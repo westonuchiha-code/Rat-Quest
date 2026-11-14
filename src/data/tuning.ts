@@ -103,6 +103,11 @@ export const TUNING = {
     wallKickPush: 7, // away from the wall
     wallKickWindow: 0.16, // a jump pressed this soon after touching a wall in the air kicks off it
     wallKickLock: 0.25, // seconds the stick cannot pull him straight back to the wall
+    // After a kick he is carried straight across at the kick's speed, towards whatever wall is opposite, for this long
+    // or until he lands; the stick only trims him sideways (this fast) unless he hauls right back.
+    wallChainTime: 1.5,
+    wallChainSteer: 2.5,
+    wallChainHold: 0.3, // a jump pressed this long before he reaches the far wall is kept for the kick off it
     climbTime: 0.5, // pulling himself up onto a ledge (long enough to see: pull, knee up, stand)
   },
     /** Attacking in the air: a short hang, a straight dive, and a shockwave all round on landing. */
@@ -143,7 +148,10 @@ export const TUNING = {
     maxPitch: 0.9,
     turnSpeed: 2.2,
     pitchSpeed: 0.8,
-    autoFollowRate: 1.4,
+    // How fast the view swings round behind him as he moves. 0: it does not; only the right stick turns it. (It was
+    // 1.4. Since the left stick steers relative to the view, a view that turned by itself changed what the stick meant
+    // under the player's thumb: worst in a wall jump, where he turns right round at every kick. The owner, 2026-11-14.)
+    autoFollowRate: 0,
     followRate: 12,
     /** How quickly the view follows him up and down (jumps, landings, lifts). Lower is smoother. */
     heightRate: 5,

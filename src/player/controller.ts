@@ -154,6 +154,16 @@ export class PlayerController {
   private wallNZ = 0;
   private wallBox: Aabb | null = null;
   private kickLock = 0;
+  /**
+   * The flight after a wall kick: seconds of it left, and which way it carries him (straight out from the wall he
+   * kicked). While it lasts he keeps the kick's speed across, so he reaches the wall opposite squarely without the
+   * stick; pressed against that wall by it he can kick again, and so on up a shaft.
+   */
+  private kickFlight = 0;
+  private kickX = 0;
+  private kickZ = 0;
+  /** A jump pressed just before he reaches the far wall, kept for the kick off it (seconds left). */
+  private kickHold = 0;
   /** Hanging from a ledge: where its top is and which way is out from the wall. */
   private hang: { top: number; nx: number; nz: number; lip: number } | null = null;
   /** How far he still has to swing out to hang clear of an overhanging edge (he caught it from underneath). */
@@ -408,6 +418,8 @@ export class PlayerController {
     this.moveEvent = null;
     this.wallTimer = Math.max(0, this.wallTimer - dt);
     this.kickLock = Math.max(0, this.kickLock - dt);
+    this.kickFlight = this.grounded || helpless || this.hang || this.plungeStage !== 0 ? 0 : Math.max(0, this.kickFlight - dt);
+    this.kickHold = this.kickFlight > 0 ? Math.max(0, this.kickHold - dt) : 0;
     this.hangDrop = Math.max(0, this.hangDrop - dt);
     if (helpless) this.hang = null;
 
@@ -468,6 +480,10 @@ export class PlayerController {
     // Jump buffering: remember a press briefly so an early press still jumps on landing.
     if (input.jumpPressed) this.jumpBuffer = T.jump.buffer;
     else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
+    // Flying from one wall at another, a press made a moment before he gets there is for the kick off it: it is kept
+    // until he touches, and does not spend his air jump meanwhile.
+    if (input.jumpPressed && this.kickFlight > 0 && this.wallTimer <= 0 && this.wallAhead(colliders, T.moves.wallKickPush * T.moves.wallChainHold)) this.kickHold = T.moves.wallChainHold;
+    if (this.kickHold > 0) this.jumpBuffer = Math.max(this.jumpBuffer, 0.02);
 
     // Water: below the surface of a pool he swims. Jumping out of it is a normal jump.
     this.splash = false;
@@ -615,6 +631,8 @@ export class PlayerController {
       }
     } else if (this.kickLock > 0) {
       // Just kicked off a wall: momentum carries him out before the stick takes over again.
+    } else if (this.kickFlight > 0 && !this.grounded && !swimming && this.kickCarry(move, dt)) {
+      // Carried across by the kick (see kickCarry).
     } else {
       const mul = this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1;
       const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * mul;
@@ -643,6 +661,10 @@ export class PlayerController {
         this.velocity.set(this.wallNX * T.moves.wallKickPush, T.moves.wallKickUp * this.gear.wallKick, this.wallNZ * T.moves.wallKickPush);
         this.facing = Math.atan2(this.wallNX, this.wallNZ);
         this.kickLock = T.moves.wallKickLock;
+        this.kickFlight = T.moves.wallChainTime;
+        this.kickX = this.wallNX;
+        this.kickZ = this.wallNZ;
+        this.kickHold = 0;
         this.wallTimer = 0;
         this.longJump = false;
         this.jumpBuffer = 0;
@@ -669,7 +691,7 @@ export class PlayerController {
         }
         this.jumpBuffer = 0;
         this.jumpCut = false;
-      } else if (!this.grounded && this.airJumpsLeft > 0) {
+      } else if (!this.grounded && this.airJumpsLeft > 0 && this.kickHold <= 0) {
         this.velocity.y = T.jump.doubleVelocity;
         this.airJumpsLeft--;
         this.flipTimer = 0;
@@ -770,11 +792,51 @@ export class PlayerController {
     // Facing turns toward held input only. Momentum from a backstep, or a slide after letting go, doesn't turn him.
     const backstepping = this.dodgeTimer >= 0 && this.dodgeKind === 'back';
     const planarSpeed = Math.hypot(this.velocity.x, this.velocity.z);
-    if (planarSpeed > 0.2 && move.lengthSq() > 0.01 && !backstepping && this.attackTimer < 0) {
+    if (planarSpeed > 0.2 && move.lengthSq() > 0.01 && !backstepping && this.attackTimer < 0 && this.kickFlight <= 0) {
       this.facing = lerpAngle(this.facing, Math.atan2(this.velocity.x, this.velocity.z), 1 - Math.exp(-T.move.turnRate * dt));
     }
 
     this.updateState(planarSpeed, input.run && planarSpeed > 4.4);
+  }
+
+  /**
+   * The flight after a wall kick. He keeps the kick's speed straight across (it used to bleed away as soon as the
+   * stick was let go, and to go wherever the stick pointed, which was rarely square at the next wall); the stick
+   * trims him sideways a little. Hauling the stick right back towards the wall he left ends it: he is his to steer
+   * again (returns false).
+   */
+  private kickCarry(move: THREE.Vector3, dt: number): boolean {
+    const M = TUNING.moves;
+    const along = move.x * this.kickX + move.z * this.kickZ;
+    if (along < -0.5) {
+      this.kickFlight = 0;
+      return false;
+    }
+    const sx = move.x - this.kickX * along;
+    const sz = move.z - this.kickZ * along;
+    const accel = TUNING.move.airAccel * dt;
+    this.velocity.x = approach(this.velocity.x, this.kickX * M.wallKickPush + sx * M.wallChainSteer, accel);
+    this.velocity.z = approach(this.velocity.z, this.kickZ * M.wallKickPush + sz * M.wallChainSteer, accel);
+    return true;
+  }
+
+  /** Whether a wall stands within `dist` of him the way his kick is carrying him. */
+  private wallAhead(colliders: Aabb[], dist: number): boolean {
+    const p = this.position;
+    const r = TUNING.rat.radius;
+    for (const b of colliders) {
+      if (b.max.y <= p.y + 0.6 || b.min.y >= p.y + TUNING.rat.height) continue;
+      if (this.kickX !== 0) {
+        if (p.z + r <= b.min.z || p.z - r >= b.max.z) continue;
+        const gap = ((this.kickX > 0 ? b.min.x : b.max.x) - p.x) * this.kickX - r;
+        if (gap > -0.05 && gap <= dist) return true;
+      } else if (this.kickZ !== 0) {
+        if (p.x + r <= b.min.x || p.x - r >= b.max.x) continue;
+        const gap = ((this.kickZ > 0 ? b.min.z : b.max.z) - p.z) * this.kickZ - r;
+        if (gap > -0.05 && gap <= dist) return true;
+      }
+    }
+    return false;
   }
 
   /** Starts one hit of the combo, turning to face the aim target, or the stick if there is none. */

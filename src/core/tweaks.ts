@@ -54,6 +54,9 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Moves', path: 'moves.wallKickUp', label: 'Wall kick height', min: 5, max: 16, step: 0.25 },
   { group: 'Moves', path: 'moves.wallKickPush', label: 'Wall kick push', min: 2, max: 14, step: 0.25 },
   { group: 'Moves', path: 'moves.wallKickWindow', label: 'Wall kick timing window', min: 0.04, max: 0.5, step: 0.01 },
+  { group: 'Moves', path: 'moves.wallChainTime', label: 'After a wall kick: seconds he is carried straight across (0: as before)', min: 0, max: 3, step: 0.05 },
+  { group: 'Moves', path: 'moves.wallChainSteer', label: 'After a wall kick: how fast the stick can trim him sideways', min: 0, max: 6, step: 0.1 },
+  { group: 'Moves', path: 'moves.wallChainHold', label: 'An early jump press is kept for the next wall this long', min: 0, max: 0.6, step: 0.02 },
   { group: 'Moves', path: 'moves.climbTime', label: 'Ledge climb time', min: 0.1, max: 1, step: 0.02 },
 
   { group: 'Fighting', path: 'health.max', label: 'Hearts', min: 1, max: 12, step: 1, later: 'after the game restarts' },
@@ -137,7 +140,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Camera', path: 'camera.distance', label: 'Distance', min: 2, max: 10, step: 0.1 },
   { group: 'Camera', path: 'camera.targetHeight', label: 'Height it looks at', min: 0, max: 2.5, step: 0.05 },
   { group: 'Camera', path: 'camera.turnSpeed', label: 'Turn speed', min: 0.5, max: 6, step: 0.1 },
-  { group: 'Camera', path: 'camera.autoFollowRate', label: 'Swings behind him', min: 0, max: 5, step: 0.1 },
+  { group: 'Camera', path: 'camera.autoFollowRate', label: 'Swings behind him as he moves (0: only the right stick turns it)', min: 0, max: 5, step: 0.1 },
   { group: 'Camera', path: 'camera.lookAhead', label: 'Looks ahead', min: 0, max: 0.6, step: 0.01 },
   { group: 'Camera', path: 'camera.heightRate', label: 'Follows jumps', min: 0.5, max: 20, step: 0.5 },
 

@@ -258,3 +258,13 @@ He sent screenshots as he played. Each of these is his report, the cause, and th
 ## Stag Knight: in progress
 See START-HERE, "What the owner wants next", item 4. Only `src/enemies/stag.ts` exists; it is not wired into anything.
 
+## Camera and wall-to-wall kicks (the owner, 2026-11-14)
+His words: the left stick "also messes with the camera", worst in wall-jump stretches where "the character won't wall jump anymore"; and after one wall jump towards another wall "there should be something that makes sure that continues to happen instead of ... a slightly wrong angle".
+- Cause of the first: followCamera eased the view round behind his facing whenever he moved and the right stick was still (`autoFollowRate` 1.4). A wall kick turns him right round, so the view set off round him, and the stick he was holding towards the next wall no longer pointed at it. `TUNING.camera.autoFollowRate` is now 0. The code and the slider are still there.
+- main.ts: lock-on pressed with no target sets `recentre` (0.35 s) and the view eases round behind him (the Souls habit). The right stick or a lock cancels it. KeyC still snaps it.
+- controller.ts, the flight after a wall kick (`kickFlight`, `kickX/Z`, `kickCarry()`): for `moves.wallChainTime` (1.5 s) or until he lands, hangs, is hurt or plunges, he keeps the kick's speed (7) straight out from the wall he kicked, whatever the stick does; the stick only trims him sideways (`wallChainSteer` 2.5) and his facing stays along the flight. Hauling the stick right back (more than half of it towards the wall he left) ends the flight. Carried into the opposite wall he is pressed against it, so the ordinary wall-kick window keeps being renewed and he can kick whenever he likes while the flight lasts; falling past its top, he catches the ledge.
+- A jump pressed during the flight with a wall within 0.3 s ahead (`wallAhead()`, `wallChainHold`) is kept (`kickHold`) until he touches, and does not spend his air jump.
+- The first kick of a chain is as it was (touch a wall in the air, jump within 0.16 s).
+- Tests: tests/moves.ts ("Wall to wall", 8 checks; "The view", 3). The chimney climbs in tests/cistern.ts and tests/keep.ts still pass unchanged.
+- Not done: nobody has played it. If the carry feels too sticky, shorten `wallChainTime`; 0 turns the whole thing off.
+

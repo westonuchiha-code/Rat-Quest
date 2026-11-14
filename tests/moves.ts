@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import type { Aabb } from '../src/world/collision';
+import { TUNING } from '../src/data/tuning';
+import { FollowCamera } from '../src/camera/followCamera';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -61,6 +63,140 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   check('jumping on touching a wall kicks off it', p.moveEvent === 'wallkick' && p.velocity.z > 4 && p.velocity.y > before + 3, `vz ${p.velocity.z.toFixed(1)} vy ${p.velocity.y.toFixed(1)}`);
   for (let t = 0; t < 8; t++) p.update(DT, inp({ move: north, jumpHeld: true }), cs);
   check('...and he flies out from it before the stick can pull him back', p.position.z > 0.8, p.position.z.toFixed(2));
+}
+
+// Wall to wall: a shaft 4.6 wide. After the first kick he is carried straight across with no stick at all, pressed
+// against the far wall by it, and can kick again; and so on up. (He used to lose his speed the moment the stick was
+// let go, and go wherever the stick pointed, which with the view swinging round behind him was rarely at the wall.)
+{
+  const northWall = box(-5, 0, -2, 5, 30, 0); // its face at z = 0
+  const southWall = box(-5, 0, 4.6, 5, 30, 6.6); // its face at z = 4.6
+  const cs = [floor, northWall, southWall];
+  const R = TUNING.rat.radius;
+  /** Jumps at the north wall and kicks off it. */
+  let firstKicked = false;
+  const firstKick = (): PlayerController => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 2.3));
+    for (let t = 0; t < 5; t++) p.update(DT, inp({}), cs); // (standing first, so that his jump is off the ground and his air jump is kept)
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), cs);
+    for (let t = 0; t < 120 && p.position.z > R + 0.001; t++) p.update(DT, inp({ move: north, jumpHeld: true }), cs);
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), cs);
+    firstKicked = p.moveEvent === 'wallkick';
+    return p;
+  };
+  /** Flies on with the stick held `stick` until he touches the wall he is heading for (or `frames` pass). Says whether he got there. */
+  const across = (p: PlayerController, stick: THREE.Vector3, toSouth: boolean, frames = 150): boolean => {
+    for (let t = 0; t < frames; t++) {
+      p.update(DT, inp({ move: stick, jumpHeld: true }), cs);
+      if (toSouth ? p.position.z > 4.6 - R - 0.02 : p.position.z < R + 0.02) return true;
+      if (p.grounded) return false;
+    }
+    return false;
+  };
+  const none = new THREE.Vector3();
+  {
+    const p = firstKick();
+    const kicked = firstKicked;
+    const y0 = p.position.y;
+    const got = across(p, none, true);
+    check('after a wall kick he is carried straight across to the wall opposite, with no stick at all', kicked && got && !p.grounded && Math.abs(p.position.x) < 0.01, `reached z ${p.position.z.toFixed(2)} at height ${p.position.y.toFixed(2)} (kicked from ${y0.toFixed(2)})`);
+    // Against it, he can kick again, for as long as the flight lasts: not only in the instant he arrives.
+    for (let t = 0; t < 12; t++) p.update(DT, inp({ jumpHeld: true }), cs);
+    p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
+    check('pressed against it by the kick, he can kick off it a fifth of a second after he arrives', p.moveEvent === 'wallkick' && p.velocity.z < -4, `vz ${p.velocity.z.toFixed(1)}`);
+    // And on up the shaft: four more kicks, never touching the stick.
+    let kicks = 2;
+    let south = false;
+    for (let n = 0; n < 4; n++) {
+      if (!across(p, none, south)) break;
+      p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
+      if (p.moveEvent === 'wallkick') kicks++;
+      south = !south;
+    }
+    check('and so on up the shaft: six kicks from wall to wall without touching the stick', kicks === 6 && p.position.y > 12, `${kicks} kicks, ${p.position.y.toFixed(1)} up`);
+  }
+  {
+    // The stick held well off line: he still goes across square, trimmed a little sideways.
+    const p = firstKick();
+    const skew = new THREE.Vector3(1, 0, 1).normalize();
+    const got = across(p, skew, true);
+    check('with the stick held 45 degrees off, he still crosses to the far wall, drifting only a little', got && Math.abs(p.position.x) < 1.6 && Math.abs(p.position.x) > 0.2, `drifted ${p.position.x.toFixed(2)} (flat out sideways it would be ${(TUNING.move.run * 0.5).toFixed(1)} or more)`);
+  }
+  {
+    // A press made before he gets there is kept for the kick, and does not spend his air jump.
+    const p = firstKick();
+    let early = -1;
+    for (let t = 0; t < 150 && early < 0; t++) {
+      p.update(DT, inp({ jumpHeld: true }), cs);
+      if (p.position.z > 4.6 - R - 1.2) early = t;
+    }
+    const vy = p.velocity.y;
+    p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
+    const notSpent = p.velocity.y <= vy + 0.01 && p.moveEvent !== 'wallkick';
+    let kickedOff = false;
+    for (let t = 0; t < 30 && !kickedOff; t++) {
+      p.update(DT, inp({ jumpHeld: true }), cs);
+      kickedOff = p.moveEvent === 'wallkick';
+    }
+    check('a jump pressed just before he reaches the far wall is kept, and kicks him off it when he touches', early >= 0 && notSpent && kickedOff && p.velocity.z < -4);
+    // (His air jump is still his.)
+    check('...and has not cost him his air jump', (p as unknown as { airJumpsLeft: number }).airJumpsLeft === TUNING.jump.airJumps && TUNING.jump.airJumps === 1);
+  }
+  {
+    // He can still turn back: the stick hauled towards the wall he left takes him back to it.
+    const open = [floor, northWall];
+    const p = new PlayerController(new THREE.Vector3(0, 0, 2.3));
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), open);
+    for (let t = 0; t < 120 && p.position.z > R + 0.02; t++) p.update(DT, inp({ move: north, jumpHeld: true }), open);
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), open);
+    for (let t = 0; t < 20; t++) p.update(DT, inp({ jumpHeld: true }), open);
+    const out = p.position.z;
+    const speedOut = p.velocity.z;
+    for (let t = 0; t < 45; t++) p.update(DT, inp({ move: north, run: true, jumpHeld: true }), open);
+    check('hauling the stick back ends it: he turns and comes back towards the wall he left', out > 1.5 && speedOut > 6 && p.velocity.z < -2 && !p.grounded, `going out at ${speedOut.toFixed(1)}, then back at ${(-p.velocity.z).toFixed(1)}`);
+  }
+  {
+    // Landed, it is over: he does not go sliding on across the floor.
+    const wide = [floor, northWall];
+    const p = new PlayerController(new THREE.Vector3(0, 0, 2.3));
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), wide);
+    for (let t = 0; t < 120 && p.position.z > R + 0.02; t++) p.update(DT, inp({ move: north, jumpHeld: true }), wide);
+    p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), wide);
+    for (let t = 0; t < 400 && !p.grounded; t++) p.update(DT, inp({ jumpHeld: true }), wide);
+    const landedAt = p.position.z;
+    for (let t = 0; t < 60; t++) p.update(DT, inp({}), wide);
+    check('with no wall opposite he lands, and stops there', p.grounded && p.position.z - landedAt < 1.2 && Math.hypot(p.velocity.x, p.velocity.z) < 0.05, `landed ${landedAt.toFixed(1)} out, slid ${(p.position.z - landedAt).toFixed(2)}`);
+  }
+  {
+    // What it was like before (the carry switched off): let go of the stick and he does not reach the other side.
+    const was = TUNING.moves.wallChainTime;
+    TUNING.moves.wallChainTime = 0;
+    const p = firstKick();
+    const got = across(p, none, true);
+    TUNING.moves.wallChainTime = was;
+    check('(with the carry switched off, as it used to be, he falls short of the far wall)', !got, `got to z ${p.position.z.toFixed(2)} of 4.30`);
+  }
+}
+
+// The view: it turns only when the right stick turns it. Moving does not swing it round behind him.
+{
+  const cam = new FollowCamera(new THREE.PerspectiveCamera());
+  const focus = new THREE.Vector3();
+  cam.yaw = 1;
+  // He runs off to one side (facing a quarter turn from the view), for three seconds.
+  for (let t = 0; t < 180; t++) {
+    focus.x += 6 * DT;
+    cam.update(DT, focus, Math.PI / 2, true, 0, 0, [], { x: 6, z: 0 });
+  }
+  check('running does not turn the view: only the right stick does', Math.abs(cam.yaw - 1) < 1e-9, `yaw ${cam.yaw.toFixed(3)}`);
+  for (let t = 0; t < 30; t++) cam.update(DT, focus, Math.PI / 2, true, 1, 0, [], { x: 6, z: 0 });
+  check('the right stick turns it', cam.yaw > 1.5);
+  const was = TUNING.camera.autoFollowRate;
+  TUNING.camera.autoFollowRate = 1.4;
+  const y0 = cam.yaw;
+  for (let t = 0; t < 60; t++) cam.update(DT, focus, Math.PI / 2, true, 0, 0, [], { x: 6, z: 0 });
+  TUNING.camera.autoFollowRate = was;
+  check('(the old swing-behind is still there on its slider, off by default)', Math.abs(cam.yaw - y0) > 0.3 && was === 0);
 }
 
 // Ledge grab: a block 3.2 high; jump at it from close, he catches the edge, then climbs on top.

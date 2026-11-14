@@ -658,6 +658,9 @@ function startGame(): void {
   let planarSpeed = 0;
   // Lock-on: the foe the rat and camera are fixed on, a marker over his head, and a short pause between target switches.
   let lockTarget: Foe | null = null;
+  // Lock on pressed with nobody to lock on to: the view comes round behind him instead (seconds of that left, and where to).
+  let recentre = 0;
+  let recentreTo = 0;
   let lockCool = 0;
   const lockMarker = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.4, 4), new THREE.MeshBasicMaterial({ color: 0xff5a3a, depthTest: false, transparent: true, opacity: 0.95 }));
   lockMarker.rotation.x = Math.PI;
@@ -1408,6 +1411,11 @@ function startGame(): void {
       else {
         lockTarget = pickTarget(player.position, follow.yaw, enemies);
         if (lockTarget) audio.play('menuMove', { vol: 0.5, rate: 1.4, verb: 0.05, priority: 3 });
+        else {
+          // Nobody there: the view swings round behind him. (It no longer does that by itself as he moves.)
+          recentre = 0.35;
+          recentreTo = player.facing + Math.PI;
+        }
       }
     }
     if (lockTarget && (player.dead || builder.live)) lockTarget = null;
@@ -1767,7 +1775,7 @@ function startGame(): void {
       reset: () => bindings.reset(),
       summary: () => {
         const l = (a: BindAction): string => `${keyLabel(bindings.key(a))} / ${padLabel(bindings.pad(a))}`;
-        return `<b>Move</b>  WASD / left stick (you run by default)<br><b>Camera</b>  arrows / right stick<br><b>Jump / talk</b>  ${l('jump')}<br><b>Attack</b>  ${l('attack')}<br><b>Dodge</b>  ${l('dodge')}<br><b>Guard</b>  hold ${l('guard')}<br><b>Sneak</b>  hold ${l('sneak')}<br><b>Stow sword</b>  ${l('stow')}<br><b>Lock on</b>  ${l('lock')}<br><b>Menu</b>  Esc or P / ${padLabel('start')}<br><b>Quicksave / load</b>  F5 / F9<br><b>Fullscreen</b>  F11 or Alt+Enter`;
+        return `<b>Move</b>  WASD / left stick (you run by default)<br><b>Camera</b>  arrows / right stick<br><b>Jump / talk</b>  ${l('jump')}<br><b>Attack</b>  ${l('attack')}<br><b>Dodge</b>  ${l('dodge')}<br><b>Guard</b>  hold ${l('guard')}<br><b>Sneak</b>  hold ${l('sneak')}<br><b>Stow sword</b>  ${l('stow')}<br><b>Lock on</b>  ${l('lock')} (nobody near: view behind you)<br><b>Menu</b>  Esc or P / ${padLabel('start')}<br><b>Quicksave / load</b>  F5 / F9<br><b>Fullscreen</b>  F11 or Alt+Enter`;
       },
     },
     rumble: {
@@ -2715,6 +2723,10 @@ function startGame(): void {
         lockTarget = switchTarget(player.position, follow.yaw, lockTarget, enemies, flick > 0 ? 1 : -1);
         lockCool = 0.35;
       }
+    }
+    if (recentre > 0) {
+      recentre = turn !== 0 || lockTarget ? 0 : recentre - frameDt;
+      follow.yaw += Math.atan2(Math.sin(recentreTo - follow.yaw), Math.cos(recentreTo - follow.yaw)) * (1 - Math.exp(-16 * frameDt));
     }
     follow.update(frameDt, renderPos, player.facing, !lockTarget && moving && player.state !== 'attack', lockTarget ? 0 : turn, pitchInput, chamber.colliders, player.velocity);
     lockMarker.visible = !!lockTarget && !builder.open;

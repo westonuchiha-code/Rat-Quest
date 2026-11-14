@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,612 checks, about 2 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,624 checks, about 2 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -213,6 +213,12 @@ Cistern in one sitting, all fixed the same turn (HANDOFF, "Fixes from the owner'
 in common: something DRAWN did not match what was SOLID or where it was PUT (a capital wider than its pillar, hangings
 half a unit off their walls, a lift whose body was in the floor, two faces in one plane). When adding anything, check
 that. tests/fit.ts is where such checks live.
+
+**Camera and wall jumps (the owner, 2026-11-14).** The view no longer swings round behind him as he moves: only the
+right stick turns it (`camera.autoFollowRate` is 0; the slider "Swings behind him" turns it back on). Do not bring
+that back by another road: the left stick steers relative to the view, so a view that turns itself changes what the
+stick means. Lock-on pressed with nobody near brings the view round behind him. After a wall kick he is carried
+straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
 Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
 playtest the Ironback, Flitter, Keep Guard and Orchid Mantis. (The plunge wind-up the owner asked about is done: the sword is raised
