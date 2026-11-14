@@ -34,15 +34,9 @@ export function portraitTexture(): THREE.DataTexture {
   for (const sx of [-1, 1]) {
     layers.push([0x5a4d6a, disc(sx * 0.26, 0.3, 0.15)], [0x6e3a52, disc(sx * 0.26, 0.3, 0.09)], [0xb04a30, disc(sx * 0.1, 0.09, 0.04)]); // ears, eyes faded from red
   }
-  // His long snout, seen from the front, and the whiskers hanging from it: out, then down past his chin.
-  layers.push([0x66587a, rect(0, -0.04, 0.055, 0.1)]);
-  layers.push([0x2a1020, disc(0, -0.15, 0.035)]);
-  for (const sx of [-1, 1]) {
-    layers.push([0xa89cb4, rect(sx * 0.13, -0.11, 0.08, 0.012)], [0xa89cb4, rect(sx * 0.21, -0.2, 0.012, 0.1)]);
-    layers.push([0xa89cb4, rect(sx * 0.16, -0.07, 0.11, 0.01)], [0xa89cb4, rect(sx * 0.27, -0.12, 0.01, 0.06)]);
-  }
+  layers.push([0x2a1020, disc(0, -0.08, 0.035)]); // the nose
   layers.push([0x4a4650, rect(0, 0.31, 0.2, 0.025)]); // the crown's band
-  for (const [sx, top] of [[-0.17, 0.12], [-0.09, 0.07], [0, 0.17], [0.09, 0.04], [0.17, 0.1]]) layers.push([0x4a4650, spike(sx, 0.38, 0.04, top, -0.065)]); // tall uneven spikes
+  for (const sx of [-1, 0, 1]) layers.push([0x4a4650, spike(sx * 0.14, 0.38, 0.05, sx === 0 ? 0.13 : 0.1, -0.065)]);
   // Row 0 is the bottom of the picture.
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {

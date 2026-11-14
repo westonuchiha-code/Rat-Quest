@@ -17,6 +17,9 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
 - No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
 - Never auto-equip pickups or purchases. **Don't make the game easier.**
+- **Keep the blocky talk-box portraits as they are.** The owner likes them simple and chunky, as a contrast with the
+  rest of the game. Do not redraw them with more detail (Grimsqueak's was redrawn on 2026-11-14 and put back the same
+  day, along with his sticker and the painting in Web Hollow). New characters get a face in that same plain style.
 - The hero is silent (jump and attack squeaks only). Finch and Pip's sounds are placeholders (their models were
   reworked on 2026-11-14, along with every enemy's; the owner has not seen them yet).
 - The story is **parked until the game is finished**. Do not offer to un-park it.
