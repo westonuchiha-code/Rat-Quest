@@ -183,6 +183,8 @@ export function hollows(): LevelDef {
     enemies,
     courseDoors: [
       { to: 'webs', name: 'Web Hollow', need: 0, door: doorOn('west', 48, 0, 48, GALLERY) },
+      // On the gallery's north ledge: the way down to what has been spinning all these webs.
+      { to: 'brood', name: 'The Brood Pit', need: 0, door: doorOn('west', 48, -21, 48, GALLERY) },
       { to: 'faith', name: 'Leap of Faith', need: 0, door: doorOn('east', 48, -41, 48, 0) },
       // Under the Mouth, in the south wall: the way into the dark.
       { to: 'dark', name: 'The Lightless Way', need: 0, door: doorOn('south', 48, -24, 48, 0) },
@@ -236,6 +238,57 @@ export const WEBS_WEDGES: WedgeDef[] = [
 export function hollowsWebs(): LevelDef {
   const def = compileCustom(websArea, 'webs');
   return { ...def, world: 'hollows', returnTo: 'hollows', solids: rockWalls(def), wedges: WEBS_WEDGES, goals: goalsOf(WEBS_WEDGES) };
+}
+
+// ======================================================================================================================
+// Side area: the Brood Pit (off the gallery's north ledge). One round floor, webs on every wall, and the Broodmother
+// in the middle of it. Nothing stands on the floor: the fight is all about where he is standing when a blow comes down.
+// Beat her and her wedge is where she fell.
+
+/** The floor she fights on (she and her pounces stay inside it; it is a little inside the walls). */
+export const PIT_ARENA = { x0: -17, x1: 17, z0: -19, z1: 17 };
+const pitArea: CustomLevel = {
+  name: 'The Brood Pit',
+  blurb: 'A round pit hung with webs, and the Broodmother in the middle of it. Watch which leg goes up.',
+  theme: 'cave',
+  music: 'march',
+  width: 40, depth: 46, wallHeight: 18,
+  pieces: [
+    box('floor', -20, -23, 20, 23, 0),
+    at('spawn', 0, 20),
+    at('exit', 0, 23),
+    // Rock piers in the four corners, so the floor reads as round and the walls are not bare.
+    box('pillar', -20, -23, -16.5, -19.5, 18), box('pillar', 16.5, -23, 20, -19.5, 18), box('pillar', -20, 19.5, -16.5, 23, 18), box('pillar', 16.5, 19.5, 20, 23, 18),
+    // Her webs, all the way round, and her larder's crystals glowing through them.
+    ...[-12, 0, 12].flatMap((z) => [at('web', -19.9, z, 5, { dir: 'e' }), at('web', 19.9, z, 6, { dir: 'w' })]),
+    ...[-10, 0, 10].map((x) => at('web', x, -22.9, 6, { dir: 's' })),
+    at('web', -9, 22.9, 7, { dir: 'n' }), at('web', 9, 22.9, 7, { dir: 'n' }),
+    at('slime', -19.9, 6, 9, { dir: 'e' }), at('slime', 19.9, -6, 9, { dir: 'w' }),
+    at('crystal', -14, -21.3, 0, { props: { color: 'purple' } }), at('crystal', 14, -21.3, 0, { props: { color: 'purple' } }), at('crystal', -18.9, 2, 0, { props: { color: 'blue' } }), at('crystal', 18.9, -3, 0, { props: { color: 'blue' } }),
+    // (Everything that stands on the floor stands outside the part of it she fights on.)
+    at('lamp', -8, 21, 4), at('lamp', 8, 21, 4), at('brazier', -18.9, 12), at('brazier', 18.9, 12), at('brazier', -18.9, -12), at('brazier', 18.9, -12),
+    at('light', 0, -22, 0, { props: { color: 'red' } }), at('light', -15.3, 22, 0, { props: { color: 'purple' } }), at('light', 15.3, 22, 0, { props: { color: 'purple' } }),
+    at('roots', -6, -22.5, 10), at('roots', 7, -22.5, 11),
+  ],
+};
+
+export const PIT_WEDGES: WedgeDef[] = [
+  { id: 'brood', name: 'The Broodmother', hint: 'Beat her. Step out from under the leg that goes up, jump the scissor, run from the pounce, and get out of her shadow when the thread twangs. Hit her while her spikes are stuck.', x: 0, y: 0, z: -4, appears: { type: 'defeat', label: 'Beat the Broodmother' } },
+];
+
+export function hollowsPit(): LevelDef {
+  const def = compileCustom(pitArea, 'brood');
+  return {
+    ...def,
+    world: 'hollows',
+    returnTo: 'hollows',
+    solids: rockWalls(def),
+    // She lurks in the middle, facing the way he comes in.
+    enemies: [...def.enemies, { type: 'brood', x: 0, y: 0, z: -4, facing: 0, arena: PIT_ARENA, respawn: false }],
+    fogRange: [26, 90],
+    wedges: PIT_WEDGES,
+    goals: goalsOf(PIT_WEDGES),
+  };
 }
 
 // ======================================================================================================================

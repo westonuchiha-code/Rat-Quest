@@ -190,6 +190,8 @@ export class Walker {
         fold(leg, index, T.k);
         T.k.applyQuaternion(this.body.quaternion).add(this.body.position);
         T.f.lerp(T.k, tuck);
+        // Wherever it is drawn to, a foot is never under the floor.
+        if (T.f.y < -lift) T.f.y = -lift;
       }
       // Two bones from the joint to the foot, the knee pointing where the leg says.
       const d = T.k.copy(T.f).sub(T.a);

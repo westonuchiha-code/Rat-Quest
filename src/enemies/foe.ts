@@ -30,7 +30,7 @@ export function keepOnFloor(e: { x: number; y: number; z: number; radius: number
 
 /** What the combat code needs from any enemy, whatever kind it is. */
 export interface Foe {
-  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag';
+  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood';
   x: number;
   y: number;
   z: number;

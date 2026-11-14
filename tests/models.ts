@@ -20,6 +20,8 @@ import { MantisModel, type MantisAnimInput } from '../src/enemies/mantisModel';
 import { MANTIS, type MantisState } from '../src/enemies/mantis';
 import { StagModel, STAG_HAMMER } from '../src/enemies/stagModel';
 import { STAG, type StagState } from '../src/enemies/stag';
+import { BroodModel } from '../src/enemies/broodModel';
+import { BROOD, type BroodState } from '../src/enemies/brood';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
@@ -1175,6 +1177,267 @@ const at = new THREE.Vector3(0, 0, 0);
     check('hero: kicking off it, he turns away and his legs drive out behind him towards the wall', kicked && !p.onWall && Math.cos(p.facing) < -0.9 && behind, pushing.map((f) => (f.z - p.position.z).toFixed(2)).join(', '));
     for (let k = 0; k < 30; k++) tick({ jumpHeld: true });
     check('hero: the push is over in a quarter of a second', p.kickProgress === -1);
+  }
+}
+
+// ---- The Broodmother: her spikes are posed first and her forelegs laid to them. Where do they go, and does any of her go into the floor? ----
+{
+  type Inside = {
+    rig: THREE.Object3D; body: THREE.Object3D; abdomen: THREE.Object3D; thread: THREE.Object3D; ring: THREE.Object3D; wave: THREE.Object3D; shadow: THREE.Object3D; eyeMat: THREE.MeshBasicMaterial;
+    forelegs: Array<{ upper: THREE.Object3D; spike: THREE.Object3D }>; legs: Array<{ thigh: THREE.Object3D; shin: THREE.Object3D; step: number }>; walker: { feet(): THREE.Vector3[] };
+  };
+  const inside = (m: BroodModel): Inside => m as unknown as Inside;
+  type Extra = { arm?: 0 | 1; windTime?: number; stabAt?: number; air?: (u: number) => number; raging?: boolean };
+  const run = (m: BroodModel, state: BroodState, secs: number, x: Extra = {}, each?: (t: number) => void): void => {
+    for (let t = 0; t < secs; t += DT) {
+      m.update(DT, { state, stateTime: t, walking: state === 'chase' ? BROOD.speed : 0, arm: x.arm ?? 0, windTime: x.windTime ?? BROOD.stabWind, stabAt: x.stabAt ?? 3, air: x.air ? x.air(Math.min(1, t / secs)) : 0, raging: !!x.raging });
+      each?.(t);
+    }
+  };
+  const fresh = (): BroodModel => {
+    const m = new BroodModel();
+    m.setTransform(at, 0);
+    return m;
+  };
+  /** The parts of her own body a foreleg passes through (none is right): along its upper part and along its spike. */
+  const through = (m: BroodModel): string[] => {
+    const I = inside(m);
+    const P = m.parts();
+    const meshes: THREE.Mesh[] = [];
+    I.body.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (mesh.isMesh && mesh.material instanceof THREE.ShaderMaterial) meshes.push(mesh);
+    });
+    const hits = new Set<string>();
+    const ray = new THREE.Raycaster();
+    P.tips.forEach((tip, i) => {
+      // (From a little way out of the shoulder, which is of course inside her.)
+      const lines: Array<[THREE.Vector3, THREE.Vector3]> = [[P.shoulders[i].clone().lerp(P.elbows[i], 0.35), P.elbows[i]], [P.elbows[i], tip]];
+      for (const [a, b] of lines) {
+        const d = b.clone().sub(a);
+        ray.far = d.length();
+        ray.set(a, d.normalize());
+        for (const mesh of meshes) {
+          const mat = mesh.material as THREE.Material;
+          const was = mat.side;
+          mat.side = THREE.DoubleSide;
+          if (ray.intersectObject(mesh, false).length) {
+            let inAbdomen = false;
+            for (let q: THREE.Object3D | null = mesh; q; q = q.parent) if (q === I.abdomen) inAbdomen = true;
+            hits.add(inAbdomen ? 'her abdomen' : 'her head and chest');
+          }
+          mat.side = was;
+        }
+      }
+    });
+    return [...hits].sort();
+  };
+  const B = BROOD;
+  const arc = (u: number): number => 4 * B.leapHeight * u * (1 - u);
+  const up = (u: number): number => B.hangHeight * u * u * (3 - 2 * u);
+  const top = (): number => B.hangHeight;
+  const fall = (u: number): number => B.hangHeight * (1 - u * u);
+  type Move = [BroodState, number, Extra?];
+  const wake: Move[] = [['idle', 0.4], ['roar', B.roar], ['chase', 0.8]];
+  // Each thing she does, as it comes about in the fight: what leads into it, then the thing itself.
+  const MOVES: Array<{ name: string; lead: Move[]; move: Move; aloft?: boolean }> = [
+    { name: 'lurking', lead: [], move: ['idle', 2] },
+    { name: 'the scream', lead: [['idle', 0.5]], move: ['roar', B.roar] },
+    { name: 'coming on', lead: wake.slice(0, 2), move: ['chase', 1.5] },
+    ...([0, 1] as const).flatMap((arm) => [1.9, 3.0, B.radius + B.stabReach].flatMap((stabAt) => {
+      const x: Extra = { arm, stabAt };
+      const y: Extra = { arm: (1 - arm) as 0 | 1, stabAt, windTime: B.stabGap };
+      const who = `${arm ? 'left' : 'right'} leg, ${stabAt.toFixed(1)} off`;
+      return [
+        { name: `a spike going up (${who})`, lead: wake, move: ['stabWind', B.stabWind, x] as Move },
+        { name: `the stab (${who})`, lead: [...wake, ['stabWind', B.stabWind, x] as Move], move: ['stab', B.stabTime, x] as Move },
+        { name: `the other spike going up (${who})`, lead: [...wake, ['stabWind', B.stabWind, x] as Move, ['stab', B.stabTime, x] as Move], move: ['stabWind', B.stabGap, y] as Move },
+        { name: `the second stab (${who})`, lead: [...wake, ['stabWind', B.stabWind, x] as Move, ['stab', B.stabTime, x] as Move, ['stabWind', B.stabGap, y] as Move], move: ['stab', B.stabTime, y] as Move },
+        { name: `both spikes in the floor (${who})`, lead: [...wake, ['stabWind', B.stabWind, x] as Move, ['stab', B.stabTime, x] as Move, ['stabWind', B.stabGap, y] as Move, ['stab', B.stabTime, y] as Move], move: ['stabStuck', B.stabStuck, y] as Move },
+        { name: `pulling them free (${who})`, lead: [...wake, ['stabWind', B.stabGap, y] as Move, ['stab', B.stabTime, y] as Move, ['stabStuck', B.stabStuck, y] as Move], move: ['chase', 1.2] as Move },
+      ];
+    })),
+    { name: 'opening the scissor', lead: wake, move: ['sweepWind', B.sweepWind] },
+    { name: 'the scissor', lead: [...wake, ['sweepWind', B.sweepWind]], move: ['sweep', B.sweepTime] },
+    { name: 'after the scissor', lead: [...wake, ['sweepWind', B.sweepWind], ['sweep', B.sweepTime]], move: ['recover', B.recover] },
+    { name: 'ready again', lead: [...wake, ['sweepWind', B.sweepWind], ['sweep', B.sweepTime], ['recover', B.recover]], move: ['chase', 1.2] },
+    { name: 'sinking to spring', lead: wake, move: ['crouch', B.leapWind] },
+    { name: 'the pounce', lead: [...wake, ['crouch', B.leapWind]], move: ['leap', B.leapTime, { air: arc }], aloft: true },
+    { name: 'landing', lead: [...wake, ['crouch', B.leapWind], ['leap', B.leapTime, { air: arc }]], move: ['slam', B.slamTime] },
+    { name: 'in a heap', lead: [...wake, ['crouch', B.leapWind], ['leap', B.leapTime, { air: arc }], ['slam', B.slamTime]], move: ['stuck', B.stuck] },
+    { name: 'getting up from the heap', lead: [...wake, ['leap', B.leapTime, { air: arc }], ['slam', B.slamTime], ['stuck', B.stuck]], move: ['chase', 1.2] },
+    { name: 'winding up the whirl', lead: wake, move: ['whirlWind', B.whirlWind] },
+    { name: 'the whirl', lead: [...wake, ['whirlWind', B.whirlWind]], move: ['whirl', B.whirlTime] },
+    { name: 'after the whirl', lead: [...wake, ['whirlWind', B.whirlWind], ['whirl', B.whirlTime]], move: ['settle', B.settle] },
+    { name: 'going up the thread', lead: wake, move: ['climb', B.climbTime, { air: up, raging: true }], aloft: true },
+    { name: 'hanging', lead: [...wake, ['climb', B.climbTime, { air: up }]], move: ['hang', 2, { air: top, raging: true }], aloft: true },
+    { name: 'the thread twangs', lead: [...wake, ['climb', B.climbTime, { air: up }], ['hang', 2, { air: top }]], move: ['dropTell', B.dropTell, { air: top, raging: true }], aloft: true },
+    { name: 'the drop', lead: [...wake, ['climb', B.climbTime, { air: up }], ['hang', 2, { air: top }], ['dropTell', B.dropTell, { air: top }]], move: ['drop', B.dropTime, { air: fall, raging: true }], aloft: true },
+    { name: 'landing from the drop', lead: [...wake, ['hang', 2, { air: top }], ['dropTell', B.dropTell, { air: top }], ['drop', B.dropTime, { air: fall }]], move: ['slam', B.slamTime] },
+    { name: 'in a heap after the drop', lead: [...wake, ['hang', 2, { air: top }], ['drop', B.dropTime, { air: fall }], ['slam', B.slamTime]], move: ['stuck', B.dropStuck] },
+    { name: 'her legs gone from under her', lead: wake, move: ['kneel', B.kneel] },
+    { name: 'struck down in the middle of a stab', lead: [...wake, ['stabWind', B.stabWind], ['stab', B.stabTime * 0.6]], move: ['kneel', B.kneel] },
+    { name: 'getting up', lead: [...wake, ['kneel', B.kneel]], move: ['chase', 1.2] },
+    { name: 'dying', lead: wake, move: ['dead', 2] },
+    { name: 'dying in a heap', lead: [...wake, ['stuck', 1]], move: ['dead', 2] },
+    { name: 'dying with a spike up', lead: [...wake, ['stabWind', B.stabWind]], move: ['dead', 2] },
+  ];
+  const bad: string[] = [];
+  const loose: string[] = [];
+  const sunk: string[] = [];
+  let sound = true;
+  let wide = 0;
+  for (const { name, lead, move, aloft } of MOVES) {
+    const m = fresh();
+    for (const [st, secs, x] of lead) run(m, st, secs, x);
+    const seen = new Map<string, number>();
+    let short = 0;
+    let lowTip = 9;
+    let lowBody = 9;
+    let lowFoot = 9;
+    let lowKnee = 9;
+    let frames = 0;
+    run(m, move[0], move[1], move[2], () => {
+      frames++;
+      for (const h of through(m)) seen.set(h, (seen.get(h) ?? 0) + 1);
+      short = Math.max(short, ...m.reachShort);
+      const P = m.parts();
+      for (const t of P.tips) lowTip = Math.min(lowTip, t.y);
+      for (const e of P.elbows) lowTip = Math.min(lowTip, e.y - 0.1);
+      for (const f of P.feet) lowFoot = Math.min(lowFoot, f.y);
+      for (const k of P.knees) lowKnee = Math.min(lowKnee, k.y - 0.1);
+      if (frames % 3 === 0) lowBody = Math.min(lowBody, measure(inside(m).rig).box.min.y);
+    });
+    if (seen.size) bad.push(`${name}: ${[...seen].map(([k, n]) => `${k} for ${n} of ${frames} frames`).join(', ')}`);
+    if (short > 0.03) loose.push(`${name}: a foreleg ${short.toFixed(2)} short of where its spike should be`);
+    if (lowTip < 0) sunk.push(`${name}: a spike or elbow ${lowTip.toFixed(2)}`);
+    if (lowFoot < -0.03) sunk.push(`${name}: a foot ${lowFoot.toFixed(2)}`);
+    if (lowKnee < 0) sunk.push(`${name}: a knee ${lowKnee.toFixed(2)}`);
+    if (!aloft && lowBody < -0.03) sunk.push(`${name}: some of her ${lowBody.toFixed(2)}`);
+    const r = measure(inside(m).rig);
+    if (!r.finite || r.meshes < 50) sound = false;
+    wide = Math.max(wide, r.box.max.x - r.box.min.x);
+  }
+  check('brood: she builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && wide > 4 && wide < 8, `widest ${wide.toFixed(2)}`);
+  check('brood: in everything she does, and on the way into it, each foreleg reaches to where its spike is put', loose.length === 0, loose.join(' | ') || `${MOVES.length} moves, every frame`);
+  check('brood: and neither foreleg passes through her own head, chest or abdomen', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
+  check('brood: nothing of her goes under the floor: spikes, elbows, feet, knees, belly', sunk.length === 0, sunk.join(' | '));
+  {
+    const m = fresh();
+    const I = inside(m);
+    run(m, 'idle', 1.5);
+    const lurk = m.parts();
+    const low = I.body.position.y;
+    check('brood: lurking, she is low with both spikes resting on the floor in front of her', lurk.tips.every((t) => t.y < 0.08 && t.z > 1.6), lurk.tips.map((t) => `${t.y.toFixed(2)} up, ${t.z.toFixed(2)} ahead`).join('; '));
+    let highest = 0;
+    run(m, 'roar', B.roar, {}, () => (highest = Math.max(highest, ...m.parts().tips.map((t) => t.y))));
+    check('brood: seeing him she rears and throws both forelegs up and wide', highest > 2.8 && I.body.position.y > low + 0.2, `spikes ${highest.toFixed(2)} up`);
+    // Walking: feet step, in threes, and do not slide.
+    const pos = new THREE.Vector3();
+    let lifted = 0;
+    let slid = 0;
+    let most = 0;
+    let prev: THREE.Vector3[] | null = null;
+    let wasDown: boolean[] = [];
+    for (let t = 0; t < 2; t += DT) {
+      pos.z += B.speed * DT;
+      m.setTransform(pos, 0);
+      m.update(DT, { state: 'chase', stateTime: t, walking: B.speed, arm: 0, windTime: B.stabWind, stabAt: 3, air: 0, raging: false });
+      const feet = I.walker.feet();
+      const down = I.legs.map((l) => l.step >= 1);
+      most = Math.max(most, down.filter((d) => !d).length);
+      feet.forEach((f, i) => {
+        lifted = Math.max(lifted, f.y);
+        // (Planted now and planted the frame before: the last frame of a step is still the step.)
+        if (prev && down[i] && wasDown[i]) slid = Math.max(slid, Math.hypot(f.x - prev[i].x, f.z - prev[i].z));
+      });
+      prev = feet;
+      wasDown = down;
+    }
+    check('brood: walking, her six feet step in threes and do not slide', lifted > 0.2 && slid < 0.012 && most >= 2 && most <= 3, `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}, up to ${most} off the floor at once`);
+    m.setTransform(at, 0);
+  }
+  for (const arm of [0, 1] as const) {
+    const m = fresh();
+    for (const [st, secs, x] of wake) run(m, st, secs, x);
+    run(m, 'stabWind', B.stabWind, { arm, stabAt: 3.2 });
+    const upP = m.parts();
+    const side = arm === 0 ? -1 : 1;
+    run(m, 'stab', B.stabTime, { arm, stabAt: 3.2 });
+    const down = m.parts();
+    check(`brood: a stab with her ${arm ? 'left' : 'right'} foreleg: the spike goes up high on that side, and comes down in the floor where the blow lands (3.2 off, as the rules said)`,
+      upP.tips[arm].y > 3 && upP.tips[arm].x * side > 0.3 && down.tips[arm].y < 0.1 && Math.abs(down.tips[arm].z - 3.2) < 0.2 && Math.abs(down.tips[arm].x) < B.radius,
+      `up ${upP.tips[arm].y.toFixed(2)}; down at ${down.tips[arm].x.toFixed(2)}, ${down.tips[arm].y.toFixed(2)}, ${down.tips[arm].z.toFixed(2)}`);
+  }
+  {
+    const m = fresh();
+    const I = inside(m);
+    for (const [st, secs, x] of wake) run(m, st, secs, x);
+    run(m, 'sweepWind', B.sweepWind);
+    const open = m.parts();
+    let front = 0;
+    let highest = 0;
+    let least = 9;
+    run(m, 'sweep', B.sweepTime, {}, () => {
+      for (const t of m.parts().tips) {
+        front = Math.max(front, t.z);
+        highest = Math.max(highest, t.y);
+        least = Math.min(least, Math.hypot(t.x, t.z));
+      }
+    });
+    const shut = m.parts();
+    check('brood: the scissor opens wide and low on both sides, and shuts across her front along the floor, at arm\'s length all the way',
+      open.tips[0].x < -2.4 && open.tips[1].x > 2.4 && open.tips.every((t) => t.y < 0.6) && shut.tips[0].x > 0 && shut.tips[1].x < 0 && front > 2.5 && highest < 0.7 && least > 2.2,
+      `open ${open.tips[0].x.toFixed(2)} and ${open.tips[1].x.toFixed(2)}; never above ${highest.toFixed(2)}, never nearer than ${least.toFixed(2)}`);
+    // The pounce and the heap.
+    run(m, 'chase', 0.8);
+    run(m, 'crouch', B.leapWind);
+    const sunkDown = I.body.position.y;
+    let tucked = 9;
+    run(m, 'leap', B.leapTime, { air: arc }, (t) => {
+      if (t > B.leapTime * 0.4 && t < B.leapTime * 0.6) tucked = Math.min(tucked, ...I.walker.feet().map((f) => f.y));
+    });
+    run(m, 'slam', B.slamTime);
+    const ringOn = I.wave.visible;
+    run(m, 'stuck', B.stuck);
+    const heap = m.parts();
+    check('brood: she sinks to spring, draws her legs up in the air, and lands flat with her forelegs splayed on the floor; a ring runs out to the edge of the blow and is gone',
+      sunkDown < 0.72 && tucked > 1.5 && I.body.position.y < 0.6 && heap.tips.every((t) => t.y < 0.1) && ringOn && !I.wave.visible, `body ${sunkDown.toFixed(2)} then ${I.body.position.y.toFixed(2)}; feet ${tucked.toFixed(2)} up in the air`);
+  }
+  {
+    const m = fresh();
+    const I = inside(m);
+    for (const [st, secs, x] of wake) run(m, st, secs, x);
+    run(m, 'climb', B.climbTime, { air: up, raging: true });
+    run(m, 'hang', 1.5, { air: top, raging: true });
+    const P = m.parts();
+    const faint = (I.ring as THREE.Mesh).visible && ((I.ring as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity < 0.4;
+    const nose = I.body.localToWorld(new THREE.Vector3(0, 0, 1)).y;
+    const tail = P.spinneret.y;
+    check('brood: on the thread she hangs head down from the tip of her abdomen, legs drawn in, the thread running up from her to the roof',
+      I.thread.visible && Math.abs(I.thread.position.y - tail) < 0.05 && I.thread.position.y + I.thread.scale.y > 20 && tail > nose + 1 && P.feet.every((f) => f.y > B.hangHeight - 1.5), `nose ${nose.toFixed(2)}, tail ${tail.toFixed(2)}`);
+    run(m, 'dropTell', B.dropTell, { air: top, raging: true });
+    const ringSize = I.ring.scale.x;
+    check('brood: under her on the floor, her shadow and a ring the size of the blow: faint while she follows him, bright once the thread twangs',
+      faint && I.shadow.visible && Math.abs(ringSize - (B.radius + B.slamReach)) < 0.01 && I.ring.position.y < 0.1 && ((I.ring as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity > 0.25);
+    run(m, 'drop', B.dropTime, { air: fall, raging: true });
+    run(m, 'slam', B.slamTime);
+    run(m, 'stuck', 0.5);
+    check('brood: landed, the thread and the ring are gone', !I.thread.visible && !I.ring.visible && measure(I.rig).box.min.y > -0.03);
+  }
+  {
+    const m = fresh();
+    const I = inside(m);
+    for (const [st, secs, x] of wake) run(m, st, secs, x);
+    const lit = I.eyeMat.color.r;
+    run(m, 'kneel', B.kneel);
+    check('brood: her legs gone from under her, she is flat with her spikes limp on the floor and her eyes dim', I.body.position.y < 0.6 && m.parts().tips.every((t) => t.y < 0.1) && I.eyeMat.color.r < lit - 0.2);
+    run(m, 'dead', 2);
+    const box = measure(I.rig).box;
+    const P = m.parts();
+    check('brood: dead, she is curled up small: every leg drawn in, nothing under the floor', box.min.y > -0.03 && box.max.x - box.min.x < 3.6 && P.feet.every((f) => Math.hypot(f.x, f.z) < 1.5), `${size(box)}`);
+    run(m, 'dead', 3.2);
+    check('brood: and then shrivels away to nothing', m.root.scale.x < 0.01);
   }
 }
 

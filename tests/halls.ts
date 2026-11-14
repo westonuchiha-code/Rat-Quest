@@ -35,7 +35,7 @@ for (const l of LEVELS) for (const x of l.collectibles) {
 }
 check('no two places in the game share a pickup', clash.length === 0, clash.slice(0, 3).join('; '));
 const wedgeTotal = LEVELS.reduce((n, l) => n + (l.wedges?.length ?? 0), 0);
-check('the game now has 45 Golden Wedges (seven of them gear secrets)', wedgeTotal === 45, `${wedgeTotal}`);
+check('the game now has 46 Golden Wedges (seven of them gear secrets, one the Broodmother\'s)', wedgeTotal === 46, `${wedgeTotal}`);
 
 console.log(failures === 0 ? 'halls: all pass' : `halls: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);

@@ -9,6 +9,7 @@ import { IRONBACK } from '../enemies/ironback';
 import { GUARD } from '../enemies/guard';
 import { MANTIS } from '../enemies/mantis';
 import { STAG } from '../enemies/stag';
+import { BROOD } from '../enemies/brood';
 import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
@@ -134,6 +135,24 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Stag Knights', path: 'stag.stompWindup', label: 'Warning before the stomp', min: 0.2, max: 2, step: 0.05 },
   { group: 'Stag Knights', path: 'stag.poise', label: 'Quick blows that put it on one knee', min: 1, max: 12, step: 1 },
   { group: 'Stag Knights', path: 'stag.kneel', label: 'How long it is down', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Broodmother', path: 'brood.hp', label: 'Health', min: 4, max: 60, step: 1, later: 'from the next level' },
+  { group: 'The Broodmother', path: 'brood.speed', label: 'Walking speed', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Broodmother', path: 'brood.turnRate', label: 'Turn speed (lower: easier to get behind)', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Broodmother', path: 'brood.stabWind', label: 'Warning before the first stab', min: 0.24, max: 2, step: 0.02 },
+  { group: 'The Broodmother', path: 'brood.stabGap', label: 'Warning before each stab after it', min: 0.2, max: 1.5, step: 0.02 },
+  { group: 'The Broodmother', path: 'brood.stabStuck', label: 'Spikes stuck after the last stab', min: 0.3, max: 3, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.sweepWind', label: 'Warning before the scissor', min: 0.3, max: 2, step: 0.02 },
+  { group: 'The Broodmother', path: 'brood.sweepChance', label: 'Close in front: how often she scissors, not stabs', min: 0, max: 1, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.leapWind', label: 'Warning before the pounce', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.slamDamage', label: 'Pounce and drop damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Broodmother', path: 'brood.stuck', label: 'In a heap after a pounce', min: 0.3, max: 4, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.behindTime', label: 'Seconds he may stand behind her before she whirls', min: 0.2, max: 4, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.rageAt', label: 'Angry below this much of her health', min: 0, max: 1, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.hangSpeed', label: 'On the thread: how fast she follows him', min: 1, max: 9, step: 0.1 },
+  { group: 'The Broodmother', path: 'brood.dropTell', label: 'Warning before she drops', min: 0.2, max: 2, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.dropStuck', label: 'In a heap after a drop', min: 0.3, max: 5, step: 0.05 },
+  { group: 'The Broodmother', path: 'brood.poise', label: 'Quick blows that put her down', min: 1, max: 16, step: 1 },
+  { group: 'The Broodmother', path: 'brood.kneel', label: 'How long she is down', min: 0.5, max: 6, step: 0.1 },
 
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
@@ -179,7 +198,7 @@ export const TWEAKS: TweakDef[] = [
 ];
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

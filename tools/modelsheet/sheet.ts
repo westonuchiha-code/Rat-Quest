@@ -17,6 +17,8 @@ import { GuardModel } from '../../src/enemies/guardModel';
 import { MantisModel } from '../../src/enemies/mantisModel';
 import { StagModel } from '../../src/enemies/stagModel';
 import { STAG, type StagState } from '../../src/enemies/stag';
+import { BroodModel } from '../../src/enemies/broodModel';
+import { BROOD, type BroodState } from '../../src/enemies/brood';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
@@ -48,7 +50,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -92,6 +94,66 @@ if (pick === 'guard') {
     labels.push({ text: 'the knight', x: -12.5, y: 0 });
   }
   for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'brood') {
+  // The Broodmother in each thing she does, with the knight beside the first for size. &only=N shows one alone.
+  const B = BROOD;
+  type X = { arm?: 0 | 1; windTime?: number; stabAt?: number; air?: number; raging?: boolean };
+  type Step = [BroodState, number, X?];
+  type Shot = { name: string; move: Step; lead?: Step[] };
+  const wake: Step[] = [['idle', 0.4], ['roar', B.roar], ['chase', 0.8]];
+  const L: X = { arm: 1 };
+  const shots: Shot[] = [
+    { name: 'idle', move: ['idle', 1] },
+    { name: 'roar', move: ['roar', B.roar], lead: [['idle', 0.4]] },
+    { name: 'chase', move: ['chase', 0.6], lead: wake.slice(0, 2) },
+    { name: 'stab windup (right)', move: ['stabWind', B.stabWind], lead: wake },
+    { name: 'stab (right)', move: ['stab', B.stabTime], lead: [...wake, ['stabWind', B.stabWind]] },
+    { name: 'stab windup (left)', move: ['stabWind', B.stabGap, { ...L, windTime: B.stabGap }], lead: [...wake, ['stabWind', B.stabWind], ['stab', B.stabTime]] },
+    { name: 'both in the floor', move: ['stabStuck', 0.5, L], lead: [...wake, ['stabWind', B.stabWind], ['stab', B.stabTime], ['stabWind', B.stabGap, L], ['stab', B.stabTime, L]] },
+    { name: 'scissor windup', move: ['sweepWind', B.sweepWind], lead: wake },
+    { name: 'scissor (half way)', move: ['sweep', B.sweepTime * 0.5], lead: [...wake, ['sweepWind', B.sweepWind]] },
+    { name: 'scissor shut', move: ['recover', 0.4], lead: [...wake, ['sweepWind', B.sweepWind], ['sweep', B.sweepTime]] },
+    { name: 'crouch', move: ['crouch', B.leapWind], lead: wake },
+    { name: 'pounce (top)', move: ['leap', B.leapTime * 0.5, { air: B.leapHeight }], lead: [...wake, ['crouch', B.leapWind]] },
+    { name: 'heap', move: ['stuck', 0.6], lead: [...wake, ['crouch', B.leapWind], ['slam', B.slamTime]] },
+    { name: 'whirl windup', move: ['whirlWind', B.whirlWind], lead: wake },
+    { name: 'whirl', move: ['whirl', B.whirlTime * 0.5], lead: [...wake, ['whirlWind', B.whirlWind]] },
+    { name: 'on the thread', move: ['hang', 1.5, { air: 3.2, raging: true }], lead: [...wake, ['climb', B.climbTime, { air: 3.2 }]] },
+    { name: 'kneel', move: ['kneel', 1.2], lead: wake },
+    { name: 'dead', move: ['dead', 1.6], lead: wake },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const COLS = 6;
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    const m = new BroodModel();
+    const x = only >= 0 ? 0 : ((i % COLS) - (COLS - 1) / 2) * 8;
+    const z = only >= 0 ? 0 : (Math.floor(i / COLS) - 1) * 9.5;
+    m.setTransform(new THREE.Vector3(x, 0, z), spin);
+    scene.add(m.root);
+    let time = 0;
+    const steps = [...(shot.lead ?? []), shot.move];
+    ticks.push((dt) => {
+      time += dt;
+      let at = time;
+      for (let k = 0; k < steps.length; k++) {
+        const [st, d, e] = steps[k];
+        if (at < d || k === steps.length - 1) {
+          m.update(dt, { state: st, stateTime: Math.min(d, at), walking: st === 'chase' && k < steps.length - 1 ? 0 : 0, arm: e?.arm ?? 0, windTime: e?.windTime ?? B.stabWind, stabAt: e?.stabAt ?? 3.1, air: e?.air ?? 0, raging: !!e?.raging });
+          return;
+        }
+        at -= d;
+      }
+    });
+    labels.push({ text: shot.name, x, y: z });
+  });
+  if (only <= 0) {
+    const rat = new RatModel();
+    rat.setTransform(new THREE.Vector3(only === 0 ? -3 : -(COLS - 1) * 4 - 3.4, 0, only === 0 ? 0 : -9.5), spin);
+    scene.add(rat.root);
+  }
+  for (let k = 0; k < 420; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'stag') {
   // The Stag Knight in each thing it does, with the knight beside the first for size. &only=N shows one alone.
@@ -496,7 +558,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'stag') {
+if (pick === 'brood') {
+  camera.position.set(0, 9, 62);
+  camera.lookAt(0, 1.5, 0);
+} else if (pick === 'stag') {
   camera.position.set(-1.5, 5, 34);
   camera.lookAt(-1.5, 1, 0);
 } else if (pick === 'mantis') {

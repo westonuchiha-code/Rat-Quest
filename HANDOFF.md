@@ -284,3 +284,55 @@ His words: the left stick "also messes with the camera", worst in wall-jump stre
 - Tests: tests/moves.ts ("Wall to wall", 8 checks; "The view", 3). The chimney climbs in tests/cistern.ts and tests/keep.ts still pass unchanged.
 - Not done: nobody has played it. If the carry feels too sticky, shorten `wallChainTime`; 0 turns the whole thing off.
 
+## The Waterworks' high bridge, moved (the owner, 2026-11-14)
+He sent a picture from the hop slabs: the plank bridge from gallery to gallery ran 1.5 over them (it stopped jumps)
+and was never needed (both galleries have stairs, and the channel can be swum). "Bridges are a cool idea but it needs
+to be somewhere else and have an actual function." Now (`src/levels/waterworks.ts`): it starts at the TOP of the pump
+tower (8 up) and runs east to a new loft on the east wall, which nothing else reaches (his best climb is 5.8). The
+relic that was at the end of the east gallery is on the loft; the cap that was on the old bridge is on the new one.
+Two posts hold it up (island, east promenade). tests/fit.ts checks: nothing in the hall hangs low enough over a
+standing place to stop a double jump; the loft is reachable with the bridge and NOT without it.
+**The rule to take from it:** a walkway must be the way to something, and nothing may hang within his jump height
+(5.86 with his head) over a place he jumps from.
+
+## Crates: the smash, the pieces, the sound (the owner, 2026-11-14)
+He asked for a sound for breaking crates and better-looking pieces. There WAS a sound, but measured it was the
+quietest in the game (half as loud as the sword's own hit, which played over it). `src/audio/synth.ts`: `crate` and
+`barrel` are rebuilt (crack, low thump, boards knocking apart through wooden resonances, soft-clipped by DRIVE_C /
+DRIVE_B: raise those for heavier, lower for cleaner), and `plank` is a new short knock played as each board lands
+(`debris.takeKnocks()` in main.ts). `src/world/debris.ts` is rewritten: a crate comes apart into what it is made of
+(frame boards, planks, a corner still nailed together, splinters), each piece starting where it sat on the crate and
+showing ITS OWN STRIP of the crate's picture (the old pieces were little boxes each showing a whole tiny crate);
+ends are snapped (slant, point, notch) with bare wood showing; a barrel gives staves, four hoop arcs and two lid
+halves. A tumbling piece rests on its lowest corner (`Debris.low`), so boards bounce on their ends and never dip into
+the floor. tests/crates.ts checks all of it, loudness included.
+
+## Boss: the Broodmother (the first of the owner's two boss battles)
+A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
+beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.
+- **Rules** `src/enemies/brood.ts` (kind `brood`, `immovable`, `BROOD` table, all on sliders under "The Broodmother").
+  hp 26. Lurks until he is within 13, screams (1.3 s), then:
+  - *Stabs*: a foreleg goes up (0.62 s; she turns with him for the first 60% and `stabAt` records how far off he
+    stood), comes down on that spot (1 heart, narrow: step aside; a shield stops it; a perfect guard throws her
+    down); then the other leg after 0.44 s. After the last, both spikes are in the floor for 0.95 s: an opening.
+  - *Scissor*: both forelegs wide and low (0.78 s), then shut along the floor across her front (`ground`: jump it).
+  - *Pounce*: from 5.5 to 12 away she sinks (0.9 s) and springs onto where he is; where she lands is 2 hearts all
+    round and `heavy` (no shield); then 1.7 s in a heap, the best opening.
+  - *Whirl*: 0.75 s behind her and she spins, legs out low, all round (`ground`).
+  - *Angry below half*: three stabs, shorter waits, and the thread: she climbs to the roof (out of reach: her `y` is
+    raised so combat's same-level test fails), follows him at 5.4 (he runs faster), stops, the thread twangs (0.5 s),
+    she drops (2 hearts, heavy) and lies 2.3 s.
+  - Poise 7 (plunge 3, parry on a stab all of it): down for 2.6 s.
+- **Model** `src/enemies/broodModel.ts`: her SPIKES are posed first (each pose gives the two tips over the floor) and
+  the forelegs are laid to them with `twoBone`; the stab's landing place comes from the rules, so what is drawn is
+  what hits. Six walking legs on the shared `Walker` (threes); in the air their feet go to `spread`, dead to `curled`.
+  Floor guards: every point of her head, chest, fangs, feelers and abdomen is held above the floor each frame
+  (`chestProbes`, `bellyProbes`, `abdomenLow`). On the floor: her shadow, a red ring the size of the blow while she
+  hangs (faint following, beating once the thread twangs), a pale ring running out where she lands.
+- **Shown** by `src/ui/bossBar.ts`: name and health along the bottom while a boss is awake (Grimsqueak too).
+- **Tests**: tests/brood.ts (47: the pit, every attack and its answer, the thread, a whole seeded fight staying on
+  her floor), tests/models.ts (15 more: every frame of 63 moves measured: forelegs reach their tips, pass through
+  none of her, nothing under the floor). Sheet: `#brood` (`&only=N`). Looked at alone from three sides, every state.
+- **Not done**: nobody has fought her by hand; her numbers are a first guess. Her sounds are made from existing ones
+  (roach screech slowed for the scream, a chain clink sped up for the thread). No story scene.
+
