@@ -31,5 +31,7 @@ shot npcs2 "npcs2&cam=0,1.5,11,0,0.8,0"; shot npcs2-mort "npcs2&cam=-2.6,1.1,3.8
 shot hero "hero"; shot hero-a "hero&cam=-10,4,-4.5,-6,2.7,0.6"; shot hero-b "hero&cam=-5,4,-4.5,-1,2.9,0.6"; shot hero-c "hero&cam=1,4.2,-4.5,5,3.1,0.6"; for n in 0 1 2 3 4 5 6; do shot "hero-side$n" "hero&only=$n&cam=-5.5,2.9,0.3,0,2.6,0.5"; done
 shot moves "moves"; for n in $(seq 0 24); do shot "move$n" "moves&only=$n&cam=4.6,1.9,1.6,0,0.85,0.2"; done
 for n in 8 9; do shot "close$n" "moves&only=$n&cam=-3.2,1.5,-1.2,0,0.75,0.9"; done; for n in 10 11 12; do shot "close$n" "moves&only=$n&settle&cam=2.6,1.5,2.2,0,0.7,0"; shot "close1$n" "moves&only=$n&settle&cam=3.4,0.9,0.1,0,0.7,0.1"; done
+shot grim "grim"; shot grim-a "grim&cam=-10.35,2.5,8.2,-10.35,1.95,0"; shot grim-b "grim&cam=-3.45,2.7,8.2,-3.45,2.15,0"; shot grim-c "grim&cam=3.45,2.6,8.2,3.45,2.0,0"; shot grim-d "grim&cam=10.35,2.4,8.2,10.35,1.75,0"; shot grim-face "grim&only=0&cam=1.1,2.75,2.1,0,2.5,0.2"; shot grim-side "grim&only=0&cam=5.5,2.0,0.3,0,1.9,0"; shot grim-back "grim&only=0&cam=-2.5,2.6,-4.6,0,1.8,0"; shot grim-front "grim&only=0&cam=0.6,2.0,5.2,0,1.85,0"
+shot faces "faces"
 for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
 ls "$OUT"

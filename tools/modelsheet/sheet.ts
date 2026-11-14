@@ -13,10 +13,13 @@ import type { ScuttlerState } from '../../src/enemies/scuttler';
 import { ToadModel } from '../../src/enemies/toadModel';
 import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
+import { drawPortrait } from '../../src/npc/portrait';
+import { stickerIcon } from '../../src/ui/icons';
+import { portraitTexture } from '../../src/world/portraitTexture';
 import { RatModel } from '../../src/player/ratModel';
 import { PlayerController, type PlayerInput } from '../../src/player/controller';
 import { makeAabb } from '../../src/world/collision';
-import type { NpcKind } from '../../src/npc/npc';
+import type { NpcAct, NpcKind } from '../../src/npc/npc';
 
 const W = 1400;
 const H = 620;
@@ -37,9 +40,36 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
+if (pick === 'grim') {
+  // Lord Grimsqueak in each thing his body does: at rest, talking, every tell of the fight, brought low, and the ending.
+  // &only=N shows one alone.
+  const poses: Array<[string, Partial<NpcAct>, boolean]> = [
+    ['rest', {}, false], ['talking', {}, true], ['cast (volley)', { gesture: 'cast', float: 1 }, false], ['conjure (orb)', { gesture: 'conjure', float: 1 }, false],
+    ['point (bat)', { gesture: 'point', float: 1 }, false], ['rear (swoop)', { gesture: 'rear', float: 1 }, false], ['sweep (dive)', { gesture: 'sweep', float: 1 }, false], ['raise (slam)', { gesture: 'raise', float: 1 }, false],
+    ['smash', { gesture: 'smash', low: 1 }, false], ['slump (spent)', { gesture: 'slump', low: 1, bow: 0.6 }, false], ['rage', { gesture: 'rage', float: 1 }, false],
+    ['offer (ending)', { low: 1, reach: 1, still: true }, false],
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  poses.forEach(([name, act, talking], i) => {
+    if (only >= 0 && i !== only) return;
+    const x = only >= 0 ? 0 : (i - (poses.length - 1) / 2) * 2.3;
+    const n = new Npc({ name: 'Lord Grimsqueak', kind: 'villain', x, z: 0, facing: spin, lines: ['.'] });
+    scene.add(n.root);
+    let beat = 0;
+    ticks.push((dt) => {
+      beat += dt;
+      if (talking && beat > 0.16) { beat = 0; n.pulse(); }
+      n.act = { lookAt: [x + Math.sin(spin) * 3, Math.cos(spin) * 3], shrug: 0, ...act };
+      n.update(dt, x + Math.sin(spin) * 3, 0, Math.cos(spin) * 3, talking);
+    });
+    labels.push({ text: `${i} ${name}`, x, y: 0 });
+  });
+  // Let every one of them come to rest in his pose before the first picture.
+  for (let k = 0; k < 240; k++) for (const t of ticks) t(1 / 60);
+}
 let soloY = 0; // with &only=N, how high that one figure is (the camera follows it)
 if (pick === 'moves') {
   // Every move the hero has, played by the real controller and stopped at its telling moment. Two rows.
@@ -262,7 +292,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'moves') {
+if (pick === 'grim') {
+  camera.position.set(0, 4.2, 26);
+  camera.lookAt(0, 1.7, 0);
+} else if (pick === 'moves') {
   camera.position.set(9, 7, 17);
   camera.lookAt(0, 0.9, -2.5);
 } else if (pick === 'hero') {
@@ -283,6 +316,34 @@ const camAt = /cam=([-\d.,]+)/.exec(location.hash)?.[1].split(',').map(Number);
 if (camAt && camAt.length === 6) {
   camera.position.set(camAt[0], camAt[1] + soloY, camAt[2]);
   camera.lookAt(camAt[3], camAt[4] + soloY, camAt[5]);
+}
+
+// #faces: the small flat pictures of everybody (the talk box's faces, the sticker book's, and the old painting), big.
+if (location.hash.includes('faces')) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;inset:0;background:#2a2f36;display:flex;flex-wrap:wrap;gap:18px;padding:18px;align-content:flex-start;z-index:5';
+  document.body.appendChild(wrap);
+  const who: Array<[NpcKind, string]> = [['villain', 'Lord Grimsqueak'], ['mouse', 'Pip'], ['mouse', 'Mellow Mort'], ['bird', 'Finch'], ['bird', 'Wren'], ['pigeon', 'Dave']];
+  for (const [kind, name] of who) {
+    const c = document.createElement('canvas');
+    drawPortrait(c, kind, name);
+    c.style.cssText = 'width:192px;height:192px;image-rendering:pixelated';
+    wrap.appendChild(c);
+  }
+  for (const name of ['grimsqueak', 'knight', 'pip', 'mort', 'wren', 'finch', 'dave']) {
+    const d = document.createElement('div');
+    d.innerHTML = stickerIcon(name, 160);
+    wrap.appendChild(d);
+  }
+  const tex = portraitTexture();
+  const pc = document.createElement('canvas');
+  pc.width = tex.image.width;
+  pc.height = tex.image.height;
+  const img = new ImageData(new Uint8ClampedArray(tex.image.data as Uint8Array), tex.image.width, tex.image.height);
+  const g = pc.getContext('2d');
+  g?.putImageData(img, 0, 0);
+  pc.style.cssText = 'width:240px;height:300px;image-rendering:pixelated;transform:scaleY(-1)';
+  wrap.appendChild(pc);
 }
 
 let last = performance.now();

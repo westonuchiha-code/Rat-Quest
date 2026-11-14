@@ -16,7 +16,8 @@ import { GRIM, Grimsqueak } from './enemies/grimsqueak';
 import { Ambience, worldSoundFor } from './audio/ambience';
 import { MoteField } from './world/motes';
 import { SENSES } from './enemies/foe';
-import type { Orb, Ring } from './enemies/grimsqueak';
+import type { GrimState, Orb, Ring } from './enemies/grimsqueak';
+import { GRIM_FIGHT_FLOAT, type GrimGesture } from './npc/grimsqueakModel';
 import { Director } from './enemies/director';
 import { Toad, ToadState, Glob, stepGlobs } from './enemies/toad';
 import { ToadModel } from './enemies/toadModel';
@@ -223,6 +224,11 @@ function startGame(): void {
   /** Room for a flier: nothing solid where its body is, from y up half a unit. */
   const canFly = (x: number, y: number, z: number, r: number): boolean =>
     !chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.02 && b.min.y < y + 0.5);
+  /** What Grimsqueak's body does in each part of the fight (each attack's tell has its own shape). */
+  const GRIM_GESTURE: Record<GrimState, GrimGesture> = {
+    idle: 'rest', float: 'rest', volley: 'cast', swoopWind: 'rear', swoop: 'sweep', slamWind: 'raise', slamFall: 'smash', orbWind: 'conjure', orbWait: 'rest',
+    bat: 'point', spent: 'slump', stunned: 'slump', repel: 'rage', rage: 'rage', dead: 'slump',
+  };
   function addEnemy(spec: EnemySpec): void {
     if (spec.type === 'grimsqueak') {
       // The boss: the toad's logic with his own numbers, drawn with the villain's model.
@@ -238,10 +244,13 @@ function startGame(): void {
           look.act = {
             lookAt: [p.x + Math.sin(f) * 4, p.z + Math.cos(f) * 4], shrug: 0, gone: boss.asleep || !boss.alive,
             low: 1 - boss.lift, bow: boss.state === 'spent' ? 0.6 : boss.state === 'stunned' ? 1 : 0,
-            reach: boss.state === 'bat' || boss.state === 'orbWind' ? 1 : 0, still: boss.state === 'stunned',
+            reach: 0, still: boss.state === 'stunned', gesture: GRIM_GESTURE[boss.state], float: GRIM_FIGHT_FLOAT,
           };
         },
-        flash: () => void (flash = 0.14),
+        flash: () => {
+          flash = 0.14;
+          look.flash();
+        },
         tick: (dt, e) => {
           flash = Math.max(0, flash - dt);
           // Every attack has a tell: gathering the light he shudders, rearing for the swoop he leans back and swells,

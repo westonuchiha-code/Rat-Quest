@@ -12,6 +12,7 @@ import type { IronbackState } from '../src/enemies/ironback';
 import { BatModel } from '../src/enemies/batModel';
 import type { BatState } from '../src/enemies/bat';
 import { Npc, lookOf } from '../src/npc/npc';
+import { GRIM_FIGHT_FLOAT, GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from '../src/npc/grimsqueakModel';
 import { RatModel } from '../src/player/ratModel';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
@@ -159,7 +160,7 @@ const at = new THREE.Vector3(0, 0, 0);
 
 // ---- The Club's folk and the king ----
 {
-  const tall: Record<NpcKind, [number, number]> = { mouse: [1.2, 1.7], bird: [1.2, 1.6], pigeon: [1.5, 2.1], villain: [2.3, 3.2] };
+  const tall: Record<NpcKind, [number, number]> = { mouse: [1.2, 1.7], bird: [1.2, 1.6], pigeon: [1.5, 2.1], villain: [2.75, 3.35] };
   for (const kind of ['mouse', 'bird', 'pigeon', 'villain'] as NpcKind[]) {
     const n = new Npc({ name: kind, kind, x: 0, z: 0, facing: 0, lines: ['Hello.'] });
     let ok = true;
@@ -250,6 +251,91 @@ const at = new THREE.Vector3(0, 0, 0);
   const open = jaw.rotation.x;
   for (let i = 0; i < 30; i++) finch.update(DT, 0, 0, 2, true);
   check('Finch: his beak opens on a syllable and shuts again', open > 0.35 && jaw.rotation.x < 0.05, `${open.toFixed(2)} -> ${jaw.rotation.x.toFixed(2)}`);
+}
+
+// ---- Lord Grimsqueak, the gaunt king: every gesture of the fight and the story ----
+{
+  const gestures: GrimGesture[] = ['rest', 'cast', 'conjure', 'point', 'rear', 'sweep', 'raise', 'smash', 'slump', 'rage', 'offer'];
+  const base = { low: 0, float: GRIM_FIGHT_FLOAT, bow: 0, still: false, talking: false, mouth: 0, reach: 0 };
+  const parts = (m: GrimsqueakModel) => m as unknown as {
+    arms: Array<{ side: number; hand: THREE.Object3D; shoulder: THREE.Object3D }>; shard: THREE.Object3D; orb: THREE.Mesh; whiskers: Array<{ pivot: THREE.Object3D; row: number }>;
+    head: THREE.Object3D; crown: THREE.Object3D; body: THREE.Object3D;
+  };
+  const world = (o: THREE.Object3D, x = 0, y = 0, z = 0): THREE.Vector3 => o.localToWorld(new THREE.Vector3(x, y, z));
+  const settle = (m: GrimsqueakModel, inp: Partial<typeof base> & { gesture: GrimGesture }, frames = 120): void => {
+    for (let i = 0; i < frames; i++) m.update(DT, { ...base, ...inp });
+    m.root.updateMatrixWorld(true);
+  };
+  let ok = true;
+  let lowUp = 9;
+  let lowDown = 9;
+  const hands: Record<string, THREE.Vector3[]> = {};
+  for (const g of gestures) {
+    const m = new GrimsqueakModel();
+    settle(m, { gesture: g });
+    const up = measure(m.root);
+    ok &&= up.finite && up.meshes > 60;
+    // (Over three seconds, so the bottom of his bobbing is in it.)
+    for (let i = 0; i < 180; i++) {
+      m.update(DT, { ...base, gesture: g });
+      if (i % 6 === 0) lowUp = Math.min(lowUp, measure(m.root).box.min.y);
+    }
+    hands[g] = parts(m).arms.map((a) => m.root.worldToLocal(world(a.hand, 0, -0.08, 0)));
+    settle(m, { gesture: g, low: 1 });
+    const down = measure(m.root);
+    ok &&= down.finite;
+    lowDown = Math.min(lowDown, down.box.min.y);
+  }
+  check('Grimsqueak: every gesture holds together, floating and on the ground', ok);
+  check('Grimsqueak: floating in the fight, all of him (rags and tail too) hangs above the sword\'s reach', lowUp > 0.9, `lowest ${lowUp.toFixed(2)}`);
+  check('Grimsqueak: brought low, his rags are on the ground and nothing is under it', lowDown > -0.06 && lowDown < 0.08, `lowest ${lowDown.toFixed(2)}`);
+  {
+    const m = new GrimsqueakModel();
+    settle(m, { gesture: 'rest', low: 1 });
+    const p = parts(m);
+    const top = measure(m.root).box.max.y;
+    check('Grimsqueak: standing, he is more than twice the knight\'s height, and thin', Math.abs(top - GRIM_HEIGHT) < 0.15 && top > 2 * 1.1, `${top.toFixed(2)} tall`);
+    const left = p.arms.find((a) => a.side < 0)!;
+    const gap = world(left.hand, 0, -0.08, 0).distanceTo(p.shard.getWorldPosition(new THREE.Vector3()));
+    check('Grimsqueak: at rest, one paw is curled over the shard in his chest', gap < 0.24, `${gap.toFixed(2)} from it`);
+    // Whiskers: two a side, sweeping out from the snout and hanging well down, but not to his waist.
+    const tips = p.whiskers.map((w) => {
+      const tube = w.pivot.children[0] as THREE.Mesh;
+      const pos = tube.geometry.attributes.position;
+      const root = world(w.pivot);
+      const tip = tube.localToWorld(new THREE.Vector3().fromBufferAttribute(pos, pos.count - 1));
+      return { row: w.row, out: Math.abs(tip.x - root.x), drop: root.y - tip.y };
+    });
+    const long = tips.filter((w) => w.row === 0);
+    check('Grimsqueak: four whiskers; the long pair sweeps out and hangs past his chin, like a moustache', tips.length === 4 && long.every((w) => w.out > 0.15 && w.drop > 0.35 && w.drop < 0.65) && tips.filter((w) => w.row === 1).every((w) => w.drop > 0.08 && w.drop < long[0].drop), tips.map((w) => `out ${w.out.toFixed(2)} down ${w.drop.toFixed(2)}`).join('; '));
+    check('Grimsqueak: no ball of light in his claw when he is at rest', !p.orb.visible);
+    settle(m, { gesture: 'conjure' }, 90);
+    const orb = p.orb.getWorldPosition(new THREE.Vector3());
+    check('Grimsqueak: making the orb, a ball of light grows in the claw he holds up over his head', p.orb.visible && p.orb.scale.x > 0.7 && orb.y > world(p.head).y + 0.3, `orb at ${orb.y.toFixed(2)}, head at ${world(p.head).y.toFixed(2)}`);
+  }
+  // Each tell of the fight has its own shape: where his claws are tells the attacks apart.
+  const R = (g: string): THREE.Vector3 => hands[g][1];
+  const L = (g: string): THREE.Vector3 => hands[g][0];
+  const shoulderY = GRIM_FIGHT_FLOAT + (0.82 + 0.6) * 0.94; // how high he floats, then his waist, then his shoulder
+  check('Grimsqueak: the volley has both claws out in front of him', R('cast').z > 0.4 && L('cast').z > 0.4);
+  check('Grimsqueak: the orb has one claw high over his head and the other on his chest', R('conjure').y > shoulderY + 0.4 && L('conjure').y < shoulderY);
+  check('Grimsqueak: rearing for the swoop, his arms are spread wide like wings', R('rear').x > 0.75 && L('rear').x < -0.75);
+  check('Grimsqueak: diving, they are flung back behind him', R('sweep').z < -0.3 && L('sweep').z < -0.3);
+  check('Grimsqueak: rising for the slam, both claws are over his head', R('raise').y > shoulderY + 0.4 && L('raise').y > shoulderY + 0.4);
+  check('Grimsqueak: spent, they hang at his sides', R('slump').y < shoulderY - 0.5 && L('slump').y < shoulderY - 0.5);
+  check('Grimsqueak: the paw he holds out at the end is out in front, below his shoulder', R('offer').z > 0.4 && R('offer').y < shoulderY);
+  const shapes = ['cast', 'conjure', 'rear', 'sweep', 'raise'];
+  let apart = 9;
+  for (let i = 0; i < shapes.length; i++) for (let j = i + 1; j < shapes.length; j++) apart = Math.min(apart, R(shapes[i]).distanceTo(R(shapes[j])) + L(shapes[i]).distanceTo(L(shapes[j])));
+  check('Grimsqueak: no two tells put his claws in nearly the same place', apart > 0.5, `closest pair differ by ${apart.toFixed(2)}`);
+  // As a character in a level: a scene's directions still work.
+  const n = new Npc({ name: 'Lord Grimsqueak', kind: 'villain', x: 0, z: 0, facing: 0, lines: [] });
+  for (let i = 0; i < 60; i++) n.update(DT, 0, 0, 3, false);
+  const floating = measure(n.root).box;
+  n.rest();
+  for (let i = 0; i < 120; i++) n.update(DT, 0, 0, 3, false);
+  const resting = measure(n.root).box;
+  check('Grimsqueak: in a level he floats; left at rest by the ending he stands on the ground', floating.min.y > 0.4 && resting.min.y > -0.06 && resting.min.y < 0.1 && resting.max.y < floating.max.y - 0.4, `${floating.min.y.toFixed(2)} -> ${resting.min.y.toFixed(2)}`);
 }
 
 // ---- The hero on a ledge: played by the real controller, his paws are on the edge the whole time he hangs and hauls ----

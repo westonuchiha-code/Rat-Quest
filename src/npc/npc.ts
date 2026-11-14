@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
 import { modelKit, paint } from '../render/modelKit';
+import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
 
 /** A friendly character standing in a level. Plain data. */
 export interface NpcSpec {
@@ -43,11 +44,8 @@ export const TALK_RANGE = 2.2;
  * He bobs on the spot, turns to look at the rat when he comes near, and a little marker hops over his head
  * when he has something to say. Later he can open a shop; for now he gives hints.
  */
-/** How high the villain's head rides when he floats, and how far he comes down to stand with his hem on the ground. */
-const VILLAIN_FLOAT = 2.0;
-const VILLAIN_DROP = 0.6;
-/** Where his paws ride, below his head. */
-const HAND_Y = -0.78;
+/** How high Grimsqueak hangs above the ground when he floats, unless a scene or the fight says otherwise. */
+const VILLAIN_FLOAT = 0.6;
 
 /** A story scene's direction for one of the level's characters. Anything left out stays as it was. */
 export interface NpcAct {
@@ -65,6 +63,10 @@ export interface NpcAct {
   bow?: number;
   /** The villain only: one paw held out, 0..1. */
   reach?: number;
+  /** The villain only: what his arms and body are doing (the fight uses these for its tells). */
+  gesture?: GrimGesture;
+  /** The villain only: how high he hangs above the ground when he is up. */
+  float?: number;
 }
 
 export class Npc {
@@ -314,221 +316,9 @@ export class Npc {
       }
       this.head.add(box(0.1, 0.02, 0.03, 0x101014, 0, 0.07, 0.19)); // bridge
     } else if (spec.kind === 'villain') {
-      // Lord Grimsqueak: a floating king. Spiked iron crown, burning eyes, a high crimson-lined collar, ermine and iron on
-      // his shoulders, a purple robe and a tattered black cloak, clawed paws in wide sleeves, and a shard of the Engine on his chest.
-      const FUR = 0x6e5e80;
-      const DARK = 0x16101c;
-      this.root.add(this.body);
-      this.body.position.y = VILLAIN_FLOAT;
-      // --- The king's body. Everything hangs from the head; he has no feet, the robe just ends. ---
-      const both = createPs1Material({ lit: true, side: THREE.DoubleSide });
-      /** Colours a shape by height: `at(y)` gives the colour of each vertex. */
-      const shade = (geo: THREE.BufferGeometry, at: (y: number, i: number) => number): THREE.BufferGeometry => {
-        const pos = geo.attributes.position;
-        const cols = new Float32Array(pos.count * 3);
-        const c = new THREE.Color();
-        for (let i = 0; i < pos.count; i++) {
-          c.set(at(pos.getY(i), i));
-          cols.set([c.r, c.g, c.b], i * 3);
-        }
-        geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-        return geo;
-      };
-      const mix = (lo: number, hi: number, k: number): number => new THREE.Color(lo).lerp(new THREE.Color(hi), Math.min(1, Math.max(0, k))).getHex();
-      /** Cuts the bottom edge of a turned shape into points, like cloth worn to rags. */
-      const ragged = (geo: THREE.BufferGeometry, bottom: number, depth: number): void => {
-        const pos = geo.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          if (Math.abs(pos.getY(i) - bottom) > 0.001) continue;
-          const ang = Math.atan2(pos.getX(i), pos.getZ(i));
-          const tooth = Math.round((ang / (Math.PI * 2)) * 24);
-          if (tooth % 2 === 0) pos.setY(i, bottom - depth * (0.6 + 0.4 * Math.abs(Math.sin(tooth * 1.7))));
-        }
-      };
-
-      // The robe: broad at the shoulder, drawn in at a belted waist, flaring to a ragged hem. Royal purple going to black.
-      const HEM = -1.2;
-      const robeGeo = new THREE.LatheGeometry(
-        [[0.15, -0.3], [0.44, -0.4], [0.5, -0.52], [0.42, -0.72], [0.31, -0.9], [0.4, -1.04], [0.6, HEM]].map(([r, y]) => new THREE.Vector2(r, y)),
-        24,
-      );
-      ragged(robeGeo, HEM, 0.2);
-      this.body.add(new THREE.Mesh(shade(robeGeo, (y) => mix(0x0e0818, 0x3a2058, (y - HEM) / 0.85)), both));
-      // A gold stripe down the front, and a belt with a buckle.
-      this.body.add(box(0.07, 0.36, 0.02, 0xb08a3a, 0, -0.6, 0.445));
-      const stripeLow = box(0.07, 0.3, 0.02, 0xb08a3a, 0, -1.05, 0.44);
-      stripeLow.rotation.x = -0.42;
-      this.body.add(stripeLow);
-      const belt = new THREE.Mesh(shade(new THREE.CylinderGeometry(0.325, 0.33, 0.07, 12, 1, true), () => 0xb08a3a), both);
-      belt.position.y = -0.9;
-      this.body.add(belt);
-      this.body.add(box(0.11, 0.11, 0.03, 0xe0c060, 0, -0.9, 0.33));
-
-      // The mantle: a heavy black cloak hung from the shoulders, longer than the robe, its edge in tatters. It sways.
-      const cloakGeo = new THREE.LatheGeometry(
-        [[0.5, -0.36], [0.6, -0.55], [0.6, -0.9], [0.72, -1.2], [0.86, -1.42]].map(([r, y]) => new THREE.Vector2(r, y)),
-        18, Math.PI * 0.24, Math.PI * 1.52, // open at the front
-      );
-      ragged(cloakGeo, -1.42, 0.3);
-      const cloak = new THREE.Mesh(shade(cloakGeo, (y) => mix(0x050308, 0x1a1024, (y + 1.42) / 1.0)), both);
-      this.cloak = cloak;
-      this.body.add(cloak);
-      // Its crimson lining shows at the edges: the one colour he has kept.
-      const liningGeo = new THREE.LatheGeometry(
-        [[0.48, -0.38], [0.57, -0.56], [0.57, -0.9], [0.68, -1.18], [0.8, -1.36]].map(([r, y]) => new THREE.Vector2(r, y)),
-        18, Math.PI * 0.24, Math.PI * 1.52,
-      );
-      const lining = new THREE.Mesh(shade(liningGeo, (y) => mix(0x3a0c18, 0x8a1c2c, (y + 1.36) / 1.0)), both);
-      cloak.add(lining);
-
-      // A high collar standing up behind his head, black outside and crimson within, cut to points along the top.
-      const collarShape = (r0: number, r1: number, color: (y: number) => number): THREE.Mesh => {
-        const g = new THREE.CylinderGeometry(r1, r0, 0.62, 12, 1, true, Math.PI * 0.5, Math.PI);
-        const pos = g.attributes.position;
-        for (let i = 0; i < pos.count; i++) {
-          if (pos.getY(i) < 0.3) continue;
-          const ang = Math.atan2(pos.getX(i), pos.getZ(i));
-          const tooth = Math.round((ang / Math.PI) * 12);
-          // Tallest at the back, dipping towards the front corners.
-          pos.setY(i, 0.3 + (tooth % 2 === 0 ? 0.14 : 0) - 0.26 * Math.abs(Math.sin(ang)));
-        }
-        const m = new THREE.Mesh(shade(g, color), both);
-        m.position.set(0, -0.12, -0.04);
-        return m;
-      };
-      this.body.add(collarShape(0.46, 0.7, (y) => mix(0x0a0610, 0x1e142c, y + 0.4)));
-      this.body.add(collarShape(0.44, 0.66, (y) => mix(0x4a1020, 0x9a2434, y + 0.4)));
-
-      // Ermine over the shoulders: pale fur with dark flecks.
-      this.body.add(blob(0.56, 0.13, 0.52, 0xd8d2e2, 0, -0.42, -0.01, 12, 5));
-      for (let k = 0; k < 9; k++) {
-        const ang = (k / 9) * Math.PI * 2 + 0.35;
-        this.body.add(blob(0.035, 0.05, 0.035, 0x16101c, Math.sin(ang) * 0.52, -0.42 + 0.03 * Math.sin(k * 2.3), Math.cos(ang) * 0.48, 4, 3));
-      }
-      // Iron on each shoulder, with a spike.
-      for (const s2 of [-1, 1]) {
-        this.body.add(blob(0.2, 0.15, 0.22, 0x3a3a48, s2 * 0.5, -0.36, -0.02, 7, 5));
-        const spike = new THREE.Mesh(shade(new THREE.ConeGeometry(0.06, 0.3, 4), (y) => mix(0x4a4a5a, 0xb0b0c4, y + 0.15)), mat);
-        spike.position.set(s2 * 0.6, -0.2, -0.02);
-        spike.rotation.z = -s2 * 0.7;
-        this.body.add(spike);
-      }
-
-      // On his chest, on a gold chain: a shard of the Deep Engine. It is what holds him up, and it never stops pulsing.
-      const chain = new THREE.Mesh(shade(new THREE.TorusGeometry(0.3, 0.018, 4, 12, Math.PI), () => 0xb08a3a), mat);
-      chain.position.set(0, -0.36, 0.3);
-      chain.rotation.set(-0.5, 0, Math.PI);
-      this.body.add(chain);
-      this.body.add(blob(0.1, 0.1, 0.05, 0xb08a3a, 0, -0.66, 0.44, 6, 4));
-      const shard = new THREE.Mesh(new THREE.OctahedronGeometry(0.085), new THREE.MeshBasicMaterial({ color: 0x7fe8f4 }));
-      shard.position.set(0, -0.66, 0.49);
-      shard.scale.set(0.8, 1.25, 0.6);
-      this.shard = shard;
-      this.body.add(shard);
-
-      // Under the hem, where feet would be: a turning ring of the same cold light, and a few sparks caught in it.
-      const under = new THREE.Group();
-      under.position.y = HEM - 0.22;
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x4fc4d4, transparent: true, opacity: 0.55, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.34, 0.44, 10), ringMat);
-      ring.rotation.x = -Math.PI / 2;
-      under.add(ring);
-      const inner = new THREE.Mesh(new THREE.RingGeometry(0.14, 0.2, 6), ringMat);
-      inner.rotation.x = -Math.PI / 2;
-      inner.position.y = -0.08;
-      under.add(inner);
-      for (let k = 0; k < 4; k++) {
-        const spark = new THREE.Mesh(new THREE.OctahedronGeometry(0.04), new THREE.MeshBasicMaterial({ color: 0x9ff0f8 }));
-        spark.userData.k = k;
-        under.add(spark);
-      }
-      this.under = under;
-      this.body.add(under);
-
-      // A long tail curling out from under the cloak.
-      for (let k = 0; k < 6; k++) {
-        const seg = blob(0.045 - k * 0.005, 0.045 - k * 0.005, 0.1, 0x8a6a80, 0.12 + k * 0.1, HEM - 0.02 + 0.02 * k * k * 0.3, -0.62 - Math.sin(k * 0.5) * 0.12, 5, 4);
-        seg.rotation.y = 0.9 + k * 0.25;
-        this.body.add(seg);
-      }
-      this.head.position.set(0, 0, 0);
-      this.body.add(this.head);
-      this.head.add(blob(0.42, 0.38, 0.4, FUR, 0, 0.05, 0, 11, 8)); // the head
-      this.head.add(blob(0.2, 0.17, 0.34, FUR, 0, -0.06, 0.36, 8, 6)); // the snout
-      this.head.add(blob(0.07, 0.06, 0.07, 0x2a1020, 0, -0.02, 0.68, 5, 4)); // the nose
-      for (const s2 of [-1, 1]) {
-        this.head.add(blob(0.26, 0.26, 0.06, FUR, s2 * 0.4, 0.38, -0.08, 8, 6)); // ears
-        this.head.add(blob(0.17, 0.17, 0.05, 0x8a3a5a, s2 * 0.4, 0.38, -0.04, 7, 5));
-        // A burning eye: a dark socket, the red of it, a hot yellow heart and a slit of a pupil.
-        this.head.add(blob(0.1, 0.085, 0.05, DARK, s2 * 0.17, 0.1, 0.315, 6, 4));
-        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 5), new THREE.MeshBasicMaterial({ color: 0xff3a1a }));
-        eye.position.set(s2 * 0.17, 0.1, 0.34);
-        eye.scale.set(1, 0.8, 1);
-        this.head.add(eye);
-        const heart = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffb040 }));
-        heart.position.set(s2 * 0.17, 0.095, 0.385);
-        heart.scale.set(1, 0.8, 0.5);
-        this.head.add(heart);
-        const slit = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), new THREE.MeshBasicMaterial({ color: 0x1a0408 }));
-        slit.position.set(s2 * 0.17, 0.095, 0.4);
-        slit.scale.set(0.35, 1.3, 0.4);
-        this.head.add(slit);
-        const brow = blob(0.16, 0.04, 0.08, DARK, s2 * 0.17, 0.22, 0.33, 6, 4);
-        brow.rotation.z = -s2 * 0.45;
-        this.head.add(brow);
-        for (let w = 0; w < 3; w++) {
-          const whisk = box(0.5, 0.012, 0.012, 0xd8d0e0, s2 * 0.38, -0.08 - w * 0.05, 0.5);
-          whisk.rotation.y = s2 * (0.25 + w * 0.12);
-          whisk.rotation.z = -s2 * (0.12 - w * 0.12);
-          this.head.add(whisk);
-        }
-      }
-      // The jaw hangs from the chin and swings open as he talks; two long front teeth stick out.
-      this.jaw.position.set(0, -0.2, 0.2);
-      this.head.add(this.jaw);
-      this.jaw.add(blob(0.17, 0.07, 0.3, 0x3a1830, 0, -0.02, 0.1, 7, 4));
-      this.jaw.add(blob(0.12, 0.05, 0.22, 0xe8e0d0, 0, 0.01, 0.12, 6, 4));
-      for (const s2 of [-1, 1]) this.head.add(box(0.05, 0.13, 0.03, 0xf0ead8, s2 * 0.035, -0.17, 0.62));
-      // The crown: a band of black iron with a ring of spikes.
-      this.head.add(blob(0.36, 0.07, 0.34, 0x2a2a34, 0, 0.36, 0, 9, 4));
-      for (let k = 0; k < 5; k++) {
-        const a = (k / 5) * Math.PI * 2;
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.22, 4), mat);
-        const sc = new THREE.Color(0x8a8a9a);
-        const sn = spike.geometry.attributes.position.count;
-        const scols = new Float32Array(sn * 3);
-        for (let i = 0; i < sn; i++) scols.set([sc.r, sc.g, sc.b], i * 3);
-        spike.geometry.setAttribute('color', new THREE.BufferAttribute(scols, 3));
-        spike.position.set(Math.sin(a) * 0.3, 0.5, Math.cos(a) * 0.28);
-        this.head.add(spike);
-      }
-      // His paws ride at his sides in wide, gold-edged sleeves, each ending in three pale claws.
-      for (const s2 of [-1, 1]) {
-        const hand = new THREE.Group();
-        const sleeve = new THREE.Mesh(shade(new THREE.CylinderGeometry(0.1, 0.2, 0.34, 8, 1, true), (y) => mix(0x3a2058, 0x1a1028, y + 0.17)), both);
-        sleeve.position.y = 0.2;
-        hand.add(sleeve);
-        const cuff = new THREE.Mesh(shade(new THREE.CylinderGeometry(0.2, 0.21, 0.05, 8, 1, true), () => 0xb08a3a), both);
-        cuff.position.y = 0.04;
-        hand.add(cuff);
-        hand.add(blob(0.11, 0.12, 0.11, FUR, 0, -0.06, 0.02, 6, 5));
-        for (let k = -1; k <= 1; k++) {
-          const claw = new THREE.Mesh(shade(new THREE.ConeGeometry(0.028, 0.14, 4), () => 0xe8e0d0), mat);
-          claw.position.set(k * 0.07, -0.19, 0.06);
-          claw.rotation.x = Math.PI + 0.35;
-          claw.rotation.z = -k * 0.25;
-          hand.add(claw);
-        }
-        hand.position.set(s2 * 0.78, HAND_Y, 0.12);
-        hand.rotation.z = s2 * 0.25;
-        hand.userData.side = s2;
-        this.wings.push(hand);
-        this.body.add(hand);
-      }
-      // A blood-red stone at the front of the crown.
-      const jewel = new THREE.Mesh(new THREE.OctahedronGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0xd8203a }));
-      jewel.position.set(0, 0.38, 0.35);
-      this.head.add(jewel);
+      // Lord Grimsqueak has a model of his own (grimsqueakModel.ts): the gaunt king, hung in the air by the Engine's shard.
+      this.grim = new GrimsqueakModel();
+      this.root.add(this.grim.root);
     } else {
       // Pip the peddler: a small mouse in a blue cloak and a yellow scarf, under a pack much too big for him, with a
       // lantern on a pole in one paw. His other paw waves about when he talks; his ears, whiskers and tail are never still.
@@ -733,7 +523,7 @@ export class Npc {
     this.root.add(shadow);
     // The marker over his head: a small gold diamond, shown when the rat is near.
     this.marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13), new THREE.MeshBasicMaterial({ color: 0xffe27a }));
-    this.marker.position.set(0, spec.kind === 'villain' ? 3.3 : 1.75, 0);
+    this.marker.position.set(0, spec.kind === 'villain' ? VILLAIN_FLOAT + GRIM_HEIGHT + 0.35 : 1.75, 0);
     this.marker.visible = false;
     this.root.add(this.marker);
 
@@ -742,6 +532,11 @@ export class Npc {
     this.root.visible = !this.gone;
     this.root.rotation.y = spec.facing;
     this.look = spec.facing;
+  }
+
+  /** The villain only: a white flash (the sword has landed). */
+  flash(): void {
+    this.grim?.flash();
   }
 
   /** A syllable was spoken: his mouth snaps open. */
@@ -757,17 +552,15 @@ export class Npc {
 
   /** A story scene's direction: somewhere to look instead of at the rat, and how far into a shrug he is (0..1). */
   act: NpcAct | null = null;
-  /** Parts of the villain that move by themselves. */
-  private cloak: THREE.Object3D | null = null;
-  private shard: THREE.Mesh | null = null;
-  private under: THREE.Object3D | null = null;
+  /** The villain's own model. */
+  private grim: GrimsqueakModel | null = null;
   /** Time that keeps running even when he is standing still (his light does not stop). */
   private clock = 0;
   private shrug = 0;
   /** Out of the room (a story scene has taken him away, or has not brought him in yet). It lasts after the scene. */
   gone = false;
   /** What a scene last left him doing; it lasts after the scene too. */
-  private pose = { still: false, low: 0, bow: 0, reach: 0 };
+  private pose: { still: boolean; low: number; bow: number; reach: number; gesture: GrimGesture; float: number } = { still: false, low: 0, bow: 0, reach: 0, gesture: 'rest', float: VILLAIN_FLOAT };
   private poseNow = { low: 0, bow: 0, reach: 0 };
 
   /** A blink every few seconds. */
@@ -793,7 +586,7 @@ export class Npc {
   /** Standing on the ground, quiet: how Grimsqueak is left at the end of the story. */
   rest(): void {
     this.gone = false;
-    this.pose = { still: true, low: 1, bow: 0, reach: 1 };
+    this.pose = { ...this.pose, still: true, low: 1, bow: 0, reach: 1, gesture: 'rest' };
   }
 
   update(dt: number, px: number, py: number, pz: number, talking: boolean): void {
@@ -801,7 +594,7 @@ export class Npc {
     if (a) {
       if (a.pos) this.moveTo(a.pos[0], a.pos[1], a.pos[2]);
       if (a.gone !== undefined) this.gone = a.gone;
-      this.pose = { still: a.still ?? this.pose.still, low: a.low ?? this.pose.low, bow: a.bow ?? this.pose.bow, reach: a.reach ?? this.pose.reach };
+      this.pose = { still: a.still ?? this.pose.still, low: a.low ?? this.pose.low, bow: a.bow ?? this.pose.bow, reach: a.reach ?? this.pose.reach, gesture: a.gesture ?? this.pose.gesture, float: a.float ?? this.pose.float };
     }
     this.root.visible = !this.gone;
     // Standing still, he stops swaying, dancing or bobbing: the clock his motion runs on stops.
@@ -820,45 +613,15 @@ export class Npc {
     this.root.rotation.y = this.look;
     this.talkBob += ((talking ? 1 : 0) - this.talkBob) * Math.min(1, dt * 8);
     this.mouth = Math.max(0, this.mouth - dt * 7);
-    if (this.spec.kind === 'villain') {
-      // He floats, sways, and his jaw snaps open on each syllable.
-      // `low` brings him down from his float until the hem of the cowl is on the ground; `bow` drops his head.
-      const still = this.pose.still ? 0.25 : 1;
-      this.body.position.y = VILLAIN_FLOAT - VILLAIN_DROP * this.poseNow.low + still * (1 - this.poseNow.low) * (0.14 * Math.sin(this.time * 1.4) + 0.05 * Math.sin(this.time * 2.9));
-      // The cloak sways behind him, the shard pulses, and the light under the hem turns. On the ground that light is out.
-      if (this.cloak) this.cloak.rotation.x = 0.08 + still * 0.06 * Math.sin(this.time * 1.3);
-      if (this.shard) {
-        const beat = 0.75 + 0.25 * Math.sin(this.clock * 3.2);
-        (this.shard.material as THREE.MeshBasicMaterial).color.setHex(0x7fe8f4).multiplyScalar(beat);
-        this.shard.rotation.y = this.clock * 1.4;
-      }
-      if (this.under) {
-        const up = 1 - this.poseNow.low;
-        this.under.visible = up > 0.05;
-        this.under.scale.setScalar(Math.max(0.01, up));
-        this.under.rotation.y = this.clock * 1.8;
-        for (const o of this.under.children) {
-          const k = o.userData.k as number | undefined;
-          if (k === undefined) continue;
-          const ang = this.clock * 2.6 + k * 1.57;
-          o.position.set(Math.cos(ang) * 0.5, 0.12 * Math.sin(this.clock * 3 + k), Math.sin(ang) * 0.5);
-        }
-      }
-      this.jaw.rotation.x = 0.55 * this.mouth + (talking ? 0.05 : 0);
-      this.head.rotation.x = -0.06 * this.mouth + 0.5 * this.poseNow.bow;
-      this.head.rotation.z = 0.05 * Math.sin(this.time * 0.9);
-      for (const w of this.wings) {
-        const sd = w.userData.side as number;
-        // `reach` brings one paw up and forward, to take the paw held out to him.
-        const r = sd > 0 ? this.poseNow.reach : 0;
-        w.position.y = HAND_Y + 0.1 * still * Math.sin(this.time * 1.8 + sd) + 0.3 * r;
-        w.position.x = sd * (0.78 + 0.05 * Math.sin(this.time * 1.3)) * (1 - 0.6 * r);
-        w.position.z = 0.12 + 0.6 * r;
-        // Reaching, the paw turns palm-up.
-        w.rotation.x = -1.1 * r;
-      }
+    if (this.grim) {
+      // He floats and sways by himself; a scene (or the fight) says how low he hangs, how far his head is bowed, and
+      // what his arms are doing.
+      this.grim.update(dt, {
+        low: this.poseNow.low, float: this.pose.float, bow: this.poseNow.bow, still: this.pose.still, talking, mouth: this.mouth,
+        gesture: this.pose.gesture, reach: this.poseNow.reach,
+      });
       this.marker.visible = this.near && !talking;
-      this.marker.position.y = 3.3 + 0.08 * Math.sin(this.time * 4);
+      this.marker.position.y = this.pose.float * (1 - this.poseNow.low) + GRIM_HEIGHT + 0.35 + 0.08 * Math.sin(this.time * 4);
       this.marker.rotation.y = this.time * 2.5;
       return;
     }

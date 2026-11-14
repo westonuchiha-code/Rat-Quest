@@ -26,7 +26,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 57 test files and 1,416 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 57 test files and 1,433 checks, about 90 s. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -49,7 +49,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
   `ironback`, `bat`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
   `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
-  `#ironback`, `#bat`, `#npcs`, `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
+  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
   looks). On `#hero` and `#moves`, `&only=N` shows one figure and `&settle` lets its springs come to rest.
   `python3 scripts/contact.py <dir> move 5` joins the single-move pictures into one sheet.
 - Dev hashes:
@@ -163,8 +163,10 @@ He gave this list himself; work through it, do not ask about it again:
    wall brace and wall kick (he had no pose for either). Looked right and left alone: idle, walk, run, jump, air jump,
    fall, land, long jump, roll, backstep, guard, guard walk, the three swings, hurt, dead, treading water, swimming,
    running with weapons stowed. All of this was judged from stopped frames, not in motion.
-2. **A new look for Grimsqueak's evil form.** He dislikes it, the whiskers most of all. He does not mind the earlier
-   form (leave it). Three directions were offered (gaunt king / machine-touched / shadow); he has not picked.
+2. **A new look for Grimsqueak's evil form.** Built 2026-11-14 (`src/npc/grimsqueakModel.ts`): the gaunt king, in the
+   hero's own style so he reads as the old friend stretched thin; long drooping whiskers; real arms with a gesture
+   for every tell of the fight. The owner has NOT seen it yet: he disliked the old one (the whiskers most), so
+   expect notes. The earlier form (the 'friend' in story/memory.ts) was not touched.
 3. **Redo every collectible's model and look** (crumb, cap, relic, wedge, gear pickups, keepsakes).
 4. **A few more enemies** (ideas offered: spider, leech, guard rat, firefly bomber, mole; none picked).
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
