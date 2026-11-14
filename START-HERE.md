@@ -172,5 +172,6 @@ He gave this list himself; work through it, do not ask about it again:
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
    Hollows; none picked).
 
-Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
+Also open (the owner asked for the first to be kept on the list, 2026-11-14): the plunge wind-up pose (he holds the
+sword at about face height; it should be raised clearly overhead, point down); raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
 playtest the Ironback and Flitter.
