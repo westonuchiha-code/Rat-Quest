@@ -159,4 +159,13 @@ Left passable on purpose: hanging lamps and chains (overhead), webs/slime/window
 - main.ts: addEnemy cases; wallAt and canFly from chamber.colliders; beastSounds() (snort, flipClang, batSqueak, flap: new SFX); glance -> clank + sparks + small hit-stop.
 - Levels: EnemySpec.type 'ironback' | 'bat', perch. Custom pieces 'beetle' and 'bat' (ENEMY_PIECES), builder palette (Ironback X, Flitter A).
 - tools/modelsheet: npx vite build tools/modelsheet --outDir ../../.sheet --emptyOutDir --base ./ ; open .sheet/index.html (#ironback, #bat, &spin=yaw).
-
+## Model rework (enemies and NPCs)
+- render/modelKit.ts: paint(geo, color | (nx, ny, nz) => color, shade) colours by position in the shape's own box (-1..1) and darkens the underside; modelKit(mat) gives blob/spar/cone/box; bead() for unlit eyes; mix().
+- scuttlerModel: two hinged wing cases (flare in the tell, rattle on a hit, fall open dead), ribbed belly, amber-rimmed shield, brows + pupils, palps, tail prongs, knee joints, leg spines, feet. Dead: legs fold over the belly (they used to point at the floor). Legs splay as the body drops so the feet stay on the floor.
+- toadModel: blotched skin, warts and glands as bumps, nostrils, eyes (rim, slit pupil, glint) that blink outside tells, a lower jaw with a dark mouth and tongue, bent front legs with fingers, webbed back feet, shaded throat sac (belly-coloured at rest, same bright green when full). BUG FIXED: dying, it rolled about y = 0 and ended under the floor; it now turns about its middle.
+- ironbackModel: eye slits and brows, clubbed feelers, rings on the horn root, knee joints, shin plates, claws, a bright worn rim on the shell.
+- batModel: paler trailing edge on the wing skin, neck ruff, eye sockets and brows, pink inner ears, nose leaf, longer fangs, toe claws, thumb claws.
+- npc.ts: mouse (Pip) has arms (right paw on the pole, left waves when talking and shrugs), a tapered tube tail, whiskers, teeth, scarf, pack with flap/buckles/pockets/map/swinging pot, cap with a bobble, a caged lantern that flickers, ears that twitch; bird (Finch) has barred wings on shoulder pivots, a two-part beak that opens on pulse(), forked tail that flicks, knotted neckerchief, toes, head that snaps between tilts; both blink. Pigeon: wing bars, toes, banded tail. Villain: eye sockets, hot centres, slit pupils.
+- Sizes, feet-on-floor, talk range, tells (sac swell, eye colours, horn heat) and every state name are unchanged; no logic file was touched.
+- tools/modelsheet now has #roach, #toad, #npcs and &cam=...; scripts/sheet-shots.sh takes the pictures. tests/models.ts (29 checks).
+- Left as it was: the grounded bat's far wing edge and the roach's feelers can dip under the floor a little (measured in tests/models.ts so it cannot get worse). The hero's model was not touched. Wren and Mellow Mort still reuse Finch's and Pip's models.

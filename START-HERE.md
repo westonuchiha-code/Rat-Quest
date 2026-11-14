@@ -1,4 +1,4 @@
-# START HERE: handoff for the next Claude (written 2026-11-13)
+# START HERE: handoff for the next Claude (written 2026-11-13, updated 2026-11-14)
 
 Read this first. HANDOFF.md is a log of each feature, oldest first, and PLAN.md is the roadmap with numbered items 1–19.
 Where they disagree with this file (an old test-room hash, "the story is in progress"), this file is right.
@@ -17,13 +17,14 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
 - No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
 - Never auto-equip pickups or purchases. **Don't make the game easier.**
-- The hero is silent (jump and attack squeaks only). Finch and Pip's models and sounds are placeholders.
+- The hero is silent (jump and attack squeaks only). Finch and Pip's sounds are placeholders (their models were
+  reworked on 2026-11-14, along with every enemy's; the owner has not seen them yet).
 - The story is **parked**; the focus is gameplay.
 - Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 55 test files and 1,328 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 56 test files and 1,357 checks, about 90 s. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -42,8 +43,11 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Browser checks (need Chrome; build the no-pad file first):
   - `npm run check:deck`: every screen at Steam Deck size (1280×800), no text under 13px.
   - `npm run check:files`: plays through the save-file screen with the keyboard.
-- Model sheet (every pose of the new beasts side by side):
-  `npx vite build tools/modelsheet --outDir ../../.sheet --emptyOutDir --base ./`, then open `.sheet/index.html#ironback` (or `#bat`).
+- Model sheet (every pose of every beast and every character side by side; needs Chrome):
+  `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
+  `ironback`, `bat`, `npcs`) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
+  `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
+  `#ironback`, `#bat` or `#npcs`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it looks).
 - Dev hashes:
   - `#level=<id>`, `#at=x,y,z,yaw` (the camera sits behind him at (sin yaw, cos yaw); yaw 1.5708 looks west).
   - `#nostory`, `#unlockall`, `#menuN` (open the menu on screen N; 3 is SAVE), `#shop`, `#talk`.
@@ -98,6 +102,8 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   - `reach.ts`: the jump checker, plus trap mode (`computeReach(def, { traps: true })`) for soft-locks.
   - `goals.ts`: wedge goals.
 - `src/enemies/`: logic classes (no Three.js, so they run in tests) and a separate `*Model.ts` for each.
+  The models and `src/npc/npc.ts` (Pip, Finch, Dave, Grimsqueak) are built from painted shapes with
+  `src/render/modelKit.ts`; `tests/models.ts` plays every pose of each.
   `foe.ts` is the shared interface (`takeHit(dmg, x, z, how)`, `deflects`, `biteDir`, `SENSES`).
 - `src/combat/combat.ts`: sword, plunge, bites, guard and parry, body push.
 - `src/player/controller.ts`: movement and moves (long jump, wall kick, ledge grab, plunge, dodge, guard, recoil).
@@ -134,15 +140,18 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
   real app id or on a Deck.
 - Feel: no human has played the latest combat numbers, the Ironback or the Flitter. Tuning sliders exist for all of them.
+- Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What was offered next (the owner hasn't picked yet)
-From the last turn (after the two new beasts):
+From the last turn (after the model rework; 6 and 7 were new):
 1. Playtest and tune the Ironback and Flitter with the sliders (turn speed, soft-spot width, hearing, swoop warning).
 2. A wave fight mixing all four beasts.
 3. More Steam achievements: one per world, all 41 wedges, Grimsqueak beaten, each gear secret, flip an Ironback into
    a wall, sneak past a roost.
 4. Gear secrets for the Moss Scarf, Buckler and Cleaver (the Ember Helm has none either).
 5. Un-park the story.
+6. Rework the hero's own model the same way (it was left alone).
+7. Give Wren and Mellow Mort their own looks (they reuse Finch's and Pip's models).
 
 Older offers, not taken:
 - Make the bridge hand-rail solid.

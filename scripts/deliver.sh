@@ -31,5 +31,5 @@ for (const l of ["hub", "cistern", "foundry", "hollows", "keep"]) make("ratquest
 ' "$OUT"
 
 rm -f "$OUT/ratquest-source.zip"
-(cd .. && zip -qr "$OUT/ratquest-source.zip" "$NAME" -x "$NAME/.git/*" "$NAME/deliver/*" "$NAME/node_modules/*" "$NAME/.testdist/*" "$NAME/.flaky/*" "$NAME/.sheet/*" "$NAME/dist/*" "$NAME/dist-editor/*" "$NAME/dist-plain/*")
+(cd .. && zip -qr "$OUT/ratquest-source.zip" "$NAME" -x "$NAME/.git/*" "$NAME/deliver/*" "$NAME/node_modules/*" "$NAME/.testdist/*" "$NAME/.flaky/*" "$NAME/.sheet/*" "$NAME/.sheet-shots/*" "$NAME/dist/*" "$NAME/dist-editor/*" "$NAME/dist-plain/*")
 ls -la "$OUT" | awk 'NR > 1 { print $5, $9 }'

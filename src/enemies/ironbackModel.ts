@@ -122,6 +122,7 @@ export class IronbackModel {
     const plate = (x: number, y: number, z: number): number => {
       if (y < 0.02) return C.ironDark;
       if (Math.abs(x) < 0.07) return C.ironDark;
+      if (y < 0.12) return C.ironLight; // a worn bright edge all round the rim
       return Math.floor((z + 2) * 3.2) % 2 === 0 ? C.iron : C.ironLight;
     };
     this.body.add(blob(0.66, 0.4, 0.74, plate, 0, 0.1, -0.05, 12, 8));
@@ -143,9 +144,23 @@ export class IronbackModel {
     this.body.add(this.headGroup);
     this.headGroup.add(blob(0.3, 0.2, 0.24, C.head, 0, 0, 0.06, 8, 5));
     for (const side of [-1, 1]) {
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 5, 4), this.eyeMaterial);
+      // A furnace eye deep under an iron brow, with a dark slit in it.
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), this.eyeMaterial);
       eye.position.set(side * 0.2, 0.06, 0.2);
       this.headGroup.add(eye);
+      const slit = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 3), new THREE.MeshBasicMaterial({ color: 0x1a0c06 }));
+      slit.position.set(side * 0.215, 0.06, 0.25);
+      slit.scale.set(1.2, 0.4, 0.4);
+      this.headGroup.add(slit);
+      const brow = blob(0.11, 0.04, 0.09, C.iron, side * 0.19, 0.13, 0.17, 5, 3);
+      brow.rotation.z = side * 0.4;
+      this.headGroup.add(brow);
+      // A short feeler, clubbed at the end like a beetle's.
+      const feeler = spar(0.02, 0.014, 0.16, C.leg, 4);
+      feeler.position.set(side * 0.24, 0.02, 0.22);
+      feeler.rotation.y = side > 0 ? -0.7 : Math.PI + 0.7;
+      feeler.add(blob(0.035, 0.028, 0.028, C.horn, 0.17, 0, 0, 4, 3));
+      this.headGroup.add(feeler);
       // Two small mandibles.
       const jaw = spar(0.05, 0.01, 0.16, C.horn, 4);
       jaw.position.set(side * 0.1, -0.1, 0.24);
@@ -157,6 +172,11 @@ export class IronbackModel {
     horn.position.set(0, 0.1, 0.24);
     const h1 = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.075, 0.13, 0.36, 6).translate(0, 0.18, 0), C.horn), mat);
     h1.rotation.x = 1.05; // forward, rising a little
+    // Two heavy rings round the root of the horn, where it is bolted on.
+    for (const [at, r] of [[0.03, 0.15], [0.13, 0.125]]) {
+      const ring = new THREE.Mesh(paint(new THREE.CylinderGeometry(r * 0.94, r, 0.045, 6).translate(0, at, 0), C.ironDark), mat);
+      h1.add(ring);
+    }
     horn.add(h1);
     const bend = new THREE.Group();
     bend.position.set(0, 0.18, 0.31);
@@ -182,7 +202,16 @@ export class IronbackModel {
         const knee = new THREE.Group();
         knee.position.set(0.3, 0, 0);
         const lower = spar(0.055, 0.02, 0.36, C.leg, 5);
-        knee.add(lower);
+        knee.add(lower, blob(0.065, 0.065, 0.065, C.ironDark, 0, 0, 0, 5, 4));
+        // A plate of iron on the shin, and two claws on the foot.
+        const greave = blob(0.09, 0.05, 0.045, C.iron, 0.14, 0.02, 0, 5, 3);
+        knee.add(greave);
+        for (const k of [-1, 1]) {
+          const claw = spar(0.016, 0.003, 0.09, C.horn, 3);
+          claw.position.set(0.34, 0, k * 0.025);
+          claw.rotation.set(0, -k * 0.5, 0.9);
+          knee.add(claw);
+        }
         hip.add(upper, knee);
         hip.userData.sweep = sweep;
         this.body.add(hip);

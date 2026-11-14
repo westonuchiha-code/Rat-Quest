@@ -15,6 +15,9 @@ const C = {
   fur: 0x5c4a52,
   furLight: 0x8a7078,
   wing: 0x3b2a33,
+  wingEdge: 0x7a4450,
+  nose: 0xd8909a,
+  socket: 0x22161c,
   bone: 0x6e5560,
   ear: 0x7a5f68,
   earInner: 0xc98a94,
@@ -94,7 +97,8 @@ export class BatModel {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.computeVertexNormals();
-      return new THREE.Mesh(paint(geo, (x) => (Math.abs(x) < 0.03 ? C.bone : C.wing)), this.wingMaterial);
+      // The skin is thin: darkest by the arm, paling to a warm red-brown at the trailing edge where the light comes through.
+      return new THREE.Mesh(paint(geo, (x, _y, z) => (z < -0.28 ? C.wingEdge : Math.abs(x) < 0.03 ? C.bone : C.wing)), this.wingMaterial);
     };
     const bone = (len: number): THREE.Mesh => {
       const geo = new THREE.CylinderGeometry(0.018, 0.026, len, 4, 1);
@@ -126,7 +130,15 @@ export class BatModel {
     }
     this.perch.position.set(roost.x, roost.y + 0.44 + 0.02, roost.z);
     // Body: a furry egg, paler in front.
-    this.body.add(blob(0.2, 0.22, 0.24, (_x, _y, z) => (z > 0.08 ? C.furLight : C.fur), 0, 0, 0, 8, 6));
+    this.body.add(blob(0.2, 0.22, 0.24, (_x, y, z) => (z > 0.08 ? C.furLight : y < -0.1 ? 0x46363e : C.fur), 0, 0, 0, 8, 6));
+    // A ruff of pale fur round its neck.
+    for (let k = 0; k < 5; k++) {
+      const a = (k - 2) * 0.55;
+      const tuft = new THREE.Mesh(paint(new THREE.ConeGeometry(0.05, 0.15, 3).rotateX(Math.PI).translate(0, -0.075, 0), (_x, y) => (y < -0.08 ? 0xa88a90 : C.furLight)), mat);
+      tuft.position.set(Math.sin(a) * 0.15, 0.1, 0.1 + Math.cos(a) * 0.1);
+      tuft.rotation.set(-0.5 * Math.cos(a), 0, 0.5 * Math.sin(a));
+      this.body.add(tuft);
+    }
     // Head with tall ears, a snout, glowing eyes and two little fangs.
     this.head.position.set(0, 0.16, 0.16);
     this.body.add(this.head);
@@ -137,15 +149,29 @@ export class BatModel {
       ear.position.set(side * 0.08, 0.08, -0.02);
       ear.rotation.z = -side * 0.35;
       this.head.add(ear);
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 5, 4), this.eyeMaterial);
+      // The inside of the ear, pink, and a notch of dark fur at its root.
+      const inner = new THREE.Mesh(paint(new THREE.ConeGeometry(0.04, 0.15, 3).translate(0, 0.075, 0), C.earInner), mat);
+      inner.position.set(side * 0.082, 0.085, 0.012);
+      inner.rotation.z = -side * 0.35;
+      this.head.add(inner);
+      // Eyes: a dark socket, the glowing eye, and a slanted brow so it glares.
+      this.head.add(blob(0.045, 0.04, 0.03, C.socket, side * 0.065, 0.03, 0.1, 5, 4));
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.034, 6, 4), this.eyeMaterial);
       eye.position.set(side * 0.065, 0.03, 0.115);
       this.head.add(eye);
+      const brow = blob(0.05, 0.014, 0.03, C.socket, side * 0.065, 0.068, 0.115, 4, 3);
+      brow.rotation.z = side * 0.45;
+      this.head.add(brow);
     }
+    // A pink leaf of a nose, turned up.
+    const nose = blob(0.035, 0.04, 0.02, C.nose, 0, 0.0, 0.195, 5, 4);
+    nose.rotation.x = -0.4;
+    this.head.add(nose);
     this.jaw = new THREE.Group();
     this.jaw.position.set(0, -0.07, 0.12);
     this.head.add(this.jaw);
     for (const side of [-1, 1]) {
-      const fang = new THREE.Mesh(paint(new THREE.ConeGeometry(0.014, 0.06, 3).translate(0, -0.03, 0), C.fang), mat);
+      const fang = new THREE.Mesh(paint(new THREE.ConeGeometry(0.016, 0.075, 3).translate(0, -0.0375, 0), C.fang), mat);
       fang.position.set(side * 0.03, 0, 0.02);
       this.jaw.add(fang);
     }
@@ -163,7 +189,10 @@ export class BatModel {
       f1.rotation.y = side < 0 ? Math.PI + 0.25 : -0.25;
       const f2 = bone(0.72);
       f2.rotation.y = side < 0 ? Math.PI - 0.32 : 0.32;
-      hand.add(fingers, f1, f2);
+      // A hooked thumb claw at the wrist.
+      const thumb = new THREE.Mesh(paint(new THREE.ConeGeometry(0.018, 0.1, 3).translate(0, 0.05, 0), C.fang), mat);
+      thumb.rotation.x = Math.PI / 2 - 0.3;
+      hand.add(fingers, f1, f2, thumb);
       arm.add(hand);
       this.body.add(arm);
       this.wings.push({ arm, hand, side });
@@ -172,6 +201,12 @@ export class BatModel {
     for (const side of [-1, 1]) {
       const foot = blob(0.03, 0.05, 0.03, C.bone, side * 0.07, -0.22, -0.06, 5, 4);
       this.body.add(foot);
+      for (const k of [-1, 0, 1]) {
+        const claw = new THREE.Mesh(paint(new THREE.ConeGeometry(0.01, 0.06, 3).translate(0, -0.03, 0), C.fang), mat);
+        claw.position.set(side * 0.07 + k * 0.022, -0.26, -0.06);
+        claw.rotation.z = k * 0.3;
+        this.body.add(claw);
+      }
     }
 
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.35, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));

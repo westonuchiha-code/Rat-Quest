@@ -1,6 +1,6 @@
 // A model sheet for the new beasts: each one in its main poses, side by side, in plain light. For checking how they look.
 // Build: npx vite build tools/modelsheet --outDir ../../.sheet --emptyOutDir   (then open .sheet/index.html)
-// Hash: #ironback or #bat (default both); &spin=yaw to turn them all.
+// Hash: #ironback, #bat, #roach, #toad or #npcs (default: ironback and bat); &spin=yaw to turn them all.
 import '../../src/core/colorSetup';
 import * as THREE from 'three';
 import { ps1Uniforms } from '../../src/render/ps1Material';
@@ -8,6 +8,12 @@ import { IronbackModel } from '../../src/enemies/ironbackModel';
 import type { IronbackState } from '../../src/enemies/ironback';
 import { BatModel } from '../../src/enemies/batModel';
 import type { BatState } from '../../src/enemies/bat';
+import { ScuttlerModel } from '../../src/enemies/scuttlerModel';
+import type { ScuttlerState } from '../../src/enemies/scuttler';
+import { ToadModel } from '../../src/enemies/toadModel';
+import type { ToadState } from '../../src/enemies/toad';
+import { Npc } from '../../src/npc/npc';
+import type { NpcKind } from '../../src/npc/npc';
 
 const W = 1400;
 const H = 620;
@@ -28,9 +34,56 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const which = location.hash.includes('bat') ? 'bat' : location.hash.includes('ironback') ? 'ironback' : 'both';
+const pick = /#(bat|ironback|roach|toad|npcs)/.exec(location.hash)?.[1];
+const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
-if (which !== 'bat') {
+if (pick === 'roach') {
+  const states: Array<[ScuttlerState, number]> = [['idle', 1], ['chase', 0.3], ['windup', 0.5], ['lunge', 0.08], ['recover', 0.5], ['stagger', 0.1], ['dead', 0.6]];
+  states.forEach(([st, t], i) => {
+    const m = new ScuttlerModel();
+    const x = (i - (states.length - 1) / 2) * 1.9;
+    m.setTransform(new THREE.Vector3(x, 0, 0), spin);
+    scene.add(m.root);
+    let time = 0;
+    ticks.push((dt) => {
+      time += dt;
+      m.update(dt, { state: st, stateTime: Math.min(t, time), moving: st === 'chase' });
+    });
+    labels.push({ text: st, x, y: 0 });
+  });
+}
+if (pick === 'toad') {
+  const states: Array<[ToadState, number, number]> = [['idle', 1, 0], ['watch', 1, 0], ['windup', 0.7, 0], ['recover', 0.1, 0], ['hop', 0.1, 0.5], ['crouch', 0.3, 0], ['pounce', 0.2, 0.9], ['dead', 0.6, 0]];
+  states.forEach(([st, t, hop], i) => {
+    const m = new ToadModel();
+    const x = (i - (states.length - 1) / 2) * 1.9;
+    m.setTransform(new THREE.Vector3(x, 0, 0), spin);
+    scene.add(m.root);
+    let time = 0;
+    ticks.push((dt) => {
+      time += dt;
+      m.update(dt, { state: st, stateTime: Math.min(t, time), moving: false, hopY: hop });
+    });
+    labels.push({ text: st, x, y: 0 });
+  });
+}
+if (pick === 'npcs') {
+  const kinds: Array<[NpcKind, string, boolean]> = [['mouse', 'Pip', false], ['mouse', 'Pip talking', true], ['bird', 'Finch', false], ['bird', 'Finch talking', true], ['pigeon', 'Dave', false], ['villain', 'Grimsqueak', false], ['villain', 'Grim talking', true]];
+  kinds.forEach(([kind, name, talking], i) => {
+    const x = (i - (kinds.length - 1) / 2) * 2.3;
+    const n = new Npc({ name, kind, x, z: 0, facing: spin, lines: ['.'] });
+    scene.add(n.root);
+    let beat = 0;
+    ticks.push((dt) => {
+      beat += dt;
+      if (talking && beat > 0.16) { beat = 0; n.pulse(); }
+      n.update(dt, x + Math.sin(spin) * 3, 0, Math.cos(spin) * 3, talking);
+    });
+    labels.push({ text: name, x, y: 0 });
+  });
+}
+
+if (which === 'both' || which === 'ironback') {
   const states: Array<[IronbackState, number]> = [['chase', 0.3], ['windup', 0.8], ['ram', 0.2], ['buck', 0.1], ['flipped', 1.0], ['tossWind', 0.4]];
   states.forEach(([st, t], i) => {
     const m = new IronbackModel();
@@ -45,7 +98,7 @@ if (which !== 'bat') {
     labels.push({ text: st, x, y: which === 'both' ? -1.6 : 0 });
   });
 }
-if (which !== 'ironback') {
+if (which === 'both' || which === 'bat') {
   const states: Array<[BatState, number, number]> = [['roost', 1, 3.4], ['hover', 0.3, 2.2], ['swoopWind', 0.5, 2.6], ['swoop', 0.35, 1.2], ['grounded', 0.5, 0], ['wake', 0.2, 3.0]];
   states.forEach(([st, t, y], i) => {
     const x = (i - (states.length - 1) / 2) * 2.6;
@@ -61,8 +114,22 @@ if (which !== 'ironback') {
     labels.push({ text: st, x, y: z });
   });
 }
-camera.position.set(0, which === 'bat' ? 3 : 4.5, which === 'both' ? 22 : 15);
-camera.lookAt(0, which === 'bat' ? 1.8 : 0.6, 0);
+if (pick === 'npcs') {
+  camera.position.set(0, 3.2, 18);
+  camera.lookAt(0, 1.3, 0);
+} else if (which === 'other') {
+  camera.position.set(0, 3, 13.5);
+  camera.lookAt(0, 0.4, 0);
+} else {
+  camera.position.set(0, which === 'bat' ? 3 : 4.5, which === 'both' ? 22 : 15);
+  camera.lookAt(0, which === 'bat' ? 1.8 : 0.6, 0);
+}
+// &cam=x,y,z,tx,ty,tz puts the camera somewhere else (for a close look at one model).
+const camAt = /cam=([-\d.,]+)/.exec(location.hash)?.[1].split(',').map(Number);
+if (camAt && camAt.length === 6) {
+  camera.position.set(camAt[0], camAt[1], camAt[2]);
+  camera.lookAt(camAt[3], camAt[4], camAt[5]);
+}
 
 let last = performance.now();
 function frame(now: number): void {

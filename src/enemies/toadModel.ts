@@ -1,19 +1,28 @@
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
+import { bead, mix, modelKit, paint } from '../render/modelKit';
 import type { ToadState } from './toad';
 
 /**
- * Gloop toad model: a squat, warty sewer toad, wider than the rat and a bit shorter, built from squashed spheres.
+ * Gloop toad model: a squat, warty sewer toad, wider than the rat and a bit shorter: blotched green back, pale belly,
+ * gold eyes with slit pupils that blink, a wide mouth that opens dark, bent front legs and big webbed back feet.
  * It faces +Z with its feet on y = 0. The tell before a spit is big and clear: the throat sac swells and glows green,
  * the head tips back, then it snaps forward and the sac empties.
  */
 const C = {
   back: 0x4a6a2a,
-  wart: 0x6a8a32,
-  belly: 0xc8b878,
-  mouth: 0x3a1a1a,
-  eye: 0xf0d040,
+  blotch: 0x33501e,
+  stripe: 0x7a9438,
+  side: 0x7a8a42,
+  wart: 0x7c9a3a,
+  belly: 0xcdbd7c,
+  lip: 0x8a5a4a,
+  mouth: 0x4a1418,
+  tongue: 0xd8707a,
+  eye: 0xf4d640,
   leg: 0x3c5a22,
+  toe: 0x8a9a4a,
+  web: 0x5a7030,
 };
 
 export interface ToadAnimInput {
@@ -30,11 +39,14 @@ function ease(cur: number, target: number, dt: number, rate: number): number {
 export class ToadModel {
   readonly root = new THREE.Group();
   private readonly material = createPs1Material({ lit: true });
-  private readonly sacMat = new THREE.MeshBasicMaterial({ color: 0x9aff6a });
+  private readonly sacMat = new THREE.MeshBasicMaterial({ color: 0x9aff6a, vertexColors: true });
   private readonly body = new THREE.Group();
   private readonly head = new THREE.Group();
   private readonly jaw = new THREE.Group();
   private readonly sac: THREE.Mesh;
+  private readonly eyes: THREE.Group[] = [];
+  private blinkIn = 2;
+  private blink = 0;
   private readonly legs: Array<{ g: THREE.Group; front: boolean; side: number }> = [];
   private readonly shadow: THREE.Mesh;
   private time = 0;
@@ -47,64 +59,104 @@ export class ToadModel {
 
   constructor() {
     const mat = this.material;
-    const blob = (sx: number, sy: number, sz: number, color: number | ((x: number, y: number, z: number) => number), x: number, y: number, z: number, w = 8, h = 6): THREE.Mesh => {
-      const geo = new THREE.SphereGeometry(1, w, h);
-      geo.scale(sx, sy, sz);
-      const pos = geo.attributes.position;
-      const cols = new Float32Array(pos.count * 3);
-      const c = new THREE.Color();
-      for (let i = 0; i < pos.count; i++) {
-        c.set(typeof color === 'number' ? color : color(pos.getX(i), pos.getY(i), pos.getZ(i)));
-        cols.set([c.r, c.g, c.b], i * 3);
-      }
-      geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-      const m = new THREE.Mesh(geo, mat);
-      m.position.set(x, y, z);
-      return m;
+    const { blob } = modelKit(mat);
+    // Skin: a pale belly, a green back with darker blotches, and a lighter stripe down the spine.
+    const blotch = (nx: number, ny: number, nz: number): boolean => Math.sin(nx * 7.3 + nz * 4.1) * Math.sin(nz * 6.7 - nx * 2.9 + ny * 3) > 0.42;
+    const skin = (nx: number, ny: number, nz: number): number => {
+      if (ny < -0.3) return C.belly;
+      if (ny < -0.05) return C.side;
+      if (ny > 0.5 && Math.abs(nx) < 0.14) return C.stripe;
+      return blotch(nx, ny, nz) ? C.blotch : C.back;
     };
-    // Warts: every few vertices on the back is a lighter green bump.
-    const skin = (x: number, y: number, z: number): number => (y < -0.05 ? C.belly : (Math.round(x * 31 + z * 17 + y * 13) % 5 === 0 ? C.wart : C.back));
 
     this.root.add(this.body);
-    this.body.add(blob(0.55, 0.36, 0.5, skin, 0, 0.36, -0.05, 9, 7));
-    // Head: wide and flat, with a big mouth line and two eyes on top.
+    this.body.add(blob(0.55, 0.36, 0.5, skin, 0, 0.36, -0.05, 12, 8, 0.3));
+    // Warts: real bumps scattered over the back, and the two big glands behind the eyes that every toad has.
+    const warts: Array<[number, number, number]> = [[0.28, 0.5, -0.2], [-0.3, 0.52, -0.12], [0.14, 0.66, -0.3], [-0.12, 0.68, -0.22], [0.4, 0.45, 0.05], [-0.42, 0.42, -0.02], [0.02, 0.6, -0.44], [0.3, 0.42, -0.4], [-0.28, 0.44, -0.42]];
+    for (const [x, y, z] of warts) this.body.add(blob(0.055, 0.04, 0.055, C.wart, x, y, z, 5, 4, 0));
+    for (const side of [-1, 1]) {
+      const gland = blob(0.11, 0.06, 0.16, C.wart, side * 0.27, 0.66, 0.1, 6, 4, 0.1);
+      gland.rotation.y = side * 0.3;
+      this.body.add(gland);
+    }
+
+    // Head: wide and flat. The top jaw is fixed; the lower jaw swings down and shows the dark of its mouth.
     this.head.position.set(0, 0.42, 0.32);
     this.body.add(this.head);
-    this.head.add(blob(0.44, 0.22, 0.32, skin, 0, 0.04, 0.08, 9, 6));
-    this.jaw.position.set(0, -0.04, 0.02);
+    this.head.add(blob(0.44, 0.2, 0.32, (nx, ny, nz) => (ny < -0.55 ? C.lip : skin(nx, ny * 0.6 + 0.4, nz)), 0, 0.06, 0.08, 12, 6, 0.15));
+    for (const side of [-1, 1]) this.head.add(blob(0.022, 0.016, 0.02, C.mouth, side * 0.07, 0.15, 0.36, 4, 3, 0)); // nostrils
+    this.jaw.position.set(0, -0.04, -0.12);
     this.head.add(this.jaw);
-    this.jaw.add(blob(0.42, 0.1, 0.3, C.belly, 0, -0.04, 0.08, 9, 5));
-    const lip = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.04, 0.05), new THREE.MeshBasicMaterial({ color: C.mouth }));
-    lip.position.set(0, 0.0, 0.36);
-    this.head.add(lip);
+    this.jaw.add(blob(0.42, 0.1, 0.3, (_nx, ny) => (ny > 0.55 ? C.lip : C.belly), 0, -0.04, 0.2, 12, 5, 0.15));
+    // The inside of the mouth: a dark red wedge and a pink tongue, hidden until the jaw drops.
+    this.jaw.add(blob(0.36, 0.05, 0.25, C.mouth, 0, 0.03, 0.2, 8, 4, 0));
+    this.jaw.add(blob(0.16, 0.035, 0.18, C.tongue, 0, 0.055, 0.22, 6, 4, 0));
+
+    // Eyes: gold, bulging from sockets on top of the head, with a sideways slit for a pupil and a lid that blinks.
     const eyeMat = new THREE.MeshBasicMaterial({ color: C.eye });
+    const rimMat = new THREE.MeshBasicMaterial({ color: 0xb07a20 });
     const pupilMat = new THREE.MeshBasicMaterial({ color: 0x101010 });
+    const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     for (const side of [-1, 1]) {
-      this.head.add(blob(0.12, 0.12, 0.12, C.back, side * 0.22, 0.2, 0.12, 6, 5));
-      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 5), eyeMat);
-      eye.position.set(side * 0.24, 0.24, 0.17);
+      this.head.add(blob(0.13, 0.12, 0.13, C.back, side * 0.22, 0.2, 0.1, 7, 5, 0.1));
+      const eye = new THREE.Group();
+      eye.position.set(side * 0.24, 0.24, 0.16);
+      eye.rotation.y = side * 0.35; // looking a little outwards
+      eye.add(bead(0.1, rimMat, 0, 0, -0.012, 7, 5));
+      eye.add(bead(0.092, eyeMat, 0, 0, 0.005, 7, 5));
+      const pupil = bead(0.06, pupilMat, 0, 0, 0.068, 6, 4);
+      pupil.scale.set(1.3, 0.55, 0.6);
+      eye.add(pupil);
+      eye.add(bead(0.018, glintMat, side * 0.035, 0.045, 0.082, 4, 3));
       this.head.add(eye);
-      const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.04, 0.02), pupilMat);
-      pupil.position.set(side * 0.25, 0.24, 0.26);
-      this.head.add(pupil);
+      this.eyes.push(eye);
+      // The brow over it.
+      const brow = blob(0.11, 0.03, 0.09, C.blotch, side * 0.225, 0.345, 0.08, 6, 3, 0);
+      brow.rotation.set(-0.35, 0, -side * 0.2);
+      this.head.add(brow);
     }
     // The throat sac: glows when it is about to spit.
-    this.sac = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), this.sacMat);
+    // (Painted paler at the front and darker round the edge, so it reads as a round bladder and not a flat disc.)
+    this.sac = new THREE.Mesh(paint(new THREE.SphereGeometry(0.22, 8, 6), (_nx, ny, nz) => mix(0x9a9a9a, 0xffffff, 0.5 + 0.5 * nz - 0.25 * Math.max(0, -ny))), this.sacMat);
     this.sac.position.set(0, -0.12, 0.2);
     this.head.add(this.sac);
-    // Legs: big folded back legs, small front ones.
+
+    // Legs: small bent front ones with splayed fingers; big folded back ones with long webbed feet.
     for (const side of [-1, 1]) {
-      for (const front of [true, false]) {
-        const g = new THREE.Group();
-        g.position.set(side * (front ? 0.3 : 0.42), front ? 0.18 : 0.2, front ? 0.3 : -0.25);
-        if (front) g.add(blob(0.07, 0.2, 0.07, C.leg, 0, -0.08, 0.03, 5, 4));
-        else {
-          g.add(blob(0.16, 0.14, 0.3, skin, 0, 0, 0.0, 6, 5));
-          g.add(blob(0.12, 0.05, 0.22, C.leg, side * 0.04, -0.15, 0.18, 6, 4));
-        }
-        this.body.add(g);
-        this.legs.push({ g, front, side });
+      const fore = new THREE.Group();
+      fore.position.set(side * 0.34, 0.3, 0.26);
+      const upper = blob(0.085, 0.14, 0.085, skin, side * 0.03, -0.08, 0.0, 6, 5, 0.2);
+      upper.rotation.z = side * 0.35;
+      fore.add(upper);
+      const lower = blob(0.065, 0.12, 0.065, C.leg, side * 0.05, -0.2, 0.06, 6, 4, 0.2);
+      lower.rotation.x = -0.4;
+      fore.add(lower);
+      for (let k = -1; k <= 1; k++) {
+        const toe = blob(0.03, 0.02, 0.085, C.toe, side * 0.05 + k * 0.045, -0.285, 0.14, 4, 3, 0);
+        toe.rotation.y = k * 0.5;
+        fore.add(toe);
       }
+      this.body.add(fore);
+      this.legs.push({ g: fore, front: true, side });
+
+      const hind = new THREE.Group();
+      hind.position.set(side * 0.42, 0.2, -0.25);
+      hind.add(blob(0.17, 0.15, 0.3, skin, 0, 0.02, 0.0, 8, 5, 0.25)); // thigh
+      const shin = blob(0.09, 0.07, 0.24, C.leg, side * 0.07, -0.1, 0.08, 6, 4, 0.2);
+      shin.rotation.x = 0.25;
+      hind.add(shin);
+      const foot = new THREE.Group();
+      foot.position.set(side * 0.08, -0.17, 0.2);
+      foot.rotation.y = side * 0.35;
+      for (let k = -1; k <= 1; k++) {
+        const toe = blob(0.03, 0.02, 0.13, C.toe, k * 0.06, 0, 0.1, 4, 3, 0);
+        toe.rotation.y = k * 0.4;
+        foot.add(toe);
+      }
+      foot.add(blob(0.09, 0.012, 0.1, C.web, 0, -0.005, 0.07, 5, 3, 0)); // the web between them
+      hind.add(foot);
+      this.body.add(hind);
+      this.legs.push({ g: hind, front: false, side });
     }
     this.shadow = new THREE.Mesh(
       new THREE.CircleGeometry(0.6, 10),
@@ -182,15 +234,34 @@ export class ToadModel {
     this.scale = ctx.state === 'dead' ? scale : ease(this.scale, 1, dt, 8);
 
     this.sac.scale.setScalar(this.sacSize);
-    this.sacMat.color.setRGB(0.45 + 0.45 * glow, 0.75 + 0.25 * glow, 0.4 * (1 - glow) + 0.2);
+    // At rest the sac is the colour of its belly; filling, it turns a sick bright green.
+    this.sacMat.color.setRGB(0.66 + 0.3 * glow, 0.62 + 0.38 * glow, 0.4 - 0.18 * glow);
+    // It blinks now and then (never in a tell: its eyes stay on him), and its eyes shut for good when it dies.
+    this.blinkIn -= dt;
+    if (this.blinkIn <= 0) {
+      this.blinkIn = 1.8 + ((this.time * 7.31) % 1) * 3;
+      if (ctx.state === 'idle' || ctx.state === 'watch' || ctx.state === 'return') this.blink = 0.14;
+    }
+    this.blink = Math.max(0, this.blink - dt);
+    const shut = ctx.state === 'dead' || this.blink > 0 ? 0.12 : ctx.state === 'stagger' ? 0.5 : ctx.state === 'crouch' ? 0.7 : 1;
+    for (const e of this.eyes) e.scale.y = ease(e.scale.y, shut, dt, 40);
     this.head.rotation.x = this.lean;
     this.jaw.rotation.x = jaw;
     this.body.scale.set(1 / Math.sqrt(this.squash), this.squash, 1 / Math.sqrt(this.squash));
-    this.body.position.y = ctx.hopY;
+    // Rolling onto its back turns it about its middle, so it ends belly-up on the floor (not under it).
+    const mid = 0.36;
+    // (Half-way over it is on its side, which is wider than it is tall: it bounces up so its flank clears the floor.)
+    this.body.position.set(Math.sin(this.roll) * mid, ctx.hopY + (1 - Math.cos(this.roll)) * mid + Math.sin(this.roll) * 0.4, 0);
     this.body.rotation.z = this.roll;
     for (const l of this.legs) {
-      const stretch = ctx.state === 'hop' && !l.front ? Math.max(0, 1 - t / 0.25) : 0;
-      l.g.rotation.x = stretch * -1.1;
+      // Back legs kick out behind in a hop and trail in a pounce; front legs reach forward to land. Dead, they all go slack.
+      let want = 0;
+      if (ctx.state === 'hop') want = l.front ? -0.5 : Math.max(0, 1 - t / 0.25) * 1.1;
+      else if (ctx.state === 'pounce') want = l.front ? -0.9 : 0.9;
+      else if (ctx.state === 'crouch') want = l.front ? 0.3 : -0.15;
+      else if (ctx.state === 'dead') want = (l.front ? -0.6 : 0.5) + 0.1 * Math.sin(this.time * 20 + l.side) * Math.max(0, 1 - t / 0.8);
+      l.g.rotation.x = ease(l.g.rotation.x, want, dt, 20);
+      l.g.rotation.z = ease(l.g.rotation.z, ctx.state === 'dead' ? l.side * 0.5 : 0, dt, 12);
     }
     this.shadow.scale.setScalar(Math.max(0.4, 1 - ctx.hopY * 0.4));
     this.root.scale.setScalar(Math.max(0.001, this.scale));
