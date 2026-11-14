@@ -37,9 +37,96 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
+let soloY = 0; // with &only=N, how high that one figure is (the camera follows it)
+if (pick === 'moves') {
+  // Every move the hero has, played by the real controller and stopped at its telling moment. Two rows.
+  // &only=N shows one alone (for a close look from any side).
+  const DT = 1 / 60;
+  const fwd = new THREE.Vector3(0, 0, 1);
+  type In = Partial<PlayerInput>;
+  /** A move: what to press on each tick (given the tick number and him), and when to stop. `wall` puts a wall in front; `water` floods the floor. */
+  interface Move { name: string; wall?: boolean; water?: boolean; press: (t: number, p: PlayerController, mem: Record<string, number>) => In; stop: (t: number, p: PlayerController, mem: Record<string, number>) => boolean; before?: (p: PlayerController) => void }
+  const after = (key: string, n: number) => (_t: number, _p: PlayerController, m: Record<string, number>): boolean => (m[key] ?? -1) >= 0 && ++m[key] > n;
+  const jumpAt0 = (t: number): In => ({ jumpPressed: t === 2, jumpHeld: true });
+  const moves: Move[] = [
+    { name: 'idle', press: () => ({}), stop: (t) => t > 60 },
+    { name: 'walk', press: () => ({ move: fwd.clone().multiplyScalar(0.5) }), stop: (t) => t > 47 },
+    { name: 'run', press: () => ({ move: fwd, run: true }), stop: (t) => t > 52 },
+    { name: 'jump', press: jumpAt0, stop: (t) => t > 10 },
+    { name: 'air jump', press: (t, p, m) => { const go = t > 4 && p.velocity.y < 1 && !m.done; if (go) m.done = 1; return { jumpPressed: t === 2 || go, jumpHeld: true }; }, stop: (_t, _p, m) => !!m.done && ++m.done > 9 },
+    { name: 'fall', press: jumpAt0, stop: (_t, p) => p.velocity.y < -7 },
+    { name: 'land', press: jumpAt0, stop: (t, p, m) => { if (t > 6 && p.grounded) m.g = (m.g ?? 0) + 1; return (m.g ?? 0) > 3; } },
+    { name: 'long jump', press: (t) => ({ move: fwd, run: t < 40, jumpPressed: t === 42, jumpHeld: t >= 42 }), stop: (t) => t > 54 },
+    { name: 'wall touch', wall: true, press: (t) => ({ move: fwd, jumpPressed: t === 2, jumpHeld: true }), stop: (t, p) => t > 6 && Math.abs(p.velocity.z) < 0.01 && p.velocity.y < 2 },
+    { name: 'wall kick', wall: true, press: (t, p, m) => { const go = t > 6 && Math.abs(p.velocity.z) < 0.01 && !m.k; if (go) m.k = 1; return { move: fwd, jumpPressed: t === 2 || go, jumpHeld: true }; }, stop: (_t, _p, m) => !!m.k && ++m.k > 7 },
+    { name: 'plunge: hang', press: (t) => ({ jumpPressed: t === 2, jumpHeld: true, attackPressed: t === 22 }), stop: (t, p) => t > 22 && p.plungeStage === 1 && t > 28 },
+    { name: 'plunge: dive', press: (t) => ({ jumpPressed: t === 2, jumpHeld: true, attackPressed: t === 22 }), stop: (_t, p, m) => { if (p.plungeStage === 2) m.d = (m.d ?? 0) + 1; return (m.d ?? 0) > 1; } },
+    { name: 'plunge: land', press: (t) => ({ jumpPressed: t === 2, jumpHeld: true, attackPressed: t === 22 }), stop: (_t, p, m) => { if (p.plungeStage === 3) m.d = (m.d ?? 0) + 1; return (m.d ?? 0) > 8; } },
+    { name: 'roll', press: (t) => ({ move: fwd, dodgePressed: t === 10 }), stop: (_t, p) => p.dodgeProgress > 0.45 },
+    { name: 'backstep', press: (t) => ({ dodgePressed: t === 10 }), stop: (_t, p) => p.dodgeProgress > 0.4 },
+    { name: 'guard', press: () => ({ guardHeld: true }), stop: (t) => t > 40 },
+    { name: 'guard walk', press: () => ({ guardHeld: true, move: fwd }), stop: (t) => t > 46 },
+    { name: 'swing 1', press: (t) => ({ attackPressed: t === 10 }), stop: (t, p) => t > 10 && p.attackTime > 0.12 },
+    { name: 'swing 2', press: (t) => ({ attackPressed: t === 10 || t === 26 }), stop: (_t, p) => p.comboStep === 1 && p.attackTime > 0.12 },
+    { name: 'swing 3', press: (t) => ({ attackPressed: t === 10 || t === 26 || t === 42 }), stop: (_t, p) => p.comboStep === 2 && p.attackTime > 0.16 },
+    { name: 'hurt', press: () => ({}), before: (p) => void p.takeHit(p.position.x, p.position.z + 1, 1), stop: (t) => t > 8 },
+    { name: 'dead', press: () => ({}), before: (p) => { for (let k = 0; k < 12; k++) { if (p.takeHit(p.position.x, p.position.z + 1, 1) === 'killed') break; for (let j = 0; j < 150; j++) p.update(DT, { move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false }, [makeAabb(0, -0.5, 0, 400, 1, 400)]); } }, stop: (t) => t > 50 },
+    { name: 'swim: tread', water: true, press: () => ({}), stop: (t) => t > 80 },
+    { name: 'swim', water: true, press: () => ({ move: fwd }), stop: (t) => t > 80 },
+    { name: 'stowed run', press: (t) => ({ move: fwd, run: true, stowPressed: t === 4 }), stop: (t) => t > 80 },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const PER = 9;
+  moves.forEach((mv, i) => {
+    if (only >= 0 && i !== only) return;
+    const slotX = only >= 0 ? 0 : ((i % PER) - (PER - 1) / 2) * 2.5;
+    const slotZ = only >= 0 ? 0 : -Math.floor(i / PER) * 4.2;
+    const floorY = mv.water ? -1.6 : 0;
+    const colliders = [makeAabb(0, floorY - 0.5, 0, 400, 1, 400)];
+    if (mv.wall) colliders.push(makeAabb(0, 4, 2.6, 6, 8, 1));
+    const p = new PlayerController(new THREE.Vector3(0, mv.water ? -0.6 : 0, 0));
+    if (mv.water) p.water = [{ x0: -200, x1: 200, z0: -200, z1: 200, y: 0 }];
+    const rat = new RatModel();
+    scene.add(rat.root);
+    const mem: Record<string, number> = {};
+    const feed = (): void => {
+      rat.setTransform(p.position, p.facing);
+      rat.update(DT, {
+        state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime, dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress,
+        verticalSpeed: p.velocity.y, flipProgress: p.flipProgress, armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime, climbProgress: p.climbProgress, kickProgress: p.kickProgress, onWall: p.onWall,
+      });
+    };
+    for (let k = 0; k < 20; k++) { p.update(DT, { move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false }, colliders); feed(); }
+    mv.before?.(p);
+    for (let t = 0; t < 400; t++) {
+      const o = mv.press(t, p, mem);
+      p.update(DT, { move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o }, colliders);
+      feed();
+      if (mv.stop(t, p, mem)) break;
+    }
+    // &settle: hold the last moment until the springs come to rest (to judge a pose rather than a passing frame).
+    if (location.hash.includes('settle')) for (let k = 0; k < 40; k++) feed();
+    // Shown in his slot, however far the move carried him; the wall and the water come along.
+    const dx = slotX - p.position.x;
+    const dz = slotZ - p.position.z;
+    rat.setTransform(new THREE.Vector3(slotX, p.position.y - floorY * 0, slotZ), p.facing);
+    if (mv.wall) {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(2.2, 6, 0.3), new THREE.MeshBasicMaterial({ color: 0x6a6258 }));
+      wall.position.set(dx, 3, 2.25 + dz);
+      scene.add(wall);
+    }
+    if (mv.water) {
+      const sea = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.02, 2.2), new THREE.MeshBasicMaterial({ color: 0x3a6a8a, transparent: true, opacity: 0.6 }));
+      sea.position.set(slotX, 0, slotZ);
+      scene.add(sea);
+    }
+    if (only >= 0) soloY = p.position.y;
+    labels.push({ text: `${i} ${mv.name}`, x: slotX, y: slotZ - 0.9 });
+  });
+}
 if (pick === 'hero') {
   // The hero on a ledge, played by the real controller: he jumps at a block, catches the edge, hangs, and pulls himself
   // up. Each figure is stopped at one moment of that. (#hero2: the same from the side.)
@@ -175,7 +262,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'hero') {
+if (pick === 'moves') {
+  camera.position.set(9, 7, 17);
+  camera.lookAt(0, 0.9, -2.5);
+} else if (pick === 'hero') {
   camera.position.set(-7, 4.2, -11);
   camera.lookAt(0, 2.2, 0.6);
 } else if (pick === 'npcs') {
@@ -191,8 +281,8 @@ if (pick === 'hero') {
 // &cam=x,y,z,tx,ty,tz puts the camera somewhere else (for a close look at one model).
 const camAt = /cam=([-\d.,]+)/.exec(location.hash)?.[1].split(',').map(Number);
 if (camAt && camAt.length === 6) {
-  camera.position.set(camAt[0], camAt[1], camAt[2]);
-  camera.lookAt(camAt[3], camAt[4], camAt[5]);
+  camera.position.set(camAt[0], camAt[1] + soloY, camAt[2]);
+  camera.lookAt(camAt[3], camAt[4] + soloY, camAt[5]);
 }
 
 let last = performance.now();
@@ -209,7 +299,7 @@ const box = document.createElement('div');
 box.style.cssText = 'position:fixed;inset:0;pointer-events:none';
 document.body.appendChild(box);
 for (const l of labels) {
-  const v = new THREE.Vector3(l.x, -0.3, l.y).project(camera);
+  const v = new THREE.Vector3(l.x, -0.3 + soloY, l.y).project(camera);
   const d = document.createElement('div');
   d.textContent = l.text;
   d.style.cssText = `position:absolute;left:${((v.x + 1) / 2) * W - 40}px;top:${((1 - v.y) / 2) * H}px;width:80px;text-align:center;font-weight:bold;color:#ffe9a0;text-shadow:0 1px 0 #000`;

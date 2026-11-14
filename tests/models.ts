@@ -308,5 +308,73 @@ const at = new THREE.Vector3(0, 0, 0);
   check('hero: on top, he stands on the block with his sword and shield in his paws again', p.grounded && Math.abs(p.position.y - 3) < 0.01 && p.ledge === null && parts.sword.visible && !parts.backSword.visible);
 }
 
+// ---- The hero's plunge and wall moves: what is drawn matches what he is doing ----
+{
+  const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+  const fwd = new THREE.Vector3(0, 0, 1);
+  const make = (wall: boolean) => {
+    const colliders = [makeAabb(0, -0.5, 0, 400, 1, 400)];
+    if (wall) colliders.push(makeAabb(0, 4, 2.6, 6, 8, 1));
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    const rat = new RatModel();
+    const tick = (o: Partial<PlayerInput>, frozen = false): void => {
+      if (!frozen) p.update(DT, input(o), colliders);
+      rat.setTransform(p.position, p.facing);
+      rat.update(DT, {
+        state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime, dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress,
+        verticalSpeed: p.velocity.y, flipProgress: p.flipProgress, armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime, climbProgress: p.climbProgress, kickProgress: p.kickProgress, onWall: p.onWall,
+      });
+    };
+    for (let i = 0; i < 20; i++) tick({});
+    return { p, rat, tick };
+  };
+  /** Which way the blade points (world), once the pose has settled. */
+  const blade = (rat: RatModel, settle: () => void): THREE.Vector3 => {
+    for (let i = 0; i < 40; i++) settle();
+    rat.root.updateMatrixWorld(true);
+    const sword = (rat as unknown as { sword: THREE.Object3D }).sword;
+    return sword.localToWorld(new THREE.Vector3(0, 0, 1)).sub(sword.localToWorld(new THREE.Vector3(0, 0, 0))).normalize();
+  };
+  const feet = (rat: RatModel): THREE.Vector3[] => {
+    rat.root.updateMatrixWorld(true);
+    const parts = rat as unknown as { footS: THREE.Object3D; footH: THREE.Object3D };
+    return [parts.footS, parts.footH].map((f) => f.getWorldPosition(new THREE.Vector3()));
+  };
+  {
+    const { p, rat, tick } = make(false);
+    tick({ jumpPressed: true, jumpHeld: true });
+    for (let i = 0; i < 20; i++) tick({ jumpHeld: true });
+    tick({ attackPressed: true });
+    for (let i = 0; i < 200 && p.plungeStage !== 2; i++) tick({});
+    const dive = blade(rat, () => tick({}, true));
+    check('hero: diving in a plunge, the sword points straight down under him', p.plungeStage === 2 && dive.y < -0.9, `blade ${dive.x.toFixed(2)}, ${dive.y.toFixed(2)}, ${dive.z.toFixed(2)}`);
+    for (let i = 0; i < 200 && p.plungeStage !== 3; i++) tick({});
+    const land = blade(rat, () => tick({}, true));
+    check('hero: landed, the sword stands point-down on the ground in front of him (it used to lie along the floor)', p.plungeStage === 3 && land.y < -0.85, `blade ${land.x.toFixed(2)}, ${land.y.toFixed(2)}, ${land.z.toFixed(2)}`);
+  }
+  {
+    const { p, rat, tick } = make(true);
+    tick({ move: fwd, jumpPressed: true, jumpHeld: true });
+    let braced = false;
+    let i = 0;
+    for (; i < 120 && !braced; i++) {
+      tick({ move: fwd, jumpHeld: true });
+      braced = p.onWall;
+    }
+    for (let k = 0; k < 4; k++) tick({ move: fwd, jumpHeld: true });
+    const onWall = feet(rat);
+    check('hero: in the air against a wall he faces, the game says so and his feet come up onto it', braced && p.onWall && onWall.every((f) => f.z > p.position.z + 0.12 && f.y > p.position.y + 0.12), onWall.map((f) => `${(f.z - p.position.z).toFixed(2)} ahead, ${(f.y - p.position.y).toFixed(2)} up`).join('; '));
+    tick({ move: fwd, jumpPressed: true, jumpHeld: true });
+    const kicked = p.kickProgress >= 0;
+    for (let k = 0; k < 4; k++) tick({ jumpHeld: true });
+    const pushing = feet(rat);
+    // He has turned to face away from the wall: his legs are driven out behind him, towards it.
+    const behind = pushing.every((f) => (f.z - p.position.z) * Math.cos(p.facing) + (f.x - p.position.x) * Math.sin(p.facing) < -0.08);
+    check('hero: kicking off it, he turns away and his legs drive out behind him towards the wall', kicked && !p.onWall && Math.cos(p.facing) < -0.9 && behind, pushing.map((f) => (f.z - p.position.z).toFixed(2)).join(', '));
+    for (let k = 0; k < 30; k++) tick({ jumpHeld: true });
+    check('hero: the push is over in a quarter of a second', p.kickProgress === -1);
+  }
+}
+
 console.log(failures === 0 ? '\nall passed' : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

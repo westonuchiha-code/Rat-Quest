@@ -2577,6 +2577,8 @@ function startGame(): void {
       ledge: player.ledge,
       hangTime: player.hangTime,
       climbProgress: player.climbProgress,
+      kickProgress: player.kickProgress,
+      onWall: player.onWall,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.

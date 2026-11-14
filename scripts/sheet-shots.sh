@@ -29,5 +29,7 @@ shot bat-a "bat&cam=-4,2.6,8,-4,2.6,0"; shot bat-b "bat&cam=3.5,1.6,8.5,3.5,1.4,
 shot npcs-a "npcs&cam=-4.6,1.3,7.5,-4.6,0.75,0"; shot npcs-pip "npcs&cam=-5.2,1.1,3.6,-5.8,0.7,0"; shot npcs-pipback "npcs&cam=-9.5,1.4,-2.5,-6.9,0.6,0"; shot npcs-finch "npcs&cam=-1,1.0,3.4,-1.1,0.6,0"; shot npcs-b "npcs&cam=4.4,2,9,4.4,1.5,0"; shot npcs-dave "npcs&cam=3.4,1.2,4,2.6,0.8,0"; shot npcs-grim "npcs&cam=7,2.3,3.4,5.6,2,0"
 shot npcs2 "npcs2&cam=0,1.5,11,0,0.8,0"; shot npcs2-mort "npcs2&cam=-2.6,1.1,3.8,-2.3,0.7,0"; shot npcs2-wren "npcs2&cam=3.9,1.0,3.6,4.6,0.6,0"; shot npcs2-back "npcs2&cam=-1,1.6,-5,1,0.6,0"
 shot hero "hero"; shot hero-a "hero&cam=-10,4,-4.5,-6,2.7,0.6"; shot hero-b "hero&cam=-5,4,-4.5,-1,2.9,0.6"; shot hero-c "hero&cam=1,4.2,-4.5,5,3.1,0.6"; for n in 0 1 2 3 4 5 6; do shot "hero-side$n" "hero&only=$n&cam=-5.5,2.9,0.3,0,2.6,0.5"; done
+shot moves "moves"; for n in $(seq 0 24); do shot "move$n" "moves&only=$n&cam=4.6,1.9,1.6,0,0.85,0.2"; done
+for n in 8 9; do shot "close$n" "moves&only=$n&cam=-3.2,1.5,-1.2,0,0.75,0.9"; done; for n in 10 11 12; do shot "close$n" "moves&only=$n&settle&cam=2.6,1.5,2.2,0,0.7,0"; shot "close1$n" "moves&only=$n&settle&cam=3.4,0.9,0.1,0,0.7,0.1"; done
 for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
 ls "$OUT"

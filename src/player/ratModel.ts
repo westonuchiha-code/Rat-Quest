@@ -5,7 +5,7 @@ import { createPs1Material } from '../render/ps1Material';
 import type { PlayerState, DodgeKind } from './controller';
 import {
   ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
-  Pose, airPose, blendPose, fullPose, idlePose, locomotionPose, unarmedArms, samplePose, smoothstep, swimPose,
+  Pose, airPose, blendPose, fullPose, idlePose, locomotionPose, unarmedArms, samplePose, smoothstep, swimPose, WALL_BRACE, WALL_KICK,
 } from './animations';
 import { TUNING } from '../data/tuning';
 
@@ -233,6 +233,9 @@ export interface RatAnimInput {
   /** Seconds he has hung from it (-1 when not hanging), and how far through the pull-up he is (0..1, -1 when not). */
   hangTime?: number;
   climbProgress?: number;
+  /** How far through the push of a wall kick he is (0..1, -1 when not), and whether he is in the air against a wall. */
+  kickProgress?: number;
+  onWall?: boolean;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number };
 }
@@ -747,6 +750,17 @@ export class RatModel {
       pose = airPose(ctx.verticalSpeed, TUNING.jump.velocity, 0);
       tumbleX = 0.85;
       stiffness = 22;
+    } else if (!grounded && (ctx.kickProgress ?? -1) >= 0 && (ctx.kickProgress as number) < 0.75) {
+      // Kicking off a wall: the push first (legs driven out behind), then into the ordinary rise.
+      const k = ctx.kickProgress as number;
+      pose = blendPose(WALL_KICK, airPose(ctx.verticalSpeed, TUNING.jump.velocity, 0), smoothstep((k - 0.35) / 0.4));
+      stiffness = 40;
+      damping = 0.9;
+    } else if (!grounded && ctx.onWall) {
+      // Against a wall in the air: feet on it, ready to kick.
+      pose = WALL_BRACE;
+      stiffness = 34;
+      damping = 0.9;
     } else if (!grounded) {
       const flip = ctx.flipProgress > 0 ? Math.sin(Math.min(1, ctx.flipProgress) * Math.PI) ** 0.6 : 0;
       pose = airPose(ctx.verticalSpeed, TUNING.jump.velocity, flip);

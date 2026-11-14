@@ -314,6 +314,17 @@ export class PlayerController {
   }
 
   /** 0..1 through a stow/draw motion, or -1 when not doing one. */
+  /** How far through the push of a wall kick he is (0..1), or -1 when he is not kicking off. */
+  get kickProgress(): number {
+    return this.kickLock > 0 ? 1 - this.kickLock / TUNING.moves.wallKickLock : -1;
+  }
+
+  /** True while he is in the air against a wall he is facing and could kick off (the model braces his feet on it). */
+  get onWall(): boolean {
+    if (this.grounded || this.wallTimer <= 0 || this.hang || this.climbT >= 0 || this.plungeStage !== 0 || this.attackTimer >= 0) return false;
+    return -(Math.sin(this.facing) * this.wallNX + Math.cos(this.facing) * this.wallNZ) > 0.5;
+  }
+
   /** How far through pulling himself up he is (0..1), or -1 when he is not. */
   get climbProgress(): number {
     return this.climbT < 0 ? -1 : Math.min(1, this.climbT / TUNING.moves.climbTime);
