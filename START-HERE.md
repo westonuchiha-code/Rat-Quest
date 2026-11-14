@@ -19,12 +19,14 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Never auto-equip pickups or purchases. **Don't make the game easier.**
 - The hero is silent (jump and attack squeaks only). Finch and Pip's sounds are placeholders (their models were
   reworked on 2026-11-14, along with every enemy's; the owner has not seen them yet).
-- The story is **parked**; the focus is gameplay.
+- The story is **parked until the game is finished**. Do not offer to un-park it.
+- **Never offer these again** (the owner said so, firmly, on 2026-11-14): a wave fight, Steam achievements, the story.
+  Do not pad the "what's next" list with questions; list work, and when told to continue, do the work.
 - Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 57 test files and 1,405 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 57 test files and 1,411 checks, about 90 s. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -152,18 +154,17 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Feel: no human has played the latest combat numbers, the Ironback or the Flitter. Tuning sliders exist for all of them.
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
-## What was offered next (the owner hasn't picked yet)
-From the last turn (after the four new gear secrets):
-1. Playtest and tune the Ironback and Flitter with the sliders (turn speed, soft-spot width, hearing, swoop warning).
-2. A wave fight mixing all four beasts.
-3. More Steam achievements: one per world, all 41 wedges, Grimsqueak beaten, each gear secret, flip an Ironback into
-   a wall, sneak past a roost.
-4. Un-park the story.
-5. Rework the hero's own model the same way (it was left alone).
-6. Raise the door costs a little to match the four extra wedges (45 now, not 41), or leave them.
-7. Put the fire and the iron-bound crate in the level builder (they are only in the built-in levels now).
+## What the owner wants next (his own list, 2026-11-14)
+He gave this list himself; work through it, do not ask about it again:
+1. **Hero animations must match his actions.** Done so far: the ledge grab, hang and pull-up (see HANDOFF). Still to
+   audit on the hero sheet (`#hero` on the model sheet, played by the real controller): wall kick, long jump, plunge,
+   roll and backstep, guard, swim, hurt, landings, each sword swing.
+2. **A new look for Grimsqueak's evil form.** He dislikes it, the whiskers most of all. He does not mind the earlier
+   form (leave it). Three directions were offered (gaunt king / machine-touched / shadow); he has not picked.
+3. **Redo every collectible's model and look** (crumb, cap, relic, wedge, gear pickups, keepsakes).
+4. **A few more enemies** (ideas offered: spider, leech, guard rat, firefly bomber, mole; none picked).
+5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
+   Hollows; none picked).
 
-Older offers, not taken:
-- Make the bridge hand-rail solid.
-- Give every room's outer walls its world's look. The Club's walls would turn grey; the owner was asked and hasn't answered.
-- An app icon and window title for the Steam build.
+Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
+playtest the Ironback and Flitter.

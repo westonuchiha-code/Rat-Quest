@@ -13,6 +13,9 @@ import type { ScuttlerState } from '../../src/enemies/scuttler';
 import { ToadModel } from '../../src/enemies/toadModel';
 import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
+import { RatModel } from '../../src/player/ratModel';
+import { PlayerController, type PlayerInput } from '../../src/player/controller';
+import { makeAabb } from '../../src/world/collision';
 import type { NpcKind } from '../../src/npc/npc';
 
 const W = 1400;
@@ -34,9 +37,65 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
+if (pick === 'hero') {
+  // The hero on a ledge, played by the real controller: he jumps at a block, catches the edge, hangs, and pulls himself
+  // up. Each figure is stopped at one moment of that. (#hero2: the same from the side.)
+  const frames: Array<[string, 'hang' | 'climb', number]> = [['catch', 'hang', 0.05], ['hang', 'hang', 1.2], ['pull', 'climb', 0.22], ['chin up', 'climb', 0.42], ['knee up', 'climb', 0.62], ['over', 'climb', 0.82], ['up', 'climb', 1.4]];
+  const DT = 1 / 60;
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1); // &only=N shows just that one (for a side view)
+  frames.forEach(([name, phase, at], i) => {
+    if (only >= 0 && i !== only) return;
+    const x = only >= 0 ? 0 : (i - (frames.length - 1) / 2) * 2.6;
+    const block = new THREE.Mesh(new THREE.BoxGeometry(2, 3, 1.6), new THREE.MeshBasicMaterial({ color: 0x6a6258 }));
+    block.position.set(x, 1.5, 1.5);
+    scene.add(block);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2, 0.06, 1.6), new THREE.MeshBasicMaterial({ color: 0x8a8274 }));
+    top.position.set(x, 3, 1.5);
+    scene.add(top);
+    const colliders = [makeAabb(x, -0.5, 0, 40, 1, 40), makeAabb(x, 1.5, 1.5, 2, 3, 1.6)];
+    const p = new PlayerController(new THREE.Vector3(x, 0, -0.6));
+    const rat = new RatModel();
+    scene.add(rat.root);
+    const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+    const fwd = new THREE.Vector3(0, 0, 1);
+    let jumps = 0;
+    let done = false;
+    let hung = 0;
+    const step = (): void => {
+      if (done) return;
+      // (Half a push: enough to reach the wall and catch the edge, not enough to climb straight up it.)
+      let inp = input({ move: jumps >= 1 ? fwd.clone().multiplyScalar(0.5) : fwd, jumpHeld: true });
+      if (p.state === 'hang') {
+        hung += DT;
+        if (phase === 'hang' ? hung >= at : hung >= 0.4) inp = phase === 'hang' ? ((done = true), input({})) : input({ jumpPressed: true });
+        else inp = input({});
+      } else if (p.climbProgress >= 0) {
+        inp = input({});
+        if (at <= 1 && p.climbProgress >= at) done = true;
+      } else if (hung > 0 && phase === 'climb') {
+        // Up on top: let him settle, then stop.
+        inp = input({});
+        hung += DT;
+        if (hung > 0.4 + at) done = true;
+      } else if (p.grounded && jumps === 0) {
+        inp = input({ move: fwd, jumpPressed: true, jumpHeld: true });
+        jumps = 1;
+      }
+      if (done) return;
+      p.update(DT, inp, colliders);
+      rat.setTransform(p.position, p.facing);
+      rat.update(DT, {
+        state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime, dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress,
+        verticalSpeed: p.velocity.y, flipProgress: p.flipProgress, armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime, climbProgress: p.climbProgress,
+      });
+    };
+    for (let k = 0; k < 400; k++) step();
+    labels.push({ text: name, x, y: -0.9 });
+  });
+}
 if (pick === 'roach') {
   const states: Array<[ScuttlerState, number]> = [['idle', 1], ['chase', 0.3], ['windup', 0.5], ['lunge', 0.08], ['recover', 0.5], ['stagger', 0.1], ['dead', 0.6]];
   states.forEach(([st, t], i) => {
@@ -116,7 +175,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'npcs') {
+if (pick === 'hero') {
+  camera.position.set(-7, 4.2, -11);
+  camera.lookAt(0, 2.2, 0.6);
+} else if (pick === 'npcs') {
   camera.position.set(0, 3.2, 18);
   camera.lookAt(0, 1.3, 0);
 } else if (which === 'other') {

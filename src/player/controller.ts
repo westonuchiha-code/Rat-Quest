@@ -59,6 +59,16 @@ export interface PlayerInput {
  * that blocks hits from the front, a dodge that hits pass through (roll with input, backstep without),
  * health, and respawning after dying or falling into the pit.
  */
+/** How much of a pull-up's height his feet have gained, `f` of the way through it (they rise early, then he moves in). */
+export function climbRise(f: number): number {
+  return 1 - (1 - Math.min(1, f * 1.6)) ** 2;
+}
+/** How far below the edge his feet hang. */
+export const HANG_DROP = 1.05;
+
+/** How far past the face of the wall his paws rest on the top of a ledge. */
+const GRIP_IN = 0.04;
+
 export class PlayerController {
   readonly position: THREE.Vector3;
   /** Position at the start of the last simulation tick, used for render interpolation. */
@@ -147,6 +157,9 @@ export class PlayerController {
   /** Hanging from a ledge: where its top is and which way is out from the wall. */
   private hang: { top: number; nx: number; nz: number } | null = null;
   private hangDrop = 0;
+  private hangAge = 0;
+  /** The point on the edge his paws hold (world). */
+  private readonly grip = new THREE.Vector3();
   private climbT = -1;
   private readonly climbFrom = new THREE.Vector3();
   private readonly climbTo = new THREE.Vector3();
@@ -301,6 +314,27 @@ export class PlayerController {
   }
 
   /** 0..1 through a stow/draw motion, or -1 when not doing one. */
+  /** How far through pulling himself up he is (0..1), or -1 when he is not. */
+  get climbProgress(): number {
+    return this.climbT < 0 ? -1 : Math.min(1, this.climbT / TUNING.moves.climbTime);
+  }
+
+  /** How long he has been hanging from a ledge (seconds), or -1 when he is not. */
+  get hangTime(): number {
+    return this.hang ? this.hangAge : -1;
+  }
+
+  /**
+   * Where the edge he is holding is, measured from his feet in the way he faces: `y` up, `z` forward. Null when he is
+   * neither hanging nor climbing. The model plants his paws there.
+   */
+  get ledge(): { y: number; z: number } | null {
+    if (!this.hang && this.climbT < 0) return null;
+    const fx = Math.sin(this.facing);
+    const fz = Math.cos(this.facing);
+    return { y: this.grip.y - this.position.y, z: (this.grip.x - this.position.x) * fx + (this.grip.z - this.position.z) * fz };
+  }
+
   get stowProgress(): number {
     return this.stowTimer < 0 ? -1 : this.stowTimer / STOW_TIME;
   }
@@ -365,7 +399,7 @@ export class PlayerController {
     if (this.climbT >= 0) {
       this.climbT += dt;
       const f = Math.min(1, this.climbT / T.moves.climbTime);
-      const up = 1 - (1 - Math.min(1, f * 1.6)) ** 2;
+      const up = climbRise(f);
       this.position.set(
         this.climbFrom.x + (this.climbTo.x - this.climbFrom.x) * f * f,
         this.climbFrom.y + (this.climbTo.y - this.climbFrom.y) * up,
@@ -385,6 +419,7 @@ export class PlayerController {
     // Hanging from a ledge: jump or push toward the wall climbs up; back away or dodge lets go.
     if (this.hang) {
       const h = this.hang;
+      this.hangAge += dt;
       this.velocity.set(0, 0, 0);
       const toward = -(move.x * h.nx + move.z * h.nz);
       if (input.jumpPressed || toward > 0.6) {
@@ -667,7 +702,9 @@ export class PlayerController {
         const floor = colliders.some((b) => Math.abs(b.max.y - top) < 0.05 && ix > b.min.x && ix < b.max.x && iz > b.min.z && iz < b.max.z);
         if (room && floor) {
           this.hang = { top, nx: this.wallNX, nz: this.wallNZ };
-          p.y = top - 1.05;
+          this.hangAge = 0;
+          p.y = top - HANG_DROP;
+          this.grip.set(p.x - this.wallNX * (r + GRIP_IN), top, p.z - this.wallNZ * (r + GRIP_IN));
           this.velocity.set(0, 0, 0);
           this.longJump = false;
           this.flipTimer = -1;

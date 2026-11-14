@@ -12,6 +12,9 @@ import type { IronbackState } from '../src/enemies/ironback';
 import { BatModel } from '../src/enemies/batModel';
 import type { BatState } from '../src/enemies/bat';
 import { Npc, lookOf } from '../src/npc/npc';
+import { RatModel } from '../src/player/ratModel';
+import { PlayerController, type PlayerInput } from '../src/player/controller';
+import { makeAabb } from '../src/world/collision';
 import type { NpcKind } from '../src/npc/npc';
 
 const DT = 1 / 60;
@@ -247,6 +250,62 @@ const at = new THREE.Vector3(0, 0, 0);
   const open = jaw.rotation.x;
   for (let i = 0; i < 30; i++) finch.update(DT, 0, 0, 2, true);
   check('Finch: his beak opens on a syllable and shuts again', open > 0.35 && jaw.rotation.x < 0.05, `${open.toFixed(2)} -> ${jaw.rotation.x.toFixed(2)}`);
+}
+
+// ---- The hero on a ledge: played by the real controller, his paws are on the edge the whole time he hangs and hauls ----
+{
+  const colliders = [makeAabb(0, -0.5, 0, 40, 1, 40), makeAabb(0, 1.5, 1.5, 2, 3, 1.6)];
+  const p = new PlayerController(new THREE.Vector3(0, 0, -0.6));
+  const rat = new RatModel();
+  const parts = rat as unknown as { elbowS: THREE.Object3D; elbowH: THREE.Object3D; sword: THREE.Object3D; backSword: THREE.Object3D; shieldPivot: THREE.Object3D };
+  const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+  const fwd = new THREE.Vector3(0, 0, 1);
+  const edge = new THREE.Vector3(0, 3, 0.7); // the top front edge of the block
+  /** How far the further paw is from its place on the edge (sideways along the edge does not count). */
+  const pawGap = (): number => {
+    rat.root.updateMatrixWorld(true);
+    return Math.max(...[parts.elbowS, parts.elbowH].map((e) => {
+      const w = e.localToWorld(new THREE.Vector3(0, -0.15, 0));
+      const at = p.ledge ?? { y: 0, z: 0 };
+      return Math.hypot(w.y - (p.position.y + at.y) + 0.02, w.z - (p.position.z + at.z));
+    }));
+  };
+  const tick = (inp: PlayerInput): void => {
+    p.update(DT, inp, colliders);
+    rat.setTransform(p.position, p.facing);
+    rat.update(DT, {
+      state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime, dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress,
+      verticalSpeed: p.velocity.y, flipProgress: p.flipProgress, armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime, climbProgress: p.climbProgress,
+    });
+  };
+  for (let i = 0; i < 5; i++) tick(input({}));
+  tick(input({ move: fwd, jumpPressed: true, jumpHeld: true }));
+  for (let i = 0; i < 200 && p.state !== 'hang'; i++) tick(input({ move: fwd.clone().multiplyScalar(0.5), jumpHeld: true }));
+  check('hero: he catches the edge of a block, and the game says where it is (on the lip, just past the face)', p.state === 'hang' && !!p.ledge && Math.abs(p.ledge.y - 1.05) < 0.01 && Math.abs(p.position.y + p.ledge.y - edge.y) < 0.01 && Math.abs(p.position.z + p.ledge.z - edge.z - 0.04) < 0.03, JSON.stringify(p.ledge));
+  let worstHang = 0;
+  for (let i = 0; i < 90; i++) {
+    tick(input({}));
+    if (i > 8) worstHang = Math.max(worstHang, pawGap());
+  }
+  check('hero: hanging, both paws are on the edge (not waving behind his head)', worstHang < 0.07, `furthest ${worstHang.toFixed(3)}`);
+  check('hero: hanging, his sword and shield are on his back', !parts.sword.visible && !parts.shieldPivot.visible && parts.backSword.visible);
+  tick(input({ jumpPressed: true }));
+  let worstClimb = 0;
+  let frames = 0;
+  let sawLow = false;
+  while (p.climbProgress >= 0 && frames++ < 200) {
+    tick(input({}));
+    if (p.climbProgress >= 0 && p.climbProgress < 0.46) worstClimb = Math.max(worstClimb, pawGap());
+    // Early in the pull his chest is still below the edge: he is hauling himself up, not standing in the air.
+    if (p.climbProgress > 0.1 && p.climbProgress < 0.3) {
+      const chest = (rat as unknown as { chest: THREE.Object3D }).chest.getWorldPosition(new THREE.Vector3());
+      if (chest.y < edge.y - 0.1) sawLow = true;
+    }
+  }
+  check('hero: his paws stay on the edge for the first half of the pull-up, while he hauls his chest over it', worstClimb < 0.08, `furthest ${worstClimb.toFixed(3)}`);
+  check('hero: the pull-up takes long enough to see (about half a second), and starts from below the edge', frames * DT > 0.4 && frames * DT < 0.7 && sawLow, `${(frames * DT).toFixed(2)} s`);
+  for (let i = 0; i < 40; i++) tick(input({}));
+  check('hero: on top, he stands on the block with his sword and shield in his paws again', p.grounded && Math.abs(p.position.y - 3) < 0.01 && p.ledge === null && parts.sword.visible && !parts.backSword.visible);
 }
 
 console.log(failures === 0 ? '\nall passed' : `\n${failures} FAILED`);

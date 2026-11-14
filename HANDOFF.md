@@ -182,3 +182,8 @@ Left passable on purpose: hanging lamps and chains (overhead), webs/slime/window
 - Buckler / the Fencer's Wedge (works 'duel'): GoalDef 'parry' {count}; goals.parries++ on every 'parried' result; reset() clears it. Not tagged gear (so the jump checker still checks it).
 - Wedge totals are counted from the levels, so menus and the Club show 45 by themselves. BALANCE.doors unchanged (4 / 10 / 20).
 - Not in the level builder: fire, tough crates and the two new goal types exist only in the built-in levels.
+## Hero: ledge grab, hang and pull-up
+- controller.ts: `ledge` (the edge he holds, from his feet in his facing frame: y up, z forward), `hangTime`, `climbProgress`; `climbRise(f)`, `HANG_DROP` (1.05), GRIP_IN (paws 0.04 past the wall face). TUNING.moves.climbTime 0.32 -> 0.5 (slower, never easier).
+- ratModel.ts: poses HANG, CLIMB_PULL, CLIMB_MANTLE; `plantPaws()` is a two-bone solve run after the springs that puts both paws on the edge (weight `gripAmount`: on while hanging and for the first half of the climb). Drawn HANG_LIFT (0.17) higher and against the wall while hanging so the paws reach; drawn rising evenly through the climb (the game lifts his feet early). Sword and shield show on his back in 'hang' and 'climb'.
+- RatAnimInput: ledge, hangTime, climbProgress (optional; main.ts passes them).
+- Sheet: `#hero` (seven moments of the climb, real controller), `&only=N` for one figure; scripts/sheet-shots.sh takes hero-side0..6. tests/models.ts: six hero checks (paws within 2 cm of the lip while hanging).

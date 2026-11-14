@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { climbRise, HANG_DROP } from './controller';
 import type { Gesture } from '../story/scene';
 import { createPs1Material } from '../render/ps1Material';
 import type { PlayerState, DodgeKind } from './controller';
@@ -227,6 +228,11 @@ export interface RatAnimInput {
   armed: boolean; // false while the sword and shield are on his back
   stowProgress: number; // 0..1 through a stow or draw motion, -1 when not doing one
   plungeStage: number; // 0 none, 1 hanging, 2 diving, 3 landed
+  /** The edge he is holding, from his feet in the way he faces (y up, z forward), while hanging or climbing. */
+  ledge?: { y: number; z: number } | null;
+  /** Seconds he has hung from it (-1 when not hanging), and how far through the pull-up he is (0..1, -1 when not). */
+  hangTime?: number;
+  climbProgress?: number;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number };
 }
@@ -272,6 +278,9 @@ function mixGesture(p: Pose, g: Partial<Pose>, w: number): void {
 
 // Skeleton measurements.
 const HIP_Y = 0.36; // pelvis height when standing straight
+const ARM_BONE = 0.15; // upper arm and forearm are each this long
+/** Hanging, he is drawn this much higher than his feet say, stretched out, so that his paws reach the edge. */
+const HANG_LIFT = 0.17;
 const HIP_X = 0.085; // hip joints sit this far either side of the centre
 const HIP_DROP = 0.02; // and this far below the pelvis origin
 const THIGH = 0.18;
@@ -313,6 +322,25 @@ const RELAXED_ARMS = fullPose({
   armS: [0.12, 0, -0.14], elbowS: -0.25, wrist: [0, 0, 0],
   armH: [0.12, 0, 0.14], elbowH: -0.25, shield: [0, 0, 0],
 });
+/** Hanging from a ledge: long and loose, head back, legs straight down, toes pointed, tail hanging. */
+const HANG: Pose = fullPose({
+  hipPos: [0, 0, 0.13], hips: [-0.04, 0, 0], chest: [-0.05, 0, 0], head: [-0.6, 0, 0],
+  armS: [-2.9, 0, -0.2], elbowS: -0.1, wrist: [0, 0, 0], armH: [-2.9, 0, 0.2], elbowH: -0.1, shield: [0, 0, 0],
+  footS: [-0.07, 0.02, -0.03], footH: [0.07, 0.04, 0.02], toeS: 0.9, toeH: 0.8, tail: [0.5, 0, -0.1], ears: 0.2,
+});
+/** Half-way up: arms bent hard, chin over the edge, knees drawn up against the wall. */
+const CLIMB_PULL: Pose = fullPose({
+  hipPos: [0, 0, 0.12], hips: [0.2, 0, 0], chest: [0.25, 0, 0], head: [-0.35, 0, 0],
+  armS: [-1.6, 0, -0.5], elbowS: -1.6, wrist: [0, 0, 0], armH: [-1.6, 0, 0.5], elbowH: -1.6, shield: [0, 0, 0],
+  footS: [-0.1, 0.16, 0.06], footH: [0.1, 0.2, 0.1], toeS: 0.5, toeH: 0.4, tail: [0.9, 0, 0.2], ears: 0.4,
+});
+/** Over the edge: chest low on the ledge, weight on his arms, one foot swung up beside his paw. */
+const CLIMB_MANTLE: Pose = fullPose({
+  hipPos: [0, -0.16, 0.02], hips: [0.4, 0.15, 0], chest: [0.55, 0, 0], head: [-0.5, 0, 0],
+  armS: [-0.6, 0, -0.5], elbowS: -1.2, wrist: [0, 0, 0], armH: [-0.6, 0, 0.5], elbowH: -1.2, shield: [0, 0, 0],
+  footS: [-0.13, 0.0, -0.12], footH: [0.15, 0.1, 0.16], toeS: 0.4, toeH: 0, tail: [1.1, 0, 0.3], ears: 0.3,
+});
+
 /** Both hands up behind the shoulders, reaching for the straps. */
 const REACH_ARMS = fullPose({
   armS: [-2.5, -0.1, -0.35], elbowS: -0.6, wrist: [0, 0, 0],
@@ -691,14 +719,29 @@ export class RatModel {
       }
       damping = 0.9;
     } else if (state === 'hang') {
-      // Hanging by his paws from a ledge, legs dangling.
-      pose = fullPose(airPose(-6, TUNING.jump.velocity, 0));
-      mixArms(pose, REACH_ARMS, 1);
-      stiffness = 22;
+      // Hanging by his paws from a ledge: stretched out long against the wall, head tipped back to look up at the edge,
+      // legs dangling. He swings a little as he catches it, then settles. (His paws are planted on the edge below.)
+      const t = Math.max(0, ctx.hangTime ?? 1);
+      const swing = Math.exp(-3.5 * t) * Math.cos(t * 10);
+      pose = fullPose(HANG);
+      pose.footS[2] += 0.1 * swing + 0.012 * Math.sin(this.time * 2.1);
+      pose.footH[2] += 0.13 * swing + 0.012 * Math.sin(this.time * 2.1 + 1);
+      pose.hips[0] += 0.22 * swing;
+      pose.tail[1] = 0.3 * Math.sin(this.time * 1.7);
+      tumbleX = -0.1 * swing;
+      lift = HANG_LIFT;
+      stiffness = 26;
     } else if (state === 'climb') {
-      pose = LAND;
-      tumbleX = 0.35;
-      stiffness = 30;
+      // Pulling himself up: first his arms bend and haul his chest to the edge with his knees tucking; then he leans
+      // out over it and gets a foot up; then he stands.
+      const f = Math.max(0, ctx.climbProgress ?? 1);
+      pose = f < 0.45 ? blendPose(HANG, CLIMB_PULL, smoothstep(f / 0.3)) : f < 0.8 ? blendPose(CLIMB_PULL, CLIMB_MANTLE, smoothstep((f - 0.45) / 0.25)) : blendPose(CLIMB_MANTLE, LAND, smoothstep((f - 0.8) / 0.2));
+      tumbleX = 0.5 * Math.sin(Math.min(1, f / 0.8) * Math.PI) ** 1.5;
+      // The game lifts his feet to the top in the first part of the move; drawn that way he would shoot up like a cork.
+      // He is drawn rising more evenly, so there is time to see the haul, then the press, then the knee coming up.
+      lift = HANG_LIFT * (1 - smoothstep(f / 0.4)) + (smoothstep(f / 0.72) - climbRise(f)) * HANG_DROP;
+      stiffness = 34;
+      damping = 0.95;
     } else if (state === 'longjump') {
       // Stretched out flat, like a dive.
       pose = airPose(ctx.verticalSpeed, TUNING.jump.velocity, 0);
@@ -724,7 +767,8 @@ export class RatModel {
     }
 
     // Weapons on his back: arms hang relaxed, and a stow/draw motion reaches over the shoulder.
-    const armed = ctx.armed;
+    // (Hanging and climbing need both paws: sword and shield go on his back for as long as it takes.)
+    const armed = ctx.armed && state !== 'hang' && state !== 'climb';
     this.sword.visible = armed && this.dress.gear;
     this.shieldPivot.visible = armed && this.dress.gear;
     this.backSword.visible = !armed && this.dress.gear;
@@ -792,7 +836,58 @@ export class RatModel {
     this.lean.rotation.set(this.pitch, 0, this.bank);
 
     this.apply(ctx.planarSpeed);
+
+    // His paws hold the edge: while he hangs, and through the pull-up until he lets go to stand.
+    const f = ctx.climbProgress ?? -1;
+    // (Past half-way his shoulders are above the edge by more than an arm: he lets go and brings his paws to his knees.)
+    const holding = !!ctx.ledge && (state === 'hang' || (state === 'climb' && f < 0.5));
+    this.gripAmount = ease(this.gripAmount, holding ? 1 : 0, dt, holding ? 40 : 16);
+    if (ctx.ledge) this.gripAt.set(0, ctx.ledge.y, ctx.ledge.z);
+    if (this.gripAmount > 0.01) this.plantPaws();
   }
+
+  private gripAmount = 0;
+  private readonly gripAt = new THREE.Vector3();
+
+  /**
+   * Puts both paws on the edge he is holding (gripAt, in the root's frame: y up from his feet, z the way he faces),
+   * a little apart, by turning each arm at the shoulder and bending it at the elbow. Laid over whatever the pose asked
+   * of the arms, by `gripAmount`.
+   */
+  private plantPaws(): void {
+    this.root.updateMatrixWorld(true);
+    const L = ARM_BONE;
+    const tmp = this.gripTmp;
+    for (const [arm, elbow, side] of [[this.armS, this.elbowS, -1], [this.armH, this.elbowH, 1]] as const) {
+      // The paw's place on the edge, in the chest's own frame (where the shoulder lives).
+      const target = tmp.t.set(side * 0.13, this.gripAt.y - 0.02, this.gripAt.z);
+      this.root.localToWorld(target);
+      this.chest.worldToLocal(target);
+      const dir = target.sub(arm.position);
+      const d = Math.min(L * 2 * 0.999, Math.max(0.05, dir.length()));
+      dir.normalize();
+      // Elbows point out to the side and down, a little back: the way arms bend when they haul a body up.
+      const pole = tmp.pole.set(side * 0.9, -0.6, -0.5);
+      const e = pole.addScaledVector(dir, -pole.dot(dir)).normalize();
+      const alpha = Math.acos(d / (2 * L)); // angle between the upper arm and the line to the paw
+      const u = tmp.u.copy(dir).multiplyScalar(Math.cos(alpha)).addScaledVector(e, Math.sin(alpha)); // the upper arm
+      const fore = tmp.f.copy(dir).multiplyScalar(Math.cos(alpha)).addScaledVector(e, -Math.sin(alpha)); // the forearm
+      const bend = 2 * alpha;
+      // The arm's own axes: -Y runs down the upper arm, and the forearm bends towards +Z.
+      const z = bend > 0.02 ? tmp.z.copy(fore).addScaledVector(u, -Math.cos(bend)).normalize() : tmp.z.copy(e).negate();
+      const y = tmp.y.copy(u).negate();
+      const x = tmp.x.crossVectors(y, z).normalize();
+      z.crossVectors(x, y);
+      tmp.q.setFromRotationMatrix(tmp.m.makeBasis(x, y, z));
+      arm.quaternion.slerp(tmp.q, this.gripAmount);
+      elbow.rotation.x += (-bend - elbow.rotation.x) * this.gripAmount;
+    }
+  }
+
+  private readonly gripTmp = {
+    t: new THREE.Vector3(), pole: new THREE.Vector3(), u: new THREE.Vector3(), f: new THREE.Vector3(),
+    x: new THREE.Vector3(), y: new THREE.Vector3(), z: new THREE.Vector3(), m: new THREE.Matrix4(), q: new THREE.Quaternion(),
+  };
 
   /** Writes the current spring values to the joints and solves the legs. */
   private apply(planarSpeed: number): void {

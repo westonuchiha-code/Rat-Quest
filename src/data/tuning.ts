@@ -103,7 +103,7 @@ export const TUNING = {
     wallKickPush: 7, // away from the wall
     wallKickWindow: 0.16, // a jump pressed this soon after touching a wall in the air kicks off it
     wallKickLock: 0.25, // seconds the stick cannot pull him straight back to the wall
-    climbTime: 0.32, // pulling himself up onto a ledge
+    climbTime: 0.5, // pulling himself up onto a ledge (long enough to see: pull, knee up, stand)
   },
     /** Attacking in the air: a short hang, a straight dive, and a shockwave all round on landing. */
   plunge: {
