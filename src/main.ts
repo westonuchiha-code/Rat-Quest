@@ -218,6 +218,24 @@ function startGame(): void {
     }
     return floor;
   };
+  /**
+   * The height of the floor under a point: the highest solid top below it, within three units. Null if there is none,
+   * or if it is a moving platform, or if water or lava lies between (a shadow would sit on the bed, under the surface).
+   * It is where a floating collectible's shadow falls.
+   */
+  const floorAt = (x: number, y: number, z: number): number | null => {
+    let best: number | null = null;
+    for (const b of chamber.colliders) {
+      if (x <= b.min.x || x >= b.max.x || z <= b.min.z || z >= b.max.z) continue;
+      if (b.max.y > y - 0.1 || b.max.y < y - 3) continue;
+      if (chamber.movers.some((m) => m.aabb === b)) continue;
+      if (best === null || b.max.y > best) best = b.max.y;
+    }
+    if (best === null) return null;
+    const floor = best;
+    const wet = [...chamber.water, ...chamber.lava].some((w) => x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1 && w.y > floor && w.y < y + 0.5);
+    return wet ? null : floor;
+  };
   /** Something solid at body height (the ironback's ram bonks into it). */
   const wallAt = (x: number, y: number, z: number, r: number): boolean =>
     chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.25 && b.min.y < y + 0.7);
@@ -933,7 +951,7 @@ function startGame(): void {
     chamber = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, pipes: def.pipes, gates: def.gates, movers: def.movers, lava: def.lava, fire: def.fire });
     scene.add(chamber.group);
     player.water = chamber.water;
-    collectVisuals = new CollectibleVisuals({ id: def.id, name: def.name, items: def.collectibles }, tracker);
+    collectVisuals = new CollectibleVisuals({ id: def.id, name: def.name, items: def.collectibles }, tracker, { floorAt });
     collectVisuals.hidden = (d) => d.crate !== undefined && !revealedCrates.has(d.crate);
     scene.add(collectVisuals.group);
     pickups = new PickupVisuals(def.gear, equipment);
@@ -2560,7 +2578,7 @@ function startGame(): void {
           shake = Math.max(shake, 0.12);
         }
       });
-      wedgeVis.update(time, (i) => wedgeWasOut[i], (i) => goals.earned.has(ws[i].id), follow.yaw);
+      wedgeVis.update(frameDt, time, (i) => wedgeWasOut[i], (i) => goals.earned.has(ws[i].id), camera.quaternion);
     }
     courseVis?.update(time);
     const gs = cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
@@ -2622,7 +2640,7 @@ function startGame(): void {
     }
     talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (npcs.some((n) => n.near) || (nearFire && resting < 0)) && player.grounded);
 
-    collectVisuals.update(frameDt, time);
+    collectVisuals.update(frameDt, time, camera.quaternion);
     if (ringAge < 0.35) {
       ringAge += frameDt;
       const k = Math.min(1, ringAge / 0.35);

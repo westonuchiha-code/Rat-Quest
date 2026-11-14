@@ -13,6 +13,8 @@ import type { ScuttlerState } from '../../src/enemies/scuttler';
 import { ToadModel } from '../../src/enemies/toadModel';
 import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
+import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
+import { nachoCanGeometry } from '../../src/world/drops';
 import { drawPortrait } from '../../src/npc/portrait';
 import { stickerIcon } from '../../src/ui/icons';
 import { portraitTexture } from '../../src/world/portraitTexture';
@@ -40,9 +42,50 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
+if (pick === 'items') {
+  // Everything he collects, three times life size and turned four ways; then at life size beside him.
+  const lit = itemMaterial();
+  const painted = new THREE.MeshBasicMaterial({ vertexColors: true });
+  const kinds: Array<[string, () => THREE.Object3D, number]> = [
+    ['crumb', () => new THREE.Mesh(crumbGeometry(), lit), 0.25],
+    ['cap', () => new THREE.Mesh(capGeometry(), lit), 0.22],
+    ['relic', () => {
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(relicGeometry(), lit));
+      const ring = new THREE.Mesh(relicRingGeometry(), lit);
+      ring.rotation.x = 1.1;
+      g.add(ring);
+      return g;
+    }, 0.4],
+    ['wedge', () => new THREE.Mesh(wedgeGeometry(), painted), 0.62],
+    ['nacho can', () => new THREE.Mesh(nachoCanGeometry(), lit), 0.25],
+  ];
+  kinds.forEach(([name, make, lift], row) => {
+    for (let k = 0; k < 4; k++) {
+      const o = make();
+      const x = -7 + k * 2.4;
+      const z = -row * 2.6;
+      o.scale.setScalar(3);
+      o.position.set(x, lift * 3 + 0.1, z);
+      o.rotation.y = k * (Math.PI / 2) * 0.82 + 0.4;
+      scene.add(o);
+    }
+    labels.push({ text: name, x: -8.8, y: -row * 2.6 });
+    // Life size, in a row beside him.
+    const small = make();
+    small.position.set(4.2 + row * 0.9, lift + 0.25, 1.2);
+    small.rotation.y = 0.6;
+    scene.add(small);
+    ticks.push((dt) => void (small.rotation.y += dt * 1.8));
+  });
+  const rat = new RatModel();
+  rat.setTransform(new THREE.Vector3(3.2, 0, 1.2), 0.5);
+  scene.add(rat.root);
+  rat.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+}
 if (pick === 'grim') {
   // Lord Grimsqueak in each thing his body does: at rest, talking, every tell of the fight, brought low, and the ending.
   // &only=N shows one alone.
@@ -292,7 +335,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'grim') {
+if (pick === 'items') {
+  camera.position.set(-1.5, 9.5, 13.5);
+  camera.lookAt(-1.5, 0.6, -4.6);
+} else if (pick === 'grim') {
   camera.position.set(0, 4.2, 26);
   camera.lookAt(0, 1.7, 0);
 } else if (pick === 'moves') {

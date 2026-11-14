@@ -15,6 +15,11 @@ export interface Ps1Options {
   /** Light each vertex in the shader from its normal (Gouraud). Use for characters, whose parts rotate. */
   lit?: boolean;
   side?: THREE.Side;
+  /**
+   * With `lit`: how brightly a face flashes when it turns to catch the light (0 none). For things that turn and should
+   * glint as they do: cheese, bottle caps, gold.
+   */
+  shine?: number;
 }
 
 let whiteTexture: THREE.DataTexture | null = null;
@@ -59,6 +64,7 @@ const vertexShader = /* glsl */ `
   uniform float snapEnabled;
   uniform vec2 uvOffset;
   uniform float lit;
+  uniform float shine;
   uniform vec3 lightDir;
   varying vec3 vColor;
   varying vec2 vUv;
@@ -74,6 +80,9 @@ const vertexShader = /* glsl */ `
       vec3 l = normalize(mat3(viewMatrix) * lightDir);
       float d = dot(n, l);
       vColor *= 0.56 + 0.5 * clamp(d * 0.6 + 0.4, 0.0, 1.0);
+      // A glint: a face square to the half-way between the light and the eye flashes (whole faces, since they are flat).
+      vec3 h = normalize(l + vec3(0.0, 0.0, 1.0));
+      vColor += shine * pow(max(dot(n, h), 0.0), 9.0) * vec3(1.0, 0.96, 0.82);
     }
     vUv = uv + uvOffset;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
@@ -140,6 +149,7 @@ export function createPs1Material(options: Ps1Options = {}): THREE.ShaderMateria
       tex: { value: options.tex ?? white() },
       uvOffset: { value: new THREE.Vector2(0, 0) },
       lit: { value: options.lit ? 1 : 0 },
+      shine: { value: options.shine ?? 0 },
       lightDir: { value: BAKE_LIGHT },
       flash: { value: new THREE.Color(0, 0, 0) }, // added on top of the color, for hit flashes
     },

@@ -3,8 +3,8 @@
  * They use the same flat-shaded look as the other collectibles.
  */
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
-import { merge, prep } from './collectibleMeshes';
+import { merge } from './collectibleMeshes';
+import { facet, itemMaterial, shadowGeometry, shadowMaterial } from './itemModels';
 
 const GRAVITY = 16;
 const HOP_SPEED = 4.6;
@@ -24,9 +24,15 @@ export function nachoCanGeometry(): THREE.BufferGeometry {
   const cheese = new THREE.IcosahedronGeometry(0.085, 0).scale(1, 0.55, 1).translate(0, 0.205, 0);
   const drip = new THREE.BoxGeometry(0.05, 0.12, 0.04).translate(0.1, 0.14, 0.06);
   const tab = new THREE.TorusGeometry(0.04, 0.012, 4, 8).rotateX(Math.PI / 2).translate(-0.07, 0.2, -0.02);
+  // The maker's mark on the label: a little wedge of cheese, front and back.
+  const mark = (side: number): THREE.BufferGeometry => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(side > 0 ? [-0.055, -0.07, 0, 0.055, -0.07, 0, -0.055, 0.0, 0] : [0.055, -0.07, 0, -0.055, -0.07, 0, 0.055, 0.0, 0], 3));
+    return facet(g.translate(0, -0.03, side * 0.151), 0xffe680);
+  };
   return merge([
-    prep(tin, 0x9aa0a6), prep(label, 0xf2a21e), prep(band, 0xc0392b), prep(lidRim, 0xc8ced4), prep(baseRim, 0xc8ced4),
-    prep(cheese, 0xffd23a), prep(drip, 0xffd23a), prep(tab, 0xd8dde2),
+    facet(tin, 0xb4bcc4), facet(label, 0xf2a21e), facet(band, 0xc0392b), facet(lidRim, 0xe0e6ec), facet(baseRim, 0xd0d6dc),
+    facet(cheese, 0xffd23a), facet(drip, 0xffd23a), facet(tab, 0xe8edf2), mark(1), mark(-1),
   ]);
 }
 
@@ -47,12 +53,15 @@ interface Drop {
   pop: number; // -1, or seconds into the pickup pop
   root: THREE.Group;
   spin: THREE.Group; // turns about the vertical axis
+  shadow: THREE.Mesh; // lies on the floor under it
 }
 
 export class DropField {
   readonly group = new THREE.Group();
   private drops: Drop[] = [];
-  private readonly material = createPs1Material();
+  private readonly material = itemMaterial(0.6);
+  private readonly shadowGeo = shadowGeometry();
+  private readonly shadowMat = shadowMaterial();
   private readonly geometries = new Map<string, THREE.BufferGeometry>();
   private count = 0;
 
@@ -71,8 +80,12 @@ export class DropField {
     spin.add(can);
     root.add(spin);
     root.position.set(x, fromY, z);
+    // Its shadow rides in the same group, held down on the floor while the can hops and bobs above it.
+    const shadow = new THREE.Mesh(this.shadowGeo, this.shadowMat);
+    shadow.scale.setScalar(0.5);
+    root.add(shadow);
     this.group.add(root);
-    this.drops.push({ itemId, x, z, floorY, y: fromY, vy: HOP_SPEED, age: 0, phase: this.count++ * 1.9, pop: -1, root, spin });
+    this.drops.push({ itemId, x, z, floorY, y: fromY, vy: HOP_SPEED, age: 0, phase: this.count++ * 1.9, pop: -1, root, spin, shadow });
   }
 
   /** Drops he is close enough to take. They start the pickup pop, and the caller is told what they were. */
@@ -103,6 +116,7 @@ export class DropField {
     for (const d of this.drops) {
       d.age += dt;
       d.spin.rotation.y = time * 2.6 + d.phase;
+      d.shadow.visible = d.pop < 0;
       if (d.pop >= 0) {
         d.pop += dt;
         const k = Math.min(1, d.pop / POP_TIME);
@@ -125,6 +139,10 @@ export class DropField {
         // Resting: a gentle bob like the other collectibles.
         d.root.position.y = rest + Math.sin(time * 2 + d.phase) * 0.05;
       }
+      // (The shadow is the can's child: put it back down on the floor, and shrink it as the can flies up.)
+      const up = d.root.position.y - d.floorY;
+      d.shadow.position.y = 0.025 - up;
+      d.shadow.scale.setScalar(0.5 * Math.max(0.35, 1 - (up - REST_HEIGHT) * 0.35));
     }
     this.drops = this.drops.filter((d) => {
       if (d.pop >= 0 && d.root.visible === false) {

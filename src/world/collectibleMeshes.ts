@@ -1,46 +1,23 @@
 /**
- * Three.js visuals for collectibles: low-poly faceted models, spin, bob and a pickup pop.
+ * The collectibles in a level, drawn: each turns and bobs over its own shadow, glints now and then, and goes in a pop
+ * and a burst of sparks when he takes it. The shapes themselves are in itemModels.ts.
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createPs1Material, bakeVertexColor } from '../render/ps1Material';
+import { bakeVertexColor } from '../render/ps1Material';
 import type { CollectibleDef, CollectibleKind, CollectibleTracker, LevelDef } from './collectibles';
+import { Sparks, capGeometry, crumbGeometry, glowMaterial, itemMaterial, relicGeometry, relicRingGeometry, shadowGeometry, shadowMaterial, twinkleGeometry, twinkleSize } from './itemModels';
 
 const POP_TIME = 0.25;
 const POP_SCALE = 1.6;
 const POP_RISE = 0.3;
 
-type V3 = [number, number, number];
-
-/** Flat-shaded, colour-baked, non-indexed geometry with only position, normal and color. */
+/** Flat-shaded, colour-baked, non-indexed geometry with only position, normal and color. (For things drawn unlit.) */
 export function prep(geo: THREE.BufferGeometry, color: number, shade = true): THREE.BufferGeometry {
   let g = geo.index ? geo.toNonIndexed() : geo;
   g.deleteAttribute('uv');
   g.computeVertexNormals(); // non-indexed, so every face is flat
   g = bakeVertexColor(g, color, shade);
-  return g;
-}
-
-/** Triangles with an outward reference point; winding is fixed so each face points away from it. */
-function triGeometry(tris: V3[][], inside: V3): THREE.BufferGeometry {
-  const pos: number[] = [];
-  const a = new THREE.Vector3();
-  const b = new THREE.Vector3();
-  const c = new THREE.Vector3();
-  const n = new THREE.Vector3();
-  const mid = new THREE.Vector3();
-  for (const t of tris) {
-    a.set(...t[0]);
-    b.set(...t[1]);
-    c.set(...t[2]);
-    n.subVectors(b, a).cross(c.clone().sub(a));
-    mid.copy(a).add(b).add(c).divideScalar(3).sub(new THREE.Vector3(...inside));
-    const flip = n.dot(mid) < 0;
-    const order = flip ? [a, c, b] : [a, b, c];
-    for (const v of order) pos.push(v.x, v.y, v.z);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   return g;
 }
 
@@ -50,115 +27,113 @@ export function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   return merged;
 }
 
-/** Cheese wedge: sloped top, with a few darker hole facets pressed onto the faces. */
-function crumbGeometry(): THREE.BufferGeometry {
-  const P0: V3 = [-0.15, 0, -0.17];
-  const P1: V3 = [-0.15, 0, 0.17];
-  const P2: V3 = [0.2, 0, 0];
-  const Q0: V3 = [-0.15, 0.2, -0.17];
-  const Q1: V3 = [-0.15, 0.2, 0.17];
-  const Q2: V3 = [0.2, 0.04, 0];
-  const centre: V3 = [-0.03, 0.08, 0];
-  const body = triGeometry(
-    [
-      [P0, P1, P2], // bottom
-      [Q0, Q1, Q2], // sloped top
-      [P0, P1, Q1], [P0, Q1, Q0], // back
-      [P0, P2, Q2], [P0, Q2, Q0], // one side
-      [P1, P2, Q2], [P1, Q2, Q1], // other side
-    ],
-    centre,
-  );
-  const holes = triGeometry(
-    [
-      [[-0.153, 0.05, -0.08], [-0.153, 0.11, -0.04], [-0.153, 0.04, 0.0]], // back face
-      [[-0.153, 0.12, 0.06], [-0.153, 0.17, 0.1], [-0.153, 0.1, 0.12]],
-      [[0.02, 0.114, -0.06], [0.07, 0.108, -0.02], [0.03, 0.1, 0.0]], // top face
-      [[-0.07, 0.18, 0.05], [-0.02, 0.17, 0.09], [-0.05, 0.162, 0.01]],
-    ],
-    [0, -1, 0],
-  );
-  return merge([prep(body, 0xf2c230), prep(holes, 0xa87812, false)]).translate(0, -0.08, 0);
-}
-
-/** Fluted metal bottle cap (10 sides) with a coloured top, tilted so it reads from the camera. */
-function capGeometry(): THREE.BufferGeometry {
-  const body = new THREE.CylinderGeometry(0.15, 0.175, 0.07, 10);
-  const top = new THREE.CylinderGeometry(0.1, 0.1, 0.01, 10).translate(0, 0.038, 0);
-  const rim = new THREE.CylinderGeometry(0.14, 0.14, 0.012, 10).translate(0, 0.034, 0);
-  return merge([prep(body, 0x9aa0a6), prep(rim, 0xc8ced4), prep(top, 0xc0392b)]).rotateX(0.5);
-}
-
-/** Faceted golden gem: a six-sided crown over a pavilion. About 0.5 across. */
-function relicGeometry(): THREE.BufferGeometry {
-  const lower = new THREE.LatheGeometry(
-    [new THREE.Vector2(0.001, -0.26), new THREE.Vector2(0.26, 0.0)],
-    6,
-  );
-  const upper = new THREE.LatheGeometry(
-    [new THREE.Vector2(0.26, 0.0), new THREE.Vector2(0.17, 0.12), new THREE.Vector2(0.001, 0.14)],
-    6,
-  );
-  return merge([prep(lower, 0xe6a50c), prep(upper, 0xfff08a)]);
-}
-
-function buildGeometry(kind: CollectibleKind): THREE.BufferGeometry {
-  if (kind === 'crumb') return crumbGeometry();
-  if (kind === 'cap') return capGeometry();
-  return relicGeometry();
-}
+/** How each kind carries itself: how fast it turns, how wide its shadow is, how often and how big it twinkles, and the colour of its sparks. */
+export const ITEM_LOOK: Record<CollectibleKind, { scale: number; turn: number; shadow: number; twinkleEvery: number; twinkle: number; reach: number; sparks: number; sparkCount: number }> = {
+  crumb: { scale: 1, turn: 1.8, shadow: 0.42, twinkleEvery: 5.5, twinkle: 0.11, reach: 0.16, sparks: 0xffe680, sparkCount: 5 },
+  cap: { scale: 1, turn: 3.2, shadow: 0.36, twinkleEvery: 2.6, twinkle: 0.16, reach: 0.15, sparks: 0xf0f6ff, sparkCount: 7 },
+  relic: { scale: 1.15, turn: 1.3, shadow: 0.6, twinkleEvery: 1.7, twinkle: 0.24, reach: 0.3, sparks: 0xfff0a0, sparkCount: 12 },
+};
 
 interface Entry {
   def: CollectibleDef;
   root: THREE.Group; // position and scale
   spin: THREE.Mesh; // rotates about Y
+  ring: THREE.Mesh | null; // the relic's ring, turning the other way
+  shadow: THREE.Mesh | null; // on the floor under it, if there is floor near enough
+  twinkle: THREE.Mesh;
   phase: number;
   pop: number; // -1 when idle, otherwise seconds into the pop
 }
 
+export interface ItemDressing {
+  /** The height of the floor under a point, or null if there is none near below it. Without this there are no shadows. */
+  floorAt?: (x: number, y: number, z: number) => number | null;
+}
+
 export class CollectibleVisuals {
   readonly group = new THREE.Group();
+  readonly sparks = new Sparks();
   private readonly entries = new Map<string, Entry>();
   private readonly tracker: CollectibleTracker;
   private readonly geometries: Record<CollectibleKind, THREE.BufferGeometry>;
-  private readonly material = createPs1Material();
+  private readonly material = itemMaterial();
   /** Items this returns true for are not drawn (still inside a crate). */
   hidden: ((def: CollectibleDef) => boolean) | null = null;
 
-  constructor(level: LevelDef, tracker: CollectibleTracker) {
+  constructor(level: LevelDef, tracker: CollectibleTracker, dressing: ItemDressing = {}) {
     this.tracker = tracker;
     this.group.name = `collectibles:${level.id}`;
     // One geometry per kind, shared by all items of that kind.
-    this.geometries = { crumb: buildGeometry('crumb'), cap: buildGeometry('cap'), relic: buildGeometry('relic') };
+    this.geometries = { crumb: crumbGeometry(), cap: capGeometry(), relic: relicGeometry() };
+    const ringGeo = relicRingGeometry();
+    const shadowGeo = shadowGeometry();
+    const shadowMat = shadowMaterial();
+    const twinkleGeo = twinkleGeometry();
+    const twinkleMat = glowMaterial(0xffffff);
+    this.group.add(this.sparks.group);
 
     level.items.forEach((def, index) => {
+      const look = ITEM_LOOK[def.kind];
       const root = new THREE.Group();
       root.position.set(def.x, def.y, def.z);
       const spin = new THREE.Mesh(this.geometries[def.kind], this.material);
-      if (def.kind === 'relic') spin.scale.setScalar(1.15);
+      spin.scale.setScalar(look.scale);
       root.add(spin);
+      let ring: THREE.Mesh | null = null;
+      if (def.kind === 'relic') {
+        ring = new THREE.Mesh(ringGeo, this.material);
+        ring.scale.setScalar(look.scale);
+        root.add(ring);
+      }
+      const twinkle = new THREE.Mesh(twinkleGeo, twinkleMat);
+      twinkle.visible = false;
+      root.add(twinkle);
+      let shadow: THREE.Mesh | null = null;
+      const floor = dressing.floorAt?.(def.x, def.y, def.z) ?? null;
+      if (floor !== null) {
+        shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.position.set(def.x, floor + 0.025, def.z);
+        shadow.scale.setScalar(look.shadow);
+        this.group.add(shadow);
+      }
       root.visible = !tracker.isCollected(def.id);
+      if (shadow) shadow.visible = root.visible;
       this.group.add(root);
-      this.entries.set(def.id, { def, root, spin, phase: index * 1.7, pop: -1 });
+      this.entries.set(def.id, { def, root, spin, ring, shadow, twinkle, phase: index * 1.7, pop: -1 });
     });
   }
 
-  /** Starts the pickup pop for items the tracker just reported. */
+  /** How many of the level's items have a shadow on the floor under them. */
+  get shadowCount(): number {
+    let n = 0;
+    for (const e of this.entries.values()) if (e.shadow) n++;
+    return n;
+  }
+
+  /** Starts the pickup pop for items the tracker just reported: a swell, and a burst of sparks. */
   collected(defs: CollectibleDef[]): void {
     for (const def of defs) {
       const e = this.entries.get(def.id);
-      if (e && e.pop < 0) e.pop = 0;
+      if (!e || e.pop >= 0) continue;
+      e.pop = 0;
+      const look = ITEM_LOOK[def.kind];
+      this.sparks.burst(e.root.position.x, e.root.position.y, e.root.position.z, look.sparks, look.sparkCount, def.kind === 'relic' ? 3 : 2.2, def.kind === 'relic' ? 0.22 : 0.15);
     }
   }
 
-  update(dt: number, time: number): void {
+  /** `face`: the camera's turn, so twinkles and sparks are seen flat-on. */
+  update(dt: number, time: number, face?: THREE.Quaternion): void {
+    this.sparks.update(dt, face);
     for (const e of this.entries.values()) {
+      const look = ITEM_LOOK[e.def.kind];
       if (e.pop >= 0) {
         e.pop += dt;
         const k = Math.min(1, e.pop / POP_TIME);
         e.root.scale.setScalar(1 + (POP_SCALE - 1) * k);
         e.root.position.y = e.def.y + POP_RISE * k;
         e.spin.rotation.y += dt * 12;
+        e.twinkle.visible = false;
+        if (e.shadow) e.shadow.visible = false;
         if (k >= 1) {
           e.pop = -1;
           e.root.visible = false;
@@ -168,10 +143,28 @@ export class CollectibleVisuals {
       // Idle: follow the tracker, so a reset brings items back.
       const show = !this.tracker.isCollected(e.def.id) && !this.hidden?.(e.def);
       e.root.visible = show;
+      if (e.shadow) e.shadow.visible = show;
       if (!show) continue;
+      const bob = Math.sin(time * 2 + e.phase) * 0.06;
       e.root.scale.setScalar(1);
-      e.root.position.y = e.def.y + Math.sin(time * 2 + e.phase) * 0.06;
-      e.spin.rotation.y = time * (e.def.kind === 'relic' ? 1.4 : 1.8) + e.phase;
+      e.root.position.y = e.def.y + bob;
+      e.spin.rotation.y = time * look.turn + e.phase;
+      if (e.ring) e.ring.rotation.set(1.15 + 0.25 * Math.sin(time * 0.9 + e.phase), -time * 1.9 - e.phase, 0);
+      // The shadow tightens a little as the thing rises over it.
+      if (e.shadow) e.shadow.scale.setScalar(look.shadow * (1 - bob * 1.5));
+      // A twinkle: every few seconds a star snaps open on it and shuts, each time somewhere else on it.
+      const cycle = (time + e.phase * 0.61) / look.twinkleEvery;
+      const n = Math.floor(cycle);
+      const t = ((cycle - n) * look.twinkleEvery) / 0.38;
+      const size = twinkleSize(t) * look.twinkle;
+      e.twinkle.visible = size > 0.005;
+      if (e.twinkle.visible) {
+        const a = n * 2.4 + e.phase;
+        e.twinkle.position.set(Math.cos(a) * look.reach, Math.sin(a * 1.7) * look.reach * 0.8 + 0.03, Math.sin(a) * look.reach);
+        e.twinkle.scale.setScalar(size);
+        if (face) e.twinkle.quaternion.copy(face);
+        e.twinkle.rotateZ(t * 0.9);
+      }
     }
   }
 }
