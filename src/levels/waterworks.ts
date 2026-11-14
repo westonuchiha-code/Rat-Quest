@@ -1,6 +1,7 @@
 /**
  * The Waterworks: one huge hall. A wide channel of green sludge runs down the middle with a tower island in it,
- * a high plank bridge crosses over, galleries line the walls, and a raised plateau at the far end holds the exit.
+ * a high plank bridge runs from the tower's top to a loft on the east wall, galleries line the walls, and a raised
+ * plateau at the far end holds the exit.
  * It is long (100 units) and wide (76), so there is room to choose a route.
  *
  * Layout, looking north from the start (z runs from +50 at the start to -50 at the exit):
@@ -19,6 +20,10 @@ const WALL = 17;
 const POOL_Y = -0.85;
 const PLATEAU = 2.4;
 const GALLERY = 1.8;
+/** The top of the pump tower, and of the bridge and loft that go with it. */
+const TOWER = 8;
+const BRIDGE_Z = 0.5;
+const LOFT_X = 32;
 
 export function waterworks(): LevelDef {
   const solids = room(HX, false, HZ, WALL);
@@ -38,13 +43,10 @@ export function waterworks(): LevelDef {
     solids.push(slab('stone', x0, x0 + 8, -18, 19.2, GALLERY));
     solids.push(...stairs(x0, x0 + 8, 24, -1, 6, 0.3, 0.8, 0, 0));
   }
-  // The high bridge from gallery to gallery, held up by two pillars standing in the channel.
-  solids.push(slab('plank', -HX + 8, HX - 8, 12, 14, GALLERY, GALLERY - 0.3));
-  solids.push(extent('pillar', -13, -11, -4, GALLERY - 0.3, 12.5, 13.5), extent('pillar', 11, 13, -4, GALLERY - 0.3, 12.5, 13.5));
 
   // The island in the channel, with the pump tower and steps spiralling up it.
   solids.push(slab('stone', -9, 9, -8, 8, 0, -4));
-  solids.push(extent('pillar', -1.5, 1.5, 0, 8, -1.5, 1.5));
+  solids.push(extent('pillar', -1.5, 1.5, 0, TOWER, -1.5, 1.5));
   const steps: Array<[number, number, number]> = [];
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2 + 0.6;
@@ -53,6 +55,14 @@ export function waterworks(): LevelDef {
     steps.push([x, z, 1.2 * (i + 1)]);
     solids.push(slab('platform', x - 1.2, x + 1.2, z - 1.2, z + 1.2, 1.2 * (i + 1)));
   }
+  // The high bridge: from the top of the pump tower to the valve loft high on the east wall. It is the only road to the
+  // loft (too high to jump to from the gallery under it), and it is far enough overhead that nobody below bumps his head
+  // on it. It starts a little north of the tower's last step, so the jump from that step to the top is clear too.
+  solids.push(slab('plank', 1.5, LOFT_X, BRIDGE_Z - 1, BRIDGE_Z + 1, TOWER, TOWER - 0.3));
+  solids.push(slab('stone', LOFT_X, HX, -3, 4, TOWER, TOWER - 0.3));
+  // Two posts hold it up: one on the island, one on the east promenade (neither stands in a way across).
+  solids.push(extent('pillar', 6, 7.2, 0, TOWER - 0.3, BRIDGE_Z - 0.6, BRIDGE_Z + 0.6), extent('pillar', 25, 26.2, 0, TOWER - 0.3, BRIDGE_Z - 0.6, BRIDGE_Z + 0.6));
+
   // Ways onto the island: a plank from the west promenade, slabs from the east, hops from the south, a plank north.
   solids.push(slab('plank', -22, -9, -1, 1, 0, -0.3));
   const eastSlabs: Array<[number, number]> = [[11, 14], [15.5, 18.5]];
@@ -83,13 +93,13 @@ export function waterworks(): LevelDef {
   // Caps: a gallery each, the middle of the high bridge, and two in crates.
   items.add('cap', -34, GALLERY + ITEM_Y, 6);
   items.add('cap', 34, GALLERY + ITEM_Y, -6);
-  items.add('cap', 0, GALLERY + ITEM_Y, 13);
+  items.add('cap', 16, TOWER + ITEM_Y, BRIDGE_Z);
   contents[idx(1)] = items.add('cap', crateSpots[1][0], crateSpots[1][2] + ITEM_Y, crateSpots[1][1], idx(1));
   contents[idx(6)] = items.add('cap', crateSpots[6][0], crateSpots[6][2] + ITEM_Y, crateSpots[6][1], idx(6));
   items.add('cap', 36, GALLERY + ITEM_Y, 17);
-  // Relics: on top of the tower, at the far end of the east gallery, and in a plateau crate.
-  items.add('relic', 0, 8 + 0.7, 0);
-  items.add('relic', 36, GALLERY + 0.8, -16);
+  // Relics: on top of the tower, on the valve loft at the far end of the high bridge, and in a plateau crate.
+  items.add('relic', 0, TOWER + 0.7, 0);
+  items.add('relic', 35.5, TOWER + 0.8, BRIDGE_Z);
   contents[idx(5)] = items.add('relic', crateSpots[5][0], crateSpots[5][2] + ITEM_Y, crateSpots[5][1], idx(5));
 
   // Guards. The ones on the galleries and the plateau stand on raised floors.

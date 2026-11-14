@@ -2815,6 +2815,9 @@ function startGame(): void {
     bossDraw(time);
     chamber.updateLights(time, fly.open ? camera.position : renderPos);
     debris.update(frameDt);
+    // Each board knocks as it lands (one knock a frame at most; more boards at once make it a little louder).
+    const knocks = debris.takeKnocks();
+    if (knocks) audio.play('plank', { vol: Math.min(0.5, 0.2 + 0.07 * knocks), rate: roll(0.78, 1.4), priority: 3 });
     motes.update(frameDt, time, renderPos);
     pickups.update(frameDt, time);
     drops.update(frameDt, time);

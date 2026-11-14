@@ -54,7 +54,8 @@ export function cisternWorks(): LevelDef {
       lines: [
         'Chirp! The Waterworks. The whole Cistern drains through here.',
         'You can swim the channel, but the slabs and planks are quicker. Jump while you swim to hop out.',
-        'There are steps right up the pump tower in the middle. Guards on the galleries, and more on the plateau.',
+        'There are steps right up the pump tower in the middle, and from its top a bridge to the loft on the east wall.',
+        'Guards on the galleries, and more on the plateau.',
       ],
     }],
     storySpots: undefined,

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { CombatEvents, resolveCombat } from '../src/combat/combat';
 import { Debris } from '../src/world/debris';
+import { sfx } from '../src/audio/synth';
 import { buildChamber } from '../src/world/chamber';
 
 const DT = 1 / 60;
@@ -48,23 +49,73 @@ check('a crate cannot be broken twice', (() => {
   return !e2.cratesBroken.includes(crate);
 })());
 
-// Debris: flies, lands above the floor, then vanishes.
+// Debris: the crate comes apart into its own boards, which fly, knock on the floor, lie flat, then vanish.
 const scene = new THREE.Group();
 const debris = new Debris(scene, () => 0);
 debris.burst(crate.x, crate.y, crate.z, crate.half, p.position.x, p.position.z);
 check('breaking throws out pieces', debris.count >= 8 && scene.children.length === debris.count, `n=${debris.count}`);
+{
+  // Where each piece starts: on the crate it came from, not scattered about.
+  const far = scene.children.map((c) => Math.max(Math.abs(c.position.x - crate.x), Math.abs(c.position.y - crate.y), Math.abs(c.position.z - crate.z)));
+  check('every piece starts on the crate it came from', Math.max(...far) <= crate.half * 1.02, `furthest ${Math.max(...far).toFixed(2)} of ${crate.half}`);
+  // What each board shows: one strip of the crate's picture (a frame board or a plank), never a tiny whole crate.
+  const boards = (scene.children as THREE.Mesh[]).filter((m) => m.geometry.attributes.uv && (m.material as THREE.ShaderMaterial).uniforms.tex.value.image.width === 64);
+  let widest = 0;
+  for (const m of boards) {
+    const uv = m.geometry.attributes.uv;
+    let v0 = 1; let v1 = 0;
+    const nrm = m.geometry.attributes.normal;
+    // (Its broad faces; the snapped ends show bare wood from elsewhere in the picture.)
+    for (let i = 0; i < uv.count; i++) if (Math.abs(nrm.getY(i)) > 0.7) { v0 = Math.min(v0, uv.getY(i)); v1 = Math.max(v1, uv.getY(i)); }
+    widest = Math.max(widest, v1 - v0);
+  }
+  check('each board shows one strip of the crate, not a little whole crate', boards.length >= 12 && widest <= 0.3, `${boards.length} boards, tallest strip ${widest.toFixed(2)} of the picture`);
+  const lens = boards.map((m) => { m.geometry.computeBoundingBox(); const b = m.geometry.boundingBox!; return b.max.x - b.min.x; });
+  check('the boards are of several lengths, long frame boards among them', Math.max(...lens) > 0.85 && Math.min(...lens) < 0.45, `${Math.min(...lens).toFixed(2)}..${Math.max(...lens).toFixed(2)}`);
+}
 let t = 0;
 let lowest = Infinity;
+let dipped = Infinity;
+let knocks = 0;
+const box = new THREE.Box3();
 for (; t < 2.5; t += DT) {
   debris.update(DT);
-  for (const c of scene.children) lowest = Math.min(lowest, c.position.y);
+  knocks += debris.takeKnocks();
+  scene.updateMatrixWorld(true);
+  for (const c of scene.children) {
+    lowest = Math.min(lowest, c.position.y);
+    dipped = Math.min(dipped, box.setFromObject(c, true).min.y);
+  }
 }
 check('pieces never sink into the floor', lowest >= 0.01, `lowest=${lowest.toFixed(3)}`);
+check('...and no end of a tumbling board dips under it either', dipped >= -0.02, `lowest corner ${dipped.toFixed(3)}`);
 const rested = scene.children.every((c) => Math.abs(c.position.y - 0.04) < 0.1);
 check('pieces lie flat on the floor', rested);
+check('each board knocks once as it lands', knocks >= 12 && knocks <= scene.children.length, `${knocks} knocks from ${scene.children.length} boards`);
 check('they are still there after 2.5 s', debris.count > 0);
+check('the splinters are gone by then, the boards are not', debris.count < 20);
 for (; t < 5.4; t += DT) debris.update(DT);
 check('and are all gone after 5 s', debris.count === 0 && scene.children.length === 0, `left=${debris.count}`);
+{
+  // A barrel comes apart into staves, hoops and the two halves of its lid.
+  debris.burst(0, 0.6, 0, 0.5, 2, 0, 'barrel');
+  const n = debris.count;
+  let low = Infinity;
+  for (let k = 0; k < 150; k++) {
+    debris.update(DT);
+    scene.updateMatrixWorld(true);
+    for (const c of scene.children) low = Math.min(low, box.setFromObject(c, true).min.y);
+  }
+  check('a barrel bursts into staves, hoops and lid, and they stay above the floor too', n >= 14 && low >= -0.02, `${n} pieces, lowest corner ${low.toFixed(3)}`);
+  debris.clear();
+}
+{
+  // The sound: a crate smash used to be the quietest sound in the game, lost under the sword's own hit.
+  const rms = (name: Parameters<typeof sfx>[0]): number => { const d = sfx(name).data; let q = 0; for (const v of d) q += v * v; return Math.sqrt(q / d.length); };
+  check('a crate breaking is louder than the blow that broke it', rms('crate') > rms('hit') * 1.3 && rms('barrel') > rms('hit') * 1.3, `crate ${rms('crate').toFixed(2)}, barrel ${rms('barrel').toFixed(2)}, hit ${rms('hit').toFixed(2)}`);
+  check('...without being flattened into a buzz', rms('crate') < 0.32 && rms('barrel') < 0.34);
+  check('a landing board has its own short knock', sfx('plank').data.length / sfx('plank').rate < 0.2);
+}
 
 // A plunge landing next to a crate breaks it.
 const c2 = chamber.crates.find((c) => c.alive && c !== crate);

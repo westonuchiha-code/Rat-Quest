@@ -14,6 +14,7 @@ import type { Box, Decor, MoverSpec } from '../src/world/layout';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { pinnedUnder } from '../src/world/crush';
 import { TUNING } from '../src/data/tuning';
+import { computeReach } from '../src/levels/reach';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -265,6 +266,35 @@ const solid = (kind: Box['kind'], x0: number, x1: number, y0: number, y1: number
   check('the tunnel a rat came in by has one bar broken off short: room at the bottom for a rat', !blocked && whole && tunnel.bars.length >= 4);
   const holes = LEVELS.flatMap((l) => (l.decor ?? []).filter((d) => d.kind === 'hole'));
   check('(every drain in the worlds is drawn this way)', holes.length >= 2, `${holes.length} drains`);
+}
+
+// ---- The Waterworks' high bridge ----
+// It used to cross gallery to gallery, low over the hop slabs: he bumped his head on it jumping them, and never needed
+// it (the galleries have stairs, and the channel can be swum). Now it starts from the top of the pump tower and is the
+// one road to the loft on the east wall.
+{
+  const works = LEVELS.find((l) => l.id === 'works')!;
+  const bridge = works.solids.filter((b) => b.kind === 'plank').reduce((a, b) => (b.y1 > a.y1 ? b : a));
+  const J = TUNING.jump;
+  const head = (J.velocity ** 2 + J.doubleVelocity ** 2) / (2 * TUNING.physics.gravity) + TUNING.rat.height;
+  const over = (a: Box, b: Box): boolean => a.x0 < b.x1 - 0.01 && a.x1 > b.x0 + 0.01 && a.z0 < b.z1 - 0.01 && a.z1 > b.z0 + 0.01;
+  // Everything he can stand on with something over it: how much room there is, against how high his head goes.
+  let tightest = Infinity;
+  let where = '';
+  for (const floor of works.solids) {
+    for (const roof of works.solids) {
+      if (roof === floor || !over(floor, roof) || roof.y0 < floor.y1 + TUNING.rat.height) continue; // (resting on it, or no room to stand at all)
+      const room = roof.y0 - floor.y1;
+      if (room < tightest) { tightest = room; where = `${roof.kind} over ${floor.kind} at ${((Math.max(floor.x0, roof.x0) + Math.min(floor.x1, roof.x1)) / 2).toFixed(0)}, ${((Math.max(floor.z0, roof.z0) + Math.min(floor.z1, roof.z1)) / 2).toFixed(0)}`; }
+    }
+  }
+  check('in the Waterworks nothing hangs low enough over a place he can stand to stop a jump, a double jump included', tightest > head, `the least room is ${tightest.toFixed(2)} (${where}); his head reaches ${head.toFixed(2)}`);
+  check('the high bridge starts at the top of the pump tower', Math.abs(bridge.y1 - 8) < 1e-6 && Math.abs(bridge.x0 - 1.5) < 1e-6, `top ${bridge.y1}, from x ${bridge.x0} to ${bridge.x1}`);
+  const relic = works.collectibles.find((c) => c.kind === 'relic' && c.y > bridge.y1)!;
+  const cap = works.collectibles.find((c) => c.kind === 'cap' && c.y > bridge.y1)!;
+  const there = (def: typeof works): boolean => computeReach(def).near(relic.x, bridge.y1, relic.z, 1.2, 0.6, 0.6);
+  check('it leads to a relic on the loft, with a cap on the way', !!relic && !!cap && cap.x > bridge.x0 && cap.x < bridge.x1 && there(works));
+  check('...and it is the only road there: with the bridge gone, the loft cannot be reached', !there({ ...works, solids: works.solids.filter((b) => b !== bridge) }));
 }
 
 console.log(failures === 0 ? '\nall passed' : `\n${failures} FAILED`);

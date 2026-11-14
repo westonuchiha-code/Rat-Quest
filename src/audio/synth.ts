@@ -91,6 +91,10 @@ function draw(seconds: number, rate: number, seed: number, gen: (c: Ctx) => Gen,
   return { data, rate, loop: !!opts.loop };
 }
 
+/** How hard the crate and barrel smashes are pushed into soft clipping: enough to sound heavy, not enough to buzz. */
+const DRIVE_C = 0.035;
+const DRIVE_B = 0.035;
+
 /** An amplitude envelope: quick attack, then an exponential fall. */
 const decay = (t: number, len: number, attack = 0.004): number => Math.min(1, t / attack) * Math.exp((-5 * t) / len);
 /** The same shape but a smooth rise and fall over the whole length (for swells). */
@@ -116,7 +120,7 @@ function knock(hz: number, rate: number, ring: number): (x: number) => number {
 
 export const SFX_NAMES = [
   'jump', 'doubleJump', 'land', 'step', 'swing', 'dodge', 'hit', 'kill', 'hurt', 'block',
-  'crate', 'barrel', 'pipe', 'crumb', 'cap', 'relic', 'item', 'heal', 'splash', 'plunge', 'shock',
+  'crate', 'barrel', 'plank', 'pipe', 'crumb', 'cap', 'relic', 'item', 'heal', 'splash', 'plunge', 'shock',
   'spit', 'splat', 'toadWind', 'croak', 'roachWind', 'lunge',
   'menuMove', 'menuOk', 'menuBack', 'talk', 'rumble', 'sparkle', 'doorOpen', 'clear', 'gate', 'drip',
   'water', 'gush',
@@ -210,19 +214,49 @@ const RECIPES: Record<SfxName, () => Sample> = {
   hurt: () => draw(0.32, RATE_HI, 9, (c) => (t) => (saw(c.osc(0, 540 - 350 * (t / 0.32))) * 0.55 + sq(c.osc(2, 270 - 175 * (t / 0.32)), 0.3) * 0.3 + (c.r() * 2 - 1) * 0.3) * decay(t, 0.25) + sine(c.osc(1, 120 * Math.exp(-10 * t) + 50)) * Math.exp(-t * 18) * 0.8),
   // A blow caught on the shield: a hard clank and a ring of out-of-tune partials, like struck iron.
   block: () => draw(0.42, RATE_HI, 10, (c) => (t) => ((c.r() * 2 - 1) * Math.exp(-t * 110) * 1.1 + sine(c.osc(0, 873)) * 0.42 * Math.exp(-t * 9) + sine(c.osc(1, 1397)) * 0.3 * Math.exp(-t * 12) + sine(c.osc(2, 2318)) * 0.22 * Math.exp(-t * 17) + sq(c.osc(3, 3105), 0.5) * 0.08 * Math.exp(-t * 26) + sine(c.osc(4, 140 * Math.exp(-14 * t) + 60)) * 0.6 * Math.exp(-t * 24)) * Math.min(1, t / 0.001) * Math.min(1, (0.42 - t) / 0.05)),
-  // A crate breaking: a woody crack, planks knocking as they fall, and splinters.
-  crate: () => draw(0.42, RATE_HI, 11, (c) => {
-    const wood = knock(310, RATE_HI, 0.985);
-    const plank = knock(520, RATE_HI, 0.975);
-    const hits = [0, 0.045, 0.1, 0.17, 0.26];
+  // A crate smashed: a hard crack and a heavy low thump as it gives, the boards knocking against each other as they
+  // come apart (each knock is a burst of noise through a few wooden resonances), and a crackle of splinters after.
+  crate: () => draw(0.62, RATE_HI, 11, (c) => {
+    const body = [knock(170, RATE_HI, 0.9972), knock(265, RATE_HI, 0.9968), knock(430, RATE_HI, 0.996), knock(720, RATE_HI, 0.9945), knock(1180, RATE_HI, 0.991)];
+    // When each board knocks, how hard, and how long its burst of noise lasts.
+    const hits: Array<[number, number, number]> = [[0, 1, 0.012], [0.03, 0.8, 0.009], [0.065, 0.95, 0.011], [0.11, 0.8, 0.009], [0.165, 0.85, 0.01], [0.235, 0.7, 0.009], [0.31, 0.6, 0.008], [0.4, 0.42, 0.007]];
     return (t, i) => {
       let x = 0;
-      for (const h of hits) if (t >= h && t < h + 0.004) x += (c.r() * 2 - 1) * (1 - h * 2.4);
-      const splinter = (c.r() < 0.06 ? c.r() * 2 - 1 : 0) * Math.exp(-t * 9) * 0.9;
-      return (wood(x) * 14 + plank(i % 2 ? x : 0) * 9 + (c.r() * 2 - 1) * Math.exp(-t * 60) * 0.8 + c.lp(0, c.r() * 2 - 1, 0.3) * Math.exp(-t * 14) * 0.5 + splinter) * Math.min(1, (0.42 - t) / 0.05);
+      for (const [at, amp, len] of hits) if (t >= at && t < at + len) x += (c.r() * 2 - 1) * amp;
+      let wood = 0;
+      // The later knocks sit higher: small boards landing after the big ones.
+      for (let k = 0; k < body.length; k++) wood += body[k](k < 2 && t > 0.12 ? 0 : x) * [1.3, 1.2, 1, 0.8, 0.55][k];
+      const crack = (c.r() * 2 - 1) * Math.exp(-t * 75) * 0.6;
+      const thump = sine(c.osc(0, 125 * Math.exp(-9 * t) + 52)) * Math.exp(-t * 11) * 0.9;
+      const crunch = c.lp(0, c.r() * 2 - 1, 0.35) * Math.exp(-t * 6) * 0.6 * (0.5 + 0.5 * sq(c.osc(1, 34 + 20 * Math.sin(i * 0.002)), 0.4));
+      const splinter = (c.r() < 0.045 ? c.r() * 2 - 1 : 0) * Math.exp(-Math.max(0, t - 0.05) * 7) * 0.8;
+      return Math.tanh((wood * 110 + crack + thump + crunch * 1.6 + splinter) * DRIVE_C) * Math.min(1, (0.62 - t) / 0.06);
     };
-  }, { bits: 7 }),
-  barrel: () => draw(0.4, RATE_HI, 12, (c) => (t) => (sine(c.osc(0, 130 - 60 * t)) * Math.exp(-t * 14) + (c.r() < 0.05 ? c.r() * 2 - 1 : 0) * 1.5 * Math.exp(-t * 9) + c.lp(1, c.r() * 2 - 1, 0.25) * Math.exp(-t * 18)) * 0.8, { bits: 7 }),
+  }, { bits: 8 }),
+  // A barrel stove in: a hollow boom from its belly, the staves knocking apart, and the iron hoops ringing as they drop.
+  barrel: () => draw(0.6, RATE_HI, 12, (c) => {
+    const body = [knock(118, RATE_HI, 0.9978), knock(205, RATE_HI, 0.9972), knock(350, RATE_HI, 0.996), knock(610, RATE_HI, 0.993)];
+    const hits: Array<[number, number, number]> = [[0, 1, 0.014], [0.04, 0.8, 0.01], [0.09, 0.8, 0.009], [0.15, 0.7, 0.009], [0.24, 0.55, 0.008], [0.34, 0.4, 0.007]];
+    return (t) => {
+      let x = 0;
+      for (const [at, amp, len] of hits) if (t >= at && t < at + len) x += (c.r() * 2 - 1) * amp;
+      let wood = 0;
+      for (let k = 0; k < body.length; k++) wood += body[k](x) * [1.4, 1.2, 0.9, 0.6][k];
+      const boom = sine(c.osc(0, 96 * Math.exp(-6 * t) + 44)) * Math.exp(-t * 9) * 1.1;
+      const crack = (c.r() * 2 - 1) * Math.exp(-t * 70) * 0.8;
+      const wash = c.lp(0, c.r() * 2 - 1, 0.25) * Math.exp(-t * 11) * 0.5;
+      const hoop = t > 0.11 ? (sine(c.osc(1, 1730)) * 0.16 + sine(c.osc(2, 2590)) * 0.1) * Math.exp(-(t - 0.11) * 13) : 0;
+      return Math.tanh((wood * 110 + boom + crack * 0.7 + wash * 1.4 + hoop) * DRIVE_B) * Math.min(1, (0.6 - t) / 0.06);
+    };
+  }, { bits: 8 }),
+  // One board landing on the floor: a short dry knock.
+  plank: () => draw(0.13, RATE_HI, 111, (c) => {
+    const body = [knock(390, RATE_HI, 0.982), knock(860, RATE_HI, 0.972)];
+    return (t) => {
+      const x = t < 0.005 ? c.r() * 2 - 1 : 0;
+      return (body[0](x) * 30 + body[1](x) * 18 + (c.r() * 2 - 1) * Math.exp(-t * 160) * 0.4) * Math.min(1, (0.13 - t) / 0.03);
+    };
+  }),
   pipe: () => draw(0.7, RATE_HI, 13, (c) => (t) => (sq(c.osc(0, 330), 0.5) * 0.4 * Math.exp(-t * 11) + sq(c.osc(1, 713), 0.5) * 0.3 * Math.exp(-t * 14) + (c.r() * 2 - 1) * 0.5 * bell(t, 0.7)) * 0.9),
   // A cheese crumb: two quick bright notes with a glint an octave up.
   crumb: () => draw(0.16, RATE_HI, 14, (c) => (t) => (sq(c.osc(0, t < 0.05 ? 988 : 1319), 0.5) * 0.8 + tri(c.osc(1, t < 0.05 ? 1976 : 2637)) * 0.3) * decay(t < 0.05 ? t : t - 0.05, 0.11, 0.001)),

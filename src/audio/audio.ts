@@ -16,7 +16,7 @@ interface StorageLike {
 
 /** Sounds heard over and over get a slightly different pitch each time, so they never sound stamped out. Value: how far, as a fraction. */
 export const VARY: Partial<Record<SfxName, number>> = {
-  hit: 0.07, kill: 0.04, swing: 0.08, dodge: 0.06, hurt: 0.04, block: 0.05, crate: 0.09, barrel: 0.08, pipe: 0.05,
+  hit: 0.07, kill: 0.04, swing: 0.08, dodge: 0.06, hurt: 0.04, block: 0.05, crate: 0.09, barrel: 0.08, plank: 0.2, pipe: 0.05,
   cap: 0.03, splash: 0.08, splat: 0.1, spit: 0.08, croak: 0.1, lunge: 0.08, shock: 0.04, softStep: 0.12, cloth: 0.1, whoosh: 0.08,
 };
 /** A run of crumbs climbs a scale, one step per crumb, and starts again after a pause. */
