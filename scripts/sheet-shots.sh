@@ -34,5 +34,8 @@ for n in 8 9; do shot "close$n" "moves&only=$n&cam=-3.2,1.5,-1.2,0,0.75,0.9"; do
 shot grim "grim"; shot grim-a "grim&cam=-10.35,2.5,8.2,-10.35,1.95,0"; shot grim-b "grim&cam=-3.45,2.7,8.2,-3.45,2.15,0"; shot grim-c "grim&cam=3.45,2.6,8.2,3.45,2.0,0"; shot grim-d "grim&cam=10.35,2.4,8.2,10.35,1.75,0"; shot grim-face "grim&only=0&cam=1.1,2.75,2.1,0,2.5,0.2"; shot grim-side "grim&only=0&cam=5.5,2.0,0.3,0,1.9,0"; shot grim-back "grim&only=0&cam=-2.5,2.6,-4.6,0,1.8,0"; shot grim-front "grim&only=0&cam=0.6,2.0,5.2,0,1.85,0"
 shot faces "faces"
 shot items "items"; shot items-a "items&cam=-3.4,3.6,5.5,-3.4,0.9,-2.6"; shot items-b "items&cam=-3.4,3.2,-0.2,-3.4,1.0,-8.4"; shot items-small "items&cam=5.6,1.3,5.2,5.6,0.55,1.2"
+shot guard "guard"
+# Each thing the guard does, alone, from three sides (front, his spear side, behind): look at every one of these.
+for n in 0 1 2 3 4 5 6 7 8 9; do shot "guard$n-front" "guard&only=$n&cam=1.5,1.2,3.6,0,0.75,0.2"; shot "guard$n-side" "guard&only=$n&cam=-4,1.0,0.5,0,0.75,0.4"; shot "guard$n-back" "guard&only=$n&cam=-1.7,1.5,-3.4,0,0.75,0.2"; done
 for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
 ls "$OUT"

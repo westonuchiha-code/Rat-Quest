@@ -6,6 +6,7 @@
 import { TUNING } from '../data/tuning';
 import { TOAD } from '../enemies/toad';
 import { IRONBACK } from '../enemies/ironback';
+import { GUARD } from '../enemies/guard';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
 import { BALANCE } from '../data/balance';
@@ -91,6 +92,16 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Ironbacks', path: 'ironback.flipTime', label: 'Time on its back', min: 0.5, max: 6, step: 0.1 },
   { group: 'Ironbacks', path: 'ironback.buckAfter', label: 'Hits from behind before it bucks', min: 1, max: 6, step: 1 },
 
+  { group: 'Keep Guards', path: 'keepguard.hp', label: 'Health', min: 1, max: 12, step: 1, later: 'from the next level' },
+  { group: 'Keep Guards', path: 'keepguard.turnRate', label: 'Turn speed (lower: he can be run round)', min: 1, max: 9, step: 0.1 },
+  { group: 'Keep Guards', path: 'keepguard.blockArc', label: 'Shield width (each side of his front)', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'Keep Guards', path: 'keepguard.windup', label: 'Thrust warning time', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Keep Guards', path: 'keepguard.counterWindup', label: 'Warning time when he strikes back', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Keep Guards', path: 'keepguard.counterAfter', label: 'Blows on his shield before he strikes back', min: 1, max: 6, step: 1 },
+  { group: 'Keep Guards', path: 'keepguard.recover', label: 'Open after a thrust that missed', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Keep Guards', path: 'keepguard.brokenParry', label: 'Open after a perfect guard', min: 0.5, max: 6, step: 0.1 },
+  { group: 'Keep Guards', path: 'keepguard.damage', label: 'Thrust damage (hearts)', min: 0, max: 5, step: 1 },
+
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
   { group: 'Flitters', path: 'bat.hearQuiet', label: 'Hears sneaking from', min: 0, max: 8, step: 0.25 },
@@ -134,7 +145,7 @@ export const TWEAKS: TweakDef[] = [
 ];
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

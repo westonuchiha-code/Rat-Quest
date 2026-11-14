@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 58 test files and 1,463 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 59 test files and 1,509 checks, about 2 minutes. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -50,9 +50,9 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   - `npm run check:files`: plays through the save-file screen with the keyboard.
 - Model sheet (every pose of every beast and every character side by side; needs Chrome):
   `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
-  `ironback`, `bat`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
+  `ironback`, `bat`, `guard`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
   `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
-  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
+  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
   looks). On `#hero` and `#moves`, `&only=N` shows one figure and `&settle` lets its springs come to rest.
   `python3 scripts/contact.py <dir> move 5` joins the single-move pictures into one sheet.
 - Dev hashes:
@@ -70,7 +70,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 | | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 4 | Ironback behind the cellar gate. coalcellars: the Coal Bin secret (Cleaver) |
 | Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
 | | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 3 / 2 / 1 | webs: the Sleeper's Wedge secret (Moss Scarf). faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
-| Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Ironback in the courtyard, bats on chains over the battlements |
+| Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Two Keep Guards and an Ironback in the courtyard; a guard, and bats on chains, on the battlements |
 | | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
 
 - 45 wedges in all (41 until 2026-11-14; the four new ones are gear secrets and the door costs were NOT raised, so
@@ -82,6 +82,10 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   - Toad: spits, pounces.
   - **Ironback**: iron shell turns the sword (get behind it); rams; flipped by a wall, a perfect guard or a plunge.
   - **Flitter** (`bat`): roosts and wakes to footsteps but not sneaking; swoops; hittable only at the bottom of the swoop.
+  - **Keep Guard** (`guard`): a rat with a spear and a tall shield. His shield turns to face you too fast to run
+    round; a sword on it clanks and throws your arm back; two blows on it and he stabs back at once. Open after a
+    thrust that missed or was blocked, when a perfect guard or a plunge has knocked his shield wide, or before he
+    has seen you. Three stand in the Keep (two at the courtyard gate, one on the battlements).
   - Grimsqueak (boss).
   - A director makes them take turns.
 - **Gear:** each item has real effects (`GearFx` in `src/data/equipment.ts`). Gear secrets, proven in
@@ -156,7 +160,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 ## Not tested on real hardware
 - Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
   real app id or on a Deck.
-- Feel: no human has played the latest combat numbers, the Ironback or the Flitter. Tuning sliders exist for all of them.
+- Feel: no human has played the latest combat numbers, the Ironback, the Flitter or the Keep Guard. Tuning sliders exist for all of them.
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What the owner wants next (his own list, 2026-11-14)
@@ -173,10 +177,15 @@ He gave this list himself; work through it, do not ask about it again:
 3. **Redo every collectible's model and look.** Done 2026-11-14 for the crumb, cap, relic, Golden Wedge and nacho can
    (`src/world/itemModels.ts`; see HANDOFF). Not touched: gear pickups (they are the hero's own helmet and scarf
    models, and only old levels have them) and the story's keepsakes. The owner has not seen them yet.
-4. **A few more enemies** (ideas offered: spider, leech, guard rat, firefly bomber, mole; none picked).
+4. **A few more enemies.** IN PROGRESS. First one built 2026-11-14: the **Keep Guard** (see HANDOFF). The owner saw
+   an early sheet picture of him with the spear standing up through his own head and was rightly angry: the fight
+   tests all passed because none of them looked at the model. So for every new creature: look at EVERY state, alone
+   and large, from three sides (`bash scripts/sheet-shots.sh out 0 guard` does this for him), and give it a looks
+   check in tests/models.ts before saying it is done. Not built yet (pick one, do not ask): a spider for the
+   Hollows, a firefly bomber for the Foundry, a leech, a mole.
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
    Hollows; none picked).
 
-Also open (the owner asked for the first to be kept on the list, 2026-11-14): the plunge wind-up pose (he holds the
-sword at about face height; it should be raised clearly overhead, point down); raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
-playtest the Ironback and Flitter.
+Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
+playtest the Ironback, Flitter and Keep Guard. (The plunge wind-up the owner asked about is done: the sword is raised
+over his head, blade up, before he dives.)

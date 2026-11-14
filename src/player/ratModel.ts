@@ -237,7 +237,7 @@ export interface RatAnimInput {
   kickProgress?: number;
   onWall?: boolean;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
-  act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number };
+  act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
 
 /** Story gestures: only the listed parts move, the rest of the pose carries on underneath. */
@@ -268,11 +268,12 @@ const GESTURES: Record<Gesture, Partial<Pose>> = {
   cheer: { armS: [-2.7, 0, -0.5], elbowS: -0.2, armH: [-2.7, 0, 0.5], elbowH: -0.2, hipPos: [0, 0.03, 0], chest: [-0.12, 0, 0], ears: -0.2 },
 };
 
-function mixGesture(p: Pose, g: Partial<Pose>, w: number): void {
-  const k = Math.min(1, Math.max(0, w));
+function mixGesture(p: Pose, g: Partial<Pose>, w: number, each?: Partial<Record<keyof Pose, number>>): void {
   for (const key of POSE_KEYS) {
     const to = g[key];
     if (to === undefined) continue;
+    const k = Math.min(1, Math.max(0, w * (each?.[key] ?? 1)));
+    if (k <= 0) continue;
     const cur = p[key];
     if (typeof to === 'number') (p[key] as number) = (cur as number) + (to - (cur as number)) * k;
     else for (let i = 0; i < 3; i++) (cur as number[])[i] += (to[i] - (cur as number[])[i]) * k;
@@ -652,8 +653,46 @@ export class RatModel {
 
   /** Adds a color on top of the whole model, for hit flashes. */
   setFlash(r: number, g: number, b: number): void {
-    (material.uniforms.flash.value as THREE.Color).setRGB(r, g, b);
-    (materialTwoSided.uniforms.flash.value as THREE.Color).setRGB(r, g, b);
+    (this.mat.uniforms.flash.value as THREE.Color).setRGB(r, g, b);
+    (this.matTwo.uniforms.flash.value as THREE.Color).setRGB(r, g, b);
+  }
+
+  private mat: THREE.ShaderMaterial = material;
+  private matTwo: THREE.ShaderMaterial = materialTwoSided;
+
+  /**
+   * Gives this rat materials of his own, so that flashing him does not flash every other rat built from this model
+   * (they all share one pair otherwise). For enemies made from it. Call it again after changing his helmet.
+   */
+  ownMaterials(): void {
+    if (this.mat === material) {
+      this.mat = createPs1Material({ lit: true });
+      this.matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide });
+    }
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      if (m.material === material) m.material = this.mat;
+      else if (m.material === materialTwoSided) m.material = this.matTwo;
+    });
+  }
+
+  /**
+   * Puts something else in his sword hand in place of the sword (a spear, say), or gives the sword back with null.
+   * It is built pointing along +Z from the grip, as the blade is.
+   */
+  setWeapon(obj: THREE.Object3D | null): void {
+    if (this.weapon) this.sword.remove(this.weapon);
+    this.weapon = obj;
+    for (const c of this.sword.children) if (c !== this.bladeBase && c !== this.bladeTip) c.visible = !obj;
+    if (obj) this.sword.add(obj);
+  }
+
+  private weapon: THREE.Object3D | null = null;
+
+  /** Makes his shield bigger or smaller (1 is the knight's). */
+  setShieldScale(k: number): void {
+    this.shieldPivot.scale.setScalar(k);
   }
 
   update(dt: number, ctx: RatAnimInput): void {
@@ -804,6 +843,7 @@ export class RatModel {
       pose.head[0] += ctx.act.headPitch;
       pose.chest[1] += ctx.act.headYaw * 0.28;
       if (ctx.act.gesture && ctx.act.weight > 0) mixGesture(pose, GESTURES[ctx.act.gesture], ctx.act.weight);
+      if (ctx.act.pose && ctx.act.weight > 0) mixGesture(pose, ctx.act.pose, ctx.act.weight, ctx.act.each);
     }
 
     // Springs. Legs are stiffer and never overshoot, so the feet stay where they are put.

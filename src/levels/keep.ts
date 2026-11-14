@@ -66,7 +66,8 @@ const keepArea: CustomLevel = {
     box('platform', -4, 26, 4, 28, WALL, { bottom: 3.5 }),
     box('gate', -4, 26, 4, 28, 0, { props: { opens: 'plates' } }),
     at('plate', -30, 36), at('plate', 30, 36),
-    at('roach', -16, 36), at('roach', 16, 36),
+    // Two of the king's guards stand either side of the gate, facing whoever comes up the courtyard.
+    at('guard', -8, 31, 0, { dir: 's' }), at('guard', 8, 31, 0, { dir: 's' }),
     // An ironback guards the west plate. The gatehouse wall is right behind it: let it ram that.
     at('beetle', -30, 31),
     at('crate', -40, 44, 0, { props: { item: 'cap' } }), at('crate', -41, 44), at('crate', -40, 44, 1), at('barrel', 40, 44), at('barrel', 41, 43, 0, { props: { item: 'crumb' } }),
@@ -91,7 +92,8 @@ const keepArea: CustomLevel = {
     // ---- West: the battlements, and the slider out to the Engine Stack ----
     box('platform', BATTLEMENTS.x0, BATTLEMENTS.z0, BATTLEMENTS.x1, BATTLEMENTS.z1, WALL, { bottom: DEEP }),
     ...[-32, -24, -18, -6, 2, 10].map((z) => box('wall', -38.8, z, -38, z + 2, WALL + 1.4, { bottom: WALL })),
-    at('roach', -43, -26, WALL), at('roach', -43, 4, WALL), at('toad', -44, -10, WALL),
+    // On the wall walk: a roach, a toad, and a guard holding the south end (there is little room to step round him).
+    at('roach', -43, -26, WALL), at('guard', -43, 4, WALL, { dir: 'n' }), at('toad', -44, -10, WALL),
     // Flitters hang from chains over the walk.
     at('bat', -43, -17, WALL, { props: { perch: 'chain' } }), at('bat', -43, 9, WALL, { props: { perch: 'chain' } }),
     box('lift', -38, -13, -35, -10, WALL, { props: { move: 'e', travel: 26, speed: 2.2, pause: 1.5 } }),

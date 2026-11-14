@@ -483,16 +483,17 @@ export const WALL_KICK: Pose = fullPose({
 });
 
 export const PLUNGE_WIND: Pose = fullPose({
-  // Hanging in the air for a beat: back arched, knees tucked, the sword held high in both paws with its point down.
+  // Hanging in the air for a beat: back arched, knees tucked, the sword thrown up as high as his arm goes, blade up over
+  // his head and tipped back, ready to be driven down. His shield arm is flung out to the side for balance.
   hipPos: [0, 0.03, 0],
-  hips: [-0.15, 0, 0],
-  chest: [-0.3, 0, 0],
-  head: [0.35, 0, 0],
-  armS: [-2.75, 0, 0.15],
-  elbowS: -0.35,
-  wrist: [-2.2, 0, 0],
-  armH: [-0.9, 0.3, 0.7],
-  elbowH: -1.1,
+  hips: [-0.2, 0, 0],
+  chest: [-0.35, 0, 0],
+  head: [0.3, 0, 0],
+  armS: [-3.0, 0, 0.12],
+  elbowS: -0.12,
+  wrist: [1.75, 0, 0],
+  armH: [-0.7, 0.3, 1.0],
+  elbowH: -0.9,
   shield: [0, 0.25, 0],
   footS: [-0.1, 0.2, -0.12],
   footH: [0.1, 0.24, 0.02],
@@ -591,7 +592,8 @@ export const DEAD: Pose = fullPose({
   footH: [0.15, 0.02, 0.05],
   toeS: 0.7,
   toeH: 0.7,
-  tail: [0, 0.3, 0],
+  // He lies on his back: the tail is laid along the floor between his feet (left as it was, it hung down through the floor and was gone).
+  tail: [-1.07, 0.1, -0.08],
   ears: 0.9,
 });
 

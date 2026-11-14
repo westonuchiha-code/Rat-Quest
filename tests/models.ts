@@ -1,4 +1,4 @@
-// The creature models (roach, toad, ironback, bat, the Club's folk and Grimsqueak): each one builds, plays every one of
+// The creature models (roach, toad, ironback, bat, the Keep Guard, the Club's folk and Grimsqueak): each one builds, plays every one of
 // its poses without a part flying off or going missing, keeps its feet on the floor, and dies on top of the floor (the
 // toad used to roll over under it and vanish).
 import './../src/core/colorSetup';
@@ -14,6 +14,8 @@ import type { BatState } from '../src/enemies/bat';
 import { Npc, lookOf } from '../src/npc/npc';
 import { GRIM_FIGHT_FLOAT, GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from '../src/npc/grimsqueakModel';
 import { RatModel } from '../src/player/ratModel';
+import { GuardModel } from '../src/enemies/guardModel';
+import { GUARD, type GuardState } from '../src/enemies/guard';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import type { NpcKind } from '../src/npc/npc';
@@ -156,6 +158,165 @@ const at = new THREE.Vector3(0, 0, 0);
   }
   check('bat: every pose holds together, on a rock and on a chain', ok);
   check('bat: struck down, its body lies on the floor (the far edge of a wing may dip under, as it did)', low > -0.5, `lowest ${low.toFixed(2)}`);
+}
+
+// ---- The Keep Guard: he is the knight's body with a long spear, so where the spear goes has to be checked ----
+// (The first one stood at his post with the spear up through his own head, and nothing here looked.)
+{
+  type Rig = Record<string, THREE.Object3D> & { root: THREE.Object3D; tailSegments: THREE.Object3D[] };
+  const rigOf = (m: GuardModel): Rig => (m as unknown as { rat: Rig }).rat;
+  const spearOf = (m: GuardModel): THREE.Object3D => (m as unknown as { spear: THREE.Object3D }).spear;
+  /** The two ends of his spear, in the world. */
+  const ends = (m: GuardModel): { butt: THREE.Vector3; tip: THREE.Vector3; dir: THREE.Vector3 } => {
+    m.root.updateMatrixWorld(true);
+    const butt = spearOf(m).localToWorld(new THREE.Vector3(0, 0, -0.51));
+    const tip = spearOf(m).localToWorld(new THREE.Vector3(0, 0, 0.92));
+    return { butt, tip, dir: tip.clone().sub(butt).normalize() };
+  };
+  /**
+   * The parts of his own body the spear passes through (none is right): lines down the middle of the shaft and just
+   * outside it, tried against every piece of him but the forearm and hand that hold it.
+   */
+  const through = (m: GuardModel): string[] => {
+    const rat = rigOf(m);
+    const { butt, tip, dir } = ends(m);
+    const named: Array<[string, THREE.Object3D]> = ['head', 'earS', 'earH', 'chest', 'pelvis', 'armS', 'armH', 'shieldPivot', 'legS', 'legH'].map((k) => [k, rat[k]]);
+    named.push(['tail', rat.tailSegments[0]]);
+    const meshes: THREE.Mesh[] = [];
+    rat.root.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible || p === rat.elbowS) return;
+      meshes.push(mesh);
+    });
+    const side = new THREE.Vector3(0, 1, 0).cross(dir);
+    if (side.lengthSq() < 1e-4) side.set(1, 0, 0);
+    side.normalize();
+    const up = dir.clone().cross(side).normalize();
+    const R = 0.035;
+    const hits = new Set<string>();
+    const ray = new THREE.Raycaster();
+    for (const [a, b] of [[0, 0], [R, 0], [-R, 0], [0, R], [0, -R]]) {
+      ray.set(butt.clone().addScaledVector(side, a).addScaledVector(up, b), dir);
+      ray.far = butt.distanceTo(tip);
+      for (const mesh of meshes) {
+        const mat = mesh.material as THREE.Material;
+        const was = mat.side;
+        mat.side = THREE.DoubleSide;
+        if (ray.intersectObject(mesh, false).length) {
+          let name = '?';
+          for (let p: THREE.Object3D | null = mesh; p && name === '?'; p = p.parent) name = named.find(([, g]) => g === p)?.[0] ?? '?';
+          hits.add(name);
+        }
+        mat.side = was;
+      }
+    }
+    return [...hits].sort();
+  };
+  const run = (m: GuardModel, state: GuardState, secs: number, each?: () => void): void => {
+    for (let t = 0; t < secs; t += DT) {
+      m.update(DT, { state, stateTime: t, walking: state === 'chase' || state === 'return' ? GUARD.speed : 0, counter: false });
+      each?.();
+    }
+  };
+  const fresh = (): GuardModel => {
+    const m = new GuardModel();
+    m.setTransform(at, 0);
+    return m;
+  };
+  // Each thing he does, how long it lasts, and what he was doing before it (every pose is come into as in a fight,
+  // and every frame of the way there is looked at, not only where it ends).
+  const LASTS: Array<[GuardState, number, GuardState[]]> = [
+    ['idle', 2.5, ['hold', 'return']], ['chase', 1.5, ['idle']], ['hold', 1.5, ['idle', 'chase']], ['windup', GUARD.windup, ['chase', 'hold']],
+    ['thrust', GUARD.thrustTime, ['hold', 'windup']], ['recover', GUARD.recover, ['hold', 'windup', 'thrust']], ['hold', 1, ['windup', 'thrust', 'recover']],
+    ['broken', GUARD.brokenParry, ['hold', 'windup', 'thrust']], ['hold', 1, ['thrust', 'broken']], ['stagger', GUARD.stagger, ['chase', 'hold']],
+    ['windup', GUARD.counterWindup, ['hold', 'stagger']], ['return', 1.5, ['chase', 'hold']], ['chase', 1, ['hold', 'return']],
+  ];
+  const time: Partial<Record<GuardState, number>> = { idle: 1, chase: 0.8, hold: 0.8, windup: GUARD.windup, thrust: GUARD.thrustTime, recover: GUARD.recover, broken: 1, stagger: GUARD.stagger, return: 0.8 };
+  const bad: string[] = [];
+  let low = 9;
+  let sound = true;
+  let tall = 0;
+  let floor = 9;
+  for (const [state, secs, lead] of LASTS) {
+    const m = fresh();
+    for (const s of lead) run(m, s, time[s] ?? 1);
+    const seen = new Map<string, number>();
+    run(m, state, secs, () => {
+      for (const h of through(m)) seen.set(h, (seen.get(h) ?? 0) + 1);
+      const e = ends(m);
+      low = Math.min(low, e.butt.y, e.tip.y);
+    });
+    if (seen.size) bad.push(`${lead[lead.length - 1]} > ${state}: ${[...seen].map(([k, n]) => `${k} for ${n} frames`).join(', ')}`);
+    const r = measure(rigOf(m).root);
+    if (!r.finite || r.meshes < 30) sound = false;
+    tall = Math.max(tall, r.box.max.y - r.box.min.y);
+    floor = Math.min(floor, r.box.min.y);
+  }
+  check('guard: he builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.2 && tall < 2.2, `tallest ${tall.toFixed(2)} with his spear`);
+  check('guard: in everything he does, and on the way into it, his spear passes clear of his own head, ears, body, shield, legs and tail', bad.length === 0, bad.join(' | ') || `${LASTS.length} moves, every frame`);
+  check('guard: neither end of his spear ever goes under the floor, and nor does he', low > -0.02 && floor > -0.06, `spear lowest ${low.toFixed(2)}, body lowest ${floor.toFixed(2)}`);
+
+  {
+    const m = fresh();
+    run(m, 'idle', 2);
+    const e = ends(m);
+    const head = rigOf(m).head.getWorldPosition(new THREE.Vector3());
+    const off = Math.hypot(e.tip.x - head.x, e.tip.z - head.z);
+    check('guard: at his post the spear stands upright beside him, its butt on the ground and its point well out from his head', e.dir.y > 0.99 && e.butt.y > -0.01 && e.butt.y < 0.06 && off > 0.34 && e.tip.y > head.y + 0.3, `tilt ${(Math.acos(e.dir.y) * 57.3).toFixed(0)} degrees, butt ${e.butt.y.toFixed(2)} up, point ${off.toFixed(2)} out from his head`);
+  }
+  {
+    const m = fresh();
+    run(m, 'idle', 0.6);
+    run(m, 'hold', 1.2);
+    const level = ends(m);
+    check('guard: coming on, the spear is levelled at hip height and points at whoever he faces', level.dir.z > 0.97 && Math.abs(level.dir.y) < 0.12 && level.tip.z > 1 && level.tip.y > 0.3 && level.tip.y < 0.7, `points ${level.dir.x.toFixed(2)}, ${level.dir.y.toFixed(2)}, ${level.dir.z.toFixed(2)}; point ${level.tip.z.toFixed(2)} ahead`);
+    run(m, 'windup', GUARD.windup);
+    const drawn = ends(m);
+    check('guard: winding up, the spear is drawn back and still points at its mark', drawn.dir.z > 0.97 && drawn.tip.z < level.tip.z - 0.25, `point ${drawn.tip.z.toFixed(2)} ahead (levelled, ${level.tip.z.toFixed(2)})`);
+    run(m, 'thrust', GUARD.thrustTime);
+    const out = ends(m);
+    // The blow lands on a rat whose near side is this far off at most: the point should get about there, and not past the far side of him.
+    const far = GUARD.radius + GUARD.reach;
+    check('guard: his thrust goes straight ahead, level, and the point reaches about as far as the blow does', out.dir.z > 0.96 && Math.abs(out.dir.y) < 0.1 && Math.abs(out.tip.x) < 0.2 && out.tip.z > far - 0.15 && out.tip.z < far + 0.35, `points ${out.dir.x.toFixed(2)}, ${out.dir.y.toFixed(2)}, ${out.dir.z.toFixed(2)}; point ${out.tip.z.toFixed(2)} ahead, the blow reaches ${far.toFixed(2)} to ${(far + 0.6).toFixed(2)}`);
+    run(m, 'recover', GUARD.recover);
+    run(m, 'hold', 1.2);
+    const again = ends(m);
+    check('guard: back in his guard after a thrust, he stands exactly as he did before it (nothing of the lunge is left in him)', again.tip.distanceTo(level.tip) < 0.03 && again.butt.distanceTo(level.butt) < 0.03, `point ${again.tip.distanceTo(level.tip).toFixed(3)} out`);
+    // And his feet step again when he walks, just as a guard's who has never lunged do (they used to stay planted
+    // where the lunge had put them).
+    const stride = (g: GuardModel): { lift: number; reach: number } => {
+      const rat = rigOf(g);
+      const lo = new THREE.Vector3(9, 9, 9);
+      const hi = new THREE.Vector3(-9, -9, -9);
+      run(g, 'chase', 1.2, () => {
+        rat.root.updateMatrixWorld(true);
+        const foot = rat.footS.getWorldPosition(new THREE.Vector3());
+        lo.min(foot);
+        hi.max(foot);
+      });
+      return { lift: hi.y - lo.y, reach: hi.z - lo.z };
+    };
+    const never = fresh();
+    run(never, 'idle', 0.6);
+    run(never, 'hold', 1.2);
+    const plain = stride(never);
+    const after = stride(m);
+    check('guard: walking after a thrust, his feet step as they did before it', after.reach > 0.1 && after.lift > 0.02 && Math.abs(after.reach - plain.reach) < 0.01 && Math.abs(after.lift - plain.lift) < 0.005, `stride ${after.reach.toFixed(2)}, lift ${after.lift.toFixed(3)} (before: ${plain.reach.toFixed(2)}, ${plain.lift.toFixed(3)})`);
+  }
+  {
+    const m = fresh();
+    run(m, 'hold', 0.8);
+    run(m, 'dead', 1.2);
+    const e = ends(m);
+    const box = measure(rigOf(m).root).box;
+    rigOf(m).root.updateMatrixWorld(true);
+    const tailLow = Math.min(...rigOf(m).tailSegments.map((seg) => seg.getWorldPosition(new THREE.Vector3()).y));
+    check('guard: dead, he lies on the floor with his tail along it, and his spear lies flat beside him (held, it stood up out of him with its butt under the ground)', e.butt.y > 0 && e.butt.y < 0.1 && e.tip.y > 0 && e.tip.y < 0.1 && box.max.y < 0.75 && tailLow > -0.03, `spear ends ${e.butt.y.toFixed(2)} and ${e.tip.y.toFixed(2)} up; he is ${box.max.y.toFixed(2)} high; tail lowest ${tailLow.toFixed(2)}`);
+    run(m, 'idle', 1.5);
+    const up = ends(m);
+    check('guard: alive again, the spear is back in his hand, upright', spearOf(m).parent === rigOf(m).sword && up.dir.y > 0.99 && through(m).length === 0);
+  }
 }
 
 // ---- The Club's folk and the king ----
@@ -394,6 +555,18 @@ const at = new THREE.Vector3(0, 0, 0);
   check('hero: on top, he stands on the block with his sword and shield in his paws again', p.grounded && Math.abs(p.position.y - 3) < 0.01 && p.ledge === null && parts.sword.visible && !parts.backSword.visible);
 }
 
+// ---- The hero, fallen: his tail lies on the floor (it used to hang down through it and be gone) ----
+{
+  const rat = new RatModel();
+  rat.setTransform(at, 0);
+  for (let i = 0; i < 150; i++) rat.update(DT, { state: 'dead', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+  rat.root.updateMatrixWorld(true);
+  const tail = (rat as unknown as { tailSegments: THREE.Object3D[] }).tailSegments.map((seg) => seg.getWorldPosition(new THREE.Vector3()));
+  const end = tail[tail.length - 1];
+  const low = Math.min(...tail.map((p) => p.y));
+  check('hero: fallen, his tail is laid out along the floor towards his feet', low > -0.03 && Math.max(...tail.map((p) => p.y)) < 0.12 && end.z > 0.3, `lowest ${low.toFixed(2)}; its end ${end.y.toFixed(2)} up, ${end.z.toFixed(2)} towards his feet`);
+}
+
 // ---- The hero's plunge and wall moves: what is drawn matches what he is doing ----
 {
   const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
@@ -431,6 +604,13 @@ const at = new THREE.Vector3(0, 0, 0);
     tick({ jumpPressed: true, jumpHeld: true });
     for (let i = 0; i < 20; i++) tick({ jumpHeld: true });
     tick({ attackPressed: true });
+    {
+      // The beat he hangs in the air: the sword is up over his head (its tip well clear of his ears), not in front of his face.
+      const up = blade(rat, () => tick({}, true));
+      const sword = (rat as unknown as { sword: THREE.Object3D }).sword;
+      const tip = sword.localToWorld(new THREE.Vector3(0, 0, 0.4)).y - p.position.y;
+      check('hero: winding up a plunge, the sword is raised over his head, blade up', p.plungeStage === 1 && up.y > 0.6 && tip > 1.25, `blade ${up.y.toFixed(2)} up, tip ${tip.toFixed(2)} above his feet`);
+    }
     for (let i = 0; i < 200 && p.plungeStage !== 2; i++) tick({});
     const dive = blade(rat, () => tick({}, true));
     check('hero: diving in a plunge, the sword points straight down under him', p.plungeStage === 2 && dive.y < -0.9, `blade ${dive.x.toFixed(2)}, ${dive.y.toFixed(2)}, ${dive.z.toFixed(2)}`);

@@ -13,6 +13,8 @@ import type { ScuttlerState } from '../../src/enemies/scuttler';
 import { ToadModel } from '../../src/enemies/toadModel';
 import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
+import { GuardModel } from '../../src/enemies/guardModel';
+import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
 import { nachoCanGeometry } from '../../src/world/drops';
 import { drawPortrait } from '../../src/npc/portrait';
@@ -42,9 +44,51 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
+if (pick === 'guard') {
+  // The Keep Guard in each thing he does, with the knight beside the first for size. &only=N shows one alone.
+  const states: Array<[GuardState, number, number, boolean]> = [['idle', 1, 0, false], ['chase', 0.4, GUARD.speed, false], ['hold', 1, 0, false], ['windup', 0.5, 0, false], ['thrust', 0.15, 0, false], ['recover', 0.6, 0, false], ['broken', 0.8, 0, false], ['stagger', 0.2, 0, false], ['dead', 0.8, 0, false], ['return', 0.6, GUARD.speed, false]];
+  // What he was doing just before each, so every pose is come into the way it is in a fight.
+  const before: Partial<Record<GuardState, Array<[GuardState, number]>>> = {
+    chase: [['idle', 0.5]], hold: [['idle', 0.5]], return: [['hold', 0.6]], windup: [['hold', 0.6]], thrust: [['hold', 0.6], ['windup', GUARD.windup]],
+    recover: [['hold', 0.6], ['windup', GUARD.windup], ['thrust', GUARD.thrustTime]], broken: [['hold', 0.6], ['windup', GUARD.windup], ['thrust', 0.1]],
+    stagger: [['hold', 0.6]], dead: [['hold', 0.6]],
+  };
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  states.forEach(([st, t, walking, counter], i) => {
+    if (only >= 0 && i !== only) return;
+    const m = new GuardModel();
+    const x = only >= 0 ? 0 : (i - (states.length - 1) / 2) * 2.2;
+    m.setTransform(new THREE.Vector3(x, 0, 0), spin);
+    scene.add(m.root);
+    let time = 0;
+    const lead = before[st] ?? [];
+    const leadTime = lead.reduce((sum, [, d]) => sum + d, 0);
+    ticks.push((dt) => {
+      time += dt;
+      let at = time;
+      for (const [s0, d] of lead) {
+        if (at < d) {
+          m.update(dt, { state: s0, stateTime: at, walking: 0, counter });
+          return;
+        }
+        at -= d;
+      }
+      m.update(dt, { state: st, stateTime: Math.min(t, time - leadTime), walking, counter });
+    });
+    labels.push({ text: `${i} ${st}`, x, y: 0 });
+  });
+  if (only < 0) {
+    const rat = new RatModel();
+    rat.setTransform(new THREE.Vector3(-12.5, 0, 0), spin);
+    scene.add(rat.root);
+    rat.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+    labels.push({ text: 'the knight', x: -12.5, y: 0 });
+  }
+  for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
 if (pick === 'items') {
   // Everything he collects, three times life size and turned four ways; then at life size beside him.
   const lit = itemMaterial();
@@ -335,7 +379,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'items') {
+if (pick === 'guard') {
+  camera.position.set(-1, 3.2, 20);
+  camera.lookAt(-1, 0.7, 0);
+} else if (pick === 'items') {
   camera.position.set(-1.5, 9.5, 13.5);
   camera.lookAt(-1.5, 0.6, -4.6);
 } else if (pick === 'grim') {

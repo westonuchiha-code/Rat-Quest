@@ -23,6 +23,8 @@ import { Toad, ToadState, Glob, stepGlobs } from './enemies/toad';
 import { ToadModel } from './enemies/toadModel';
 import { Ironback, IronbackState } from './enemies/ironback';
 import { IronbackModel } from './enemies/ironbackModel';
+import { Guard } from './enemies/guard';
+import { GuardModel } from './enemies/guardModel';
 import { Bat, BAT, rouseRoost } from './enemies/bat';
 import { BatModel } from './enemies/batModel';
 import type { Foe } from './enemies/foe';
@@ -296,6 +298,18 @@ function startGame(): void {
         tick: (dt, f) => m.update(dt, { state: f.state as IronbackState, stateTime: f.stateTime, moving: f.state === 'chase' || f.state === 'return' }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'guard') {
+      const m = new GuardModel();
+      const e = new Guard(spec);
+      enemies.push(e);
+      enemyModels.push({
+        root: m.root,
+        setTransform: (p, f) => m.setTransform(p, f),
+        flash: () => m.flash(),
+        glance: (a) => m.glance(a),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, walking: e.walking, counter: e.counter }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'bat') {
       const e = new Bat(spec);
       const m = new BatModel({ x: e.home.x, y: e.floorY + BAT.roostHeight, z: e.home.z }, spec.perch ?? 'rock');
@@ -345,9 +359,23 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
+      if (e instanceof Guard) {
+        // The guard: a gruff squeak when he sees the rat, steel as he draws back, his grunt and the rush of the thrust,
+        // and the clatter of his shield knocked wide. (A sword on his shield clanks by itself, as off the ironback.)
+        if (ev === 'alert') audio.play('ratAttack', { vol: v * 0.9, rate: 0.68, priority: 6 });
+        else if (ev === 'windup') {
+          audio.play('swing', { vol: v * 0.7, rate: 0.6, priority: 6 });
+          audio.play('sparkle', { vol: v * 0.4, rate: 1.9, priority: 5 });
+        } else if (ev === 'thrust') {
+          audio.play('whoosh', { vol: v, rate: 1.6, priority: 7 });
+          audio.play('ratAttack', { vol: v * 0.8, rate: 0.75, priority: 6 });
+        } else if (ev === 'broken') audio.play('flipClang', { vol: v, rate: 1.45, priority: 8 });
+        else if (ev === 'hurt') audio.play('ratHurt', { vol: v, rate: 0.75, priority: 6 });
+        continue;
+      }
       if (ev === 'snort') audio.play('snort', { vol: v, priority: 6 });
       else if (ev === 'ram') audio.play('lunge', { vol: v, rate: 0.55, priority: 7 });
       else if (ev === 'bonk') {
@@ -1140,6 +1168,9 @@ function startGame(): void {
         if (e.state === 'windup') audio.play('roachWind', { vol: v, priority: 5 });
         else if (e.state === 'lunge') audio.play('roachScreech', { vol: v, rate: roll(0.92, 1.12), priority: 6 });
         else if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: roll(0.9, 1.1), priority: 6 });
+      } else if (e.kind === 'guard') {
+        // (What he does has its own sounds, in beastSounds; only his fall is here.)
+        if (e.state === 'dead') audio.play('ratDie', { vol: v, rate: 0.75, priority: 6 });
       } else if (e instanceof Grimsqueak) {
         // His sounds come from what he does (bossEvents), not from his states; only his fall is here.
         if (e.state === 'dead') audio.play('recall', { vol: v, rate: 0.7, priority: 8 });
@@ -1392,7 +1423,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);

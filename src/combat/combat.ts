@@ -101,7 +101,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
 
     // Keep the two bodies apart. The roach gives way, except in the middle of its lunge.
     const minDist = e.radius + TUNING.rat.radius;
-    if (e.alive && e.state !== 'lunge' && e.state !== 'hop' && e.state !== 'pounce' && e.state !== 'swoop' && e.state !== 'ram' && sameLevel && dist < minDist && dist > 1e-4) {
+    if (e.alive && e.state !== 'lunge' && e.state !== 'hop' && e.state !== 'pounce' && e.state !== 'swoop' && e.state !== 'ram' && e.state !== 'thrust' && sameLevel && dist < minDist && dist > 1e-4) {
       const push = minDist - dist;
       e.nudge((dx / dist) * push, (dz / dist) * push);
     }

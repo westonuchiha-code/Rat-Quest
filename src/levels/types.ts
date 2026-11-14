@@ -26,7 +26,9 @@ export type GoalDef =
 
 export interface EnemySpec {
   /** Which enemy. Default: the roach. */
-  type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat';
+  type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat' | 'guard';
+  /** A guard: which way he faces at his post (radians). Default 0. */
+  facing?: number;
   x: number;
   z: number;
   /** Height of the floor it stands on. Default 0. */
