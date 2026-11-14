@@ -175,3 +175,10 @@ Left passable on purpose: hanging lamps and chains (overhead), webs/slime/window
 - Mort: grey-lilac, olive jumper with a cream stripe, maroon hat, slippers, half-open eyes with lids (eyeOpen 0.45, long blinks), both paws on a steaming mug, slow nod, drooping ears. No pack, pole or lantern.
 - portrait.ts: drawPortrait(canvas, kind, name) draws their own faces (dialog passes the name). Colours follow their sticker icons.
 - Sheet page #npcs2; tests/models.ts has 9 more checks (38).
+## Four more gear secrets (45 wedges)
+- Cleaver / Coal Bin (coalcellars 'bin'): foundry.ts BIN, BIN_CRATE. Box.tough -> Crate.tough (chamber draws iron straps and studs). combat.ts resolveCrates: a tough crate breaks only to a sword blow with gear.damage >= HEAVY_BLADE (2); anything else sets events.crateRang (main: low clank, hit-stop). sameLevel for crates now uses the crate's own top and bottom (a 2-unit crate could not be hit from the floor).
+- Ember Helm / the Pyre (keep 'pyre'): keep.ts PYRE; LevelDef.fire / Layout.fire (FireVolume), layout.fireAt(). chamber draws coals, flame cones and a light. main lavaStep: in a fire and not fireproof -> takeFall(1) (no roll or guard helps) and back to lastSafe; fireproof walks through. lastSafe is never set inside a fire.
+- Moss Scarf / the Sleeper's Wedge (webs 'hush'): GoalDef 'unseen' {radius}. goals.ts SHY_RANGE (8), keepersOf() (ground beasts that start within radius; not bats), shyShows() (all keepers alive and 'idle', and he is at least SHY_RANGE * gear.notice from each, height ignored). main sets goals.unseen each frame; no chime when it comes and goes. A dead keeper hides it until the level is entered again.
+- Buckler / the Fencer's Wedge (works 'duel'): GoalDef 'parry' {count}; goals.parries++ on every 'parried' result; reset() clears it. Not tagged gear (so the jump checker still checks it).
+- Wedge totals are counted from the levels, so menus and the Club show 45 by themselves. BALANCE.doors unchanged (4 / 10 / 20).
+- Not in the level builder: fire, tough crates and the two new goal types exist only in the built-in levels.

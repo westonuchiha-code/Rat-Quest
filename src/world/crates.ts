@@ -20,4 +20,6 @@ export interface Crate {
   mesh: { visible: boolean } | null;
   /** Id of the swing or plunge that broke it, to stop one blow breaking it twice. */
   lastSwing: number;
+  /** Bound in iron: only a heavy blade breaks it (a plain sword, a plunge and its blast all bounce off). */
+  tough?: boolean;
 }

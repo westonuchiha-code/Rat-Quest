@@ -24,7 +24,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 56 test files and 1,366 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 57 test files and 1,405 checks, about 90 s. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -58,15 +58,17 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 |---|---|---|---|---|
 | (hub) | hub | The Club | 0 | Doors to the worlds. Pip's shop, rest at the fire |
 | Cistern (door 0) | cistern | The Great Cistern | 6 | Includes the drain secret (Sludge Scarf) |
-| | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 3 / 2 | Side areas (returnTo cistern) |
+| | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 4 / 2 | Side areas (returnTo cistern). works: the Fencer's Wedge (three perfect guards; the Buckler makes it fair) |
 | Foundry (door 4) | foundry | The Foundry | 6 | Ironback behind the Crucible. Mouth secret (Royal Scarf) |
-| | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 3 | Ironback behind the cellar gate |
+| | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 4 | Ironback behind the cellar gate. coalcellars: the Coal Bin secret (Cleaver) |
 | Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
-| | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 2 / 2 / 1 | faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
-| Keep (door 20) | keep | Grimsqueak's Keep | 5 | Fall-back level. Ironback in the courtyard, bats on chains over the battlements |
+| | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 3 / 2 / 1 | webs: the Sleeper's Wedge secret (Moss Scarf). faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
+| Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Ironback in the courtyard, bats on chains over the battlements |
 | | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
 
-- 41 wedges in all. Door costs are in `src/data/balance.ts` (BALANCE). Shop prices are there too.
+- 45 wedges in all (41 until 2026-11-14; the four new ones are gear secrets and the door costs were NOT raised, so
+  the doors are very slightly easier to open than before: the owner has been told). Door costs are in
+  `src/data/balance.ts` (BALANCE). Shop prices are there too.
 - 13 retired levels live in ARCHIVE (`levelById` still finds them).
 - **Enemies:**
   - Roach (`scuttler`): circles, bites, charges.
@@ -81,7 +83,15 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   - the Royal Scarf (a long jump to the Furnace Mouth);
   - the Miner's Helm (its lamp makes the Lightless Way fair).
 
-  The Ember Helm, Moss Scarf, Buckler and Cleaver have no secret yet.
+  Four more, proven in `tests/gearsecrets.ts`:
+  - the Cleaver (the Coal Bin, Coal Cellars: an iron-bound crate, `Box.tough`, that only `gear.damage >= 2` breaks);
+  - the Ember Helm (the Heart of the Pyre, Keep: a wedge inside a fire, `LevelDef.fire`, only the fireproof cross);
+  - the Moss Scarf (the Sleeper's Wedge, Web Hollow: a shy wedge, goal type `unseen`, there only while its roach is
+    alive, idle and he is outside its notice range; the scarf halves that range);
+  - the Buckler (the Fencer's Wedge, Waterworks: goal type `parry`, three perfect guards in one visit; the Buckler
+    doubles the window. This one is made fair, not gated: a plain shield can do it).
+
+  Every piece of gear Pip sells now has a secret.
 - **Systems:**
   - Three save files (`src/core/slots.ts`; File 1 is the old keys).
   - Button prompts that follow the device, including the Steam Deck (`src/ui/glyphs.ts`).
@@ -143,14 +153,15 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What was offered next (the owner hasn't picked yet)
-From the last turn (after Wren and Mort got their own looks):
+From the last turn (after the four new gear secrets):
 1. Playtest and tune the Ironback and Flitter with the sliders (turn speed, soft-spot width, hearing, swoop warning).
 2. A wave fight mixing all four beasts.
 3. More Steam achievements: one per world, all 41 wedges, Grimsqueak beaten, each gear secret, flip an Ironback into
    a wall, sneak past a roost.
-4. Gear secrets for the Moss Scarf, Buckler and Cleaver (the Ember Helm has none either).
-5. Un-park the story.
-6. Rework the hero's own model the same way (it was left alone).
+4. Un-park the story.
+5. Rework the hero's own model the same way (it was left alone).
+6. Raise the door costs a little to match the four extra wedges (45 now, not 41), or leave them.
+7. Put the fire and the iron-bound crate in the level builder (they are only in the built-in levels now).
 
 Older offers, not taken:
 - Make the bridge hand-rail solid.

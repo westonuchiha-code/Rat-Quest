@@ -42,7 +42,7 @@ check('the ending plays in the Club once the lair is won, starting him at the Cl
 check('the Club has the marks the ending looks at, and Grimsqueak waiting out of sight', ['dave', 'mort', 'wren'].every((k) => !!LEVELS.find((l) => l.id === 'hub')?.storySpots?.[k]) && !!LEVELS.find((l) => l.id === 'hub')?.npcs?.some((n) => n.kind === 'villain' && n.hidden));
 check('the Keep has its own music and look', def.music === 'march' && TRACK_NAMES.includes('march') && def.theme === 'keep');
 check('a fall into the pit costs a heart, not the walk back', def.fallBack === true);
-check('five wedges in the Keep, one in the throne room', (def.wedges?.length ?? 0) === 5);
+check('six wedges in the Keep (one in the heart of a fire), one in the throne room', (def.wedges?.length ?? 0) === 6);
 
 check('the Throne Ledge, the Engine Stack and the far end of the Burning Walk can all be reached', reaches(def, LEDGE.x, LEDGE.y, LEDGE.z) && reaches(def, TOP.x, TOP.y, TOP.z) && reaches(def, FAR.x, FAR.y, FAR.z));
 const noChimney = { ...def, solids: def.solids.filter((b) => !(b.x0 === CHIMNEY_WALL.x0 && b.x1 === CHIMNEY_WALL.x1 && b.z0 === CHIMNEY_WALL.z0)) };

@@ -226,6 +226,9 @@ const websArea: CustomLevel = {
 export const WEBS_WEDGES: WedgeDef[] = [
   { id: 'far', name: 'The Far Ledge', hint: 'Over both bridges, up the stairs and across the last bridge.', x: 18, y: 4, z: -14, appears: null },
   { id: 'crumbs', name: 'Every Crumb in the Webs', hint: 'Eight crumbs, on the bridges and the ledges.', x: -4, y: 0, z: 18, appears: collect('crumb', 'Find every crumb') },
+  // A gear secret (the Moss Scarf): it stands inside the range the west shelf's roach notices him from, and it is only
+  // there while that roach sleeps on. In the scarf he is noticed from half as far, and the wedge is outside that.
+  { id: 'hush', name: 'The Sleeper\'s Wedge', hint: 'On the west shelf, by the roach. It is gone the moment the roach stirs, and gone for good if the roach dies. You would have to be as quiet as moss.', x: -19.5, y: 0, z: -4.2, appears: { type: 'unseen', radius: 7, label: 'Let the roach sleep' }, gear: 'mossScarf' },
 ];
 
 export function hollowsWebs(): LevelDef {

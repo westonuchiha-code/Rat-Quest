@@ -145,12 +145,19 @@ const keepArea: CustomLevel = {
   ],
 };
 
+/**
+ * The Pyre (a gear secret: the Ember Helm). A square of fire in the north-east ward, with a wedge standing in the heart
+ * of it, further in than anyone can reach from outside. Fire burns whoever is not fireproof and throws him back.
+ */
+export const PYRE = { x0: 39.5, x1: 44.5, z0: -47.5, z1: -42.5, y: 0 };
+
 export const KEEP_WEDGES: WedgeDef[] = [
   { id: 'walk', name: 'The Burning Walk', hint: 'Through the portcullis, east, and over the lava on the stones.', x: 44, y: 0, z: -24, appears: null },
   { id: 'chimney', name: 'Up the Chimney', hint: 'Up the Broken Stair to the landing, then wall-kick up the chimney to the Throne Ledge.', x: -24, y: THRONE, z: -46, appears: null },
   { id: 'stack', name: 'The Engine Stack', hint: 'From the battlements, ride the slider out over the pit to the column.', x: 0, y: STACK, z: -12, appears: null },
   { id: 'guard', name: "The Keep's Guard", hint: 'Beat every guard: the courtyard, the far end of the Burning Walk, the battlements.', x: 0, y: 0, z: 22, appears: { type: 'defeat', label: 'Beat every guard' } },
   { id: 'caps', name: 'Eight Bottle Caps', hint: 'In a crate, at the end of the ward, on the lava, in the corner, on the stair, on the landing, on the battlements.', x: 8, y: 0, z: 40, appears: collect('cap', 'Find all the caps') },
+  { id: 'pyre', name: 'The Heart of the Pyre', hint: 'A fire burns in the north-east ward, past the Burning Walk, and something gold stands in the middle of it. Only what was forged in fire walks through fire.', x: (PYRE.x0 + PYRE.x1) / 2, y: 0, z: (PYRE.z0 + PYRE.z1) / 2, appears: null, gear: 'emberHelm' },
 ];
 
 /** Enemies keep to the floor they started on (there is a pit round most of it). */
@@ -177,6 +184,7 @@ export function keep(): LevelDef {
     ],
     courseDoors: [{ to: 'lair', name: "Grimsqueak's Throne", need: 0, door: doorOn('north', 48, -27, 48, THRONE) }],
     fogRange: [35, 140],
+    fire: [PYRE],
     wedges: KEEP_WEDGES,
     goals: goalsOf(KEEP_WEDGES),
   };

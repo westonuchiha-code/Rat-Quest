@@ -24,7 +24,7 @@ const STORE = { x: 43, y: 0, z: 12 };
 
 check('the Foundry is in the world, with its two side areas', def.world === 'foundry' && foundryShaft().returnTo === 'foundry' && foundryCellars().returnTo === 'foundry' && LEVELS.some((l) => l.id === 'shaft') && LEVELS.some((l) => l.id === 'coalcellars'));
 check('the Club\'s east door leads to the Foundry, for four wedges', HUB_DOORS.some((d) => d.to === 'foundry' && d.need === 4));
-check('it has six wedges here (one a secret) and five in its side areas', (def.wedges?.length ?? 0) === 6 && (foundryShaft().wedges?.length ?? 0) + (foundryCellars().wedges?.length ?? 0) === 5);
+check('it has six wedges here (one a secret) and six in its side areas (one a secret)', (def.wedges?.length ?? 0) === 6 && (foundryShaft().wedges?.length ?? 0) + (foundryCellars().wedges?.length ?? 0) === 6);
 check('the top of the Crucible, the Ladle and the storehouse can all be reached', reaches(def, TOP.x, TOP.y, TOP.z) && reaches(def, LADLE.x, LADLE.y, LADLE.z) && reaches(def, STORE.x, STORE.y, STORE.z));
 
 // Without the pistons the Crucible cannot be climbed; without the last one, the top shelf is a dead end.

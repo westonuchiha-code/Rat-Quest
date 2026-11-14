@@ -61,6 +61,20 @@ export class WaveDirector {
   }
 }
 
+/** How far a shy wedge's keeper notices him from, before his gear changes it: a roach's range. */
+export const SHY_RANGE = 8;
+/** The beasts that keep a shy wedge: the ground beasts that start within `radius` of it (bats sleep through it). */
+export function keepersOf<T extends { x: number; z: number; kind?: string; type?: string }>(wedge: { x: number; z: number }, radius: number, beasts: readonly T[]): T[] {
+  return beasts.filter((e) => (e.kind ?? e.type ?? 'scuttler') !== 'bat' && Math.hypot(e.x - wedge.x, e.z - wedge.z) <= radius);
+}
+/**
+ * Whether a shy wedge shows: every keeper alive and at rest, and he (at px, pz; height does not matter, so he cannot
+ * jump in over their heads) outside the range they notice him from (`notice` is his gear's multiplier).
+ */
+export function shyShows(keepers: ReadonlyArray<{ x: number; z: number; alive: boolean; state: string }>, px: number, pz: number, notice: number): boolean {
+  return keepers.every((k) => k.alive && k.state === 'idle' && Math.hypot(k.x - px, k.z - pz) >= SHY_RANGE * notice);
+}
+
 /** Reach checks for wedges are kept apart from the level's own goals by this offset. */
 const WEDGE_REACH = 1000;
 
@@ -72,6 +86,10 @@ export class GoalTracker {
   kills = 0;
   /** Wall pipes smashed so far. */
   burst = 0;
+  /** Attacks turned aside with a perfect guard, this visit. */
+  parries = 0;
+  /** For each shy wedge (by its place in the level's list): whether its keepers are letting it show. Set by the game. */
+  readonly unseen = new Map<number, boolean>();
   private reached = new Set<number>();
 
   constructor(
@@ -132,6 +150,10 @@ export class GoalTracker {
       }
       case 'reach':
         return { have: this.reached.has(i) ? 1 : 0, need: 1 };
+      case 'parry':
+        return { have: Math.min(this.parries, g.count), need: g.count };
+      case 'unseen':
+        return { have: this.unseen.get(i - WEDGE_REACH) === false ? 0 : 1, need: 1 };
     }
   }
 
@@ -142,7 +164,7 @@ export class GoalTracker {
         const got = this.earned.has(w.id);
         const out = this.wedgeOut(i, alive);
         let text = got ? 'got' : out ? 'out' : '';
-        if (!got && !out && w.appears && w.appears.type !== 'reach') {
+        if (!got && !out && w.appears && w.appears.type !== 'reach' && w.appears.type !== 'unseen') {
           const p = this.progress(w.appears, WEDGE_REACH + i, alive);
           text = `${p.have}/${p.need}`;
         }
@@ -175,6 +197,8 @@ export class GoalTracker {
   reset(): void {
     this.kills = 0;
     this.burst = 0;
+    this.parries = 0;
+    this.unseen.clear();
     this.reached.clear();
     this.director.reset();
   }

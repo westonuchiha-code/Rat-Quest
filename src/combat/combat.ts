@@ -14,6 +14,8 @@ export interface CombatEvents {
   shockwave: boolean;
   /** Crates broken this tick. */
   cratesBroken: Crate[];
+  /** An iron-bound crate was struck by something too light to break it. */
+  crateRang?: Crate | null;
   /** A sword that glanced off armour this tick (the ironback's shell): a clank and sparks, no harm. */
   glanced?: Foe | null;
 }
@@ -31,6 +33,7 @@ function angleBetween(a: number, b: number): number {
  */
 export function resolveCombat(player: PlayerController, enemies: Foe[], events: CombatEvents, crates: Crate[] = []): void {
   events.cratesBroken.length = 0;
+  events.crateRang = null;
   events.enemyHit = null;
   events.enemyKilled = false;
   events.playerResult = null;
@@ -105,6 +108,9 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
   }
 }
 
+/** How much harder than a plain sword a blade must hit to break an iron-bound crate (the Cleaver's is 2). */
+export const HEAVY_BLADE = 2;
+
 /** Crates break from a sword swing, a plunge dive, or a plunge landing near them. */
 function resolveCrates(player: PlayerController, crates: Crate[], events: CombatEvents): void {
   const p = player.position;
@@ -114,17 +120,28 @@ function resolveCrates(player: PlayerController, crates: Crate[], events: Combat
     const dx = c.x - p.x;
     const dz = c.z - p.z;
     const dist = Math.hypot(dx, dz);
-    const sameLevel = Math.abs(p.y - c.y) < 1.0;
+    // (Measured from the crate's own top and bottom, so a crate taller than one unit can still be struck from the floor.)
+    const sameLevel = p.y > c.aabb.min.y - 0.5 && p.y < c.aabb.max.y + 0.5;
     let broken = false;
+    let bySword = false;
     // A sword swing never breaks the crate he is standing on: its top must be above his feet.
     const standingOn = c.y + c.half <= p.y + 0.15;
     if (player.attackActive && c.lastSwing !== player.swingId && sameLevel && !standingOn) {
       const clip = player.attackClip;
       const inArc = dist < c.half + 0.25 || angleBetween(Math.atan2(dx, dz), player.facing) <= clip.arc;
-      if (inArc && dist - c.half * 1.2 <= clip.reach) broken = true;
+      if (inArc && dist - c.half * 1.2 <= clip.reach) broken = bySword = true;
     }
     if (player.plungeStage === 2 && dist <= c.half + P.diveRadius && c.y + c.half <= p.y + 0.3) broken = true;
     if (player.plungeImpact && sameLevel && dist - c.half <= P.shockRadius) broken = true;
+    if (c.tough) {
+      // Iron-bound: only a sword that hits twice as hard goes through. Anything else rings off it (once per blow).
+      const struck = broken;
+      broken = bySword && player.gear.damage >= HEAVY_BLADE;
+      if (struck && !broken && c.lastSwing !== player.swingId) {
+        c.lastSwing = player.swingId;
+        events.crateRang = c;
+      }
+    }
     if (broken) {
       c.alive = false;
       c.lastSwing = player.swingId;

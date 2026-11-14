@@ -266,6 +266,14 @@ export function foundryShaft(): LevelDef {
 // ======================================================================================================================
 // Side area: the Coal Cellars (the old Cellars, now under the Foundry's storehouse). Two plates open the gate.
 
+/**
+ * The Coal Bin (a gear secret: the Cleaver). The north-west corner behind the gate is walled off to the roof; the only
+ * way in is a doorway filled by one crate twice the usual size, bound in iron. A plain sword, a plunge and its blast
+ * all ring off it; only a blade that hits twice as hard breaks it.
+ */
+export const BIN = { x0: -22, x1: -19, z0: -22, wallZ: -19.5, doorX0: -21, crate: 2 };
+export const BIN_CRATE: Box = { ...extent('rubble', BIN.doorX0, BIN.x1, 0, BIN.crate, BIN.wallZ - 0.5, BIN.wallZ + 1.5), tough: true };
+
 const cellarArea: CustomLevel = {
   name: 'The Coal Cellars',
   blurb: 'Under the storehouse. Two plates open the gate. Beasts, coal barrels and a high ledge.',
@@ -288,7 +296,10 @@ const cellarArea: CustomLevel = {
     at('cap', -20, 20), at('cap', 20, 20), at('cap', -6, -20),
     at('crumb', 0, 14), at('crumb', -15, 6), at('crumb', 15, 6), at('crumb', -10, -18), at('crumb', 10, -18),
     at('lamp', -6, 20, 3), at('lamp', 6, 20, 3), at('chain', -3, 10, 7), at('chain', 3, 10, 7),
-    at('brazier', -20, -20), at('light', 20, -21, 3, { props: { color: 'yellow' } }),
+    // The Coal Bin: a walled corner behind the gate, shut by one huge iron-bound crate (see BIN).
+    box('wall', BIN.x1, BIN.z0, BIN.x1 + 1, BIN.wallZ + 1, 12), box('wall', BIN.x0, BIN.wallZ, BIN.doorX0, BIN.wallZ + 1, 12),
+    box('wall', BIN.doorX0, BIN.wallZ, BIN.x1, BIN.wallZ + 1, 12, { bottom: BIN.crate }),
+    at('brazier', -13, -21), at('light', 20, -21, 3, { props: { color: 'yellow' } }),
     at('window', -21.5, 0, 5, { dir: 'e' }), at('window', 21.5, 0, 5, { dir: 'w' }),
     at('npc', 5, 19, 0, { props: { name: 'Wren', kind: 'bird', lines: ['Chirp! It is dark down here. Stand on both plates and the gate lifts.', 'The roaches guard the side bays. The toad in the middle spits, so mind it. Behind the gate there is an ironback: its shell turns a sword, so go round behind it, or let it run into a wall.', 'Caps in the corners, and something up on the ledge in the far corner.'] } }),
   ],
@@ -298,6 +309,7 @@ export const CELLAR_WEDGES: WedgeDef[] = [
   { id: 'crew', name: 'Clear the Cellars', hint: 'Beat every beast, in the bays and behind the gate.', x: 0, y: 0, z: -18, appears: { type: 'defeat', label: 'Beat every beast' } },
   { id: 'ledge', name: 'The Coal Ledge', hint: 'Up the stair in the far corner, behind the gate.', x: 19, y: 3, z: -20, appears: null },
   { id: 'caps', name: 'Four Caps in the Coal', hint: 'One in each bay\'s corner, one in a barrel, one by the back wall.', x: -4, y: 0, z: 14, appears: collect('cap', 'Find every cap') },
+  { id: 'bin', name: 'The Coal Bin', hint: 'Behind the gate, a walled corner shut with a crate bound in iron. A rat sword rings off it. Something that hits twice as hard would not.', x: -20.5, y: 0, z: -21.2, appears: null, gear: 'cleaver' },
 ];
 
 export function foundryCellars(): LevelDef {
@@ -308,7 +320,8 @@ export function foundryCellars(): LevelDef {
     ...def,
     world: 'foundry',
     returnTo: 'foundry',
-    solids: [...def.solids, ...shelves],
+    solids: [...def.solids, ...shelves, BIN_CRATE],
+    crateContents: [...def.crateContents, null],
     decor: [...def.decor, { kind: 'shelf', x: 4.4, y: 0, z: -21.97, yaw: 0, width: 3.4, height: 2.5 }, { kind: 'shelf', x: -4.4, y: 0, z: -21.97, yaw: 0, width: 3.4, height: 2.5 }],
     wedges: CELLAR_WEDGES,
     goals: CELLAR_WEDGES.map((w) => w.appears ?? { type: 'reach', x: w.x, y: w.y, z: w.z, radius: 1.5, label: w.name }),

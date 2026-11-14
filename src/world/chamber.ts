@@ -273,7 +273,27 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     bakeVertexColor(geo, b.skin && b.kind !== 'rubble' ? 0xeeeeee : PALETTE[b.kind]);
     if (b.kind === 'platform' && !b.skin) tintUpFaces(geo, MOSS);
     const mesh = addMesh(geo, mat(skin), cx, cy - shaft / 2, cz);
-    if (b.kind === 'rubble') crates.push({ type: 'crate', index: crates.length, x: cx, y: cy, z: cz, half: w / 2, alive: true, aabb, mesh, lastSwing: -1 });
+    if (b.kind === 'rubble') {
+      if (b.tough) {
+        // Bound in iron: dark straps round it both ways, corner plates and studs, so it reads as too much for a rat sword.
+        const parts: THREE.BufferGeometry[] = [];
+        const e = 0.03;
+        for (const t of [-0.3, 0.3]) {
+          parts.push(new THREE.BoxGeometry(w + e * 2, h * 0.09, d + e * 2).translate(0, t * h, 0));
+          parts.push(new THREE.BoxGeometry(w * 0.09, h + e * 2, d + e * 2).translate(t * w, 0, 0));
+          parts.push(new THREE.BoxGeometry(w + e * 2, h + e * 2, d * 0.09).translate(0, 0, t * d));
+        }
+        const iron = new THREE.Mesh(bakeVertexColor(mergeAll(parts), 0x34363c), plainMat);
+        mesh.add(iron);
+        const studs: THREE.BufferGeometry[] = [];
+        for (const sx of [-0.3, 0.3]) for (const sy of [-0.3, 0.3]) for (const sz of [-1, 1]) {
+          studs.push(new THREE.BoxGeometry(w * 0.07, h * 0.07, 0.05).translate(sx * w, sy * h, sz * (d / 2 + e + 0.02)));
+          studs.push(new THREE.BoxGeometry(0.05, h * 0.07, d * 0.07).translate(sz * (w / 2 + e + 0.02), sy * h, sx * d));
+        }
+        mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll(studs), 0xb8a060), plainMat));
+      }
+      crates.push({ type: 'crate', index: crates.length, x: cx, y: cy, z: cz, half: w / 2, alive: true, aabb, mesh, lastSwing: -1, tough: b.tough });
+    }
 
     // Pillars get a capital on top. It's visual only and sits flush with the top of the pillar.
     if (b.kind === 'pillar') {
@@ -1152,6 +1172,41 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   }
 
   // ---- Lava: a glowing, slowly drifting surface (it is never lit, so it always looks hot). ----
+  // ---- Standing fires: a bed of coals, and tongues of flame that lick and sway. They light the room around them. ----
+  const pyres: Array<{ mesh: THREE.Mesh; x: number; y: number; z: number; h: number; phase: number }> = [];
+  for (const f of layout.fire ?? []) {
+    const fx = (f.x0 + f.x1) / 2;
+    const fz = (f.z0 + f.z1) / 2;
+    const bed = new THREE.BoxGeometry(f.x1 - f.x0, 0.24, f.z1 - f.z0, 3, 1, 3);
+    bakeVertexColor(bed, 0x2a1c18, false);
+    {
+      // Coals: every other corner of the bed glows.
+      const col = bed.attributes.color;
+      for (let i = 0; i < col.count; i++) if ((i * 7) % 3 === 0 && bed.attributes.position.getY(i) > 0) col.setXYZ(i, 1, 0.4, 0.08);
+    }
+    addMesh(bed, darkMat, fx, f.y + 0.12, fz);
+    const n = Math.max(2, Math.round((f.x1 - f.x0) / 1.1));
+    const m = Math.max(2, Math.round((f.z1 - f.z0) / 1.1));
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < m; j++) {
+        const edge = i === 0 || j === 0 || i === n - 1 || j === m - 1;
+        const hh = (edge ? 2.6 : 4.2) + ((i * 5 + j * 3) % 4) * 0.45;
+        const cone = new THREE.ConeGeometry(0.62, hh, 5, 2);
+        bakeVertexColor(cone, 0xffb030, false);
+        const col = cone.attributes.color;
+        for (let k = 0; k < col.count; k++) {
+          const u = cone.attributes.position.getY(k) / hh + 0.5; // 0 at the root, 1 at the tip
+          col.setXYZ(k, 1, 0.3 + 0.65 * u, 0.04 + 0.4 * u * u);
+        }
+        const x = f.x0 + ((i + 0.5) / n) * (f.x1 - f.x0);
+        const z = f.z0 + ((j + 0.5) / m) * (f.z1 - f.z0);
+        const mesh = addMesh(cone, darkMat, x, f.y + hh / 2, z);
+        pyres.push({ mesh, x, y: f.y, z, h: hh, phase: i * 2.3 + j * 4.1 });
+      }
+    }
+    lightDefs.push({ x: fx, y: f.y + 2.2, z: fz, r: 16, color: new THREE.Color(0xff7a20), power: 1.3, flash: 0, flicker: 0.3, phase: fx * 1.3 + fz * 0.7 });
+  }
+
   const lavaMat = createPs1Material({ tex: getTexture('magmaRock') });
   const lavaOffset = lavaMat.uniforms.uvOffset.value as THREE.Vector2;
   for (const vol of layout.lava ?? []) {
@@ -1187,6 +1242,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     }
     waterOffset.set(time * 0.03, time * 0.02);
     lavaOffset.set(time * 0.02, time * 0.012);
+    for (const p of pyres) {
+      // Each tongue stretches, shrinks and leans on its own beat.
+      const k = 0.78 + 0.22 * Math.sin(time * 7.3 + p.phase) + 0.1 * Math.sin(time * 13.1 + p.phase * 2);
+      p.mesh.scale.set(1 + 0.12 * Math.sin(time * 5 + p.phase), k, 1 + 0.12 * Math.cos(time * 6 + p.phase));
+      p.mesh.position.set(p.x + 0.1 * Math.sin(time * 4.1 + p.phase), p.y + (p.h * k) / 2, p.z + 0.1 * Math.cos(time * 3.3 + p.phase));
+      p.mesh.rotation.y = time * 1.7 + p.phase;
+    }
     // The speaker cones thump on the kick of the groove (86 BPM, a kick every other beat).
     {
       const ph = (time * 86) / 60 / 2;

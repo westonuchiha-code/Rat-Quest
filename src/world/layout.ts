@@ -20,6 +20,8 @@ export interface Box {
   skin?: Skin;
   /** Collides but is not drawn (for example the space under an arch's curve). */
   hidden?: boolean;
+  /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
+  tough?: boolean;
   x0: number;
   x1: number;
   y0: number;
@@ -64,6 +66,24 @@ export interface LavaVolume {
   z0: number;
   z1: number;
   y: number;
+}
+
+/**
+ * A standing fire: a pyre that fills its square from the floor (y) up. Walking into it burns (a heart, and back to the
+ * last safe ground) unless he is fireproof (the Ember Helm), who walks through it.
+ */
+export interface FireVolume {
+  x0: number;
+  x1: number;
+  z0: number;
+  z1: number;
+  y: number;
+}
+
+/** Whether a point (his feet) is in one of the fires. */
+export function fireAt(fires: readonly FireVolume[] | undefined, x: number, y: number, z: number): FireVolume | null {
+  for (const f of fires ?? []) if (x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1 && y > f.y - 0.5) return f;
+  return null;
 }
 
 /** Things that are only drawn: pipes along the walls, dark drain mouths, lamps. They are never collided with. */
@@ -188,6 +208,7 @@ export function moverOffset(m: MoverSpec, time: number): [number, number, number
 export interface Layout {
   movers?: MoverSpec[];
   lava?: LavaVolume[];
+  fire?: FireVolume[];
   solids: Box[];
   decor?: Decor[];
   /** The void under the room (kept clear of solids), or null when there is none. */

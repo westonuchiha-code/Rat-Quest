@@ -47,7 +47,8 @@ import { ITEMS, gearMods } from './data/equipment';
 import { Equipment } from './player/equipment';
 import { PickupVisuals } from './world/pickups';
 import { LevelProgress } from './core/levelProgress';
-import { GoalTracker } from './levels/goals';
+import { GoalTracker, keepersOf, shyShows } from './levels/goals';
+import { fireAt } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS } from './levels/junction';
@@ -173,6 +174,8 @@ function startGame(): void {
   let nearFire = false;
   let courseVis: CourseDoors | null = null;
   let wedgeWasOut: boolean[] = [];
+  /** For each shy wedge (by its place in the level's list), the beasts that keep it. */
+  let shyKeepers = new Map<number, Foe[]>();
   let goals!: GoalTracker;
   const fader = new Fader(gameWrap);
 
@@ -918,7 +921,7 @@ function startGame(): void {
     renderer.setClearColor(ps1Uniforms.fogColor.value);
     if (!keep) tracker.reset(def.id);
 
-    chamber = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, pipes: def.pipes, gates: def.gates, movers: def.movers, lava: def.lava });
+    chamber = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, pipes: def.pipes, gates: def.gates, movers: def.movers, lava: def.lava, fire: def.fire });
     scene.add(chamber.group);
     player.water = chamber.water;
     collectVisuals = new CollectibleVisuals({ id: def.id, name: def.name, items: def.collectibles }, tracker);
@@ -935,6 +938,10 @@ function startGame(): void {
       for (const w of def.wedges) if (discoveries.has(`wedge:${def.id}:${w.id}`)) goals.earned.add(w.id);
       wedgeVis = new WedgeVisuals(def.wedges);
       scene.add(wedgeVis.group);
+      shyKeepers = new Map();
+      def.wedges.forEach((w, i) => {
+        if (w.appears?.type === 'unseen') shyKeepers.set(i, keepersOf(w, w.appears.radius, enemies));
+      });
       wedgeWasOut = def.wedges.map((_, i) => goals.wedgeOut(i, aliveCount()));
     }
     // A hub: its own door is open from the start, and its course doors show what they lead to and what they want.
@@ -1187,6 +1194,20 @@ function startGame(): void {
       audio.play('plunge', { vol: 0.6, rate: 0.6, priority: 7 });
       return;
     }
+    // A standing fire: it burns anyone who is not fireproof (no roll or shield helps) and he is back where he last stood.
+    // In the Ember Helm he walks through it.
+    if (fireAt(cur.fire, p.x, p.y, p.z)) {
+      if (player.gear.fireproof) return;
+      const result = player.takeFall(1);
+      if (result === 'hit' || result === 'killed') events.playerResult = result;
+      if (player.dead) return;
+      p.copy(lastSafe);
+      player.prevPosition.copy(lastSafe);
+      player.velocity.set(0, 0, 0);
+      follow.snap();
+      audio.play('splash', { vol: 0.8, rate: 1.5, priority: 7 });
+      return;
+    }
     let inLava: (typeof chamber.lava)[number] | null = null;
     let near = false;
     for (const l of chamber.lava) {
@@ -1203,7 +1224,7 @@ function startGame(): void {
       player.velocity.set(0, 4, 0);
       follow.snap();
       audio.play('splash', { vol: 0.8, priority: 7 });
-    } else if (player.grounded && !near && !player.swimming) {
+    } else if (player.grounded && !near && !player.swimming && !fireAt(cur.fire, p.x, p.y, p.z)) {
       const onMover = chamber.movers.some((m) => p.x > m.aabb.min.x && p.x < m.aabb.max.x && p.z > m.aabb.min.z && p.z < m.aabb.max.z && Math.abs(p.y - m.aabb.max.y) < 0.2);
       if (!onMover) lastSafe.copy(p);
     }
@@ -1384,6 +1405,13 @@ function startGame(): void {
       shake = Math.max(shake, 0.05);
       hitStop = Math.max(hitStop, 0.02);
     }
+    if (events.crateRang) {
+      // An iron-bound crate shrugs off a light blow: a dull clang and a jarred arm, so he knows it wants something heavier.
+      audio.play('clank', { vol: 0.8, rate: roll(0.7, 0.8), priority: 7 });
+      hitStop = Math.max(hitStop, 0.05);
+      shake = Math.max(shake, 0.05);
+      rumble.block();
+    }
     if (events.glanced) {
       // Off the ironback's shell: a clank, sparks, and his arm jarred.
       const g = events.glanced;
@@ -1432,6 +1460,7 @@ function startGame(): void {
       audio.play('block', { vol: 0.9, priority: 7 });
       rumble.block();
     } else if (events.playerResult === 'parried') {
+      goals.parries++;
       // Turned aside at the last instant: a longer freeze, a brighter ring, and no shove.
       hitStop = 0.12;
       shake = Math.max(shake, 0.1);
@@ -2501,10 +2530,12 @@ function startGame(): void {
     if (wedgeVis && cur.wedges) {
       const ws = cur.wedges;
       const alive = aliveCount();
+      // Shy wedges: there only while their keepers sleep on and he is outside the range they notice him from.
+      shyKeepers.forEach((keepers, i) => goals.unseen.set(i, shyShows(keepers, player.position.x, player.position.z, player.gear.notice)));
       ws.forEach((w, i) => {
         const out = goals.wedgeOut(i, alive);
-        // A wedge has just appeared: a chime, no pop-up.
-        if (out && !wedgeWasOut[i]) {
+        // A wedge has just appeared: a chime, no pop-up. (A shy one comes and goes without a sound.)
+        if (out && !wedgeWasOut[i] && w.appears?.type !== 'unseen') {
           audio.play('sparkle', { vol: 0.9, priority: 8 });
           audio.play('menuOk', { vol: 0.8, rate: 1.5, priority: 7 });
         }

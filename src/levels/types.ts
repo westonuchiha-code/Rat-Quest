@@ -2,7 +2,7 @@
  * A level is plain data: the room, what is in it, and what he has to do to open the exit.
  * Nothing here touches three.js, so tests can check every level in node.
  */
-import type { Box, Decor, GateSpec, LavaVolume, MoverSpec, PipeSpec, WaterVolume } from '../world/layout';
+import type { Box, Decor, FireVolume, GateSpec, LavaVolume, MoverSpec, PipeSpec, WaterVolume } from '../world/layout';
 import type { NpcSpec } from '../npc/npc';
 import type { CollectibleDef, CollectibleKind } from '../world/collectibles';
 import type { PickupDef } from '../data/equipment';
@@ -15,7 +15,14 @@ export type GoalDef =
   | { type: 'waves'; label: string }
   /** Smash this many of the level's wall pipes (or all of them). */
   | { type: 'burst'; count: number | 'all'; label: string }
-  | { type: 'reach'; x: number; y: number; z: number; radius: number; label: string };
+  | { type: 'reach'; x: number; y: number; z: number; radius: number; label: string }
+  /** Turn aside this many attacks with a perfectly timed shield, in one visit. */
+  | { type: 'parry'; count: number; label: string }
+  /**
+   * A shy wedge: it is only there while its keepers (the ground beasts that start within `radius` of it) are all alive,
+   * all at rest, and he is outside the range they notice him from. So it cannot be fought for, only crept up on.
+   */
+  | { type: 'unseen'; radius: number; label: string };
 
 export interface EnemySpec {
   /** Which enemy. Default: the roach. */
@@ -80,6 +87,8 @@ export interface LevelDef {
   decor: Decor[];
   /** Wall pipes that can be smashed. */
   pipes?: PipeSpec[];
+  /** Standing fires: only the fireproof walk through. */
+  fire?: FireVolume[];
   /** Portcullises that open when their pipes are burst, or when the goals are done. */
   gates?: GateSpec[];
   /** Pools of lava: touching one hurts. */

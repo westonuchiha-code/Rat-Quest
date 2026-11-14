@@ -27,6 +27,8 @@ export const WORKS_WEDGES: WedgeDef[] = [
   { id: 'tower', name: 'Top of the Pump Tower', hint: 'Out to the island in the channel, then up the steps that spiral round the tower.', x: 0, y: 8, z: 0, appears: null },
   { id: 'guards', name: 'Clear the Waterworks', hint: 'Beat every guard: the landing, both galleries, the island and the plateau.', x: 0, y: PLATEAU, z: -44, appears: { type: 'defeat', label: 'Beat every guard' } },
   { id: 'crumbs', name: 'Sixteen Crumbs', hint: 'On the slabs, the island, the planks, the promenades and the plateau.', x: 8, y: 0, z: 42, appears: collect('crumb', 'Find every crumb') },
+  // Made fair by the Buckler (its parry window is twice as long); not marked as gear, because a plain shield can do it.
+  { id: 'duel', name: 'The Fencer\'s Wedge', hint: 'Turn three bites aside with a perfect guard: raise your shield at the very last moment, three times in one visit. A quick little shield gives you twice as long.', x: -8, y: 0, z: 42, appears: { type: 'parry', count: 3, label: 'Turn three bites aside' } },
 ];
 
 export function cisternWorks(): LevelDef {
