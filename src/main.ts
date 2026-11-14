@@ -33,6 +33,9 @@ import { Stag } from './enemies/stag';
 import { Brood } from './enemies/brood';
 import { BroodModel } from './enemies/broodModel';
 import { BossBar } from './ui/bossBar';
+import { Workshop } from './ui/workshop';
+import { DEV, devSummary } from './core/devSwitches';
+import { HitShapes } from './render/hitShapes';
 import { StagModel } from './enemies/stagModel';
 import { Bat, BAT, rouseRoost } from './enemies/bat';
 import { BatModel } from './enemies/batModel';
@@ -101,6 +104,8 @@ import { compileCustom, CustomLevel } from './levels/custom';
 import { platform } from './platform/platform';
 import { makeAabb } from './world/collision';
 import { AudioEngine, nearness } from './audio/audio';
+import { SFX_NAMES, sfx, type SfxName } from './audio/synth';
+import { TRACK_NAMES, type TrackName } from './audio/music';
 import { speak } from './audio/speech';
 import { Rumble } from './core/rumble';
 import { Display } from './ui/display';
@@ -862,7 +867,9 @@ function startGame(): void {
     return [...LEVELS, ...mine()].filter((l) => (l.world ?? l.id) === w);
   };
   const wedgeTotal = (): number => discoveries.countPrefix('wedge:');
-  const levelOpen = (id: string): boolean => unlockAll || isMine(id) || isUnlocked(id, levelOrder, (x) => levelProgress.cleared(x));
+  /** What the doors count: his wedges, or (the test room, or the Workshop's switch) as many as any door could ask. */
+  const doorWedges = (): number => (unlockAll || DEV.openDoors ? 9999 : wedgeTotal());
+  const levelOpen = (id: string): boolean => unlockAll || DEV.openDoors || isMine(id) || isUnlocked(id, levelOrder, (x) => levelProgress.cleared(x));
   const storyCtx = (): StoryCtx => ({ x: player.position.x, z: player.position.z, facing: player.facing, y: player.position.y, exit: { x: cur.exit.x, z: cur.exit.z }, spots: cur.storySpots ?? {} });
   // Memories are played on a small stage far below the level, by two rats of their own.
   const memoryStage = new MemoryStage();
@@ -1127,7 +1134,7 @@ function startGame(): void {
     // Doors to other areas (the Club's world doors, or a world's doors into its side areas), each with a sign.
     const doors = doorsOf(def);
     if (doors.length) {
-      const total = wedgeTotal();
+      const total = doorWedges();
       courseVis = new CourseDoors(doors, doors.map((cd) => {
         const to = cd.to ? levelById(cd.to) : null;
         // The Club's signs count the whole world (every area in it); a side door counts just that area.
@@ -1539,7 +1546,7 @@ function startGame(): void {
     director.update(dt, enemies, player.position.x, player.position.z);
     const swinging = player.state === 'attack';
     for (const e of enemies) {
-      e.update(dt, player.position.x, player.position.y, player.position.z, !player.dead, swinging);
+      if (!DEV.still) e.update(dt, player.position.x, player.position.y, player.position.z, !player.dead, swinging);
       if (e instanceof Grimsqueak) bossTick(e);
       const spits = e instanceof Grimsqueak ? e.spits.splice(0) : e.kind === 'toad' && (e as Toad).spit ? [(e as Toad).spit!] : [];
       if (e.kind === 'toad') (e as Toad).spit = null;
@@ -1762,7 +1769,7 @@ function startGame(): void {
     }
     // In a hub: walking into an open course door goes into that course.
     if (!trans.active && !cutscene.active && !story.scene && player.grounded && !player.dead) {
-      const total = wedgeTotal();
+      const total = doorWedges();
       for (const cd of doorsOf(cur)) {
         const to = cd.to ? levelById(cd.to) : null;
         if (to && total >= cd.need && atDoor(cd.door, player.position.x, player.position.z)) {
@@ -1846,6 +1853,7 @@ function startGame(): void {
     toggleFullscreen: () => platform.toggleFullscreen(),
     openBuilder: () => builder.show(),
     openTweaks: () => tweaksPanel.show(),
+    openWorkshop: () => workshop.show(),
     openPhoto: () => {
       if (canPhoto()) photo.start();
     },
@@ -1907,6 +1915,10 @@ function startGame(): void {
 
   // ---- Start-up: boot logo, title screen, loading screen. Only on a plain start (no dev hash) and never in the editor. ----
   let optionsFromTitle = false;
+  /** Where closing the editor, the tweaks or the Workshop leads back to (null: to the game). */
+  let editorBack: 'title' | 'workshop' | null = null;
+  let tweaksBack: 'workshop' | null = null;
+  let workshopBack: 'title' | null = null;
   const boot = new Boot(gameWrap, {
     files: () => Array.from({ length: FILE_COUNT }, (_, i) => {
       const f = fileSummary(deviceStore, i + 1);
@@ -1945,6 +1957,16 @@ function startGame(): void {
       optionsFromTitle = true;
       boot.hide();
       menu.showAt(3);
+    },
+    onEditor: () => {
+      editorBack = 'title';
+      boot.hide();
+      builder.show();
+    },
+    onWorkshop: () => {
+      workshopBack = 'title';
+      boot.hide();
+      workshop.show();
     },
     sound: (n) => {
       if (n === 'chime') audio.play('boot', { vol: 0.8, verb: 0.2, priority: 9 });
@@ -2019,11 +2041,11 @@ function startGame(): void {
       }
       const areas = worldAreas(w).sort((a, b) => (a.id === w.id ? -1 : b.id === w.id ? 1 : 0));
       const all = wedgeInfo(areas);
-      const shut = total < cd.need && !unlockAll;
+      const shut = total < cd.need && !unlockAll && !DEV.openDoors;
       rows.push({ ...base(w), kind: 'world', wedges: all.wedges, wedgeList: wedgeInfo([w]).list, locked: shut, lockText: `Its door in the Club needs ${cd.need} Golden Wedges. You have ${total}.` });
       for (const a of areas) {
         if (a.id === w.id) continue;
-        const seen = discoveries.has(`place:${a.id}`) || unlockAll;
+        const seen = discoveries.has(`place:${a.id}`) || unlockAll || DEV.openDoors;
         const info = wedgeInfo([a]);
         rows.push({ ...base(a), kind: 'area', wedges: info.wedges, wedgeList: info.list, locked: shut || !seen, lockText: `Somewhere in ${w.name} is a door to this place.` });
       }
@@ -2076,6 +2098,10 @@ function startGame(): void {
   if (/[#&]shop\b/.test(location.hash)) setTimeout(() => shop.show('Squeak! Welcome to Pip\'s. Crumbs and caps, I take both!'), 400);
   const tweaksPanel = new TweaksPanel(gameWrap, tweaks, () => {
     input.clearLast();
+    if (tweaksBack === 'workshop') {
+      tweaksBack = null;
+      workshop.show();
+    }
   });
   if (/[#&]tweaks\b/.test(location.hash)) setTimeout(() => tweaksPanel.show(), 300);
   // 3D editing from the builder: the game holds still while a free camera flies through the level.
@@ -2136,6 +2162,7 @@ function startGame(): void {
   }
   const builder: Builder = new Builder(gameWrap, {
     fly: (level, done, jumpCheck) => {
+      editorReturn = false; // (it is only stepping aside for the 3D view)
       flyDone = done;
       fly.start(level, jumpCheck);
     },
@@ -2167,6 +2194,11 @@ function startGame(): void {
       },
     },
     play: (level) => {
+      // Into the game with it: wherever the editor was opened from, there is no going back there now.
+      editorReturn = false;
+      editorBack = null;
+      workshopBack = null;
+      boot.leave();
       const def = compileCustom(level);
       tracker.setLevel({ id: def.id, name: def.name, items: def.collectibles } as never);
       levelProgress.forget('custom');
@@ -2174,8 +2206,115 @@ function startGame(): void {
     },
     onClose: () => {
       for (const a of ['jump', 'attack', 'dodge', 'stow', 'respawn', 'confirm', 'back'] as const) consumeAction(a);
+      // Opened from the title or the Workshop, it closes back to there (unless it closed to play or to fly: they say so at once).
+      if (!editorBack) return;
+      editorReturn = true;
+      queueMicrotask(() => {
+        if (!editorReturn) return;
+        editorReturn = false;
+        const back = editorBack;
+        editorBack = null;
+        if (back === 'workshop') workshop.show();
+        else if (back === 'title') boot.showTitle();
+      });
     },
   });
+  let editorReturn = false;
+
+  // ---- The Workshop: every development tool in one place, and the test switches. ----
+  const WORLD_LABEL: Record<string, string> = { cistern: 'The Great Cistern', foundry: 'The Foundry', hollows: 'The Hollows', keep: "Grimsqueak's Keep" };
+  let soundList: Array<{ name: string; loud: number; secs: number; loop: boolean }> | null = null;
+  const hitShapes = new HitShapes();
+  scene.add(hitShapes.object);
+  const devTag = document.createElement('div');
+  devTag.style.cssText = 'position:absolute;left:50%;top:4px;transform:translateX(-50%);z-index:21;pointer-events:none;font:600 11px system-ui,sans-serif;letter-spacing:0.06em;color:#ffc94a;background:#0c0f15cc;border:1px solid #ffc94a66;border-radius:10px;padding:1px 9px;display:none;white-space:nowrap';
+  gameWrap.appendChild(devTag);
+  const workshop: Workshop = new Workshop(gameWrap, {
+    openEditor: () => {
+      editorBack = 'workshop';
+      builder.show();
+    },
+    openTweaks: () => {
+      tweaksBack = 'workshop';
+      tweaksPanel.show();
+    },
+    tweaksChanged: () => tweaks.count(),
+    sounds: () => (soundList ??= SFX_NAMES.map((name) => {
+      const smp = sfx(name);
+      let q = 0;
+      for (const v of smp.data) q += v * v;
+      return { name, loud: Math.sqrt(q / smp.data.length), secs: smp.data.length / smp.rate, loop: smp.loop };
+    }).sort((a, b) => a.name.localeCompare(b.name))),
+    playSound: (name, rate, vol) => {
+      audio.playSample(`ws:${name}`, { ...sfx(name as SfxName), loop: false }, { rate, vol, priority: 9, verb: 0.05 });
+    },
+    tracks: () => [...TRACK_NAMES],
+    playTrack: (name) => audio.playTrack((name as TrackName | null) ?? cur.music ?? 'drift'),
+    places: () => {
+      // The Club first, then the worlds in the order he meets them (each world's own area before its side areas).
+      const order = ['The Club', ...Object.values(WORLD_LABEL), 'Other places'];
+      const world = LEVELS.map((l) => ({ id: l.id, name: l.name, group: l.hub ? 'The Club' : WORLD_LABEL[l.world ?? ''] ?? 'Other places', note: l.wedges ? `${l.wedges.length} wedge${l.wedges.length === 1 ? '' : 's'}` : '', here: l.id === cur.id, main: l.id === l.world }));
+      world.sort((a, b) => order.indexOf(a.group) - order.indexOf(b.group) || Number(b.main) - Number(a.main));
+      return [
+        ...world,
+        ...mine().map((l) => ({ id: l.id, name: l.name, group: 'My Levels', here: l.id === cur.id })),
+        ...ARCHIVE.map((l) => ({ id: l.id, name: l.name, group: 'Old levels (retired)', here: l.id === cur.id })),
+      ];
+    },
+    goTo: (id) => {
+      const def = levelById(id);
+      if (!def) return;
+      workshopBack = null;
+      editorBack = null;
+      boot.leave();
+      trans.active = false;
+      cutscene.active = false;
+      loadLevel(def);
+      player.hp = player.maxHp;
+      follow.snap();
+      input.clearLast();
+    },
+    switched: (key) => {
+      if (key === 'god') player.untouchable = DEV.god;
+      if (key === 'readout') debugEl.style.display = showDebug || DEV.readout ? '' : 'none';
+    },
+    act: (what) => {
+      if (what === 'heal') {
+        if (player.dead) return 'He is down. Start this place again instead.';
+        player.hp = player.maxHp;
+        return 'Healed.';
+      }
+      if (what === 'gear') {
+        for (const id of Object.keys(ITEMS)) equipment.give(id);
+        applyGear();
+        return 'He owns every piece of gear now (put it on in the pause menu, under EQUIP).';
+      }
+      if (what === 'restart') {
+        trans.active = false;
+        cutscene.active = false;
+        loadLevel(cur);
+        player.hp = player.maxHp;
+        follow.snap();
+        return `${cur.name}: started again.`;
+      }
+      let beaten = 0;
+      for (const e of enemies) {
+        if (!e.alive) continue;
+        // (A boss up on her thread cannot be touched: she is brought down first.)
+        for (let k = 0; k < 400 && e.alive; k++) e.takeHit(5, player.position.x, player.position.z, 'plunge');
+        if (!e.alive) beaten++;
+      }
+      return beaten ? `${beaten} beaten.` : 'There is nothing here to beat (or it cannot be reached just now).';
+    },
+    onClose: () => {
+      input.clearLast();
+      if (workshopBack === 'title') {
+        workshopBack = null;
+        boot.showTitle();
+      }
+    },
+  });
+  if (/[#&]workshop\b/.test(location.hash)) setTimeout(() => workshop.show(), 300);
 
   if (/[#&]flyedit\b/.test(location.hash)) {
     setTimeout(() => {
@@ -2272,7 +2411,11 @@ function startGame(): void {
       for (const a of ['jump', 'attack', 'dodge', 'stow', 'respawn', 'menu', 'confirm', 'back', 'left', 'right', 'up', 'down', 'tabPrev', 'tabNext'] as const) consumeAction(a);
       return;
     }
-    if (input.consumePressed('F2') && !builder.open) builder.show();
+    if (input.consumePressed('F2') && !builder.open && !workshop.open) builder.show();
+    if (input.consumePressed('F4') && !builder.open && !tweaksPanel.open && !menu.open) {
+      if (workshop.open) workshop.hide();
+      else workshop.show();
+    }
     // Quicksave (F5) and quickload (F9). There is no pop-up: a chime says it worked, a low note says there was nothing to load.
     if (input.consumePressed('F3') && !builder.open) {
       if (tweaksPanel.open) tweaksPanel.hide();
@@ -2536,13 +2679,14 @@ function startGame(): void {
     }
     // While the menu, a conversation or the builder is open the world holds still.
     // Slow motion after a kill: time crawls, then eases back to normal.
-    let timeScale = 1;
+    let timeScale = DEV.slow;
+    player.untouchable = DEV.god;
     if (slowT > 0) {
       const k = 1 - slowT / TUNING.feel.killSlowSeconds;
-      timeScale = TUNING.feel.killSlowScale + (1 - TUNING.feel.killSlowScale) * k * k;
+      timeScale *= TUNING.feel.killSlowScale + (1 - TUNING.feel.killSlowScale) * k * k;
       slowT = Math.max(0, slowT - rawDt);
     }
-    const frameDt = boot.blocking || menu.open || tweaksPanel.open || fly.open || photo.open || shop.open || (dialog.open && !story.scene) || (builder.open && !builder.live) ? 0 : rawDt * timeScale;
+    const frameDt = boot.blocking || menu.open || tweaksPanel.open || workshop.open || fly.open || photo.open || shop.open || (dialog.open && !story.scene) || (builder.open && !builder.live) ? 0 : rawDt * timeScale;
     dialog.update(rawDt);
     menu.update(rawDt);
     audio.duck(menu.open ? 0.35 : dialog.open ? 0.55 : 1);
@@ -2818,6 +2962,17 @@ function startGame(): void {
       }
     }
     bossBar.update(frameDt, fought);
+    // The Workshop's test view and its reminder of what is switched on.
+    hitShapes.update(DEV.shapes && !boot.blocking, enemies as never, {
+      x: player.position.x, y: player.position.y, z: player.position.z, facing: player.facing, radius: TUNING.rat.radius,
+      swing: player.attackActive ? { reach: player.attackClip.reach, arc: player.attackClip.arc } : null,
+      guarding: player.state === 'guard', blockArc: TUNING.health.blockArc * player.gear.blockArc,
+    });
+    const tag = boot.blocking ? '' : devSummary();
+    if (devTag.textContent !== (tag ? `TEST  ${tag}` : '')) {
+      devTag.textContent = tag ? `TEST  ${tag}` : '';
+      devTag.style.display = tag ? '' : 'none';
+    }
 
     // Stick right swings the camera round to the right and stick up looks up, so both are flipped from the arrow keys.
     const lookX = -controlSources.reduce((a, s) => a + s.lookX, 0);
@@ -2839,7 +2994,10 @@ function startGame(): void {
       recentre = turn !== 0 || lockTarget ? 0 : recentre - frameDt;
       follow.yaw += Math.atan2(Math.sin(recentreTo - follow.yaw), Math.cos(recentreTo - follow.yaw)) * (1 - Math.exp(-16 * frameDt));
     }
-    follow.update(frameDt, renderPos, player.facing, !lockTarget && moving && player.state !== 'attack', lockTarget ? 0 : turn, pitchInput, chamber.colliders, player.velocity);
+    // On the title screen the view drifts slowly round him (the game itself is holding still).
+    const drifting = boot.blocking && (boot.where === 'title' || boot.where === 'files');
+    if (drifting) follow.yaw += rawDt * 0.06;
+    follow.update(drifting ? rawDt : frameDt, renderPos, player.facing, !lockTarget && moving && player.state !== 'attack', lockTarget ? 0 : turn, pitchInput, chamber.colliders, player.velocity);
     lockMarker.visible = !!lockTarget && !builder.open;
     if (lockTarget) {
       lockMarker.position.set(lockTarget.x, lockTarget.y + lockTarget.radius * 2 + 0.75 + 0.07 * Math.sin(time * 6), lockTarget.z);
@@ -2898,7 +3056,7 @@ function startGame(): void {
       fpsAccum = 0;
       fpsFrames = 0;
     }
-    if (showDebug) debugEl.textContent = `${fps} fps  ${player.state}  foes:${aliveCount()}  x:${player.position.x.toFixed(1)} t:${trans.active ? trans.t.toFixed(2) : '-'}  snd:${audio.ready ? 'on' : 'off'} ${audio.stats.played}/${audio.stats.notes}`;
+    if (showDebug || DEV.readout) debugEl.textContent = `${fps} fps  ${player.state}  foes:${aliveCount()}  x:${player.position.x.toFixed(1)} t:${trans.active ? trans.t.toFixed(2) : '-'}  snd:${audio.ready ? 'on' : 'off'} ${audio.stats.played}/${audio.stats.notes}`;
 
     requestAnimationFrame(frame);
   }

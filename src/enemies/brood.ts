@@ -201,9 +201,11 @@ export class Brood {
   }
   get bite(): { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean } {
     const B = BROOD;
-    if (this.state === 'sweep') return { reach: B.sweepReach, arc: B.sweepArc, damage: B.sweepDamage, ground: true };
-    if (this.state === 'whirl') return { reach: B.whirlReach, arc: Math.PI, damage: B.whirlDamage, ground: true };
-    if (this.state === 'slam') return { reach: B.slamReach, arc: Math.PI, damage: B.slamDamage, heavy: true };
+    const s = this.state;
+    // (Each wind-up answers with the shape of the blow it leads to, so the test view can draw what is coming.)
+    if (s === 'sweep' || s === 'sweepWind') return { reach: B.sweepReach, arc: B.sweepArc, damage: B.sweepDamage, ground: true };
+    if (s === 'whirl' || s === 'whirlWind') return { reach: B.whirlReach, arc: Math.PI, damage: B.whirlDamage, ground: true };
+    if (s === 'slam' || s === 'crouch' || s === 'leap' || s === 'climb' || s === 'hang' || s === 'dropTell' || s === 'drop') return { reach: B.slamReach, arc: Math.PI, damage: B.slamDamage, heavy: true };
     return { reach: B.stabReach, arc: B.stabArc, damage: B.stabDamage };
   }
   /** How fast she is walking (for her legs). */

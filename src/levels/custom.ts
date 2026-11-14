@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { Box, Decor, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -15,14 +15,14 @@ import { ThemeId, themeById } from './themes';
 
 export type PieceType =
   | 'floor' | 'tile' | 'grate' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
-  | 'water' | 'river' | 'lava' | 'bridge' | 'crate' | 'barrel'
+  | 'water' | 'river' | 'lava' | 'fire' | 'bridge' | 'crate' | 'barrel'
   | 'crumb' | 'cap' | 'relic'
-  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'npc' | 'pipe' | 'fall' | 'gate'
+  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
   | 'stairs' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
-/** The pieces that are enemies (roach, toad, ironback, bat, keep guard). */
-export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag'];
+/** The pieces that are enemies (the Broodmother, a boss, among them). */
+export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'brood'];
 
 /** What makes a Golden Wedge appear: there from the start, or once that job is done. */
 export type WedgeAppears = 'start' | 'defeat' | 'waves' | 'burst' | 'crumb' | 'cap' | 'relic' | 'reach';
@@ -50,6 +50,8 @@ export interface PieceProps {
   lines?: string[];
   /** A crate or barrel can hold one collectible. */
   item?: CollectibleKind;
+  /** A crate bound in iron: only a heavy blade breaks it. */
+  tough?: boolean;
   /** An enemy that comes back after it is beaten. */
   respawn?: boolean;
   /** A bat: what it hangs from. Rock (a knob of rock, for caves) or chain (hanging from the dark, for halls). */
@@ -115,6 +117,10 @@ export interface CustomLevel {
   /** Switch off the ledge grab or the long jump in this level. */
   noGrab?: boolean;
   noLongJump?: boolean;
+  /** A fall into the dark costs a heart and puts him back on the last ground he stood on (instead of at the start). */
+  fallBack?: boolean;
+  /** Where the dark begins and where nothing more can be seen (the level's look decides, left out). */
+  fogRange?: [number, number];
 }
 
 export const BOX_TYPES: PieceType[] = ['floor', 'tile', 'grate', 'platform', 'plank', 'stone', 'wall', 'pillar'];
@@ -147,7 +153,7 @@ export function checkCustom(c: CustomLevel): string[] {
   const count = (t: PieceType): number => c.pieces.filter((p) => p.t === t).length;
   for (const g of c.goals ?? []) {
     if (g.type === 'reach' && count('mark') === 0) out.push('A "reach" goal needs a Goal marker on the map.');
-    if (g.type === 'defeat' && count('roach') + count('toad') + count('beetle') + count('bat') + count('guard') + count('mantis') + count('stag') === 0) out.push('A "defeat" goal needs an enemy on the map.');
+    if (g.type === 'defeat' && !c.pieces.some((p) => ENEMY_PIECES.includes(p.t))) out.push('A "defeat" goal needs an enemy on the map.');
     if (g.type === 'waves' && !c.pieces.some((p) => ENEMY_PIECES.includes(p.t) && (p.props?.wave ?? 0) > 0)) out.push('A "waves" goal needs enemies set to wave 1 or higher.');
     if (g.type === 'burst' && count('pipe') === 0) out.push('A "burst" goal needs a wall pipe on the map.');
     if (g.type === 'collect') {
@@ -182,6 +188,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   if (theme.id === 'foundry' || theme.id === 'keep') for (let i = 0; i < 4; i++) solids[i] = { ...solids[i], skin: theme.skins.wall };
   const water: WaterVolume[] = [];
   const lava: LavaVolume[] = [];
+  const fire: FireVolume[] = [];
   const decor: Decor[] = [];
   const pipes: PipeSpec[] = [];
   const gates: GateSpec[] = [];
@@ -240,6 +247,10 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         solids.push(extent('stone', x0, Math.max(x1, x0 + 1), p.top - 2.4, p.top - 1.35, z0, Math.max(z1, z0 + 1)));
         break;
       }
+      case 'fire':
+        // A standing fire over its squares, from the floor up: it burns (unless he is fireproof).
+        fire.push({ x0, x1: Math.max(x1, x0 + 1), z0, z1: Math.max(z1, z0 + 1), y: p.top });
+        break;
       case 'bridge': {
         // Planks with a rope along each side and posts at the ends and every few steps.
         const alongX = x1 - x0 >= z1 - z0;
@@ -315,7 +326,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       }
       case 'crate':
       case 'barrel': {
-        const idx = crate(p.t === 'crate' ? extent('rubble', cx - 0.5, cx + 0.5, p.top, p.top + 1, cz - 0.5, cz + 0.5) : extent('barrel', cx - 0.5, cx + 0.5, p.top, p.top + 1.1, cz - 0.5, cz + 0.5));
+        const idx = crate(p.t === 'crate' ? { ...extent('rubble', cx - 0.5, cx + 0.5, p.top, p.top + 1, cz - 0.5, cz + 0.5), ...(p.props?.tough ? { tough: true } : {}) } : extent('barrel', cx - 0.5, cx + 0.5, p.top, p.top + 1.1, cz - 0.5, cz + 0.5));
         if (p.props?.item) contents[idx] = items.add(p.props.item, cx, p.top + 0.5, cz, idx);
         break;
       }
@@ -376,11 +387,14 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'guard':
       case 'mantis':
       case 'stag':
+      case 'brood':
         {
-          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag' } as const)[p.t];
-          const spec: EnemySpec = { type, x: cx, z: cz, y: p.top, arena: { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 }, respawn: !!p.props?.respawn, ...(p.props?.perch ? { perch: p.props.perch } : {}) };
+          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag', brood: 'brood' } as const)[p.t];
+          // A boss has the run of the whole room (a little inside its walls); the others keep to a patch round where they stand.
+          const arena = p.t === 'brood' ? { x0: -c.width / 2 + 2, x1: c.width / 2 - 2, z0: -c.depth / 2 + 2, z1: c.depth / 2 - 2 } : { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 };
+          const spec: EnemySpec = { type, x: cx, z: cz, y: p.top, arena, respawn: p.t === 'brood' ? false : !!p.props?.respawn, ...(p.props?.perch ? { perch: p.props.perch } : {}) };
           // A guard stands at his post facing the way he is set (north by default: towards whoever comes up the room).
-          if (p.t === 'guard' || p.t === 'mantis' || p.t === 'stag') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+          if (p.t === 'guard' || p.t === 'mantis' || p.t === 'stag' || p.t === 'brood') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
           const w = Math.round(p.props?.wave ?? 0);
           if (w > 0) (waveSpecs[w - 1] ??= []).push(spec);
           else enemies.push(spec);
@@ -506,6 +520,9 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
     ...(wedges ? { wedges } : {}),
     ...(c.noGrab ? { noGrab: true } : {}),
     ...(c.noLongJump ? { noLongJump: true } : {}),
+    ...(fire.length ? { fire } : {}),
+    ...(c.fallBack ? { fallBack: true } : {}),
+    ...(c.fogRange ? { fogRange: c.fogRange } : {}),
   };
 }
 
@@ -532,7 +549,7 @@ export function parseCustom(text: string): CustomLevel | null {
     if (!d || !Array.isArray(d.pieces) || typeof d.width !== 'number' || typeof d.depth !== 'number') return null;
     const ok = d.pieces.every((p) => p && typeof p.t === 'string' && [p.x0, p.z0, p.x1, p.z1, p.top].every((n) => typeof n === 'number' && Number.isFinite(n)));
     if (!ok) return null;
-    return { name: String(d.name ?? 'My Level'), width: Math.min(120, Math.max(10, d.width)), depth: Math.min(120, Math.max(10, d.depth)), wallHeight: Number(d.wallHeight) || 12, pieces: d.pieces as Piece[], ...(typeof d.blurb === 'string' ? { blurb: d.blurb } : {}), ...(d.music === 'drift' || d.music === 'pump' || d.music === 'groove' || d.music === 'echo' || d.music === 'march' ? { music: d.music } : {}), ...(Array.isArray(d.goals) ? { goals: d.goals } : {}), ...(typeof d.theme === 'string' ? { theme: themeById(d.theme).id } : {}), ...(d.hubDoor === 'west' || d.hubDoor === 'east' ? { hubDoor: d.hubDoor } : {}), ...(typeof d.hubNeed === 'number' ? { hubNeed: Math.max(0, Math.round(d.hubNeed)) } : {}), ...(d.noGrab === true ? { noGrab: true } : {}), ...(d.noLongJump === true ? { noLongJump: true } : {}) };
+    return { name: String(d.name ?? 'My Level'), width: Math.min(120, Math.max(10, d.width)), depth: Math.min(120, Math.max(10, d.depth)), wallHeight: Number(d.wallHeight) || 12, pieces: d.pieces as Piece[], ...(typeof d.blurb === 'string' ? { blurb: d.blurb } : {}), ...(d.music === 'drift' || d.music === 'pump' || d.music === 'groove' || d.music === 'echo' || d.music === 'march' ? { music: d.music } : {}), ...(Array.isArray(d.goals) ? { goals: d.goals } : {}), ...(typeof d.theme === 'string' ? { theme: themeById(d.theme).id } : {}), ...(d.hubDoor === 'west' || d.hubDoor === 'east' ? { hubDoor: d.hubDoor } : {}), ...(typeof d.hubNeed === 'number' ? { hubNeed: Math.max(0, Math.round(d.hubNeed)) } : {}), ...(d.noGrab === true ? { noGrab: true } : {}), ...(d.noLongJump === true ? { noLongJump: true } : {}), ...(d.fallBack === true ? { fallBack: true } : {}), ...(Array.isArray(d.fogRange) && d.fogRange.length === 2 && d.fogRange.every((n) => typeof n === 'number' && Number.isFinite(n)) ? { fogRange: [Math.max(0, d.fogRange[0]), Math.max(d.fogRange[0] + 1, d.fogRange[1])] as [number, number] } : {}) };
   } catch {
     return null;
   }

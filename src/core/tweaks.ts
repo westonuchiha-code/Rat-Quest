@@ -29,7 +29,6 @@ export interface TweakDef {
   later?: string;
 }
 
-export const TWEAK_GROUPS = ['Moving', 'Jumping', 'Moves', 'Fighting', 'Roaches', 'Toads', 'Grimsqueak', 'Camera', 'Doors and prices'];
 
 export const TWEAKS: TweakDef[] = [
   { group: 'Moving', path: 'move.walk', label: 'Walk speed', min: 1, max: 8, step: 0.1 },
@@ -196,6 +195,24 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Doors and prices', path: 'balance.prices.royalScarf.crumbs', label: 'Royal scarf: crumbs', min: 0, max: 150, step: 1 },
   { group: 'Doors and prices', path: 'balance.prices.royalScarf.caps', label: 'Royal scarf: caps', min: 0, max: 45, step: 1 },
 ];
+
+/**
+ * The panel's sections, and the groups under each, in the order they are shown. A group of sliders that is not named
+ * here is still shown (under "More"): the list of groups is read from the sliders themselves, so none can be left out.
+ * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
+ */
+export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Fighting', 'Camera'] },
+  { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights'] },
+  { title: 'Bosses', groups: ['The Broodmother', 'Grimsqueak'] },
+  { title: 'The game', groups: ['Doors and prices'] },
+];
+/** Every group that has a slider, sections first. */
+export const TWEAK_GROUPS: string[] = (() => {
+  const named = TWEAK_SECTIONS.flatMap((sec) => sec.groups);
+  const all = [...new Set(TWEAKS.map((t) => t.group))];
+  return [...named.filter((g) => all.includes(g)), ...all.filter((g) => !named.includes(g))];
+})();
 
 type Table = Record<string, unknown>;
 const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };

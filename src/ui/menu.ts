@@ -76,6 +76,8 @@ export interface MenuHost {
   /** Opens the level builder. */
   openBuilder?(): void;
   openTweaks?(): void;
+  /** The Workshop: every development tool in one place. */
+  openWorkshop?(): void;
   /** Opens photo mode. */
   openPhoto?(): void;
   /** Sound and music volumes, 0..1. When given, the SAVE screen shows two volume rows. */
@@ -217,7 +219,7 @@ const CSS = `
 .rq-sticker.unknown { background: #2c2a26; border-color: #4a463c; }
 .rq-sticker.unknown b { font-size: 1.8em; color: #6a655a; }
 .rq-sticker.sel { transform: rotate(var(--tilt, 0deg)) scale(1.14); box-shadow: 0 0 0 2px #0009, 0 0 1em #ffe27a99; border-color: #ffe27a; z-index: 1; }
-.rq-q { font-size: 2.4em; font-weight: 800; color: #6a655a; }
+.rq-unk { font-size: 2.4em; font-weight: 800; color: #6a655a; }
 .rq-btn.dim { opacity: 0.4; }
 .rq-acts.tighter .rq-btn { padding: 0.4em 1em; margin-bottom: 0.3em; }
 .rq-acts.tight .rq-btn { padding: 0.6em 1em; margin-bottom: 0.45em; }
@@ -567,6 +569,9 @@ export class Menu {
       } else if (id === 'tweaks') {
         this.host.openTweaks?.();
         return this.close();
+      } else if (id === 'workshop') {
+        this.host.openWorkshop?.();
+        return this.close();
       } else if (id === 'photo') {
         this.close();
         this.host.openPhoto?.();
@@ -721,7 +726,7 @@ export class Menu {
       ? ''
       : cur.found
       ? `<div class="rq-detail"><div class="ic">${cur.icon}</div><div><b>${cur.name}</b><span class="tag">${cur.group}</span></div><p>${cur.blurb}</p></div>`
-      : `<div class="rq-detail"><div class="ic"><span class="rq-q">?</span></div><b>? ? ?</b><p>You have not found this yet.</p></div>`;
+      : `<div class="rq-detail"><div class="ic"><span class="rq-unk">?</span></div><b>? ? ?</b><p>You have not found this yet.</p></div>`;
     const found = rows.filter((r) => r.found).length;
     return `<div class="rq-cols items">
       <div class="rq-col"><div class="rq-h">STICKER BOOK<span>${found} / ${rows.length} stuck in</span></div><div class="rq-scroll rq-book">${tiles}</div></div>
@@ -772,8 +777,9 @@ export class Menu {
     if (this.host.rumble) items.push({ id: 'rumble', label: `RUMBLE: ${this.host.rumble.level().toUpperCase()}` });
     for (const x of this.host.extras ?? []) items.push({ id: `x:${x.id}`, label: x.label() });
     items.push({ id: 'controls', label: 'CONTROLS' });
-    if (this.host.openBuilder) items.push({ id: 'builder', label: 'LEVEL BUILDER' });
+    if (this.host.openBuilder) items.push({ id: 'builder', label: 'LEVEL EDITOR' });
     if (this.host.openTweaks) items.push({ id: 'tweaks', label: 'TWEAKS (GAME FEEL)' });
+    if (this.host.openWorkshop) items.push({ id: 'workshop', label: 'WORKSHOP (ALL TOOLS)' });
     if (this.host.quit) items.push({ id: 'quit', label: this.confirmQuit ? 'SELECT AGAIN TO QUIT' : 'QUIT GAME', warn: true });
     return items;
   }

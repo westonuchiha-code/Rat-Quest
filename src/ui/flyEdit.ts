@@ -38,7 +38,7 @@ const CSS = `
 `;
 
 /** Every piece that can be placed in 3D, in builder order. */
-const PLACEABLE: Array<{ t: PieceType; label: string }> = TOOLS.filter((g) => g.group !== 'EDIT' && g.group !== 'STAMPS').flatMap((g) => g.items as Array<{ t: PieceType; label: string }>);
+const PLACEABLE: Array<{ t: PieceType; label: string }> = TOOLS.filter((g) => g.group !== 'EDIT' && g.group !== 'SHAPES').flatMap((g) => g.items as Array<{ t: PieceType; label: string }>);
 const DIRS: Array<'n' | 'e' | 's' | 'w'> = ['n', 'e', 's', 'w'];
 
 export interface FlyInput {

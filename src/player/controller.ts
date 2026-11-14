@@ -208,9 +208,12 @@ export class PlayerController {
     return this.deadTimer >= 0;
   }
 
+  /** A test switch (the Workshop): nothing hurts him. Never set in a real game. */
+  untouchable = false;
+
   /** True while hits pass through him: the safe part of a dodge, the moments after being hit, or when dead. */
   get invulnerable(): boolean {
-    if (this.deadTimer >= 0 || this.invulnTimer > 0) return true;
+    if (this.deadTimer >= 0 || this.invulnTimer > 0 || this.untouchable) return true;
     if (this.dodgeTimer >= 0) {
       const p = this.dodgeTimer / this.dodgeDuration;
       const safe = this.dodgeKind === 'roll' ? TUNING.dodge.rollSafe : TUNING.dodge.backSafe;
@@ -238,7 +241,7 @@ export class PlayerController {
 
   /** A fall into the dark: no rolling or guarding out of it (but no second hurt straight after a hit that knocked him in). */
   takeFall(damage: number): HitResult {
-    if (this.deadTimer >= 0 || this.invulnTimer > 0) return 'dodged';
+    if (this.deadTimer >= 0 || this.invulnTimer > 0 || this.untouchable) return 'dodged';
     this.dodgeTimer = -1;
     this.guarding = false;
     return this.takeHit(this.position.x + 0.01, this.position.z, damage);

@@ -336,3 +336,64 @@ beating her). Not strictly an insect: she was one of the boss ideas offered earl
 - **Not done**: nobody has fought her by hand; her numbers are a first guess. Her sounds are made from existing ones
   (roach screech slowed for the scream, a chain clink sped up for the thread). No story scene.
 
+## The development suite (the owner, 2026-11-14)
+He asked for the start menu to be overhauled, and for the development tools to be reworked: friendlier, better
+looking, more intuitive, more options in the editor, and any other tools that would help. What was done:
+
+**One look for all of it**: `src/ui/devTheme.ts` (`.rqd`: colours, buttons, fields, a set of line icons, `esc`).
+Anything new for developers should use it.
+
+**Title screen** (`src/ui/boot.ts`). Was RATQUEST / START / OPTIONS, centred. Now the logo and a menu down the left
+over the live room (the view drifts slowly round him: main.ts, `drifting`), with CONTINUE (straight into the file
+played last), NEW GAME (the first empty file; with none, it opens the file screen saying so), LOAD GAME (the file
+screen), LEVEL EDITOR, WORKSHOP, OPTIONS, each with a small icon, and a card beside the menu that says what the chosen
+one does (the save file's place, wedges and time for CONTINUE). In a tall or square window (the game inside the
+on-screen pad) it is one centred column (`@container (max-aspect-ratio: 5 / 4)`). Closing the editor or the Workshop
+opened from here comes back here (`editorBack`, `workshopBack`, `tweaksBack` in main.ts). "Start menu" could also have
+meant the pause menu (the pad's button is labelled START): that one was left as it was, except for a bug found on
+its QUEST page (two styles both called `.rq-q` made the goals 2.4 times too big; the sticker one is `.rq-unk` now).
+
+**Level editor** (`src/ui/builder.ts`, rewritten; same `Builder` class and host, so main.ts hardly changed).
+- Layout: a bar along the top (File menu, name, saved or not, undo/redo, copy/paste/duplicate/delete, grid, snap,
+  layers, jump check, problems count, Watch, 3D, Play here, Play, help); pieces on the left (the four tools, a search
+  box, the last six pieces used, then groups that fold); the map; on the right the game (while watching) and four
+  tabs: Piece, Level, Outline, Problems. A status line along the bottom says what the tool or the piece under the
+  pointer is for, and where the pointer is.
+- New: redo; copy, cut, paste at the pointer; stretching a rectangle by its edges and corners; flip left-right and
+  north-south; half-square snapping; layers (hide a kind of piece: it goes faint and cannot be clicked); a Measure
+  tool (drag across a gap: how far, how much higher, and which jump makes it, from the real jump numbers); an Outline
+  of every piece (click to select and go to it); a Problems list (what stops it being played, and the jump checker's
+  findings, each a click away); a right-click menu; rulers, a north arrow, higher ground drawn lighter, steps drawn on
+  stairs, a preview of the piece under the pointer; zoom about the pointer; two-finger pinch and pan; save to a file
+  and open one; a picture of the map; a keys-and-tips sheet (?); the level being worked on is kept on the device as
+  it changes. The level settings are a tab now, not a window over the map.
+- New things a level can hold (`src/levels/custom.ts`): the **Broodmother** as a piece (`brood`: a boss, with the
+  run of the whole room), **fire** (an area, like lava: `fire` on the LevelDef), **iron-bound crates** (a crate's
+  `tough`), **falls put him back** (`fallBack`) and **how far he sees** (`fogRange`, from a short list).
+- A placed piece is no longer left selected (the same piece can be placed again at once), and selecting a piece no
+  longer changes the height of the next one (it used to: pick a river and the next slab went in at -0.85).
+- Not done: the 3D editor (`flyEdit.ts`) still has its old look; nothing was tried by hand on a real touch screen.
+
+**Game feel** (`src/ui/tweaksPanel.ts`, rewritten). **A real fault was found here:** the panel's list of groups was
+kept by hand and six groups (Ironbacks, Flitters, Keep Guards, Mantises, Stag Knights, The Broodmother: 67 sliders)
+were never on it, so those sliders existed but could not be reached. `TWEAK_GROUPS` is now read from the sliders
+themselves (`TWEAK_SECTIONS` only orders them under headings) and tests/editops.ts checks none can be left out. Also
+new: a search across every slider, a "Changed" filter, a box for an exact number beside each slider.
+
+**Workshop** (`src/ui/workshop.ts`; host functions in main.ts next to the builder's).
+- *Sound test*: every sound by name, playable at any pitch, each with a bar for how loud it is on average (red:
+  under 0.09, quiet enough to be lost). It is how the crate sound would have been caught. As of now it marks these
+  as quiet: clank, flipClang, pebbles, chainClink, keepsake, lavaBubble (not changed; worth a look). The five tunes.
+- *Go to a place*: any level, by world; the retired ones too.
+- *Test switches* (`src/core/devSwitches.ts`, `DEV`; never saved, all off at start; what is on is written small at
+  the top of the screen): no damage (`player.untouchable`), speed (1, 0.5, 0.25, 0.1), hit shapes
+  (`src/render/hitShapes.ts`: a ring for each body, the wedge of each attack in yellow while it winds up and red
+  while it can hurt, his sword's sweep, his shield's cover: drawn from the very numbers combat tests), creatures
+  stand still, every door open, a readout. And: heal, beat every creature here, give all gear, start the place again.
+- So that hit shapes can draw what is coming, the Stag Knight's and the Broodmother's `bite` now answer with the right
+  shape during each wind-up, not only during the blow.
+
+**Tests**: tests/editops.ts (55: the editor's rules, the new level options, the slider groups, the switches, the hit
+shapes, the sound loudness numbers). The screens themselves have no tests (they need a browser); they were driven
+with puppeteer scripts and looked at.
+

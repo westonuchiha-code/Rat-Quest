@@ -143,8 +143,9 @@ export class Stag {
     return this.state === 'stomp';
   }
   get bite(): { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean } {
-    if (this.state === 'sweep') return { reach: STAG.sweepReach, arc: STAG.sweepArc, damage: STAG.sweepDamage };
-    if (this.state === 'stomp') return { reach: STAG.stompReach, arc: Math.PI, damage: STAG.stompDamage, ground: true };
+    // (Each wind-up answers with the shape of the blow it leads to, so the test view can draw what is coming.)
+    if (this.state === 'sweep' || this.state === 'sweepWind') return { reach: STAG.sweepReach, arc: STAG.sweepArc, damage: STAG.sweepDamage };
+    if (this.state === 'stomp' || this.state === 'stompWind') return { reach: STAG.stompReach, arc: Math.PI, damage: STAG.stompDamage, ground: true };
     return { reach: STAG.slamReach, arc: STAG.slamArc, damage: STAG.slamDamage, heavy: true };
   }
   /** How fast it is walking (for its legs). */

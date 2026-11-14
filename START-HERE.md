@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,762 checks, about 3 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,817 checks, about 3 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -215,6 +215,14 @@ He gave this list himself; work through it, do not ask about it again:
    yet); or a Great Ironback / forge beetle in the Foundry over the lava. A boss gets its name and health along the
    bottom of the screen (`src/ui/bossBar.ts`: give the creature a `bossName`, `maxHp` and `awake` and add it to the
    loop in main.ts that feeds the bar; Grimsqueak has it too now).
+
+**The development suite (rebuilt 2026-11-14 at the owner's asking; HANDOFF, "The development suite").** Three things,
+one look (`src/ui/devTheme.ts`): the **level editor** (`src/ui/builder.ts`, rewritten; its rules are in
+`src/levels/editOps.ts`), **Game feel** (the tweaks panel) and the **Workshop** (`src/ui/workshop.ts`: a hub for
+those two plus a sound test, go-to-any-place, and test switches: no damage, slow motion, hit shapes, creatures
+still, every door open). The Workshop is on the title screen, in the pause menu, on F4 and at `#...&workshop`.
+The title screen (`src/ui/boot.ts`) was rebuilt the same day: CONTINUE, NEW GAME, LOAD GAME, LEVEL EDITOR, WORKSHOP,
+OPTIONS, with a card saying what the chosen one does. The owner has seen none of it yet: expect notes.
 
 **The owner plays the builds and sends screenshots of what looks wrong.** On 2026-11-14 he sent seven from the
 Cistern in one sitting, all fixed the same turn (HANDOFF, "Fixes from the owner's Cistern playthrough"). What they had

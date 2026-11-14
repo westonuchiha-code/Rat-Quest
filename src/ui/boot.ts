@@ -29,6 +29,11 @@ export interface BootHost {
   eraseFile(file: number): void;
   /** OPTIONS: the main menu takes over. */
   onOptions(): void;
+  /** LEVEL EDITOR and WORKSHOP: the title steps aside for them (left out, the entries are not shown). */
+  onEditor?(): void;
+  onWorkshop?(): void;
+  /** A short line for the corner of the title (a version or a date). */
+  version?: string;
   /** The controls line for a screen, as button chips. */
   help?(screen: 'title' | 'files' | 'pickCopy' | 'sureCopy' | 'sureErase'): string;
   sound?(name: 'move' | 'ok' | 'back' | 'chime'): void;
@@ -62,20 +67,57 @@ const CSS = `
 @keyframes rq-logo-out { 0%, 100% { opacity: 1; } }
 
 /* ---- Title ---- */
-.rq-title { background: radial-gradient(ellipse at 50% 55%, #0000 30%, #000b 100%), linear-gradient(#000a, #0000 35%, #0000 60%, #000c); }
-.rq-title .logo { position: absolute; left: 0; right: 0; top: 9%; text-align: center; font-size: min(25cqh, 13.2cqw); line-height: 1; letter-spacing: 0.02em; white-space: nowrap;
+/* The live room is behind it. A dark fall-off on the menu's side keeps the words readable; the rest is left clear. */
+.rq-title { background: linear-gradient(90deg, #05070bee 0%, #05070bcc 26%, #05070b55 48%, #0000 66%), radial-gradient(ellipse at 62% 50%, #0000 38%, #000a 100%), linear-gradient(#0008, #0000 22%, #0000 70%, #000b); }
+.rq-title .col { position: absolute; left: 5.5%; top: 0; bottom: 0; width: 46%; display: flex; flex-direction: column; justify-content: center; gap: 0; padding-bottom: 6cqh; box-sizing: border-box; }
+.rq-title .logo { font-size: min(17cqh, 9.4cqw); line-height: 1; letter-spacing: 0.02em; white-space: nowrap;
   filter: drop-shadow(0 0.012em 0 #3a1000) drop-shadow(0 0.03em 0 #3a1000) drop-shadow(0 0.055em 0 #1a0600) drop-shadow(0 0.1em 0.04em #000c) drop-shadow(0.018em 0 0 #1a0600) drop-shadow(-0.018em 0 0 #1a0600) drop-shadow(0 -0.018em 0 #1a0600); }
 .rq-title .logo span { display: inline-block; background: linear-gradient(#fff6b0 0%, #ffc233 42%, #ee6a12 62%, #b8340a 100%); -webkit-background-clip: text; background-clip: text; color: transparent; animation: rq-wob 0.9s steps(1) infinite; }
 .rq-title .logo span:nth-child(2n) { animation-delay: -0.3s; }
 .rq-title .logo span:nth-child(3n) { animation-delay: -0.6s; }
-.rq-title .tag { position: absolute; left: 0; right: 0; top: 36%; text-align: center; font-size: min(6.4cqh, 5.2cqw); letter-spacing: 0.3em; color: #e7e0bd; text-shadow: 0 0.08em 0 #000, 0 0 0.4em #000; padding-left: 0.3em; }
-.rq-title .opts { position: absolute; left: 0; right: 0; top: 56%; display: flex; flex-direction: column; align-items: center; gap: 1.6cqh; }
-.rq-title .opt { font-size: min(8cqh, 8cqw); line-height: 1; letter-spacing: 0.12em; color: #8f8a73; text-shadow: 0 0.07em 0 #000; padding: 0.4cqh 4cqh; position: relative; cursor: pointer; }
-.rq-title .opt.sel { color: #fff2a8; text-shadow: 0 0.07em 0 #5a2200, 0 0 0.5em #ffb02a99; animation: rq-pulse 0.7s steps(2) infinite; }
-.rq-title .opt.sel::before { content: '\\25B6'; position: absolute; left: -1.5cqh; top: 50%; transform: translateY(-50%); font-size: 0.6em; color: #ffd24a; }
-.rq-title .hint { position: absolute; left: 0; right: 0; bottom: 7%; text-align: center; font: 700 min(3.4cqh, 2.9cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.1em; color: #d9d3b0; text-shadow: 0 0.1em 0 #000; }
-.rq-title .copy { position: absolute; right: 2%; bottom: 1.5%; font: 600 min(2.4cqh, 2cqw) 'Trebuchet MS', Arial, sans-serif; color: #9a9477; text-shadow: 0 0.1em 0 #000; }
-.rq-title .hint .rqg-pair, .rq-files .help .rqg-pair { margin: 0 0.8em; }
+.rq-title .tag { margin-top: 0.6cqh; font-size: min(3.5cqh, 2cqw); letter-spacing: 0.46em; color: #e7e0bd; text-shadow: 0 0.08em 0 #000, 0 0 0.4em #000; white-space: nowrap; }
+.rq-title .rule { height: 0.45cqh; width: min(54cqh, 30cqw); margin: 2.4cqh 0 2.2cqh; background: linear-gradient(90deg, #ffd24a, #ee6a12 55%, #ee6a1200); border-radius: 1cqh; }
+.rq-title .opts { display: flex; flex-direction: column; gap: 0.7cqh; align-items: flex-start; }
+.rq-title .opt { position: relative; display: flex; align-items: center; gap: 1.6cqh; min-width: min(46cqh, 26cqw); padding: 1cqh 3.4cqh 1cqh 2cqh; border-radius: 1.2cqh; border: 0.3cqh solid #0000;
+  font-size: min(5.4cqh, 3.3cqw); line-height: 1; letter-spacing: 0.1em; color: #a9a48c; text-shadow: 0 0.07em 0 #000; cursor: pointer; white-space: nowrap; transition: transform 0.12s, background 0.12s; }
+.rq-title .opt svg { width: 0.95em; height: 0.95em; flex: none; opacity: 0.75; }
+.rq-title .opt.sel { color: #fff2a8; text-shadow: 0 0.07em 0 #5a2200, 0 0 0.5em #ffb02a88; background: linear-gradient(90deg, #4a2c0ee0, #2a1808c8 70%, #2a180800); border-color: #ffd24a; border-right-color: #0000; transform: translateX(1.6cqh); }
+.rq-title .opt.sel svg { opacity: 1; }
+.rq-title .opt.sel::before { content: ''; position: absolute; left: -2.6cqh; top: 50%; margin-top: -1.1cqh; border: 1.1cqh solid #0000; border-left: 1.7cqh solid #ffd24a; animation: rq-nudge 0.7s steps(2) infinite; }
+.rq-title .opt.off { color: #5f5c50; }
+.rq-title .card { position: absolute; right: 4.5%; bottom: 15%; width: min(60cqh, 36cqw); box-sizing: border-box; padding: 2.2cqh 2.6cqh; border-radius: 1.8cqh; background: linear-gradient(#141a22e8, #0b0f15e8); border: 0.3cqh solid #56627a;
+  box-shadow: 0 1cqh 3cqh #000a; font: 600 max(12px, 2.5cqh) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.01em; color: #cfd6e2; line-height: 1.35; }
+.rq-title .card .k { font: min(3.4cqh, 2.2cqw) Impact, 'Arial Black', sans-serif; letter-spacing: 0.16em; color: #ffd24a; margin-bottom: 0.8cqh; }
+.rq-title .card .where { font-weight: 800; font-size: 1.25em; color: #fff6d8; }
+.rq-title .card .wedges { display: flex; align-items: center; gap: 0.4em; font-weight: 800; font-size: 1.2em; color: #ffd24a; margin: 0.5cqh 0; }
+.rq-title .card .wedges svg { width: 1.2em; height: 1.2em; }
+.rq-title .card .sub { color: #98a2b4; font-size: 0.9em; }
+.rq-title .card .line { display: flex; justify-content: space-between; gap: 1em; padding: 0.35cqh 0; border-bottom: 1px solid #ffffff14; }
+.rq-title .card .line:last-child { border-bottom: 0; }
+.rq-title .card .line b { color: #fff6d8; } .rq-title .card .line i { font-style: normal; color: #ffd24a; white-space: nowrap; }
+.rq-title .card .line.none b { color: #7d8698; font-weight: 600; }
+.rq-title .hint { position: absolute; left: 5.5%; bottom: 5%; font: 700 min(3.2cqh, 2.6cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.08em; color: #d9d3b0; text-shadow: 0 0.1em 0 #000; white-space: nowrap; }
+.rq-title .copy { position: absolute; right: 2.5%; bottom: 2.5%; font: 600 min(2.3cqh, 1.9cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.12em; color: #9a9477; text-shadow: 0 0.1em 0 #000; }
+.rq-title .hint .rqg-pair, .rq-files .help .rqg-pair { margin: 0 1.6em 0 0; }
+.rq-files .help .rqg-pair { margin: 0 0.8em; }
+@keyframes rq-nudge { 0% { transform: translateX(0); } 50% { transform: translateX(0.5cqh); } }
+/* A tall or square window (the game inside the on-screen pad): one centred column, the card as a strip under it. */
+@container (max-aspect-ratio: 5 / 4) {
+  .rq-title { background: radial-gradient(ellipse at 50% 50%, #05070bb0 20%, #05070be8 100%); }
+  .rq-title .col { left: 0; width: 100%; align-items: center; justify-content: flex-start; padding: 7cqh 0 0; }
+  .rq-title .logo { font-size: min(15cqh, 16.5cqw); }
+  .rq-title .tag { font-size: min(3.2cqh, 3.6cqw); padding-left: 0.46em; }
+  .rq-title .rule { background: linear-gradient(90deg, #ee6a1200, #ffd24a 30%, #ffd24a 70%, #ee6a1200); width: 62cqw; margin: 2cqh 0 1.6cqh; }
+  .rq-title .opts { align-items: stretch; width: min(78cqw, 62cqh); }
+  .rq-title .opt { font-size: min(4.6cqh, 6cqw); padding: 0.9cqh 2cqh; min-width: 0; }
+  .rq-title .opt.sel { transform: none; border-right-color: #ffd24a; background: linear-gradient(#4a2c0ee0, #2a1808e0); }
+  .rq-title .opt.sel::before { display: none; }
+  .rq-title .card { position: absolute; left: 50%; right: auto; bottom: 11.5%; transform: translateX(-50%); width: min(88cqw, 70cqh); padding: 1.2cqh 2cqh; font-size: max(11px, 2.1cqh); }
+  .rq-title .card .k { margin-bottom: 0.3cqh; font-size: min(2.8cqh, 3.6cqw); }
+  .rq-title .hint { left: 0; right: 0; text-align: center; bottom: 5.5%; font-size: min(2.8cqh, 3.4cqw); }
+  .rq-title .hint .rqg-pair { margin: 0 0.8em; }
+  .rq-title .copy { left: 0; right: 0; text-align: center; bottom: 1.6%; font-size: min(2cqh, 2.6cqw); }
+}
 
 /* ---- Save files ---- */
 .rq-files { background: radial-gradient(ellipse at 50% 50%, #0008 20%, #000d 100%), linear-gradient(#000c, #0006 40%, #000c); font-family: 'Trebuchet MS', Arial, sans-serif; color: #e9e2c4; }
@@ -123,6 +165,17 @@ const CSS = `
 @keyframes rq-spin { from { transform: rotateX(-24deg) rotateY(0); } to { transform: rotateX(-24deg) rotateY(360deg); } }
 `;
 
+type TitleItem = 'continue' | 'new' | 'load' | 'editor' | 'workshop' | 'options';
+/** The small picture beside each entry of the title's menu. */
+const TITLE_ICONS: Record<TitleItem, string> = {
+  continue: '<path d="M6 4 L20 12 L6 20 Z" fill="currentColor"/>',
+  new: '<path d="M12 2 L14.6 9 L22 9.4 L16.2 14 L18.2 21.4 L12 17.2 L5.8 21.4 L7.8 14 L2 9.4 L9.4 9 Z" fill="currentColor"/>',
+  load: '<path d="M2 6 H9 L11 8.5 H22 V20 H2 Z" fill="currentColor"/>',
+  editor: '<path d="M2 14 H10 V22 H2 Z M12 14 H22 V22 H12 Z M7 4 H17 V12 H7 Z" fill="currentColor"/>',
+  workshop: '<path d="M21 6.5 a5 5 0 0 1 -6.6 4.7 L6 19.6 a2 2 0 0 1 -2.8 -2.8 L11.6 8.4 A5 5 0 0 1 17.5 2 L14.6 5 L15.6 8.4 L19 9.4 Z" fill="currentColor"/>',
+  options: '<path d="M10 2 H14 L14.6 5 L17.2 6.4 L20 5.2 L22 8.6 L19.8 10.6 V13.4 L22 15.4 L20 18.8 L17.2 17.6 L14.6 19 L14 22 H10 L9.4 19 L6.8 17.6 L4 18.8 L2 15.4 L4.2 13.4 V10.6 L2 8.6 L4 5.2 L6.8 6.4 L9.4 5 Z M12 8.6 A3.4 3.4 0 1 0 12 15.4 A3.4 3.4 0 1 0 12 8.6 Z" fill="currentColor" fill-rule="evenodd"/>',
+};
+
 const LOAD_COLORS = ['#ff3b3b', '#ff9a1f', '#ffe03a', '#52e05a', '#38d6ff', '#5a7bff', '#d65aff'];
 
 const EMBLEM = `<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
@@ -158,7 +211,7 @@ export class Boot {
   private stage: Stage = 'off';
   private t = 0;
   private sel = 0;
-  private items: { label: string; run: () => void }[] = [];
+  private items: { id: TitleItem; label: string; off?: boolean; run: () => void }[] = [];
   private loadFor = 0;
   private loadDone: (() => void) | null = null;
   private stars: { x: number; y: number; z: number; c: string }[] = [];
@@ -171,7 +224,7 @@ export class Boot {
     this.logo.className = 'rq-logo';
     this.logo.innerHTML = `<div class="mark">${EMBLEM}</div><div class="name">KINGDOM BELOW<i>™</i></div><div class="sub">INTERACTIVE ENTERTAINMENT</div><div class="black"></div>`;
     this.title.className = 'rq-title';
-    this.title.innerHTML = `<div class="logo">${letters('RATQUEST')}</div><div class="tag">THE KINGDOM BELOW</div><div class="opts"></div><div class="hint"></div><div class="copy">© KINGDOM BELOW INTERACTIVE</div>`;
+    this.title.innerHTML = `<div class="col"><div class="logo">${letters('RATQUEST')}</div><div class="tag">THE KINGDOM BELOW</div><div class="rule"></div><div class="opts"></div></div><div class="card"></div><div class="hint"></div><div class="copy">© KINGDOM BELOW INTERACTIVE${host.version ? ` · ${host.version}` : ''}</div>`;
     this.opts = this.title.querySelector('.opts') as HTMLDivElement;
     this.loadEl.className = 'rq-loading';
     this.loadEl.innerHTML = `<div class="word">${letters('LOADING', LOAD_COLORS)}</div><div class="cube"><div><b></b><b></b><b></b><b></b><b></b><b></b></div></div>`;
@@ -248,6 +301,13 @@ export class Boot {
     this.setStage('loading');
   }
 
+  /** The start-up screens are over (something else has put him in the game). */
+  leave(): void {
+    this.stage = 'off';
+    this.root.classList.remove('on');
+    this.sync();
+  }
+
   /** Hides the title for a moment (the menu takes over). */
   hide(): void {
     this.root.classList.remove('on');
@@ -285,19 +345,43 @@ export class Boot {
   }
 
   private renderTitle(): void {
-    // Any game saved: CONTINUE opens the files. None: START begins a new game in File 1.
-    const any = this.host.files().some((f) => !f.empty);
-    this.items = any
-      ? [
-          { label: 'CONTINUE', run: () => this.showFiles() },
-          { label: 'OPTIONS', run: () => this.host.onOptions() },
-        ]
-      : [
-          { label: 'START', run: () => this.startWith(() => this.host.playFile(1)) },
-          { label: 'OPTIONS', run: () => this.host.onOptions() },
-        ];
+    const cards = this.host.files();
+    const used = cards.filter((f) => !f.empty);
+    // CONTINUE goes straight back into the file played last (or, if that one is empty, the first that has a game).
+    const last = cards.find((f) => f.file === this.host.currentFile() && !f.empty) ?? used[0];
+    const empty = cards.find((f) => f.empty);
+    const items: typeof this.items = [];
+    if (last) items.push({ id: 'continue', label: 'CONTINUE', run: () => this.startWith(() => this.host.playFile(last.file)) });
+    items.push({
+      id: 'new', label: 'NEW GAME', off: !empty,
+      run: () => {
+        if (empty) return this.startWith(() => this.host.playFile(empty.file));
+        // Every file is in use: the file screen is where one is erased.
+        this.showFiles();
+        this.fileMsg = 'Every file has a game in it. Erase one to start a new game there.';
+        this.renderFiles();
+      },
+    });
+    if (used.length) items.push({ id: 'load', label: 'LOAD GAME', run: () => this.showFiles() });
+    if (this.host.onEditor) items.push({ id: 'editor', label: 'LEVEL EDITOR', run: () => this.host.onEditor?.() });
+    if (this.host.onWorkshop) items.push({ id: 'workshop', label: 'WORKSHOP', run: () => this.host.onWorkshop?.() });
+    items.push({ id: 'options', label: 'OPTIONS', run: () => this.host.onOptions() });
+    this.items = items;
     this.sel = Math.min(this.sel, this.items.length - 1);
-    this.opts.innerHTML = this.items.map((it, i) => `<div class="opt${i === this.sel ? ' sel' : ''}" data-i="${i}">${it.label}</div>`).join('');
+    this.opts.innerHTML = this.items
+      .map((it, i) => `<div class="opt${i === this.sel ? ' sel' : ''}${it.off ? ' off' : ''}" data-i="${i}"><svg viewBox="0 0 24 24">${TITLE_ICONS[it.id]}</svg>${it.label}</div>`)
+      .join('');
+    // Beside the menu: what the chosen entry will do.
+    const file = (f: FileCard): string => `<div class="where">${f.where}</div><div class="wedges">${wedgeIcon(20)} ${f.wedges} / ${f.total}</div><div class="sub">${f.played} played${f.saved ? ` · saved ${f.saved}` : ''}</div>`;
+    const id = this.items[this.sel].id;
+    let card = '';
+    if (id === 'continue' && last) card = `<div class="k">FILE ${last.file}</div>${file(last)}`;
+    else if (id === 'new') card = empty ? `<div class="k">FILE ${empty.file}</div><div class="where">A new adventure</div><div class="sub">Starts in the Club, in an empty file. Your other files are not touched.</div>` : '<div class="k">NO EMPTY FILE</div><div class="sub">Every file has a game in it. Choose this to pick one to erase.</div>';
+    else if (id === 'load') card = `<div class="k">SAVE FILES</div>${cards.map((f) => (f.empty ? `<div class="line none"><b>File ${f.file} · empty</b></div>` : `<div class="line"><b>File ${f.file} · ${f.where}</b><i>${f.wedges} / ${f.total}</i></div>`)).join('')}<div class="sub" style="margin-top:0.6cqh">Play, copy or erase a file.</div>`;
+    else if (id === 'editor') card = '<div class="k">LEVEL EDITOR</div><div class="sub">Build your own levels on a map, watch them in the game as you draw, and play them. Sample levels are included to learn from.</div>';
+    else if (id === 'workshop') card = '<div class="k">WORKSHOP</div><div class="sub">The tools the game is made with: sliders for how it feels, a sound test, a way to any place, and test switches.</div>';
+    else card = '<div class="k">OPTIONS</div><div class="sub">Sound and music, the buttons, the picture.</div>';
+    (this.title.querySelector('.card') as HTMLDivElement).innerHTML = card;
     (this.title.querySelector('.hint') as HTMLDivElement).innerHTML = this.host.help?.('title') ?? '';
   }
 
