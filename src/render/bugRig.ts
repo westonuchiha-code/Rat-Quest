@@ -21,6 +21,31 @@ export function aim(obj: THREE.Object3D, dir: THREE.Vector3, edge: THREE.Vector3
   obj.quaternion.setFromRotationMatrix(m.makeBasis(x, y, z));
 }
 
+const boneTmp = { d: new THREE.Vector3(), p: new THREE.Vector3(), k: new THREE.Vector3(), v: new THREE.Vector3() };
+/**
+ * Lays two bones (groups whose own +X runs along the bone) from `from` to `to`, bending towards `pole`. If `to` is
+ * further off than the two bones reach, they point at it at full stretch. Returns how far short of it they fall.
+ */
+export function twoBone(from: THREE.Vector3, to: THREE.Vector3, pole: THREE.Vector3, l1: number, l2: number, first: THREE.Object3D, second: THREE.Object3D): number {
+  const { d, p, k, v } = boneTmp;
+  d.copy(to).sub(from);
+  const far = d.length();
+  const reach = l1 + l2 - 0.005;
+  const len = Math.max(0.02, Math.min(far, reach));
+  d.normalize();
+  const along = (l1 * l1 - l2 * l2 + len * len) / (2 * len);
+  const high = Math.sqrt(Math.max(0, l1 * l1 - along * along));
+  p.copy(pole).addScaledVector(d, -pole.dot(d));
+  if (p.lengthSq() < 1e-6) p.set(0, 1, 0).addScaledVector(d, -d.y);
+  p.normalize();
+  k.copy(from).addScaledVector(d, along).addScaledVector(p, high);
+  first.position.copy(from);
+  aim(first, v.copy(k).sub(from), p);
+  second.position.copy(k);
+  aim(second, v.copy(from).addScaledVector(d, len).sub(k), p);
+  return Math.max(0, far - reach);
+}
+
 /** A row of numbers, each on a spring towards its target. */
 export class Springs {
   readonly target: Float32Array;

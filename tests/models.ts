@@ -1,4 +1,4 @@
-// The creature models (roach, toad, ironback, bat, the Keep Guard, the Orchid Mantis, the Club's folk and Grimsqueak): each one builds, plays every one of
+// The creature models (roach, toad, ironback, bat, the Keep Guard, the Orchid Mantis, the Stag Knight, the Club's folk and Grimsqueak): each one builds, plays every one of
 // its poses without a part flying off or going missing, keeps its feet on the floor, and dies on top of the floor (the
 // toad used to roll over under it and vanish).
 import './../src/core/colorSetup';
@@ -18,6 +18,8 @@ import { GuardModel } from '../src/enemies/guardModel';
 import { GUARD, type GuardState } from '../src/enemies/guard';
 import { MantisModel, type MantisAnimInput } from '../src/enemies/mantisModel';
 import { MANTIS, type MantisState } from '../src/enemies/mantis';
+import { StagModel, STAG_HAMMER } from '../src/enemies/stagModel';
+import { STAG, type StagState } from '../src/enemies/stag';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
@@ -540,6 +542,225 @@ const at = new THREE.Vector3(0, 0, 0);
     check('mantis: and then shrivels away to nothing', m.root.scale.x < 0.01);
     run(m, 'idle', 1);
     check('mantis: (and is whole again if the level brings it back)', m.root.scale.x > 0.98 && measure(inside(m).rig).finite);
+  }
+}
+
+// ---- The Stag Knight: its hammer is posed first and its arms laid to it, so: are its hands on it, and where does it go? ----
+{
+  type Inside = {
+    rig: THREE.Object3D; body: THREE.Object3D; head: THREE.Object3D; hammer: THREE.Object3D; cases: THREE.Object3D[]; underGlow: THREE.Object3D[]; glints: THREE.Object3D[];
+    arms: Array<{ upper: THREE.Object3D; fore: THREE.Object3D }>; legs: Array<{ thigh: THREE.Object3D; shin: THREE.Object3D }>; ring: THREE.Object3D; coreMat: THREE.MeshBasicMaterial; walker: { feet(): THREE.Vector3[] };
+  };
+  const inside = (m: StagModel): Inside => m as unknown as Inside;
+  const H = STAG_HAMMER;
+  /** The parts of its own body the hammer passes through (none is right): down the shaft and on through the head, and across the head both ways. */
+  const through = (m: StagModel): string[] => {
+    const I = inside(m);
+    const h = m.hammerParts();
+    const named: Array<[string, THREE.Object3D]> = [['its head or antlers', I.head], ['a wing case', I.cases[0]], ['a wing case', I.cases[1]], ['its body', I.body]];
+    for (const leg of I.legs) named.push(['a leg', leg.thigh], ['a leg', leg.shin]);
+    const skip = [I.hammer, ...I.arms.flatMap((a) => [a.upper, a.fore])];
+    const meshes: THREE.Mesh[] = [];
+    I.rig.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible || skip.includes(p)) return;
+      meshes.push(mesh);
+    });
+    const along = h.head.clone().sub(h.butt);
+    const lines: Array<[THREE.Vector3, THREE.Vector3, number]> = [[h.butt, along.clone().normalize(), along.length() + H.headHalf]];
+    const q = I.hammer.getWorldQuaternion(new THREE.Quaternion());
+    for (const ax of [new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)]) {
+      const w = ax.applyQuaternion(q);
+      lines.push([h.head.clone().addScaledVector(w, -H.headHalf), w, H.headHalf * 2]);
+    }
+    const hits = new Set<string>();
+    const ray = new THREE.Raycaster();
+    for (const [from, dir, far] of lines) {
+      ray.far = far;
+      ray.set(from, dir);
+      for (const mesh of meshes) {
+        const mat = mesh.material as THREE.Material;
+        const was = mat.side;
+        mat.side = THREE.DoubleSide;
+        if (ray.intersectObject(mesh, false).length) {
+          let name = '?';
+          for (let p: THREE.Object3D | null = mesh; p && name === '?'; p = p.parent) name = named.find(([, g]) => g === p)?.[0] ?? '?';
+          hits.add(name);
+        }
+        mat.side = was;
+      }
+    }
+    return [...hits].sort();
+  };
+  const run = (m: StagModel, state: StagState, secs: number, each?: (t: number) => void): void => {
+    for (let t = 0; t < secs; t += DT) {
+      m.update(DT, { state, stateTime: t, walking: state === 'chase' || state === 'return' ? STAG.speed : 0 });
+      each?.(t);
+    }
+  };
+  const fresh = (): StagModel => {
+    const m = new StagModel();
+    m.setTransform(at, 0);
+    return m;
+  };
+  type Move = [StagState, number];
+  // Each thing it does, as it comes about in a fight: what leads into it, then the thing itself.
+  const MOVES: Array<{ name: string; lead: Move[]; move: Move }> = [
+    { name: 'at its post', lead: [], move: ['idle', 2] },
+    { name: 'coming on', lead: [['idle', 0.5]], move: ['chase', 1.5] },
+    { name: 'the hammer going up', lead: [['chase', 0.8]], move: ['windup', STAG.windup] },
+    { name: 'the slam', lead: [['chase', 0.8], ['windup', STAG.windup]], move: ['slam', STAG.slamTime] },
+    { name: 'stuck', lead: [['chase', 0.8], ['windup', STAG.windup], ['slam', STAG.slamTime]], move: ['stuck', STAG.stuck] },
+    { name: 'pulling the hammer free', lead: [['windup', STAG.windup], ['slam', STAG.slamTime], ['stuck', STAG.stuck]], move: ['chase', 1.2] },
+    { name: 'drawing back to sweep', lead: [['chase', 0.8]], move: ['sweepWind', STAG.sweepWindup] },
+    { name: 'the sweep', lead: [['chase', 0.8], ['sweepWind', STAG.sweepWindup]], move: ['sweep', STAG.sweepTime] },
+    { name: 'after the sweep', lead: [['chase', 0.8], ['sweepWind', STAG.sweepWindup], ['sweep', STAG.sweepTime]], move: ['recover', STAG.recover] },
+    { name: 'ready again', lead: [['sweepWind', STAG.sweepWindup], ['sweep', STAG.sweepTime], ['recover', STAG.recover]], move: ['chase', 1.2] },
+    { name: 'rearing to stomp', lead: [['chase', 0.8]], move: ['stompWind', STAG.stompWindup] },
+    { name: 'the stomp', lead: [['chase', 0.8], ['stompWind', STAG.stompWindup]], move: ['stomp', STAG.stompTime] },
+    { name: 'after the stomp', lead: [['chase', 0.8], ['stompWind', STAG.stompWindup], ['stomp', STAG.stompTime]], move: ['settle', STAG.settle] },
+    { name: 'down on one knee', lead: [['chase', 0.8]], move: ['kneel', STAG.kneel] },
+    { name: 'getting up', lead: [['chase', 0.8], ['kneel', STAG.kneel]], move: ['chase', 1.2] },
+    { name: 'going home', lead: [['chase', 0.8]], move: ['return', 1.2] },
+  ];
+  const bad: string[] = [];
+  const loose: string[] = [];
+  const sunk: string[] = [];
+  let sound = true;
+  let tall = 0;
+  for (const { name, lead, move } of MOVES) {
+    const m = fresh();
+    for (const [st, secs] of lead) run(m, st, secs);
+    const seen = new Map<string, number>();
+    let short = 0;
+    let lowHead = 9;
+    let lowButt = 9;
+    let lowFoot = 9;
+    let highFoot = -9;
+    run(m, move[0], move[1], () => {
+      for (const h of through(m)) seen.set(h, (seen.get(h) ?? 0) + 1);
+      short = Math.max(short, ...m.reachShort);
+      const h = m.hammerParts();
+      lowHead = Math.min(lowHead, h.head.y);
+      lowButt = Math.min(lowButt, h.butt.y);
+      for (const f of inside(m).walker.feet()) {
+        lowFoot = Math.min(lowFoot, f.y);
+        highFoot = Math.max(highFoot, f.y);
+      }
+    });
+    if (seen.size) bad.push(`${name}: ${[...seen].map(([k, n]) => `${k} for ${n} frames`).join(', ')}`);
+    if (short > 0.03) loose.push(`${name}: a hand ${short.toFixed(2)} short of the shaft`);
+    if (lowHead < H.headHalf - 0.02) sunk.push(`${name}: the hammer's head ${(H.headHalf - lowHead).toFixed(2)} into the floor`);
+    if (lowButt < -0.02) sunk.push(`${name}: its butt ${lowButt.toFixed(2)}`);
+    if (lowFoot < -0.03 || highFoot > 0.2) sunk.push(`${name}: a foot between ${lowFoot.toFixed(2)} and ${highFoot.toFixed(2)}`);
+    const r = measure(inside(m).rig);
+    if (!r.finite || r.meshes < 50) sound = false;
+    tall = Math.max(tall, r.box.max.y - r.box.min.y);
+  }
+  check('stag: it builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.6 && tall < 3.6, `tallest ${tall.toFixed(2)} with its hammer up`);
+  check('stag: in everything it does, and on the way into it, both its hands are on the hammer\'s shaft', loose.length === 0, loose.join(' | ') || `${MOVES.length} moves, every frame`);
+  check('stag: and the hammer passes clear of its own head, antlers, body, wing cases and legs', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
+  check('stag: the hammer\'s head rests on the floor, never in it; and its feet are on the floor', sunk.length === 0, sunk.join(' | '));
+
+  {
+    const m = fresh();
+    run(m, 'idle', 1.5);
+    const h = m.hammerParts();
+    const top = inside(m).head.getWorldPosition(new THREE.Vector3());
+    check('stag: at its post it stands taller than the knight, leaning on its hammer: both hands on the end of the shaft, the head on the floor in front', top.y > 1.3 && Math.abs(h.head.y - H.headHalf) < 0.03 && h.head.z > 0.9 && h.grips.every((g) => g.y > 0.9) && Math.abs(h.head.x) < 0.1, `its head ${top.y.toFixed(2)} up; the hammer's ${h.head.z.toFixed(2)} out in front`);
+    // Walking: heavy steps, each foot planted between them.
+    const pos = new THREE.Vector3();
+    let lifted = 0;
+    let slid = 0;
+    let last = inside(m).walker.feet();
+    for (let t = 0; t < 3; t += DT) {
+      pos.z += STAG.speed * DT;
+      m.setTransform(pos, 0);
+      m.update(DT, { state: 'chase', stateTime: t, walking: STAG.speed });
+      const now = inside(m).walker.feet();
+      now.forEach((f, i) => {
+        lifted = Math.max(lifted, f.y);
+        if (f.y < 0.004 && last[i].y < 0.004) slid = Math.max(slid, Math.hypot(f.x - last[i].x, f.z - last[i].z));
+      });
+      last = now;
+    }
+    check('stag: walking, its feet step and do not slide', lifted > 0.1 && slid < 0.01 && inside(m).walker.feet().every((f) => Math.abs(f.z - pos.z) < 0.9), `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`);
+  }
+  {
+    const m = fresh();
+    run(m, 'chase', 0.8);
+    const cold = inside(m).coreMat.color.r + inside(m).coreMat.color.g;
+    run(m, 'windup', STAG.windup);
+    const I = inside(m);
+    const h = m.hammerParts();
+    const top = I.head.getWorldPosition(new THREE.Vector3());
+    const hot = I.coreMat.color.r + I.coreMat.color.g;
+    check('stag: before the slam the hammer is right up over its head and behind it, white-hot, with a red glint on it', h.head.y > top.y + 0.7 && h.head.z < -0.6 && hot > cold + 0.6 && I.glints.some((g) => g.visible), `the hammer's head ${(h.head.y - top.y).toFixed(2)} over its own and ${(-h.head.z).toFixed(2)} behind`);
+    // It comes over the top: at no time during the swing is the hammer's head lower than its hands until it is out in front.
+    let overTop = true;
+    let highest = 0;
+    run(m, 'slam', STAG.slamTime, () => {
+      const x = m.hammerParts();
+      highest = Math.max(highest, x.head.y);
+      if (x.head.z < 0.3 && x.head.y < x.grips[0].y) overTop = false;
+    });
+    run(m, 'stuck', 0.3);
+    const down = m.hammerParts();
+    // The blow lands on a rat whose middle is this far off at most.
+    const far = STAG.radius + STAG.slamReach + 0.3;
+    check('stag: the slam comes over the top and lands on the floor in front of it, where the blow lands', overTop && highest > 2.4 && Math.abs(down.head.y - H.headHalf) < 0.03 && Math.abs(down.head.x) < 0.15 && down.head.z > far - 0.5 && down.head.z < far + 0.25, `the hammer lands ${down.head.z.toFixed(2)} out; the blow reaches a rat ${far.toFixed(2)} off`);
+    const ringOn = I.ring.visible;
+    run(m, 'stuck', 0.6);
+    check('stag: a ring runs out over the floor from where it lands, and is gone again', ringOn && !I.ring.visible && Math.hypot(I.ring.position.x - 0, I.ring.position.z - down.head.z) < 0.3);
+  }
+  {
+    const m = fresh();
+    run(m, 'chase', 0.8);
+    run(m, 'sweepWind', STAG.sweepWindup);
+    const back = m.hammerParts().head;
+    let lowest = 9;
+    let highest = 0;
+    let front = 0;
+    let nearest = 9;
+    let furthest = 0;
+    run(m, 'sweep', STAG.sweepTime, () => {
+      const h = m.hammerParts().head;
+      lowest = Math.min(lowest, h.y);
+      highest = Math.max(highest, h.y);
+      front = Math.max(front, h.z);
+      nearest = Math.min(nearest, Math.hypot(h.x, h.z));
+      furthest = Math.max(furthest, Math.hypot(h.x, h.z));
+    });
+    const out = m.hammerParts().head;
+    const reach = STAG.radius + STAG.sweepReach + 0.3;
+    check('stag: the sweep is drawn back on its right and swung level across its whole front to its left, at the height of the knight', back.x < -0.9 && back.z < 0.5 && out.x > 0.9 && front > 1.2 && lowest > 0.3 && highest < 0.85 && furthest < reach + 0.1 && furthest > reach - 0.6, `from ${back.x.toFixed(2)} to ${out.x.toFixed(2)} across, ${lowest.toFixed(2)} to ${highest.toFixed(2)} up, ${nearest.toFixed(2)} to ${furthest.toFixed(2)} out (the blow reaches ${reach.toFixed(2)})`);
+  }
+  {
+    const m = fresh();
+    run(m, 'chase', 0.8);
+    const I = inside(m);
+    const shut = I.underGlow.every((g) => !g.visible);
+    const standing = I.body.position.y;
+    run(m, 'stompWind', STAG.stompWindup);
+    const flared = I.cases.every((c) => Math.abs(c.rotation.z) > 0.5) && I.underGlow.every((g) => g.visible);
+    const reared = I.body.position.y;
+    run(m, 'stomp', STAG.stompTime);
+    const ring = I.ring.visible && Math.hypot(I.ring.position.x, I.ring.position.z) < 0.01;
+    run(m, 'settle', 0.12);
+    const dropped = I.body.position.y;
+    check('stag: before a stomp it rears up and its wing cases lift, showing the heat under them; then its weight drops and a ring runs out from under it', shut && flared && reared > standing + 0.05 && dropped < standing - 0.05 && ring, `up ${(reared - standing).toFixed(2)}, then down ${(standing - dropped).toFixed(2)}`);
+    run(m, 'kneel', 1);
+    const h = m.hammerParts();
+    check('stag: its poise broken, it is down low over its hammer, the head of it on the floor', I.body.position.y < standing - 0.2 && Math.abs(h.head.y - H.headHalf) < 0.03 && m.reachShort.every((x) => x < 0.03), `${(standing - I.body.position.y).toFixed(2)} lower`);
+    run(m, 'dead', 1.4);
+    const box = measure(I.rig).box;
+    const d = m.hammerParts();
+    check('stag: dead, it lies on its back with its legs in the air and the hammer on the floor beside it, nothing under the floor', box.min.y > -0.06 && box.max.y < 1.6 && I.walker.feet().every((f) => f.y > 0.5) && Math.abs(d.head.y - H.headHalf) < 0.03 && Math.abs(d.butt.y - H.headHalf) < 0.05 && d.hands.every((hand, i) => hand.distanceTo(d.grips[i]) > 0.4), size(box));
+    run(m, 'dead', 2.4);
+    check('stag: and then shrivels away to nothing', m.root.scale.x < 0.01);
+    run(m, 'idle', 1.5);
+    check('stag: (and is whole again, hands on its hammer, if the level brings it back)', m.root.scale.x > 0.98 && m.reachShort.every((x) => x < 0.03) && through(m).length === 0);
   }
 }
 

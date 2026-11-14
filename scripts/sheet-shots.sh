@@ -35,6 +35,9 @@ shot grim "grim"; shot grim-a "grim&cam=-10.35,2.5,8.2,-10.35,1.95,0"; shot grim
 shot mantis "mantis"
 # Each thing the mantis does, alone, from three sides (front, its right side, behind): look at every one of these.
 for n in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14; do shot "mantis$n-front" "mantis&only=$n&cam=1.7,1.4,4.2,0,0.85,0.2"; shot "mantis$n-side" "mantis&only=$n&cam=-4.6,1.2,0.5,0,0.85,0.3"; shot "mantis$n-back" "mantis&only=$n&cam=-2,1.8,-4,0,0.8,0.2"; done
+shot stag "stag"
+# Each thing the Stag Knight does, alone, from three sides: look at every one of these.
+for n in 0 1 2 3 4 5 6 7 8 9 10 11; do shot "stag$n-front" "stag&only=$n&cam=2.4,1.7,5.4,0,1.0,0.4"; shot "stag$n-side" "stag&only=$n&cam=-6,1.5,0.6,0,1.0,0.5"; shot "stag$n-back" "stag&only=$n&cam=-2.6,2.2,-5.2,0,1.0,0.3"; done
 shot faces "faces"
 shot items "items"; shot items-a "items&cam=-3.4,3.6,5.5,-3.4,0.9,-2.6"; shot items-b "items&cam=-3.4,3.2,-0.2,-3.4,1.0,-8.4"; shot items-small "items&cam=5.6,1.3,5.2,5.6,0.55,1.2"
 shot guard "guard"

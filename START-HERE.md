@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,624 checks, about 2 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,671 checks, about 3 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -52,7 +52,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
   `ironback`, `bat`, `guard`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
   `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
-  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#mantis` (the Orchid Mantis, the same), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
+  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#mantis` (the Orchid Mantis, the same), `#stag` (the Stag Knight, the same), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
   looks). On `#hero` and `#moves`, `&only=N` shows one figure and `&settle` lets its springs come to rest.
   `python3 scripts/contact.py <dir> move 5` joins the single-move pictures into one sheet.
 - Dev hashes:
@@ -92,6 +92,12 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
     jumps to where you stood for two hearts, and if it misses its scythes are stuck in the floor. Open after its
     cuts, longer when stuck, longest when a perfect guard throws its arms wide. One on the Hollows' Webbed Gallery
     (middle ledge), one in Web Hollow (the middle floor).
+  - **Stag Knight** (`stag`): a great beetle on its hind legs with a forge hammer. Slow, 10 hits, and it does not
+    flinch: a sword does not stop what it is doing. The slam (hammer up over its head, glowing, a RED glint: nearly
+    a second of warning) is two hearts and a shield does not stop it; then the hammer is stuck in the floor. Close in
+    front it sweeps its whole front (one heart; a shield stops that). It turns slowly, but stay behind it and its
+    wing cases lift and it stomps: a ring along the floor all round (jump it). Five quick blows, or a perfect guard,
+    put it on one knee. The rat cannot shove it. One on the Crucible's island in the Foundry, one in the Coal Cellars.
   - Grimsqueak (boss).
   - A director makes them take turns.
 - **Gear:** each item has real effects (`GearFx` in `src/data/equipment.ts`). Gear secrets, proven in
@@ -166,7 +172,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 ## Not tested on real hardware
 - Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
   real app id or on a Deck.
-- Feel: no human has played the latest combat numbers, the Ironback, the Flitter, the Keep Guard or the Orchid Mantis. Tuning sliders exist for all of them.
+- Feel: no human has played the latest combat numbers, the Ironback, the Flitter, the Keep Guard, the Orchid Mantis or the Stag Knight. Tuning sliders exist for all of them.
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What the owner wants next (his own list, 2026-11-14)
@@ -194,17 +200,13 @@ He gave this list himself; work through it, do not ask about it again:
      angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
      EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
      ray-tested against its own body on every frame of every move) before saying it is done.
-   **Next, half built: the Stag Knight** (a great beetle on its hind legs with a forge hammer, for the Foundry).
-   Its rules are written and compile but nothing uses them yet: `src/enemies/stag.ts` (read its header: it does not
-   flinch, five blows break its poise and it kneels; an overhead slam a shield cannot stop; a sweep; a stomp for a
-   rat who stays behind it). The engine pieces it needs are in and tested by the suite still passing: a `heavy` blow
-   (`takeHit(..., heavy)`: only a perfect guard turns it), `bite.ground` (misses a rat in the air), `Foe.immovable`
-   (the rat is pushed out, not the beast). STILL TO DO: its model (`stagModel.ts`, on `src/render/bugRig.ts`, which
-   now holds the springs, `aim()` and the planted-feet `Walker` the mantis uses; pose the HAMMER first and solve both
-   arms to its shaft), the `#stag` sheet page, tests/stag.ts and its looks checks, then wiring (main.ts, level
-   piece, builder, sounds, sticker, sliders) and a place in the Foundry.
-   After it, ideas (all insects, none built; pick one, do not ask): a hornet lancer that dives, an ant pikeman that
-   fights in pairs, a firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
+   Built to that so far: the Orchid Mantis and the **Stag Knight** (HANDOFF has a section on each). After them,
+   ideas (all insects, none built; pick one, do not ask): a hornet lancer that dives, an ant pikeman that fights in
+   pairs, a firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
+   Lessons from building these, for the next: (1) give a weapon-holder its WEAPON's place first and lay the arms to
+   it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of
+   every move: weapon against own body, hands on the weapon, nothing under the floor; (3) a head that sticks out in
+   front, or horns over it, will be in the way of anything held in two hands: decide where the weapon lives first.
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
    Hollows; none picked).
 
@@ -221,5 +223,5 @@ stick means. Lock-on pressed with nobody near brings the view round behind him. 
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
 Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
-playtest the Ironback, Flitter, Keep Guard and Orchid Mantis. (The plunge wind-up the owner asked about is done: the sword is raised
+playtest the Ironback, Flitter, Keep Guard, Orchid Mantis and Stag Knight. (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

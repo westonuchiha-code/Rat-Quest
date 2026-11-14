@@ -88,7 +88,8 @@ const hall: CustomLevel = {
     box('platform', -8, -14, 0, POT.z0, SHELF2, { bottom: SHELF2 - 0.5 }),
     box('lift', 1, -14, 4, POT.z0 - 0.1, SHELF2, { props: { move: 'up', travel: CRUCIBLE - 1 - SHELF2, speed: 1.6, pause: 1.5 } }),
     // The Slag Crew, all over the rim. An ironback holds the back of the island, behind the Crucible (ram it into the pot).
-    at('roach', -9, 3), at('roach', 9, 3), at('beetle', 2, -14), at('roach', -10, -15),
+    // And a Stag Knight on the east rim, facing in across the island: the Crucible's smith, hammer and all.
+    at('roach', -9, 3), at('stag', 9, 3, 0, { dir: 'w' }), at('beetle', 2, -14), at('roach', -10, -15),
     at('toad', 9, -6), at('toad', -9, -9),
 
     // ---- North: the Hopper, the Slag Run, the Ladle ----
@@ -285,7 +286,7 @@ const cellarArea: CustomLevel = {
     at('exit', 0, 22),
     box('wall', -9, 4, -8, 22, 6), box('wall', 8, 4, 9, 22, 6),
     at('plate', -15, 16), at('plate', 15, 16),
-    at('roach', -15, 10), at('roach', 15, 10), at('toad', 0, 8),
+    at('stag', -15, 10, 0, { dir: 's' }), at('roach', 15, 10), at('toad', 0, 8),
     box('wall', -22, -5, -4, -4, 6), box('wall', 4, -5, 22, -4, 6),
     box('gate', -4, -5, 4, -4, 0, { props: { opens: 'plates' } }),
     box('pillar', -12, -12, -10, -10, 5), box('pillar', 10, -12, 12, -10, 5), box('pillar', -2, -15, 0, -13, 5),

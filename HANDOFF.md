@@ -255,8 +255,24 @@ He sent screenshots as he played. Each of these is his report, the cause, and th
 ## Shared insect rig (src/render/bugRig.ts)
 `Springs` (a row of numbers on springs), `aim(obj, dir, edge)` (point a part's +X along a direction), `Walker` (legs of two bones with feet planted in the world, stepping in pairs; `fold` says where a foot goes when it is off the ground), `ease`. The mantis model uses all of it; the Stag Knight's is to.
 
-## Stag Knight: in progress
-See START-HERE, "What the owner wants next", item 4. Only `src/enemies/stag.ts` exists; it is not wired into anything.
+## New enemy: the Stag Knight
+- The heavy. Where the Keep Guard asks "when do I swing?" and the mantis "can I make it miss?", this one asks "where do I stand, and how greedy am I?".
+- Rules: src/enemies/stag.ts (`Stag`, kind `stag`, table `STAG`). States idle, chase, windup, slam, stuck, sweepWind, sweep, recover, stompWind, stomp, settle, kneel, return, dead.
+  - It walks at 1.7 and turns at 1.9 rad/s (a running rat gets behind it). 10 hit points. `immovable`: combat pushes the RAT out of it, not it out of the rat.
+  - **No flinch.** `takeHit` never changes its state, except: each blow takes poise (5; a plunge 3; all of it back after 3.5 s without a blow), and at none it `kneel`s for 2.2 s (open; hits land and it stays down), then rises with it all back.
+  - Slam: square in front (within 0.5 rad) and within 2.6. `windup` 0.9 s (turning with him for the first 55%), `slam` 0.18 s stepping in, then `stuck` 1.4 s. Narrow (0.42 rad each side), reach 1.3, 2 hearts, `heavy`: a plain block does nothing (`takeHit(..., heavy)` in the controller); a perfect guard turns it and drops it to its knee.
+  - Sweep: within 2.0 and anywhere in its front (if square on, 55% of the time, else the slam). `sweepWind` 0.65 s, `sweep` 0.22 s, `recover` 0.8 s. Wide (1.9 rad each side), reach 1.25, 1 heart, blockable.
+  - Stomp: the rat further than 1.9 rad round from its front and within 2.3 for 0.9 s, whoever's turn it is. `stompWind` 0.55 s, `stomp` 0.14 s, `settle` 0.6 s, then not again for 2.5 s. All round, reach 1.9, 1 heart, `ground`: it misses a rat in the air (`bite.ground`, combat).
+- Model: src/enemies/stagModel.ts, on bugRig. **The hammer is posed first** (`grip`: where its right-hand grip is over the floor; `dir`: which way the shaft points) and both arms are laid to it with `twoBone()`, so its hands are on it by construction (`reachShort` says how far short they fall, for the tests). The slam and the sweep are arcs worked out from how far through the state it is (`slamArc`, `sweepArc`), so the hammer comes over the top and lands when the blow does. Its hands are kept 0.6 from the middle of its chest and 0.38 from its head, which carries them round its own body between a pose overhead and one in front; and the floor holds the hammer's head up.
+  - Its head is on TOP of its shell and its antlers sweep back over its shoulders. It began with the head low in front and the antlers forward, like a real stag beetle: the hammer went through them in most poses. Do not move them back without re-measuring everything.
+  - Wing cases on hinges (`shell`): they lift in the stomp's tell and show the glow under them. The hammer's core is an unlit box behind six iron plates; `heat` runs it from ember to white-hot, and a RED glint sits on it before the slam (white glints mean a blow a shield will stop; red, one it will not).
+  - A ring runs out over the floor from where the slam lands and from under the stomp (it shows the stomp's reach).
+  - Two feet on the shared `Walker`; dead, it is on its back with its limbs curled and the hammer on the floor beside it.
+- Piece `stag` in levels and the builder ("Stag Knight", symbol J, takes `dir`). Sounds in main.ts `beastSounds` (existing sounds re-pitched; the slam and the stomp shake the view). Sticker `foe:stag` with a flat icon. Tweaks group "Stag Knights".
+- Placed: the Foundry, east rim of the Crucible's island (was a roach); the Coal Cellars, first bay (was a roach). Enemy counts unchanged.
+- Tests: tests/stag.ts (32, the fight) and tests/models.ts (15 on how it looks: on every frame of 16 moves with their lead-ins, hands on the shaft, the shaft and the head of the hammer ray-tested against its head, antlers, body, wing cases and legs, nothing under the floor; then where each pose puts the hammer, and that the slam and the sweep reach where their blows land).
+- Sheet page `#stag` (12 states; `&only=N`); `sheet-shots.sh` takes each from three sides.
+- Not done: nobody has fought it by hand. It is dark, in a dark place: if it is hard to see in the Foundry, lighten `C.shell` in the model.
 
 ## Camera and wall-to-wall kicks (the owner, 2026-11-14)
 His words: the left stick "also messes with the camera", worst in wall-jump stretches where "the character won't wall jump anymore"; and after one wall jump towards another wall "there should be something that makes sure that continues to happen instead of ... a slightly wrong angle".

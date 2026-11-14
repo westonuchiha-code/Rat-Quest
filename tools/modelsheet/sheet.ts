@@ -15,6 +15,8 @@ import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
 import { GuardModel } from '../../src/enemies/guardModel';
 import { MantisModel } from '../../src/enemies/mantisModel';
+import { StagModel } from '../../src/enemies/stagModel';
+import { STAG, type StagState } from '../../src/enemies/stag';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
@@ -46,7 +48,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -90,6 +92,57 @@ if (pick === 'guard') {
     labels.push({ text: 'the knight', x: -12.5, y: 0 });
   }
   for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'stag') {
+  // The Stag Knight in each thing it does, with the knight beside the first for size. &only=N shows one alone.
+  type Shot = { name: string; state: StagState; t: number; walking?: number; lead?: Array<[StagState, number]> };
+  const shots: Shot[] = [
+    { name: 'idle', state: 'idle', t: 1 },
+    { name: 'chase', state: 'chase', t: 0.6, walking: STAG.speed, lead: [['idle', 0.4]] },
+    { name: 'windup', state: 'windup', t: STAG.windup, lead: [['chase', 0.8]] },
+    { name: 'slam (half way)', state: 'slam', t: STAG.slamTime * 0.6, lead: [['chase', 0.8], ['windup', STAG.windup]] },
+    { name: 'stuck', state: 'stuck', t: 0.5, lead: [['chase', 0.8], ['windup', STAG.windup], ['slam', STAG.slamTime]] },
+    { name: 'sweep windup', state: 'sweepWind', t: STAG.sweepWindup, lead: [['chase', 0.8]] },
+    { name: 'sweep (half way)', state: 'sweep', t: STAG.sweepTime * 0.5, lead: [['chase', 0.8], ['sweepWind', STAG.sweepWindup]] },
+    { name: 'recover', state: 'recover', t: 0.4, lead: [['chase', 0.8], ['sweepWind', STAG.sweepWindup], ['sweep', STAG.sweepTime]] },
+    { name: 'stomp windup', state: 'stompWind', t: STAG.stompWindup, lead: [['chase', 0.8]] },
+    { name: 'stomp', state: 'stomp', t: STAG.stompTime, lead: [['chase', 0.8], ['stompWind', STAG.stompWindup]] },
+    { name: 'kneel', state: 'kneel', t: 1, lead: [['chase', 0.8]] },
+    { name: 'dead', state: 'dead', t: 1.2, lead: [['chase', 0.8]] },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    const m = new StagModel();
+    const x = only >= 0 ? 0 : (i - (shots.length - 1) / 2) * 3.4;
+    const pos = new THREE.Vector3(x, 0, 0);
+    m.setTransform(pos, spin);
+    scene.add(m.root);
+    let time = 0;
+    const lead = shot.lead ?? [];
+    const leadTime = lead.reduce((sum, [, d]) => sum + d, 0);
+    ticks.push((dt) => {
+      time += dt;
+      let at = time;
+      for (const [s0, d] of lead) {
+        if (at < d) {
+          m.update(dt, { state: s0, stateTime: at, walking: 0 });
+          return;
+        }
+        at -= d;
+      }
+      m.update(dt, { state: shot.state, stateTime: Math.min(shot.t, time - leadTime), walking: shot.walking ?? 0 });
+    });
+    labels.push({ text: `${i} ${shot.name}`, x, y: 0 });
+  });
+  if (only < 0) {
+    const rat = new RatModel();
+    rat.setTransform(new THREE.Vector3(-21.5, 0, 0), spin);
+    scene.add(rat.root);
+    rat.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+    labels.push({ text: 'the knight', x: -21.5, y: 0 });
+  }
+  for (let k = 0; k < 360; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'mantis') {
   // The Orchid Mantis in each thing it does, with the knight beside the first for size. &only=N shows one alone.
@@ -443,7 +496,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'mantis') {
+if (pick === 'stag') {
+  camera.position.set(-1.5, 5, 34);
+  camera.lookAt(-1.5, 1, 0);
+} else if (pick === 'mantis') {
   camera.position.set(-1.2, 4.5, 30);
   camera.lookAt(-1.2, 0.8, 0);
 } else if (pick === 'guard') {

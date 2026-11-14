@@ -8,6 +8,7 @@ import { TOAD } from '../enemies/toad';
 import { IRONBACK } from '../enemies/ironback';
 import { GUARD } from '../enemies/guard';
 import { MANTIS } from '../enemies/mantis';
+import { STAG } from '../enemies/stag';
 import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
@@ -121,6 +122,19 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Mantises', path: 'mantis.escapeAfter', label: 'Hits in a row before it springs away', min: 1, max: 6, step: 1 },
   { group: 'Mantises', path: 'mantis.reel', label: 'Open after a perfect guard', min: 0.5, max: 6, step: 0.1 },
 
+  { group: 'Stag Knights', path: 'stag.hp', label: 'Health', min: 1, max: 24, step: 1, later: 'from the next level' },
+  { group: 'Stag Knights', path: 'stag.speed', label: 'Walking speed', min: 0.5, max: 4, step: 0.1 },
+  { group: 'Stag Knights', path: 'stag.turnRate', label: 'Turn speed (lower: easier to get behind)', min: 0.5, max: 6, step: 0.1 },
+  { group: 'Stag Knights', path: 'stag.windup', label: 'Warning before the slam', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'Stag Knights', path: 'stag.slamDamage', label: 'Slam damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'Stag Knights', path: 'stag.stuck', label: 'Stuck after a slam', min: 0.3, max: 4, step: 0.05 },
+  { group: 'Stag Knights', path: 'stag.sweepWindup', label: 'Warning before the sweep', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Stag Knights', path: 'stag.sweepChance', label: 'Close in front: how often it sweeps, not slams', min: 0, max: 1, step: 0.05 },
+  { group: 'Stag Knights', path: 'stag.behindTime', label: 'Seconds he may stand behind it before it stomps', min: 0.2, max: 4, step: 0.1 },
+  { group: 'Stag Knights', path: 'stag.stompWindup', label: 'Warning before the stomp', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Stag Knights', path: 'stag.poise', label: 'Quick blows that put it on one knee', min: 1, max: 12, step: 1 },
+  { group: 'Stag Knights', path: 'stag.kneel', label: 'How long it is down', min: 0.5, max: 6, step: 0.1 },
+
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
   { group: 'Flitters', path: 'bat.hearQuiet', label: 'Hears sneaking from', min: 0, max: 8, step: 0.25 },
@@ -165,7 +179,7 @@ export const TWEAKS: TweakDef[] = [
 ];
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

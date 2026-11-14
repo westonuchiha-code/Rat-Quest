@@ -37,12 +37,12 @@ export const STAG = {
   slamDamage: 2,
   stuck: 1.4, // hammer in the floor: open
   // The sweep.
-  sweepRange: 2.1,
+  sweepRange: 2.0,
   sweepArc: 1.9, // its whole front and both sides
   sweepChance: 0.55, // close in front of it, how often it sweeps rather than slams
   sweepWindup: 0.65,
   sweepTime: 0.22,
-  sweepReach: 1.5,
+  sweepReach: 1.25,
   sweepDamage: 1,
   recover: 0.8,
   // The stomp.
@@ -242,7 +242,7 @@ export class Stag {
       // Each heavy footfall.
       this.stepIn -= dt;
       if (this.stepIn <= 0) {
-        this.stepIn = 0.5;
+        this.stepIn = 0.36;
         this.events.push('step');
       }
     };
