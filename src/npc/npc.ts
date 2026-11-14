@@ -23,6 +23,19 @@ export interface NpcSpec {
 
 export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon';
 
+/**
+ * Who he is, within his kind: two mice and two birds share a build but not a look. It goes by name, so every level
+ * (and every level a player has built) gets the right one: Wren is the brown songbird, Mort the sleepy grey mouse.
+ */
+export type NpcLook = 'pip' | 'mort' | 'finch' | 'wren' | 'dave' | 'grimsqueak';
+export function lookOf(kind: NpcKind | undefined, name: string): NpcLook {
+  const n = name.toUpperCase();
+  if (kind === 'villain') return 'grimsqueak';
+  if (kind === 'pigeon') return 'dave';
+  if (kind === 'bird') return n.includes('WREN') ? 'wren' : 'finch';
+  return n.includes('MORT') ? 'mort' : 'pip';
+}
+
 export const TALK_RANGE = 2.2;
 
 /**
@@ -76,6 +89,12 @@ export class Npc {
   private readonly pot = new THREE.Group();
   private muzzle: THREE.Object3D | null = null;
   private lanternGlow: THREE.Mesh | null = null;
+  private readonly who: NpcLook;
+  /** How open his eyes are when they are open (Mort's are never more than half), and where the bird's tail rests. */
+  private eyeOpen = 1;
+  private tailRest = -0.35;
+  private readonly mug = new THREE.Group();
+  private readonly wisps: THREE.Mesh[] = [];
   private blinkIn = 1 + Math.random() * 3;
   private blink = 0;
   /** The bird's head snaps from one tilt to the next, the way small birds look about. */
@@ -130,71 +149,91 @@ export class Npc {
       return m;
     };
     const kit = modelKit(mat);
+    const look = lookOf(spec.kind, spec.name);
+    this.who = look;
     if (spec.kind === 'bird') {
       // Finch the goldfinch: a round yellow bird with a black cap, black wings barred with yellow, a forked tail,
       // a red neckerchief knotted at the front and a tuft on his head. His beak opens when he talks.
-      const YEL = 0xf2c230;
-      const INK = 0x2e2e34;
-      const BEAK = 0xe88a30;
+      // Wren is the same build in other feathers: a small brown songbird, paler below, with barred wings, a pale stripe
+      // over each eye, a thin yellow beak, one pink feather on his head, a teal collar with a gold stud, and (the
+      // mark of a wren) a short tail cocked straight up.
+      const wren = look === 'wren';
+      const YEL = wren ? 0xb27a4a : 0xf2c230;
+      const INK = wren ? 0x6a4428 : 0x2e2e34;
+      const INK_LIGHT = wren ? 0x8a5c36 : 0x4a4a52;
+      const BAR = wren ? 0xd8b080 : 0xf2c230;
+      const BELLY = wren ? 0xecd8b0 : 0xfff0b0;
+      const BEAK = wren ? 0xf0c040 : 0xe88a30;
+      const LEG = wren ? 0xc89a6a : 0xe88a30;
+      if (wren) {
+        this.root.scale.setScalar(0.9);
+        this.tailRest = 0.95;
+      }
       this.root.add(this.body);
-      this.body.add(kit.blob(0.3, 0.3, 0.34, (nx, ny, nz) => (nz > 0.25 && ny < 0.5 && Math.abs(nx) < 0.8 ? 0xfff0b0 : ny < -0.6 ? 0xe8d8a0 : YEL), 0, 0.5, 0, 10, 8, 0.25));
+      this.body.add(kit.blob(0.3, 0.3, 0.34, (nx, ny, nz) => (nz > 0.25 && ny < 0.5 && Math.abs(nx) < 0.8 ? BELLY : ny < -0.6 ? (wren ? 0xd8c098 : 0xe8d8a0) : YEL), 0, 0.5, 0, 10, 8, 0.25));
       for (const s of [-1, 1]) {
         // A wing: a flat black blade with a yellow bar across it and three feather tips at the back.
         const wing = new THREE.Group();
         wing.position.set(s * 0.28, 0.64, 0.1);
         const blade = new THREE.Group();
         blade.rotation.x = -0.4; // swept down towards the tail
-        blade.add(kit.blob(0.04, 0.13, 0.22, (_nx, _ny, nz) => (nz > -0.3 && nz < 0.05 ? YEL : INK), 0, -0.04, -0.12, 10, 6, 0.15));
-        for (let k = 0; k < 3; k++) blade.add(kit.blob(0.022, 0.04, 0.11, k === 1 ? 0x4a4a52 : INK, 0, -0.1 + k * 0.06, -0.34 + (k === 1 ? -0.03 : 0), 4, 3, 0));
+        blade.add(kit.blob(0.04, 0.13, 0.22, (_nx, _ny, nz) => (wren ? (Math.floor((nz + 1) * 5) % 2 ? BAR : INK) : nz > -0.3 && nz < 0.05 ? BAR : INK), 0, -0.04, -0.12, 10, 6, 0.15));
+        for (let k = 0; k < 3; k++) blade.add(kit.blob(0.022, 0.04, 0.11, k === 1 ? INK_LIGHT : INK, 0, -0.1 + k * 0.06, -0.34 + (k === 1 ? -0.03 : 0), 4, 3, 0));
         wing.add(blade);
         wing.userData.side = s;
         this.wings.push(wing);
         this.body.add(wing);
         // A thin leg with a feathered top, and a foot of three toes forward and one back.
         this.body.add(kit.blob(0.055, 0.07, 0.055, YEL, s * 0.09, 0.24, 0.02, 5, 4, 0.2));
-        this.body.add(box(0.028, 0.22, 0.028, BEAK, s * 0.09, 0.11, 0.02));
+        this.body.add(box(0.028, 0.22, 0.028, LEG, s * 0.09, 0.11, 0.02));
         for (let k = -1; k <= 1; k++) {
-          const toe = kit.blob(0.016, 0.014, 0.065, BEAK, s * 0.09 + k * 0.035, 0.015, 0.075, 4, 3, 0);
+          const toe = kit.blob(0.016, 0.014, 0.065, LEG, s * 0.09 + k * 0.035, 0.015, 0.075, 4, 3, 0);
           toe.rotation.y = k * 0.45;
           this.body.add(toe);
         }
-        this.body.add(kit.blob(0.016, 0.014, 0.04, BEAK, s * 0.09, 0.015, -0.02, 4, 3, 0));
+        this.body.add(kit.blob(0.016, 0.014, 0.04, LEG, s * 0.09, 0.015, -0.02, 4, 3, 0));
       }
       // The tail: two long feathers in a fork. It flicks.
       this.tail.position.set(0, 0.52, -0.3);
       for (const s of [-1, 1]) {
-        const feather = kit.blob(0.055, 0.03, 0.17, (_nx, _ny, nz) => (nz < -0.5 ? 0x4a4a52 : INK), s * 0.045, 0, -0.16, 5, 3, 0);
+        const feather = kit.blob(0.055, 0.03, wren ? 0.13 : 0.17, (_nx, _ny, nz) => (wren ? (Math.floor((nz + 1) * 4) % 2 ? BAR : INK) : nz < -0.5 ? INK_LIGHT : INK), s * 0.045, 0, wren ? -0.12 : -0.16, 5, 3, 0);
         feather.rotation.y = -s * 0.22;
         this.tail.add(feather);
       }
-      this.tail.rotation.x = -0.35;
+      this.tail.rotation.x = this.tailRest;
       this.body.add(this.tail);
-      // The neckerchief: a red band with a knot and two ends hanging at the front.
-      this.body.add(kit.blob(0.27, 0.07, 0.26, (_nx, ny) => (ny > 0.3 ? 0xe04a4a : 0xc83a3a), 0, 0.74, 0.06, 10, 4, 0.1));
-      this.body.add(kit.blob(0.045, 0.04, 0.04, 0xa82c2c, 0, 0.71, 0.31, 5, 4, 0));
-      for (const s of [-1, 1]) {
-        const end = kit.blob(0.035, 0.08, 0.02, 0xc83a3a, s * 0.035, 0.63, 0.31, 4, 3, 0);
-        end.rotation.z = s * 0.35;
-        this.body.add(end);
+      if (wren) {
+        // A teal collar with a gold stud.
+        this.body.add(kit.blob(0.26, 0.055, 0.25, (_nx, ny) => (ny > 0.3 ? 0x3aa8a0 : 0x2a8880), 0, 0.75, 0.06, 10, 4, 0.1));
+        this.body.add(kit.blob(0.035, 0.035, 0.03, 0xe8c040, 0, 0.74, 0.31, 5, 4, 0));
+      } else {
+        // The neckerchief: a red band with a knot and two ends hanging at the front.
+        this.body.add(kit.blob(0.27, 0.07, 0.26, (_nx, ny) => (ny > 0.3 ? 0xe04a4a : 0xc83a3a), 0, 0.74, 0.06, 10, 4, 0.1));
+        this.body.add(kit.blob(0.045, 0.04, 0.04, 0xa82c2c, 0, 0.71, 0.31, 5, 4, 0));
+        for (const s of [-1, 1]) {
+          const end = kit.blob(0.035, 0.08, 0.02, 0xc83a3a, s * 0.035, 0.63, 0.31, 4, 3, 0);
+          end.rotation.z = s * 0.35;
+          this.body.add(end);
+        }
       }
       this.head.position.set(0, 1.0, 0.1);
       this.body.add(this.head);
-      this.head.add(kit.blob(0.23, 0.22, 0.23, (nx, ny, nz) => (ny > 0.4 ? INK : nz > 0.2 && ny < 0 && Math.abs(nx) > 0.35 ? 0xfadc70 : YEL), 0, 0, 0, 10, 8, 0.15));
+      this.head.add(kit.blob(0.23, 0.22, 0.23, (nx, ny, nz) => (wren ? (ny > 0.55 ? INK_LIGHT : nz > 0 && ny > 0.2 && ny < 0.5 && Math.abs(nx) > 0.25 ? 0xf0dcb8 : nz > 0.5 && ny < -0.2 ? BELLY : 0xc8905a) : ny > 0.4 ? INK : nz > 0.2 && ny < 0 && Math.abs(nx) > 0.35 ? 0xfadc70 : YEL), 0, 0, 0, 10, 8, 0.15));
       // The beak: a cone above, and a smaller one below that drops open.
-      const upper = kit.cone(0.07, 0.17, (_nx, ny) => (ny > 0.4 ? 0xb86a20 : BEAK), 5);
+      const upper = kit.cone(wren ? 0.045 : 0.07, wren ? 0.2 : 0.17, (_nx, ny) => (ny > 0.4 ? (wren ? 0xc89a20 : 0xb86a20) : BEAK), 5);
       upper.position.set(0, -0.015, 0.19);
       upper.rotation.x = Math.PI / 2;
       upper.scale.set(1, 1, 0.75);
       this.head.add(upper);
       this.jaw.position.set(0, -0.05, 0.19);
-      const lower = kit.cone(0.055, 0.13, 0xc87428, 5);
+      const lower = kit.cone(wren ? 0.036 : 0.055, wren ? 0.15 : 0.13, wren ? 0xd8a830 : 0xc87428, 5);
       lower.rotation.x = Math.PI / 2;
       lower.scale.set(1, 1, 0.55);
       this.jaw.add(lower);
       this.head.add(this.jaw);
       // The tuft: three little feathers swept back.
-      for (let k = 0; k < 3; k++) {
-        const f = kit.blob(0.028, 0.11 - k * 0.015, 0.04, INK, 0, 0.27 - k * 0.02, -0.04 - k * 0.07, 4, 4, 0);
+      for (let k = 0; k < (wren ? 1 : 3); k++) {
+        const f = kit.blob(wren ? 0.035 : 0.028, (wren ? 0.13 : 0.11) - k * 0.015, 0.04, wren ? 0xe06a8a : INK, wren ? -0.06 : 0, 0.27 - k * 0.02, -0.04 - k * 0.07, 4, 4, 0);
         f.rotation.x = -0.3 - k * 0.35;
         this.head.add(f);
       }
@@ -493,55 +532,75 @@ export class Npc {
     } else {
       // Pip the peddler: a small mouse in a blue cloak and a yellow scarf, under a pack much too big for him, with a
       // lantern on a pole in one paw. His other paw waves about when he talks; his ears, whiskers and tail are never still.
-      const FUR = 0xd8c8a8;
-      const FUR_LIGHT = 0xf0e8d0;
-      const PINK = 0xe8a8a0;
-      const CLOAK = 0x3a5a8a;
+      // Mellow Mort is the same build with nothing to carry: a plump grey-lilac mouse in a baggy olive jumper with a
+      // cream stripe, a slouching maroon hat, fluffy slippers, eyes that never get more than half open, and a mug of
+      // something hot held in both paws. He nods along to Dave's beat, slowly.
+      const mort = look === 'mort';
+      const FUR = mort ? 0x9a8aa0 : 0xd8c8a8;
+      const FUR_LIGHT = mort ? 0xc8bccc : 0xf0e8d0;
+      const PINK = mort ? 0xc8a0b8 : 0xe8a8a0;
+      const CLOAK = mort ? 0x6a7a3a : 0x3a5a8a;
+      const TRIM = mort ? 0xe0d8b0 : 0x6a8ab8;
+      const HAT = mort ? 0x8a3a4a : 0x4a8a3a;
+      const HAT_DARK = mort ? 0x6a2a3a : 0x3a7030;
+      if (mort) this.eyeOpen = 0.45;
       const LEATHER = 0x8a5a32;
       const STRAP = 0x4a3020;
       const GOLD = 0xe0b040;
       this.root.add(this.body);
       // Body: the cloak, open down the front over a cream belly, with a paler hem.
-      this.body.add(kit.blob(0.3, 0.36, 0.28, (nx, ny, nz) => (nz > 0.35 && Math.abs(nx) < 0.55 && ny < 0.6 ? FUR_LIGHT : ny < -0.72 ? 0x6a8ab8 : CLOAK), 0, 0.42, 0, 10, 8, 0.3));
+      this.body.add(mort
+        ? kit.blob(0.34, 0.36, 0.31, (_nx, ny) => (ny < -0.72 ? 0x566430 : ny > -0.1 && ny < 0.2 ? TRIM : CLOAK), 0, 0.42, 0, 10, 9, 0.3)
+        : kit.blob(0.3, 0.36, 0.28, (nx, ny, nz) => (nz > 0.35 && Math.abs(nx) < 0.55 && ny < 0.6 ? FUR_LIGHT : ny < -0.72 ? TRIM : CLOAK), 0, 0.42, 0, 10, 8, 0.3));
       for (const s of [-1, 1]) {
-        const foot = kit.blob(0.1, 0.055, 0.16, PINK, s * 0.14, 0.05, 0.08, 6, 4, 0.2);
+        const foot = kit.blob(mort ? 0.12 : 0.1, mort ? 0.075 : 0.055, 0.16, mort ? 0x4a9a9a : PINK, s * 0.14, 0.05, 0.08, 6, 4, 0.2);
         foot.rotation.y = s * 0.25;
         this.body.add(foot);
+        if (mort) {
+          // Slippers, with a fluffy cuff.
+          this.body.add(kit.blob(0.085, 0.045, 0.07, 0xe8e0d0, s * 0.13, 0.11, 0.02, 6, 4, 0.1));
+          continue;
+        }
         for (let k = -1; k <= 1; k++) this.body.add(kit.blob(0.028, 0.025, 0.04, 0xf0c0b8, s * 0.14 + k * 0.05 + s * 0.03, 0.04, 0.23, 4, 3, 0));
         // The pack's straps, over his shoulders and down his front.
         const strap = box(0.05, 0.42, 0.03, STRAP, s * 0.17, 0.56, 0.2);
         strap.rotation.set(0.22, 0, -s * 0.12);
         this.body.add(strap);
       }
-      // The scarf: a yellow roll round his neck with one end hanging.
-      this.body.add(kit.blob(0.22, 0.07, 0.2, (_nx, ny) => (ny > 0.2 ? 0xe8bc48 : 0xc89a30), 0, 0.72, 0.02, 9, 4, 0.1));
-      const scarfEnd = kit.blob(0.05, 0.11, 0.025, 0xc89a30, -0.1, 0.6, 0.21, 4, 4, 0);
-      scarfEnd.rotation.z = 0.25;
-      this.body.add(scarfEnd);
-      // The pack: a huge leather box with a flap and buckles, a bedroll on top, a pot and a ladle hanging off it,
-      // and a rolled map poking out.
-      const pack = new THREE.Group();
-      pack.position.set(0, 0.62, -0.36);
-      pack.add(kit.box(0.62, 0.6, 0.4, (_nx, ny) => (ny < -0.6 ? 0x6e4626 : LEATHER), 0, 0, 0));
-      pack.add(kit.box(0.66, 0.2, 0.44, 0xa06c3c, 0, 0.22, 0)); // the flap
-      for (const s of [-1, 1]) {
-        pack.add(box(0.06, 0.34, 0.02, STRAP, s * 0.16, 0.0, 0.215));
-        pack.add(box(0.08, 0.06, 0.03, GOLD, s * 0.16, 0.1, 0.225));
-        pack.add(kit.box(0.2, 0.22, 0.1, 0x7a4e2a, s * 0.36, -0.12, 0)); // side pockets
+      if (mort) {
+        // The jumper's thick rolled neck.
+        this.body.add(kit.blob(0.2, 0.07, 0.19, (_nx, ny) => (ny > 0.2 ? 0x7a8a46 : 0x566430), 0, 0.73, 0.02, 9, 4, 0.1));
+      } else {
+        // The scarf: a yellow roll round his neck with one end hanging.
+        this.body.add(kit.blob(0.22, 0.07, 0.2, (_nx, ny) => (ny > 0.2 ? 0xe8bc48 : 0xc89a30), 0, 0.72, 0.02, 9, 4, 0.1));
+        const scarfEnd = kit.blob(0.05, 0.11, 0.025, 0xc89a30, -0.1, 0.6, 0.21, 4, 4, 0);
+        scarfEnd.rotation.z = 0.25;
+        this.body.add(scarfEnd);
+        // The pack: a huge leather box with a flap and buckles, a bedroll on top, a pot and a ladle hanging off it,
+        // and a rolled map poking out.
+        const pack = new THREE.Group();
+        pack.position.set(0, 0.62, -0.36);
+        pack.add(kit.box(0.62, 0.6, 0.4, (_nx, ny) => (ny < -0.6 ? 0x6e4626 : LEATHER), 0, 0, 0));
+        pack.add(kit.box(0.66, 0.2, 0.44, 0xa06c3c, 0, 0.22, 0)); // the flap
+        for (const s of [-1, 1]) {
+          pack.add(box(0.06, 0.34, 0.02, STRAP, s * 0.16, 0.0, 0.215));
+          pack.add(box(0.08, 0.06, 0.03, GOLD, s * 0.16, 0.1, 0.225));
+          pack.add(kit.box(0.2, 0.22, 0.1, 0x7a4e2a, s * 0.36, -0.12, 0)); // side pockets
+        }
+        const roll = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.16, 0.16, 0.76, 8, 10), (_nx, ny) => (Math.abs(ny) > 0.95 ? 0xe8d8b0 : Math.abs(ny) > 0.5 && Math.abs(ny) < 0.7 ? STRAP : 0xb84a3a)), mat);
+        roll.rotation.z = Math.PI / 2;
+        roll.position.set(0, 0.42, 0);
+        pack.add(roll);
+        const map = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6, 4), (_nx, ny) => (ny > 0.7 ? 0xb84a3a : 0xe8dcb8)), mat);
+        map.position.set(-0.2, 0.36, -0.12);
+        map.rotation.z = 0.25;
+        pack.add(map);
+        this.pot.position.set(0.37, 0.02, -0.02);
+        this.pot.add(kit.blob(0.12, 0.1, 0.12, (_nx, ny) => (ny > 0.6 ? 0x2a2a30 : 0x5a5a62), 0, -0.14, 0, 7, 5, 0.3));
+        this.pot.add(box(0.02, 0.1, 0.02, 0x3a3a40, 0, -0.03, 0));
+        pack.add(this.pot);
+        this.body.add(pack);
       }
-      const roll = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.16, 0.16, 0.76, 8, 10), (_nx, ny) => (Math.abs(ny) > 0.95 ? 0xe8d8b0 : Math.abs(ny) > 0.5 && Math.abs(ny) < 0.7 ? STRAP : 0xb84a3a)), mat);
-      roll.rotation.z = Math.PI / 2;
-      roll.position.set(0, 0.42, 0);
-      pack.add(roll);
-      const map = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6, 4), (_nx, ny) => (ny > 0.7 ? 0xb84a3a : 0xe8dcb8)), mat);
-      map.position.set(-0.2, 0.36, -0.12);
-      map.rotation.z = 0.25;
-      pack.add(map);
-      this.pot.position.set(0.37, 0.02, -0.02);
-      this.pot.add(kit.blob(0.12, 0.1, 0.12, (_nx, ny) => (ny > 0.6 ? 0x2a2a30 : 0x5a5a62), 0, -0.14, 0, 7, 5, 0.3));
-      this.pot.add(box(0.02, 0.1, 0.02, 0x3a3a40, 0, -0.03, 0));
-      pack.add(this.pot);
-      this.body.add(pack);
       // The tail: pink, curling out from under the pack. It sways.
       this.tail.position.set(0, 0.1, -0.15);
       {
@@ -560,18 +619,18 @@ export class Npc {
             pos.setXYZ(n, mid.x + (pos.getX(n) - mid.x) * k, mid.y + (pos.getY(n) - mid.y) * k, mid.z + (pos.getZ(n) - mid.z) * k);
           }
         }
-        this.tail.add(new THREE.Mesh(paint(tube, (nx) => (Math.floor((nx + 1) * 7) % 2 ? 0xd89890 : PINK)), mat));
+        this.tail.add(new THREE.Mesh(paint(tube, (nx) => (Math.floor((nx + 1) * 7) % 2 ? (mort ? 0xb890a8 : 0xd89890) : PINK)), mat));
       }
       this.body.add(this.tail);
 
       // Head: round, paler round the muzzle, big pink-lined ears, bright eyes, whiskers, two front teeth, a floppy green cap.
       this.head.position.set(0, 0.86, 0.04);
       this.body.add(this.head);
-      this.head.add(kit.blob(0.24, 0.22, 0.24, (nx, ny, nz) => (nz > 0.45 && ny < 0.1 ? FUR_LIGHT : Math.abs(nx) > 0.5 && ny < -0.1 && nz > 0 ? 0xe4d6b8 : FUR), 0, 0, 0, 10, 8, 0.2));
+      this.head.add(kit.blob(0.24, 0.22, 0.24, (nx, ny, nz) => (nz > 0.45 && ny < 0.1 ? FUR_LIGHT : Math.abs(nx) > 0.5 && ny < -0.1 && nz > 0 ? (mort ? 0xb0a2b6 : 0xe4d6b8) : FUR), 0, 0, 0, 10, 8, 0.2));
       const muzzle = new THREE.Group();
       muzzle.position.set(0, -0.05, 0.2);
       muzzle.add(kit.blob(0.105, 0.085, 0.12, FUR_LIGHT, 0, 0, 0, 7, 5, 0.15));
-      muzzle.add(kit.blob(0.042, 0.036, 0.04, 0xe87a8a, 0, 0.015, 0.12, 5, 4, 0));
+      muzzle.add(kit.blob(0.042, 0.036, 0.04, mort ? 0x7a5a70 : 0xe87a8a, 0, 0.015, 0.12, 5, 4, 0));
       muzzle.add(box(0.045, 0.04, 0.02, 0xfaf4e4, 0, -0.07, 0.085)); // teeth
       for (const s of [-1, 1]) {
         for (let w = 0; w < 3; w++) {
@@ -589,7 +648,7 @@ export class Npc {
         const ear = new THREE.Group();
         ear.position.set(s * 0.2, 0.12, -0.02);
         ear.add(kit.blob(0.15, 0.15, 0.04, FUR, s * 0.06, 0.08, 0, 8, 5, 0.1));
-        ear.add(kit.blob(0.1, 0.1, 0.03, (_nx, ny) => (ny < -0.3 ? 0xd08880 : PINK), s * 0.06, 0.08, 0.025, 7, 4, 0));
+        ear.add(kit.blob(0.1, 0.1, 0.03, (_nx, ny) => (ny < -0.3 ? (mort ? 0xb088a0 : 0xd08880) : PINK), s * 0.06, 0.08, 0.025, 7, 4, 0));
         ear.userData.side = s;
         this.ears.push(ear);
         this.head.add(ear);
@@ -601,42 +660,71 @@ export class Npc {
         eye.add(glint);
         this.head.add(eye);
         this.eyes.push(eye);
-        const brow = kit.blob(0.045, 0.012, 0.02, 0xb8a888, s * 0.1, 0.11, 0.2, 4, 3, 0);
-        brow.rotation.z = s * 0.25;
+        const brow = kit.blob(0.045, 0.012, 0.02, mort ? 0x7a6a80 : 0xb8a888, s * 0.1, mort ? 0.1 : 0.11, 0.2, 4, 3, 0);
+        brow.rotation.z = s * (mort ? -0.3 : 0.25); // Mort's slope down and out: sleepy
         this.head.add(brow);
+        if (mort) {
+          // A heavy lid over the top of each eye, and a shadow under it.
+          const lid = kit.blob(0.05, 0.03, 0.035, 0x8a7a90, s * 0.1, 0.07, 0.198, 5, 3, 0);
+          lid.rotation.z = -s * 0.2;
+          this.head.add(lid);
+          this.head.add(kit.blob(0.04, 0.012, 0.02, 0x7a6a80, s * 0.1, 0.012, 0.212, 4, 3, 0));
+        }
       }
       // The cap: a green band with a brim, and a floppy tip with a yellow bobble on the end.
-      this.head.add(kit.blob(0.21, 0.1, 0.21, (_nx, ny) => (ny < -0.4 ? 0x3a7030 : 0x4a8a3a), 0, 0.19, -0.02, 9, 4, 0.1));
+      this.head.add(kit.blob(0.21, 0.1, 0.21, (_nx, ny) => (ny < -0.4 ? (mort ? TRIM : HAT_DARK) : HAT), 0, 0.19, -0.02, 9, 4, 0.1));
       this.capTip.position.set(0.06, 0.25, -0.06);
-      this.capTip.add(kit.blob(0.09, 0.08, 0.1, 0x4a8a3a, 0.05, 0.02, -0.04, 6, 4, 0.1));
-      this.capTip.add(kit.blob(0.06, 0.055, 0.07, 0x3a7030, 0.12, -0.02, -0.11, 5, 4, 0));
-      this.capTip.add(kit.blob(0.04, 0.04, 0.04, GOLD, 0.16, -0.07, -0.16, 5, 4, 0));
+      this.capTip.add(kit.blob(0.09, 0.08, 0.1, HAT, 0.05, 0.02, -0.04, 6, 4, 0.1));
+      this.capTip.add(kit.blob(0.06, 0.055, 0.07, HAT_DARK, 0.12, -0.02, -0.11, 5, 4, 0));
+      this.capTip.add(kit.blob(0.04, 0.04, 0.04, mort ? TRIM : GOLD, 0.16, -0.07, -0.16, 5, 4, 0));
       this.head.add(this.capTip);
 
       // Arms: blue sleeves and pink paws. The right one holds the pole; the left one hangs free and does the talking.
       for (const s of [-1, 1]) {
         const arm = new THREE.Group();
         arm.position.set(s * 0.24, 0.62, 0.04);
-        arm.add(kit.blob(0.075, 0.15, 0.08, (_nx, ny) => (ny < -0.7 ? 0x6a8ab8 : CLOAK), 0, -0.11, 0, 6, 5, 0.2));
+        arm.add(kit.blob(mort ? 0.085 : 0.075, 0.15, mort ? 0.09 : 0.08, (_nx, ny) => (ny < -0.7 ? TRIM : CLOAK), 0, -0.11, 0, 6, 5, 0.2));
         arm.add(kit.blob(0.055, 0.05, 0.055, PINK, 0, -0.26, 0.01, 5, 4, 0));
         arm.userData.side = s;
         this.arms.push(arm);
         this.body.add(arm);
       }
-      // Lantern on a pole in his right paw: an iron cage with a glowing pane, swinging from a hook.
-      this.body.add(box(0.04, 1.34, 0.04, 0x5a4028, 0.38, 0.67, 0.2));
-      this.body.add(kit.blob(0.035, 0.03, 0.035, 0x3a2a1c, 0.38, 1.35, 0.2, 5, 4, 0));
-      this.body.add(box(0.03, 0.03, 0.16, 0x5a4028, 0.38, 1.3, 0.27));
-      this.lantern.position.set(0.38, 1.3, 0.34);
-      this.body.add(this.lantern);
-      this.lantern.add(box(0.015, 0.06, 0.015, 0x3a3a40, 0, -0.03, 0));
-      const glow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.12), new THREE.MeshBasicMaterial({ color: 0xffe08a }));
-      glow.position.set(0, -0.16, 0);
-      this.lantern.add(glow);
-      this.lanternGlow = glow;
-      this.lantern.add(kit.cone(0.11, 0.07, 0x3a3a40, 4).translateY(-0.085));
-      this.lantern.add(box(0.16, 0.03, 0.16, 0x3a3a40, 0, -0.245, 0));
-      for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.lantern.add(box(0.018, 0.16, 0.018, 0x3a3a40, x * 0.065, -0.16, z * 0.065));
+      if (mort) {
+        // The mug, held in both paws in front of his belly: blue enamel, a handle, something dark in it.
+        this.mug.position.set(0, 0.53, 0.33);
+        const cup = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.075, 0.065, 0.13, 8, 3), (_nx, ny) => (ny > 0.6 ? 0xf0f0f0 : 0x4a7ab0)), mat);
+        this.mug.add(cup);
+        const tea = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.062, 0.062, 0.01, 8), 0x5a3420), mat);
+        tea.position.y = 0.062;
+        this.mug.add(tea);
+        const handle = new THREE.Mesh(paint(new THREE.TorusGeometry(0.04, 0.014, 4, 6, Math.PI), 0x4a7ab0), mat);
+        handle.position.set(0.075, 0, 0);
+        handle.rotation.z = -Math.PI / 2;
+        this.mug.add(handle);
+        // Three wisps of steam that rise and fade, one after the other.
+        for (let k = 0; k < 3; k++) {
+          const wisp = new THREE.Mesh(new THREE.OctahedronGeometry(0.028, 0), new THREE.MeshBasicMaterial({ color: 0xf0f0f0, transparent: true, opacity: 0.5, depthWrite: false }));
+          wisp.userData.k = k;
+          this.mug.add(wisp);
+          this.wisps.push(wisp);
+        }
+        this.body.add(this.mug);
+      } else {
+        // Lantern on a pole in his right paw: an iron cage with a glowing pane, swinging from a hook.
+        this.body.add(box(0.04, 1.34, 0.04, 0x5a4028, 0.38, 0.67, 0.2));
+        this.body.add(kit.blob(0.035, 0.03, 0.035, 0x3a2a1c, 0.38, 1.35, 0.2, 5, 4, 0));
+        this.body.add(box(0.03, 0.03, 0.16, 0x5a4028, 0.38, 1.3, 0.27));
+        this.lantern.position.set(0.38, 1.3, 0.34);
+        this.body.add(this.lantern);
+        this.lantern.add(box(0.015, 0.06, 0.015, 0x3a3a40, 0, -0.03, 0));
+        const glow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.12), new THREE.MeshBasicMaterial({ color: 0xffe08a }));
+        glow.position.set(0, -0.16, 0);
+        this.lantern.add(glow);
+        this.lanternGlow = glow;
+        this.lantern.add(kit.cone(0.11, 0.07, 0x3a3a40, 4).translateY(-0.085));
+        this.lantern.add(box(0.16, 0.03, 0.16, 0x3a3a40, 0, -0.245, 0));
+        for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.lantern.add(box(0.018, 0.16, 0.018, 0x3a3a40, x * 0.065, -0.16, z * 0.065));
+      }
     }
     // A soft shadow (a floating head casts a wider, fainter one).
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false }));
@@ -688,10 +776,10 @@ export class Npc {
     this.blinkIn -= dt;
     if (this.blinkIn <= 0) {
       this.blinkIn = 1.5 + Math.random() * 3.5;
-      this.blink = 0.13;
+      this.blink = this.eyeOpen < 1 ? 0.4 : 0.13; // a sleepy blink is a long one
     }
     this.blink = Math.max(0, this.blink - dt);
-    for (const e of this.eyes) e.scale.y = this.blink > 0 ? 0.12 : 1;
+    for (const e of this.eyes) e.scale.y = this.blink > 0 ? 0.12 : this.eyeOpen;
   }
 
   /** Puts him somewhere else in the room. */
@@ -837,7 +925,7 @@ export class Npc {
       this.head.rotation.y += ((talking ? 0 : this.tilt.y) - this.head.rotation.y) * snap;
       this.head.rotation.x = (talking ? 0.1 * Math.sin(this.time * 9) : 0) - 0.12 * this.mouth + 0.12 * this.shrug;
       this.jaw.rotation.x = 0.6 * this.mouth;
-      this.tail.rotation.x = -0.35 + 0.25 * Math.max(0, Math.sin(this.time * 2.3)) ** 6 + 0.2 * this.talkBob * Math.abs(Math.sin(this.time * 9));
+      this.tail.rotation.x = this.tailRest + 0.25 * Math.max(0, Math.sin(this.time * 2.3)) ** 6 + 0.2 * this.talkBob * Math.abs(Math.sin(this.time * 9));
       for (const w of this.wings) w.rotation.z = (w.userData.side as number) * (0.06 + (talking ? 0.35 * Math.abs(Math.sin(this.time * 14)) : 0.04 * Math.sin(this.time * 2)) + 0.75 * this.shrug);
     } else {
       // The mouse: head nodding along, ears twitching one at a time, nose and whiskers working, tail and pot swinging.
@@ -855,9 +943,26 @@ export class Npc {
       this.lantern.rotation.z = 0.15 * Math.sin(this.time * 1.7);
       // The lamp flickers a little.
       if (this.lanternGlow) (this.lanternGlow.material as THREE.MeshBasicMaterial).color.setHex(0xffe08a).multiplyScalar(0.9 + 0.1 * Math.sin(this.clock * 13) * Math.sin(this.clock * 7.3));
+      if (this.who === 'mort') {
+        // Mort: a slow nod on the beat, ears drooping, both paws round his mug (he lifts it a little when he talks).
+        const beat = this.time * Math.PI * 2 * 1.05;
+        this.head.rotation.x += 0.1 + 0.09 * Math.max(0, Math.sin(beat)) ** 2;
+        for (const e of this.ears) e.rotation.z += (e.userData.side as number) * 0.3;
+        const lift = 0.06 * this.talkBob + 0.012 * Math.sin(this.time * 2.2);
+        this.mug.position.y = 0.53 + lift;
+        this.mug.rotation.x = -0.25 * this.talkBob * Math.max(0, Math.sin(this.time * 1.7));
+        for (const w of this.wisps) {
+          const u = (this.clock * 0.55 + (w.userData.k as number) / 3) % 1;
+          w.position.set(0.03 * Math.sin(u * 9 + (w.userData.k as number) * 2), 0.09 + u * 0.3, 0.02 * Math.cos(u * 7));
+          w.scale.setScalar(0.6 + u * 1.2);
+          (w.material as THREE.MeshBasicMaterial).opacity = 0.5 * Math.sin(u * Math.PI);
+        }
+      }
       for (const arm of this.arms) {
         const sd = arm.userData.side as number;
-        if (sd > 0) {
+        if (this.who === 'mort') {
+          arm.rotation.set(-1.15 - 0.2 * this.talkBob - 0.3 * this.shrug, 0, sd * (-1.0 + 1.3 * this.shrug));
+        } else if (sd > 0) {
           // The right paw stays on the pole.
           arm.rotation.set(-0.75, 0, 0.5);
         } else {

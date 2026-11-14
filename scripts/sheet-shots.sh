@@ -27,5 +27,6 @@ shot toad-a "toad&cam=-4,1.8,7,-4,0.4,0"; shot toad-b "toad&cam=3.8,2,7.5,3.8,0.
 shot ironback-a "ironback&cam=-4,2,7.5,-4,0.4,0"; shot ironback-b "ironback&cam=4,2,7.5,4,0.4,0"
 shot bat-a "bat&cam=-4,2.6,8,-4,2.6,0"; shot bat-b "bat&cam=3.5,1.6,8.5,3.5,1.4,0"; shot bat-face "bat&cam=-1.0,2.5,2.6,-1.3,2.4,0"; shot bat-ground "bat&cam=2.6,1.6,3.5,2.6,0.1,0"; shot bat-roost "bat&cam=-5.6,3.0,3.2,-6.5,2.9,0"; shot ironback-face "ironback&cam=-5.2,1.0,4.2,-6.5,0.4,0"
 shot npcs-a "npcs&cam=-4.6,1.3,7.5,-4.6,0.75,0"; shot npcs-pip "npcs&cam=-5.2,1.1,3.6,-5.8,0.7,0"; shot npcs-pipback "npcs&cam=-9.5,1.4,-2.5,-6.9,0.6,0"; shot npcs-finch "npcs&cam=-1,1.0,3.4,-1.1,0.6,0"; shot npcs-b "npcs&cam=4.4,2,9,4.4,1.5,0"; shot npcs-dave "npcs&cam=3.4,1.2,4,2.6,0.8,0"; shot npcs-grim "npcs&cam=7,2.3,3.4,5.6,2,0"
+shot npcs2 "npcs2&cam=0,1.5,11,0,0.8,0"; shot npcs2-mort "npcs2&cam=-2.6,1.1,3.8,-2.3,0.7,0"; shot npcs2-wren "npcs2&cam=3.9,1.0,3.6,4.6,0.6,0"; shot npcs2-back "npcs2&cam=-1,1.6,-5,1,0.6,0"
 for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
 ls "$OUT"

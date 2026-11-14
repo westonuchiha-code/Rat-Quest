@@ -168,4 +168,10 @@ Left passable on purpose: hanging lamps and chains (overhead), webs/slime/window
 - npc.ts: mouse (Pip) has arms (right paw on the pole, left waves when talking and shrugs), a tapered tube tail, whiskers, teeth, scarf, pack with flap/buckles/pockets/map/swinging pot, cap with a bobble, a caged lantern that flickers, ears that twitch; bird (Finch) has barred wings on shoulder pivots, a two-part beak that opens on pulse(), forked tail that flicks, knotted neckerchief, toes, head that snaps between tilts; both blink. Pigeon: wing bars, toes, banded tail. Villain: eye sockets, hot centres, slit pupils.
 - Sizes, feet-on-floor, talk range, tells (sac swell, eye colours, horn heat) and every state name are unchanged; no logic file was touched.
 - tools/modelsheet now has #roach, #toad, #npcs and &cam=...; scripts/sheet-shots.sh takes the pictures. tests/models.ts (29 checks).
-- Left as it was: the grounded bat's far wing edge and the roach's feelers can dip under the floor a little (measured in tests/models.ts so it cannot get worse). The hero's model was not touched. Wren and Mellow Mort still reuse Finch's and Pip's models.
+- Left as it was: the grounded bat's far wing edge and the roach's feelers can dip under the floor a little (measured in tests/models.ts so it cannot get worse). The hero's model was not touched.
+## Wren and Mellow Mort
+- npc.ts: NpcLook + lookOf(kind, name): a bird whose name contains WREN is 'wren', a mouse whose name contains MORT is 'mort' (levels upper-case names; player-built levels get it too). NpcKind, voices and level data are unchanged.
+- Wren: brown, pale below, barred wings and tail, tail cocked up (tailRest), thin yellow beak, one pink head feather, teal collar with a gold stud, 0.9 scale.
+- Mort: grey-lilac, olive jumper with a cream stripe, maroon hat, slippers, half-open eyes with lids (eyeOpen 0.45, long blinks), both paws on a steaming mug, slow nod, drooping ears. No pack, pole or lantern.
+- portrait.ts: drawPortrait(canvas, kind, name) draws their own faces (dialog passes the name). Colours follow their sticker icons.
+- Sheet page #npcs2; tests/models.ts has 9 more checks (38).

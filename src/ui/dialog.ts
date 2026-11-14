@@ -103,7 +103,7 @@ export class Dialog {
     this.tick = 0;
     this.open_ = true;
     this.nameEl.textContent = name;
-    drawPortrait(this.root.querySelector('.rq-talk-face') as HTMLCanvasElement, kind);
+    drawPortrait(this.root.querySelector('.rq-talk-face') as HTMLCanvasElement, kind, name);
     (this.root.querySelector('.rq-talk-box') as HTMLElement).classList.add('has-face');
     this.root.classList.remove('k-mouse', 'k-bird', 'k-villain', 'k-pigeon');
     this.root.classList.add('open', `k-${kind}`);

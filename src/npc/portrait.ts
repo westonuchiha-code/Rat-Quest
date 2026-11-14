@@ -1,7 +1,9 @@
+import { lookOf } from './npc';
 import type { NpcKind } from './npc';
 
 /** Draws a chunky little face for the talk box, in a few big pixels, like the portraits in old games. */
-export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse'): void {
+export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse', name = ''): void {
+  const look = lookOf(kind, name);
   const N = 24;
   canvas.width = N;
   canvas.height = N;
@@ -50,6 +52,22 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse')
     px(10, 19, 1, 2, '#f0ead8'); // fangs
     px(13, 19, 1, 2, '#f0ead8');
     px(2, 21, 20, 3, '#0c0810'); // cowl
+  } else if (look === 'wren') {
+    px(5, 6, 14, 13, '#c8905a'); // head
+    px(7, 4, 10, 3, '#c8905a');
+    px(6, 4, 12, 3, '#8a5c36'); // brown crown
+    px(8, 1, 2, 4, '#e06a8a'); // the pink feather
+    px(6, 8, 5, 1, '#f0dcb8'); // pale stripes over the eyes
+    px(13, 8, 5, 1, '#f0dcb8');
+    px(8, 10, 3, 3, '#101010'); // eyes
+    px(13, 10, 3, 3, '#101010');
+    px(9, 10, 1, 1, '#fff');
+    px(14, 10, 1, 1, '#fff');
+    px(8, 14, 8, 4, '#ecd8b0'); // pale throat
+    px(11, 13, 2, 4, '#f0c040'); // thin beak
+    px(11, 17, 2, 1, '#c89a20');
+    px(4, 19, 16, 4, '#2a8880'); // teal collar
+    px(11, 20, 2, 2, '#e8c040');
   } else if (kind === 'bird') {
     px(5, 6, 14, 13, '#f2c230'); // head
     px(7, 4, 10, 3, '#f2c230');
@@ -63,6 +81,23 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse')
     px(11, 16, 2, 1, '#b8661e');
     px(4, 19, 16, 4, '#c83a3a'); // neckerchief
     px(7, 19, 3, 1, '#e86a6a');
+  } else if (look === 'mort') {
+    px(6, 7, 12, 12, '#9a8aa0'); // head
+    px(3, 4, 6, 6, '#9a8aa0'); // ears, drooping
+    px(15, 4, 6, 6, '#9a8aa0');
+    px(4, 5, 4, 4, '#c8a0b8');
+    px(16, 5, 4, 4, '#c8a0b8');
+    px(6, 4, 12, 4, '#8a3a4a'); // slouching hat
+    px(6, 7, 12, 1, '#e0d8b0');
+    px(16, 3, 4, 3, '#6a2a3a');
+    px(8, 12, 3, 2, '#101010'); // half-shut eyes
+    px(13, 12, 3, 2, '#101010');
+    px(8, 11, 3, 1, '#7a6a80'); // heavy lids
+    px(13, 11, 3, 1, '#7a6a80');
+    px(9, 15, 6, 3, '#c8bccc'); // muzzle
+    px(11, 15, 2, 2, '#7a5a70'); // nose
+    px(4, 19, 16, 5, '#6a7a3a'); // olive jumper
+    px(4, 21, 16, 1, '#e0d8b0');
   } else {
     px(6, 7, 12, 12, '#d8c8a8'); // head
     px(3, 3, 6, 6, '#d8c8a8'); // ears

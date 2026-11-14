@@ -11,7 +11,7 @@ import { IronbackModel } from '../src/enemies/ironbackModel';
 import type { IronbackState } from '../src/enemies/ironback';
 import { BatModel } from '../src/enemies/batModel';
 import type { BatState } from '../src/enemies/bat';
-import { Npc } from '../src/npc/npc';
+import { Npc, lookOf } from '../src/npc/npc';
 import type { NpcKind } from '../src/npc/npc';
 
 const DT = 1 / 60;
@@ -194,6 +194,50 @@ const at = new THREE.Vector3(0, 0, 0);
     moved = Math.max(moved, Math.abs(free.rotation.x - before));
   }
   check('Pip: his left paw waves about when he talks', moved > 0.3, moved.toFixed(2));
+  // Wren and Mort have looks of their own, picked by name (levels write it in any case).
+  check('looks go by name: Wren is not Finch, Mort is not Pip', lookOf('bird', 'WREN') === 'wren' && lookOf('bird', 'Finch') === 'finch' && lookOf('mouse', 'MELLOW MORT') === 'mort' && lookOf('mouse', 'Pip') === 'pip' && lookOf(undefined, 'Somebody') === 'pip' && lookOf('villain', 'Mort') === 'grimsqueak');
+  const colours = (n: Npc): Set<number> => {
+    const set = new Set<number>();
+    n.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      const col = m.isMesh && m.material instanceof THREE.ShaderMaterial ? m.geometry.attributes.color : null;
+      if (col) for (let i = 0; i < col.count; i += 3) set.add(Math.round(col.getX(i) * 31) * 1024 + Math.round(col.getY(i) * 31) * 32 + Math.round(col.getZ(i) * 31));
+    });
+    return set;
+  };
+  const shared = (a: Set<number>, b: Set<number>): number => [...a].filter((c) => b.has(c)).length / Math.min(a.size, b.size);
+  for (const [kind, name, other, lo, hi] of [['mouse', 'MELLOW MORT', 'PIP', 1.15, 1.6], ['bird', 'WREN', 'FINCH', 1.05, 1.5]] as Array<[NpcKind, string, string, number, number]>) {
+    const n = new Npc({ name, kind, x: 0, z: 0, facing: 0, lines: ['Hello.'] });
+    const o = new Npc({ name: other, kind, x: 0, z: 0, facing: 0, lines: ['Hello.'] });
+    let ok = true;
+    let low = 0;
+    let top = 0;
+    for (let i = 0; i < 400; i++) {
+      if (i > 200 && i % 9 === 0) n.pulse();
+      if (i === 300) n.act = { lookAt: null, shrug: 1 };
+      n.update(DT, 1, 0, 1.5, i > 200);
+      if (i % 10) continue;
+      const r = measure(n.root);
+      ok &&= r.finite && r.meshes > 20;
+      low = Math.min(low, r.box.min.y);
+      top = Math.max(top, r.box.max.y);
+    }
+    check(`${name}: idling, talking and shrugging, he holds together and stands on the floor`, ok && low > -0.08 && top > lo && top < hi, `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`);
+    const mix = shared(colours(n), colours(o));
+    check(`${name}: he does not wear ${other}'s colours`, mix < 0.35, `${Math.round(mix * 100)}% shared`);
+    check(`${name}: the rat can still talk to him from the same distance`, n.inRange(1, 0, 1.5) && !n.inRange(3, 0, 0));
+  }
+  {
+    // Mort carries a mug and no lantern; both paws are on the mug.
+    const mort = new Npc({ name: 'MELLOW MORT', kind: 'mouse', x: 0, z: 0, facing: 0, lines: ['Hey.'] });
+    for (let i = 0; i < 60; i++) mort.update(DT, 0, 0, 2, false);
+    mort.root.updateMatrixWorld(true);
+    const parts = mort as unknown as { arms: THREE.Object3D[]; mug: THREE.Object3D; lanternGlow: unknown; eyes: THREE.Object3D[] };
+    const mug = parts.mug.getWorldPosition(new THREE.Vector3());
+    const reach = parts.arms.map((a) => a.localToWorld(new THREE.Vector3(0, -0.26, 0.01)).distanceTo(mug));
+    check('Mort: no lantern, and both paws are on his mug', parts.lanternGlow === null && Math.max(...reach) < 0.17, reach.map((d) => d.toFixed(2)).join(', '));
+    check('Mort: his eyes are never more than half open', parts.eyes.every((e) => e.scale.y <= 0.5));
+  }
   // Finch's beak opens on a syllable and shuts again.
   const finch = new Npc({ name: 'Finch', kind: 'bird', x: 0, z: 0, facing: 0, lines: ['Chirp.'] });
   const jaw = (finch as unknown as { jaw: THREE.Object3D }).jaw;

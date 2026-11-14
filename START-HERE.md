@@ -24,7 +24,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 56 test files and 1,357 checks, about 90 s. It must exit 0.
+2. `npm run test:sim`: 56 test files and 1,366 checks, about 90 s. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -45,7 +45,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   - `npm run check:files`: plays through the save-file screen with the keyboard.
 - Model sheet (every pose of every beast and every character side by side; needs Chrome):
   `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
-  `ironback`, `bat`, `npcs`) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
+  `ironback`, `bat`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
   `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
   `#ironback`, `#bat` or `#npcs`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it looks).
 - Dev hashes:
@@ -143,7 +143,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What was offered next (the owner hasn't picked yet)
-From the last turn (after the model rework; 6 and 7 were new):
+From the last turn (after Wren and Mort got their own looks):
 1. Playtest and tune the Ironback and Flitter with the sliders (turn speed, soft-spot width, hearing, swoop warning).
 2. A wave fight mixing all four beasts.
 3. More Steam achievements: one per world, all 41 wedges, Grimsqueak beaten, each gear secret, flip an Ironback into
@@ -151,7 +151,6 @@ From the last turn (after the model rework; 6 and 7 were new):
 4. Gear secrets for the Moss Scarf, Buckler and Cleaver (the Ember Helm has none either).
 5. Un-park the story.
 6. Rework the hero's own model the same way (it was left alone).
-7. Give Wren and Mellow Mort their own looks (they reuse Finch's and Pip's models).
 
 Older offers, not taken:
 - Make the bridge hand-rail solid.

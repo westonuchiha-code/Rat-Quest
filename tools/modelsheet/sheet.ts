@@ -68,7 +68,9 @@ if (pick === 'toad') {
   });
 }
 if (pick === 'npcs') {
-  const kinds: Array<[NpcKind, string, boolean]> = [['mouse', 'Pip', false], ['mouse', 'Pip talking', true], ['bird', 'Finch', false], ['bird', 'Finch talking', true], ['pigeon', 'Dave', false], ['villain', 'Grimsqueak', false], ['villain', 'Grim talking', true]];
+  const kinds: Array<[NpcKind, string, boolean]> = location.hash.includes('npcs2')
+    ? [['mouse', 'Pip', false], ['mouse', 'Mellow Mort', false], ['mouse', 'Mort talking', true], ['bird', 'Finch', false], ['bird', 'Wren', false], ['bird', 'Wren talking', true]]
+    : [['mouse', 'Pip', false], ['mouse', 'Pip talking', true], ['bird', 'Finch', false], ['bird', 'Finch talking', true], ['pigeon', 'Dave', false], ['villain', 'Grimsqueak', false], ['villain', 'Grim talking', true]];
   kinds.forEach(([kind, name, talking], i) => {
     const x = (i - (kinds.length - 1) / 2) * 2.3;
     const n = new Npc({ name, kind, x, z: 0, facing: spin, lines: ['.'] });
