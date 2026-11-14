@@ -1,0 +1,52 @@
+{
+  "_help": "Each bank is one recorded voice: file in recordings/, sounds are auto-sliced by silence. Normal banks follow the order of SYLLABLES (src/audio/speech.ts); a 'free' bank (beatboxing) shares its good sounds out over all 27 syllables. Rebuild: python3 scripts/make-recorded.py",
+  "villain": {
+    "file": "villain.m4a",
+    "threshold": 0.03,
+    "skip": [
+      1,
+      2
+    ],
+    "lowpass": 0.7,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "pigeon": {
+    "file": "pigeon.m4a",
+    "threshold": 0.03,
+    "free": true,
+    "minlen": 8,
+    "minpeak": 0.1,
+    "lowpass": 0.85,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85,
+    "maxlen": 0.35
+  },
+  "mort": {
+    "file": "mort2.m4a",
+    "threshold": 0.03,
+    "free": true,
+    "minlen": 15,
+    "minpeak": 0.08,
+    "lowpass": 0.75,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85,
+    "maxlen": 0.3,
+    "droop": -0.18
+  },
+  "wren": {
+    "file": "wren.m4a",
+    "threshold": 0.03,
+    "free": true,
+    "minlen": 8,
+    "minpeak": 0.05,
+    "lowpass": 0.9,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.9,
+    "maxlen": 0.35
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.testdist/
+
+steam/node_modules
+steam/game
+steam/release
+
+dist-single/
+dist-editor/
+dist-plain/
+.testdist-*/
+.sheet/
+.flaky/
+deliver/

@@ -1,0 +1,32 @@
+{
+  "name": "ratquest-steam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RATQUEST: THE KINGDOM BELOW - desktop wrapper for Steam",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare-game": "cd .. && npm run build && rm -rf steam/game && cp -r dist steam/game",
+    "start": "npm run prepare-game && electron .",
+    "pack": "npm run prepare-game && electron-builder --dir",
+    "dist:win": "npm run prepare-game && electron-builder --win dir",
+    "dist:linux": "npm run prepare-game && electron-builder --linux dir",
+    "dist:mac": "npm run prepare-game && electron-builder --mac dir"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.ratquest.game",
+    "productName": "RATQUEST",
+    "directories": { "output": "release" },
+    "files": ["main.cjs", "preload.cjs", "game/**/*", "steam_appid.txt"],
+    "asarUnpack": ["node_modules/steamworks.js/**/*"],
+    "win": { "target": "dir" },
+    "linux": { "target": "dir", "category": "Game" },
+    "mac": { "target": "dir", "category": "public.app-category.games" }
+  }
+}

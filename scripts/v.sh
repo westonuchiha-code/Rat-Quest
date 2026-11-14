@@ -1,0 +1,3 @@
+#!/bin/bash
+# build + shots: scripts/v.sh out.png hashes...
+cd /home/claude/ratquest && npx tsc --noEmit && npx vite build --mode testpad >/dev/null 2>&1 && node scripts/make-single.mjs >/dev/null && scripts/shots.sh "$@"

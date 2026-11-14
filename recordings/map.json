@@ -1,0 +1,143 @@
+{
+  "_help": "Each key is a sound name (see SFX_NAMES in src/audio/synth.ts). file is in recordings/, start/end in seconds, pitch is a speed factor (2 = an octave up, shorter), lowpass 0..1 (1 = none), bits is the squash depth, rate is 22050 or 11025. Delete an entry to go back to the made-up sound. Rebuild with: python3 scripts/make-recorded.py",
+  "talk": {
+    "file": "voice001.m4a",
+    "start": 6.92,
+    "end": 7.1,
+    "pitch": 1.3,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "menuMove": {
+    "file": "voice001.m4a",
+    "start": 3.87,
+    "end": 4.1,
+    "pitch": 1.7,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "step": {
+    "file": "voice001.m4a",
+    "start": 0.78,
+    "end": 0.9,
+    "pitch": 0.8,
+    "lowpass": 0.25,
+    "bits": 6,
+    "rate": 11025,
+    "gain": 0.9
+  },
+  "drip": {
+    "file": "voice001.m4a",
+    "start": 5.37,
+    "end": 5.55,
+    "pitch": 2.2,
+    "lowpass": 0.9,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.7
+  },
+  "ratJump": {
+    "file": "react8.m4a",
+    "start": 3.03,
+    "end": 3.28,
+    "pitch": 1.5,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "ratJump2": {
+    "file": "react8.m4a",
+    "start": 3.03,
+    "end": 3.28,
+    "pitch": 1.7,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "ratDouble": {
+    "file": "react8.m4a",
+    "start": 3.03,
+    "end": 3.28,
+    "pitch": 1.95,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "ratAttack": {
+    "file": "react8.m4a",
+    "start": 4.56,
+    "end": 5.0,
+    "pitch": 2.1,
+    "lowpass": 0.95,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.5
+  },
+  "ratHurt": {
+    "file": "react8.m4a",
+    "start": 6.86,
+    "end": 7.22,
+    "pitch": 1.5,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "ratDie": {
+    "file": "react8.m4a",
+    "start": 10.9,
+    "end": 12.14,
+    "pitch": 1.45,
+    "lowpass": 0.7,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "item": {
+    "file": "react8.m4a",
+    "start": 14.84,
+    "end": 15.48,
+    "pitch": 1.4,
+    "lowpass": 0.8,
+    "bits": 7,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "toadWind": {
+    "file": "react8.m4a",
+    "start": 17.47,
+    "end": 18.0,
+    "pitch": 0.75,
+    "lowpass": 0.5,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "roachDie": {
+    "file": "react8.m4a",
+    "start": 20.48,
+    "end": 21.9,
+    "pitch": 1.6,
+    "lowpass": 0.8,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85
+  },
+  "villainLaugh": {
+    "file": "react8.m4a",
+    "start": 23.18,
+    "end": 24.47,
+    "pitch": 0.85,
+    "lowpass": 0.6,
+    "bits": 6,
+    "rate": 22050,
+    "gain": 0.85
+  }
+}

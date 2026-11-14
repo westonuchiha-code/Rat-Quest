@@ -1,0 +1,150 @@
+# START HERE: handoff for the next Claude (written 2026-11-13)
+
+Read this first. HANDOFF.md is a log of each feature, oldest first, and PLAN.md is the roadmap with numbered items 1–19.
+Where they disagree with this file (an old test-room hash, "the story is in progress"), this file is right.
+
+## The project
+RATQUEST: THE KINGDOM BELOW is a PS1-style 3D action platformer: a rat knight, a hub (the Club), four worlds of
+Golden Wedges in the style of Mario 64, and sword and shield combat in the style of Zelda.
+- Stack: TypeScript (strict, no unused locals or parameters), Three.js 0.187, Vite 8. No other game libraries.
+- The owner tests on a **phone** with single-file HTML builds opened in the Claude app. The real targets are
+  keyboard and mouse, controllers, and **Steam** (Electron wrapper in `steam/`, Steam Deck included).
+- Every mechanic has been built and tested by machine; the owner has not reported back on the latest builds.
+
+## The owner's standing rules (follow all of them)
+- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all ten files it writes.
+- When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
+  owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
+- No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
+- Never auto-equip pickups or purchases. **Don't make the game easier.**
+- The hero is silent (jump and attack squeaks only). Finch and Pip's models and sounds are placeholders.
+- The story is **parked**; the focus is gameplay.
+- Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
+
+## Setup in a fresh session
+1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
+2. `npm run test:sim`: 55 test files and 1,328 checks, about 90 s. It must exit 0.
+3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
+   Headless screenshot:
+   `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
+4. Build tests inside the project (`--outDir .testdist`). Built elsewhere, they can't find `three`.
+   One test: `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`
+
+## Builds
+- `bash scripts/deliver.sh ../deliver` writes all ten files:
+  - ratquest.html (with the test pad)
+  - ratquest-hub/cistern/foundry/hollows/keep.html (open on that place)
+  - ratquest-testroom.html (the Club with every door open)
+  - ratquest-nopad.html
+  - ratquest-editor.html
+  - ratquest-source.zip
+- Single builds: `npm run build:test` (test pad), `npm run build:editor`, `npm run build` (the Steam/plain build).
+- Browser checks (need Chrome; build the no-pad file first):
+  - `npm run check:deck`: every screen at Steam Deck size (1280×800), no text under 13px.
+  - `npm run check:files`: plays through the save-file screen with the keyboard.
+- Model sheet (every pose of the new beasts side by side):
+  `npx vite build tools/modelsheet --outDir ../../.sheet --emptyOutDir --base ./`, then open `.sheet/index.html#ironback` (or `#bat`).
+- Dev hashes:
+  - `#level=<id>`, `#at=x,y,z,yaw` (the camera sits behind him at (sin yaw, cos yaw); yaw 1.5708 looks west).
+  - `#nostory`, `#unlockall`, `#menuN` (open the menu on screen N; 3 is SAVE), `#shop`, `#talk`.
+  - `#photo` (or `#photo=look,pose,frame`), `#boot&title`, `#boot&files`, `#nopad`, `#tweaks`, `#ownall`, `#allstickers`, `#debug`.
+
+## The game right now
+| World | Area id | Name | Wedges | Notes |
+|---|---|---|---|---|
+| (hub) | hub | The Club | 0 | Doors to the worlds. Pip's shop, rest at the fire |
+| Cistern (door 0) | cistern | The Great Cistern | 6 | Includes the drain secret (Sludge Scarf) |
+| | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 3 / 2 | Side areas (returnTo cistern) |
+| Foundry (door 4) | foundry | The Foundry | 6 | Ironback behind the Crucible. Mouth secret (Royal Scarf) |
+| | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 3 | Ironback behind the cellar gate |
+| Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
+| | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 2 / 2 / 1 | faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
+| Keep (door 20) | keep | Grimsqueak's Keep | 5 | Fall-back level. Ironback in the courtyard, bats on chains over the battlements |
+| | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
+
+- 41 wedges in all. Door costs are in `src/data/balance.ts` (BALANCE). Shop prices are there too.
+- 13 retired levels live in ARCHIVE (`levelById` still finds them).
+- **Enemies:**
+  - Roach (`scuttler`): circles, bites, charges.
+  - Toad: spits, pounces.
+  - **Ironback**: iron shell turns the sword (get behind it); rams; flipped by a wall, a perfect guard or a plunge.
+  - **Flitter** (`bat`): roosts and wakes to footsteps but not sneaking; swoops; hittable only at the bottom of the swoop.
+  - Grimsqueak (boss).
+  - A director makes them take turns.
+- **Gear:** each item has real effects (`GearFx` in `src/data/equipment.ts`). Gear secrets, proven in
+  `tests/secrets.ts`:
+  - the Sludge Scarf (up the Cistern drain against the current);
+  - the Royal Scarf (a long jump to the Furnace Mouth);
+  - the Miner's Helm (its lamp makes the Lightless Way fair).
+
+  The Ember Helm, Moss Scarf, Buckler and Cleaver have no secret yet.
+- **Systems:**
+  - Three save files (`src/core/slots.ts`; File 1 is the old keys).
+  - Button prompts that follow the device, including the Steam Deck (`src/ui/glyphs.ts`).
+  - Rumble off/low/full.
+  - Photo mode.
+  - Sticker book.
+  - Level builder with a jump checker and trap finder.
+  - Tweaks sliders (F3 in the test build).
+  - Ambience, music per world, coloured lights.
+
+## Code map
+- `src/main.ts` (2,700 lines): the game loop and all the wiring (levels, enemies, combat events, sounds, menus,
+  saves, files, prompts). Big but linear; search it for the feature name.
+- `src/levels/`:
+  - Each world is a CustomLevel (pieces) built by `compileCustom(level, id)`. The worlds are `cistern.ts`,
+    `foundry.ts`, `hollows.ts`, `keep.ts` and `cisternHalls.ts`; the Club is `junction.ts`.
+  - `levels.ts`: ALL_LEVELS / LEVELS / ARCHIVE.
+  - `reach.ts`: the jump checker, plus trap mode (`computeReach(def, { traps: true })`) for soft-locks.
+  - `goals.ts`: wedge goals.
+- `src/enemies/`: logic classes (no Three.js, so they run in tests) and a separate `*Model.ts` for each.
+  `foe.ts` is the shared interface (`takeHit(dmg, x, z, how)`, `deflects`, `biteDir`, `SENSES`).
+- `src/combat/combat.ts`: sword, plunge, bites, guard and parry, body push.
+- `src/player/controller.ts`: movement and moves (long jump, wall kick, ledge grab, plunge, dodge, guard, recoil).
+- `src/ui/`: menu, boot (title and save files), HUD, shop, photo mode, glyphs, builder.
+- `src/core/`: input, controls (pads), bindings, rumble, save, slots, tweaks.
+- `src/data/`: tuning, balance, equipment, shop, stickers.
+- `steam/`: Electron main and preload, steamworks.js (achievements, Deck flag, pad type). See `steam/README.md`.
+
+## Habits that caught real bugs (keep them)
+- Every feature gets a test file in `tests/`, added to the `test:sim` list in package.json. Use the **real**
+  PlayerController and `resolveCombat` for fights, not just the enemy class.
+- Every enemy roll goes through `this.rng` (tests fix the dice). A raw `Math.random` in toad.ts once made a test fail
+  about 1 run in 20. footing.ts now checks that the same dice give the same result.
+- Look at it. Screenshots in the game and on the model sheet found the problems the tests missed: invisible banners,
+  the bat flying above the frame, a shell that read as two bubbles, steam drawn as white squares.
+- After a change, run the whole `npm run test:sim` before building.
+
+## Gotchas
+- The game camera sees only about 5–7 units up a wall. Anything hung higher is invisible.
+- A "defeat" wedge counts **every** enemy in its level. Adding an enemy anywhere changes that goal, so put new enemies
+  in the group the hint names, or update the hint.
+- The plain jump checker lets jumps pass through walls (on purpose, so it never cries wolf). Trap mode is strict.
+- The menu remembers its last screen and row. Scripts must navigate by title, not by counting key presses.
+- Enemies remember the last swing number that hit them, and a new test rat counts swings from 1. Use a fresh enemy
+  for each check.
+- Rumble ignores a weaker buzz for 60 ms after a stronger one.
+- Photo mode on a pad: B / ○ means back (leave). Don't put a photo action on the east button.
+- An empty save file means no save and under a second played. The game writes a few things at start-up before a file
+  is chosen.
+- Fall-back levels (Hollows, Keep, Lightless Way) put him back where he was, with 1 damage. Other levels respawn him at
+  the start.
+
+## Not tested on real hardware
+- Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
+  real app id or on a Deck.
+- Feel: no human has played the latest combat numbers, the Ironback or the Flitter. Tuning sliders exist for all of them.
+
+## What was offered next (the owner hasn't picked yet)
+From the last turn (after the two new beasts):
+1. Playtest and tune the Ironback and Flitter with the sliders (turn speed, soft-spot width, hearing, swoop warning).
+2. A wave fight mixing all four beasts.
+3. More Steam achievements: one per world, all 41 wedges, Grimsqueak beaten, each gear secret, flip an Ironback into
+   a wall, sneak past a roost.
+4. Gear secrets for the Moss Scarf, Buckler and Cleaver (the Ember Helm has none either).
+5. Un-park the story.
+
+Older offers, not taken:
+- Make the bridge hand-rail solid.
+- Give every room's outer walls its world's look. The Club's walls would turn grey; the owner was asked and hasn't answered.
+- An app icon and window title for the Steam build.

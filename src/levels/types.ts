@@ -1,0 +1,124 @@
+/**
+ * A level is plain data: the room, what is in it, and what he has to do to open the exit.
+ * Nothing here touches three.js, so tests can check every level in node.
+ */
+import type { Box, Decor, GateSpec, LavaVolume, MoverSpec, PipeSpec, WaterVolume } from '../world/layout';
+import type { NpcSpec } from '../npc/npc';
+import type { CollectibleDef, CollectibleKind } from '../world/collectibles';
+import type { PickupDef } from '../data/equipment';
+import type { DoorSpec } from '../world/rooms';
+
+/** One thing he must do. A level opens its exit when every main goal is done. */
+export type GoalDef =
+  | { type: 'collect'; kind: CollectibleKind; /** how many, or 'all' of that kind in the level */ count: number | 'all'; label: string }
+  | { type: 'defeat'; /** every enemy that stands in the room at the start */ label: string }
+  | { type: 'waves'; label: string }
+  /** Smash this many of the level's wall pipes (or all of them). */
+  | { type: 'burst'; count: number | 'all'; label: string }
+  | { type: 'reach'; x: number; y: number; z: number; radius: number; label: string };
+
+export interface EnemySpec {
+  /** Which enemy. Default: the roach. */
+  type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat';
+  x: number;
+  z: number;
+  /** Height of the floor it stands on. Default 0. */
+  y?: number;
+  /** The floor patch it guards. Default: a 5 unit radius. */
+  arena?: { x0: number; x1: number; z0: number; z1: number };
+  respawn?: boolean;
+  /** Hunts the rat from anywhere in the room instead of keeping to its patch. Used for enemies that arrive in waves. */
+  hunt?: boolean;
+  /** A bat: what it hangs from (drawn above its roost). Default rock. */
+  perch?: 'rock' | 'chain';
+}
+
+/**
+ * A Golden Wedge: one of several separate prizes in an open course (the "pick a goal" kind of level).
+ * It sits at x, y, z (its base). With `appears` set it only shows up once that is done; with null it is there from the start.
+ * He earns it by touching it. The first wedge he takes opens the exit; the course stays open for the rest.
+ */
+export interface WedgeDef {
+  id: string;
+  name: string;
+  /** A short clue for the quest screen. */
+  hint: string;
+  x: number;
+  y: number;
+  z: number;
+  appears: GoalDef | null;
+  /** A secret only some gear can reach (an item id). The jump checker leaves it out; tests check it with that gear on. */
+  gear?: string;
+}
+
+/** A door in a hub that leads into a course. It opens once he has `need` Golden Wedges in all. `to` null: not built yet. */
+export interface CourseDoorDef {
+  to: string | null;
+  name: string;
+  need: number;
+  door: DoorSpec;
+}
+
+export interface LevelDef {
+  id: string;
+  name: string;
+  /** One line telling what the level is about, for the level list. */
+  blurb: string;
+  /** Which music plays here. Default 'drift'. */
+  music?: 'drift' | 'pump' | 'groove' | 'echo' | 'march';
+  /** Colour of the fog and the far dark. Default: the sewer's. */
+  fog?: number;
+  /** Where the fog starts and where it is total (default 18 and 90). Big open levels push it back so their landmarks show. */
+  fogRange?: [number, number];
+  /** Which look the level has (stone, wood and iron of the exit door follow it). Default: the sewer. */
+  theme?: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
+  solids: Box[];
+  /** The void under the room, for the dark bottom. Null when there is none. */
+  pit: Box | null;
+  water: WaterVolume[];
+  /** Pipes, drains and lamps, drawn only. */
+  decor: Decor[];
+  /** Wall pipes that can be smashed. */
+  pipes?: PipeSpec[];
+  /** Portcullises that open when their pipes are burst, or when the goals are done. */
+  gates?: GateSpec[];
+  /** Pools of lava: touching one hurts. */
+  lava?: LavaVolume[];
+  /** Falling into the dark costs a heart and puts him back on the last ground he stood on (instead of back at the start). */
+  fallBack?: boolean;
+  /** Platforms that glide back and forth and carry the rat. */
+  movers?: MoverSpec[];
+  /** Floor plates: stepping on one presses it for good; gates can wait for them. */
+  plates?: Array<{ x: number; z: number; y: number }>;
+  /** Friendly characters to talk to. */
+  npcs?: NpcSpec[];
+  spawn: { x: number; y: number; z: number; facing: number };
+  collectibles: CollectibleDef[];
+  /** What is inside each crate, in the order the crates appear in `solids`: a collectible id, or null. */
+  crateContents: Array<string | null>;
+  enemies: EnemySpec[];
+  /** Enemies that arrive one group at a time. Used by the 'waves' goal. */
+  waves: EnemySpec[][];
+  gear: PickupDef[];
+  goals: GoalDef[];
+  exit: DoorSpec;
+  /** Named places that story scenes are staged around (see src/story/scenes.ts). */
+  storySpots?: Record<string, { x: number; y: number; z: number }>;
+  /** An open course: separate Golden Wedges to earn in any order instead of one set of goals. */
+  wedges?: WedgeDef[];
+  /** No ledge grabbing here (a level about jump timing, where catching an edge would make it easy). */
+  noGrab?: boolean;
+  /** No long jump here (gaps meant to be crossed with a plain running jump). */
+  noLongJump?: boolean;
+  /** A hub: doors into courses; its own door is open from the start. */
+  hub?: boolean;
+  courseDoors?: CourseDoorDef[];
+  /** Which world this area belongs to (its wedges count together on the Club's door sign). Default: its own id. */
+  world?: string;
+  /** A sub-area: its door is open from the start and leads back to this area (in front of the door that led here). */
+  returnTo?: string;
+  /** A fire to rest at: heals him and saves. */
+  restSpot?: { x: number; y: number; z: number };
+  /** Gear given when everything in the level has been collected. */
+  reward?: string;
+}
