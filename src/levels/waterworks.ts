@@ -121,7 +121,7 @@ export function waterworks(): LevelDef {
   // and an iron grate in the landing floor with something glowing far below.
   const tunnel = { x: HX, y: 0, z: 33 };
   const grate = { x: -5, y: 0, z: 41.5 };
-  decor.push({ kind: 'hole', x: HX - 0.04, y: 1.3, z: tunnel.z, yaw: -Math.PI / 2, r: 1.6 });
+  decor.push({ kind: 'hole', x: HX - 0.04, y: 1.3, z: tunnel.z, yaw: -Math.PI / 2, r: 1.6, gap: true });
   decor.push({ kind: 'mark', glyph: 'crown', x: HX - 0.03, y: 4.1, z: tunnel.z, yaw: -Math.PI / 2, size: 0.8, color: 0x7d6a92 });
   decor.push({ kind: 'mark', glyph: 'crown', x: -HX + 0.03, y: 3.4, z: 36, yaw: Math.PI / 2, size: 0.8, color: 0x7d6a92 });
   decor.push({ kind: 'grate', x: grate.x, y: 0, z: grate.z, size: 1.7 });

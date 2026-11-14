@@ -4,6 +4,8 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS } from '../render/ps1Material';
 import { getTexture, TextureName } from '../render/textures';
 import { Aabb, makeAabb } from './collision';
+import { mount, seatMovers } from './hangings';
+import { buildDrain } from './drain';
 import type { Crate } from './crates';
 import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, moverOffset } from './layout';
 import { TUNING } from '../data/tuning';
@@ -182,6 +184,9 @@ interface Gush {
   age: number;
 }
 
+/** How far a pillar's capital overhangs its shaft, all round. */
+export const PILLAR_LIP = 0.3;
+
 export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const group = new THREE.Group();
   const colliders: Aabb[] = [];
@@ -226,6 +231,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const cy = (b.y0 + b.y1) / 2;
     const cz = (b.z0 + b.z1) / 2;
     const aabb = makeAabb(cx, cy, cz, w, h, d);
+    if (b.kind === 'pillar' && !b.hidden) aabb.lip = PILLAR_LIP; // its capital overhangs: see below
     colliders.push(aabb);
     if (b.hidden) continue; // collider only
 
@@ -295,9 +301,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       crates.push({ type: 'crate', index: crates.length, x: cx, y: cy, z: cz, half: w / 2, alive: true, aabb, mesh, lastSwing: -1, tough: b.tough });
     }
 
-    // Pillars get a capital on top. It's visual only and sits flush with the top of the pillar.
+    // Pillars get a capital on top. It is drawn only (the solid shape is the shaft) and sits flush with the top of the
+    // pillar; the collider's `lip` says how far it overhangs, so that a rat hanging from the top hangs from its edge.
     if (b.kind === 'pillar') {
-      const capGeo = new THREE.BoxGeometry(w + 0.6, 0.4, d + 0.6);
+      const capGeo = new THREE.BoxGeometry(w + PILLAR_LIP * 2, 0.4, d + PILLAR_LIP * 2);
       applyWorldUvs(capGeo, 2);
       bakeVertexColor(capGeo, PALETTE.pillar);
       addMesh(capGeo, trimMat, cx, b.y1 - 0.2, cz); // flush with the top, so standing on the pillar does not sink into it
@@ -311,7 +318,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   // ---- Moving platforms. ----
   const movers: Mover[] = [];
   const moverMeshes: THREE.Mesh[] = [];
-  for (const spec of layout.movers ?? []) {
+  // (Seated on the floor under them, if they were put with their bodies in it: see hangings.ts. Levels do this
+  // themselves when they are compiled; this is for a layout that has not been.)
+  for (const spec of seatMovers(layout.movers ?? [], layout.solids)) {
     const thick = spec.thick ?? 0.5;
     const geo = new THREE.BoxGeometry(spec.w, thick, spec.d, Math.max(1, Math.ceil(spec.w / 2.5)), 1, Math.max(1, Math.ceil(spec.d / 2.5)));
     const skin = spec.skin ?? DEFAULT_SKIN.plank;
@@ -361,6 +370,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         if (dy > 0 && a.max.y - p.y < 0.5) {
           rider.prevPosition.y += a.max.y - p.y;
           p.y = a.max.y;
+        } else if (dy < -1e-6) {
+          // It is coming down on him (a lift settling onto the floor he stands on): he is pushed out from under it,
+          // the shortest way that is not into a wall, quickly but not in one jump.
+          const exits: Array<[number, number]> = [[a.min.x - r - p.x, 0], [a.max.x + r - p.x, 0], [0, a.min.z - r - p.z], [0, a.max.z + r - p.z]];
+          const free = exits.filter(([ex, ez]) => !colliders.some((b) => !movers.some((o) => o.aabb === b) && p.x + ex + r > b.min.x && p.x + ex - r < b.max.x && p.z + ez + r > b.min.z && p.z + ez - r < b.max.z && b.max.y > p.y + TUNING.physics.stepHeight && b.min.y < p.y + TUNING.rat.height));
+          const [ex, ez] = (free.length ? free : exits).sort((u, v) => Math.hypot(u[0], u[1]) - Math.hypot(v[0], v[1]))[0];
+          const need = Math.hypot(ex, ez);
+          const go = Math.min(need + 0.01, 7 * dt) / Math.max(1e-6, need);
+          p.x += ex * go; p.z += ez * go;
+          rider.prevPosition.x += ex * go; rider.prevPosition.z += ez * go;
         } else {
           p.x += dx; p.z += dz;
           rider.prevPosition.x += dx; rider.prevPosition.z += dz;
@@ -384,7 +403,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Story machinery that moves: each is called every frame with the time. */
   const animators: Array<(time: number) => void> = [];
   const foam: Array<{ mesh: THREE.Mesh; phase: number }> = [];
-  for (const d of layout.decor ?? []) buildDecor(d);
+  // Wall hangings are stood flat against their walls and kept clear of the floor first (see hangings.ts).
+  for (const d of layout.decor ?? []) buildDecor(mount(d, colliders));
 
   function buildDecor(d: Decor): void {
     if (d.kind === 'pipe') {
@@ -405,19 +425,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       m.quaternion.setFromUnitVectors(UP, to.clone().sub(from).normalize());
       group.add(m);
     } else if (d.kind === 'hole') {
-      // A dark round mouth, with a rim, on a wall that faces `yaw`.
-      const disc = new THREE.CircleGeometry(d.r, 14);
-      bakeVertexColor(disc, 0x050806, false);
-      const dm = new THREE.Mesh(disc, darkMat);
-      dm.position.set(d.x, d.y, d.z);
-      dm.rotation.y = d.yaw;
-      group.add(dm);
-      const rim = new THREE.RingGeometry(d.r, d.r * 1.18, 14);
-      bakeVertexColor(rim, 0x6a5a44, false);
-      const rm = new THREE.Mesh(rim, darkMat);
-      rm.position.set(d.x + Math.sin(d.yaw) * 0.01, d.y, d.z + Math.cos(d.yaw) * 0.01);
-      rm.rotation.y = d.yaw;
-      group.add(rm);
+      // A drain: a dark round mouth with bars across it and bricks laid round it, on a wall that faces `yaw` (see drain.ts).
+      const drain = buildDrain(d.r, !!d.gap, plainMat, darkMat).group;
+      drain.position.set(d.x, d.y, d.z);
+      drain.rotation.y = d.yaw;
+      group.add(drain);
     } else if (d.kind === 'mark') {
       // Flat chalky shapes a hair off the wall: a little sword, point down (deeper), inside a diamond.
       const mark = new THREE.Group();

@@ -3,6 +3,7 @@
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
 import { Box, Decor, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
 import { Items } from './builders';
@@ -489,7 +490,8 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
     decor,
     pipes,
     gates,
-    movers,
+    // Platforms put with their bodies in the floor are seated on it (see world/hangings.ts).
+    movers: seatMovers(movers, solids),
     npcs,
     spawn,
     collectibles: items.list,

@@ -18,8 +18,11 @@ export const CONSUMABLES: Record<string, ConsumableDef> = {
   },
 };
 
-/** What a broken crate may leave behind, each with its own chance. Tune `chance` to change how generous crates are. */
-export const CRATE_DROPS: Array<{ itemId: string; chance: number }> = [{ itemId: 'nachoCheese', chance: 1 }];
+/**
+ * What a broken crate or barrel may leave behind, each with its own chance. Tune `chance` to change how generous they
+ * are. One in ten gives a can of nacho cheese (the owner's number, 2026-11-14: every one of them used to).
+ */
+export const CRATE_DROPS: Array<{ itemId: string; chance: number }> = [{ itemId: 'nachoCheese', chance: 0.1 }];
 
 /** Rolls the crate table once. `random` returns a number from 0 up to (not including) 1. */
 export function rollCrateDrop(random: () => number = Math.random): string | null {

@@ -44,7 +44,7 @@ function sewer(): LevelDef {
     water: layout.water,
     // Story dressing: the tunnel mouth he arrives by, and an old adventurers' mark beside where the door will appear.
     decor: [
-      { kind: 'hole', x: SEWER.tunnel.x, y: 1.25, z: SEWER.tunnel.z - 0.03, yaw: Math.PI, r: 1.35 },
+      { kind: 'hole', x: SEWER.tunnel.x, y: 1.25, z: SEWER.tunnel.z - 0.03, yaw: Math.PI, r: 1.35, gap: true },
       { kind: 'mark', x: SEWER.mark.x, y: SEWER.mark.y, z: SEWER.mark.z, yaw: -Math.PI / 2, size: 0.42 },
     ],
     spawn: { x: TUNING.spawn.x, y: TUNING.spawn.y, z: TUNING.spawn.z, facing: 0 },

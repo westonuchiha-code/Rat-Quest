@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
+import { Springs, Walker, aim, ease, walkerLeg, type WalkerLeg } from '../render/bugRig';
 import { MANTIS, type MantisState } from './mantis';
 
 /**
@@ -115,23 +116,6 @@ export interface MantisAnimInput {
   air: number;
 }
 
-function ease(current: number, target: number, dt: number, rate: number): number {
-  return current + (target - current) * (1 - Math.exp(-rate * dt));
-}
-
-/** Turns `obj` so its own +X runs along `dir` and its +Y leans towards `edge` as nearly as it can. */
-const aimTmp = { x: new THREE.Vector3(), y: new THREE.Vector3(), z: new THREE.Vector3(), m: new THREE.Matrix4() };
-function aim(obj: THREE.Object3D, dir: THREE.Vector3, edge: THREE.Vector3): void {
-  const { x, y, z, m } = aimTmp;
-  x.copy(dir).normalize();
-  y.copy(edge).addScaledVector(x, -edge.dot(x));
-  if (y.lengthSq() < 1e-5) y.set(0, 1, 0).addScaledVector(x, -x.y);
-  if (y.lengthSq() < 1e-5) y.set(0, 0, 1);
-  y.normalize();
-  z.crossVectors(x, y);
-  obj.quaternion.setFromRotationMatrix(m.makeBasis(x, y, z));
-}
-
 /** A scythe: along +X from the wrist, hooked, its cutting edge towards +Y, a ridge down its back. */
 function bladeGeometry(length: number): THREE.BufferGeometry {
   const pos: number[] = [];
@@ -213,27 +197,11 @@ function fanGeometry(length: number, spread: number): THREE.BufferGeometry {
   return geo;
 }
 
-interface Leg {
-  side: -1 | 1;
-  /**
-   * Where it joins the body (in the body's own space), where its foot rests (over the floor, from the model's middle),
-   * and where the foot goes off the ground (body space): drawn up under it, or streaming out behind in a leap.
-   */
-  root: THREE.Vector3;
-  rest: THREE.Vector3;
+/** A leg, and where its foot goes off the ground (in the body's space): drawn up under it, streaming behind in a leap, or curled to its belly when it lies dead. */
+interface Leg extends WalkerLeg {
   tucked: THREE.Vector3;
   trail: THREE.Vector3;
-  /** And where it is drawn in to when the creature lies dead on its side: curled to its belly. */
   curl: THREE.Vector3;
-  thigh: THREE.Group;
-  shin: THREE.Group;
-  /** The foot's place on the floor, in the world. */
-  planted: THREE.Vector3;
-  from: THREE.Vector3;
-  to: THREE.Vector3;
-  /** How far through a step it is (1 = standing). */
-  step: number;
-  pair: 0 | 1;
 }
 
 export class MantisModel {
@@ -256,17 +224,12 @@ export class MantisModel {
   private readonly glints: THREE.Mesh[][] = [[], []];
   private readonly shadow: THREE.Mesh;
 
-  private readonly target = new Float32Array(SIZE);
-  private readonly value = new Float32Array(SIZE);
-  private readonly velocity = new Float32Array(SIZE);
-  private started = false;
+  private readonly springs = new Springs(SIZE);
+  private walker!: Walker;
   private time = 0;
   private flashAmount = 0;
   private scale = 1;
   private lift = 0;
-  private readonly lastPos = new THREE.Vector3();
-  private readonly speed = new THREE.Vector3();
-  private stepTurn: 0 | 1 = 0;
   /** How far its legs are streaming behind it (in a leap) instead of drawn up. */
   private trailing = 0;
 
@@ -406,9 +369,10 @@ export class MantisModel {
       shin.add(claw);
       this.rig.add(thigh, shin);
       this.legs.push({
-        side, root: new THREE.Vector3(side * 0.09, -0.03, join), rest: new THREE.Vector3(side * out, 0, fwd), tucked: new THREE.Vector3(side * 0.26, -0.3, join > 0 ? 0.2 : -0.28), trail: new THREE.Vector3(side * (join > 0 ? 0.5 : 0.36), join > 0 ? -0.2 : -0.12, join > 0 ? -0.5 : -1.0),
+        ...walkerLeg(side, new THREE.Vector3(side * 0.09, -0.03, join), new THREE.Vector3(side * out, 0, fwd), new THREE.Vector3(side * 0.2, 1, 0), pair, thigh, shin),
+        tucked: new THREE.Vector3(side * 0.26, -0.3, join > 0 ? 0.2 : -0.28),
+        trail: new THREE.Vector3(side * (join > 0 ? 0.5 : 0.36), join > 0 ? -0.2 : -0.12, join > 0 ? -0.5 : -1.0),
         curl: new THREE.Vector3(side * 0.09, -0.34, join > 0 ? 0.24 : -0.2),
-        thigh, shin, planted: new THREE.Vector3(), from: new THREE.Vector3(), to: new THREE.Vector3(), step: 1, pair,
       });
     }
 
@@ -417,7 +381,10 @@ export class MantisModel {
     this.shadow.position.y = 0.02;
     this.root.add(this.shadow);
     this.root.scale.setScalar(SCALE);
-    flatten(PRAY, this.value);
+    // The knees stand up and a little out, as an insect's do. A step takes a seventh of a second.
+    this.walker = new Walker(this.root, this.body, this.legs, { thigh: THIGH, shin: SHIN, stride: 0.26, strideStill: 0.16, stepTime: 0.15, lift: 0.13 });
+    flatten(PRAY, this.springs.target);
+    this.springs.snap();
     this.apply(0, 0);
   }
 
@@ -469,26 +436,12 @@ export class MantisModel {
     this.time += dt;
     const state = ctx.state;
     const t = this.time;
-    flatten(this.poseFor(ctx), this.target);
+    flatten(this.poseFor(ctx), this.springs.target);
 
     // How hard the springs pull: a cut snaps, a wind-up is drawn (the held one more slowly), the rest settle.
     const stiffness = state === 'slash' ? 38 : state === 'leap' ? 26 : state === 'stagger' || state === 'reel' || state === 'hop' ? 24 : state === 'windup' ? (ctx.held ? 15 : 20) : state === 'dead' ? 11 : 15;
     const damping = state === 'reel' || state === 'stagger' ? 0.45 : 0.8;
-    if (!this.started || dt > 0.5) {
-      this.value.set(this.target);
-      this.velocity.fill(0);
-      this.started = true;
-    } else {
-      const steps = Math.max(1, Math.ceil(dt / (1 / 120)));
-      const h = dt / steps;
-      for (let s = 0; s < steps; s++) {
-        for (let i = 0; i < SIZE; i++) {
-          const a = stiffness * stiffness * (this.target[i] - this.value[i]) - 2 * damping * stiffness * this.velocity[i];
-          this.velocity[i] += a * h;
-          this.value[i] += this.velocity[i] * h;
-        }
-      }
-    }
+    this.springs.step(dt, stiffness, damping);
 
     // In the air: a leap's arc, a hop's.
     const arc = 4 * ctx.air * (1 - ctx.air);
@@ -557,7 +510,7 @@ export class MantisModel {
 
   /** Lays the body out from the spring values (plus whatever life is laid over them), and steps the feet. */
   private apply(swayX: number, swayRoll: number, headTilt = 0, shake = 0, dt = 0, ctx: MantisAnimInput | null = null): void {
-    const v = this.value;
+    const v = this.springs.value;
     const T = this.tmp;
     this.rig.position.y = this.lift;
     this.body.position.set(v[I.hip] + swayX, v[I.hip + 1] + shake, v[I.hip + 2] - shake * 0.6);
@@ -610,85 +563,15 @@ export class MantisModel {
       aim(blade, T.d[2], T.e.copy(T.d[1]).negate());
     }
 
-    this.stepLegs(dt, ctx);
-  }
-
-  /** The four feet: planted on the floor, stepping in pairs when the body has moved off them; tucked up in the air. */
-  private stepLegs(dt: number, ctx: MantisAnimInput | null): void {
-    const T = this.tmp;
-    const v = this.value;
-    this.root.updateMatrixWorld(true);
-    const here = this.root.getWorldPosition(T.p);
-    if (dt > 0) this.speed.copy(here).sub(this.lastPos).divideScalar(dt);
-    const jumped = this.lastPos.distanceTo(here) > 1.2 || dt === 0;
-    this.lastPos.copy(here);
-    const tuck = Math.min(1, Math.max(0, v[I.tuck]));
+    // The four feet: planted on the floor, stepping in pairs; off the ground they are drawn up (a hop), stream out
+    // behind (a leap), or curl to its belly (dead). In the air they paddle a little.
     this.trailing = ease(this.trailing, ctx?.state === 'leap' ? 1 : 0, dt, 18);
-    const moving = this.speed.length();
-    const stepping = [false, false];
-    for (const leg of this.legs) if (leg.step < 1) stepping[leg.pair] = true;
-
-    for (const leg of this.legs) {
-      // Where this foot would like to be: its resting place under the body as it is now, a little ahead if it is moving.
-      T.home.copy(leg.rest);
-      this.root.localToWorld(T.home);
-      T.home.addScaledVector(this.speed, 0.1);
-      T.home.y = here.y;
-      if (jumped || tuck > 0.5) {
-        leg.planted.copy(T.home);
-        leg.step = 1;
-      } else if (leg.step >= 1) {
-        const off = leg.planted.distanceTo(T.home);
-        const limit = moving > 0.3 ? 0.26 : 0.16;
-        if (off > limit && !stepping[leg.pair === 0 ? 1 : 0] && (stepping[leg.pair] || this.stepTurn === leg.pair || off > limit * 2.2)) {
-          leg.from.copy(leg.planted);
-          leg.to.copy(T.home).addScaledVector(this.speed, 0.09);
-          leg.step = 0;
-          stepping[leg.pair] = true;
-          this.stepTurn = leg.pair === 0 ? 1 : 0;
-        }
-      }
-      let lifted = 0;
-      if (leg.step < 1) {
-        leg.step = Math.min(1, leg.step + dt / 0.15);
-        const u = leg.step * leg.step * (3 - 2 * leg.step);
-        leg.planted.lerpVectors(leg.from, leg.to, u);
-        lifted = 0.13 * Math.sin(leg.step * Math.PI);
-      }
-      // The foot, in the rig's space (the rig is the model lifted by its jump).
-      T.f.copy(leg.planted);
-      this.root.worldToLocal(T.f);
-      T.f.y = lifted - this.lift;
-      // Tucked: drawn up under the body instead.
-      T.a.copy(leg.root).applyQuaternion(this.body.quaternion).add(this.body.position);
-      if (tuck > 0) {
-        // In the air its legs paddle a little; dead, they are still.
-        const curl = ctx?.state === 'dead' ? 0 : 0.03 * Math.sin(this.time * 14 + leg.pair * 2);
-        if (ctx?.state === 'dead') T.k.copy(leg.curl);
-        else T.k.copy(leg.tucked).lerp(leg.trail, this.trailing);
-        T.k.applyQuaternion(this.body.quaternion).add(this.body.position);
-        T.k.y += curl;
-        T.f.lerp(T.k, tuck);
-      }
-      // Two bones from the joint to the foot, the knee standing up and out (as an insect's does).
-      const d = T.k.copy(T.f).sub(T.a);
-      let len = d.length();
-      const reach = THIGH + SHIN - 0.02;
-      if (len > reach) {
-        d.multiplyScalar(reach / len);
-        len = reach;
-      }
-      const along = (THIGH * THIGH - SHIN * SHIN + len * len) / (2 * Math.max(0.05, len));
-      const high = Math.sqrt(Math.max(0, THIGH * THIGH - along * along));
-      d.normalize();
-      T.pole.set(leg.side * 0.2, 1, 0).applyQuaternion(this.body.quaternion);
-      T.pole.addScaledVector(d, -T.pole.dot(d)).normalize();
-      const knee = T.e.copy(T.a).addScaledVector(d, along).addScaledVector(T.pole, high);
-      leg.thigh.position.copy(T.a);
-      aim(leg.thigh, T.home.copy(knee).sub(T.a), T.pole);
-      leg.shin.position.copy(knee);
-      aim(leg.shin, T.home.copy(T.a).addScaledVector(d, len).sub(knee), T.pole);
-    }
+    const dead = ctx?.state === 'dead';
+    this.walker.update(dt, this.lift, Math.min(1, Math.max(0, v[I.tuck])), (leg, index, out) => {
+      const l = this.legs[index];
+      if (dead) out.copy(l.curl);
+      else out.copy(l.tucked).lerp(l.trail, this.trailing).setY(out.y + 0.03 * Math.sin(this.time * 14 + leg.pair * 2));
+    });
   }
 
   /** Where each scythe is, in the world: its wrist and its point, right arm then left. (For tests and for effects.) */

@@ -92,8 +92,8 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
       const S = TUNING.scuttler;
       const B = e.bite ?? { reach: S.biteReach, arc: S.biteArc, damage: S.damage };
       const inFront = angleBetween(Math.atan2(-dx, -dz), e.biteDir ?? e.facing) <= B.arc;
-      if (inFront && dist <= e.radius + B.reach + TUNING.rat.radius) {
-        const result = player.takeHit(e.x, e.z, B.damage);
+      if (inFront && dist <= e.radius + B.reach + TUNING.rat.radius && !(B.ground && !player.grounded)) {
+        const result = player.takeHit(e.x, e.z, B.damage, !!B.heavy);
         events.playerResult = result;
         if (result !== 'dodged') e.lungeLanded(result === 'blocked', result === 'parried');
       }
@@ -101,6 +101,12 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
 
     // Keep the two bodies apart. The roach gives way, except in the middle of its lunge.
     const minDist = e.radius + TUNING.rat.radius;
+    if (e.alive && e.immovable && sameLevel && dist < minDist && dist > 1e-4) {
+      // Against something too heavy to shove, it is the rat who is moved.
+      const push = minDist - dist;
+      p.x -= (dx / dist) * push;
+      p.z -= (dz / dist) * push;
+    } else
     if (e.alive && e.state !== 'lunge' && e.state !== 'hop' && e.state !== 'pounce' && e.state !== 'swoop' && e.state !== 'ram' && e.state !== 'thrust' && e.state !== 'slash' && e.state !== 'leap' && sameLevel && dist < minDist && dist > 1e-4) {
       const push = minDist - dist;
       e.nudge((dx / dist) * push, (dz / dist) * push);

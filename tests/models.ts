@@ -20,6 +20,8 @@ import { MantisModel, type MantisAnimInput } from '../src/enemies/mantisModel';
 import { MANTIS, type MantisState } from '../src/enemies/mantis';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
+import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
+import { TUNING } from '../src/data/tuning';
 import type { NpcKind } from '../src/npc/npc';
 
 const DT = 1 / 60;
@@ -775,6 +777,97 @@ const at = new THREE.Vector3(0, 0, 0);
   check('hero: the pull-up takes long enough to see (about half a second), and starts from below the edge', frames * DT > 0.4 && frames * DT < 0.7 && sawLow, `${(frames * DT).toFixed(2)} s`);
   for (let i = 0; i < 40; i++) tick(input({}));
   check('hero: on top, he stands on the block with his sword and shield in his paws again', p.grounded && Math.abs(p.position.y - 3) < 0.01 && p.ledge === null && parts.sword.visible && !parts.backSword.visible);
+}
+
+// ---- The hero on a pillar: its capital overhangs the shaft, and he hangs from the capital's edge, not inside it ----
+// (He used to hang flush against the shaft with his head and shoulders in the capital.)
+{
+  const LIP = PILLAR_LIP;
+  const TOP = 3;
+  const FACE = 0.7; // the shaft's face; the capital's is LIP nearer him, and 0.4 deep from the top
+  const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+  const fwd = new THREE.Vector3(0, 0, 1);
+  /** He jumps at the block and catches it. `lip`: whether the block says its capital overhangs. */
+  const hangOn = (lip: boolean) => {
+    const block = makeAabb(0, 1.5, 1.5, 2, 3, 1.6);
+    if (lip) block.lip = LIP;
+    const colliders = [makeAabb(0, -0.5, 0, 40, 1, 40), block];
+    const p = new PlayerController(new THREE.Vector3(0, 0, -0.6));
+    const rat = new RatModel();
+    const tick = (inp: PlayerInput): void => {
+      p.update(DT, inp, colliders);
+      rat.setTransform(p.position, p.facing);
+      rat.update(DT, {
+        state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime, dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress,
+        verticalSpeed: p.velocity.y, flipProgress: p.flipProgress, armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime, climbProgress: p.climbProgress,
+      });
+    };
+    for (let i = 0; i < 5; i++) tick(input({}));
+    tick(input({ move: fwd, jumpPressed: true, jumpHeld: true }));
+    for (let i = 0; i < 200 && p.state !== 'hang'; i++) tick(input({ move: fwd.clone().multiplyScalar(0.5), jumpHeld: true }));
+    return { p, rat, tick };
+  };
+  /** How much of him is inside where the capital is drawn (the points of his body in that slab of stone, past a paw's grip on its edge). */
+  const inCapital = (rat: RatModel): { points: number; deepest: number } => {
+    rat.root.updateMatrixWorld(true);
+    let points = 0;
+    let deepest = 0;
+    const v = new THREE.Vector3();
+    rat.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !(m.material instanceof THREE.ShaderMaterial)) return;
+      for (let q: THREE.Object3D | null = o; q; q = q.parent) if (!q.visible) return;
+      const pos = m.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+        const inside = v.z - (FACE - LIP);
+        if (v.y > TOP - 0.4 + 0.02 && v.y < TOP - 0.06 && inside > 0.08) {
+          points++;
+          deepest = Math.max(deepest, inside);
+        }
+      }
+    });
+    return { points, deepest };
+  };
+  const r = TUNING.rat.radius;
+  const { p, rat, tick } = hangOn(true);
+  let worstIn = { points: 0, deepest: 0 };
+  let seenAt = -1;
+  for (let i = 0; i < 90; i++) {
+    tick(input({}));
+    // From a tenth of a second after he catches it (he swings out from under it in less).
+    if (i >= 6) {
+      const now = inCapital(rat);
+      if (now.points > worstIn.points) worstIn = now;
+    }
+    if (i === 30) seenAt = p.position.z;
+  }
+  check('hero: on a pillar he hangs from the edge of its capital, his body hanging clear of the shaft by as much as the capital overhangs', p.state === 'hang' && Math.abs(seenAt - (FACE - LIP - r)) < 0.01 && !!p.ledge && Math.abs(p.position.z + p.ledge.z - (FACE - LIP + 0.04)) < 0.02, `he is ${(FACE - seenAt - r).toFixed(2)} out from the shaft (the capital overhangs ${LIP}); paws ${(p.position.z + (p.ledge?.z ?? 0) - (FACE - LIP)).toFixed(2)} in from its edge`);
+  check('hero: hanging there, no part of him is inside the capital', worstIn.points === 0, worstIn.points ? `${worstIn.points} points of him, up to ${worstIn.deepest.toFixed(2)} in` : 'none');
+  // (The same measure on a block that does not say it has a capital: he hangs flush, where a capital would be. This is what was wrong.)
+  const flush = hangOn(false);
+  for (let i = 0; i < 30; i++) flush.tick(input({}));
+  const was = inCapital(flush.rat);
+  check('hero: (hung flush against the shaft, as he used to be, that measure finds his head and shoulders in it)', flush.p.state === 'hang' && was.points > 20 && was.deepest > 0.2, `${was.points} points, up to ${was.deepest.toFixed(2)} in`);
+  // Up he goes: onto the top, at the same place as from a plain block.
+  tick(input({ jumpPressed: true }));
+  flush.tick(input({ jumpPressed: true }));
+  for (let i = 0; i < 80; i++) {
+    tick(input({}));
+    flush.tick(input({}));
+  }
+  check('hero: he pulls himself up from the capital onto the pillar, to the same spot as from a plain block', p.grounded && Math.abs(p.position.y - TOP) < 0.01 && Math.abs(p.position.z - flush.p.position.z) < 0.01 && p.position.z > FACE + 0.3, `z ${p.position.z.toFixed(2)} (plain block: ${flush.p.position.z.toFixed(2)})`);
+  // Let go, and he drops straight down from where he hung.
+  const again = hangOn(true);
+  for (let i = 0; i < 20; i++) again.tick(input({}));
+  again.tick(input({ dodgePressed: true }));
+  for (let i = 0; i < 90; i++) again.tick(input({}));
+  check('hero: letting go, he drops to the floor clear of the pillar', again.p.grounded && again.p.position.y < 0.01 && again.p.position.z < FACE - r + 0.01);
+  // And a real room's pillars say how far their capitals overhang.
+  const room = buildChamber({ solids: [{ kind: 'floor', x0: -6, x1: 6, y0: -1, y1: 0, z0: -6, z1: 6 }, { kind: 'pillar', x0: -1, x1: 1, y0: 0, y1: 3, z0: -1, z1: 1 }, { kind: 'wall', x0: 3, x1: 4, y0: 0, y1: 3, z0: -1, z1: 1 }], pit: null, water: [] });
+  const pillar = room.colliders.find((c) => Math.abs(c.max.y - 3) < 1e-6 && Math.abs(c.max.x - 1) < 1e-6);
+  const wall = room.colliders.find((c) => Math.abs(c.max.x - 4) < 1e-6);
+  check('hero: in a built room, a pillar tells him how far its capital overhangs (and a plain wall has none)', pillar?.lip === PILLAR_LIP && wall !== undefined && wall.lip === undefined);
 }
 
 // ---- The hero, fallen: his tail lies on the floor (it used to hang down through it and be gone) ----

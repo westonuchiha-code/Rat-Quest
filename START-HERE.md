@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,565 checks, about 2 minutes. It must exit 0.
+2. `npm run test:sim`: 1,612 checks, about 2 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -194,11 +194,25 @@ He gave this list himself; work through it, do not ask about it again:
      angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
      EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
      ray-tested against its own body on every frame of every move) before saying it is done.
-   Ideas for the next ones, all insects, none built (pick one, do not ask): a stag-beetle knight for the Foundry
-   (slow, armoured, a great overhead blow), a hornet lancer that dives, an ant pikeman that fights in pairs, a
-   firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
+   **Next, half built: the Stag Knight** (a great beetle on its hind legs with a forge hammer, for the Foundry).
+   Its rules are written and compile but nothing uses them yet: `src/enemies/stag.ts` (read its header: it does not
+   flinch, five blows break its poise and it kneels; an overhead slam a shield cannot stop; a sweep; a stomp for a
+   rat who stays behind it). The engine pieces it needs are in and tested by the suite still passing: a `heavy` blow
+   (`takeHit(..., heavy)`: only a perfect guard turns it), `bite.ground` (misses a rat in the air), `Foe.immovable`
+   (the rat is pushed out, not the beast). STILL TO DO: its model (`stagModel.ts`, on `src/render/bugRig.ts`, which
+   now holds the springs, `aim()` and the planted-feet `Walker` the mantis uses; pose the HAMMER first and solve both
+   arms to its shaft), the `#stag` sheet page, tests/stag.ts and its looks checks, then wiring (main.ts, level
+   piece, builder, sounds, sticker, sliders) and a place in the Foundry.
+   After it, ideas (all insects, none built; pick one, do not ask): a hornet lancer that dives, an ant pikeman that
+   fights in pairs, a firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
    Hollows; none picked).
+
+**The owner plays the builds and sends screenshots of what looks wrong.** On 2026-11-14 he sent seven from the
+Cistern in one sitting, all fixed the same turn (HANDOFF, "Fixes from the owner's Cistern playthrough"). What they had
+in common: something DRAWN did not match what was SOLID or where it was PUT (a capital wider than its pillar, hangings
+half a unit off their walls, a lift whose body was in the floor, two faces in one plane). When adding anything, check
+that. tests/fit.ts is where such checks live.
 
 Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
 playtest the Ironback, Flitter, Keep Guard and Orchid Mantis. (The plunge wind-up the owner asked about is done: the sword is raised

@@ -89,7 +89,7 @@ export function fireAt(fires: readonly FireVolume[] | undefined, x: number, y: n
 /** Things that are only drawn: pipes along the walls, dark drain mouths, lamps. They are never collided with. */
 export type Decor =
   | { kind: 'pipe'; a: [number, number, number]; b: [number, number, number]; r: number; color?: number }
-  | { kind: 'hole'; x: number; y: number; z: number; /** direction the opening faces, in radians about Y */ yaw: number; r: number }
+  | { kind: 'hole'; x: number; y: number; z: number; /** direction the opening faces, in radians about Y */ yaw: number; r: number; /** a rat's tunnel: one of its bars is broken off short */ gap?: boolean }
   /** An old adventurers' mark scratched on a wall that faces `yaw`: a little sword, point down, inside a diamond. */
   | { kind: 'mark'; x: number; y: number; z: number; yaw: number; size: number; color?: number; /** 'crown' is the royal mark: three spikes on a band. Default: the adventurers' sword. */ glyph?: 'sword' | 'crown' }
   /** Bare wooden shelves standing against a wall that faces `yaw`. Nothing on them. */

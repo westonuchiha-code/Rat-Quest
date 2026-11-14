@@ -8,6 +8,7 @@ import { TOAD } from '../enemies/toad';
 import { IRONBACK } from '../enemies/ironback';
 import { GUARD } from '../enemies/guard';
 import { MANTIS } from '../enemies/mantis';
+import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
 import { BALANCE } from '../data/balance';
@@ -144,6 +145,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Doors and prices', path: 'balance.doors.hollows', label: 'Hollows door: wedges', min: 0, max: 38, step: 1, later: 'next time you are in the Club' },
   { group: 'Doors and prices', path: 'balance.doors.keep', label: 'Keep door: wedges', min: 0, max: 38, step: 1, later: 'next time you are in the Club' },
   { group: 'Doors and prices', path: 'balance.prices.nachoCheese.crumbs', label: 'Nacho cheese: crumbs', min: 0, max: 60, step: 1 },
+  { group: 'Doors and prices', path: 'crates.chance', label: 'Chance a broken crate or barrel drops a nacho can', min: 0, max: 1, step: 0.05 },
   { group: 'Doors and prices', path: 'balance.prices.mossScarf.crumbs', label: 'Moss scarf: crumbs', min: 0, max: 150, step: 1 },
   { group: 'Doors and prices', path: 'balance.prices.minerHelm.crumbs', label: "Miner's helm: crumbs", min: 0, max: 150, step: 1 },
   { group: 'Doors and prices', path: 'balance.prices.minerHelm.caps', label: "Miner's helm: caps", min: 0, max: 45, step: 1 },
@@ -160,7 +162,7 @@ export const TWEAKS: TweakDef[] = [
 ];
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

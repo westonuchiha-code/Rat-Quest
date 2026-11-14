@@ -155,7 +155,9 @@ export class PlayerController {
   private wallBox: Aabb | null = null;
   private kickLock = 0;
   /** Hanging from a ledge: where its top is and which way is out from the wall. */
-  private hang: { top: number; nx: number; nz: number } | null = null;
+  private hang: { top: number; nx: number; nz: number; lip: number } | null = null;
+  /** How far he still has to swing out to hang clear of an overhanging edge (he caught it from underneath). */
+  private hangSlide = 0;
   private hangDrop = 0;
   private hangAge = 0;
   /** The point on the edge his paws hold (world). */
@@ -232,7 +234,8 @@ export class PlayerController {
     return this.takeHit(this.position.x + 0.01, this.position.z, damage);
   }
 
-  takeHit(fromX: number, fromZ: number, damage: number): HitResult {
+  /** `heavy`: a blow too big for a shield (it lands through a plain block; only a perfectly timed guard turns it). */
+  takeHit(fromX: number, fromZ: number, damage: number, heavy = false): HitResult {
     if (this.invulnerable) return 'dodged';
     let ax = this.position.x - fromX;
     let az = this.position.z - fromZ;
@@ -245,10 +248,12 @@ export class PlayerController {
       const off = Math.abs(Math.atan2(Math.sin(toAttacker - this.facing), Math.cos(toAttacker - this.facing)));
       if (off <= H.blockArc * this.gear.blockArc) {
         if (this.guardAge <= TUNING.guard.parryWindow * this.gear.parry) return 'parried';
-        this.velocity.x = ax * H.blockPush;
-        this.velocity.z = az * H.blockPush;
-        this.blockStun = H.blockStun;
-        return 'blocked';
+        if (!heavy) {
+          this.velocity.x = ax * H.blockPush;
+          this.velocity.z = az * H.blockPush;
+          this.blockStun = H.blockStun;
+          return 'blocked';
+        }
       }
     }
     this.hp = Math.max(0, this.hp - damage);
@@ -432,10 +437,21 @@ export class PlayerController {
       const h = this.hang;
       this.hangAge += dt;
       this.velocity.set(0, 0, 0);
+      // Caught under an overhang, he swings out from the wall to hang from its edge (quickly: a twelfth of a second).
+      const out = (all: boolean): void => {
+        const step = all ? this.hangSlide : Math.min(this.hangSlide, (h.lip / 0.085) * dt);
+        this.position.x += h.nx * step;
+        this.position.z += h.nz * step;
+        this.hangSlide -= step;
+      };
+      if (this.hangSlide > 0) out(false);
       const toward = -(move.x * h.nx + move.z * h.nz);
       if (input.jumpPressed || toward > 0.6) {
+        out(true);
         this.climbFrom.copy(this.position);
-        this.climbTo.set(this.position.x - h.nx * (T.rat.radius * 2 + 0.15), h.top, this.position.z - h.nz * (T.rat.radius * 2 + 0.15));
+        // Onto the top, the same distance in from the wall's own face whether or not something overhangs it.
+        const inward = T.rat.radius * 2 + 0.15 + h.lip;
+        this.climbTo.set(this.position.x - h.nx * inward, h.top, this.position.z - h.nz * inward);
         this.hang = null;
         this.climbT = 0;
         this.jumpBuffer = 0;
@@ -709,13 +725,26 @@ export class PlayerController {
         const r = T.rat.radius;
         const ix = p.x - this.wallNX * (r * 2 + 0.15);
         const iz = p.z - this.wallNZ * (r * 2 + 0.15);
-        const room = !colliders.some((b) => b.max.y > top + 0.02 && b.min.y < top + T.rat.height && ix + r > b.min.x && ix - r < b.max.x && iz + r > b.min.z && iz - r < b.max.z);
         const floor = colliders.some((b) => Math.abs(b.max.y - top) < 0.05 && ix > b.min.x && ix < b.max.x && iz > b.min.z && iz < b.max.z);
+        // If something drawn on the top overhangs it (a pillar's capital), it is that edge he hangs from, his body
+        // clear of it: unless there is no room out there for him to hang.
+        let lip = wb.lip ?? 0;
+        const ox = p.x + this.wallNX * lip;
+        const oz = p.z + this.wallNZ * lip;
+        if (lip > 0 && colliders.some((b) => b !== wb && b.max.y > top - HANG_DROP + 0.05 && b.min.y < top - HANG_DROP + T.rat.height && ox + r > b.min.x && ox - r < b.max.x && oz + r > b.min.z && oz - r < b.max.z)) lip = 0;
+        // Room for the whole pull-up, not only for standing at the end of it: from where he hangs, over the edge, to
+        // where he will stand, as high as his head goes. Without it he does not catch the edge at all. (He used to
+        // catch it, haul himself up into whatever was overhead, and be hurt for it.)
+        const hx = p.x + this.wallNX * lip;
+        const hz = p.z + this.wallNZ * lip;
+        const room = !colliders.some((b) => b.max.y > top + 0.02 && b.min.y < top + T.rat.height + 0.05 && Math.max(hx, ix) + r > b.min.x && Math.min(hx, ix) - r < b.max.x && Math.max(hz, iz) + r > b.min.z && Math.min(hz, iz) - r < b.max.z);
         if (room && floor) {
-          this.hang = { top, nx: this.wallNX, nz: this.wallNZ };
+          this.hang = { top, nx: this.wallNX, nz: this.wallNZ, lip };
           this.hangAge = 0;
+          this.hangSlide = lip;
           p.y = top - HANG_DROP;
-          this.grip.set(p.x - this.wallNX * (r + GRIP_IN), top, p.z - this.wallNZ * (r + GRIP_IN));
+          // His paws are on the edge at once (the overhang's, if there is one); his body swings out under them.
+          this.grip.set(p.x + this.wallNX * (lip - r - GRIP_IN), top, p.z + this.wallNZ * (lip - r - GRIP_IN));
           this.velocity.set(0, 0, 0);
           this.longJump = false;
           this.flipTimer = -1;

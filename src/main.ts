@@ -25,6 +25,8 @@ import { Ironback, IronbackState } from './enemies/ironback';
 import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
+import { buildPlate, pressPlate } from './world/plates';
+import { pinnedUnder } from './world/crush';
 import { Mantis } from './enemies/mantis';
 import { MantisModel } from './enemies/mantisModel';
 import { Bat, BAT, rouseRoost } from './enemies/bat';
@@ -558,8 +560,6 @@ function startGame(): void {
   // Floor plates: stand on one and it stays pressed; gates can wait for them.
   let plateGroup: THREE.Group | null = null;
   let platesDown: boolean[] = [];
-  const plateMat = new THREE.MeshBasicMaterial({ color: 0xd8a83a });
-  const plateDownMat = new THREE.MeshBasicMaterial({ color: 0x6a5a2a });
 
   // Collectibles.
   // ---- Save files: three games side by side. The game's own things are kept under the chosen file's keys (slots.ts). ----
@@ -983,14 +983,7 @@ function startGame(): void {
     if (plateGroup) scene.remove(plateGroup);
     plateGroup = new THREE.Group();
     platesDown = (def.plates ?? []).map(() => false);
-    for (const pl of def.plates ?? []) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.5), plateMat);
-      m.position.set(pl.x, pl.y + 0.06, pl.z);
-      plateGroup.add(m);
-      const rim = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 1.8), new THREE.MeshBasicMaterial({ color: 0x2a2418 }));
-      rim.position.set(pl.x, pl.y + 0.04, pl.z);
-      plateGroup.add(rim);
-    }
+    for (const pl of def.plates ?? []) plateGroup.add(...buildPlate(pl.x, pl.y, pl.z));
     scene.add(plateGroup);
     dialog.close();
     talkingTo = null;
@@ -1327,24 +1320,16 @@ function startGame(): void {
 
   /** A moving platform that pins him against the ceiling crushes him: a hit, and back to the last safe ground. */
   function crushCheck(): void {
-    if (player.dead || !chamber.movers.length) return;
+    if (player.dead) return;
     const p = player.position;
-    const r = TUNING.rat.radius;
-    const head = p.y + TUNING.rat.height;
-    for (const b of chamber.colliders) {
-      if (chamber.movers.some((m) => m.aabb === b)) continue;
-      if (p.x + r <= b.min.x || p.x - r >= b.max.x || p.z + r <= b.min.z || p.z - r >= b.max.z) continue;
-      if (b.min.y < head - 0.05 && b.max.y > p.y + TUNING.physics.stepHeight + 0.05 && b.min.y > p.y) {
-        const result = player.takeHit(p.x, p.z, 1);
-        if (result === 'hit' || result === 'killed') events.playerResult = result;
-        if (player.dead) return;
-        p.copy(lastSafe);
-        player.prevPosition.copy(lastSafe);
-        player.velocity.set(0, 0, 0);
-        follow.snap();
-        return;
-      }
-    }
+    if (!pinnedUnder(p, chamber.colliders, chamber.movers.map((m) => m.aabb), chamber.carry)) return;
+    const result = player.takeHit(p.x, p.z, 1);
+    if (result === 'hit' || result === 'killed') events.playerResult = result;
+    if (player.dead) return;
+    p.copy(lastSafe);
+    player.prevPosition.copy(lastSafe);
+    player.velocity.set(0, 0, 0);
+    follow.snap();
   }
 
   /** True while any key bound to the action is held. */
@@ -1594,10 +1579,7 @@ function startGame(): void {
       if (Math.hypot(pl.x - player.position.x, pl.z - player.position.z) < 0.95 && Math.abs(player.position.y - pl.y) < 0.6) {
         platesDown[i] = true;
         const m = plateGroup?.children[i * 2] as THREE.Mesh | undefined;
-        if (m) {
-          m.material = plateDownMat;
-          m.position.y = pl.y + 0.02;
-        }
+        if (m) pressPlate(m, pl.y);
         audio.play('menuOk', { vol: 0.9, rate: 0.7, priority: 6 });
         shake = Math.max(shake, 0.05);
       }

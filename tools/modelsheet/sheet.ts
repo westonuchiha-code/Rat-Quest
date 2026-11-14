@@ -316,6 +316,14 @@ if (pick === 'hero') {
     top.position.set(x, 3, 1.5);
     scene.add(top);
     const colliders = [makeAabb(x, -0.5, 0, 40, 1, 40), makeAabb(x, 1.5, 1.5, 2, 3, 1.6)];
+    // &lip: the block is a pillar, with a capital that overhangs it (drawn only; the collider says how far).
+    if (location.hash.includes('lip')) {
+      colliders[1].lip = 0.3;
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.4, 2.2), new THREE.MeshBasicMaterial({ color: 0x7c7466 }));
+      cap.position.set(x, 2.8, 1.5);
+      scene.add(cap);
+      top.scale.set(1.3, 1, 1.375);
+    }
     const p = new PlayerController(new THREE.Vector3(x, 0, -0.6));
     const rat = new RatModel();
     scene.add(rat.root);

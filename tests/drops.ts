@@ -10,7 +10,15 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const store = { data: new Map<string, string>(), getItem(k: string) { return this.data.get(k) ?? null; }, setItem(k: string, v: string) { this.data.set(k, v); } };
 
-check('a certain drop always drops', rollCrateDrop(() => 0.99) === (CRATE_DROPS[0].chance >= 1 ? 'nachoCheese' : null));
+check('one broken crate in ten leaves a can of nacho cheese', CRATE_DROPS.length === 1 && CRATE_DROPS[0].itemId === 'nachoCheese' && CRATE_DROPS[0].chance === 0.1);
+check('a roll under the chance drops it, a roll over does not', rollCrateDrop(() => 0.05) === 'nachoCheese' && rollCrateDrop(() => 0.15) === null && rollCrateDrop(() => 0.99) === null);
+{
+  let s = 12345;
+  const dice = (): number => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
+  let cans = 0;
+  for (let i = 0; i < 20000; i++) if (rollCrateDrop(dice)) cans++;
+  check('over twenty thousand crates, about a tenth of them', cans > 1800 && cans < 2200, `${cans} cans`);
+}
 check('a drop that misses gives nothing', CRATE_DROPS.every((d) => d.chance > 0) && rollCrateDrop(() => 1) === null);
 
 const inv = new Inventory(store);

@@ -4,6 +4,11 @@ import * as THREE from 'three';
 export interface Aabb {
   min: THREE.Vector3;
   max: THREE.Vector3;
+  /**
+   * How far something drawn on its top edge sticks out past it all round (a pillar's capital). The box itself is the
+   * shaft; a rat hanging from the top hangs from the capital's edge, this far out, not inside it.
+   */
+  lip?: number;
 }
 
 /** Builds an AABB from a center point and full size. */

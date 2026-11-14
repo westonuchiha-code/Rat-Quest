@@ -30,7 +30,7 @@ export function keepOnFloor(e: { x: number; y: number; z: number; radius: number
 
 /** What the combat code needs from any enemy, whatever kind it is. */
 export interface Foe {
-  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis';
+  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag';
   x: number;
   y: number;
   z: number;
@@ -46,7 +46,10 @@ export interface Foe {
   /** True while a melee attack can hurt (the roach's lunge, the toad's landing, the boss's swoop). */
   readonly attackActive: boolean;
   /** The shape of that attack, if it is not the roach's bite: how far beyond its body, how wide (radians each side of its facing), how hard. */
-  readonly bite?: { reach: number; arc: number; damage: number };
+  /** `heavy`: a shield does not stop it (only a perfect guard does). `ground`: it runs along the floor, and misses a rat in the air. */
+  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean };
+  /** Too heavy to be shouldered aside: where the two bodies meet, it is the rat who gives way. */
+  readonly immovable?: boolean;
   /** Which way that attack points, if not where it faces (the ironback's buck kicks backwards). */
   readonly biteDir?: number;
   /** True if a hit from there would glance off its armour (the ironback's shell): no harm, and the sword bounces back. */

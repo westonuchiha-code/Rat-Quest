@@ -38,11 +38,11 @@ const room = buildChamber({
   solids: [extent('floor', -10, 10, -1, 0, -10, 10)],
   pit: null,
   water: [],
-  movers: [{ x: 0, z: 0, y: 0.4, w: 3, d: 3, to: [0, 5, 0], speed: 2, pause: 0.5 }],
+  movers: [{ x: 0, z: 0, y: 0.5, w: 3, d: 3, to: [0, 5, 0], speed: 2, pause: 0.5 }], // resting on the floor: its body is half a unit thick
 });
-const p = new PlayerController(new THREE.Vector3(0, 0.4, 0));
+const p = new PlayerController(new THREE.Vector3(0, 0.5, 0));
 p.update(DT, input(), room.colliders);
-check('he starts standing on the lift', p.grounded && Math.abs(p.position.y - 0.4) < 0.01);
+check('he starts standing on the lift', p.grounded && Math.abs(p.position.y - 0.5) < 0.01);
 let grounded = true;
 let top = 0;
 for (let i = 0; i < 60 * 6; i++) {
@@ -60,9 +60,9 @@ const slider = buildChamber({
   solids: [extent('floor', -20, 20, -1, 0, -20, 20)],
   pit: null,
   water: [],
-  movers: [{ x: 0, z: 0, y: 0.4, w: 3, d: 3, to: [8, 0, 0], speed: 2, pause: 0.5 }],
+  movers: [{ x: 0, z: 0, y: 0.5, w: 3, d: 3, to: [8, 0, 0], speed: 2, pause: 0.5 }],
 });
-const q = new PlayerController(new THREE.Vector3(0, 0.4, 0));
+const q = new PlayerController(new THREE.Vector3(0, 0.5, 0));
 q.update(DT, input(), slider.colliders);
 for (let i = 0; i < 60 * 3; i++) {
   slider.stepMovers(DT, q);
@@ -70,7 +70,7 @@ for (let i = 0; i < 60 * 3; i++) {
 }
 check('the chamber reports the platform speed he is riding', (() => { slider.stepMovers(DT, q); return slider.carry.length() >= 0; })());
 check('he is carried sideways', q.position.x > 3, `x ${q.position.x.toFixed(2)}`);
-check('and is still on it', q.grounded && Math.abs(q.position.y - 0.4) < 0.02 && Math.abs(q.position.x - (slider.movers[0].aabb.min.x + slider.movers[0].aabb.max.x) / 2) < 1.5);
+check('and is still on it', q.grounded && Math.abs(q.position.y - 0.5) < 0.02 && Math.abs(q.position.x - (slider.movers[0].aabb.min.x + slider.movers[0].aabb.max.x) / 2) < 1.5);
 
 // Standing beside it he is not carried, and a platform that rises into him lifts him up.
 const side = buildChamber({
@@ -111,12 +111,18 @@ check('a lift piece becomes a moving platform', def.movers?.length === 1 && def.
   check('the slider carries him over the gap', r.position.z <= -4.4 && r.grounded, `z ${r.position.z.toFixed(2)} after ${t.toFixed(1)}s`);
   for (let i = 0; i < 90; i++) step({ move: new THREE.Vector3(0, 0, -1) });
   check('he steps onto the far island', r.position.z < -7 && r.grounded);
-  // Walk to the lift's start and wait for it to come down.
-  while (Math.abs(r.position.z + 9.5) > 0.3 || ch.movers[1].aabb.max.y > 0.05) {
-    step({ move: new THREE.Vector3(0, 0, r.position.z > -9.5 ? -1 : 1) });
+  // Walk up to the lift and wait for it to come down. (At the bottom it rests ON the floor now, its top half a unit
+  // up; it used to sink into the floor until its top was level with it. So he hops onto it.)
+  while (Math.abs(r.position.z + 7.5) > 0.2 || ch.movers[1].aabb.max.y > 0.52) {
+    step({ move: new THREE.Vector3(0, 0, r.position.z > -7.5 ? -0.6 : 0.6) });
     t += DT;
     if (t > 90) break;
   }
+  check('at the bottom of its run the lift rests on the floor, not in it', Math.abs(ch.movers[1].aabb.min.y) < 0.02 && Math.abs(ch.movers[1].aabb.max.y - 0.5) < 0.02);
+  step({ move: new THREE.Vector3(0, 0, -1), jumpPressed: true, jumpHeld: true });
+  for (let i = 0; i < 26; i++) step({ move: new THREE.Vector3(0, 0, -0.6), jumpHeld: true });
+  for (let i = 0; i < 90 && !r.grounded; i++) step();
+  check('he hops onto it', r.grounded && Math.abs(r.position.y - ch.movers[1].aabb.max.y) < 0.05 && r.position.z < -8.2 && r.position.z > -10.8, `z ${r.position.z.toFixed(2)}, y ${r.position.y.toFixed(2)}, lift top ${ch.movers[1].aabb.max.y.toFixed(2)}, grounded ${r.grounded}`);
   for (let i = 0; i < 400 && r.position.y < 5.9; i++) step();
   check('the lift takes him up to the ledge height', r.position.y > 5.9 && r.grounded, `y ${r.position.y.toFixed(2)}`);
   for (let i = 0; i < 80; i++) step({ move: new THREE.Vector3(0, 0, -1) });
