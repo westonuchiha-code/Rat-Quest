@@ -55,7 +55,7 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'WATER', items: [{ t: 'water', label: 'Pool' }, { t: 'river', label: 'River' }, { t: 'lava', label: 'Lava' }, { t: 'fall', label: 'Grate fall' }] },
   { group: 'BREAKABLE', items: [{ t: 'crate', label: 'Crate' }, { t: 'barrel', label: 'Barrel' }, { t: 'pipe', label: 'Wall pipe' }] },
   { group: 'COLLECT', items: [{ t: 'crumb', label: 'Crumb' }, { t: 'cap', label: 'Cap' }, { t: 'relic', label: 'Relic' }, { t: 'wedge', label: 'Gold Wedge' }] },
-  { group: 'PEOPLE', items: [{ t: 'roach', label: 'Roach' }, { t: 'toad', label: 'Toad' }, { t: 'beetle', label: 'Ironback' }, { t: 'bat', label: 'Flitter' }, { t: 'guard', label: 'Keep Guard' }, { t: 'npc', label: 'Pip' }] },
+  { group: 'PEOPLE', items: [{ t: 'roach', label: 'Roach' }, { t: 'toad', label: 'Toad' }, { t: 'beetle', label: 'Ironback' }, { t: 'bat', label: 'Flitter' }, { t: 'guard', label: 'Keep Guard' }, { t: 'mantis', label: 'Orchid Mantis' }, { t: 'npc', label: 'Pip' }] },
   { group: 'LEVEL', items: [{ t: 'gate', label: 'Gate' }, { t: 'plate', label: 'Floor plate' }, { t: 'mark', label: 'Goal marker' }, { t: 'spawn', label: 'Start' }, { t: 'exit', label: 'Exit' }] },
   { group: 'DECOR', items: [{ t: 'lamp', label: 'Lamp' }, { t: 'chain', label: 'Chain' }, { t: 'window', label: 'Window' }, { t: 'slime', label: 'Slime' }, { t: 'web', label: 'Cobweb' }, { t: 'brazier', label: 'Brazier' }, { t: 'speaker', label: 'Speaker' }, { t: 'couch', label: 'Couch' }, { t: 'light', label: 'Light' }, { t: 'banner', label: 'Banner' }, { t: 'torch', label: 'Wall torch' }, { t: 'gauge', label: 'Gauge' }, { t: 'crystal', label: 'Crystals' }, { t: 'roots', label: 'Roots' }] },
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
@@ -63,10 +63,10 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
 const COLOR: Record<PieceType, string> = {
   floor: '#4a5a4a', tile: '#6a7a7a', grate: '#5a6a5a', platform: '#5a7a4a', plank: '#8a5a32', stone: '#7a7a6a', wall: '#3a3a44', pillar: '#9a9a88',
   water: '#2a9a4a', river: '#3ac05a', crate: '#c08a4a', barrel: '#a06a3a', crumb: '#ffd23a', cap: '#d85a5a', relic: '#ffe27a',
-  roach: '#a04a6a', toad: '#6aa03a', beetle: '#6d7580', bat: '#8a5a8a', guard: '#7a4ab0', npc: '#4a7aca', pipe: '#9a6a3a', fall: '#8aff8a', gate: '#caa84a', spawn: '#ffffff', exit: '#8ad8ff', plate: '#d8a83a', stairs: '#8a8a9a', lift: '#e0a040', lava: '#ff6a1a', bridge: '#b08850', web: '#d8d8cc', brazier: '#ff9a3a', speaker: '#7a5ac8', couch: '#a8584a', light: '#ff4a4a', mark: '#ff9ad8', lamp: '#ffd27a', chain: '#9a9aaa', window: '#8ab8d8', slime: '#6adc6a', wedge: '#ffc93a',
+  roach: '#a04a6a', toad: '#6aa03a', beetle: '#6d7580', bat: '#8a5a8a', guard: '#7a4ab0', mantis: '#e88ab0', npc: '#4a7aca', pipe: '#9a6a3a', fall: '#8aff8a', gate: '#caa84a', spawn: '#ffffff', exit: '#8ad8ff', plate: '#d8a83a', stairs: '#8a8a9a', lift: '#e0a040', lava: '#ff6a1a', bridge: '#b08850', web: '#d8d8cc', brazier: '#ff9a3a', speaker: '#7a5ac8', couch: '#a8584a', light: '#ff4a4a', mark: '#ff9ad8', lamp: '#ffd27a', chain: '#9a9aaa', window: '#8ab8d8', slime: '#6adc6a', wedge: '#ffc93a',
   banner: '#7a3aa8', torch: '#ffb040', gauge: '#c0a050', crystal: '#5ac8ff', roots: '#6a4a2a'
 };
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 const DIRS: Array<'n' | 'e' | 's' | 'w'> = ['n', 'e', 's', 'w'];
 /** Ready-made characters: picking one sets the name and the creature. */
 const CHARACTERS: Array<[string, string, 'mouse' | 'bird' | 'pigeon' | 'villain']> = [
@@ -1199,7 +1199,7 @@ export class Builder {
       g.fillStyle = '#000';
       g.font = `bold ${Math.max(9, s * 0.6)}px monospace`;
       g.textAlign = 'center';
-      g.fillText({ spawn: 'S', exit: 'E', plate: 'K', mark: 'G', lamp: 'L', chain: 'H', window: 'W', slime: 'M', web: 'V', brazier: 'Y', speaker: 'Q', couch: 'U', light: 'Z', wedge: 'W', npc: 'P', roach: 'R', toad: 'T', beetle: 'X', bat: 'A', guard: 'D', pipe: 'I', fall: 'F', crate: 'C', barrel: 'B', crumb: '·', cap: 'o', relic: '*' }[p.t as string] ?? '?', x, z + s * 0.22);
+      g.fillText({ spawn: 'S', exit: 'E', plate: 'K', mark: 'G', lamp: 'L', chain: 'H', window: 'W', slime: 'M', web: 'V', brazier: 'Y', speaker: 'Q', couch: 'U', light: 'Z', wedge: 'W', npc: 'P', roach: 'R', toad: 'T', beetle: 'X', bat: 'A', guard: 'D', mantis: 'N', pipe: 'I', fall: 'F', crate: 'C', barrel: 'B', crumb: '·', cap: 'o', relic: '*' }[p.t as string] ?? '?', x, z + s * 0.22);
       g.textAlign = 'left';
       if (p.dir) {
         g.strokeStyle = '#fff';

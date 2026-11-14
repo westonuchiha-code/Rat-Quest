@@ -1,4 +1,4 @@
-// The creature models (roach, toad, ironback, bat, the Keep Guard, the Club's folk and Grimsqueak): each one builds, plays every one of
+// The creature models (roach, toad, ironback, bat, the Keep Guard, the Orchid Mantis, the Club's folk and Grimsqueak): each one builds, plays every one of
 // its poses without a part flying off or going missing, keeps its feet on the floor, and dies on top of the floor (the
 // toad used to roll over under it and vanish).
 import './../src/core/colorSetup';
@@ -16,6 +16,8 @@ import { GRIM_FIGHT_FLOAT, GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from
 import { RatModel } from '../src/player/ratModel';
 import { GuardModel } from '../src/enemies/guardModel';
 import { GUARD, type GuardState } from '../src/enemies/guard';
+import { MantisModel, type MantisAnimInput } from '../src/enemies/mantisModel';
+import { MANTIS, type MantisState } from '../src/enemies/mantis';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import type { NpcKind } from '../src/npc/npc';
@@ -316,6 +318,226 @@ const at = new THREE.Vector3(0, 0, 0);
     run(m, 'idle', 1.5);
     const up = ends(m);
     check('guard: alive again, the spear is back in his hand, upright', spearOf(m).parent === rigOf(m).sword && up.dir.y > 0.99 && through(m).length === 0);
+  }
+}
+
+// ---- The Orchid Mantis: a body of its own (nothing of the knight's), so everything about it is checked ----
+{
+  type Inside = {
+    rig: THREE.Object3D; head: THREE.Object3D; neckPivot: THREE.Object3D; abdomenPivot: THREE.Object3D; arms: THREE.Object3D[][];
+    legs: Array<{ thigh: THREE.Object3D; shin: THREE.Object3D }>; fans: THREE.Object3D[]; glints: THREE.Object3D[][];
+  };
+  const inside = (m: MantisModel): Inside => m as unknown as Inside;
+  const SHIN_LENGTH = 0.72;
+  const feet = (m: MantisModel): THREE.Vector3[] => {
+    m.root.updateMatrixWorld(true);
+    return inside(m).legs.map((leg) => leg.shin.localToWorld(new THREE.Vector3(SHIN_LENGTH, 0, 0)));
+  };
+  /** The parts of its own body a scythe arm passes through (none is right): the thigh and the blade of each, tried against everything but its arms. */
+  const through = (m: MantisModel): string[] => {
+    const I = inside(m);
+    const named: Array<[string, THREE.Object3D]> = [['head', I.head], ['neck', I.neckPivot], ['abdomen or wings', I.abdomenPivot]];
+    for (const leg of I.legs) named.push(['a leg', leg.thigh], ['a leg', leg.shin]);
+    const arms = I.arms.flat();
+    const meshes: THREE.Mesh[] = [];
+    I.rig.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible || arms.includes(p)) return;
+      meshes.push(mesh);
+    });
+    const hits = new Set<string>();
+    const ray = new THREE.Raycaster();
+    for (const b of m.blades()) {
+      for (const [from, to] of [[b.elbow, b.wrist], [b.wrist, b.tip]]) {
+        const dir = to.clone().sub(from);
+        ray.far = dir.length();
+        ray.set(from, dir.normalize());
+        for (const mesh of meshes) {
+          const mat = mesh.material as THREE.Material;
+          const was = mat.side;
+          mat.side = THREE.DoubleSide;
+          if (ray.intersectObject(mesh, false).length) {
+            let name = 'body';
+            for (let p: THREE.Object3D | null = mesh; p && name === 'body'; p = p.parent) name = named.find(([, g]) => g === p)?.[0] ?? 'body';
+            hits.add(name);
+          }
+          mat.side = was;
+        }
+      }
+    }
+    return [...hits].sort();
+  };
+  const ctx = (state: MantisState, stateTime: number, o: Partial<MantisAnimInput> = {}): MantisAnimInput => ({ state, stateTime, walking: 0, arm: -1, held: false, windupTime: MANTIS.windup, air: 0, ...o });
+  const run = (m: MantisModel, state: MantisState, secs: number, o: Partial<MantisAnimInput> = {}, each?: (t: number) => void): void => {
+    for (let t = 0; t < secs; t += DT) {
+      const air = state === 'leap' ? Math.min(1, t / MANTIS.leapTime) : state === 'hop' ? Math.min(1, t / MANTIS.hopTime) : 0;
+      m.update(DT, ctx(state, t, { air, ...o }));
+      each?.(t);
+    }
+  };
+  const fresh = (): MantisModel => {
+    const m = new MantisModel();
+    m.setTransform(at, 0);
+    return m;
+  };
+  type Move = [MantisState, number, Partial<MantisAnimInput>];
+  const W = MANTIS.windup;
+  // Each thing it does, as it comes about in a fight: what leads into it, then the thing itself.
+  const MOVES: Array<{ name: string; lead: Move[]; move: Move }> = [
+    { name: 'rest', lead: [], move: ['idle', 2, {}] },
+    { name: 'stalk', lead: [['idle', 0.5, {}]], move: ['stalk', 1, {}] },
+    { name: 'sway', lead: [['stalk', 0.5, {}]], move: ['sway', 2, {}] },
+    { name: 'wind-up (right)', lead: [['sway', 0.6, {}]], move: ['windup', W, { arm: -1 }] },
+    { name: 'cut (right)', lead: [['sway', 0.6, {}], ['windup', W, { arm: -1 }]], move: ['slash', MANTIS.slashTime, { arm: -1 }] },
+    { name: 'second wind-up (left, held)', lead: [['sway', 0.6, {}], ['windup', W, { arm: -1 }], ['slash', MANTIS.slashTime, { arm: -1 }]], move: ['windup', MANTIS.delayed, { arm: 1, held: true, windupTime: MANTIS.delayed }] },
+    { name: 'second cut (left)', lead: [['sway', 0.6, {}], ['windup', W, { arm: -1 }], ['slash', MANTIS.slashTime, { arm: -1 }], ['windup', MANTIS.quick, { arm: 1, windupTime: MANTIS.quick }]], move: ['slash', MANTIS.slashTime, { arm: 1 }] },
+    { name: 'spent', lead: [['sway', 0.6, {}], ['windup', W, { arm: 1 }], ['slash', MANTIS.slashTime, { arm: 1 }]], move: ['recover', MANTIS.recover, {}] },
+    { name: 'back to swaying', lead: [['windup', W, {}], ['slash', MANTIS.slashTime, {}], ['recover', MANTIS.recover, {}]], move: ['sway', 1, {}] },
+    { name: 'crouch', lead: [['stalk', 0.6, {}]], move: ['crouch', MANTIS.leapWindup, {}] },
+    { name: 'leap', lead: [['stalk', 0.6, {}], ['crouch', MANTIS.leapWindup, {}]], move: ['leap', MANTIS.leapTime, {}] },
+    { name: 'stuck', lead: [['stalk', 0.6, {}], ['crouch', MANTIS.leapWindup, {}], ['leap', MANTIS.leapTime, {}]], move: ['stuck', MANTIS.stuck, {}] },
+    { name: 'pulling free', lead: [['crouch', MANTIS.leapWindup, {}], ['leap', MANTIS.leapTime, {}], ['stuck', MANTIS.stuck, {}]], move: ['sway', 1, {}] },
+    { name: 'hop', lead: [['sway', 0.6, {}]], move: ['hop', MANTIS.hopTime, {}] },
+    { name: 'landing from a hop', lead: [['sway', 0.6, {}], ['hop', MANTIS.hopTime, {}]], move: ['stalk', 0.8, {}] },
+    { name: 'flinch', lead: [['sway', 0.6, {}]], move: ['stagger', MANTIS.stagger, {}] },
+    { name: 'flinch out of a wind-up', lead: [['sway', 0.6, {}], ['windup', W * 0.8, { arm: 1 }]], move: ['stagger', MANTIS.stagger, {}] },
+    { name: 'reel', lead: [['sway', 0.6, {}], ['windup', W, {}], ['slash', 0.08, {}]], move: ['reel', MANTIS.reel, {}] },
+    { name: 'steadying', lead: [['windup', W, {}], ['slash', 0.08, {}], ['reel', MANTIS.reel, {}]], move: ['sway', 1, {}] },
+    { name: 'going home', lead: [['sway', 0.6, {}]], move: ['return', 1, {}] },
+  ];
+  const bad: string[] = [];
+  const sunk: string[] = [];
+  const afloat: string[] = [];
+  let sound = true;
+  let tall = 0;
+  for (const { name, lead, move } of MOVES) {
+    const m = fresh();
+    for (const [s, secs, o] of lead) run(m, s, secs, o);
+    const seen = new Map<string, number>();
+    let lowTip = 9;
+    let lowFoot = 9;
+    let highFoot = -9;
+    run(m, move[0], move[1], move[2], () => {
+      for (const h of through(m)) seen.set(h, (seen.get(h) ?? 0) + 1);
+      for (const b of m.blades()) lowTip = Math.min(lowTip, b.tip.y, b.wrist.y);
+      for (const f of feet(m)) {
+        lowFoot = Math.min(lowFoot, f.y);
+        highFoot = Math.max(highFoot, f.y);
+      }
+    });
+    if (seen.size) bad.push(`${name}: ${[...seen].map(([k, n]) => `${k} for ${n} frames`).join(', ')}`);
+    // Its scythes go into the floor only when they are meant to (driven in after a leap, and while it pulls them out).
+    const planted = move[0] === 'stuck' || move[0] === 'leap' || name === 'pulling free';
+    if (lowTip < (planted ? -0.16 : -0.02)) sunk.push(`${name}: a scythe ${lowTip.toFixed(2)}`);
+    if (lowFoot < -0.03) sunk.push(`${name}: a foot ${lowFoot.toFixed(2)}`);
+    // On the ground its feet are on the ground (a stepping foot lifts a little).
+    const air = move[0] === 'leap' || move[0] === 'hop' || name === 'landing from a hop' || name === 'stuck';
+    if (!air && highFoot > 0.17) afloat.push(`${name}: a foot ${highFoot.toFixed(2)} up`);
+    const r = measure(inside(m).rig);
+    if (!r.finite || r.meshes < 40) sound = false;
+    tall = Math.max(tall, r.box.max.y - r.box.min.y);
+  }
+  check('mantis: it builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.2 && tall < 2.6, `tallest ${tall.toFixed(2)}`);
+  check('mantis: in everything it does, and on the way into it, its scythes pass clear of its own head, neck, body, wings and legs', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
+  check('mantis: its scythes and feet never go under the floor (the scythes are driven a little way in after a leap, and only then)', sunk.length === 0, sunk.join(' | '));
+  check('mantis: on the ground, its feet are on the ground', afloat.length === 0, afloat.join(' | '));
+
+  {
+    const m = fresh();
+    run(m, 'idle', 1.5);
+    const head = inside(m).head.getWorldPosition(new THREE.Vector3());
+    const b = m.blades();
+    check('mantis: at rest it stands taller than the knight, its scythes folded up before its face', head.y > 1.15 && b.every((x) => x.wrist.z > head.z + 0.1 && x.wrist.y > head.y - 0.35 && x.tip.y < x.wrist.y), `head ${head.y.toFixed(2)} up; wrists ${b.map((x) => x.wrist.y.toFixed(2)).join(', ')} up`);
+    // Standing still (and swaying), its feet do not slide.
+    run(m, 'sway', 0.6);
+    const a0 = feet(m);
+    let moved = 0;
+    let rocked = 0;
+    const x0 = inside(m).head.getWorldPosition(new THREE.Vector3()).x;
+    run(m, 'sway', 2, {}, () => {
+      feet(m).forEach((f, i) => (moved = Math.max(moved, f.distanceTo(a0[i]))));
+      rocked = Math.max(rocked, Math.abs(inside(m).head.getWorldPosition(new THREE.Vector3()).x - x0));
+    });
+    check('mantis: swaying, its body rocks from side to side over feet that stay planted', moved < 0.01 && rocked > 0.08, `feet moved ${moved.toFixed(3)}, head rocked ${rocked.toFixed(2)}`);
+    // Walking, they step: each foot stays put on the floor between steps and is lifted over.
+    const pos = new THREE.Vector3();
+    let lifted = 0;
+    let slid = 0;
+    let last = feet(m);
+    for (let t = 0; t < 2; t += DT) {
+      pos.z += MANTIS.speed * DT;
+      m.setTransform(pos, 0);
+      m.update(DT, ctx('stalk', t, { walking: MANTIS.speed }));
+      const now = feet(m);
+      now.forEach((f, i) => {
+        lifted = Math.max(lifted, f.y);
+        // A foot that is down is not moving.
+        if (f.y < 0.004 && last[i].y < 0.004) slid = Math.max(slid, Math.hypot(f.x - last[i].x, f.z - last[i].z));
+      });
+      last = now;
+    }
+    const kept = feet(m).every((f) => Math.abs(f.z - pos.z) < 1.2);
+    check('mantis: walking, its feet step (down they stay where they are put; up they are carried over) and keep up with it', lifted > 0.08 && slid < 0.01 && kept, `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`);
+  }
+  {
+    const m = fresh();
+    run(m, 'sway', 0.6);
+    run(m, 'windup', W, { arm: -1 });
+    const head = inside(m).head.getWorldPosition(new THREE.Vector3());
+    const [right, left] = m.blades();
+    const glint = inside(m).glints.map((g) => g.some((x) => x.visible));
+    check('mantis: winding up, that scythe is raised high over its head and glints; the other stays down before its face', right.tip.y > head.y + 0.35 && left.tip.y < head.y + 0.1 && glint[0] && !glint[1], `raised point ${(right.tip.y - head.y).toFixed(2)} over its head`);
+    run(m, 'slash', MANTIS.slashTime, { arm: -1 });
+    const cut = m.blades()[0];
+    // The blow lands on a rat whose near side is this far off at most (it has stepped in by then).
+    const far = MANTIS.radius + MANTIS.reach;
+    check('mantis: the cut comes down across its front at the height of the knight, and its point gets about as far as the blow does', cut.tip.z > far - 0.55 && cut.tip.z < far + 0.25 && cut.tip.y > 0.25 && cut.tip.y < 0.95 && Math.abs(cut.tip.x) < 0.45, `point ${cut.tip.z.toFixed(2)} ahead, ${cut.tip.y.toFixed(2)} up, ${cut.tip.x.toFixed(2)} across; the blow reaches ${far.toFixed(2)}`);
+    run(m, 'windup', MANTIS.delayed, { arm: 1, held: true, windupTime: MANTIS.delayed });
+    const second = m.blades();
+    const glint2 = inside(m).glints.map((g) => g.some((x) => x.visible));
+    check('mantis: the second cut is the other scythe going up, and it is the one that glints', second[1].tip.y > inside(m).head.getWorldPosition(new THREE.Vector3()).y + 0.35 && glint2[1] && !glint2[0]);
+  }
+  {
+    const m = fresh();
+    run(m, 'stalk', 0.6);
+    run(m, 'crouch', MANTIS.leapWindup);
+    const I = inside(m);
+    const head = I.head.getWorldPosition(new THREE.Vector3());
+    const standing = (() => { const s = fresh(); run(s, 'stalk', 0.8); return inside(s).head.getWorldPosition(new THREE.Vector3()).y; })();
+    const flared = I.fans.every((f) => f.visible && Math.abs(f.scale.x) > 0.8);
+    const b = m.blades();
+    check('mantis: before a leap it crouches, flares its bright wings and lifts both scythes, both glinting', head.y < standing - 0.15 && flared && b.every((x) => x.tip.y > head.y + 0.3) && I.glints.every((g) => g.some((x) => x.visible)), `head ${(standing - head.y).toFixed(2)} lower; points ${b.map((x) => (x.tip.y - head.y).toFixed(2)).join(', ')} over it`);
+    const calm = fresh();
+    run(calm, 'sway', 1);
+    check('mantis: (its wings are folded away the rest of the time)', inside(calm).fans.every((f) => !f.visible));
+    let top = 0;
+    let feetUp = 0;
+    run(m, 'leap', MANTIS.leapTime, {}, (t) => {
+      top = Math.max(top, I.rig.position.y);
+      if (Math.abs(t - MANTIS.leapTime / 2) < DT) feetUp = Math.min(...feet(m).map((f) => f.y));
+    });
+    check('mantis: it leaps well clear of the floor, legs and all', top > MANTIS.leapHeight * 0.9 && feetUp > 0.4, `${top.toFixed(2)} up, lowest foot ${feetUp.toFixed(2)}`);
+    run(m, 'stuck', 0.5);
+    const stuck = m.blades();
+    check('mantis: it comes down with both scythes driven into the floor in front of it', stuck.every((x) => x.tip.y < 0.05 && x.tip.y > -0.16 && x.tip.z > 0.6) && I.rig.position.y < 0.02 && feet(m).every((f) => f.y < 0.02), `points ${stuck.map((x) => x.tip.y.toFixed(2)).join(', ')} up, ${stuck.map((x) => x.tip.z.toFixed(2)).join(', ')} ahead`);
+  }
+  {
+    const m = fresh();
+    run(m, 'sway', 0.6);
+    run(m, 'windup', W);
+    run(m, 'slash', 0.08);
+    run(m, 'reel', 1);
+    const [r, l] = m.blades();
+    check('mantis: its cut turned, its arms are thrown wide open', l.wrist.x - r.wrist.x > 1.0 && l.tip.x - r.tip.x > 1.0, `wrists ${(l.wrist.x - r.wrist.x).toFixed(2)} apart`);
+    run(m, 'dead', 1.1);
+    const box = measure(inside(m).rig).box;
+    check('mantis: dead, it lies on the floor, nothing of it under it', box.max.y < 0.85 && box.min.y > -0.04, size(box));
+    run(m, 'dead', 2.2);
+    m.root.updateMatrixWorld(true);
+    check('mantis: and then shrivels away to nothing', m.root.scale.x < 0.01);
+    run(m, 'idle', 1);
+    check('mantis: (and is whole again if the level brings it back)', m.root.scale.x > 0.98 && measure(inside(m).rig).finite);
   }
 }
 

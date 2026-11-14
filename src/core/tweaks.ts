@@ -7,6 +7,7 @@ import { TUNING } from '../data/tuning';
 import { TOAD } from '../enemies/toad';
 import { IRONBACK } from '../enemies/ironback';
 import { GUARD } from '../enemies/guard';
+import { MANTIS } from '../enemies/mantis';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
 import { BALANCE } from '../data/balance';
@@ -102,6 +103,20 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Keep Guards', path: 'keepguard.brokenParry', label: 'Open after a perfect guard', min: 0.5, max: 6, step: 0.1 },
   { group: 'Keep Guards', path: 'keepguard.damage', label: 'Thrust damage (hearts)', min: 0, max: 5, step: 1 },
 
+  { group: 'Mantises', path: 'mantis.hp', label: 'Health', min: 1, max: 14, step: 1, later: 'from the next level' },
+  { group: 'Mantises', path: 'mantis.windup', label: 'Warning before the first cut', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.quick', label: 'Warning before a quick second cut', min: 0.1, max: 1.5, step: 0.02 },
+  { group: 'Mantises', path: 'mantis.delayed', label: 'Warning before a held second cut', min: 0.2, max: 2, step: 0.02 },
+  { group: 'Mantises', path: 'mantis.comboChance', label: 'How often a second cut follows', min: 0, max: 1, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.delayChance', label: 'How often the second cut is held', min: 0, max: 1, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.recover', label: 'Open after its cuts', min: 0.3, max: 3, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.leapWindup', label: 'Warning before a leap', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.stuck', label: 'Stuck in the floor after a leap that missed', min: 0.3, max: 4, step: 0.05 },
+  { group: 'Mantises', path: 'mantis.leapDamage', label: 'Leap damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'Mantises', path: 'mantis.evadeCooldown', label: 'Rest between hops out of reach', min: 0.5, max: 10, step: 0.1 },
+  { group: 'Mantises', path: 'mantis.escapeAfter', label: 'Hits in a row before it springs away', min: 1, max: 6, step: 1 },
+  { group: 'Mantises', path: 'mantis.reel', label: 'Open after a perfect guard', min: 0.5, max: 6, step: 0.1 },
+
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
   { group: 'Flitters', path: 'bat.hearQuiet', label: 'Hears sneaking from', min: 0, max: 8, step: 0.25 },
@@ -145,7 +160,7 @@ export const TWEAKS: TweakDef[] = [
 ];
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

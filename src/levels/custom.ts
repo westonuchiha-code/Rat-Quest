@@ -16,12 +16,12 @@ export type PieceType =
   | 'floor' | 'tile' | 'grate' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
   | 'water' | 'river' | 'lava' | 'bridge' | 'crate' | 'barrel'
   | 'crumb' | 'cap' | 'relic'
-  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'npc' | 'pipe' | 'fall' | 'gate'
+  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
   | 'stairs' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** The pieces that are enemies (roach, toad, ironback, bat, keep guard). */
-export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard'];
+export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis'];
 
 /** What makes a Golden Wedge appear: there from the start, or once that job is done. */
 export type WedgeAppears = 'start' | 'defeat' | 'waves' | 'burst' | 'crumb' | 'cap' | 'relic' | 'reach';
@@ -146,7 +146,7 @@ export function checkCustom(c: CustomLevel): string[] {
   const count = (t: PieceType): number => c.pieces.filter((p) => p.t === t).length;
   for (const g of c.goals ?? []) {
     if (g.type === 'reach' && count('mark') === 0) out.push('A "reach" goal needs a Goal marker on the map.');
-    if (g.type === 'defeat' && count('roach') + count('toad') + count('beetle') + count('bat') + count('guard') === 0) out.push('A "defeat" goal needs an enemy on the map.');
+    if (g.type === 'defeat' && count('roach') + count('toad') + count('beetle') + count('bat') + count('guard') + count('mantis') === 0) out.push('A "defeat" goal needs an enemy on the map.');
     if (g.type === 'waves' && !c.pieces.some((p) => ENEMY_PIECES.includes(p.t) && (p.props?.wave ?? 0) > 0)) out.push('A "waves" goal needs enemies set to wave 1 or higher.');
     if (g.type === 'burst' && count('pipe') === 0) out.push('A "burst" goal needs a wall pipe on the map.');
     if (g.type === 'collect') {
@@ -373,11 +373,12 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'beetle':
       case 'bat':
       case 'guard':
+      case 'mantis':
         {
-          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard' } as const)[p.t];
+          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis' } as const)[p.t];
           const spec: EnemySpec = { type, x: cx, z: cz, y: p.top, arena: { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 }, respawn: !!p.props?.respawn, ...(p.props?.perch ? { perch: p.props.perch } : {}) };
           // A guard stands at his post facing the way he is set (north by default: towards whoever comes up the room).
-          if (p.t === 'guard') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+          if (p.t === 'guard' || p.t === 'mantis') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
           const w = Math.round(p.props?.wave ?? 0);
           if (w > 0) (waveSpecs[w - 1] ??= []).push(spec);
           else enemies.push(spec);

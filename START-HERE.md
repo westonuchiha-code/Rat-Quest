@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 59 test files and 1,509 checks, about 2 minutes. It must exit 0.
+2. `npm run test:sim`: 1,565 checks, about 2 minutes. It must exit 0.
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -52,7 +52,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
   `ironback`, `bat`, `guard`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
   `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
-  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
+  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#mantis` (the Orchid Mantis, the same), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
   looks). On `#hero` and `#moves`, `&only=N` shows one figure and `&settle` lets its springs come to rest.
   `python3 scripts/contact.py <dir> move 5` joins the single-move pictures into one sheet.
 - Dev hashes:
@@ -86,6 +86,12 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
     round; a sword on it clanks and throws your arm back; two blows on it and he stabs back at once. Open after a
     thrust that missed or was blocked, when a perfect guard or a plunge has knocked his shield wide, or before he
     has seen you. Three stand in the Keep (two at the courtyard gate, one on the battlements).
+  - **Orchid Mantis** (`mantis`): tall, pale, two scythes, no armour, a body all its own. Swing at it while it sways
+    and it springs back (not twice running), then usually leaps in. Its cuts: a scythe goes up and glints, comes
+    down, and a second usually follows, at once or after a held beat. Its leap: it crouches and flares its wings,
+    jumps to where you stood for two hearts, and if it misses its scythes are stuck in the floor. Open after its
+    cuts, longer when stuck, longest when a perfect guard throws its arms wide. One on the Hollows' Webbed Gallery
+    (middle ledge), one in Web Hollow (the middle floor).
   - Grimsqueak (boss).
   - A director makes them take turns.
 - **Gear:** each item has real effects (`GearFx` in `src/data/equipment.ts`). Gear secrets, proven in
@@ -160,7 +166,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 ## Not tested on real hardware
 - Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
   real app id or on a Deck.
-- Feel: no human has played the latest combat numbers, the Ironback, the Flitter or the Keep Guard. Tuning sliders exist for all of them.
+- Feel: no human has played the latest combat numbers, the Ironback, the Flitter, the Keep Guard or the Orchid Mantis. Tuning sliders exist for all of them.
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
 ## What the owner wants next (his own list, 2026-11-14)
@@ -177,15 +183,23 @@ He gave this list himself; work through it, do not ask about it again:
 3. **Redo every collectible's model and look.** Done 2026-11-14 for the crumb, cap, relic, Golden Wedge and nacho can
    (`src/world/itemModels.ts`; see HANDOFF). Not touched: gear pickups (they are the hero's own helmet and scarf
    models, and only old levels have them) and the story's keepsakes. The owner has not seen them yet.
-4. **A few more enemies.** IN PROGRESS. First one built 2026-11-14: the **Keep Guard** (see HANDOFF). The owner saw
-   an early sheet picture of him with the spear standing up through his own head and was rightly angry: the fight
-   tests all passed because none of them looked at the model. So for every new creature: look at EVERY state, alone
-   and large, from three sides (`bash scripts/sheet-shots.sh out 0 guard` does this for him), and give it a looks
-   check in tests/models.ts before saying it is done. Not built yet (pick one, do not ask): a spider for the
-   Hollows, a firefly bomber for the Foundry, a leech, a mole.
+4. **A few more enemies.** IN PROGRESS. Built 2026-11-14: the **Keep Guard** and the **Orchid Mantis** (see HANDOFF).
+   What the owner said about them (2026-11-14), which sets the direction:
+   - He likes the Keep Guard, and likes how the fight against him looks: "getting closer to the Dark Souls feel that
+     I'm aiming for". Keep going that way: enemies with tells, commitments and openings, that punish mashing.
+   - But the guard is "basically exactly the same as the main character". New enemies must be **as detailed as the
+     guard but NOT rats or mice**. Most of the game's enemies are insects, so make them insects, each with a body of
+     its own. The mantis is the first built to that.
+   - He saw an early sheet picture of the guard with the spear standing up through his own head and was rightly
+     angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
+     EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
+     ray-tested against its own body on every frame of every move) before saying it is done.
+   Ideas for the next ones, all insects, none built (pick one, do not ask): a stag-beetle knight for the Foundry
+   (slow, armoured, a great overhead blow), a hornet lancer that dives, an ant pikeman that fights in pairs, a
+   firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
 5. **Two boss battles** (ideas offered: Toad Queen in the Cistern, Great Ironback in the Foundry, Broodmother in the
    Hollows; none picked).
 
 Also open: raise the door costs to match 45 wedges or leave them; fire and iron-bound crates in the level builder;
-playtest the Ironback, Flitter and Keep Guard. (The plunge wind-up the owner asked about is done: the sword is raised
+playtest the Ironback, Flitter, Keep Guard and Orchid Mantis. (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

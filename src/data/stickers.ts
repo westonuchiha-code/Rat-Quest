@@ -20,6 +20,7 @@ export const STICKERS: StickerDef[] = [
   { id: 'foe:toad', group: 'Beasts', name: 'Toad', icon: 'toad', blurb: 'Spits globs, hops away, and pounces when you crowd it. Lies winded afterwards.' },
   { id: 'foe:ironback', group: 'Beasts', name: 'Ironback', icon: 'ironback', blurb: 'Its iron shell turns your sword. Get round behind it, or flip it: let it ram a wall, catch the ram on a perfect guard, or plunge onto it.' },
   { id: 'foe:guard', group: 'Beasts', name: 'Keep Guard', icon: 'guard', blurb: 'One of the king\'s rats, behind a shield. Your sword rings off it, and he answers. Wait for his thrust: step aside, block it, or turn it with a perfect guard. A plunge breaks his guard too.' },
+  { id: 'foe:mantis', group: 'Beasts', name: 'Orchid Mantis', icon: 'mantis', blurb: 'It will not stand and be hit: swing at it and it springs back, then leaps. Wait for it. A scythe goes up and glints before each cut, and the second cut may come late. Its wings flare before a leap: step aside and its scythes stick in the floor.' },
   { id: 'foe:bat', group: 'Beasts', name: 'Flitter', icon: 'bat', blurb: 'Roosts out of reach and wakes to footsteps (sneak past). Only low enough to hit at the bottom of its swoop.' },
   { id: 'find:crumb', group: 'Finds', name: 'Cheese Crumb', icon: 'crumb', blurb: 'The kingdom\'s small change. Collect enough to open the way.' },
   { id: 'find:cap', group: 'Finds', name: 'Bottle Cap', icon: 'cap', blurb: 'Shiny and hard to spot. Hidden in corners and on high ledges.' },

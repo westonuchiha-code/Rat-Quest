@@ -94,7 +94,9 @@ const cave: CustomLevel = {
     ...GALLERY_LEDGES.map((g) => box('platform', g.x0, g.z0, g.x1, g.z1, GALLERY, { bottom: DEEP, skin: 'wetRock' })),
     box('stairs', -46, 32, -38, 37, GALLERY, { dir: 'n', bottom: 0 }),
     box('bridge', -43, 8, -40, 14, GALLERY), box('bridge', -43, -14, -40, -8, GALLERY),
-    at('roach', -40, 26, GALLERY), at('roach', -38, -2, GALLERY), at('roach', -44, -18, GALLERY),
+    at('roach', -40, 26, GALLERY), at('roach', -44, -18, GALLERY),
+    // An orchid mantis holds the middle ledge, facing the bridge he comes over. (It keeps to the ledge: it will not hop or leap off it.)
+    at('mantis', -40, -1, GALLERY, { dir: 's' }),
     at('toad', -44, 2, GALLERY), at('toad', -39, -24, GALLERY),
     // Two flitters roost over the first ledge: sneak past under them, or wake them and fight on the ledge.
     at('bat', -44, 19, GALLERY), at('bat', -39, 23, GALLERY),
@@ -213,7 +215,7 @@ const websArea: CustomLevel = {
     box('bridge', -10, -19.5, 6, -16.5, 4),
     box('platform', 6, -22, 22, -10, 4),
     at('crumb', 0, 9), at('crumb', 0, 0), at('crumb', -12, 0), at('crumb', -19, -3), at('crumb', -16, -18, 4), at('crumb', -2, -18, 4), at('crumb', 12, -14, 4), at('crumb', 18, -18, 4),
-    at('roach', 0, 0), at('roach', -19, 1), at('toad', -16, -18, 4), at('roach', 14, -14, 4),
+    at('mantis', 0, -1, 0, { dir: 's' }), at('roach', -19, 1), at('toad', -16, -18, 4), at('roach', 14, -14, 4),
     // A flitter roosts over the landing before the stairs.
     at('bat', -19, -4),
     at('web', -21.9, 10, 3, { dir: 'e' }), at('web', 21.9, 6, 4, { dir: 'w' }), at('web', -21.9, -18, 8, { dir: 'e' }), at('web', 0, -21.9, 8, { dir: 's' }), at('web', 10, -21.9, 7, { dir: 's' }),

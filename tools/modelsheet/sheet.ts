@@ -14,6 +14,8 @@ import { ToadModel } from '../../src/enemies/toadModel';
 import type { ToadState } from '../../src/enemies/toad';
 import { Npc } from '../../src/npc/npc';
 import { GuardModel } from '../../src/enemies/guardModel';
+import { MantisModel } from '../../src/enemies/mantisModel';
+import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
 import { nachoCanGeometry } from '../../src/world/drops';
@@ -44,7 +46,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -88,6 +90,60 @@ if (pick === 'guard') {
     labels.push({ text: 'the knight', x: -12.5, y: 0 });
   }
   for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'mantis') {
+  // The Orchid Mantis in each thing it does, with the knight beside the first for size. &only=N shows one alone.
+  type Shot = { name: string; state: MantisState; t: number; arm?: -1 | 1; held?: boolean; air?: number; walking?: number; lead?: Array<[MantisState, number]> };
+  const shots: Shot[] = [
+    { name: 'idle', state: 'idle', t: 1 },
+    { name: 'stalk', state: 'stalk', t: 0.5, walking: MANTIS.speed, lead: [['idle', 0.4]] },
+    { name: 'sway', state: 'sway', t: 0.8, lead: [['idle', 0.4]] },
+    { name: 'windup right', state: 'windup', t: MANTIS.windup, arm: -1, lead: [['sway', 0.6]] },
+    { name: 'slash right', state: 'slash', t: MANTIS.slashTime, arm: -1, lead: [['sway', 0.6], ['windup', MANTIS.windup]] },
+    { name: 'windup left (held)', state: 'windup', t: MANTIS.delayed, arm: 1, held: true, lead: [['sway', 0.6]] },
+    { name: 'slash left', state: 'slash', t: MANTIS.slashTime, arm: 1, lead: [['sway', 0.6], ['windup', MANTIS.windup]] },
+    { name: 'recover', state: 'recover', t: 0.6, lead: [['sway', 0.6], ['windup', MANTIS.windup], ['slash', MANTIS.slashTime]] },
+    { name: 'crouch', state: 'crouch', t: MANTIS.leapWindup, lead: [['sway', 0.6]] },
+    { name: 'leap', state: 'leap', t: 0.2, air: 0.45, lead: [['sway', 0.6], ['crouch', MANTIS.leapWindup]] },
+    { name: 'stuck', state: 'stuck', t: 0.6, lead: [['sway', 0.6], ['crouch', MANTIS.leapWindup]] },
+    { name: 'hop', state: 'hop', t: 0.12, air: 0.5, lead: [['sway', 0.6]] },
+    { name: 'stagger', state: 'stagger', t: 0.2, lead: [['sway', 0.6]] },
+    { name: 'reel', state: 'reel', t: 0.9, lead: [['sway', 0.6], ['windup', MANTIS.windup], ['slash', 0.08]] },
+    { name: 'dead', state: 'dead', t: 0.9, lead: [['sway', 0.6]] },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    const m = new MantisModel();
+    const x = only >= 0 ? 0 : (i - (shots.length - 1) / 2) * 2.4;
+    m.setTransform(new THREE.Vector3(x, 0, 0), spin);
+    scene.add(m.root);
+    let time = 0;
+    const lead = shot.lead ?? [];
+    const leadTime = lead.reduce((sum, [, d]) => sum + d, 0);
+    const base = { arm: shot.arm ?? -1, held: !!shot.held, windupTime: shot.held ? MANTIS.delayed : MANTIS.windup };
+    ticks.push((dt) => {
+      time += dt;
+      let at = time;
+      for (const [s0, d] of lead) {
+        if (at < d) {
+          m.update(dt, { ...base, state: s0, stateTime: at, walking: 0, air: 0 });
+          return;
+        }
+        at -= d;
+      }
+      m.update(dt, { ...base, state: shot.state, stateTime: Math.min(shot.t, time - leadTime), walking: shot.walking ?? 0, air: shot.air ?? 0 });
+    });
+    labels.push({ text: `${i} ${shot.name}`, x, y: 0 });
+  });
+  if (only < 0) {
+    const rat = new RatModel();
+    rat.setTransform(new THREE.Vector3(-19.4, 0, 0), spin);
+    scene.add(rat.root);
+    rat.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+    labels.push({ text: 'the knight', x: -19.4, y: 0 });
+  }
+  for (let k = 0; k < 300; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'items') {
   // Everything he collects, three times life size and turned four ways; then at life size beside him.
@@ -379,7 +435,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'guard') {
+if (pick === 'mantis') {
+  camera.position.set(-1.2, 4.5, 30);
+  camera.lookAt(-1.2, 0.8, 0);
+} else if (pick === 'guard') {
   camera.position.set(-1, 3.2, 20);
   camera.lookAt(-1, 0.7, 0);
 } else if (pick === 'items') {
