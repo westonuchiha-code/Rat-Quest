@@ -164,5 +164,22 @@ export const TUNING = {
     /** The camera is pulled in by a wall at this rate, and eases back out at the slower one. */
     pullInRate: 22,
     pullOutRate: 2.5,
+    /**
+     * Something low behind him (a brazier, a crate, a step) does not pull the view in: it rises to look over it. This
+     * is the steepest it may look to do that (radians above level; he can tilt it to 0.9 himself). At or under the
+     * pitch it is at, it never rises, and everything pulls it in as walls do. Then how fast it rises, and comes down.
+     */
+    liftMaxPitch: 1.2,
+    liftInRate: 10,
+    liftOutRate: 3,
+    /** What counts as low: nothing of it more than this far above his feet (two crates, one on the other, are 2). */
+    liftOver: 2.4,
+    /**
+     * A wall right behind him still pulls the view in; but pulled in close, it goes this far up over his head and
+     * looks down ahead of him, where it used to sit in the back of his head. 0: it stays level, as it used to.
+     */
+    squeezeRise: 2.6,
+    /** How fast it goes up there. (It comes down at `liftOutRate`.) */
+    squeezeInRate: 14,
   },
 } as const;

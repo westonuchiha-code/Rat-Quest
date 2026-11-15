@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,319 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,355 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -246,6 +246,10 @@ right stick turns it (`camera.autoFollowRate` is 0; the slider "Swings behind hi
 that back by another road: the left stick steers relative to the view, so a view that turns itself changes what the
 stick means. Lock-on pressed with nobody near brings the view round behind him. After a wall kick he is carried
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
+**The view with something behind him (2026-11-15).** It no longer ends up inside his head. Something LOW in the way (a
+brazier, a barrel, a crate or two) does not pull it in: it rises to look over it from its usual distance. A wall still
+pulls it in, but pulled in close it goes up over his head and looks down ahead of him. Neither turns it: only its
+height changes. Two sliders under Camera turn each off (HANDOFF, "The view when something is behind him").
 
 Also open: fire and iron-bound crates in the level builder;
 playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, Ant Pikemen, Firefly Bomber, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised

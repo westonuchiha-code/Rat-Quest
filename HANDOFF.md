@@ -284,6 +284,42 @@ His words: the left stick "also messes with the camera", worst in wall-jump stre
 - Tests: tests/moves.ts ("Wall to wall", 8 checks; "The view", 3). The chimney climbs in tests/cistern.ts and tests/keep.ts still pass unchanged.
 - Not done: nobody has played it. If the carry feels too sticky, shorten `wallChainTime`; 0 turns the whole thing off.
 
+## The view when something is behind him (2026-11-15)
+Seen while recording the ant pikemen beside a brazier in the Hollows: the view "closed right in". A brazier is a
+solid box 0.8 wide and 1.1 high, and the view was one line from his chest to where it wanted to be: anything that
+line met pulled it in to just short of it. Backed against a brazier, a crate or a wall it came to rest 0.42 from the
+middle of him, which is inside his head. A step away from a brazier or a barrel the line just cleared the top of the
+box, and he was hidden behind the thing to the neck. All in `src/camera/followCamera.ts`:
+- **Something low is looked over** (`lift`). When something stands between it and him and nothing of it is more than
+  `camera.liftOver` (2.4) above his feet, it looks for the lowest line, the same way round him and as far off, from
+  which it can SEE him: his chest, his waist (0.25 lower) and 0.22 to each side of him, every box taken 0.06 bigger.
+  If there is one within `camera.liftMaxPitch` (1.2 radians; he can tilt it to 0.9 himself) it rises to it
+  (`liftInRate` 10) and comes down when the thing is out of the way (`liftOutRate` 3). Looking steeply down it also
+  looks up to 0.9 ahead of him, so there is floor in front of him to see. Low things only, on purpose: from far
+  enough off there is a clear line down past the face of ANY wall, and without the limit it climbed to a bird's
+  view every time he came near one.
+- **A wall still pulls it in; pulled in close it goes over his head** (`rise`, `over`, `tuck`). From `pull` 0.55
+  down to 0.2 it changes over to a view built round HIM (his chest, not the point leaned ahead of him): 0.12 on his
+  side of whatever is behind him, `camera.squeezeRise` (2.6) higher (less under a low roof; with under 0.35 of room
+  it stays as it was), looking ahead of him by as much as puts him 18 degrees below the middle of the picture. All
+  of him is in the picture and so is the floor three ahead of him.
+- **The lean stops short of anything solid.** The point the view is built round leans up to 0.9 the way he runs.
+  Running into a wall, that point went on into the wall for a quarter of a second, and with nothing to be seen from
+  in there the view shot in to the back of his head and out again. It is now cut back to what can be seen from his
+  chest. (This was in every level, whatever was behind him.)
+- **It never turns.** `yaw` is not touched; only height and distance change, so the stick means what it meant.
+- **Sliders** (Camera): "Rises to look over a low thing behind him: how steeply it may" and "A wall right behind
+  him: how far up over his head it goes". With both at 0 the view is the old one frame for frame (tested), the cut
+  to the lean included.
+- **Tests**: tests/camera.ts (36: the Hollows' brazier, the Club's barrels, the Cistern's crates, a wall, a corner, a
+  low roof, backing into each from the open, the sliders off against a copy of the old code, and a minute and a
+  half of the real knight running about the Cistern: the old view was within 0.75 of the middle of him for 475
+  frames of 5,400, the new for none; he is never out of the picture; it never swings more than 11 degrees in a
+  frame).
+- **Not done**: nobody has played with it. A brazier's flame is not solid, so looking over the bowl he can still be
+  half behind the flame. Something tall and thin (a pipe, a three-crate stack, a pillar) still pulls the view in as
+  a wall does. The overhead view shows about four units ahead of him; less under a low roof.
+
 ## The Waterworks' high bridge, moved (the owner, 2026-11-14)
 He sent a picture from the hop slabs: the plank bridge from gallery to gallery ran 1.5 over them (it stopped jumps)
 and was never needed (both galleries have stairs, and the channel can be swum). "Bridges are a cool idea but it needs

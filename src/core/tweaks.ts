@@ -240,6 +240,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Camera', path: 'camera.autoFollowRate', label: 'Swings behind him as he moves (0: only the right stick turns it)', min: 0, max: 5, step: 0.1 },
   { group: 'Camera', path: 'camera.lookAhead', label: 'Looks ahead', min: 0, max: 0.6, step: 0.01 },
   { group: 'Camera', path: 'camera.heightRate', label: 'Follows jumps', min: 0.5, max: 20, step: 0.5 },
+  { group: 'Camera', path: 'camera.liftMaxPitch', label: 'Rises to look over a low thing behind him: how steeply it may (0: never, it closes in)', min: 0, max: 1.4, step: 0.05 },
+  { group: 'Camera', path: 'camera.squeezeRise', label: 'A wall right behind him: how far up over his head it goes (0: it stays in the back of his head)', min: 0, max: 3, step: 0.1 },
 
   { group: 'Doors and prices', path: 'balance.doors.foundry', label: 'Foundry door: wedges', min: 0, max: 47, step: 1, later: 'next time you are in the Club' },
   { group: 'Doors and prices', path: 'balance.doors.hollows', label: 'Hollows door: wedges', min: 0, max: 47, step: 1, later: 'next time you are in the Club' },

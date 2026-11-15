@@ -1,0 +1,319 @@
+// The view when something is behind him. It used to be pulled in by anything solid between it and him: backed against
+// a brazier or a crate, it ended up inside his head. Now something LOW in the way does not pull it in: it rises to look
+// over it, from as far off as ever. A wall still pulls it in, but pulled in close it goes up over his head and looks
+// ahead of him. It never turns to do either. All of it against the real levels' own solid boxes.
+import './../src/core/colorSetup';
+import * as THREE from 'three';
+import { FollowCamera, sight } from '../src/camera/followCamera';
+import { PlayerController, PlayerInput } from '../src/player/controller';
+import { buildChamber } from '../src/world/chamber';
+import { LEVELS } from '../src/levels/levels';
+import { TUNING } from '../src/data/tuning';
+import { Aabb, makeAabb, segmentAabbT } from '../src/world/collision';
+import { TWEAKS } from '../src/core/tweaks';
+
+const DT = 1 / 60;
+const C = TUNING.camera as { -readonly [K in keyof typeof TUNING.camera]: number };
+let failures = 0;
+function check(name: string, ok: boolean, detail = ''): void {
+  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
+  if (!ok) failures++;
+}
+const solidsOf = (id: string): Aabb[] => {
+  const L = LEVELS.find((l) => l.id === id)!;
+  return buildChamber({ solids: L.solids, pit: L.pit, water: L.water ?? [], decor: [], movers: L.movers }).colliders;
+};
+const hollows = solidsOf('hollows');
+const cistern = solidsOf('cistern');
+const hub = solidsOf('hub');
+
+interface View {
+  cam: FollowCamera;
+  eye: THREE.PerspectiveCamera;
+  focus: THREE.Vector3;
+}
+function view(x: number, y: number, z: number, yaw: number): View {
+  const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+  const cam = new FollowCamera(eye);
+  cam.yaw = yaw;
+  return { cam, eye, focus: new THREE.Vector3(x, y, z) };
+}
+const step = (v: View, colliders: Aabb[], vel = { x: 0, z: 0 }): void => v.cam.update(DT, v.focus, 0, false, 0, 0, colliders, vel);
+const settle = (v: View, colliders: Aabb[], secs = 3): void => {
+  for (let i = 0; i < secs * 60; i++) step(v, colliders);
+};
+/** The point it looks at: his chest. */
+const chest = (v: View): THREE.Vector3 => new THREE.Vector3(v.focus.x, v.focus.y + C.targetHeight, v.focus.z);
+/** How far up or down the picture a point is, and how far to the side, in degrees from its middle. Out of the picture beyond 27.5 and about 35. */
+function onScreen(v: View, p: THREE.Vector3): { up: number; side: number; seen: boolean } {
+  v.eye.updateMatrixWorld(true);
+  const q = p.clone().applyMatrix4(v.eye.matrixWorldInverse);
+  const up = (Math.atan2(q.y, -q.z) * 180) / Math.PI;
+  const side = (Math.atan2(q.x, -q.z) * 180) / Math.PI;
+  return { up, side, seen: q.z < 0 && Math.abs(up) < 27.5 && Math.abs(side) < 34.5 };
+}
+/** How deep inside a solid box a point is (0: in none). */
+function inside(p: THREE.Vector3, colliders: Aabb[]): number {
+  let deep = 0;
+  for (const b of colliders) {
+    const d = Math.min(p.x - b.min.x, b.max.x - p.x, p.y - b.min.y, b.max.y - p.y, p.z - b.min.z, b.max.z - p.z);
+    if (d > deep) deep = d;
+  }
+  return deep;
+}
+/** Which way round him it is, flat: the angle of the line from him to it. */
+const bearing = (v: View): number => Math.atan2(v.eye.position.x - v.focus.x, v.eye.position.z - v.focus.z);
+const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
+const far = (v: View): number => v.eye.position.distanceTo(chest(v));
+/** Its pitch: how steeply it looks down at him. */
+const steep = (v: View): number => Math.atan2(v.eye.position.y - chest(v).y, Math.hypot(v.eye.position.x - v.focus.x, v.eye.position.z - v.focus.z));
+/** The view as it used to be (before 2026-11-15), for the same inputs: eased out to where it wants to be, pulled in by anything in the way. */
+function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => THREE.Vector3 {
+  const free = new THREE.Vector3();
+  let pull = 1;
+  let started = false;
+  let smoothY = 0;
+  return (focus, yaw, colliders) => {
+    if (!started) smoothY = focus.y;
+    smoothY += (focus.y - smoothY) * (1 - Math.exp(-C.heightRate * DT));
+    smoothY = Math.min(focus.y + C.heightSlack, Math.max(focus.y - C.heightSlack, smoothY));
+    const target = new THREE.Vector3(focus.x, smoothY + C.targetHeight, focus.z);
+    const pitch = 0.3;
+    const desired = new THREE.Vector3(target.x + Math.sin(yaw) * Math.cos(pitch) * C.distance, target.y + Math.sin(pitch) * C.distance, target.z + Math.cos(yaw) * Math.cos(pitch) * C.distance);
+    if (!started) {
+      free.copy(desired);
+      started = true;
+    } else free.lerp(desired, 1 - Math.exp(-C.followRate * DT));
+    let hit: number | null = null;
+    for (const b of colliders) {
+      const t = segmentAabbT(target, free, b);
+      if (t !== null && (hit === null || t < hit)) hit = t;
+    }
+    const want = hit === null ? 1 : Math.max(0.12, hit - 0.05);
+    pull += (want - pull) * (1 - Math.exp(-(want < pull ? C.pullInRate : C.pullOutRate) * DT));
+    return target.clone().lerp(free, pull);
+  };
+}
+
+// ---- In the open nothing is different ----
+{
+  const v = view(-30, 0, 40, 1);
+  settle(v, hollows, 2);
+  check('in the open it is where it always was: its usual distance off, looking at him, neither risen nor pulled in', Math.abs(far(v) - C.distance) < 1e-6 && Math.abs(steep(v) - 0.3) < 1e-6 && v.cam.lift === 0 && v.cam.rise === 0 && Math.abs(onScreen(v, chest(v)).up) < 1e-6, `${far(v).toFixed(3)} off, pitch ${steep(v).toFixed(3)}`);
+}
+
+// ---- A brazier behind him (the Hollows, where the west path comes out: the one the owner's pikemen fought beside) ----
+{
+  const B = { x: -26, z: -28, half: 0.4, top: 1.1 };
+  const box = hollows.find((b) => Math.abs((b.min.x + b.max.x) / 2 - B.x) < 0.01 && Math.abs((b.min.z + b.max.z) / 2 - B.z) < 0.01 && b.max.y < 1.5);
+  check('the brazier there is a small solid thing: under a unit wide, a little over a unit high', !!box && Math.abs(box.max.x - box.min.x - 0.8) < 0.01 && Math.abs(box.max.y - B.top) < 0.01);
+  // He stands with his back against it; the view is behind him, beyond it.
+  const z = B.z + B.half + TUNING.rat.radius + 0.02;
+  const before = oldView();
+  let old = new THREE.Vector3();
+  const f = new THREE.Vector3(B.x, 0, z);
+  for (let i = 0; i < 180; i++) old = before(f, Math.PI, hollows);
+  check('as it used to be: backed against it, the view was pulled in to inside his head', old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)) < 0.6, `${old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)).toFixed(2)} from the middle of him`);
+  const v = view(B.x, 0, z, Math.PI);
+  settle(v, hollows);
+  const waist = chest(v).add(new THREE.Vector3(0, -0.25, 0));
+  check('now it is not pulled in: it stays its full distance off', Math.abs(far(v) - C.distance) < 0.02 && v.cam.rise === 0, `${far(v).toFixed(2)} off`);
+  check('it has risen to look over the brazier at him: steeper than he set it, within how steeply it may look', v.cam.lift > 0.3 && steep(v) > 0.6 && steep(v) <= C.liftMaxPitch + 0.03, `pitch ${steep(v).toFixed(2)} (he set 0.30; it may go to ${C.liftMaxPitch})`);
+  check('from there nothing solid is between it and him: his chest, his waist, either side of him', sight(chest(v), v.eye.position, hollows) === 1 && sight(waist, v.eye.position, hollows) === 1 && inside(v.eye.position, hollows) === 0);
+  check('it has not turned: it is the same way round him as he left it', Math.abs(wrap(bearing(v) - Math.PI)) < 1e-6 && v.cam.yaw === Math.PI);
+  check('all of him is in the picture, a little below its middle (looking so steeply down, it looks a little ahead of him), and the floor three ahead of him (a pike\'s length) is well inside it', onScreen(v, new THREE.Vector3(B.x, 0.05, z)).seen && onScreen(v, new THREE.Vector3(B.x, 1.2, z)).seen && onScreen(v, chest(v)).up < 0 && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).seen && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up < 20, `his chest ${onScreen(v, chest(v)).up.toFixed(0)}, three ahead ${onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up.toFixed(0)} degrees up the picture`);
+  // He walks away from it: the view comes down again.
+  for (let i = 0; i < 60; i++) {
+    v.focus.z += 3 * DT;
+    step(v, hollows, { x: 0, z: 3 });
+  }
+  settle(v, hollows, 2.5);
+  check('when he walks away from it the view comes down to where he set it', v.cam.lift < 0.01 && Math.abs(steep(v) - 0.3) < 0.02 && Math.abs(far(v) - C.distance) < 0.02, `pitch ${steep(v).toFixed(3)}`);
+  // He backs into it from the open: the view goes up over it without first coming in at him.
+  const w = view(B.x, 0, z + 3, Math.PI);
+  settle(w, hollows, 1);
+  let nearest = 9;
+  let jump = 0;
+  let turn = 0;
+  const last = w.eye.position.clone();
+  for (let i = 0; i < 150; i++) {
+    if (w.focus.z > z) w.focus.z = Math.max(z, w.focus.z - 3 * DT);
+    step(w, hollows);
+    nearest = Math.min(nearest, far(w));
+    jump = Math.max(jump, w.eye.position.distanceTo(last));
+    turn = Math.max(turn, Math.abs(wrap(bearing(w) - Math.PI)));
+    last.copy(w.eye.position);
+  }
+  check('backing into it from the open, the view goes up over it smoothly, hardly coming in at him at all on the way', nearest > C.distance - 0.4 && jump < 0.25 && turn < 1e-6 && w.cam.lift > 0.3, `nearest ${nearest.toFixed(2)} of ${C.distance}; most it moves in a frame ${jump.toFixed(2)}`);
+  // A little to one side of the line, its bowl (wider than its stand) would still have hidden him: it rises for that too.
+  const s = view(B.x + 0.5, 0, z + 0.3, Math.PI);
+  settle(s, hollows);
+  check('a brazier just beside the line between them (its bowl is wider than its stand) is looked over as well', s.cam.lift > 0.2 && Math.abs(far(s) - C.distance) < 0.02, `risen ${s.cam.lift.toFixed(2)}`);
+  const clear = view(B.x + 1.6, 0, z + 0.3, Math.PI);
+  settle(clear, hollows);
+  check('one well to the side is left alone', clear.cam.lift === 0 && Math.abs(steep(clear) - 0.3) < 1e-6);
+}
+
+// ---- Barrels and crates ----
+{
+  // The Club's barrels (a row of them on the raised floor, 1.1 high).
+  const L = LEVELS.find((l) => l.id === 'hub')!;
+  const barrel = L.solids.find((b) => b.kind === 'barrel')!;
+  const bx = (barrel.x0 + barrel.x1) / 2;
+  const bz = (barrel.z0 + barrel.z1) / 2;
+  const v = view(barrel.x1 + TUNING.rat.radius + 0.6, barrel.y0, bz, -Math.PI / 2);
+  settle(v, hub);
+  const feet = new THREE.Vector3(v.focus.x, v.focus.y + 0.55, v.focus.z);
+  check('a barrel between them is looked over: he is not hidden behind it to the neck (as a line to his chest alone would have left him)', v.cam.lift > 0.1 && Math.abs(far(v) - C.distance) < 0.02 && sight(feet, v.eye.position, hub) === 1 && v.eye.position.x < bx, `pitch ${steep(v).toFixed(2)}`);
+  // The Cistern: a crate with another on top of it and one beside it. A step off it, the view can still see over.
+  const stack = { x: 26, z0: 25.5, z1: 26.5, top: 2 };
+  const a = view(stack.x, 0, stack.z1 + 1.3, Math.PI);
+  settle(a, cistern);
+  check('two crates, one on the other: a step away from them, it looks over them too', a.cam.lift > 0.3 && Math.abs(far(a) - C.distance) < 0.02 && sight(chest(a), a.eye.position, cistern) === 1 && a.eye.position.y > stack.top, `pitch ${steep(a).toFixed(2)}, ${a.eye.position.y.toFixed(1)} up`);
+}
+
+// ---- A wall behind him: it is still pulled in, but it goes up over his head and looks ahead of him ----
+for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0], ['a corner', 48 - TUNING.rat.radius - 0.02, 48 - TUNING.rat.radius - 0.02, Math.PI / 4]] as Array<[string, number, number, number]>) {
+  const f = new THREE.Vector3(x, 0, z);
+  const before = oldView();
+  let old = new THREE.Vector3();
+  for (let i = 0; i < 180; i++) old = before(f, yaw, cistern);
+  const v = view(x, 0, z, yaw);
+  settle(v, cistern);
+  const ahead = new THREE.Vector3(x - Math.sin(yaw) * 3, 0.5, z - Math.cos(yaw) * 3);
+  const head = new THREE.Vector3(x, 1.1, z);
+  check(`${name} at his back, as it used to be: the view was pulled in to inside his head`, old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)) < 0.6, `${old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)).toFixed(2)} from the middle of him, ${inside(old, cistern).toFixed(2)} into the wall`);
+  check(`${name} at his back: it has gone up over his head, on his side of the wall`, v.cam.rise > C.squeezeRise - 0.05 && v.eye.position.y > 2.5 && inside(v.eye.position, cistern) === 0 && v.cam.lift === 0, `${v.eye.position.y.toFixed(2)} up, ${Math.hypot(v.eye.position.x - x, v.eye.position.z - z).toFixed(2)} out from him`);
+  check(`...and looks down ahead of him: all of him is in the picture, near its foot, and so is the floor three ahead of him`, onScreen(v, new THREE.Vector3(x, 0.05, z)).seen && onScreen(v, head).seen && onScreen(v, chest(v)).up < -5 && onScreen(v, ahead).seen, `his feet ${onScreen(v, new THREE.Vector3(x, 0.05, z)).up.toFixed(0)}, his head ${onScreen(v, head).up.toFixed(0)}, three ahead ${onScreen(v, ahead).up.toFixed(0)} degrees up the picture`);
+  check(`...and it has not turned`, v.cam.yaw === yaw && Math.abs(onScreen(v, chest(v)).side) < 0.01 && Math.abs(onScreen(v, ahead).side) < 0.01);
+  // He walks out from the wall: it comes back down behind him.
+  for (let i = 0; i < 90; i++) {
+    v.focus.x -= Math.sin(yaw) * 4 * DT;
+    v.focus.z -= Math.cos(yaw) * 4 * DT;
+    step(v, cistern);
+  }
+  settle(v, cistern, 3);
+  check(`...and when he walks out from it, it comes down behind him again`, v.cam.rise < 0.01 && Math.abs(steep(v) - 0.3) < 0.02 && Math.abs(far(v) - C.distance) < 0.05, `pitch ${steep(v).toFixed(3)}, ${far(v).toFixed(2)} off`);
+}
+{
+  // Backing into the wall from the open: it moves smoothly, and he never leaves the picture.
+  const z1 = 48 - TUNING.rat.radius - 0.02;
+  const v = view(10, 0, z1 - 6, 0);
+  settle(v, cistern, 1);
+  let jump = 0;
+  let swing = 0;
+  let lost = 0;
+  let deep = 0;
+  let deepOld = 0;
+  const before = oldView();
+  const last = v.eye.position.clone();
+  const dir = new THREE.Vector3();
+  const lastDir = v.eye.getWorldDirection(new THREE.Vector3());
+  for (let i = 0; i < 300; i++) {
+    v.focus.z = Math.min(z1, v.focus.z + 4 * DT);
+    step(v, cistern);
+    deepOld = Math.max(deepOld, inside(before(v.focus, 0, cistern), cistern));
+    jump = Math.max(jump, v.eye.position.distanceTo(last));
+    v.eye.getWorldDirection(dir);
+    swing = Math.max(swing, (dir.angleTo(lastDir) * 180) / Math.PI);
+    if (!onScreen(v, chest(v)).seen) lost++;
+    deep = Math.max(deep, inside(v.eye.position, cistern));
+    last.copy(v.eye.position);
+    lastDir.copy(dir);
+  }
+  check('backing into a wall from the open, the view moves smoothly up over him and he never leaves the picture', jump < 0.6 && swing < 8 && lost === 0, `most it moves in a frame ${jump.toFixed(2)}, most it swings ${swing.toFixed(1)} degrees; out of the picture for ${lost} frames`);
+  check('...and it is never deeper in the wall than it used to go on the way', deep <= deepOld + 0.01, `${deep.toFixed(2)}; it used to go ${deepOld.toFixed(2)} in`);
+  settle(v, cistern, 1);
+  check('...and come to rest it is not in the wall at all (it used to rest a little way inside it)', inside(v.eye.position, cistern) === 0);
+}
+{
+  // Under a low roof there is no room to go up: it goes up as far as there is, and stays under the roof.
+  const room: Aabb[] = [makeAabb(0, -0.5, 0, 20, 1, 20), makeAabb(0, 2, 5.5, 20, 6, 1), makeAabb(0, 2.6, 0, 20, 1, 20)];
+  const v = view(0, 0, 5 - TUNING.rat.radius - 0.02, 0);
+  settle(v, room);
+  check('under a low roof it goes up only as far as there is room, stays under the roof and out of the wall, and he is still in the picture', v.cam.rise > 0.2 && v.cam.rise < C.squeezeRise - 0.5 && v.eye.position.y < 2.1 - 0.15 && inside(v.eye.position, room) === 0 && Number.isFinite(v.eye.position.x + v.eye.quaternion.x) && onScreen(v, chest(v)).seen && onScreen(v, new THREE.Vector3(0, 1.2, v.focus.z)).seen, `risen ${v.cam.rise.toFixed(2)}; ${v.eye.position.y.toFixed(2)} up under a roof at 2.10; his chest ${onScreen(v, chest(v)).up.toFixed(0)} degrees up the picture`);
+  const flat: Aabb[] = [room[0], room[1], makeAabb(0, 1.7, 0, 20, 1, 20)];
+  const u = view(0, 0, 5 - TUNING.rat.radius - 0.02, 0);
+  settle(u, flat);
+  check('with no room over him at all it stays as it was', u.cam.rise === 0 && Math.abs(steep(u) - 0.3) < 0.05, `risen ${u.cam.rise.toFixed(2)}`);
+}
+
+// ---- Both can be turned off, and then it is exactly as it was ----
+{
+  const tall = C.liftMaxPitch;
+  const up = C.squeezeRise;
+  C.liftMaxPitch = 0;
+  C.squeezeRise = 0;
+  const before = oldView();
+  const v = view(10, 0, 40, 0);
+  let off = 0;
+  // He backs into the Cistern's wall, stands, and walks out again; then the same at the brazier.
+  for (let i = 0; i < 420; i++) {
+    v.focus.z = i < 240 ? Math.min(48 - 0.32, v.focus.z + 4 * DT) : v.focus.z - 3 * DT;
+    step(v, cistern);
+    off = Math.max(off, v.eye.position.distanceTo(before(v.focus, 0, cistern)));
+  }
+  C.liftMaxPitch = tall;
+  C.squeezeRise = up;
+  check('with both sliders at nothing the view is exactly what it was, frame for frame', off < 1e-9 && v.cam.lift === 0 && v.cam.rise === 0, `furthest apart ${off.toExponential(1)}`);
+  check('each has a slider, set as the game is', TWEAKS.some((t) => t.path === 'camera.liftMaxPitch') && TWEAKS.some((t) => t.path === 'camera.squeezeRise') && tall === 1.2 && up === 2.6);
+}
+
+// ---- A run about the Cistern with the real knight: against the old view, frame for frame ----
+{
+  const L = LEVELS.find((l) => l.id === 'cistern')!;
+  const p = new PlayerController(new THREE.Vector3(20, 0, 30));
+  const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, sneakHeld: false, stowPressed: false, ...o } as PlayerInput);
+  for (let i = 0; i < 20; i++) p.update(DT, input(), cistern);
+  const v = view(p.position.x, p.position.y, p.position.z, 0);
+  const before = oldView();
+  let seed = 5;
+  const roll = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  let dir = 0;
+  let inHead = 0;
+  let inHeadOld = 0;
+  let lost = 0;
+  let bad = 0;
+  let deep = 0;
+  let deepOld = 0;
+  let swing = 0;
+  let risen = 0;
+  let over = 0;
+  let turned = 0;
+  let yaw = 0;
+  const dirNow = new THREE.Vector3();
+  const lastDir = new THREE.Vector3(0, 0, -1);
+  const FRAMES = 60 * 90;
+  for (let i = 0; i < FRAMES; i++) {
+    // He runs one way for a second or so, then another; the view is turned slowly by the stick now and then.
+    if (i % 75 === 0) dir = roll() * Math.PI * 2;
+    const turn = Math.floor(i / 300) % 3 === 1 ? 1 : 0;
+    yaw += turn * DT * C.turnSpeed;
+    p.update(DT, input({ move: new THREE.Vector3(Math.sin(dir), 0, Math.cos(dir)), run: true }), cistern);
+    v.focus.copy(p.position);
+    v.cam.update(DT, v.focus, p.facing, true, turn, 0, cistern, p.velocity);
+    const old = before(v.focus, yaw, cistern);
+    const c = new THREE.Vector3(p.position.x, p.position.y + C.targetHeight, p.position.z);
+    if (old.distanceTo(c) < 0.75) inHeadOld++;
+    if (v.eye.position.distanceTo(c) < 0.75) inHead++;
+    if (!Number.isFinite(v.eye.position.x + v.eye.position.y + v.eye.position.z + v.eye.quaternion.w)) bad++;
+    if (i > 5 && !onScreen(v, c).seen) lost++;
+    deep = Math.max(deep, inside(v.eye.position, cistern));
+    deepOld = Math.max(deepOld, inside(old, cistern));
+    v.eye.getWorldDirection(dirNow);
+    if (i > 5) swing = Math.max(swing, (dirNow.angleTo(lastDir) * 180) / Math.PI);
+    lastDir.copy(dirNow);
+    if (v.cam.rise > 0.3) risen++;
+    if (v.cam.lift > 0.1) over++;
+    turned = Math.max(turned, Math.abs(wrap(v.cam.yaw - yaw)));
+  }
+  check('a minute and a half of running about the Cistern into its walls and crates: the old view was in his head for some of it', inHeadOld > 30, `${inHeadOld} of ${FRAMES} frames within 0.75 of the middle of him`);
+  check('...the new one never is', inHead === 0, `${inHead} frames; it went up over his head for ${risen} frames and looked over something low for ${over}`);
+  check('...he is never out of the picture, nothing in it is a bad number, and it is never deeper in anything solid than it used to go', lost === 0 && bad === 0 && deep <= deepOld + 0.01, `out of the picture ${lost} frames; deepest ${deep.toFixed(2)}, where it used to go ${deepOld.toFixed(2)}`);
+  check('...it never swings sharply from one frame to the next', swing < 12, `most ${swing.toFixed(1)} degrees in a frame`);
+  check('...and only the stick turned it', turned < 1e-9);
+  void L;
+}
+
+console.log(failures === 0 ? '\ncamera: all passed' : `\ncamera: ${failures} FAILED`);
+process.exit(failures === 0 ? 0 : 1);
