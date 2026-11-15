@@ -21,7 +21,7 @@ import { GRIM_FIGHT_FLOAT, type GrimGesture } from './npc/grimsqueakModel';
 import { Director } from './enemies/director';
 import { Toad, ToadState, Glob, stepGlobs } from './enemies/toad';
 import { ToadModel } from './enemies/toadModel';
-import { Ironback, IronbackState } from './enemies/ironback';
+import { IRONBACK, Ironback, IronbackState } from './enemies/ironback';
 import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
@@ -574,7 +574,7 @@ function startGame(): void {
           audio.play('whoosh', { vol: v * 0.8, rate: 1.2, priority: 6 });
           audio.play('broodRattle', { vol: v * 0.6, rate: 1.3, priority: 5 });
         } else if (ev === 'twang') audio.play('threadTwang', { vol: loud, priority: 9 });
-        else if (ev === 'drop') audio.play('plunge', { vol: loud, rate: 0.7, priority: 8 });
+        else if (ev === 'drop') audio.play('broodDrop', { vol: loud, priority: 8 });
         else if (ev === 'kneel') audio.play('broodHurt', { vol: v, rate: 0.55, priority: 8 });
         else if (ev === 'rise') audio.play('broodHiss', { vol: v * 0.8, rate: 0.9, priority: 5 });
         else if (ev === 'hurt') audio.play('broodHurt', { vol: v * 0.5, priority: 4 });
@@ -646,16 +646,23 @@ function startGame(): void {
         } else if (ev === 'hurt') audio.play('guardYelp', { vol: v, priority: 6 });
         continue;
       }
-      if (ev === 'snort') audio.play('snort', { vol: v, priority: 6 });
-      else if (ev === 'ram') audio.play('lunge', { vol: v, rate: 0.55, priority: 7 });
+      // The Ironback, in sounds of its own: a snort of steam and its horn scraping the floor, three rasps, for as
+      // long as the tell; its feet drumming for as long as the ram; the great dull knock of its head on a wall; the
+      // clang of it going over; a grunt and a scrape as its horn goes down for a toss; a sharp snort as it bucks; its
+      // shell rocking as it rights itself.
+      if (ev === 'snort') {
+        audio.play('snort', { vol: v, priority: 6 });
+        audio.play('ironScrape', { vol: v * 0.9, rate: 0.9 / IRONBACK.windup, priority: 6 });
+      } else if (ev === 'ram') audio.play('ironCharge', { vol: v, rate: 1.2 / IRONBACK.ramTime, priority: 7 });
       else if (ev === 'bonk') {
-        audio.play('shock', { vol: Math.max(0.4, v), rate: 1.25, priority: 8 });
+        audio.play('ironBonk', { vol: Math.max(0.4, v), priority: 8 });
         shake = Math.max(shake, 0.14 * v);
         if (v > 0.5) rumble.shock();
       } else if (ev === 'flip') audio.play('flipClang', { vol: v, priority: 8 });
-      else if (ev === 'toss') audio.play('roachWind', { vol: v * 0.6, rate: 0.5, priority: 6 });
+      else if (ev === 'toss') audio.play('ironToss', { vol: v * 0.9, rate: 0.42 / IRONBACK.tossWind, priority: 6 });
       else if (ev === 'buck') audio.play('snort', { vol: v, rate: 1.5, priority: 6 });
-      else if (ev === 'rise') audio.play('land', { vol: v, rate: 0.6, priority: 4 });
+      else if (ev === 'rise') audio.play('ironRise', { vol: v * 0.9, rate: 0.6 / IRONBACK.riseTime, priority: 4 });
+      // The Flitter: its squeak when it wakes, lower when it screeches before a swoop and lower still as it is lost.
       else if (ev === 'wake') audio.play('batSqueak', { vol: v, priority: 6 });
       else if (ev === 'screech') audio.play('batSqueak', { vol: Math.max(0.45, v), rate: 0.75, priority: 7 });
       else if (ev === 'swoop') audio.play('whoosh', { vol: v, rate: 1.3, priority: 6 });
@@ -669,30 +676,43 @@ function startGame(): void {
     }
   }
   /** One tick of the boss's extras: his sounds, the rings and the orb against the rat, and the shove when he bursts away. */
+  const grimHp = new WeakMap<Grimsqueak, number>();
   function bossTick(boss: Grimsqueak): void {
     const p = player.position;
+    // Lord Grimsqueak, in sounds of his own: the Engine's light gathering before each attack (as long as that
+    // attack's tell, so quicker and higher when he rages); the crack of each bolt; his cloak and his snarl in the
+    // swoop; the boom of his slam and the ring running out from it; the orb's hum as he sends it, and the glass of it
+    // rung by a sword (higher each time it is sent back) or by his own hand (lower); his shriek when it bursts on him,
+    // and a shorter one when the sword finds him; the burst that throws the knight off him; his laugh when he rages.
+    const hpWas = grimHp.get(boss) ?? boss.hp;
+    grimHp.set(boss, boss.hp);
+    let cried = false;
     for (const ev of boss.events.splice(0)) {
       const v = Math.max(0.4, hearAt(boss.x, boss.z));
-      if (ev === 'tell') audio.play('rumble', { vol: v * 0.7, rate: 2.2, priority: 6 });
-      else if (ev === 'bolt') audio.play('spit', { vol: v, rate: 1.5, priority: 6 });
-      else if (ev === 'swoop') audio.play('plunge', { vol: v, rate: 0.8, priority: 7 });
+      if (ev === 'tell') {
+        const windup = (boss.state === 'volley' ? GRIM.volley.windup : boss.state === 'swoopWind' ? GRIM.swoop.windup : boss.state === 'slamWind' ? GRIM.slam.windup : GRIM.orb.windup) * (boss.phase === 2 ? GRIM.rage.haste : 1);
+        audio.play('grimGather', { vol: v * 0.8, rate: 0.9 / windup, priority: 7 });
+      } else if (ev === 'bolt') audio.play('grimBolt', { vol: v, rate: roll(0.94, 1.08), priority: 6 });
+      else if (ev === 'swoop') audio.play('grimSwoop', { vol: v, rate: 0.65 / GRIM.swoop.time, priority: 7 });
       else if (ev === 'slam') {
-        audio.play('shock', { vol: 1, rate: 0.85, priority: 8 });
+        audio.play('grimSlam', { vol: 1, priority: 9 });
         shake = Math.max(shake, 0.22);
         rumble.shock();
-      } else if (ev === 'orbThrow') audio.play('whoosh', { vol: v, rate: 0.6, priority: 7 });
+      } else if (ev === 'orbThrow') audio.play('orbHum', { vol: v, priority: 7 });
       else if (ev === 'orbBack') {
-        audio.play('block', { vol: 0.9, rate: 1.5, priority: 8 });
+        audio.play('orbStrike', { vol: 0.95, rate: 1.15 + 0.14 * Math.min(4, boss.orb?.bats ?? 0), priority: 8 });
         hitStop = Math.max(hitStop, 0.07);
         rumble.block();
-      } else if (ev === 'orbBat') audio.play('block', { vol: 0.8, rate: 0.8, priority: 7 });
+      } else if (ev === 'orbBat') audio.play('orbStrike', { vol: 0.8, rate: 0.8, priority: 7 });
       else if (ev === 'orbHit') {
-        audio.play('kill', { vol: 1, priority: 9 });
+        audio.play('grimCry', { vol: 1, rate: 0.85, priority: 9 });
+        audio.play('boltBurst', { vol: 1, rate: 0.6, priority: 8 });
+        cried = true;
         rumble.kill();
         shake = Math.max(shake, 0.2);
         hitStop = Math.max(hitStop, 0.1);
       } else if (ev === 'repel') {
-        audio.play('shock', { vol: 0.9, rate: 1.4, priority: 8 });
+        audio.play('grimRepel', { vol: 0.95, priority: 8 });
         rumble.block();
         shake = Math.max(shake, 0.12);
       } else if (ev === 'rage') {
@@ -700,6 +720,8 @@ function startGame(): void {
         audio.play('rumble', { vol: 1, priority: 8 });
       }
     }
+    // (The sword finding him: a short sharp cry, but not on top of the one above, nor as he dies: his end has its own.)
+    if (boss.hp < hpWas && !cried && boss.alive) audio.play('grimCry', { vol: 0.6, rate: 1.4, priority: 6 });
     if (boss.state === 'rage') shake = Math.max(shake, 0.06);
     // He bursts away: the rat is thrown back, unhurt.
     if (boss.repelPulse) {
@@ -1467,17 +1489,26 @@ function startGame(): void {
           audio.play('stagDie', { vol: v, priority: 6 });
         }
       } else if (e instanceof Grimsqueak) {
-        // His sounds come from what he does (bossEvents), not from his states; only his fall is here.
-        if (e.state === 'dead') audio.play('recall', { vol: v, rate: 0.7, priority: 8 });
-        else if (e.state === 'spent' || e.state === 'stunned') audio.play('memoryOut', { vol: v * 0.5, rate: e.state === 'stunned' ? 0.8 : 1.4, priority: 5 });
+        // His sounds come from what he does (bossTick), not from his states; only his sinking and his fall are here.
+        if (e.state === 'dead') {
+          audio.play('grimDie', { vol: 1, priority: 9 });
+          audio.play('recall', { vol: 0.7, rate: 0.7, priority: 8 });
+        } else if (e.state === 'spent' || e.state === 'stunned') audio.play('grimSag', { vol: Math.max(0.4, v) * 0.8, rate: e.state === 'stunned' ? 0.75 : 1.1, priority: 5 });
+      } else if (e.kind === 'ironback') {
+        // (What it does has its own sounds, in beastSounds; only its end is here.)
+        if (e.state === 'dead') audio.play('ironDie', { vol: v, priority: 6 });
+      } else if (e.kind === 'bat') {
+        if (e.state === 'dead') audio.play('batDie', { vol: v, priority: 6 });
       } else if (e.state === 'crouch') audio.play('croak', { vol: v, rate: 0.55, priority: 6 });
       else if (e.state === 'pounce') audio.play('whoosh', { vol: v, rate: 0.8, priority: 6 });
       else if (e.state === 'windup') audio.play('toadWind', { vol: v, priority: 5 });
       else if (e.state === 'hop') audio.play('croak', { vol: v, priority: 5 });
       else if (e.state === 'dead') audio.play('croak', { vol: v, rate: 0.6, priority: 6 });
     }
-    if (globs.length > heard.globs) audio.play('spit', { vol: 0.8, priority: 6 });
-    heard.globs = globs.length;
+    // (A toad's spit leaving its mouth. Grimsqueak's bolts have their own crack, from what he does.)
+    const slime = globs.reduce((n, g) => n + (g.kind === 'energy' ? 0 : 1), 0);
+    if (slime > heard.globs) audio.play('spit', { vol: 0.8, priority: 6 });
+    heard.globs = slime;
     const open = chamber.gates.filter((g) => g.open).length;
     if (open > heard.gates) audio.play('gate', { vol: 0.9, verb: 0.3, priority: 8 });
     heard.gates = open;
@@ -1731,9 +1762,11 @@ function startGame(): void {
     for (const g of [...landed, ...hitGlobs]) {
       ringAge = 0;
       ringSize = 0.9;
-      (ring.material as THREE.MeshBasicMaterial).color.set(0x8aff5a);
+      // (A toad's spit splats, green; a bolt of the Engine's light bursts, its own colour.)
+      (ring.material as THREE.MeshBasicMaterial).color.set(g.kind === 'energy' ? 0x9fefff : 0x8aff5a);
       ring.position.set(g.x, Math.max(0.05, g.y), g.z);
-      audio.play('splat', { vol: 0.7 * hearAt(g.x, g.z, 22), priority: 4 });
+      if (g.kind === 'energy') audio.play('boltBurst', { vol: 0.8 * hearAt(g.x, g.z, 22), rate: roll(0.92, 1.1), priority: 4 });
+      else audio.play('splat', { vol: 0.7 * hearAt(g.x, g.z, 22), priority: 4 });
     }
     for (let i = globs.length - 1; i >= 0; i--) {
       const g = globs[i];
@@ -3236,7 +3269,7 @@ function startGame(): void {
       fpsAccum = 0;
       fpsFrames = 0;
     }
-    if (showDebug || DEV.readout) debugEl.textContent = `${fps} fps  ${player.state}  foes:${aliveCount()}  x:${player.position.x.toFixed(1)} t:${trans.active ? trans.t.toFixed(2) : '-'}  snd:${audio.ready ? 'on' : 'off'} ${audio.stats.played}/${audio.stats.notes}`;
+    if (showDebug || DEV.readout) debugEl.textContent = `${fps} fps  ${player.state}  foes:${aliveCount()}  x:${player.position.x.toFixed(1)} t:${trans.active ? trans.t.toFixed(2) : '-'}  snd:${audio.ready ? 'on' : 'off'} ${audio.stats.played}/${audio.stats.notes}  last: ${audio.recent.join(' ')}`;
 
     requestAnimationFrame(frame);
   }

@@ -193,6 +193,15 @@ export const SFX_NAMES = [
   // The Ant Pikeman: its jaws clacking (how an ant shouts), its pike sliding back through its claw, its jaws
   // shutting on a bite, a scraped chirp when it is struck, and its end.
   'antClick', 'pikeReady', 'antSnap', 'antHurt', 'antDie',
+  // The Ironback's own (besides its snort and the clang of it going over): its horn scraping the floor before a
+  // ram, its feet drumming in the ram, its head meeting a wall, its horn going down for a toss, its shell rocking as
+  // it rights itself, and the steam going out of it at the end.
+  'ironScrape', 'ironCharge', 'ironBonk', 'ironToss', 'ironRise', 'ironDie',
+  // The Flitter's end, and the Broodmother coming down off her thread.
+  'batDie', 'broodDrop',
+  // Lord Grimsqueak: the Engine's light gathering, a bolt of it thrown and bursting, his swoop, his slam, the orb
+  // sent and struck, his cry, the burst that throws the knight off him, the light going out of him, and his end.
+  'grimGather', 'grimBolt', 'boltBurst', 'grimSwoop', 'grimSlam', 'orbHum', 'orbStrike', 'grimCry', 'grimRepel', 'grimSag', 'grimDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -770,6 +779,168 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const hz = 1050 * Math.exp(-u * 1.3) + 200;
       const chirp = c.lp(0, sq(c.osc(0, hz), 0.3) * 0.5 + sq(c.osc(1, hz * 1.51), 0.25) * 0.3, 0.45) * 1.6 * (sq(c.osc(2, 80 * (1 - u) + 12), 0.55) > 0 ? 1 : 0.1) * (1 - u) ** 0.7 * Math.min(1, t / 0.01);
       return Math.tanh((chirp * 0.9 + pike(t - 0.42) + pike2(t - 0.6) * 0.8) * 0.9) * Math.min(1, (0.9 - t) / 0.08);
+    };
+  }, { bits: 7 }),
+  // The Ironback. Before it rams: its horn and feet scraping the floor, three long rasps, each harder than the last.
+  ironScrape: () => draw(0.9, RATE_HI, 181, (c) => {
+    const stone = knock(310, RATE_HI, 0.97);
+    const stone2 = knock(730, RATE_HI, 0.96);
+    return (t) => {
+      const u = t / 0.9;
+      const k = (t % 0.3) / 0.22;
+      const on = k < 1 ? Math.sin(Math.PI * k) ** 0.7 : 0;
+      const grit = sq(c.osc(0, 70 + 50 * u), 0.4) > 0 ? c.r() * 2 - 1 : (c.r() * 2 - 1) * 0.25;
+      return (stone(grit) + stone2(grit) * 0.5) * on * (0.45 + 0.55 * u);
+    };
+  }, { bits: 7 }),
+  // The ram: its feet drumming on the floor under all that iron, faster as it comes, and its shell rattling over them.
+  ironCharge: () => draw(1.2, RATE_HI, 182, (c) => {
+    const feet = rattle(c, RATE_HI, 1.2, 11, 19, 150, 0.985);
+    const shell = rattle(c, RATE_HI, 1.2, 23, 31, 640, 0.97);
+    return (t) => Math.tanh((feet(t) * 1.6 + shell(t) * 0.35) * 1.3) * Math.min(1, t / 0.05) * Math.min(1, (1.2 - t) / 0.15);
+  }, { bits: 7, gain: 0.78 }),
+  // Its head meeting a wall: a great dull knock, and the iron of its shell ringing low and short after it.
+  ironBonk: () => draw(0.8, RATE_HI, 183, (c) => {
+    const shell = struck(c, [[128, 1, 7], [196, 0.7, 9], [333, 0.5, 13], [540, 0.25, 20]], 0.7);
+    return (t) => Math.tanh((shell(t) + sine(c.osc(8, 48 + 90 * Math.exp(-18 * t))) * Math.exp(-t * 9) * 1.2 + c.lp(0, c.r() * 2 - 1, 0.15) * Math.exp(-t * 14) * 0.7) * 0.6) * Math.min(1, (0.8 - t) / 0.08);
+  }, { bits: 7 }),
+  // Its horn going down for a toss: a short hard grunt of steam, and the scrape of the horn's point.
+  ironToss: () => draw(0.42, RATE_HI, 184, (c) => {
+    const stone = knock(420, RATE_HI, 0.965);
+    return (t) => {
+      const u = t / 0.42;
+      const n = c.r() * 2 - 1;
+      const steam = c.lp(0, n, 0.2 + 0.3 * u) * Math.sin(Math.PI * Math.min(1, u * 1.3)) ** 0.6;
+      const grunt = sine(c.osc(1, 95 - 25 * u + 8 * sine(c.osc(2, 31)))) * 0.6 * bell(t, 0.42);
+      const scrape = stone(sq(c.osc(3, 90 + 80 * u), 0.35) > 0 ? n : 0) * u * 1.2;
+      return (steam * 0.8 + grunt + scrape) * Math.min(1, (0.42 - t) / 0.04);
+    };
+  }, { bits: 7 }),
+  // Getting off its back: its shell rocking on the stone, three knocks quickening, and the thump of its feet coming down.
+  ironRise: () => draw(0.6, RATE_HI, 185, (c) => {
+    const rock = struck(c, [[240, 1, 22], [395, 0.6, 30], [702, 0.3, 40]], 0.9);
+    const rock2 = struck(c, [[262, 1, 24], [431, 0.6, 32], [760, 0.3, 42]], 0.9, 3);
+    const rock3 = struck(c, [[228, 1, 20], [380, 0.6, 28], [690, 0.3, 38]], 1, 6);
+    return (t) => {
+      const down = t > 0.45 ? sine(c.osc(9, 50 + 70 * Math.exp(-20 * (t - 0.45)))) * Math.exp(-(t - 0.45) * 14) * 1.3 : 0;
+      return Math.tanh((rock(t) * 0.7 + rock2(t - 0.19) * 0.85 + rock3(t - 0.33) + down) * 0.7) * Math.min(1, (0.6 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // Its end: the steam going out of it in one long falling hiss, a low groan under it, and its shell settling on the floor.
+  ironDie: () => draw(1.2, RATE_HI, 186, (c) => {
+    const settle = struck(c, [[196, 1, 6], [203, 0.5, 6.5], [440, 0.6, 9], [760, 0.3, 13]], 0.5, 2);
+    return (t) => {
+      const u = Math.min(1, t / 0.8);
+      const n = c.r() * 2 - 1;
+      const steam = (c.lp(0, n, 0.5 - 0.42 * u) - c.lp(1, n, 0.04)) * (1 - u) ** 0.7 * Math.min(1, t / 0.02);
+      const groan = sine(c.osc(0, 90 - 45 * u)) * 0.35 * (1 - u);
+      return Math.tanh((steam * 1.1 + groan + settle(t - 0.7) * 0.8) * 0.9) * Math.min(1, (1.2 - t) / 0.1);
+    };
+  }, { bits: 7 }),
+  // The Flitter's end: its squeak falling away, and one last flutter of its wings.
+  batDie: () => draw(0.45, RATE_HI, 187, (c) => (t) => {
+    const u = t / 0.45;
+    const hz = 4200 * Math.exp(-u * 1.6) + 600;
+    const squeak = (sq(c.osc(0, hz + 300 * sine(c.osc(2, 38))), 0.25) * 0.5 + tri(c.osc(1, hz * 1.5)) * 0.3) * (1 - u) ** 0.6;
+    const flutter = c.lp(0, c.r() * 2 - 1, 0.3) * (sq(c.osc(3, 26 - 14 * u), 0.4) > 0 ? 0.5 : 0) * u * (1 - u) * 3;
+    return (squeak + flutter) * Math.min(1, t / 0.005) * Math.min(1, (0.45 - t) / 0.06);
+  }, { bits: 7, gain: 0.55 }),
+  // The Broodmother coming down off her thread: the air she pushes ahead of her, and her hiss in it, growing till she lands.
+  broodDrop: () => draw(0.5, RATE_HI, 188, (c) => (t) => {
+    const u = t / 0.5;
+    const n = c.r() * 2 - 1;
+    const air = c.lp(0, n, 0.04 + 0.5 * u * u) - c.lp(1, n, 0.02);
+    const hiss = (n - c.lp(2, n, 0.3)) * (sq(c.osc(0, 60 + 70 * u), 0.5) > 0 ? 1 : 0.3) * 0.35 * u;
+    return (air + hiss) * u ** 1.5 * Math.min(1, (0.5 - t) / 0.02);
+  }, { bits: 7 }),
+  // Lord Grimsqueak. The Engine's light gathering in his hands: a thin shimmer climbing, beating faster as it comes.
+  grimGather: () => draw(0.9, RATE_HI, 191, (c) => (t) => {
+    const u = t / 0.9;
+    const hz = 520 * 2 ** (u * 1.6);
+    const beat = 0.6 + 0.4 * sine(c.osc(3, 9 + 22 * u));
+    const light = sine(c.osc(0, hz)) * 0.5 + sine(c.osc(1, hz * 1.503)) * 0.32 + tri(c.osc(2, hz * 2.01)) * 0.2;
+    const n = c.r() * 2 - 1;
+    return (light * beat + (n - c.lp(0, n, 0.5)) * 0.1 * u) * u ** 0.8 * Math.min(1, (0.9 - t) / 0.03);
+  }, { bits: 7 }),
+  // A bolt of it thrown: a hard bright crack falling away.
+  grimBolt: () => draw(0.2, RATE_HI, 192, (c) => (t) => {
+    const u = t / 0.2;
+    const hz = 2600 * Math.exp(-u * 2.2) + 420;
+    return (sq(c.osc(0, hz), 0.3) * 0.5 + sine(c.osc(1, hz * 0.5)) * 0.5 + (c.r() * 2 - 1) * 0.5 * Math.exp(-t * 60)) * decay(t, 0.2, 0.002);
+  }, { bits: 7 }),
+  // A bolt bursting where it lands: a spit of sparks.
+  boltBurst: () => draw(0.26, RATE_HI, 193, (c) => {
+    const ping = struck(c, [[1870, 0.9, 12], [2790, 0.6, 16], [3940, 0.35, 24]], 1.2);
+    return (t) => {
+      const n = c.r() * 2 - 1;
+      const crackle = (n - c.lp(0, n, 0.4)) * (c.r() < 0.3 ? 1 : 0.2) * Math.exp(-t * 9) * 0.9;
+      return Math.tanh((ping(t) + crackle) * 1.5) * Math.min(1, (0.26 - t) / 0.03);
+    };
+  }, { bits: 7, gain: 0.55 }),
+  // His swoop: his cloak tearing through the air, and his snarl in it, rising as he comes.
+  grimSwoop: () => draw(0.65, RATE_HI, 194, (c) => (t) => {
+    const u = t / 0.65;
+    const n = c.r() * 2 - 1;
+    const air = c.lp(0, n, 0.05 + 0.4 * Math.sin(Math.PI * u)) - c.lp(1, n, 0.03);
+    const hz = 120 + 110 * u;
+    const snarl = c.lp(2, saw(c.osc(0, hz + 14 * sine(c.osc(1, 43)))) * 0.6 + sq(c.osc(2, hz * 2.02), 0.3) * 0.2, 0.5);
+    return (air * 0.9 + snarl * 0.9) * bell(t, 0.65);
+  }, { bits: 7 }),
+  // His slam: the boom of him coming down, and the ring of light running out from it (a bright tone falling fast).
+  grimSlam: () => draw(1.0, RATE_HI, 195, (c) => (t) => {
+    const boom = sine(c.osc(0, 42 + 110 * Math.exp(-16 * t))) * Math.exp(-t * 5) * 1.3 + c.lp(0, c.r() * 2 - 1, 0.12) * Math.exp(-t * 11) * 0.8;
+    const hz = 1500 * Math.exp(-t * 3.2) + 240;
+    const ring = (sine(c.osc(1, hz)) * 0.4 + sine(c.osc(2, hz * 1.498)) * 0.25) * Math.exp(-t * 3.4) * (0.7 + 0.3 * sine(c.osc(3, 23)));
+    return Math.tanh((boom + ring * 0.8) * 0.8) * Math.min(1, t / 0.002) * Math.min(1, (1 - t) / 0.1);
+  }, { bits: 7, gain: 0.85 }),
+  // The orb sent on its way: a slow round hum with a wobble in it.
+  orbHum: () => draw(0.7, RATE_HI, 196, (c) => (t) => {
+    const u = t / 0.7;
+    const hz = 196 * (1 + 0.25 * u) * (1 + 0.04 * sine(c.osc(2, 7)));
+    return (sine(c.osc(0, hz)) * 0.6 + sine(c.osc(1, hz * 2.997)) * 0.25 + tri(c.osc(3, hz * 1.5)) * 0.12) * (0.75 + 0.25 * sine(c.osc(4, 13))) * bell(t, 0.7) ** 0.6;
+  }, { bits: 7, gain: 0.7 }),
+  // The orb struck (by the knight's sword, or batted back by Grimsqueak): glass rung with iron. It rings on.
+  orbStrike: () => draw(0.5, RATE_HI, 197, (c) => {
+    const glass = struck(c, [[1245, 1, 9], [1876, 0.6, 12], [2510, 0.45, 15], [3330, 0.25, 22]], 1.2);
+    return (t) => (glass(t) + sine(c.osc(6, 311)) * 0.4 * Math.exp(-t * 14)) * Math.min(1, (0.5 - t) / 0.05);
+  }, { bits: 7 }),
+  // He is hurt: a rat's shriek under all that grandeur, breaking as it falls.
+  grimCry: () => draw(0.5, RATE_HI, 198, (c) => (t) => {
+    const u = t / 0.5;
+    const hz = 980 - 520 * u ** 0.7 + 40 * sine(c.osc(2, 27));
+    const voice = saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 1.5), 0.3) * 0.25 + (c.r() * 2 - 1) * 0.14;
+    const broken = u > 0.55 ? (sq(c.osc(3, 34), 0.6) > 0 ? 1 : 0.25) : 1;
+    return c.lp(0, voice, 0.6) * 1.4 * broken * bell(t, 0.5) ** 0.7;
+  }, { bits: 7 }),
+  // He bursts away: a thump of air pushed out all round him, and the light snapping after it.
+  grimRepel: () => draw(0.5, RATE_HI, 199, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const push = sine(c.osc(0, 60 + 140 * Math.exp(-22 * t))) * Math.exp(-t * 8) * 1.2 + c.lp(0, n, 0.25) * Math.exp(-t * 12) * 0.8;
+    const hz = 700 * 2 ** (Math.min(1, t / 0.22) * 1.3);
+    const snap = (sine(c.osc(1, hz)) * 0.35 + sine(c.osc(2, hz * 1.5)) * 0.2) * Math.exp(-Math.max(0, t - 0.2) * 14) * Math.min(1, t / 0.03);
+    return Math.tanh((push + snap) * 0.8) * Math.min(1, (0.5 - t) / 0.05);
+  }, { bits: 7 }),
+  // He sinks, spent: the light going out of him, a tone sliding down and guttering.
+  grimSag: () => draw(0.7, RATE_HI, 200, (c) => (t) => {
+    const u = t / 0.7;
+    const hz = 620 * 2 ** (-u * 1.4);
+    const gutter = 0.55 + 0.45 * sq(c.osc(3, 11 + 16 * u), 0.5 + 0.3 * u);
+    return (sine(c.osc(0, hz)) * 0.5 + sine(c.osc(1, hz * 1.503)) * 0.3 + tri(c.osc(2, hz * 0.5)) * 0.25) * gutter * (1 - u) ** 0.6 * Math.min(1, t / 0.02);
+  }, { bits: 7 }),
+  // His end: the shriek drawn out and falling, the light tearing loose from him in sparks, and a last low boom.
+  grimDie: () => draw(1.8, RATE_HI, 201, (c) => {
+    const sparks = Array.from({ length: 14 }, (_, i) => ({ at: 0.2 + i * 0.055 + c.r() * 0.03, hz: 1400 + c.r() * 2600 }));
+    return (t) => {
+      const u = Math.min(1, t / 0.95);
+      const hz = 900 * Math.exp(-u * 1.9) + 70 + 30 * sine(c.osc(2, 19 + 20 * u));
+      const voice = c.lp(0, saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 1.5), 0.3) * 0.25 + (c.r() * 2 - 1) * 0.12, 0.55) * 1.3 * (1 - u) ** 0.5 * Math.min(1, t / 0.02);
+      let light = 0;
+      for (const sp of sparks) {
+        const d = t - sp.at;
+        if (d >= 0 && d < 0.2) light += tri(sp.hz * d) * Math.exp(-d * 22) * 0.35;
+      }
+      const boom = t > 0.9 ? sine(c.osc(3, 40 + 80 * Math.exp(-14 * (t - 0.9)))) * Math.exp(-(t - 0.9) * 5.5) * 1.1 : 0;
+      return Math.tanh((voice + light + boom) * 0.85) * Math.min(1, (1.8 - t) / 0.12);
     };
   }, { bits: 7 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),

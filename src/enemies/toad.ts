@@ -380,6 +380,8 @@ export interface Glob {
   age: number;
   /** Where it ended: 'flying', it hit something ('splat'), or it hit him ('hit'). */
   done: boolean;
+  /** One of Grimsqueak's bolts of light, not a toad's spit: it looks and sounds its own way. */
+  kind?: 'energy';
 }
 
 /** Moves globs. A glob ends when it falls below the ground under it, or after a few seconds. */

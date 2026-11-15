@@ -347,9 +347,38 @@ the hero's own squeaks slowed down for the guard. Sixteen recipes in `src/audio/
 - Nobody has heard these either: built by measurement and by looking at their pitch over time. tests/audio.ts: the
   mantis's cry over three times higher than the guard's and the guard's over three times higher than the stag's;
   the guard lower than the hero; tells as long as their wind-ups; the hammer heavier than an Ironback going over.
-- What still borrows: the Ironback has its own snort and clang but uses the roach's wind-up (slowed) for its toss
-  and the roach's lunge for its ram; Grimsqueak's attacks are put together from shared sounds (`rumble`, `spit`,
-  `memoryOut`, `block`). The roach, toad and bat have always had their own.
+- (What still borrowed after that, the Ironback and Grimsqueak, has its own now: see the next section.)
+
+## Nothing borrows a sound now: the Ironback, Grimsqueak, and two strays (2026-11-15)
+An audit found more borrowing than the notes said, all fixed:
+- **The Ironback** played the toad's wind-up under its snort (it fell through to the toad's branch in `soundWorld`),
+  the roach's lunge for its ram, the roach's wind-up for its toss, a plain `land` for getting up, and it DIED with
+  the toad's croak. Its own now: `ironScrape` (horn and feet scraping, three rasps, as long as the ram's tell),
+  `ironCharge` (feet drumming, as long as the ram), `ironBonk` (head on a wall: a dull knock, in place of `shock`),
+  `ironToss`, `ironRise`, `ironDie` (the steam going out of it). Its `snort` and `flipClang` were already its own.
+- **The Flitter** died with the toad's croak too: `batDie`.
+- **The Broodmother's** drop off her thread used the knight's plunge: `broodDrop`.
+- **Lord Grimsqueak** had only his laugh. Now: `grimGather` (the Engine's light gathering: every tell, played at the
+  length of that attack's wind-up, so quicker and higher in his rage), `grimBolt` (each bolt; it was the toad's spit,
+  twice over: once from his event and once from the glob counter) and `boltBurst` (a bolt landing; it was the toad's
+  splat, with the toad's green ring: the ring is the light's own colour now), `grimSwoop`, `grimSlam`, `orbHum`,
+  `orbStrike` (the orb struck: higher each time the knight sends it back, lower when Grimsqueak bats it), `grimCry`
+  (the orb bursting on him; and, shorter, whenever the sword finds him: bossTick watches his hp), `grimRepel`,
+  `grimSag` (sinking spent, or stunned: it was a story sound) and `grimDie` (with the `recall` sting the other
+  bosses' ends have). `Glob.kind` ('energy') is how the game tells a bolt from a toad's spit.
+- **Shared on purpose** (the world's sounds, not anyone's voice): `whoosh`, `shock` (the floor shaking under the
+  Broodmother's and the Stag's slams, under their own sounds), `land`, `rumble`, `spikeHit` (anything sharp going into
+  the floor: her spikes, the mantis's scythes, the hornet's lance), `chitinTap` (an insect's foot), `clank`, and
+  `flipClang` for the Stag Knight going down (iron armour hitting stone).
+- **A debug aid**: the readout (`#...&debug`, or the dev suite's switch) now ends with the last six sounds the game
+  asked for (`audio.recent`): "which sound was that?". Used to check, in the built game, that Grimsqueak's fight and
+  the Ironback's ram play the new ones (they do); see "Not done" for the ones that did not come up.
+- **Tests**: tests/audio.ts +16 (each set exists and is neither too loud nor too quiet; tells as long as what they
+  warn of and growing; the Ironback all low, nothing like the roach or toad; the Flitter's end a bat's; a bolt bright
+  and short; his slam his heaviest; his cry a rat's; each end runs down). 135 sounds in all.
+- **Not done**: nobody has heard any of it. In the live runs these did not come up, so they are tested only as
+  sounds, not as moments in the game: `ironBonk`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `orbStrike`, `grimCry`,
+  `grimRepel`, `grimDie`.
 
 ## The quiet sounds (2026-11-15)
 The sound test marked nine sounds as too quiet. Measured, most were not quiet so much as nearly empty: `clank` was a

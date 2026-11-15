@@ -18,7 +18,7 @@ interface StorageLike {
 export const VARY: Partial<Record<SfxName, number>> = {
   hit: 0.07, kill: 0.04, swing: 0.08, dodge: 0.06, hurt: 0.04, block: 0.05, crate: 0.09, barrel: 0.08, plank: 0.2, pipe: 0.05,
   cap: 0.03, splash: 0.08, splat: 0.1, spit: 0.08, croak: 0.1, lunge: 0.08, shock: 0.04, softStep: 0.12, cloth: 0.1, whoosh: 0.08,
-  chitinTap: 0.15, plateKnock: 0.1, broodHurt: 0.08, wyrmSnap: 0.05, spikeHit: 0.05, hornetHurt: 0.08, antClick: 0.1, antSnap: 0.05, antHurt: 0.08,
+  chitinTap: 0.15, plateKnock: 0.1, broodHurt: 0.08, wyrmSnap: 0.05, spikeHit: 0.05, hornetHurt: 0.08, antClick: 0.1, antSnap: 0.05, antHurt: 0.08, ironBonk: 0.05, batDie: 0.08, boltBurst: 0.06,
 };
 /** A run of crumbs climbs a scale, one step per crumb, and starts again after a pause. */
 export const CRUMB_STREAK = { window: 1400, steps: [0, 2, 4, 5, 7, 9, 11, 12] };
@@ -215,7 +215,12 @@ export class AudioEngine {
   }
 
   /** Plays a sound once. */
+  /** The last few sounds asked for, newest last (for the debug readout: "which sound was that?"). */
+  readonly recent: SfxName[] = [];
+
   play(name: SfxName, o: PlayOptions = {}): void {
+    this.recent.push(name);
+    if (this.recent.length > 6) this.recent.shift();
     let opts = o;
     if (o.rate === undefined) {
       const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
