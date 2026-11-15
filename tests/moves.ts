@@ -110,7 +110,13 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
     for (let n = 0; n < 4; n++) {
       if (!across(p, none, south)) break;
       p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
-      if (p.moveEvent === 'wallkick') kicks++;
+      // (Pressed a hair before he touches, the jump is kept and kicks him off as he arrives: a frame or two later.)
+      let kicked = p.moveEvent === 'wallkick';
+      for (let t = 0; t < 3 && !kicked; t++) {
+        p.update(DT, inp({ jumpHeld: true }), cs);
+        kicked = p.moveEvent === 'wallkick';
+      }
+      if (kicked) kicks++;
       south = !south;
     }
     check('and so on up the shaft: six kicks from wall to wall without touching the stick', kicks === 6 && p.position.y > 12, `${kicks} kicks, ${p.position.y.toFixed(1)} up`);

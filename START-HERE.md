@@ -269,6 +269,22 @@ The first bears on the level work now under way (the Cistern is done; the Foundr
 not): do it before the next level is reworked.
 
 ## The Move Garden and the jump sets (2026-11-15)
+**THE OWNER HAS PLAYED IT AND DECIDED (2026-11-15): the jump numbers stay as they are.** His words: "it feels good
+the way you've got it"; the wall jump "was pretty satisfying"; "the height was basically perfect to do a double jump
+and then have to grab on the ledge"; "it required skill and I appreciate it". One change asked for: "the distance
+between the walls for the wall jump could be a tiny bit more lenient". Done: a kick's push across went from 7 to 7.5
+(`moves.wallKickPush`), so he reaches the far wall a little sooner and a little higher across a wide gap; a kick's
+HEIGHT is untouched. (That is our reading of "distance between the walls"; if he meant the timing of the press, that
+is `wallKickWindow`, 0.16 s, unchanged.) So:
+- Do NOT lower the double jump or raise the wall kick on the strength of the Mario 64 report. The sets stay in the
+  Tweaks panel for comparing, no more.
+- "He can just jump over stuff" is therefore a matter for the LEVELS: anything meant to be earned stands higher than
+  5.7 (a double jump and a grab) from wherever he can stand, as in the Cistern.
+- **The pattern he praised, to build with:** a wall kick, then a double jump, then a catch of the ledge, with nothing
+  to spare. From the height of the kick that is about 2.8 (the kick) + 2.2 (the double jump) + 1 (the catch): a ledge
+  some 6 above where he kicks from, across a gap of about 3.5. The garden's "one kick" ledge is the plain kick and
+  catch; chained after a first kick up a chimney is where he met the harder one.
+
 All three research reports say the same thing about order: settle the hero's numbers BEFORE building more levels to
 them. So there is now a test room for feeling them, `src/levels/garden.ts` (`#level=garden`, the file
 `ratquest-garden.html`, or the Workshop's list of places under "Test rooms"). It is no part of the game: not in
@@ -278,12 +294,12 @@ LEVELS, ALL_LEVELS or the archive, nothing to collect, its door leads back to th
   (2.2, 4 and 6 wide, and a "one kick" ledge 6 up across a 3.5 gap from a tall wall), each with a ruler up the wall
   behind it; a ruler on a pole in the open to jump beside (not solid); and a ruler on the floor to jump along. Every
   thing has a board saying what it is (new decor kinds `sign` and `ruler`, `src/world/signs.ts`: only drawn).
-  Whatever he could kick between is joined on or eight or more apart, so no climb is there by accident.
+  Whatever he could kick between is joined on or nine or more apart, so no climb is there by accident.
 - **The jump sets:** at the top of "Jumping" and "Moves" in the Tweaks panel, five buttons that move the jump
   sliders together (`JUMP_SETS` in `src/core/tweaks.ts`): As it is; Stronger wall kick (`wallKickUp` 12); Smaller
   double jump (`doubleVelocity` 6); Both; Mario's proportions (11 and 4.5). They are sliders like any other: kept on
   the device, and they change the WHOLE game until "As it is" is pressed, so levels built for the present numbers
-  will break under them. That is the point of trying them in the garden first.
+  will break under them.
 - **What they measure to** (`tests/garden.ts` plays the room with the real controller under each set and prints
   this; a jump is 2.43 up in all of them):
 
@@ -297,11 +313,11 @@ LEVELS, ALL_LEVELS or the archive, nothing to collect, its door leads back to th
 
   (The game's notes have long said "2.5 and 4.75": that is the arithmetic; played at sixty steps a second he gets
   2.43 and 4.6.) As the game is, a six-wide chimney can be climbed too (three kicks to 8 up): a kick carries him
-  about seven and a half across before he is back down to where he kicked from. `reach.ts` only knows chimneys up
-  to 4.5 wide, so two walls five to seven apart are a climb the checker does not see.
-- **Nothing in the game's own numbers has changed.** The owner is to try the sets and say which (or what sliders);
-  then that becomes the default, `reach.ts` and every level test are run again, and the levels that break are
-  mended BEFORE the Foundry, the Hollows and the Keep are reworked.
+  a little over eight across before he is back down to where he kicked from (8.3, with the push at 7.5). `reach.ts`
+  only knows chimneys up to 4.5 wide, so two walls five to eight apart are a climb the checker DOES NOT SEE: the
+  Cistern's "five or more from any other wall" was the checker's rule, not the knight's. Until the checker is
+  taught, keep walls that are not meant as a chimney NINE or more apart, or joined.
+- The room's own chimneys stand nine clear of one another (`CHIMNEY_CLEAR`), further than a kick carries.
 
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:

@@ -100,7 +100,9 @@ export const TUNING = {
     longJumpWindow: 0.3, // he must have been running this recently when he crouches and jumps
     longJumpSteer: 3, // how much he can bend it in the air
     wallKickUp: 10,
-    wallKickPush: 7, // away from the wall
+    // Away from the wall. (7 until 2026-11-15: the owner, after playing the Move Garden, liked the kick as it was and
+    // asked for the distance between the walls to be "a tiny bit more lenient". The height is untouched.)
+    wallKickPush: 7.5,
     wallKickWindow: 0.16, // a jump pressed this soon after touching a wall in the air kicks off it
     wallKickLock: 0.25, // seconds the stick cannot pull him straight back to the wall
     // After a kick he is carried straight across at the kick's speed, towards whatever wall is opposite, for this long

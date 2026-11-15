@@ -10,8 +10,8 @@
  * the top of "Jumping".
  *
  * Nothing here can be climbed by a wall kick that is not meant to be: whatever he could kick between is either
- * joined on (no gap) or eight or more apart (a kick carries him about seven and a half across before he is back
- * down to where he kicked from).
+ * joined on (no gap) or nine or more apart (a kick carries him a little over eight across before he is back down
+ * to where he kicked from).
  */
 import { extent, type Box, type Decor } from '../world/layout';
 import { doorOn } from '../world/rooms';
@@ -19,7 +19,7 @@ import { room } from './builders';
 import type { LevelDef } from './types';
 
 /** Half the room, east to west and north to south; and how high its walls are. North is -z. */
-export const GARDEN = { halfX: 34, halfZ: 24, wall: 16 } as const;
+export const GARDEN = { halfX: 36, halfZ: 24, wall: 16 } as const;
 
 /** A ledge on the west wall: how high, where along the wall (its middle), and what its board says gets him onto it (from the floor, as the game is). */
 export interface Step { top: number; z: number; move: string }
@@ -41,12 +41,23 @@ export interface Chimney { id: string; x: number; gap: number; westTop: number; 
 /** How thick a chimney's walls are (the least he can land on from a kick), and how far they stand out from the wall. */
 export const CHIMNEY_WALL = 2.4;
 export const CHIMNEY_DEPTH = 5;
-export const CHIMNEYS: readonly Chimney[] = [
-  { id: 'narrow', x: -GARDEN.halfX, gap: 2.2, westTop: 10, eastTop: 10, lines: ['2.2 WIDE', '10 UP'] },
-  { id: 'wide', x: -19, gap: 4, westTop: 10, eastTop: 10, lines: ['4 WIDE', '10 UP'] },
-  { id: 'widest', x: -2.2, gap: 6, westTop: 8, eastTop: 8, lines: ['6 WIDE', '8 UP'] },
-  { id: 'one', x: 16.6, gap: 3.5, westTop: 12, eastTop: 6, lines: ['6 UP', 'ONE KICK'] },
-];
+/** Clear floor between one chimney and the next, and between the last and the room's east wall: too far to kick across. */
+export const CHIMNEY_CLEAR = 9;
+export const CHIMNEYS: readonly Chimney[] = (() => {
+  const list: Array<Omit<Chimney, 'x'>> = [
+    { id: 'narrow', gap: 2.2, westTop: 10, eastTop: 10, lines: ['2.2 WIDE', '10 UP'] },
+    { id: 'wide', gap: 4, westTop: 10, eastTop: 10, lines: ['4 WIDE', '10 UP'] },
+    { id: 'widest', gap: 6, westTop: 8, eastTop: 8, lines: ['6 WIDE', '8 UP'] },
+    { id: 'one', gap: 3.5, westTop: 12, eastTop: 6, lines: ['6 UP', 'ONE KICK'] },
+  ];
+  // West to east from the corner (the first is joined to the west wall), each the clear distance past the last.
+  let x: number = -GARDEN.halfX;
+  return list.map((c) => {
+    const at = x;
+    x += CHIMNEY_WALL * 2 + c.gap + CHIMNEY_CLEAR;
+    return { ...c, x: at };
+  });
+})();
 /** The inner faces of a chimney, west and east, and the middle of its mouth. */
 export function chimneyFaces(c: Chimney): { west: number; east: number; mid: number; z0: number; z1: number } {
   const west = c.x + CHIMNEY_WALL;
