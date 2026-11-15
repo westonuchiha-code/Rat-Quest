@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { BRAZIER, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { BRAZIER, COUCH, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -326,13 +326,14 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         };
         if (p.t === 'speaker') part('stone', -0.85, 0.85, 2.9, -0.6, 0.6);
         else {
-          part('plank', -0.975, 0.975, 0.72, -0.225, 0.55); // the seat, between the arms: stand on it
-          part('plank', -1.3, 1.3, 1.45, -0.575, -0.225); // the back
-          // The arms (in front of the back, either side of the seat) and the cushion (on the seat), as drawn. (They
-          // were not solid: standing on the seat he sank into the cushion, and walking along it he went through the arms.)
-          part('plank', -1.325, -0.975, 1.0, -0.225, 0.55);
-          part('plank', 0.975, 1.325, 1.0, -0.225, 0.55);
-          part('plank', 0.15, 0.85, 0.84, -0.1, 0.3, 0.72);
+          // As drawn (couchModel.ts, from the same numbers): the seat between the arms, the back, the arms in front
+          // of the back, and the pillow on the seat. No two of them overlap.
+          const K = COUCH;
+          part('plank', -K.armIn, K.armIn, K.seat, K.seatBack, K.front); // the seat: stand on it
+          part('plank', -K.half, K.half, K.backTop, K.back, K.seatBack); // the back
+          part('plank', -K.armOut, -K.armIn, K.armTop, K.seatBack, K.front);
+          part('plank', K.armIn, K.armOut, K.armTop, K.seatBack, K.front);
+          part('plank', K.pillow.x0, K.pillow.x1, K.pillow.top, K.pillow.z0, K.pillow.z1, K.seat);
         }
         break;
       }

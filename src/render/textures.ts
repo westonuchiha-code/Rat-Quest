@@ -1045,28 +1045,46 @@ const paintMagmaRock: Painter = (p, rand) => {
 
 // ---- props: what things are made of (a fire bowl's iron, its burnt inside, its coals) ----
 
-/** Black iron beaten by hand: dark, with the dull marks of the hammer, a band across it and a row of studs. */
+/**
+ * Dark cast iron: smooth and quiet, a little lighter where it has been rubbed, with one band and its studs. (Its
+ * first painting was busy with hammer marks and rust; on something as small as a fire bowl that was all noise.)
+ */
 const paintWroughtIron: Painter = (p, rand) => {
   const s = p.size;
-  const f = fbm(s, rand, 5, 3);
-  const iron = [0x17181c, 0x212329, 0x2c2f36, 0x3a3d45, 0x4a4e57];
-  p.each((x, y) => ramp(f[y * s + x], iron, x, y, 0.35));
-  // Hammer marks: small pale crescents, each with a dark side.
-  for (let k = 0; k < 14; k++) {
+  const f = fbm(s, rand, 2, 2);
+  const iron = [0x2a2c31, 0x33363c, 0x3d4047, 0x484c54];
+  p.each((x, y) => ramp(0.25 + f[y * s + x] * 0.55, iron, x, y, 0.2));
+  // A band round it, with a lit top edge, a dark under-edge and a row of studs.
+  const by = Math.floor(s * 0.6);
+  p.rect(0, by, s, 5, 0x30333a);
+  p.hline(0, by, s, 0x6a6e78);
+  p.hline(0, by + 5, s, 0x15161a);
+  for (let x = 3; x < s; x += 8) rivet(p, x, by + 2, 0x8a8e98, 0x15161a);
+  // A soft line of light along the top, as on a cast edge, and a shadow at the foot.
+  p.hline(0, 1, s, 0x565a63);
+  p.hline(0, s - 1, s, 0x1c1d22);
+};
+
+/**
+ * One block of dressed stone, with no joints in it: what a thing stands on (a fire bowl's foot). The room's own stone
+ * is a wall of blocks with mortar between them, and on a single foot that looked like a piece of the floor.
+ */
+const paintCutStone: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 3, 3);
+  const stone = [0x6c6860, 0x79756b, 0x878378, 0x959186];
+  p.each((x, y) => ramp(0.2 + f[y * s + x] * 0.62, stone, x, y, 0.3));
+  // The marks of the chisel: short faint strokes, all leaning the same way.
+  for (let k = 0; k < 16; k++) {
     const x = Math.floor(rand() * s), y = Math.floor(rand() * s);
-    p.blend(x, y, 0x70747e, 0.55);
-    p.blend(x + 1, y, 0x5a5e68, 0.45);
-    p.blend(x, y + 1, 0x0c0c0f, 0.6);
-    p.blend(x + 1, y + 1, 0x0c0c0f, 0.4);
+    for (let j = 0; j < 3; j++) p.blend(x + j, y - j, 0x55524b, 0.35);
   }
-  // A band round it, with a lit top edge and a row of studs.
-  const by = Math.floor(s * 0.62);
-  p.rect(0, by, s, 5, 0x1b1c21);
-  p.hline(0, by, s, 0x5c606a);
-  p.hline(0, by + 4, s, 0x08080a);
-  for (let x = 3; x < s; x += 8) rivet(p, x, by + 2, 0x8a8e98, 0x08080a);
-  // A little rust where the wet has got at it.
-  p.speckle(rand, 18, [0x4a2a18, 0x5e3418]);
+  p.speckle(rand, 10, [0x4e4b45, 0xa6a296]);
+  // A worked edge: light along the top of the block, shadow along its foot.
+  p.hline(0, 0, s, 0xa9a598);
+  p.hline(0, 1, s, 0x9a968a);
+  p.hline(0, s - 1, s, 0x47443f);
+  p.hline(0, s - 2, s, 0x5a5750);
 };
 
 /** The inside of a fire bowl: burnt black, flaked with grey ash, cracked, an ember or two still alive in it. */
@@ -1078,6 +1096,81 @@ const paintCharred: Painter = (p, rand) => {
   for (let k = 0; k < 5; k++) p.crack(rand, Math.floor(rand() * s), Math.floor(rand() * s), 6 + rand() * 8, rand() * Math.PI * 2, 0x000000);
   p.speckle(rand, 34, [0x4a4844, 0x5e5a54, 0x38342f]); // ash
   p.speckle(rand, 5, [0x8a2a0c, 0xc84a12]); // embers
+};
+
+/**
+ * An old couch's cloth: a warm rust-red weave, faded where it has been sat on, with the damp stains and the loose
+ * threads of something that has lived in a sewer a long while and is still the best seat in the house.
+ */
+const paintCouchFabric: Painter = (p, rand) => {
+  const s = p.size;
+  const wear = fbm(s, rand, 3, 3);
+  const cloth = [0x6a3226, 0x7e3e2e, 0x944c36, 0xa85a40, 0xba6c4c];
+  p.each((x, y) => {
+    // The weave: over and under, two dots to a thread; the ribs of the cloth run up it every four dots.
+    const over = ((x >> 1) + (y >> 1)) & 1 ? 0.06 : -0.04;
+    const rib = x % 4 === 0 ? -0.12 : 0;
+    return ramp(0.34 + wear[y * s + x] * 0.42 + over + rib, cloth, x, y, 0.25);
+  });
+  // Faded where it is worn thin: paler, and a little yellowed.
+  p.each((x, y) => (wear[y * s + x] > 0.7 ? mix(p.get(x, y), 0xc08a62, (wear[y * s + x] - 0.7) * 1.6) : p.get(x, y)));
+  // Damp stains: dark blotches of no particular shape, each with a darker tide-mark round its edge.
+  const damp = fbm(s, rand, 2, 3);
+  p.each((x, y) => {
+    const d = damp[y * s + x] + (bayer(x, y) - 0.5) * 0.03;
+    if (d > 0.66) return mix(p.get(x, y), 0x4a3024, 0.34);
+    if (d > 0.635) return mix(p.get(x, y), 0x2a1a12, 0.5);
+    return p.get(x, y);
+  });
+  // A pale water mark or two, loose threads, and crumbs.
+  for (let k = 0; k < 2; k++) {
+    const cx = rand() * s, cy = rand() * s, r = 3 + rand() * 3;
+    for (let a = 0; a < 40; a++) p.blend(cx + Math.cos(a * 0.157) * r, cy + Math.sin(a * 0.157) * r * 0.7, 0xc8a888, 0.35);
+  }
+  for (let k = 0; k < 7; k++) {
+    const x = rand() * s, y = rand() * s, a = rand() * Math.PI;
+    p.line(x, y, x + Math.cos(a) * 3, y + Math.sin(a) * 3, 0xd0a078);
+  }
+  p.speckle(rand, 16, [0x2a1810, 0xd8c080]);
+};
+
+/** A patch sewn onto it: a square of somebody's old plaid, the stitches showing all round its edge. */
+const paintCouchPatch: Painter = (p, rand) => {
+  const s = p.size;
+  const plaid = [0x4a5a2a, 0x5c6c34, 0x70803e];
+  p.each((x, y) => ramp(0.4 + (((x >> 1) + (y >> 1)) & 1 ? 0.12 : 0) + rand() * 0.2, plaid, x, y, 0.3));
+  for (let k = 5; k < s; k += 10) {
+    p.rect(k, 0, 2, s, 0x8a3a2a);
+    p.rect(0, k, s, 2, 0x8a3a2a);
+    p.rect(k + 4, 0, 1, s, 0xd8c078);
+    p.rect(0, k + 4, s, 1, 0xd8c078);
+  }
+  // Its edge is frayed and turned under; the stitches are big, pale and not very straight.
+  for (let i = 0; i < s; i++) {
+    for (const [x, y] of [[i, 0], [i, s - 1], [0, i], [s - 1, i]]) p.set(x, y, rand() < 0.7 ? 0x2a2a16 : 0x70803e);
+    if (i % 4 < 2) for (const [x, y] of [[i, 2 + (i % 8 === 0 ? 1 : 0)], [i, s - 3], [2, i], [s - 3 - (i % 8 === 4 ? 1 : 0), i]]) p.set(x, y, 0xe8dcb0);
+  }
+};
+
+/** A knitted blanket: rows of little V stitches in broad stripes of teal and cream, a stitch dropped here and there. */
+const paintKnitBlanket: Painter = (p, rand) => {
+  const s = p.size;
+  const teal = [0x1f5450, 0x2a6a64, 0x3a8078];
+  const cream = [0xb8ac88, 0xd0c49c, 0xe4dab4];
+  p.each((x, y) => {
+    const stripe = Math.floor(y / 8) % 2 === 0 ? teal : cream;
+    // A V to each stitch: four dots wide, its arms dark at the bottom and light at the top.
+    const vx = x % 4, vy = y % 4;
+    const arm = vx === vy || vx === 3 - vy;
+    return stripe[arm ? 2 : vy === 3 ? 0 : 1];
+  });
+  // A thin line of the other colour through each stripe, as blankets have.
+  for (let y = 3; y < s; y += 8) p.hline(0, y, s, Math.floor(y / 8) % 2 === 0 ? 0xd0c49c : 0x2a6a64);
+  for (let k = 0; k < 3; k++) {
+    const x = Math.floor(rand() * s), y = Math.floor(rand() * s);
+    p.set(x, y, 0x10201e);
+    p.set(x + 1, y, 0x10201e);
+  }
 };
 
 /** A bed of coals: black lumps, the fire showing between them. It is drawn unlit, so the cracks glow in the dark. */
@@ -1348,8 +1441,12 @@ const DEFS = {
   hazardTrim: { size: 32, seed: 404, paint: paintHazardTrim },
   // props (not offered in the level builder: they are what things are made of, not what rooms are built from)
   wroughtIron: { size: 32, seed: 601, paint: paintWroughtIron },
+  cutStone: { size: 32, seed: 607, paint: paintCutStone },
   charred: { size: 32, seed: 602, paint: paintCharred },
   coals: { size: 32, seed: 603, paint: paintCoals },
+  couchFabric: { size: 64, seed: 604, paint: paintCouchFabric },
+  couchPatch: { size: 32, seed: 605, paint: paintCouchPatch },
+  knitBlanket: { size: 32, seed: 606, paint: paintKnitBlanket },
   // keep
   keepStone: { size: 32, seed: 501, paint: paintKeepStone },
   royalCarpet: { size: 32, seed: 502, paint: paintRoyalCarpet },

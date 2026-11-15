@@ -74,7 +74,7 @@ import { Equipment } from './player/equipment';
 import { PickupVisuals } from './world/pickups';
 import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
-import { fireAt } from './world/layout';
+import { fireAt, inBrazierFire } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
@@ -1679,6 +1679,19 @@ function startGame(): void {
       audio.play('plunge', { vol: 0.6, rate: 0.6, priority: 7 });
       return;
     }
+    // A fire bowl's fire: it burns him like any fire (the owner, 2026-11-15: "it's fire so you shouldn't be able to just
+    // stand in it"), in the Club as anywhere, and throws him off the bowl. No roll or shield helps; the Ember Helm does.
+    const bowl = player.dead || player.gear.fireproof ? null : inBrazierFire(cur.decor, p.x, p.y, p.z);
+    if (bowl) {
+      const result = player.takeBurn(bowl.x, bowl.z, 1);
+      if (result === 'hit' || result === 'killed') {
+        events.playerResult = result;
+        resting = -1;
+        // (Up and off it, not just sideways: he is standing in the bowl.)
+        if (!player.dead) player.velocity.y = Math.max(player.velocity.y, 5);
+        audio.play('emberBurst', { vol: 0.7, rate: 1.2, priority: 7 });
+      }
+    }
     // A standing fire: it burns anyone who is not fireproof (no roll or shield helps) and he is back where he last stood.
     // In the Ember Helm he walks through it.
     if (fireAt(cur.fire, p.x, p.y, p.z)) {
@@ -1709,7 +1722,7 @@ function startGame(): void {
       player.velocity.set(0, 4, 0);
       follow.snap();
       audio.play('splash', { vol: 0.8, priority: 7 });
-    } else if (player.grounded && !near && !player.swimming && !fireAt(cur.fire, p.x, p.y, p.z)) {
+    } else if (player.grounded && !near && !player.swimming && !fireAt(cur.fire, p.x, p.y, p.z) && !inBrazierFire(cur.decor, p.x, p.y, p.z)) {
       const onMover = chamber.movers.some((m) => p.x > m.aabb.min.x && p.x < m.aabb.max.x && p.z > m.aabb.min.z && p.z < m.aabb.max.z && Math.abs(p.y - m.aabb.max.y) < 0.2);
       if (!onMover) lastSafe.copy(p);
     }
@@ -1776,7 +1789,8 @@ function startGame(): void {
 
     // Resting by the fire: he sits down, his hearts fill and the game saves. Moving or any button gets him up.
     const fire = cur.restSpot;
-    nearFire = !!fire && !nearNpc && player.grounded && !player.dead && Math.hypot(fire.x - player.position.x, fire.z - player.position.z) < 2.9 && Math.abs(fire.y - player.position.y) < 1.5;
+    // (Beside the fire, on the floor it stands on: not up on the bowl, in it.)
+    nearFire = !!fire && !nearNpc && player.grounded && !player.dead && Math.hypot(fire.x - player.position.x, fire.z - player.position.z) < 2.9 && Math.abs(fire.y - player.position.y) < 0.6 && !inBrazierFire(cur.decor, player.position.x, player.position.y, player.position.z);
     if (resting < 0 && jumpPressed && nearFire && fire && !builder.live) {
       jumpPressed = false;
       resting = 0;

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,523 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,546 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -361,10 +361,24 @@ were the places it was broken, and how each is held now:
 - **Stairs:** the rules stand him on the highest thing any part of his round footprint is over, so coming up to a step
   he was lifted onto it while his feet were still over the tread below. He is now DRAWN on what is under his feet
   (`feetGround` and `drawnY` in main.ts), eased, so he walks up and down steps. The rules themselves are unchanged.
-- **The fire bowl** (`brazier`) is a new model (`src/world/brazierModel.ts`): a stone foot, an iron stem on three
-  feet, a wide iron bowl with a rim, a band and ring handles, burnt black inside, a bed of coals, four tongues of
-  flame. Its sizes are `BRAZIER` in layout.ts, and custom.ts builds its two solid boxes from them. Three new textures
-  for it (`wroughtIron`, `charred`, `coals`), not offered in the level builder.
+- **The fire bowl** (`brazier`) is a new model (`src/world/brazierModel.ts`), made twice. The first had a tripod of
+  scrolled feet, a band and ring handles; the owner: "almost too much ... something maybe in between, a little less
+  detailed with a nice texture like everything else in the game". So it is now a few plain shapes (a wide stone foot,
+  a plain iron stem with one knuckle, a wide bowl with a rolled rim, three tongues of flame) and the pictures on them
+  do the work (`cutStone` for the foot, one block with no joints: the room's own stone made it look like a piece of the floor; `wroughtIron`, repainted quiet; `charred`; `coals`). Its inside is drawn on both faces: it was seen
+  through. Its sizes are `BRAZIER` in layout.ts, and custom.ts builds its two solid boxes from them. **When he asks
+  for "more detail" on a thing, he means a better shape and a good texture, not more parts.**
+- **Its fire burns** (the owner: "it's fire so you shouldn't be able to just stand in it"): `inBrazierFire`
+  (layout.ts); in `lavaStep` (main.ts) it costs a heart and throws him up and off the bowl, in the Club as anywhere.
+  The Ember Helm keeps him safe from it, as from any fire. Rest is offered beside the fire, on the floor it stands
+  on, never up on the bowl.
+- **The couch** (the owner: "a better texture, give it some rips and stains and stuff, it's like a sewer couch but
+  still make it seem cozy") is a new model, `src/world/couchModel.ts`: two seat cushions and two back cushions on a
+  low frame, rolled arms, piping, worn rust-red cloth with damp stains, a patch on the seat and another on the back,
+  a rip with the stuffing coming out, a tear sewn up with big stitches, a plaid pillow, a knitted blanket thrown over
+  one arm, and one foot that is a brick. Its sizes are `COUCH` in layout.ts; custom.ts builds its five solid boxes
+  from them. Three more textures (`couchFabric`, `couchPatch`, `knitBlanket`). `tests/furniture.ts` holds the couch
+  and the fire bowl to their solids.
 - **Lamps** were a bright block floating in the air. Each is now a lantern (iron cap and frame, panes of light) hung
   on a rod from whatever is over it (`roofOver` in chamber.ts), which is usually the ceiling.
 - **Ceilings:** over the walls there was nothing but the dark. Every level with walls round it now has one

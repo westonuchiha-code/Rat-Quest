@@ -92,6 +92,32 @@ export function fireAt(fires: readonly FireVolume[] | undefined, x: number, y: n
  */
 export const BRAZIER = { foot: 0.46, bowl: 0.66, bowlFrom: 0.8, rim: 1.16, coals: 1.02 } as const;
 
+/**
+ * Whether he is in a fire bowl's fire: his feet over the bowl (within the coals, not just touching the rim) and no
+ * higher over its rim than the flames stand. Comes back with the bowl he is in, to be thrown away from. Fire is fire,
+ * in the Club as anywhere: he cannot stand in it, or rest there.
+ */
+export function inBrazierFire(decor: readonly Decor[] | undefined, x: number, y: number, z: number): { x: number; z: number } | null {
+  for (const d of decor ?? []) {
+    if (d.kind !== 'brazier') continue;
+    const up = y - (d.y + BRAZIER.rim);
+    if (up > -0.3 && up < 0.95 && Math.hypot(x - d.x, z - d.z) < BRAZIER.bowl - 0.08) return { x: d.x, z: d.z };
+  }
+  return null;
+}
+
+/**
+ * A couch, as drawn (couchModel.ts) and as solid (custom.ts). It faces +z with its middle on x = 0: `half` its
+ * half-width; the back runs from `back` to `seatBack` and stands `backTop` high; the seat, `seat` high, runs from
+ * `seatBack` to `front` between the arms; an arm runs from `armIn` to `armOut` either side and is `armTop` high;
+ * the pillow lies on the seat.
+ */
+export const COUCH = {
+  half: 1.3, back: -0.575, seatBack: -0.225, front: 0.55, seat: 0.72, backTop: 1.45,
+  armIn: 0.975, armOut: 1.325, armTop: 1.0,
+  pillow: { x0: 0.15, x1: 0.85, z0: -0.1, z1: 0.3, top: 0.84 },
+} as const;
+
 /** Things that are only drawn: pipes along the walls, dark drain mouths, lamps. They are never collided with. */
 export type Decor =
   | { kind: 'pipe'; a: [number, number, number]; b: [number, number, number]; r: number; color?: number }

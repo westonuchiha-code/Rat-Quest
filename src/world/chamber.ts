@@ -1,5 +1,6 @@
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
+import { buildCouch } from './couchModel';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -212,7 +213,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const plainMat = createPs1Material({ lit: true });
   let ironMaterial: THREE.ShaderMaterial | null = null;
   /** Wrought iron for things that stand in the room (a fire bowl): its picture, lifted, so that it is iron and not a black shape in a dark hall. */
-  const ironMat = (): THREE.ShaderMaterial => (ironMaterial ??= createPs1Material({ tex: getTexture('wroughtIron'), color: new THREE.Color().setRGB(2.1, 2.05, 2.0) }));
+  const ironMat = (): THREE.ShaderMaterial => (ironMaterial ??= createPs1Material({ tex: getTexture('wroughtIron'), color: new THREE.Color().setRGB(1.5, 1.48, 1.45) }));
+  let charMaterial: THREE.ShaderMaterial | null = null;
+  /** The burnt inside of a fire bowl: on both faces, so the bowl is never seen through. */
+  const charMat = (): THREE.ShaderMaterial => (charMaterial ??= createPs1Material({ tex: getTexture('charred'), side: THREE.DoubleSide }));
   let coalMaterial: THREE.ShaderMaterial | null = null;
   /** The coals in a fire bowl: their picture, unlit, so the fire between the lumps glows in the dark. */
   const coalMat = (): THREE.ShaderMaterial => (coalMaterial ??= createPs1Material({ tex: getTexture('coals'), lit: false }));
@@ -794,7 +798,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(web);
     } else if (d.kind === 'brazier') {
       // A fire bowl on its stand (brazierModel.ts): stone foot, iron stem and bowl, burnt inside, coals, the fire.
-      const b = buildBrazier({ stone: mat('stone'), iron: ironMat(), char: mat('charred'), coals: coalMat(), flame: darkMat });
+      const b = buildBrazier({ stone: mat('cutStone'), iron: ironMat(), char: charMat(), coals: coalMat(), flame: darkMat });
       b.group.position.set(d.x, d.y, d.z);
       // (Each stands turned a little differently, so a row of them does not look stamped out.)
       b.group.rotation.y = (d.x * 1.3 + d.z * 0.7) % (Math.PI * 2);
@@ -984,12 +988,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         part(new THREE.BoxGeometry(0.05, 0.9, 0.05), 0xc84a3a, 0.9, 0.5, 0.3); // a dangling wire
         cones.push({ mesh: woofer, base: 1, dz: 0.5 }, { mesh: dust, base: 1, dz: 0.9 });
       } else {
-        part(new THREE.BoxGeometry(2.6, 0.55, 1.1), 0x8a4a40, 0, 0.45, 0); // the seat
-        part(new THREE.BoxGeometry(2.6, 0.9, 0.35), 0x7a3e36, 0, 1.0, -0.4); // the back
-        for (const sd of [-1, 1]) part(new THREE.BoxGeometry(0.35, 0.8, 1.1), 0x6a342e, sd * 1.15, 0.6, 0); // arms
-        part(new THREE.BoxGeometry(0.2, 0.25, 0.2), 0x2a1e1a, -1.1, 0.12, 0.45);
-        part(new THREE.BoxGeometry(0.2, 0.25, 0.2), 0x2a1e1a, 1.1, 0.12, 0.45);
-        part(new THREE.BoxGeometry(0.7, 0.12, 0.4), 0xc8b060, 0.5, 0.78, 0.1); // a stained cushion
+        // The couch (couchModel.ts): old cloth, cushions, a patch, rips, a pillow, a blanket over one arm.
+        const couch = buildCouch({ cloth: mat('couchFabric'), patch: mat('couchPatch'), blanket: mat('knitBlanket'), plain: plainMat });
+        couch.position.set(d.x, d.y, d.z);
+        couch.rotation.y = d.yaw;
+        group.add(couch);
       }
     } else if (d.kind === 'fall') {
       buildFall(d);
