@@ -98,6 +98,15 @@ const club: CustomLevel = {
   ],
 };
 
+/**
+ * Whether a door lets him through: he has the wedges it asks for, or he has been through it before. (A door's price
+ * can go up between one build and the next, as wedges are added to the game: that must not shut a world on someone
+ * who had already got into it.)
+ */
+export function doorLetsIn(need: number, wedges: number, beenThrough: boolean): boolean {
+  return wedges >= need || beenThrough;
+}
+
 export const HUB_DOORS: CourseDoorDef[] = [
   { to: 'cistern', name: 'The Great Cistern', need: 0, door: doorOn('west', HX, 12, HZ, 0) },
   // How many wedges each wants is read from the balance table (tunable in Tweaks).

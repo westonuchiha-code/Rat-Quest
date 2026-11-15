@@ -1,7 +1,7 @@
 // The game's balance: each Club door asks for well under what a player could have by then (so no one hard wedge is ever
 // needed), the doors climb, and Pip's shop is a goal across the worlds (all of it affordable, but not from the first alone).
 import { LEVELS } from '../src/levels/levels';
-import { HUB_DOORS } from '../src/levels/junction';
+import { HUB_DOORS, doorLetsIn } from '../src/levels/junction';
 import { SHOP } from '../src/data/shop';
 import { BALANCE } from '../src/data/balance';
 import { TWEAKS, Tweaks, readTweak } from '../src/core/tweaks';
@@ -31,6 +31,20 @@ for (let i = 0; i < order.length; i++) {
   open += wedges(order[i]);
 }
 console.log('      ' + report.join('; '));
+// The shares the doors were set at. (They were once left behind while nine wedges were added, and every door got a
+// little easier than it was meant to be. Add wedges to a world and these will say the doors want looking at.)
+{
+  const need = (w: string): number => HUB_DOORS.find((d) => d.to === w)!.need;
+  const before = (w: string): number => order.slice(0, order.indexOf(w)).reduce((n, x) => n + wedges(x), 0);
+  const share = (w: string): number => need(w) / before(w);
+  check('the Foundry door asks about a third of the Cistern\'s wedges', share('foundry') >= 0.28 && share('foundry') <= 0.36, `${need('foundry')} of ${before('foundry')}`);
+  check('the Hollows door asks a little under half of what is open by then', share('hollows') >= 0.39 && share('hollows') <= 0.48, `${need('hollows')} of ${before('hollows')}`);
+  check('the Keep, the last door, asks just under two thirds', share('keep') >= 0.58 && share('keep') <= 2 / 3, `${need('keep')} of ${before('keep')}`);
+  check('the last door cannot be opened from the first world alone', need('keep') > wedges('cistern'), `the Keep asks ${need('keep')}; the Cistern has ${wedges('cistern')}`);
+  // A door he has been through stays open, whatever it asks now.
+  check('a door lets him in with the wedges it asks for, and not with one fewer', doorLetsIn(need('keep'), need('keep'), false) && !doorLetsIn(need('keep'), need('keep') - 1, false));
+  check('a door he has already been through stays open, though its price has gone up since (an old save is not shut out of a world it had reached)', doorLetsIn(need('keep'), 20, true) && doorLetsIn(need('hollows'), 10, true) && doorLetsIn(need('foundry'), 4, true));
+}
 check('each door asks for more than the one before', order.slice(1).every((w, i) => HUB_DOORS.find((d) => d.to === w)!.need > HUB_DOORS.find((d) => d.to === order[i])!.need));
 
 // The shop.

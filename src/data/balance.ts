@@ -3,17 +3,21 @@
  * All of it is on sliders in Tweaks (the "Doors and prices" group), so it can be tuned in the game; "Copy settings" there
  * gives the changes as text to make them the defaults.
  *
- * How the defaults were picked (when there were 38 wedges: Cistern 13, Foundry 10, Hollows 9, Keep 6; there are 45 now,
- * the extra ones mostly gear secrets, and the doors have not been raised to match):
+ * How the defaults were picked (there are 47 wedges: Cistern 16, Foundry 12, Hollows 12, Keep 7):
  *   Each door asks for well under the wedges a player could have by then, so no single hard wedge is ever required.
- *   The Foundry wants 4 of the Cistern's 13 (about a third); the Hollows 10 of the 23 open by then (under half); the Keep,
- *   the last door, 20 of 32 (just under two thirds; Super Mario 64's last door asks for about 58% of every star).
+ *   The Foundry wants 5 of the Cistern's 16 (about a third); the Hollows 12 of the 28 open by then (under half); the Keep,
+ *   the last door, 25 of 40 (just under two thirds; Super Mario 64's last door asks for about 58% of every star).
+ *   They were 4, 10 and 20 when there were 38 wedges (13, 10, 9, 6), and were left there while nine more were added
+ *   (gear secrets and the two bosses), which made every door a little easier than it was meant to be. On 2026-11-15
+ *   they were put back to the same shares. tests/balance.ts holds the shares: add wedges and it will say so.
+ *   A door he has already been through stays open whatever it asks now (main.ts, `doorOpen`): raising a door must
+ *   not shut a world on a save that had got there.
  *   The shop: seven pieces of gear, each a trade (something gained, something given up). All of it costs about four
  *   fifths of the game's crumbs (117 of 147) and just over half its caps (25 of 45), so a thorough player can have
  *   everything, but not out of the first world alone.
  */
 export const BALANCE = {
-  doors: { foundry: 4, hollows: 10, keep: 20 },
+  doors: { foundry: 5, hollows: 12, keep: 25 },
   prices: {
     nachoCheese: { crumbs: 8, caps: 0 },
     mossScarf: { crumbs: 10, caps: 0 },

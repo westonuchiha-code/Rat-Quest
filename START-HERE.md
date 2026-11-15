@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,006 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,012 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -75,9 +75,12 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 | Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Two Keep Guards and an Ironback in the courtyard; a guard, and bats on chains, on the battlements |
 | | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
 
-- 47 wedges in all (41 until 2026-11-14; four gear secrets and the two bosses' were added and the door costs were NOT raised, so
-  the doors are very slightly easier to open than before: the owner has been told). Door costs are in
-  `src/data/balance.ts` (BALANCE). Shop prices are there too.
+- 47 wedges in all (Cistern 16, Foundry 12, Hollows 12, Keep 7). The Club's doors ask 5 (Foundry), 12 (Hollows) and
+  25 (Keep): about a third, under half and just under two thirds of what is open by then. They were 4, 10 and 20,
+  set when there were 38 wedges, and were raised on 2026-11-15 to the same shares (tests/balance.ts holds the shares:
+  add wedges to a world and it will say the doors want looking at). A door he has already been through stays open
+  whatever it asks now (`doorLetsIn` in `src/levels/junction.ts`), so an old save is not shut out of a world it had
+  reached. Door costs are in `src/data/balance.ts` (BALANCE). Shop prices are there too.
 - 13 retired levels live in ARCHIVE (`levelById` still finds them).
 - **Enemies:**
   - Roach (`scuttler`): circles, bites, charges.
@@ -238,6 +241,6 @@ that back by another road: the left stick steers relative to the view, so a view
 stick means. Lock-on pressed with nobody near brings the view round behind him. After a wall kick he is carried
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
-Also open: raise the door costs to match 47 wedges or leave them; fire and iron-bound crates in the level builder;
+Also open: fire and iron-bound crates in the level builder;
 playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

@@ -70,7 +70,7 @@ import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
-import { HUB_GUEST_DOORS } from './levels/junction';
+import { HUB_GUEST_DOORS, doorLetsIn } from './levels/junction';
 import type { CourseDoorDef } from './levels/types';
 import { isUnlocked, nextInOrder } from './levels/campaign';
 import { compileScene, sceneFrame } from './story/scene';
@@ -964,6 +964,12 @@ function startGame(): void {
   const wedgeTotal = (): number => discoveries.countPrefix('wedge:');
   /** What the doors count: his wedges, or (the test room, or the Workshop's switch) as many as any door could ask. */
   const doorWedges = (): number => (unlockAll || DEV.openDoors ? 9999 : wedgeTotal());
+  /**
+   * Whether a door to another place will let him through: he has the wedges it asks for, or he has been through it
+   * before. (A door's price can go up between one build and the next, as wedges are added to the game: that must not
+   * shut a world on someone who had already got into it.)
+   */
+  const doorOpen = (cd: { need: number; to?: string | null }): boolean => doorLetsIn(cd.need, doorWedges(), !!cd.to && discoveries.has(`place:${cd.to}`));
   const levelOpen = (id: string): boolean => unlockAll || DEV.openDoors || isMine(id) || isUnlocked(id, levelOrder, (x) => levelProgress.cleared(x));
   const storyCtx = (): StoryCtx => ({ x: player.position.x, z: player.position.z, facing: player.facing, y: player.position.y, exit: { x: cur.exit.x, z: cur.exit.z }, spots: cur.storySpots ?? {} });
   // Memories are played on a small stage far below the level, by two rats of their own.
@@ -1229,14 +1235,13 @@ function startGame(): void {
     // Doors to other areas (the Club's world doors, or a world's doors into its side areas), each with a sign.
     const doors = doorsOf(def);
     if (doors.length) {
-      const total = doorWedges();
       courseVis = new CourseDoors(doors, doors.map((cd) => {
         const to = cd.to ? levelById(cd.to) : null;
         // The Club's signs count the whole world (every area in it); a side door counts just that area.
         const areas = to ? (def.hub ? worldAreas(to) : [to]) : [];
         const got = areas.reduce((n, a) => n + (a.wedges ?? []).filter((w) => discoveries.has(`wedge:${a.id}:${w.id}`)).length, 0);
         const of = areas.reduce((n, a) => n + (a.wedges?.length ?? 0), 0);
-        return { open: total >= cd.need, got, of };
+        return { open: doorOpen(cd), got, of };
       }), def.theme ?? 'sewer');
       scene.add(courseVis.group);
     }
@@ -1878,10 +1883,9 @@ function startGame(): void {
     }
     // In a hub: walking into an open course door goes into that course.
     if (!trans.active && !cutscene.active && !story.scene && player.grounded && !player.dead) {
-      const total = doorWedges();
       for (const cd of doorsOf(cur)) {
         const to = cd.to ? levelById(cd.to) : null;
-        if (to && total >= cd.need && atDoor(cd.door, player.position.x, player.position.z)) {
+        if (to && doorOpen(cd) && atDoor(cd.door, player.position.x, player.position.z)) {
           startTransition(to);
           break;
         }
@@ -2150,7 +2154,7 @@ function startGame(): void {
       }
       const areas = worldAreas(w).sort((a, b) => (a.id === w.id ? -1 : b.id === w.id ? 1 : 0));
       const all = wedgeInfo(areas);
-      const shut = total < cd.need && !unlockAll && !DEV.openDoors;
+      const shut = !doorOpen(cd);
       rows.push({ ...base(w), kind: 'world', wedges: all.wedges, wedgeList: wedgeInfo([w]).list, locked: shut, lockText: `Its door in the Club needs ${cd.need} Golden Wedges. You have ${total}.` });
       for (const a of areas) {
         if (a.id === w.id) continue;

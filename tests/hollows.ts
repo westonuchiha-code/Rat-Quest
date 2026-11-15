@@ -21,7 +21,7 @@ const reaches = (d: LevelDef, x: number, y: number, z: number): boolean => compu
 const sameBox = (b: { x0: number; x1: number; z0: number; z1: number }, s: { x0: number; x1: number; z0: number; z1: number }): boolean => b.x0 === s.x0 && b.x1 === s.x1 && b.z0 === s.z0 && b.z1 === s.z1;
 
 check('the Hollows is in the world, with its two side areas', def.world === 'hollows' && hollowsWebs().returnTo === 'hollows' && hollowsFaith().returnTo === 'hollows' && ['webs', 'faith'].every((id) => LEVELS.some((l) => l.id === id)));
-check('the Club\'s north door leads to the Hollows, for ten wedges', HUB_DOORS.some((d) => d.to === 'hollows' && d.need === 10));
+check('the Club\'s north door leads to the Hollows, for twelve wedges', HUB_DOORS.some((d) => d.to === 'hollows' && d.need === 12));
 check('falls in the Hollows cost a heart and put him back (not back at the start)', def.fallBack === true);
 check('the Hollows has its own music', def.music === 'echo' && TRACK_NAMES.includes('echo'));
 check('Leap of Faith keeps its rules: no grabbing, no long jump', hollowsFaith().noGrab === true && hollowsFaith().noLongJump === true);
