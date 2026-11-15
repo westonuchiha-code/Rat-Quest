@@ -236,6 +236,8 @@ export interface RatAnimInput {
   /** How far through the push of a wall kick he is (0..1, -1 when not), and whether he is in the air against a wall. */
   kickProgress?: number;
   onWall?: boolean;
+  /** Riding his shield: how hard he is steering (-1..1), how far through a kickflip (0..1, -1 when not), and whether he is in the air. */
+  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number } | null;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
@@ -345,6 +347,24 @@ const CLIMB_MANTLE: Pose = fullPose({
   footS: [-0.13, 0.0, -0.12], footH: [0.15, 0.1, 0.16], toeS: 0.4, toeH: 0, tail: [1.1, 0, 0.3], ears: 0.3,
 });
 
+/**
+ * Riding his shield like a board: side-on to the way he is going, one foot before the other on it, knees bent, arms
+ * out wide for balance, head turned to look where he is going, tail up behind him.
+ */
+const RIDE: Pose = fullPose({
+  hipPos: [0, -0.11, -0.01], hips: [0.1, 1.0, 0], chest: [0.28, -0.2, 0], head: [-0.22, -0.72, 0],
+  armS: [-0.25, 0, -1.2], elbowS: -0.35, wrist: [0, 0, 0], armH: [-0.25, 0, 1.2], elbowH: -0.35, shield: [0, 0, 0],
+  footS: [-0.015, 0.05, -0.15], footH: [0.015, 0.05, 0.17], toeS: 0, toeH: 0, tail: [0.75, 0, 0.15], ears: 0.4,
+});
+/** In the air on it: tucked up over the shield, arms higher. */
+/** How much of a slope's tilt his body takes while he rides it (his shield takes all of it). */
+const RIDE_BODY_TILT = 0.6;
+const RIDE_AIR: Pose = fullPose({
+  hipPos: [0, -0.07, 0], hips: [0.2, 1.0, 0], chest: [0.38, -0.2, 0], head: [-0.32, -0.72, 0],
+  armS: [-0.5, 0, -1.45], elbowS: -0.25, wrist: [0, 0, 0], armH: [-0.5, 0, 1.45], elbowH: -0.25, shield: [0, 0, 0],
+  footS: [-0.015, 0.15, -0.13], footH: [0.015, 0.16, 0.15], toeS: 0.15, toeH: 0.15, tail: [1.0, 0, 0.3], ears: 0.55,
+});
+
 /** Both hands up behind the shoulders, reaching for the straps. */
 const REACH_ARMS = fullPose({
   armS: [-2.5, -0.1, -0.35], elbowS: -0.6, wrist: [0, 0, 0],
@@ -388,6 +408,13 @@ export class RatModel {
   private readonly scarfParts: Array<{ mesh: THREE.Mesh; hem: boolean }> = [];
   private readonly backSword = new THREE.Group();
   private readonly backShield = new THREE.Group();
+  /** The shield under his feet while he rides it: the outer turns it for a kickflip, the inner lays it flat. */
+  private readonly board = new THREE.Group();
+  private readonly boardFlat = new THREE.Group();
+  private rideAir = 0;
+  private rideLean = 0;
+  private rideTiltX = 0;
+  private rideTiltZ = 0;
   private helmet: THREE.Group;
   private headR = 0.185;
   private headY = 0.14;
@@ -557,6 +584,15 @@ export class RatModel {
     stowedShield.position.set(0, 0, 0);
     this.backShield.add(stowedShield);
     this.chest.add(this.backSword, this.backShield);
+    // Under his feet, for the ride: lying flat, its point forward. It leans with him.
+    const boardMesh = shieldMesh.clone();
+    boardMesh.scale.setScalar(0.92);
+    boardMesh.position.set(0, 0, 0);
+    this.boardFlat.rotation.x = -Math.PI / 2;
+    this.boardFlat.add(boardMesh);
+    this.board.add(this.boardFlat);
+    this.board.visible = false;
+    this.lean.add(this.board);
     this.backSword.visible = false;
     this.backShield.visible = false;
 
@@ -693,6 +729,7 @@ export class RatModel {
   /** Makes his shield bigger or smaller (1 is the knight's). */
   setShieldScale(k: number): void {
     this.shieldPivot.scale.setScalar(k);
+    this.board.scale.setScalar(k);
   }
 
   update(dt: number, ctx: RatAnimInput): void {
@@ -760,6 +797,25 @@ export class RatModel {
         stiffness = 30;
       }
       damping = 0.9;
+    } else if (state === 'ride') {
+      // On his shield: crouched side-on over it, tucked up in the air; his tail swings out against a turn to balance
+      // him, hard out in a carve.
+      const r = ctx.ride ?? { steer: 0, flip: -1, air: false };
+      this.rideAir = ease(this.rideAir, r.air ? 1 : 0, dt, r.air ? 14 : 20);
+      pose = blendPose(RIDE, RIDE_AIR, this.rideAir);
+      pose.tail[1] = r.steer * 1.1;
+      pose.tail[0] += Math.abs(r.steer) * 0.25;
+      pose.chest[2] = -r.steer * 0.18;
+      pose.hipPos[1] -= Math.abs(r.steer) * 0.035;
+      // A kickflip: his feet come up off it while it turns.
+      if (r.flip >= 0) {
+        const up = Math.sin(Math.min(1, r.flip) * Math.PI);
+        pose.footS[1] += 0.09 * up;
+        pose.footH[1] += 0.09 * up;
+        pose.hipPos[1] += 0.03 * up;
+      }
+      stiffness = 30;
+      damping = 0.85;
     } else if (state === 'hang') {
       // Hanging by his paws from a ledge: stretched out long against the wall, head tipped back to look up at the edge,
       // legs dangling. He swings a little as he catches it, then settles. (His paws are planted on the edge below.)
@@ -823,9 +879,21 @@ export class RatModel {
     // (Hanging and climbing need both paws: sword and shield go on his back for as long as it takes.)
     const armed = ctx.armed && state !== 'hang' && state !== 'climb';
     this.sword.visible = armed && this.dress.gear;
-    this.shieldPivot.visible = armed && this.dress.gear;
+    // (Riding, the shield is under his feet: not on his arm, nor on his back.)
+    const riding = state === 'ride';
+    this.shieldPivot.visible = armed && this.dress.gear && !riding;
     this.backSword.visible = !armed && this.dress.gear;
-    this.backShield.visible = !armed && this.dress.gear;
+    this.backShield.visible = !armed && this.dress.gear && !riding;
+    this.board.visible = riding && this.dress.gear;
+    if (riding) {
+      const r = ctx.ride ?? { steer: 0, flip: -1, air: false };
+      const flip = r.flip >= 0 ? Math.min(1, r.flip) : 0;
+      // It sits under his feet (which tuck up in the air), and in a kickflip turns once round its length, popping up.
+      this.board.position.set(0, 0.03 + this.rideAir * 0.095 + Math.sin(flip * Math.PI) * 0.05, 0.01);
+      // (He leans most of the way with the slope; the shield lies the whole way on it.)
+      this.board.rotation.x = this.rideTiltX * (1 - RIDE_BODY_TILT);
+      this.board.rotation.z = flip * Math.PI * 2 + this.rideTiltZ * (1 - RIDE_BODY_TILT);
+    }
     const free = state === 'idle' || state === 'walk' || state === 'run' || state === 'land';
     this.relaxed = ease(this.relaxed, !armed && free ? 1 : 0, dt, 10);
     const reach = ctx.stowProgress >= 0 && free ? Math.sin(Math.min(1, ctx.stowProgress) * Math.PI) : 0;
@@ -887,7 +955,13 @@ export class RatModel {
       this.lastFacing = facing;
       this.lastSpeed = ctx.planarSpeed;
     }
-    this.lean.rotation.set(this.pitch, 0, this.bank);
+    // On the shield he leans into his turns, a long way over in a carve.
+    this.rideLean = ease(this.rideLean, state === 'ride' ? -(ctx.ride?.steer ?? 0) * 0.42 : 0, dt, 9);
+    // ...and he and his shield lie to the slope under them: nose down going down it, tipped across it going across.
+    const onSlope = state === 'ride' ? ctx.ride : null;
+    this.rideTiltX = ease(this.rideTiltX, onSlope ? Math.atan(-(onSlope.along ?? 0)) : 0, dt, 14);
+    this.rideTiltZ = ease(this.rideTiltZ, onSlope ? Math.atan(onSlope.across ?? 0) : 0, dt, 14);
+    this.lean.rotation.set(this.pitch + this.rideTiltX * RIDE_BODY_TILT, 0, this.bank + this.rideLean + this.rideTiltZ * RIDE_BODY_TILT);
 
     this.apply(ctx.planarSpeed);
 

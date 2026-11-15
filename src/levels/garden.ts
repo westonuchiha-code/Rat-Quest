@@ -3,7 +3,7 @@
  *
  * Mario 64's makers got the hero's movement right in a bare room of blocks before they built a course
  * (reports/Super Mario 64 design research.md). This is that room for the knight: ledges at the heights that matter,
- * chimneys of four widths, three ramps, a pole and a strip to measure against, and a board on everything saying what it is (two
+ * chimneys of four widths, three ramps, a run to ride the shield down, a pole and a strip to measure against, and a board on everything saying what it is (two
  * lines at most, in big letters: the game is drawn coarsely, and small writing cannot be read from where he stands). The
  * numbers on the boards are the heights and widths of the things themselves (tests/garden.ts holds them to that);
  * what he can DO with them depends on the jump numbers, which are on the Tweaks sliders, with a few sets to try at
@@ -81,6 +81,24 @@ export const RAMPS: readonly GardenRamp[] = [
   { x0: 33, x1: GARDEN.halfX, length: 3, lines: ['1 UP IN 1', 'THE STEEPEST'] },
 ];
 
+/**
+ * The run, for riding the shield: along the south wall. A platform in the south-east corner, eight up; a walkable
+ * ramp up to it from the north, against the east wall; the RUN itself, a long slope west from it down to the floor
+ * (one up in two), with the whole length of the room to roll out along, and a kicker on the way to jump from; and the
+ * CHUTE, north off the platform, too steep to stand on (two up for one along): on that he slides whether he will or no.
+ */
+export const RUN = {
+  top: { x0: 30, x1: GARDEN.halfX, z0: 19, z1: GARDEN.halfZ, y: 8 },
+  /** The way up: it climbs south to the platform. */
+  up: { x0: 33, x1: GARDEN.halfX, z0: 11, z1: 19 },
+  /** The run: it is high at its east end. */
+  slope: { x0: 14, x1: 30, z0: 19, z1: GARDEN.halfZ },
+  /** The chute: it is high at its south end. */
+  chute: { x0: 30, x1: 33, z0: 15, z1: 19 },
+  /** The kicker: a little ramp across the roll-out, high at its west end. It stands before the door, so a rider is in the air past it. */
+  kicker: { x0: 4, x1: 7, z0: 19.5, z1: 23.5, y: 1.2 },
+} as const;
+
 export function garden(): LevelDef {
   const W = -GARDEN.halfX;
   const N = -GARDEN.halfZ;
@@ -120,6 +138,19 @@ export function garden(): LevelDef {
     // Its board stands at its foot, to one side of the way up.
     decor.push({ kind: 'sign', x: r.x0 + 0.75, y: 1.5, z: L.z1 + r.length + 0.6, yaw: south, w: 1.4, h: 0.9, lines: r.lines, post: 0 });
   }
+
+  // ---- The run, for riding the shield ----
+  const T = RUN.top;
+  solids.push(extent('stone', T.x0, T.x1, 0, T.y, T.z0, T.z1));
+  solids.push(rampBox('stone', RUN.up.x0, RUN.up.x1, RUN.up.z0, RUN.up.z1, 0, T.y, 's'));
+  solids.push(rampBox('stone', RUN.slope.x0, RUN.slope.x1, RUN.slope.z0, RUN.slope.z1, 0, T.y, 'e'));
+  solids.push(rampBox('stone', RUN.chute.x0, RUN.chute.x1, RUN.chute.z0, RUN.chute.z1, 0, T.y, 's'));
+  solids.push(rampBox('stone', RUN.kicker.x0, RUN.kicker.x1, RUN.kicker.z0, RUN.kicker.z1, 0, RUN.kicker.y, 'w'));
+  // Boards: on the platform's wall for the run and the chute, and standing before the kicker.
+  decor.push({ kind: 'sign', x: T.x1, y: T.y + 1.6, z: (T.z0 + T.z1) / 2, yaw: -Math.PI / 2, w: 2.6, h: 1.4, lines: ['THE RUN', 'RUN, THEN SNEAK'] });
+  decor.push({ kind: 'sign', x: (RUN.chute.x0 + RUN.chute.x1) / 2, y: T.y + 1.6, z: T.z1, yaw: Math.PI, w: 2.6, h: 1.4, lines: ['TOO STEEP', 'HE SLIDES'] });
+  decor.push({ kind: 'sign', x: RUN.kicker.x1 + 1.6, y: 1.5, z: RUN.kicker.z0 - 0.8, yaw: Math.PI / 2, w: 2.4, h: 1.3, lines: ['JUMP', 'THEN JUMP AGAIN'], post: 0 });
+  decor.push({ kind: 'lamp', x: 22, y: 11, z: 21.5 }, { kind: 'lamp', x: 8, y: 7, z: 21.5 }, { kind: 'lamp', x: -18, y: 7, z: 21.5 });
 
   // ---- The pole and the strip ----
   decor.push({ kind: 'ruler', x: POLE.x, y: 0, z: POLE.z, yaw: south, length: POLE.height, width: 1, pole: true });

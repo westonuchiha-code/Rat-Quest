@@ -206,6 +206,9 @@ export const SFX_NAMES = [
   // faster before a run, a drop of fire let go, the drop catching on the floor, its light going out, a thin peep
   // when it is struck, and its end.
   'fireflyHum', 'fireflyBlink', 'emberDrop', 'emberBurst', 'fireflyFade', 'fireflyHurt', 'fireflyDie',
+  // Riding his shield: the rim grinding along on stone (looped while he rides, louder and higher the faster he
+  // goes), the crack of it leaving the ground or coming down again, and the clatter when he comes off it.
+  'rideScrape', 'ridePop', 'rideClatter',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -785,6 +788,32 @@ const RECIPES: Record<SfxName, () => Sample> = {
       return Math.tanh((chirp * 0.9 + pike(t - 0.42) + pike2(t - 0.6) * 0.8) * 0.9) * Math.min(1, (0.9 - t) / 0.08);
     };
   }, { bits: 7 }),
+  // ---- Riding the shield ----
+  // The rim of it on stone: a gritty hiss with a hollow ring under it, catching now and then. (A loop: its two
+  // wobbles turn whole numbers of times in it.)
+  rideScrape: () => draw(0.6, RATE_HI, 221, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const grit = c.lp(0, n, 0.45) - c.lp(1, n, 0.09);
+    const hollow = c.lp(2, n, 0.03) * 2.2;
+    const catchy = 0.75 + 0.25 * wob(t, 0.6, 7) * wob(t, 0.6, 3);
+    return (grit * 0.9 + hollow * 0.5 + sine(c.osc(0, 310)) * 0.05) * catchy;
+  }, { bits: 7, loop: true, gain: 0.5 }),
+  // It leaves the ground, or meets it again: one hard crack of iron and wood, with the board's own hollow note.
+  ridePop: () => draw(0.26, RATE_HI, 222, (c) => {
+    const hit = struck(c, [[520, 1, 18], [1250, 0.7, 30], [2700, 0.4, 60]], 1.2);
+    return (t) => hit(t) + c.lp(0, c.r() * 2 - 1, 0.5) * Math.exp(-t * 70) * 0.5;
+  }, { bits: 7, gain: 0.8 }),
+  // He comes off it: the shield skitters away over the stone, three knocks getting quicker and quieter.
+  rideClatter: () => draw(0.5, RATE_HI, 223, (c) => {
+    const hits = [0, 0.13, 0.23, 0.3, 0.35].map((at, k) => ({ at, hit: struck(c, [[640 + k * 90, 1, 26], [1700 + k * 160, 0.6, 44]], 1, k * 2) }));
+    return (t) => {
+      let v = 0;
+      hits.forEach((h, k) => {
+        if (t >= h.at) v += h.hit(t - h.at) * (1 - k * 0.17);
+      });
+      return v;
+    };
+  }, { bits: 7, gain: 0.8 }),
   // ---- The Firefly Bomber (soft, and glassy: nothing like the hornet's rasp) ----
   // Its wings: a soft whirr, a round low note with air on it, fluttering. (Every pitch in it turns a whole number of
   // times in the loop, so it joins up.)

@@ -115,6 +115,31 @@ export const TUNING = {
     wallChainHold: 0.3, // a jump pressed this long before he reaches the far wall is kept for the kick off it
     climbTime: 0.5, // pulling himself up onto a ledge (long enough to see: pull, knee up, stand)
   },
+  /**
+   * Riding his shield down a slope, like a board (the owner, 2026-11-15: "he rides it like a skateboard ... he uses
+   * his tail to balance and make hard curves"). Running down a slope, SNEAK drops it under his feet; on a slope too
+   * steep to stand on he has no choice. Speeds are along the ground, in units a second.
+   */
+  ride: {
+    minSlope: 0.2, // a slope has to be at least this steep (rise over run) to start a ride on it from a run
+    gravity: 15, // how hard a slope pulls him down it (times how steep it is)
+    dragSlope: 0.5, // what slows him on a slope
+    dragFlat: 1.6, // ...and on the flat, where he rolls on a long way
+    max: 16, // top speed
+    stop: 1.4, // slower than this, on ground he can stand on, he steps off
+    turn: 2.2, // how fast he turns with the stick held to one side (radians a second)
+    carve: 1.8, // ...and how much faster with it held hard over: a carve, his tail out
+    carveDrag: 3.2, // a carve scrubs speed off
+    brake: 9, // the stick pulled back against the way he is going
+    airTurn: 0.5, // how much of his turning he keeps in the air
+    ollie: 8.2, // the jump off the board
+    flipLift: 5.4, // the little lift a kickflip gives (the second jump, in the air)
+    flipTime: 0.42, // seconds the shield takes to spin round under his feet
+    trickBoost: 2.6, // speed added for landing one
+    bailSpeed: 6, // into a wall faster than this, he comes off
+    bailTime: 0.5, // ...and is this long picking himself up
+    again: 0.4, // after stepping off, this long before SNEAK starts another
+  },
     /** Attacking in the air: a short hang, a straight dive, and a shockwave all round on landing. */
   plunge: {
     windup: 0.16, // seconds hanging with the sword raised

@@ -7,8 +7,10 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
-import { makeAabb } from '../src/world/collision';
-import { garden, GARDEN, STEPS, STEP_SIZE, CHIMNEYS, CHIMNEY_WALL, chimneyFaces, POLE, STRIP, type Chimney, type Step } from '../src/levels/garden';
+import { makeAabb, aabbOf } from '../src/world/collision';
+import { atDoor } from '../src/world/rooms';
+import { MAX_WALK_SLOPE } from '../src/world/layout';
+import { garden, GARDEN, STEPS, STEP_SIZE, CHIMNEYS, CHIMNEY_WALL, chimneyFaces, POLE, STRIP, RUN, type Chimney, type Step } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { JUMP_SETS, Tweaks, readTweak, defaultTweak, TWEAKS, type TweakSet } from '../src/core/tweaks';
@@ -348,6 +350,79 @@ for (const r of rows) {
     return (Number.isNaN(d) || Math.abs(d - r.double) < 0.1) && (Number.isNaN(k) || Math.abs(k - r.one.gain) < 0.1) && !(Number.isNaN(d) && Number.isNaN(k));
   }), rows.map((r) => `${r.set.id}: ${r.double.toFixed(2)}, ${r.one.gain.toFixed(2)}`).join('; '));
   check('after all of that the sliders are back where the game has them', TWEAKS.every((x) => readTweak(x.path) === defaultTweak(x.path)));
+}
+
+// ---- The run: riding the shield ----
+{
+  const rs = def.solids.map(aabbOf);
+  const T = RUN.top;
+  const signs = def.decor.filter((d) => d.kind === 'sign');
+  const slopeOfRun = T.y / (RUN.slope.x1 - RUN.slope.x0);
+  const slopeOfChute = T.y / (RUN.chute.z1 - RUN.chute.z0);
+  const slopeOfUp = T.y / (RUN.up.z1 - RUN.up.z0);
+  check('the run is a slope he can stand on, the way up to it one he can walk, and the chute one he cannot', slopeOfRun <= MAX_WALK_SLOPE && slopeOfRun >= TUNING.ride.minSlope && slopeOfUp <= MAX_WALK_SLOPE && slopeOfChute > MAX_WALK_SLOPE, `run ${slopeOfRun}, way up ${slopeOfUp}, chute ${slopeOfChute}`);
+  check('each of them has a board that says what it is for', ['THE RUN', 'TOO STEEP', 'JUMP'].every((l) => signs.some((d) => d.lines[0] === l)) && signs.find((d) => d.lines[0] === 'THE RUN')?.lines[1] === 'RUN, THEN SNEAK');
+  const drive = (from: THREE.Vector3, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): { p: PlayerController; events: string[] } => {
+    const p = new PlayerController(from.clone());
+    const events: string[] = [];
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), rs);
+    for (let i = 0; i < frames; i++) {
+      p.update(DT, inp(at(i, p)), rs);
+      if (p.moveEvent) events.push(p.moveEvent);
+      each?.(p);
+    }
+    return { p, events };
+  };
+  const midZ = (RUN.slope.z0 + RUN.slope.z1) / 2;
+  // The way up: from the floor at its foot he walks to the top.
+  const walked = drive(new THREE.Vector3((RUN.up.x0 + RUN.up.x1) / 2, 0, RUN.up.z0 - 1.5), 260, () => ({ move: new THREE.Vector3(0, 0, 1), run: true }));
+  check('he walks up the way up, from the floor to the top of the run', Math.abs(walked.p.position.y - T.y) < 0.01 && walked.p.grounded && !walked.p.riding, `y ${walked.p.position.y.toFixed(2)}`);
+  // The run: he runs at it, sneaks as he comes onto it, and rides. Holding nothing after, he goes over the kicker.
+  let fastest = 0;
+  let airPastKicker = 0;
+  let doorFrames = 0;
+  let rodeToFloor = false;
+  // (Once he is down past it he brakes: the room is not long enough to roll to a stop in from that speed.)
+  const EAST = new THREE.Vector3(1, 0, 0);
+  const brakePast = (p: PlayerController): Partial<PlayerInput> => (p.grounded && p.position.x < RUN.kicker.x0 - 1 ? { move: EAST, run: false } : { run: false });
+  const ridden = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (i, p) => (p.riding ? brakePast(p) : { move: p.position.x < RUN.kicker.x0 ? new THREE.Vector3() : WEST, run: p.position.x > RUN.slope.x1 - 0.6 }), (p) => {
+    if (p.riding) fastest = Math.max(fastest, Math.hypot(p.velocity.x, p.velocity.z));
+    if (p.riding && p.grounded && p.position.y < 0.01 && p.position.x < RUN.slope.x0 && p.position.x > RUN.kicker.x1) rodeToFloor = true;
+    if (p.riding && !p.grounded && p.position.x < RUN.kicker.x0) airPastKicker = Math.max(airPastKicker, p.position.y);
+    if (p.grounded && atDoor(def.exit, p.position.x, p.position.z)) doorFrames++;
+  });
+  check('THE RUN: run, then sneak, and he rides his shield down it and out across the floor', ridden.events.includes('ride') && rodeToFloor && fastest > TUNING.move.run * 1.5, `fastest ${fastest.toFixed(1)}; ${ridden.events.join()}`);
+  check('...the kicker throws him into the air, higher than its own top, and he comes down still on it', airPastKicker > RUN.kicker.y + 0.5 && ridden.events.includes('rideLand') && !ridden.events.includes('bail'), `${airPastKicker.toFixed(2)} up past the kicker; ${ridden.events.join()}`);
+  check('...and going straight he is never at the door: he is in the air past it, or beside it', doorFrames === 0, `${doorFrames} frames at the door`);
+  // Off the kicker, JUMP and then JUMP AGAIN is the kickflip, and there is air enough to land it.
+  let popped = false;
+  let flipped = false;
+  const tricked = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (i, p) => {
+    if (!p.riding) return { move: p.position.x < RUN.kicker.x0 ? new THREE.Vector3() : WEST, run: p.position.x > RUN.slope.x1 - 0.6 };
+    if (flipped && p.grounded) return brakePast(p);
+    if (!popped && p.grounded && p.position.x < RUN.kicker.x0 + 0.5 && p.position.x > RUN.kicker.x0) {
+      popped = true;
+      return { run: false, jumpPressed: true, jumpHeld: true };
+    }
+    if (popped && !flipped && !p.grounded && p.velocity.y < 6) {
+      flipped = true;
+      return { run: false, jumpPressed: true, jumpHeld: true };
+    }
+    return { run: false, jumpHeld: popped && !p.grounded };
+  });
+  check('...JUMP at its top and JUMP AGAIN in the air: a kickflip, landed', tricked.events.includes('ollie') && tricked.events.includes('kickflip') && tricked.events.includes('trick') && !tricked.events.includes('bail'), tricked.events.join());
+  // The chute: he runs off the top onto it and is on his shield whether he chose it or not, down to the floor.
+  let slidFrom = 0;
+  let outOnTheFloor = false;
+  let inTheAir = 0;
+  const chuted = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 110, (i, p) => (p.riding ? {} : { move: NORTH, run: true }), (p) => {
+    if (p.riding && p.grounded) slidFrom = Math.max(slidFrom, p.position.y);
+    if (p.position.z < RUN.chute.z1 - 0.4 && p.position.z > RUN.chute.z0 && !p.grounded) inTheAir++;
+    if (p.riding && p.grounded && p.position.y < 0.01 && p.position.z < RUN.chute.z0) outOnTheFloor = true;
+  });
+  check('TOO STEEP: he runs onto the chute and slides from its top to the floor, on it all the way, and out across the floor', chuted.events.includes('ride') && slidFrom > T.y - 1.5 && inTheAir === 0 && outOnTheFloor && !chuted.events.includes('bail'), `slid from ${slidFrom.toFixed(2)}; ${inTheAir} frames in the air; ${chuted.events.join()}`);
+  const climbed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, 0, RUN.chute.z0 - 3), 200, (i) => ({ move: new THREE.Vector3(0, 0, 1), run: true, jumpPressed: i % 45 === 20, jumpHeld: i % 45 >= 20 }));
+  check('...and from the floor he cannot get up it', climbed.p.position.y < T.y - 2, `y ${climbed.p.position.y.toFixed(2)}`);
 }
 
 console.log(failures === 0 ? '\nAll garden checks passed.' : `\n${failures} garden check(s) FAILED.`);

@@ -899,3 +899,22 @@ START-HERE has what a ramp is and who knows about it. Things to know before touc
 - Things still treating a ramp as its whole box (safe, but blunt): every enemy, the wall-kick chain's look ahead
   (`wallAhead`), wall hangings (`mount`), the camera's "low thing in the way" rule, crushing.
 
+## The shield ride (2026-11-15: step two)
+START-HERE has the rules. Things to know before touching it:
+- The ride is a state of the controller (`riding`), entered in `startRideIfHeShould` and run by `rideStep` in place
+  of the ordinary ground and air steering. His heading is his velocity's (`rideHeading`); the stick only turns it.
+- `groundBox` is the solid he stood on at the end of the last step; `slopeUnder()` reads the slope from it. Past the
+  high end of a ramp, while his footprint still overlaps it, he is still "on the ramp" (its top is clamped), which is
+  what lets `rideLift` see the ramp's rise in the very step he leaves it.
+- The short-hop rule (`jumpCut`) cuts any upward speed when jump is not held. Anything that throws him up without a
+  button (the kicker) must set `jumpCut = true`, or the throw is cut to a third the next frame.
+- The hold on a ramp (`moveVertical`) is `(speed * dt + radius) * slope` and a little: a chute two up for one along
+  needs most of a unit. A rider leaving a ramp for the FLAT is not held (the flat's hold is the old 0.48), which is
+  why he flies off a kicker 1.2 high; a kicker under about half a unit would not throw him.
+- In `moveAxis` a too-steep ramp is judged by the uphill edge of his footprint only when he moves up it along its own
+  axis. Going down or across it is judged like any ramp, by the slope under his middle.
+- The garden's kicker stands east of the door on purpose: the exit takes anyone GROUNDED at the door (`atDoor`), and
+  the roll-out runs right past it. `tests/garden.ts` checks a straight rider is never at the door.
+- For pictures of it: `ride.mjs` in the scratchpad pattern (keys down/up, `burst:N` screenshots) worked better than
+  timed single shots; the first second after a page loads runs slow, so start him close to the slope.
+

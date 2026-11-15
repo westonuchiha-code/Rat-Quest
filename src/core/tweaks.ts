@@ -64,6 +64,20 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Moves', path: 'moves.wallChainHold', label: 'An early jump press is kept for the next wall this long', min: 0, max: 0.6, step: 0.02 },
   { group: 'Moves', path: 'moves.climbTime', label: 'Ledge climb time', min: 0.1, max: 1, step: 0.02 },
 
+  { group: 'Riding', path: 'ride.gravity', label: 'How hard a slope pulls him', min: 4, max: 40, step: 0.5 },
+  { group: 'Riding', path: 'ride.max', label: 'Top riding speed', min: 8, max: 30, step: 0.5 },
+  { group: 'Riding', path: 'ride.dragFlat', label: 'Slow-down on the flat', min: 0, max: 8, step: 0.1 },
+  { group: 'Riding', path: 'ride.dragSlope', label: 'Slow-down on a slope', min: 0, max: 4, step: 0.1 },
+  { group: 'Riding', path: 'ride.turn', label: 'Turning', min: 0.5, max: 6, step: 0.1 },
+  { group: 'Riding', path: 'ride.carve', label: 'Hard turn: how much sharper', min: 1, max: 4, step: 0.1 },
+  { group: 'Riding', path: 'ride.carveDrag', label: 'Hard turn: speed it costs', min: 0, max: 10, step: 0.2 },
+  { group: 'Riding', path: 'ride.brake', label: 'Braking (stick back)', min: 0, max: 20, step: 0.5 },
+  { group: 'Riding', path: 'ride.ollie', label: 'Jump off the shield', min: 4, max: 14, step: 0.1 },
+  { group: 'Riding', path: 'ride.flipLift', label: 'Kickflip lift', min: 0, max: 12, step: 0.1 },
+  { group: 'Riding', path: 'ride.flipTime', label: 'Kickflip: seconds it takes', min: 0.15, max: 1, step: 0.01 },
+  { group: 'Riding', path: 'ride.trickBoost', label: 'Speed a landed kickflip gives', min: 0, max: 8, step: 0.1 },
+  { group: 'Riding', path: 'ride.stop', label: 'He steps off below this speed', min: 0.2, max: 5, step: 0.1 },
+
   { group: 'Fighting', path: 'health.max', label: 'Hearts', min: 1, max: 12, step: 1, later: 'after the game restarts' },
   { group: 'Fighting', path: 'health.invulnTime', label: 'Safe time after a hit', min: 0.2, max: 3, step: 0.05 },
   { group: 'Fighting', path: 'health.knockback', label: 'Knockback when hit', min: 0, max: 15, step: 0.5 },
@@ -269,7 +283,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Riding', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

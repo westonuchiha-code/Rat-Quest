@@ -6,9 +6,9 @@ import type { WaterVolume } from '../world/layout';
 import { NO_GEAR, type GearMods } from '../data/equipment';
 import { ATTACK_CLIPS } from './animations';
 
-export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb';
+export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride';
 /** A move that just happened this step, for sounds and rumble. */
-export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | null;
+export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | null;
 /** 'parried' is a block made just as the shield came up: no shove, and the attacker reels. */
 export type HitResult = 'dodged' | 'blocked' | 'parried' | 'hit' | 'killed';
 /** 0 not plunging, 1 hanging with the sword raised, 2 diving, 3 stuck in the ground after landing. */
@@ -136,6 +136,33 @@ export class PlayerController {
   private dodgeKind: DodgeKind = 'roll';
   /** Standing on a ramp (see moveVertical). */
   private onRamp = false;
+  /** What he is standing on (null in the air). */
+  private groundBox: Aabb | null = null;
+  /**
+   * Riding his shield (see `rideStep` and TUNING.ride). While he is: `rideSteer` is how hard he is steering, from -1
+   * to 1 (for his lean and his tail), and `rideFlipProgress` how far through a kickflip he is (0..1, -1 when not).
+   */
+  riding = false;
+  rideSteer = 0;
+  private rideHeading = 0;
+  private rideAge = 0;
+  private rideFlip = -1;
+  private rideFlipDone = false;
+  private rideAgain = 0;
+  get rideFlipProgress(): number {
+    return this.riding ? this.rideFlip : -1;
+  }
+  /**
+   * How the ground he rides on lies under him: its rise for a unit forward, and for a unit to the side his model calls
+   * +x. Nothing on the flat or in the air. (His shield is drawn lying on the slope, not level and half inside it.)
+   */
+  get rideGround(): { along: number; across: number } {
+    const under = this.riding ? this.slopeUnder() : null;
+    if (!under) return { along: 0, across: 0 };
+    const fx = Math.sin(this.facing);
+    const fz = Math.cos(this.facing);
+    return { along: -(under.dx * fx + under.dz * fz) * under.steep, across: -(under.dx * fz - under.dz * fx) * under.steep };
+  }
   private dodgeTimer = -1; // -1 means not dodging
   private dodgeDuration = 0;
   private dodgeSpeed = 0;
@@ -402,6 +429,8 @@ export class PlayerController {
     this.jumpCut = false;
     this.landTimer = 0;
     this.airJumpsLeft = TUNING.jump.airJumps;
+    this.riding = false;
+    this.rideFlip = -1;
     this.flipTimer = -1;
     this.attackStep = 0;
     this.attackTimer = -1;
@@ -536,7 +565,7 @@ export class PlayerController {
     if (input.stowPressed) this.autoStowed = false;
 
     // Stow / draw: on the ground, not mid-fight. The weapons swap places at the halfway point.
-    if (input.stowPressed && this.stowTimer < 0 && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0) {
+    if (input.stowPressed && !this.riding && this.stowTimer < 0 && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0) {
       this.stowTimer = 0;
     }
     if (this.stowTimer >= 0) {
@@ -550,7 +579,7 @@ export class PlayerController {
     const canFight = this.armed && this.stowTimer < 0 && !swimming;
 
     // Guard: held, on the ground, and not mid-swing or mid-dodge.
-    this.guarding = canFight && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
+    this.guarding = canFight && !this.riding && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
     this.guardAge = this.guarding ? this.guardAge + dt : 0;
 
     // A press made a moment too early (mid-roll, or while still shoved back from a block) is remembered and used as soon as it can be.
@@ -560,7 +589,7 @@ export class PlayerController {
     const wantDodge = input.dodgePressed || this.dodgeBuffer > 0;
 
     // Sword: a press starts the combo, or queues the next hit while a swing is already playing.
-    if (canFight && wantAttack && this.dodgeTimer < 0 && !input.guardHeld && this.blockStun <= 0) {
+    if (canFight && !this.riding && wantAttack && this.dodgeTimer < 0 && !input.guardHeld && this.blockStun <= 0) {
       this.attackBuffer = 0;
       if (this.plungeStage !== 0) {
         // Already plunging: nothing more to do until he lands.
@@ -573,8 +602,16 @@ export class PlayerController {
       }
     }
 
+    // Riding: the dodge button steps him off the shield. (He cannot roll, guard or swing from it: it is under his feet.)
+    if (this.riding && wantDodge && this.grounded) {
+      this.dodgeBuffer = 0;
+      this.endRide('rideEnd');
+    }
+    this.startRideIfHeShould(input, helpless, swimming);
+
     // Dodge: from the ground. It can cancel the recovery of a swing, but not the swing itself.
     if (
+      !this.riding &&
       wantDodge &&
       this.plungeStage === 0 &&
       this.grounded &&
@@ -625,7 +662,12 @@ export class PlayerController {
 
     // Horizontal velocity. A dodge sets it directly; otherwise it eases toward the target speed.
     const dodging = this.dodgeTimer >= 0;
-    if (dodging) {
+    if (helpless || swimming) this.riding = false;
+    this.rideAgain = Math.max(0, this.rideAgain - dt);
+    let rideSpeed = 0;
+    if (this.riding) {
+      rideSpeed = this.rideStep(dt, input);
+    } else if (dodging) {
       this.velocity.x = this.dodgeDir.x * this.dodgeSpeed;
       this.velocity.z = this.dodgeDir.z * this.dodgeSpeed;
     } else if (helpless) {
@@ -674,7 +716,7 @@ export class PlayerController {
     }
 
     // Jumps. Not during a dodge. Ground jump uses coyote time; the air jump is the extra one.
-    if (!dodging && !helpless && this.plungeStage === 0 && this.jumpBuffer > 0) {
+    if (!this.riding && !dodging && !helpless && this.plungeStage === 0 && this.jumpBuffer > 0) {
       const kick = !this.grounded && !swimming && this.coyoteTimer <= 0 && this.wallTimer > 0;
       const long = this.allowLongJump && this.coyoteTimer > 0 && this.grounded && !swimming && !input.run && this.sinceFast < T.moves.longJumpWindow && this.attackTimer < 0 && !this.guarding;
       if (kick) {
@@ -742,11 +784,19 @@ export class PlayerController {
     // Horizontal motion, one axis at a time so walls slide instead of blocking diagonally.
     // A current carries him along while he swims in it.
     const flow = swimming && pool?.flow ? pool.flow : null;
+    // (A rider keeps the rise or fall the slope was giving him when it ends under him: a kicker throws him up.)
+    const rideLift = this.riding && this.grounded ? this.rideClimb() : null;
     this.moveAxis('x', (this.velocity.x + (flow ? flow[0] : 0)) * dt, colliders);
     this.moveAxis('z', (this.velocity.z + (flow ? flow[1] : 0)) * dt, colliders);
+    // Riding into a wall: at any speed worth the name, he comes off.
+    if (this.riding && rideSpeed > T.ride.bailSpeed && Math.hypot(this.velocity.x, this.velocity.z) < rideSpeed * 0.6) this.bail();
 
     // Vertical motion, including landing and head bumps.
     this.moveVertical(dt, colliders);
+    if (rideLift !== null && this.riding && !this.grounded && this.velocity.y <= 0 && rideLift !== 0) {
+      this.velocity.y = rideLift;
+      this.jumpCut = true; // (it is the ramp's throw, not a jump: no button is held, and none let go cuts it short)
+    }
     if (this.plungeStage === 2 && this.grounded) {
       this.plungeStage = 3;
       this.plungeTimer = 0;
@@ -758,7 +808,7 @@ export class PlayerController {
     const wb = this.wallBox;
     // (Of a ramp, only the wall at its high end has an edge to catch: its sides slope, and its low end is no wall.)
     const edge = !wb?.ramp || (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up);
-    if (wb && edge && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
+    if (wb && edge && !this.riding && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
       const top = wb.max.y;
       const p = this.position;
       // Pushing toward the wall at all (a stick held at an angle slides him along it, turning him sideways), or facing it.
@@ -806,6 +856,19 @@ export class PlayerController {
 
     // Landing detection drives the short land state.
     const justLanded = !this.wasGrounded && this.grounded;
+    if (this.riding && justLanded) {
+      if (this.rideFlip >= 0) {
+        // Down before the shield came round: he comes off it.
+        this.bail();
+      } else if (this.rideFlipDone) {
+        // A kickflip landed: a little speed for it.
+        this.rideFlipDone = false;
+        const v = Math.min(T.ride.max, Math.hypot(this.velocity.x, this.velocity.z) + T.ride.trickBoost);
+        this.velocity.x = Math.sin(this.rideHeading) * v;
+        this.velocity.z = Math.cos(this.rideHeading) * v;
+        this.moveEvent = 'trick';
+      } else this.moveEvent = 'rideLand';
+    }
     this.wasGrounded = this.grounded;
     this.landTimer = justLanded ? T.landTime : Math.max(0, this.landTimer - dt);
 
@@ -914,6 +977,143 @@ export class PlayerController {
     this.comboQueued = false;
   }
 
+  /** The way down the slope he is standing on ([x, z], a unit long) and how steep it is; null on the flat or in the air. */
+  private slopeUnder(): { dx: number; dz: number; steep: number } | null {
+    const b = this.grounded ? this.groundBox : null;
+    if (!b?.ramp) return null;
+    const steep = slopeOf(b);
+    if (steep <= 0) return null;
+    return { dx: b.ramp.axis === 'x' ? -b.ramp.up : 0, dz: b.ramp.axis === 'z' ? -b.ramp.up : 0, steep };
+  }
+
+  /**
+   * Whether he gets on his shield this step. On a slope too steep to stand on he has no choice (he would otherwise
+   * stand on a wall). On one he can stand on, it is his to choose: running down it, SNEAK drops the shield under his
+   * feet (weapons out and nothing else in hand: not mid-swing, mid-roll or with them on his back).
+   */
+  private startRideIfHeShould(input: PlayerInput, helpless: boolean, swimming: boolean): void {
+    if (this.riding || helpless || swimming || this.hang || this.climbT >= 0 || this.plungeStage !== 0) return;
+    const under = this.slopeUnder();
+    if (!under) return;
+    const R = TUNING.ride;
+    const tooSteep = under.steep > MAX_WALK_SLOPE + 1e-6;
+    const downhill = this.velocity.x * under.dx + this.velocity.z * under.dz;
+    const chosen = this.armed && this.stowTimer < 0 && this.attackTimer < 0 && this.dodgeTimer < 0 && this.rideAgain <= 0 && !input.run && this.sinceFast < TUNING.moves.longJumpWindow && under.steep >= R.minSlope && downhill > TUNING.move.walk;
+    if (!tooSteep && !chosen) return;
+    this.riding = true;
+    this.rideAge = 0;
+    this.rideFlip = -1;
+    this.rideFlipDone = false;
+    this.rideSteer = 0;
+    const speed = Math.hypot(this.velocity.x, this.velocity.z);
+    this.rideHeading = speed > 0.5 ? Math.atan2(this.velocity.x, this.velocity.z) : Math.atan2(under.dx, under.dz);
+    this.attackTimer = -1;
+    this.attackStep = 0;
+    this.comboQueued = false;
+    this.dodgeTimer = -1;
+    this.guarding = false;
+    this.stowTimer = -1;
+    this.moveEvent = 'ride';
+  }
+
+  /** Off the shield: he is on his feet again, with whatever speed he had. */
+  private endRide(event: MoveEvent): void {
+    this.riding = false;
+    this.rideFlip = -1;
+    this.rideFlipDone = false;
+    this.rideSteer = 0;
+    this.rideAgain = TUNING.ride.again;
+    this.moveEvent = event;
+  }
+
+  /** Thrown off it: into a wall, or down on the ground with the shield still turning under him. No harm done but to his pride. */
+  private bail(): void {
+    const back = 2.5;
+    this.endRide('bail');
+    this.velocity.set(-Math.sin(this.rideHeading) * back, Math.max(this.velocity.y, 3.5), -Math.cos(this.rideHeading) * back);
+    this.grounded = false;
+    this.hurtTimer = Math.max(this.hurtTimer, TUNING.ride.bailTime);
+  }
+
+  /**
+   * One step of riding the shield: the slope pulls him down it, the stick turns him (hard over is a carve, which
+   * turns him faster and scrubs speed off; pulled back it brakes), the ground slows him, and jump is an ollie (and,
+   * in the air, a kickflip). Sets his sideways speed; comes back with how fast that is.
+   */
+  /** How fast the slope he is riding on is carrying him up (or, going down it, down): nothing on the flat or in the air. */
+  private rideClimb(): number {
+    const under = this.riding ? this.slopeUnder() : null;
+    return under ? -(this.velocity.x * under.dx + this.velocity.z * under.dz) * under.steep : 0;
+  }
+
+  private rideStep(dt: number, input: PlayerInput): number {
+    const R = TUNING.ride;
+    this.rideAge += dt;
+    this.guarding = false;
+    let vx = this.velocity.x;
+    let vz = this.velocity.z;
+    const under = this.slopeUnder();
+    if (under) {
+      // (Down the slope, by as much of gravity as the slope turns that way.)
+      const pull = (R.gravity * under.steep) / Math.sqrt(1 + under.steep * under.steep);
+      vx += under.dx * pull * dt;
+      vz += under.dz * pull * dt;
+    }
+    let speed = Math.hypot(vx, vz);
+    if (speed > 0.3) this.rideHeading = Math.atan2(vx, vz);
+    // The stick, against the way he is going: across it steers, back along it brakes.
+    const hx = Math.sin(this.rideHeading);
+    const hz = Math.cos(this.rideHeading);
+    const side = Math.max(-1, Math.min(1, input.move.x * hz - input.move.z * hx));
+    const fwd = input.move.x * hx + input.move.z * hz;
+    const hard = Math.abs(side) > 0.85;
+    this.rideHeading += side * R.turn * (hard ? R.carve : 1) * (this.grounded ? 1 : R.airTurn) * dt;
+    this.rideSteer += (side * (hard ? 1 : 0.6) - this.rideSteer) * Math.min(1, dt * 10);
+    let slow = 0;
+    if (this.grounded) {
+      slow = under ? R.dragSlope : R.dragFlat;
+      if (hard) slow += R.carveDrag;
+      else if (fwd < -0.5) slow += R.brake * -fwd;
+    }
+    speed = Math.max(0, Math.min(R.max, speed - slow * dt));
+    this.velocity.x = Math.sin(this.rideHeading) * speed;
+    this.velocity.z = Math.cos(this.rideHeading) * speed;
+    this.facing = this.rideHeading;
+
+    // The jump is an ollie; a second, in the air, is a kickflip: the shield spins round under his feet.
+    if (this.jumpBuffer > 0) {
+      if (this.coyoteTimer > 0) {
+        // (Popped going up a ramp, he has the ramp's own lift as well: the lip of a kicker is the place to jump.)
+        this.velocity.y = R.ollie + Math.max(0, this.rideClimb());
+        this.grounded = false;
+        this.coyoteTimer = 0;
+        this.jumpBuffer = 0;
+        this.jumpCut = false;
+        this.rideFlip = -1;
+        this.rideFlipDone = false;
+        this.moveEvent = 'ollie';
+      } else if (!this.grounded && this.airJumpsLeft > 0 && this.rideFlip < 0) {
+        this.velocity.y = Math.max(this.velocity.y, R.flipLift);
+        this.airJumpsLeft--;
+        this.rideFlip = 0;
+        this.rideFlipDone = false;
+        this.jumpBuffer = 0;
+        this.jumpCut = true;
+        this.moveEvent = 'kickflip';
+      }
+    }
+    if (this.rideFlip >= 0) {
+      this.rideFlip += dt / R.flipTime;
+      if (this.rideFlip >= 1) {
+        this.rideFlip = -1;
+        this.rideFlipDone = true;
+      }
+    }
+    // Too slow to ride, on ground he can stand on: he steps off. (On a slope too steep to stand on he never does.)
+    if (this.grounded && speed < R.stop && this.rideAge > 0.3 && !(under && under.steep > MAX_WALK_SLOPE + 1e-6)) this.endRide('rideEnd');
+    return speed;
+  }
+
   private moveAxis(axis: 'x' | 'z', delta: number, colliders: Aabb[]): void {
     if (delta === 0) return;
     const p = this.position;
@@ -933,8 +1133,23 @@ export class PlayerController {
       // its slope under his middle, where he will be standing: on a ramp he can walk, that is never more than a
       // step above where he stood the moment before. (One too steep to walk is judged by the uphill edge of his
       // footprint instead, which stops him at its foot.)
-      const high = !b.ramp ? b.max.y : slopeOf(b) <= MAX_WALK_SLOPE + 1e-6 ? topAt(b, p.x, p.z) : topUnder(b, p.x, p.z, r);
+      // That edge is a wall to him only as he goes UP it. Going down it, or across it, it is the slope he is sliding
+      // on: were it a wall then, it threw him back to the top of the chute he had just been put on.
+      const climbing = !!b.ramp && slopeOf(b) > MAX_WALK_SLOPE + 1e-6 && b.ramp.axis === axis && delta * b.ramp.up > 0;
+      const high = !b.ramp ? b.max.y : climbing ? topUnder(b, p.x, p.z, r) : topAt(b, p.x, p.z);
       if (high <= feet + TUNING.physics.stepHeight + EPS) continue;
+      // (And one he cannot climb gives him his step back, no more: it does not put him at its foot, which may be a
+      // long way behind one who jumped at it.)
+      if (climbing && topAt(b, p.x, p.z) <= feet + TUNING.physics.stepHeight + EPS) {
+        if (axis === 'x') {
+          p.x -= delta;
+          this.velocity.x = 0;
+        } else {
+          p.z -= delta;
+          this.velocity.z = 0;
+        }
+        continue;
+      }
       // Touching a tall wall in the air: remember it for a wall kick or a ledge grab.
       if (!this.grounded && high > p.y + 0.6) {
         this.wallTimer = TUNING.moves.wallKickWindow;
@@ -985,7 +1200,11 @@ export class PlayerController {
       // (A ramp's top is its slope under his middle; beside it, its nearest edge.)
       const top = b.ramp ? topAt(b, p.x, p.z) : b.max.y;
       // Support must be reachable: at most a step above where we started, and at or below our feet now.
-      const held = wasOn && (b.ramp || this.onRamp) && top >= prevY - RAMP_HOLD;
+      // (Riding fast down a steep one it falls away further in a step than at a run.)
+      // (And where a flat gives way to a steep one, its slope is already his own half-width down by the time his
+      // middle is over it: one who runs off a landing onto a chute is put on the chute, he does not sail over it.)
+      const hold = b.ramp ? Math.max(RAMP_HOLD, (Math.hypot(this.velocity.x, this.velocity.z) * dt + r) * slopeOf(b) + (this.riding ? 0.15 : 0.05)) : RAMP_HOLD;
+      const held = wasOn && (b.ramp || this.onRamp) && top >= prevY - hold;
       if (top <= prevY + TUNING.physics.stepHeight + EPS && (p.y <= top + EPS || held)) {
         if (support === null || top > support) {
           support = top;
@@ -999,9 +1218,11 @@ export class PlayerController {
       this.velocity.y = 0;
       this.grounded = true;
       this.onRamp = !!under?.ramp;
+      this.groundBox = under;
     } else {
       this.grounded = false;
       this.onRamp = false;
+      this.groundBox = null;
     }
   }
 
@@ -1021,6 +1242,8 @@ export class PlayerController {
       this.state = 'climb';
     } else if (this.swimming) {
       this.state = 'swim';
+    } else if (this.riding) {
+      this.state = 'ride';
     } else if (this.plungeStage !== 0) {
       this.state = 'plunge';
     } else if (this.attackTimer >= 0) {

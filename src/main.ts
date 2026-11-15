@@ -1509,6 +1509,23 @@ function startGame(): void {
       audio.play('step', { vol: 0.7, rate: 0.8, priority: 6 });
       audio.play('cloth', { vol: 0.5, priority: 4 });
     } else if (ev === 'climb') audio.play('ratJump2', { vol: 0.6, rate: 1.25, priority: 6 });
+    // Riding his shield: it goes down under his feet, cracks off the ground and back onto it, whirls round in a
+    // kickflip (a bright note if he lands one), and clatters away when he comes off.
+    else if (ev === 'ride') {
+      audio.play('ridePop', { vol: 0.6, rate: 0.8, priority: 6 });
+      audio.play('cloth', { vol: 0.5, priority: 4 });
+    } else if (ev === 'ollie') audio.play('ridePop', { vol: 0.75, rate: roll(1.0, 1.12), priority: 6 });
+    else if (ev === 'kickflip') audio.play('whoosh', { vol: 0.6, rate: 1.7, priority: 5 });
+    else if (ev === 'rideLand') audio.play('ridePop', { vol: 0.6, rate: roll(0.85, 0.95), priority: 5 });
+    else if (ev === 'trick') {
+      audio.play('ridePop', { vol: 0.65, rate: 0.9, priority: 6 });
+      audio.play('sparkle', { vol: 0.5, rate: 1.3, priority: 6 });
+      rumble.land(5);
+    } else if (ev === 'bail') {
+      audio.play('rideClatter', { vol: 0.85, priority: 8 });
+      audio.play('ratHurt', { vol: 0.55, rate: 1.15, priority: 7 });
+      rumble.land(9);
+    } else if (ev === 'rideEnd') audio.play('step', { vol: 0.6, rate: 0.85, priority: 4 });
     if (!heard.grounded && player.grounded && !inWater) {
       audio.play('land', { vol: Math.min(1, 0.35 + Math.abs(vyBefore) / 12), rate: roll(0.9, 1.1) });
       rumble.land(Math.abs(vyBefore));
@@ -1649,6 +1666,9 @@ function startGame(): void {
       ffv = Math.max(ffv, nearness(Math.hypot(e.x - player.position.x, e.y - player.position.y, e.z - player.position.z), 15) * (e.low ? 0.6 : e.attacking ? 1 : 0.8));
     }
     audio.loop('fireflyHum', ffv * ffv * 0.5);
+    // His shield on the stone, while he rides it on the ground: louder the faster he goes.
+    const rideV = player.riding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.ride.max) : 0;
+    audio.loop('rideScrape', rideV * 0.55 + (rideV > 0 ? 0.08 : 0));
     let fv = 0;
     for (const b of braziers) fv = Math.max(fv, nearness(Math.hypot(b.x - player.position.x, b.y - player.position.y, b.z - player.position.z), 6));
     // (A firefly's flames crackle as a brazier does, for as long as they burn.)
@@ -3329,6 +3349,7 @@ function startGame(): void {
       climbProgress: player.climbProgress,
       kickProgress: player.kickProgress,
       onWall: player.onWall,
+      ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.

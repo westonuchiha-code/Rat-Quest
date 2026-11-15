@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,591 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,643 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -346,7 +346,7 @@ new kind of ground for ALL of them, so do it in this order and test each step wi
 next: (1) a ramp solid (a box whose top runs from one height to another along one axis) that he can stand, walk and
 jump on, with the camera, shadows and `reach.ts` taught about it (done: see below; enemies are not taught yet); (2) the slide (too steep to stand: he
 slides; and the shield ride as a move of its own: speed from the slope, the tail steering, a jump and a kickflip off
-it); (3) the cave area built for it, where the sewer has broken through. The Move Garden is the place to try (1)
+it: done, see below); (3) the cave area built for it, where the sewer has broken through. The Move Garden is the place to try (1)
 and (2) first. Do not start it as a side task: it is a job for a turn of its own.
 
 ### Step one is DONE (2026-11-15): ramps
@@ -358,8 +358,7 @@ level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the heigh
 - The knight (controller.ts): its slope is his ground (`moveVertical`); it is a wall only at its high end and along
   its sides (`moveAxis`); he is HELD to it going downhill (`RAMP_HOLD`: the slope falls away under him faster than he
   falls, so without that he left the ground at every step); only its high end has an edge to catch. He walks slopes
-  up to one up for one along (`MAX_WALK_SLOPE`); a steeper one stops him at its foot. He does not slide, and does not
-  lean: that is step two.
+  up to one up for one along (`MAX_WALK_SLOPE`); a steeper one stops him at its foot, and on it he slides (step two).
 - Shadows and where he is drawn (`groundBelow`, `feetGround`, `floorAt` in main.ts), falling embers (`groundFrom`),
   the camera's line of sight (`sight`: a ramp is its wedge, so standing on one he is not "inside" it), how it is
   drawn (chamber.ts: the box pressed down under its slope), the jump checker (reach.ts takes it a column at a time).
@@ -367,10 +366,47 @@ level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the heigh
   may be placed on one until they are taught (their footing is `canStand` in main.ts and each one's own `y`).
 - The Move Garden has three in its south-east corner (one up in 4, in 2 and in 1) to a landing three up.
 - `tests/ramps.ts` plays all of it with the real controller. Nobody has walked one by hand yet.
-**Next, step two:** the slide and the shield ride. What it needs that is not there: his speed along the slope (now he
-moves across the ground at the same speed uphill and down), a slope too steep to stand on that he slides down, the
-ride itself as a state of the controller with the tail steering, a jump and a kickflip off it, his pose on the
-shield, and the camera following a fast descent.
+
+### Step two is DONE (2026-11-15): the slide and the shield ride
+He rides his shield like a small skateboard. All of it is `TUNING.ride`, and a 'Riding' group of sliders in the
+tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRide`, `bail` in controller.ts.
+- **Getting on.** Running DOWN a slope (at least `minSlope`, one up in five), press SNEAK: the shield drops under his
+  feet. On a slope too steep to stand on (over `MAX_WALK_SLOPE`) he has no choice: he slides the moment he is on it,
+  and cannot step off till he is at its foot. Weapons must be out (not on his back, not mid-swing or mid-roll).
+- **On it.** The slope pulls him (`gravity`), the flat slows him (`dragFlat`), top speed `max` (16; a run is 6.2). The
+  stick ACROSS his heading steers; hard over is a carve (sharper, and it costs speed); the stick BACK brakes. He
+  cannot guard, swing, roll or stow while riding. He steps off by himself below `stop`, or at once on the ROLL button.
+- **Jump** is an ollie (`ollie`; tap for a short one, as on foot). **Jump again in the air** is the kickflip: it uses
+  his air jump, takes `flipTime`, and landing it gives `trickBoost` of speed. Landing before it is finished, or riding
+  into a wall at speed (`bailSpeed`), throws him off: no hearts lost, a moment on the floor (`bailTime`).
+- **A ramp throws a rider**: leaving the top of a ramp he keeps the rise it was giving him (`rideClimb`), so a kicker
+  is a kicker, and a jump at its lip adds the two together. On foot nothing has changed: a walker is not thrown.
+- **How it is drawn** (ratModel.ts): poses `RIDE` and `RIDE_AIR`; the shield is a copy lying flat under his feet
+  (`board`), hidden from his arm and back meanwhile; he leans into turns, his tail swings out the other way, and both
+  he and the shield tip to the slope under them (`rideGround`: the shield all the way, his body six tenths of it).
+- **Sounds**: `rideScrape` (a loop, louder the faster he goes), `ridePop`, `rideClatter`.
+- **The Move Garden has THE RUN** along its south wall (`RUN` in garden.ts): a platform eight up in the south-east
+  corner, a ramp to walk up to it, the run itself (one up in two) west down to the floor, a kicker on the roll-out
+  (before the door, so a rider is in the air past it), and the CHUTE north off the platform (two up for one along).
+- `tests/ride.ts` plays every rule above with the real controller; `tests/garden.ts` rides the run, the kicker (with
+  and without a kickflip) and the chute. It has been watched in the running game with the keyboard from behind and
+  from the side: the ride, a carve, the jump, the flip, the chute. **Nobody has ridden it with a controller in hand.**
+**Three faults the running game showed that the tests had not** (worth knowing, they were all in step one's code):
+- A slope too steep to stand on threw him back to its TOP every step: `moveAxis` judged it by the uphill edge of his
+  footprint whichever way he was going. It is now a wall only to one going UP it; and one who cannot climb it is given
+  his step back, not put at its foot.
+- Running off a landing onto a steep slope he sailed clear over it: the slope is his own half-width down already when
+  his middle crosses the edge. The hold on a ramp now grows with its steepness (`moveVertical`).
+- The kicker did not throw him: grounded, his upward speed is nothing, and the short-hop rule then cut what he was
+  given. See `rideLift` in `update`.
+**Not done, and known:**
+- Down the chute the camera loses him for a moment: it is still up behind the platform's lip, looking over it, while
+  he is at the foot of a slope too steep to see down (he is at the bottom edge of the picture, or under it, for a
+  few frames; then it catches up). The same is true of running off any high ledge. The camera may not turn by itself
+  (the owner's rule), so the cure, if he wants one, is in how fast it comes forward and down, not in swinging round.
+- Enemies still know nothing of ramps or of a rider. Nothing hurts or is hurt by a rider differently.
+- A roll-out from top speed is about sixty units on the flat (`dragFlat` 1.6): longer than the garden. He can brake.
+- No level but the garden has a slope in it yet. **Next, step three: the cave.**
 
 ## Drawn and solid, again (2026-11-15: what the owner found walking round the Club)
 He sent pictures of the knight standing inside things. The rule is old (what is DRAWN must match what is SOLID); these
