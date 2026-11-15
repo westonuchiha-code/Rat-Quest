@@ -2529,6 +2529,10 @@ function startGame(): void {
     }, 300);
   }
 
+  /** What was asked of the menu in one frame, in the order it is done: moves, then changes of screen, then yes and no. */
+  const menuOrder = (asked: Set<MenuKey>): MenuKey[] => (['left', 'right', 'up', 'down', 'tabPrev', 'tabNext', 'confirm', 'back'] as const).filter((k) => asked.has(k));
+  /** How fast the right stick moves the menu's DETAILS card, in heights of the card a second. */
+  const MENU_READ = 1.5;
   const MENU_KEYS: Array<[MenuKey, string[]]> = [
     ['left', ['ArrowLeft', 'KeyA']],
     ['right', ['ArrowRight', 'KeyD']],
@@ -2703,28 +2707,35 @@ function startGame(): void {
     const enter = input.consumePressed('Enter') && !builder.live;
     if (toggle || (enter && !menu.open)) menu.toggle();
     if (menu.open) {
+      // Everything asked for this frame, each thing once. (A d-pad press is a button AND, with the stick at rest, a
+      // push of the stick: asked for twice over, it used to move the cursor two rows.)
+      const asked = new Set<MenuKey>();
       for (const [key, base] of MENU_KEYS) {
         const codes = key === 'confirm' ? [...base, ...bindings.keys('jump'), ...bindings.keys('attack')] : key === 'back' ? [...base, ...bindings.keys('dodge')] : base;
         let hit = consumeAction(key);
         for (const c of codes) if (input.consumePressed(c)) hit = true;
-        if (hit) menu.press(key);
+        if (hit) asked.add(key);
       }
-      if (enter) menu.press('confirm');
-      // The left stick moves the cursor, repeating while held.
+      if (enter) asked.add('confirm');
+      // The left stick (or the d-pad) moves the cursor, repeating while held.
       const ax = controlSources.reduce((a, s) => a + s.moveX, 0);
       const ay = controlSources.reduce((a, s) => a + s.moveY, 0);
       const dir: MenuKey | null = Math.abs(ay) > Math.abs(ax) ? (ay > 0.6 ? 'up' : ay < -0.6 ? 'down' : null) : ax > 0.6 ? 'right' : ax < -0.6 ? 'left' : null;
       if (dir !== navDir) {
         navDir = dir;
         navTimer = 0.35;
-        if (dir) menu.press(dir);
+        if (dir) asked.add(dir);
       } else if (dir) {
         navTimer -= dt;
         if (navTimer <= 0) {
           navTimer = 0.15;
-          menu.press(dir);
+          asked.add(dir);
         }
       }
+      for (const key of menuOrder(asked)) menu.press(key);
+      // The right stick (or R and F) moves what is written in the DETAILS card, when there is more of it than fits.
+      const read = controlSources.reduce((a, s) => a + s.lookY, 0) + (input.isDown('KeyR') ? 1 : 0) - (input.isDown('KeyF') ? 1 : 0);
+      if (Math.abs(read) > 0.25) menu.scroll(-Math.max(-1, Math.min(1, read)) * MENU_READ * dt);
       for (const a of ['jump', 'attack', 'dodge', 'stow', 'respawn'] as const) consumeAction(a);
       for (const code of bindings.allKeys()) input.consumePressed(code);
     } else {

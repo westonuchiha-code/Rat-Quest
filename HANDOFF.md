@@ -521,6 +521,23 @@ before, but only in words, and only for a world you had picked that was still sh
 - **Tests**: tests/menu.ts +15. **Not done**: nobody has looked at it on a real phone or TV; a player's own levels hung
   on the Club's guest doors are listed too (up to six rows), which has not been looked at.
 
+## The pause menu: reading on, and the d-pad (2026-11-15)
+- **The DETAILS card can be moved** when there is more written in it than fits (the Foundry's on WORLDS; a piece of
+  gear's on EQUIP, which had always lost its last line at 1280 x 720): the RIGHT STICK on a controller, R and F on a
+  keyboard; the mouse wheel and a finger always could. `Menu.scroll(by)` (in heights of the card), fed from
+  handleMenuInput in main.ts at `MENU_READ` (1.5 heights a second at full tilt, less for less). A marker sits on the
+  card's lower edge while there is more below ("more", with the stick or keys that do it), one on its upper edge once
+  it has been moved, the words fade out towards an edge they run past, and the help line gains "read on". The markers
+  are placed from the card's own `offsetTop` (on EQUIP the card is not at the top of its column). Choosing something
+  else starts at the top again (the page is drawn afresh).
+- **The d-pad moved the cursor two rows a press.** A d-pad press is a button (`up`/`down` actions) AND, with the stick
+  at rest, a push of the stick (controls.ts makes the d-pad walk): handleMenuInput acted on both. Everything asked
+  for in a frame is now gathered and done once (`menuOrder`). Found with a pretend controller (a script that fakes
+  `navigator.getGamepads`); nobody had used a real one. The title screen and the shop were not affected.
+- **Tests**: tests/menu.ts +7 (moved by half a card, stops at each end, markers, a card that fits is left alone).
+  The d-pad fix is in main.ts and is checked only by the pretend-controller script, not by a test in the suite.
+- **Not done**: no real controller, phone or TV. R and F are not shown anywhere but the help line and the marker.
+
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
 beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.

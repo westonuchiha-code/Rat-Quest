@@ -224,5 +224,32 @@ check('the cursor stops at the last row', quits === 1);
   check('...and the one before it, whose door is open, can be gone to', gone.join() === 'foundry' && !m.open);
 }
 
+// ---- Reading on: the DETAILS card moved when there is more written in it than fits ----
+{
+  const card = { scrollTop: 0, scrollHeight: 500, clientHeight: 200, parentElement: null, classList: { toggle() {} }, addEventListener() {} };
+  const marks: Record<string, { hidden: boolean }> = { '.rq-more': { hidden: true }, '.rq-less': { hidden: true }, '.rq-readon': { hidden: true } };
+  (globalThis as unknown as { document: { createElement: () => unknown } }).document.createElement = () => ({ ...fakeEl(), querySelector: (q: string) => (q === '.rq-detail' ? card : marks[q] ?? null) });
+  const m = new Menu(fakeEl() as unknown as HTMLElement, {
+    equipment: new Equipment(null), inventory: new Inventory(null), useItem: () => null,
+    quest: () => ({ name: 'T', goals: [], collectibles: [] }), levels: () => [{ id: 'a', name: 'A', blurb: 'Long.', cleared: false, perfect: false, current: true }], goLevel: () => undefined,
+    health: () => ({ hp: 5, max: 5 }), save: () => true, load: () => false, savedAt: () => null,
+    restart: () => undefined, onToggle: () => undefined,
+  });
+  m.scroll(1);
+  check('with the menu shut, nothing is moved', card.scrollTop === 0);
+  m.show();
+  check('a card with more in it than fits says there is more below, and nothing above', m.more().below && !m.more().above);
+  m.scroll(0.5);
+  check('the right stick moves it: half a card\'s height is half a card\'s height', card.scrollTop === 100 && m.more().below && m.more().above, `${card.scrollTop}`);
+  check('...and the markers show: more below, more above, and how to read on', !marks['.rq-more'].hidden && !marks['.rq-less'].hidden && !marks['.rq-readon'].hidden);
+  m.scroll(5);
+  check('it stops at the end of what is written, and the "more" marker goes', card.scrollTop === 300 && !m.more().below && m.more().above && marks['.rq-more'].hidden && !marks['.rq-less'].hidden, `${card.scrollTop}`);
+  m.scroll(-9);
+  check('and back up it stops at the top', card.scrollTop === 0 && m.more().below && !m.more().above && marks['.rq-less'].hidden);
+  card.scrollHeight = 200;
+  m.scroll(1);
+  check('a card that fits is not moved, and has no markers', card.scrollTop === 0 && !m.more().below && !m.more().above && marks['.rq-more'].hidden && marks['.rq-readon'].hidden);
+}
+
 console.log(failures === 0 ? '\nMenu checks passed.' : `\n${failures} menu check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

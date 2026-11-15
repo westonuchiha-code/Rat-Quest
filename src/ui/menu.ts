@@ -9,7 +9,7 @@ import type { Equipment } from '../player/equipment';
 import type { Inventory } from '../player/inventory';
 import { capIcon, crumbIcon, doorIcon, heartIcon, itemIcon, lockIcon, nachoIcon, relicIcon, tabIcon, wedgeIcon } from './icons';
 import { doorWords, type DoorState } from '../levels/junction';
-import { ensureGlyphCss, helpLine, prompt } from './glyphs';
+import { ensureGlyphCss, helpLine, keyChip, lastDevice, pair, prompt } from './glyphs';
 import type { RumbleLevel } from '../core/rumble';
 
 export interface QuestInfo {
@@ -163,7 +163,17 @@ const CSS = `
 .rq-cols.items { grid-template-columns: 1.55fr 1fr; }
 .rq-cols.equip { grid-template-columns: 0.95fr 0.8fr 1.5fr; }
 .rq-cols.two { grid-template-columns: 1.2fr 1fr; }
-.rq-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.rq-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; position: relative; }
+/* When the details run off the bottom of their card: a small marker on its lower edge, and one at the top once it has
+   been moved. (The right stick moves it; or R and F; or the wheel, or a finger.) */
+.rq-more, .rq-less { position: absolute; left: 50%; top: 100%; transform: translate(-50%, -50%); z-index: 2; display: flex; align-items: center; gap: 0.35em; padding: 0.1em 0.7em;
+  border-radius: 1em; background: #1c2618; border: 1px solid #7f9a5e; color: #d8e6c0; font-size: 0.72em; font-weight: 700; white-space: nowrap; pointer-events: none; box-shadow: 0 0 0.6em #000a; }
+.rq-less { padding: 0 0.6em; }
+.rq-more[hidden], .rq-less[hidden], .rq-readon[hidden] { display: none; }
+/* (What is written fades out towards an edge it runs past, so a marker never sits on top of plain words.) */
+.rq-detail.more-below { -webkit-mask-image: linear-gradient(#000 calc(100% - 2.6em), #0000 calc(100% - 0.3em)); mask-image: linear-gradient(#000 calc(100% - 2.6em), #0000 calc(100% - 0.3em)); }
+.rq-detail.more-above { -webkit-mask-image: linear-gradient(#0000 0.3em, #000 2.4em); mask-image: linear-gradient(#0000 0.3em, #000 2.4em); }
+.rq-detail.more-above.more-below { -webkit-mask-image: linear-gradient(#0000 0.3em, #000 2.4em, #000 calc(100% - 2.6em), #0000 calc(100% - 0.3em)); mask-image: linear-gradient(#0000 0.3em, #000 2.4em, #000 calc(100% - 2.6em), #0000 calc(100% - 0.3em)); }
 .rq-scroll { overflow-y: auto; min-height: 0; padding: 0.4em; margin: -0.4em; }
 .rq-h { color: #ffe9a0; font-weight: 800; letter-spacing: 0.15em; font-size: 0.85em; margin: 0 0 0.6em; display: flex; justify-content: space-between; }
 .rq-h span { color: #9aa68a; font-weight: 400; letter-spacing: 0; }
@@ -365,6 +375,59 @@ export class Menu {
   /** Call every frame. Keeps the live preview of the rat moving. */
   update(dt: number): void {
     if (this.open_ && this.screen === 1) this.host.preview?.tick(dt);
+  }
+
+  /**
+   * Moves what is written in the DETAILS card up or down, when there is more of it than fits (the right stick, or R
+   * and F). `by`: how far, in heights of the card; more than nothing is down. Choosing something else starts it at
+   * the top again.
+   */
+  scroll(by: number): void {
+    if (!this.open_ || !by) return;
+    const el = this.detail();
+    if (!el) return;
+    const room = Math.max(0, el.scrollHeight - el.clientHeight);
+    el.scrollTop = Math.max(0, Math.min(room, el.scrollTop + by * el.clientHeight));
+    this.markMore();
+  }
+
+  /** The DETAILS card of the screen that is up, if it has one. */
+  private detail(): HTMLElement | null {
+    return (this.root.querySelector?.('.rq-detail') as HTMLElement | null | undefined) ?? null;
+  }
+
+  /** Whether there is more of the details below what shows, and above it. (For the markers; and for the tests.) */
+  more(): { below: boolean; above: boolean } {
+    const el = this.detail();
+    if (!el) return { below: false, above: false };
+    return { below: el.scrollHeight - el.clientHeight - el.scrollTop > 2, above: el.scrollTop > 2 };
+  }
+
+  /** Shows or hides the "more" markers on the DETAILS card, and the words for it in the help line. */
+  private markMore(): void {
+    const m = this.more();
+    const set = (q: string, on: boolean): void => {
+      const el = this.root.querySelector?.(q) as { hidden: boolean } | null | undefined;
+      if (el) el.hidden = !on;
+    };
+    set('.rq-more', m.below);
+    set('.rq-less', m.above);
+    set('.rq-readon', m.below || m.above);
+    const card = this.detail();
+    card?.classList?.toggle?.('more-below', m.below);
+    card?.classList?.toggle?.('more-above', m.above);
+    // The markers sit on the card's own lower and upper edges, wherever in its column the card is.
+    if (card && typeof card.offsetTop === 'number') {
+      const at = (q: string, y: number): void => {
+        const el = this.root.querySelector?.(q) as HTMLElement | null | undefined;
+        if (el?.style) {
+          el.style.top = `${y}px`;
+          el.style.left = `${card.offsetLeft + card.offsetWidth / 2}px`;
+        }
+      };
+      at('.rq-more', card.offsetTop + card.offsetHeight);
+      at('.rq-less', card.offsetTop);
+    }
   }
 
   /** A pad, keyboard or screen-tap command. */
@@ -631,6 +694,9 @@ export class Menu {
 
     let body = '';
     let help = helpLine([[['tabPrev', 'tabNext'], 'change screen'], ['nav', 'choose'], ['confirm', 'select'], ['back', 'close']]);
+    // What moves the details when they do not fit: the right stick, or R and F. (A finger just drags them.)
+    const device = lastDevice();
+    const reader = device === 'touch' ? '' : device === 'keyboard' ? keyChip('#R') + keyChip('#F') : prompt('look');
     if (this.screen === 0) body = this.itemsScreen();
     else if (this.screen === 1) {
       body = this.equipScreen();
@@ -654,12 +720,20 @@ export class Menu {
       </div>
       <div></div>
       <div class="rq-panel${slide}">${body}</div>
-      <div class="rq-help">${help}</div></div>`;
+      <div class="rq-help">${help}${reader ? `<span class="rq-readon" hidden>${pair(reader, 'read on')}</span>` : ''}</div></div>`;
     // The live preview is one persistent canvas that gets moved into the freshly drawn page.
     const spot = this.root.querySelector?.('[data-preview]');
     if (spot && this.host.preview) spot.appendChild(this.host.preview.canvas);
     this.root.querySelector?.('.rq-lv.sel')?.scrollIntoView?.({ block: 'nearest' });
     this.root.querySelector?.('.rq-acts .rq-btn.sel')?.scrollIntoView?.({ block: 'nearest' });
+    // The DETAILS card: markers for when there is more of it than fits, kept right as it is moved by any means.
+    const card = this.detail();
+    const col = card?.parentElement;
+    if (card && col?.insertAdjacentHTML) {
+      col.insertAdjacentHTML('beforeend', `<div class="rq-more" hidden>&#9660; ${reader}more</div><div class="rq-less" hidden>&#9650;</div>`);
+      card.addEventListener?.('scroll', () => this.markMore());
+      this.markMore();
+    }
   }
 
   private tile_(it: ItemDef, selected: boolean, attrs: string): string {
