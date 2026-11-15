@@ -13,8 +13,12 @@
  *   A door he has already been through stays open whatever it asks now (main.ts, `doorOpen`): raising a door must
  *   not shut a world on a save that had got there.
  *   The shop: seven pieces of gear, each a trade (something gained, something given up). All of it costs about four
- *   fifths of the game's crumbs (117 of 147) and just over half its caps (25 of 45), so a thorough player can have
+ *   fifths of the game's crumbs (117 of 147) and three fifths of its caps (25 of 42), so a thorough player can have
  *   everything, but not out of the first world alone.
+ *   "Crumbs" here is what the cheese is WORTH. Since 2026-11-15 the Great Cistern's cheese is three hunks worth eight
+ *   each in place of twenty-four crumbs (the owner: fewer things, each one earned), so the prices did not have to move.
+ *   When another world's crumbs are traded for hunks, keep what they are worth the same and nothing here changes. Caps
+ *   are one each: the Cistern has five now where it had eight; cut many more and the caps prices will want looking at.
  */
 export const BALANCE = {
   doors: { foundry: 5, hollows: 12, keep: 25 },

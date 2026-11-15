@@ -284,6 +284,41 @@ His words: the left stick "also messes with the camera", worst in wall-jump stre
 - Tests: tests/moves.ts ("Wall to wall", 8 checks; "The view", 3). The chimney climbs in tests/cistern.ts and tests/keep.ts still pass unchanged.
 - Not done: nobody has played it. If the carry feels too sticky, shorten `wallChainTime`; 0 turns the whole thing off.
 
+## The Cistern's things to find (2026-11-15: the first level done to the owner's note on collectibles)
+His note is in START-HERE ("The owner on collectibles and wall jumps"): fewer, each one earned by a piece of movement,
+no trails, no jumping past the way a thing is meant to be got, and far more wall jumps.
+- **What there is now**: five bottle caps and three hunks of cheese (24 crumbs and 8 caps before). None is on the floor
+  or in a crate, and no two are within twelve of each other.
+  - caps: the tallest of the Teeth; the perch at the top of the tower's chimney; the keep in the Bastion (a fight);
+    the top of the CLEFT (new: two walls 2.2 apart standing by themselves in the north-west, ten high, kicked up from
+    the floor); the top of the FLUE (new: a wall on the pump house roof four units in from the hall's east wall, seven
+    up from the roof, kicked up wall to wall).
+  - hunks: the OUTRIGGER (new: a slab level with the spiral's last slab and nine north of it, a full double jump);
+    the roof of the old drain's room (onto the Bastion's south wall, west along the top of it, a hop off its end);
+    the ledge at the end of the WINCH (new, north-east: a lift up nine to a perch, a slider from beside the perch ten
+    north, and a jump up three to a ledge on the east wall; the double jump has to come early or he is under the
+    ledge by then).
+  - So the Cistern has three wall-kick climbs now (it had one) and one ride on moving platforms (it had none).
+- **A hunk of cheese** is a crumb with `worth` (collectibles.ts; `props.worth` on a level piece). `tracker.worth()`
+  is what the purse counts; `tracker.count()` still counts things (the HUD says 0/3; the pause menu says "Hunks of
+  cheese"). Drawn at twice a crumb's size (`HUNK_LOOK`), with the crumb's note and a flourish after it. The shop's
+  prices did not move: the Cistern's cheese is worth 24, as it was. The editor cannot set `worth` yet.
+- **The caps wedge** is "Five Bottle Caps" and its hint names the five places. Finch has a line about the Cleft.
+- **Moved to close short cuts** (each found by the checker with the route taken away): the Outrigger was first hung
+  off the seventh slab over the bridge, and could be got from the grand stairs with a running double jump and a
+  grab; the second of the Teeth stood a unit nearer the old drain's room, and its roof could be got from it (the roof
+  is also half a unit higher now: 7).
+- **Tests**: tests/cistern.ts (41): each route played by the real controller at more than one timing, with the thing
+  picked up at the end; each route's key piece taken away (the Cleft's second wall, the Flue's wall, the spiral, the
+  Winch's slider, its lift, the Bastion, the Teeth) and that thing, and only that thing, then out of reach; the two
+  old short cuts shown to have been real. tests/wedges.ts and tests/balance.ts follow (balance counts worth).
+- **Old saves**: the hunks are new ids, so nobody has them already; the 24 crumbs an old save picked up there no
+  longer count (the purse never goes below nothing). The five caps keep the ids `cap:01` to `cap:05`, so an old save
+  that had those has them still, wherever they now are.
+- **Not done**: nobody has played it. The other fifteen levels still have their trails. Whether eight is too few for
+  a hall this size, and whether the Winch's wait (six seconds or so on the perch) is tedious, are for a player to
+  say. The crate yard, the moat stone, the pump house roof and the cliffs' third tier now hold nothing.
+
 ## The view when something is behind him (2026-11-15)
 Seen while recording the ant pikemen beside a brazier in the Hollows: the view "closed right in". A brazier is a
 solid box 0.8 wide and 1.1 high, and the view was one line from his chest to where it wanted to be: anything that

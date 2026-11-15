@@ -1038,8 +1038,8 @@ function startGame(): void {
     let crumbs = 0;
     let caps = 0;
     for (const l of LEVELS) {
-      crumbs += tracker.count(l.id, 'crumb').have;
-      caps += tracker.count(l.id, 'cap').have;
+      crumbs += tracker.worth(l.id, 'crumb').have;
+      caps += tracker.worth(l.id, 'cap').have;
     }
     return { crumbs, caps };
   });
@@ -1979,7 +1979,11 @@ function startGame(): void {
     if (got.length) {
       collectVisuals.collected(got);
       for (const d of got) discoveries.add(`find:${d.kind}`);
-      for (const d of got) audio.play(d.kind === 'relic' ? 'relic' : d.kind === 'cap' ? 'cap' : 'crumb', { vol: 0.8, priority: 5 });
+      for (const d of got) {
+        audio.play(d.kind === 'relic' ? 'relic' : d.kind === 'cap' ? 'cap' : 'crumb', { vol: 0.8, priority: 5 });
+        // (A hunk of cheese: the crumb's note, and a flourish after it.)
+        if (d.kind === 'crumb' && (d.worth ?? 1) > 1) audio.play('item', { vol: 0.7, priority: 5 });
+      }
       if (got.length) rumble.collect();
     }
 
@@ -2106,7 +2110,9 @@ function startGame(): void {
       goals: goals.status(aliveCount()),
       collectibles: (['crumb', 'cap', 'relic'] as const).map((k) => {
         const c = tracker.count(cur.id, k);
-        return { label: { crumb: 'Cheese crumbs', cap: 'Bottle caps', relic: 'Golden relics' }[k], icon: k, have: c.have, total: c.total };
+        // (Where the cheese is in hunks, each worth several crumbs, it says so.)
+        const hunks = k === 'crumb' && cur.collectibles.some((x) => x.kind === 'crumb' && (x.worth ?? 1) > 1);
+        return { label: hunks ? 'Hunks of cheese' : { crumb: 'Cheese crumbs', cap: 'Bottle caps', relic: 'Golden relics' }[k], icon: k, have: c.have, total: c.total };
       }),
     }),
     levels: () =>

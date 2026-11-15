@@ -13,7 +13,8 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const inWorld = (w: string) => LEVELS.filter((l) => l.world === w);
 const wedges = (w: string) => inWorld(w).reduce((n, l) => n + (l.wedges?.length ?? 0), 0);
-const count = (w: string, kind: string) => inWorld(w).reduce((n, l) => n + l.collectibles.filter((c) => c.kind === kind).length, 0);
+// (What they are worth in his purse: a hunk of cheese counts as several crumbs.)
+const count = (w: string, kind: string) => inWorld(w).reduce((n, l) => n + l.collectibles.filter((c) => c.kind === kind).reduce((m, c) => m + (c.worth ?? 1), 0), 0);
 
 // The worlds in the order their doors open.
 const order = [...HUB_DOORS].sort((a, b) => a.need - b.need).map((d) => d.to!);

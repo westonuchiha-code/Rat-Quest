@@ -47,14 +47,19 @@ export function crate(x: number, z: number): Box {
 /** Hands out collectible ids like "caps:cap:03" and collects the definitions. */
 export class Items {
   readonly list: CollectibleDef[] = [];
-  private readonly counts: Record<CollectibleKind, number> = { crumb: 0, cap: 0, relic: 0 };
+  private readonly counts: Record<CollectibleKind | 'hunk', number> = { crumb: 0, cap: 0, relic: 0, hunk: 0 };
 
   constructor(private readonly prefix: string) {}
 
-  add(kind: CollectibleKind, x: number, y: number, z: number, inCrate?: number): string {
-    this.counts[kind]++;
-    const id = `${this.prefix}:${kind}:${String(this.counts[kind]).padStart(2, '0')}`;
-    this.list.push({ id, kind, x, y, z, ...(inCrate === undefined ? {} : { crate: inCrate }) });
+  /**
+   * `worth`: a crumb that counts as more than one is a hunk of cheese. Hunks are numbered by themselves (`...:hunk:01`),
+   * so a level that trades its crumbs for hunks does not hand an old save the new ones already picked up.
+   */
+  add(kind: CollectibleKind, x: number, y: number, z: number, inCrate?: number, worth = 1): string {
+    const name = kind === 'crumb' && worth > 1 ? 'hunk' : kind;
+    this.counts[name]++;
+    const id = `${this.prefix}:${name}:${String(this.counts[name]).padStart(2, '0')}`;
+    this.list.push({ id, kind, x, y, z, ...(inCrate === undefined ? {} : { crate: inCrate }), ...(worth > 1 ? { worth } : {}) });
     return id;
   }
 }

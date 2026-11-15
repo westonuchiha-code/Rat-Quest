@@ -11,7 +11,19 @@
  *   NORTH  The Drain Cliffs: three tiers up the north wall (jumps and grabs), then a jump-and-grab up to the High Drain.
  *   EAST   The Pump House, shut. Its gate opens when both floor plates are pressed: one on its roof (ride the lift),
  *          one up on the cliffs.
- *   Bottle caps are on every landmark, in the crate yard, on the Teeth (pillars to hop) and in the moat.
+ *   NW     The Cleft: two tall walls close together, standing by themselves. Wall-kick up between them from the floor.
+ *   NE     The Winch: a lift up to a perch, and from the perch a slider that carries him north to a ledge on the wall.
+ *
+ *   THINGS TO FIND (the owner, 2026-11-15: fewer of them, each one earned by a piece of movement, none on a trail):
+ *   five bottle caps and three hunks of cheese (each worth 8 crumbs: what the 24 crumbs that used to lie about were).
+ *     caps:  the tallest of the Teeth (pillars to hop); the perch at the top of the tower's chimney (wall kicks); the
+ *            keep in the Bastion (a fight); the top of the Cleft (wall kicks, from the floor); the Flue on the pump
+ *            house roof (wall kicks, wall to wall across four units).
+ *     hunks: the Outrigger (a slab nine units out from the spiral's last: a full double jump); the roof of the old
+ *            drain's room (along the top of the Bastion's wall and a hop off its end); the ledge at the end of the
+ *            Winch's slider.
+ *   tests/cistern.ts plays each route with the real controller, and takes each route's key piece away to see that
+ *   the thing cannot then be got. Keep both when anything here moves.
  *
  * Room: x -48..48, z -48..48; north is -z. One jump climbs about 2.5, the double jump about 4.75, and a ledge grab adds
  * about 1 more. A wall kick climbs between two walls close together.
@@ -44,6 +56,26 @@ const DRAIN = 17;
 const FORT = 3;
 const FORT_WALL = 6.5;
 const PUMP_ROOF = 8.5;
+
+/** The Cleft (north-west): two walls 2.2 apart, standing by themselves, this high. The cap is on the north one. */
+export const CLEFT = { x0: -40, x1: -35, northZ0: -32.5, northZ1: -30, southZ0: -27.8, southZ1: -26.6, top: 10 };
+/** The Flue, on the pump house roof: a wall four units in from the hall's east wall, this high. The cap is on it. */
+export const FLUE = { x0: 41.6, x1: 44, z0: -6, z1: -1, top: 15.5 };
+/**
+ * The Outrigger: a slab by itself out over the north moat, level with the spiral's last slab (11 up) and nine north of
+ * it. (It was first hung off the seventh slab, over the bridge: but from the lower steps of the grand stairs a running
+ * double jump and a grab reached it, with no need of the spiral at all.)
+ */
+export const OUTRIGGER = { x0: -5.43, x1: -2.23, z0: -19.17, z1: -15.97, top: 11 };
+/** The Winch (north-east): a lift up to a perch, a slider from beside the perch north to under a ledge on the east wall. */
+export const WINCH = {
+  lift: { x0: 36, x1: 39, z0: -25, z1: -22, travel: 9 },
+  perch: { x0: 40.5, x1: 43.5, z0: -25, z1: -22, top: 9 },
+  slider: { x0: 40.5, x1: 43.5, z0: -30, z1: -27, top: 9, travel: 10 },
+  ledge: { x0: 43, x1: 48, z0: -47, z1: -42, top: 12 },
+};
+/** The old drain's sealed room: its roof (the hunk is on it), reached along the Bastion's south wall. */
+export const DRAIN_ROOF = { x: -45.5, z: 19.5, top: 7 };
 
 /**
  * The spiral round the tower: floating slabs, each a little higher, winding round so the last one sits just west of the
@@ -87,8 +119,10 @@ const course: CustomLevel = {
     box('wall', -48, 14.5, -42.5, 15, 6),
     box('wall', -48, DRAIN_ROOM_Z1, -42.5, DRAIN_ROOM_Z1 + 0.5, 6),
     box('wall', DRAIN_X1, 15, -42.5, DRAIN_ROOM_Z1, 6),
-    box('platform', -48, 14.5, -42.5, DRAIN_ROOM_Z1 + 0.5, 6.5, { bottom: 6 }),
-    at('lamp', -45.5, 18, 5), at('crumb', -45.5, 16.5),
+    // (Its roof is half a unit higher than the Bastion's wall beside it: from the wall it is a hop; from the second of
+    // the Teeth, which a running double jump and a grab used to reach it from, it is now out of reach.)
+    box('platform', -48, 14.5, -42.5, DRAIN_ROOM_Z1 + 0.5, DRAIN_ROOF.top, { bottom: 6 }),
+    at('lamp', -45.5, 18, 5),
     box('floor', 18, -18, 48, 18, 0),
     box('tile', -10, -10, 10, 10, 0),
     box('water', -18, 10, 18, 18, -0.85),
@@ -146,30 +180,47 @@ const course: CustomLevel = {
     at('plate', 18, -45, TIER2),
 
     // ---- South-west: the Teeth (pillars to hop, a cap on the tallest) ----
-    box('pillar', -40, 34, -38, 36, 2), box('pillar', -36, 30, -34, 32, 3.5), box('pillar', -31, 33, -29, 35, 5),
+    // (The second stood a unit nearer the old drain's room, and from it a running double jump and a grab reached that
+    // room's roof: the hunk up there is for the walk along the Bastion's wall.)
+    box('pillar', -40, 34, -38, 36, 2), box('pillar', -35, 31, -33, 33, 3.5), box('pillar', -31, 33, -29, 35, 5),
     box('pillar', -27, 28, -25, 30, 6.5), box('pillar', -22, 32, -20, 34, 8), box('pillar', -26, 23, -24, 25, 9.5),
 
     // ---- South-east: the crate yard ----
-    at('crate', 26, 26), at('crate', 27, 26), at('crate', 26, 26, 1), at('crate', 30, 30, 0, { props: { item: 'cap' } }),
+    at('crate', 26, 26), at('crate', 27, 26), at('crate', 26, 26, 1), at('crate', 30, 30),
     at('crate', 31, 30), at('crate', 34, 25), at('crate', 34, 25, 1), at('crate', 34, 25, 2),
     at('barrel', 38, 33), at('barrel', 39, 33), at('barrel', 38, 34),
 
-    // ---- Bottle caps ----
+    // ---- North-west: the Cleft. Two walls by themselves, 2.2 apart: wall-kick up between them from the floor. ----
+    box('wall', CLEFT.x0, CLEFT.northZ0, CLEFT.x1, CLEFT.northZ1, CLEFT.top),
+    box('wall', CLEFT.x0, CLEFT.southZ0, CLEFT.x1, CLEFT.southZ1, CLEFT.top),
+    at('lamp', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.northZ1 + CLEFT.southZ0) / 2, CLEFT.top + 3),
+
+    // ---- The Flue, on the pump house roof: a wall four units in from the hall's east wall. Kick from one to the other. ----
+    box('wall', FLUE.x0, FLUE.z0, FLUE.x1, FLUE.z1, FLUE.top, { bottom: PUMP_ROOF }),
+
+    // ---- The Outrigger: a slab by itself, a full double jump north from the spiral's last slab ----
+    box('platform', OUTRIGGER.x0, OUTRIGGER.z0, OUTRIGGER.x1, OUTRIGGER.z1, OUTRIGGER.top, { bottom: OUTRIGGER.top - 0.5 }),
+    at('chain', (OUTRIGGER.x0 + OUTRIGGER.x1) / 2, (OUTRIGGER.z0 + OUTRIGGER.z1) / 2, OUTRIGGER.top + 6),
+
+    // ---- North-east: the Winch. Ride the lift up, step to the perch, catch the slider when it comes, ride it north,
+    // and jump up to the ledge. ----
+    box('lift', WINCH.lift.x0, WINCH.lift.z0, WINCH.lift.x1, WINCH.lift.z1, 0, { props: { move: 'up', travel: WINCH.lift.travel, speed: 2.5, pause: 2 } }),
+    box('platform', WINCH.perch.x0, WINCH.perch.z0, WINCH.perch.x1, WINCH.perch.z1, WINCH.perch.top, { bottom: WINCH.perch.top - 0.5 }),
+    box('lift', WINCH.slider.x0, WINCH.slider.z0, WINCH.slider.x1, WINCH.slider.z1, WINCH.slider.top, { props: { move: 'n', travel: WINCH.slider.travel, speed: 2.2, pause: 1.2 } }),
+    box('platform', WINCH.ledge.x0, WINCH.ledge.z0, WINCH.ledge.x1, WINCH.ledge.z1, WINCH.ledge.top, { bottom: WINCH.ledge.top - 0.5 }),
+    at('chain', 42, -23.5, WINCH.perch.top + 6), at('lamp', 45.5, -44.5, WINCH.ledge.top + 3),
+
+    // ---- Bottle caps: five, each at the end of something ----
     at('cap', -25, 24, 9.5),
     at('cap', -43, 2, FORT + 3),
-    at('cap', 22, -46.5, TIER3),
     at('cap', 0, -6.2, PERCH),
-    at('cap', 14, 0, 0.3),
-    at('cap', -9, 45, 0),
-    at('cap', 44, 10, PUMP_ROOF),
+    at('cap', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.northZ0 + CLEFT.northZ1) / 2, CLEFT.top),
+    at('cap', (FLUE.x0 + FLUE.x1) / 2, (FLUE.z0 + FLUE.z1) / 2, FLUE.top),
 
-    // ---- Cheese: trails along each route ----
-    at('crumb', 0, 29.5, 3.2), at('crumb', 0, 33.5, 6.4), at('crumb', 0, 22), at('crumb', 0, 14),
-    ...[1, 3, 5, 7, 9].map((i) => at('crumb', SPIRAL[i].x, SPIRAL[i].z, SPIRAL[i].top)),
-    at('crumb', -20, 0), at('crumb', -23.5, 0, 1.5), at('crumb', -34, 0, FORT),
-    at('crumb', 0, -36), at('crumb', -10, -40, TIER1), at('crumb', 10, -44, TIER2), at('crumb', 0, -46.5, TIER3),
-    at('crumb', 24, 0), at('crumb', 32.5, -13), at('crumb', 34, 4, PUMP_ROOF),
-    at('crumb', -38, 35, 2), at('crumb', -30, 40), at('crumb', 34, 40), at('crumb', 22, 20),
+    // ---- Cheese: three hunks, each worth eight crumbs, each at the end of something (there are no trails) ----
+    at('crumb', (OUTRIGGER.x0 + OUTRIGGER.x1) / 2, (OUTRIGGER.z0 + OUTRIGGER.z1) / 2, OUTRIGGER.top, { props: { worth: 8 } }),
+    at('crumb', DRAIN_ROOF.x, DRAIN_ROOF.z, DRAIN_ROOF.top, { props: { worth: 8 } }),
+    at('crumb', 45.5, -44.5, WINCH.ledge.top, { props: { worth: 8 } }),
 
     // ---- Torches either side of the way out, gauges on the pump house ----
     at('torch', -3.5, 47.7, BALCONY + 2.5, { dir: 's' }), at('torch', 3.5, 47.7, BALCONY + 2.5, { dir: 's' }),
@@ -187,6 +238,7 @@ const course: CustomLevel = {
       'Chirp! These cliffs go all the way up to the old drain.',
       'Too high to jump onto? Jump anyway, and as you fall past the edge, grab it!',
       'The plate up on the second ledge works something in the pump house, I think.',
+      'See those two walls standing by themselves in the corner, west of here? Jump at one and kick off it. Then off the other. Up and up.',
     ] } }),
 
     // ---- Lights and dressing: each landmark has its own colour ----
@@ -214,7 +266,7 @@ export const CISTERN_WEDGES: WedgeDef[] = [
   { id: 'summit', name: 'Top of the Tower', hint: 'Climb the spiral, then wall-kick up the chimney behind the tower.', x: 0, y: SUMMIT, z: 0, appears: null },
   { id: 'bastion', name: 'Beasts of the Bastion', hint: 'Beat every beast in the west fort.', x: -34, y: FORT, z: 0, appears: { type: 'defeat', label: 'Beat the beasts' } },
   { id: 'drain', name: 'The High Drain', hint: 'Climb the north cliffs. The last one is a jump and a grab.', x: -17.5, y: DRAIN, z: -46.5, appears: null },
-  { id: 'caps', name: 'Eight Bottle Caps', hint: 'One on every landmark, one in a crate, one in the moat, one on the Teeth.', x: 6, y: BALCONY, z: 40, appears: collect('cap', 'Find all eight caps') },
+  { id: 'caps', name: 'Five Bottle Caps', hint: 'On the tallest of the Teeth, at the top of the tower\'s chimney, in the keep of the fort, up the Cleft in the north-west corner, and up the Flue on the pump house roof.', x: 6, y: BALCONY, z: 40, appears: collect('cap', 'Find all five caps') },
   { id: 'under', name: 'The Undercroft', hint: 'Sometimes the best view hides what is underneath you.', x: 0, y: 0, z: 44, appears: null },
   { id: 'current', name: 'Against the Current', hint: 'The old drain past the Teeth runs too hard to swim. Something slick round your neck might help.', x: -45.5, y: 0, z: 18, appears: null },
 ];

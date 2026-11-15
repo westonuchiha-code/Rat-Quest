@@ -50,6 +50,11 @@ export interface ItemDressing {
   floorAt?: (x: number, y: number, z: number) => number | null;
 }
 
+/** A hunk of cheese (a crumb worth more than one): bigger, slower, brighter. */
+export const HUNK_LOOK: (typeof ITEM_LOOK)['crumb'] = { scale: 2.1, turn: 1.2, shadow: 0.7, twinkleEvery: 2.2, twinkle: 0.2, reach: 0.3, sparks: 0xffe680, sparkCount: 12 };
+/** How a thing carries itself: its kind's way, or a hunk's. */
+export const lookOf = (def: CollectibleDef): (typeof ITEM_LOOK)['crumb'] => (def.kind === 'crumb' && (def.worth ?? 1) > 1 ? HUNK_LOOK : ITEM_LOOK[def.kind]);
+
 export class CollectibleVisuals {
   readonly group = new THREE.Group();
   readonly sparks = new Sparks();
@@ -73,7 +78,7 @@ export class CollectibleVisuals {
     this.group.add(this.sparks.group);
 
     level.items.forEach((def, index) => {
-      const look = ITEM_LOOK[def.kind];
+      const look = lookOf(def);
       const root = new THREE.Group();
       root.position.set(def.x, def.y, def.z);
       const spin = new THREE.Mesh(this.geometries[def.kind], this.material);
@@ -116,7 +121,7 @@ export class CollectibleVisuals {
       const e = this.entries.get(def.id);
       if (!e || e.pop >= 0) continue;
       e.pop = 0;
-      const look = ITEM_LOOK[def.kind];
+      const look = lookOf(def);
       this.sparks.burst(e.root.position.x, e.root.position.y, e.root.position.z, look.sparks, look.sparkCount, def.kind === 'relic' ? 3 : 2.2, def.kind === 'relic' ? 0.22 : 0.15);
     }
   }
@@ -125,7 +130,7 @@ export class CollectibleVisuals {
   update(dt: number, time: number, face?: THREE.Quaternion): void {
     this.sparks.update(dt, face);
     for (const e of this.entries.values()) {
-      const look = ITEM_LOOK[e.def.kind];
+      const look = lookOf(e.def);
       if (e.pop >= 0) {
         e.pop += dt;
         const k = Math.min(1, e.pop / POP_TIME);

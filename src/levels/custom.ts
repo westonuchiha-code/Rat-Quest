@@ -50,6 +50,8 @@ export interface PieceProps {
   lines?: string[];
   /** A crate or barrel can hold one collectible. */
   item?: CollectibleKind;
+  /** A crumb: how many it counts as (a hunk of cheese, at the end of a route, in place of a trail of crumbs). */
+  worth?: number;
   /** A crate bound in iron: only a heavy blade breaks it. */
   tough?: boolean;
   /** An enemy that comes back after it is beaten. */
@@ -378,7 +380,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'crumb':
       case 'cap':
       case 'relic':
-        items.add(p.t, cx, p.top + 0.5, cz);
+        items.add(p.t, cx, p.top + 0.5, cz, undefined, p.t === 'crumb' ? Math.max(1, Math.round(p.props?.worth ?? 1)) : 1);
         break;
       case 'roach':
       case 'toad':

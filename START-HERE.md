@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,374 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,411 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -201,10 +201,24 @@ What that means for any work on a level from now on:
   route.
 - Build wall-jump routes: chimneys (two walls 2 to 2.5 apart) and wall-to-wall kicks across a gap.
 
-How things stand (counted 2026-11-15): 154 crumbs, 45 bottle caps and 10 relics across the game (24 crumbs in the
-Cistern, 19 in the Foundry, 18 in the Keep, 17 in the Hollows). There are TWO wall-jump chimneys in the whole game:
-behind the Cistern's tower, and up to the throne in the Keep. Several wedges ask for "all the caps" of a level, and
-crumbs are what the shop is paid in (`BALANCE`), so cutting them means re-pricing: do both together.
+How things stood when he said it (counted 2026-11-15): 154 crumbs, 45 bottle caps and 10 relics across the game (24
+crumbs in the Cistern, 19 in the Foundry, 18 in the Keep, 17 in the Hollows), and TWO wall-jump chimneys in the whole
+game: behind the Cistern's tower, and up to the throne in the Keep.
+
+**The Great Cistern is done to this rule (2026-11-15), as the pattern for the rest** (HANDOFF, "The Cistern's things
+to find"). Eight things where there were thirty-two: five caps and three HUNKS of cheese. How to do the next level:
+- A crumb can be WORTH more than one (`props: { worth: 8 }` on the piece): that is a hunk of cheese, drawn big, with
+  an id of its own (`...:hunk:01`). Trade a level's crumbs for a few hunks worth the same in all and the shop's prices
+  do not have to move. Caps are one each; a wedge that asks for "all the caps" follows the count by itself, but its
+  name and hint say the number: change them.
+- For EVERY thing: play its route in the level's test with the real controller (and pick the thing up at the end),
+  and take the route's key piece away and ask `unreachable()` whether it can still be got. tests/cistern.ts is the
+  pattern. That second check found two short cuts in the first hour (a slab reachable from the grand stairs, a roof
+  reachable from one of the Teeth); each was closed by moving something a unit or two.
+- Wall kicks: a chimney 2.2 wide gains about 1.8 a kick, one 4 wide about 2.7 (he is carried across). Give him a
+  landing at the top at least 2.4 thick. Keep a chimney five or more from any other wall, or the other wall makes a
+  second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
+The other fifteen levels are as they were.
 
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:

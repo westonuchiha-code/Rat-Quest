@@ -12,6 +12,11 @@ export interface CollectibleDef {
   z: number;
   /** If set, the item sits inside that crate (by its order in the level) and cannot be taken until it breaks. */
   crate?: number;
+  /**
+   * How many it counts as in his purse (1 if not set). A crumb worth more is a HUNK of cheese: one thing, at the end
+   * of a route, in place of a trail of crumbs along it.
+   */
+  worth?: number;
 }
 
 export interface LevelDef {
@@ -137,6 +142,19 @@ export class CollectibleTracker {
   count(levelId: string, kind?: CollectibleKind): Count {
     const level = this.levels.find((l) => l.id === levelId);
     return level ? this.tally(level.items, kind) : { have: 0, total: 0 };
+  }
+
+  /** What he has picked up in a level is worth, and what all of it there is worth: each item counted at its `worth`. */
+  worth(levelId: string, kind: CollectibleKind): Count {
+    const level = this.levels.find((l) => l.id === levelId);
+    let have = 0;
+    let total = 0;
+    for (const item of level?.items ?? []) {
+      if (item.kind !== kind) continue;
+      total += item.worth ?? 1;
+      if (this.collected.has(item.id)) have += item.worth ?? 1;
+    }
+    return { have, total };
   }
 
   /** Counts across all levels. */

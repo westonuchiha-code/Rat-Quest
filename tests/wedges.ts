@@ -17,14 +17,14 @@ const g = new GoalTracker(def, (k) => counts[k]);
 const idx = (id: string) => def.wedges!.findIndex((w) => w.id === id);
 
 check("six wedges in the main hall (one a secret), each with its own name", def.wedges!.length === 6 && new Set(def.wedges!.map((w) => w.name)).size === 6);
-check('eight bottle caps in the course', counts.cap.total === 8, `${counts.cap.total}`);
+check('five bottle caps in the course (there were eight: the owner asked for fewer, each one earned)', counts.cap.total === 5, `${counts.cap.total}`);
 check('the tower, drain and undercroft wedges are out from the start', ['summit', 'drain', 'under'].every((id) => g.wedgeOut(idx(id))));
 check('the bastion wedge waits for the beasts', !g.wedgeOut(idx('bastion'), def.enemies.length));
 g.kills = def.enemies.length;
 check('...and appears when they are all beaten', g.wedgeOut(idx('bastion'), 0));
-check('the caps wedge shows how many caps so far', g.status()[idx('caps')].text === '0/8');
-counts.cap.have = 8;
-check('...and appears with the eighth cap', g.wedgeOut(idx('caps')));
+check('the caps wedge shows how many caps so far', g.status()[idx('caps')].text === '0/5');
+counts.cap.have = 5;
+check('...and appears with the fifth cap', g.wedgeOut(idx('caps')));
 check('no wedge yet: the door stays shut', !g.mainDone());
 g.earned.add('summit');
 check('one wedge opens the door', g.mainDone());
