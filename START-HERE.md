@@ -220,6 +220,25 @@ to find"). Eight things where there were thirty-two: five caps and three HUNKS o
   second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
 The other fifteen levels are as they were.
 
+## Research the owner has asked for (2026-11-15: on the list, not yet begun)
+He asked for these to be added to the list. Each is in-depth research from real sources (interviews with the people
+who made the games, postmortems, design analyses), written up in the repo with its sources, and each write-up ends
+with what it means for THIS game: things to do, not just things learned. Suggested home: `docs/research/<game>.md`.
+1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
+   the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
+2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
+   control.
+3. **Kingdom Hearts 2**: movement and combat only (he does not care about its menus). This goes WITH the Dark Souls
+   research, as its counterweight. His words on why, in short: he wants "more of a Dark Souls philosophy" but "faster,
+   more sort of flashing movement". Do not get "locked down on the slowness" of Dark Souls: lean too far that way and
+   "we're going to sort of ruin the Mario 64 vibe". If Mario 64 had the combat of a modern action RPG it would be
+   nearer Kingdom Hearts 2, which is very fast, most of all late in the game as the character grows. Take from Dark
+   Souls how it APPROACHES combat (he thinks the game already does this "pretty well"), not its pace.
+4. **The Legend of Zelda: Ocarina of Time**: its combat, level design and platforming. He sees "a lot of parallels
+   with the game we're making" and expects it to be useful for "basically everything".
+The first bears on the level work now under way (the Cistern is done; the Foundry, the Hollows and the Keep are
+not): do it before the next level is reworked.
+
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:
 1. **Hero animations must match his actions.** Audited 2026-11-14 on the model sheet's `#moves` page (25 moves, played
