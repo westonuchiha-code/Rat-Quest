@@ -896,7 +896,9 @@ export class PlayerController {
       this.dodgeSpeed = TUNING.dodge.back.speed;
     }
     this.dodgeTimer = 0;
-    this.dodgeCooldown = TUNING.dodge.cooldown;
+    // The wait before the next one is counted from when this one ENDS (it used to be counted from its start, and was
+    // no longer than a roll, so there was no wait at all: rolls ran one into the next).
+    this.dodgeCooldown = this.dodgeDuration + TUNING.dodge.cooldown;
     this.jumpBuffer = 0;
     this.comboQueued = false;
   }

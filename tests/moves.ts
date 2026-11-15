@@ -278,5 +278,81 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   check('a ledge he can jump onto is landed on, not hung from', !hung && p.grounded && Math.abs(p.position.y - 1.5) < 0.01, `y ${p.position.y.toFixed(2)}`);
 }
 
+// Rolling: one roll after another, with a beat between them.
+// (The wait before the next roll used to be counted from the start of a roll and was no longer than a roll, so there
+// was none: rolls ran one into the next, faster than running and safe from hits for two thirds of the time. The owner,
+// 2026-11-15: a pause between them, but "don't completely take away the player's ability to roll around".)
+{
+  const cs = [floor];
+  const D = TUNING.dodge;
+  /** Six seconds going north with the roll button mashed (every frame) or left alone. */
+  const go = (mash: boolean): { far: number; starts: number[]; safe: number; open: number[] } => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 50));
+    for (let t = 0; t < 30; t++) p.update(DT, inp({ move: north }), cs);
+    const z0 = p.position.z;
+    const starts: number[] = [];
+    const open: number[] = [];
+    let safe = 0;
+    let was = false;
+    let gap = 0;
+    for (let t = 0; t < 360; t++) {
+      p.update(DT, inp({ move: north, dodgePressed: mash }), cs);
+      const rolling = p.state === 'dodge';
+      if (rolling && !was) {
+        starts.push(t);
+        if (starts.length > 1) open.push(gap);
+        gap = 0;
+      }
+      if (!rolling) gap++;
+      if (p.invulnerable) safe++;
+      was = rolling;
+    }
+    return { far: z0 - p.position.z, starts, safe: safe / 360, open };
+  };
+  const run = go(false);
+  const roll = go(true);
+  const cycle = roll.starts.slice(1).map((t, i) => (t - roll.starts[i]) * DT);
+  check('mashing the roll button, he rolls again and again: he has not lost the roll', roll.starts.length >= 7, `${roll.starts.length} rolls in six seconds`);
+  check('...but each roll starts a roll and a pause after the last one did, not on its heels', cycle.every((c) => Math.abs(c - (D.roll.duration + D.cooldown)) < 0.05) && D.cooldown >= 0.2, `${cycle[0].toFixed(2)} s from one roll to the next (a roll is ${D.roll.duration})`);
+  check('...so between rolls he is on his feet and can be hit, for about a quarter of a second each time', roll.open.every((g) => g * DT > D.cooldown - 0.05 && g * DT < D.cooldown + 0.07), `${(roll.open[0] * DT).toFixed(2)} s`);
+  check('...and hits pass through him for less than half of the time, where it was two thirds', roll.safe < 0.5 && roll.safe > 0.3, `${Math.round(roll.safe * 100)}%`);
+  check('rolling everywhere is no longer much faster than running: within a tenth', roll.far < run.far * 1.1 && roll.far > run.far * 0.95, `${roll.far.toFixed(1)} rolling, ${run.far.toFixed(1)} running, in six seconds`);
+  // A press a little early is kept: he does not have to hit the exact frame the pause ends.
+  {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 50));
+    for (let t = 0; t < 30; t++) p.update(DT, inp({ move: north }), cs);
+    p.update(DT, inp({ move: north, dodgePressed: true }), cs);
+    let t = 1;
+    while (p.state === 'dodge' && t < 200) {
+      p.update(DT, inp({ move: north }), cs);
+      t++;
+    }
+    const ended = t;
+    // (Pressed once, six frames after the roll ended: a tenth of a second, well inside the pause.)
+    let second = -1;
+    for (let k = 0; k < 60 && second < 0; k++) {
+      p.update(DT, inp({ move: north, dodgePressed: k === 6 }), cs);
+      t++;
+      if (p.state === 'dodge') second = t;
+    }
+    check('a press made during the pause is remembered: the next roll comes out the moment the pause is over', second > 0 && Math.abs((second - ended) * DT - D.cooldown) < 0.05, `${((second - ended) * DT).toFixed(2)} s after the first ended`);
+  }
+  // The backstep has the same pause after it.
+  {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 50));
+    for (let t = 0; t < 10; t++) p.update(DT, inp({}), cs);
+    const starts: number[] = [];
+    let was = false;
+    for (let t = 0; t < 240; t++) {
+      p.update(DT, inp({ dodgePressed: true }), cs);
+      const d = p.state === 'dodge';
+      if (d && !was) starts.push(t);
+      was = d;
+    }
+    const c = (starts[1] - starts[0]) * DT;
+    check('the backstep: the same pause after it', starts.length >= 4 && Math.abs(c - (D.back.duration + D.cooldown)) < 0.05, `${c.toFixed(2)} s from one to the next (a backstep is ${D.back.duration})`);
+  }
+}
+
 console.log(failures === 0 ? 'moves: all pass' : `moves: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);

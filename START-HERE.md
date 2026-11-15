@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,453 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,460 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -249,10 +249,9 @@ a move.** Nothing in the game has been changed on the strength of them yet.
   then whole places built on one idea, then everything together; fewer enemies near a puzzle; no reward where it is
   useless. The Water Temple had to be rebuilt late because the hero's numbers changed after its maps were made:
   SETTLE THE JUMP NUMBERS BEFORE REBUILDING MORE LEVELS.
-- *Found in our own code while writing them (checked, true, not yet changed):* the wait before the next roll (0.5 s)
-  starts when a roll STARTS and a roll lasts 0.5 s, so rolls chain back to back: faster than running (7.0 against
-  6.2) and safe from hits for two thirds of each roll. And when a locked-on enemy dies the lock moves to another by
-  itself (`keepTarget`), which turns the view without the right stick.
+- *Found in our own code while writing them:* the wait before the next roll (0.5 s) started when a roll STARTED and
+  a roll lasts 0.5 s, so rolls chained back to back. **Mended 2026-11-15** (see "Rolling" below). Still open: when a
+  locked-on enemy dies the lock moves to another by itself (`keepTarget`), which turns the view without the right stick.
 1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
    the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
 2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
@@ -275,7 +274,9 @@ and then have to grab on the ledge"; "it required skill and I appreciate it". On
 between the walls for the wall jump could be a tiny bit more lenient". Done: a kick's push across went from 7 to 7.5
 (`moves.wallKickPush`), so he reaches the far wall a little sooner and a little higher across a wide gap; a kick's
 HEIGHT is untouched. (That is our reading of "distance between the walls"; if he meant the timing of the press, that
-is `wallKickWindow`, 0.16 s, unchanged.) So:
+is `wallKickWindow`, 0.16 s, unchanged.) He added later the same day: "I'll do some more testing here in the future with
+the sliders", so the numbers are settled for now, not for ever: if he sends slider text ("Copy settings"), make it
+the default and re-run every level test. So:
 - Do NOT lower the double jump or raise the wall kick on the strength of the Mario 64 report. The sets stay in the
   Tweaks panel for comparing, no more.
 - "He can just jump over stuff" is therefore a matter for the LEVELS: anything meant to be earned stands higher than
@@ -318,6 +319,15 @@ LEVELS, ALL_LEVELS or the archive, nothing to collect, its door leads back to th
   Cistern's "five or more from any other wall" was the checker's rule, not the knight's. Until the checker is
   taught, keep walls that are not meant as a chimney NINE or more apart, or joined.
 - The room's own chimneys stand nine clear of one another (`CHIMNEY_CLEAR`), further than a kick carries.
+
+## Rolling (the owner, 2026-11-15)
+His words: "You can add like a pause between the rolls, that's okay ... but don't completely take away the player's
+ability to roll around, cuz even in Dark Souls people do that and it's pretty fun to be able to kind of roll around
+your enemies." So: `dodge.cooldown` is now the pause from one roll (or backstep) ENDING to the next starting, 0.25 s
+(slider: Fighting, "Pause between rolls"). Mashing the button gives a roll every 0.75 s; a press made during the
+pause is kept and comes out when it is over. Hits pass through him 44% of the time while he does that (it was 66%),
+and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
+slow the roll without asking: rolling round an enemy is meant to stay.
 
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:

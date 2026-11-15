@@ -55,7 +55,10 @@ export const TUNING = {
   dodge: {
     roll: { duration: 0.5, speed: 7.0 }, // rolls in the direction you hold
     back: { duration: 0.3, speed: 5.5 }, // backstep when no direction is held
-    cooldown: 0.5,
+    // The pause between one roll (or backstep) ending and the next starting. Short: he can still roll round an enemy,
+    // roll after roll (the owner, 2026-11-15: "don't completely take away the player's ability to roll around"), but
+    // there is a beat between them in which he can be hit.
+    cooldown: 0.25,
     rollSafe: [0.06, 0.72], // the part of the roll (0..1) during which hits pass through him
     backSafe: [0.0, 0.5],
   },

@@ -71,7 +71,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Fighting', path: 'guard.moveMultiplier', label: 'Speed with shield up', min: 0.1, max: 1, step: 0.05 },
   { group: 'Fighting', path: 'dodge.roll.speed', label: 'Roll speed', min: 3, max: 14, step: 0.1 },
   { group: 'Fighting', path: 'dodge.roll.duration', label: 'Roll length (time)', min: 0.2, max: 1, step: 0.02 },
-  { group: 'Fighting', path: 'dodge.cooldown', label: 'Wait between rolls', min: 0, max: 1.5, step: 0.05 },
+  { group: 'Fighting', path: 'dodge.cooldown', label: 'Pause between rolls (from one ending to the next starting)', min: 0, max: 1.5, step: 0.05 },
   { group: 'Fighting', path: 'attack.aimRange', label: 'Swing auto-aim range', min: 0, max: 6, step: 0.1 },
   { group: 'Fighting', path: 'plunge.shockRadius', label: 'Plunge blast size', min: 0.5, max: 5, step: 0.1 },
   { group: 'Fighting', path: 'feel.killSlowSeconds', label: 'Slow-motion on a kill', min: 0, max: 1.5, step: 0.05 },
