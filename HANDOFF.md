@@ -625,8 +625,22 @@ level editor ("Firefly Bomber"), a sticker with a flat icon, 15 sliders under "F
   looked at alone from three sides, and a fight watched in the built game.
 - **Found on the way**: a flier stopped by a ledge under it tried one way only and stuck there (it now slides along
   whatever stops it; the hornet's `moveTo` still has the older form and has not shown the fault).
-- **Not done**: nobody has fought it by hand or heard it; every number is a first guess. Only one is placed. Its fire
-  does nothing to other creatures or to crates.
+- **Two more placed** (the same day). Each is over an empty stretch with a wall along one side and a drop along the
+  other, is not counted by any wedge, and has its air given by name in its level file:
+  - *The Foundry*, over the north floor under the Slag Run (`NORTH_FIREFLY`, `NORTH_AIR`): the lava is along the
+    floor's south side and one of the three steam pipes is on its wall. Drops over the lava do not catch. A rat up on
+    the beams is over its head and is left alone (it only comes for a rat less than 6 above its floor).
+  - *The Keep*, over the west end of the inner ward (`WARD_FIREFLY`, `WARD_AIR`): the ledge is 8 deep, the
+    gatehouse wall at his back and the pit in front, a bottle cap at the far end. It is not one of "every guard":
+    that wedge asks for what it did (13), and its hint is still true. From the courtyard it does not see him.
+  - A drop of fire now falls PAST anything that moves (a lift, a cart): `groundFrom(colliders, skip)` in embers.ts is
+    the floor the game gives it. It used to be marked on a lift that would have moved on by the time it landed.
+  - tests/firefly.ts +19 (88 now): each place's air, a minute's fight twice over in each (never in anything solid or
+    out of its air, spent always within reach, no drop catching on lava or over the pit), cut down over the lava and
+    the pit, the two wedges untouched.
+- **Not done**: nobody has fought it by hand or heard it; every number is a first guess. Its fire does nothing to
+  other creatures or to crates. In the test a rat who keeps changing direction is burned only once or twice a minute;
+  one who stands still loses four hearts to two runs. Whether that is the right spread is for a player to say.
 
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for

@@ -8,12 +8,16 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { Firefly, FIREFLY, type FireflyState } from '../src/enemies/firefly';
 import { CombatEvents, resolveCombat, resolveFlames } from '../src/combat/combat';
-import { Flames, emberLanding, flameHeat, makeEmber, stepEmbers, type Ember } from '../src/world/embers';
+import { Flames, emberLanding, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember, type GroundAt } from '../src/world/embers';
 import { EmberFx } from '../src/world/emberFx';
 import { Director } from '../src/enemies/director';
 import { buildChamber } from '../src/world/chamber';
 import { LEVELS } from '../src/levels/levels';
 import { FIREFLY_AIR, SHELF_FIREFLY } from '../src/levels/hollows';
+import { ISLAND, NORTH_AIR, NORTH_FIREFLY } from '../src/levels/foundry';
+import { KEEP_WEDGES, WARD_AIR, WARD_FIREFLY } from '../src/levels/keep';
+import type { LevelDef } from '../src/levels/types';
+import { makeAabb } from '../src/world/collision';
 import { ENEMY_PIECES, compileCustom, emptyCustom } from '../src/levels/custom';
 import { TUNING } from '../src/data/tuning';
 import { NO_GEAR } from '../src/data/equipment';
@@ -29,8 +33,16 @@ function check(name: string, ok: boolean, detail = ''): void {
   if (!ok) failures++;
 }
 const cave = LEVELS.find((l) => l.id === 'hollows')!;
-const chamber = buildChamber({ solids: cave.solids, pit: cave.pit, water: cave.water ?? [], decor: [], movers: cave.movers });
-// (These three are the game's own, from main.ts.)
+/** The level the checks are in just now (the Hollows first; the Foundry and the Keep at the end). */
+const roomOf = (L: LevelDef) => buildChamber({ solids: L.solids, pit: L.pit, water: L.water ?? [], lava: L.lava, decor: [], movers: L.movers });
+let chamber = roomOf(cave);
+/** The floor a drop falls to: the game's own (everything solid but what moves). */
+let floorUnder: GroundAt = groundFrom(chamber.colliders, new Set(chamber.movers.map((m) => m.aabb)));
+function enter(L: LevelDef): void {
+  chamber = roomOf(L);
+  floorUnder = groundFrom(chamber.colliders, new Set(chamber.movers.map((m) => m.aabb)));
+}
+// (These are the game's own, from main.ts.)
 const canStand = (x: number, y: number, z: number, r: number): boolean => {
   let floor = false;
   for (const b of chamber.colliders) {
@@ -42,14 +54,9 @@ const canStand = (x: number, y: number, z: number, r: number): boolean => {
 };
 const canFly = (x: number, y: number, z: number, r: number): boolean =>
   !chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.02 && b.min.y < y + 0.5);
-const groundBelow = (x: number, y: number, z: number): number | null => {
-  let best: number | null = null;
-  for (const b of chamber.colliders) {
-    if (x < b.min.x || x > b.max.x || z < b.min.z || z > b.max.z) continue;
-    if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
-  }
-  return best;
-};
+const groundBelow: GroundAt = (x, y, z) => floorUnder(x, y, z);
+/** Under water or lava, as the game asks before it lets a drop catch. */
+const wet = (x: number, y: number, z: number): boolean => [...chamber.water, ...chamber.lava].some((w) => x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1 && w.y > y);
 const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, sneakHeld: false, stowPressed: false, ...o } as PlayerInput);
 const events = (): CombatEvents => ({ enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] });
 const spec = cave.enemies.find((e) => e.type === 'firefly')!;
@@ -92,7 +99,7 @@ function step(w: Fight, act: Partial<PlayerInput> = {}): void {
   if (f.state === 'run' && was !== 'run') w.runs++;
   for (const d of f.drops.splice(0)) {
     const em = makeEmber(d, { gravity: F.bombFall, radius: F.flameRadius, burnFor: F.flameTime }, groundBelow);
-    if (em.land && !canStand(em.land.x, em.land.y, em.land.z, 0.1)) em.land = null;
+    if (em.land && (wet(em.land.x, em.land.y, em.land.z) || !canStand(em.land.x, em.land.y, em.land.z, 0.1))) em.land = null;
     runOf.set(em, w.runs);
     w.embers.push(em);
     w.let.push({ t: w.t, x: d.x, y: d.y, z: d.z, offVent: Math.hypot(d.x - f.vent.x, d.y - f.vent.y, d.z - f.vent.z), run: w.runs, mark: em.land ? { x: em.land.x, z: em.land.z } : null, rat: { x: p.position.x, z: p.position.z } });
@@ -598,6 +605,108 @@ const YARD = { x: spec.x + 8, z: spec.z };
   put(w.p, 40, 40);
   play(w, still, (q) => q.f.state === 'idle', 30);
   check('when he goes right away it flies back to its post', w.f.state === 'idle' && w.seen.includes('return') && dist(w.f, spec) < 0.5 && Math.abs(w.f.y - F.height) < 0.3, `${w.seen.join(' ')}; ${dist(w.f, spec).toFixed(1)} from its post`);
+}
+
+// ---- The others: one over the Foundry's north floor, the lava along it; one over the west end of the Keep's ward, the pit along it ----
+{
+  const places = [
+    { id: 'foundry', where: 'over the Foundry\'s north floor, under the Slag Run', at: NORTH_FIREFLY, air: NORTH_AIR, roam: { x0: -44, x1: 28, z0: -46.5, z1: -35.5 }, beside: 'the lava' },
+    { id: 'keep', where: 'over the west end of the Keep\'s inner ward', at: WARD_FIREFLY, air: WARD_AIR, roam: { x0: -46, x1: -10, z0: 19, z1: 25 }, beside: 'the pit' },
+  ];
+  for (const place of places) {
+    const L = LEVELS.find((l) => l.id === place.id)!;
+    enter(L);
+    const found = L.enemies.filter((e) => e.type === 'firefly');
+    const sp = found[0];
+    check(`there is one ${place.where}, hanging in clear air over real floor`, found.length === 1 && sp.x === place.at.x && sp.z === place.at.z && canStand(sp.x, sp.y ?? 0, sp.z, 0.45) && canFly(sp.x, (sp.y ?? 0) + F.height, sp.z, F.radius) && canFly(sp.x, (sp.y ?? 0) + F.height + 0.8, sp.z, F.radius), sp ? `at ${sp.x}, ${sp.z}` : 'none');
+    check(`...its air is that floor and out over ${place.beside} beside it; and it is no part of what any wedge there asks for`, !!sp.arena && sp.arena.x0 === place.air.x0 && sp.arena.x1 === place.air.x1 && sp.arena.z0 === place.air.z0 && sp.arena.z1 === place.air.z1 && !!sp.uncounted && new GoalTracker(L).enemyTotal === L.enemies.filter((e) => !e.uncounted).length);
+    const R = place.roam;
+    const mid = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 };
+    for (const seed of [3, 11]) {
+      const w = fight(Math.min(R.x1 - 1, sp.x + 8), mid.z, seed, sp);
+      let inRock = 0;
+      let out = 0;
+      let outOfReach = 0;
+      let frame = 0;
+      let falls = 0;
+      const A = place.air;
+      const dirs = [[-1, 0], [0, 1], [1, 0], [0, -1], [-1, 1], [1, -1]];
+      let dir = dirs[0];
+      play(w, (q) => {
+        frame++;
+        if (frame % 70 === 0) dir = dirs[(frame / 70 + seed) % dirs.length | 0];
+        const p = q.p.position;
+        // (Burned off the edge, he is put back where he last stood, as the game does.)
+        if (p.y < -0.5 || p.x < R.x0 - 3 || p.x > R.x1 + 3 || p.z < R.z0 - 3 || p.z > R.z1 + 3) {
+          falls++;
+          put(q.p, mid.x, mid.z);
+        }
+        let mx = dir[0];
+        let mz = dir[1];
+        if (p.x < R.x0 + 2) mx = 1;
+        if (p.x > R.x1 - 2) mx = -1;
+        if (p.z < R.z0 + 1) mz = 1;
+        if (p.z > R.z1 - 1) mz = -1;
+        const f = q.f;
+        if (f.state !== 'grounded' && f.state !== 'fall' && f.state !== 'dead' && !canFly(f.x, f.y, f.z, f.radius * 0.9)) inRock++;
+        if (f.x < A.x0 - 0.01 || f.x > A.x1 + 0.01 || f.z < A.z0 - 0.01 || f.z > A.z1 + 0.01) out++;
+        if (f.state === 'spent' && (f.y - f.floor > F.low + 0.15 || !canStand(f.x, f.floor, f.z, 0.2))) outOfReach++;
+        return { move: new THREE.Vector3(mx, 0, mz).normalize(), run: true };
+      }, () => false, 60);
+      const lost = w.let.filter((d) => d.mark === null).length;
+      check(`a minute of it there with him running about (dice ${seed}): it never flies into anything solid or out of its air, and spent it always hangs low over floor he can stand on`, inRock === 0 && out === 0 && outOfReach === 0 && w.runs >= 6, `${inRock} frames in something solid, ${out} out of its air, ${outOfReach} spent out of his reach; ${w.runs} runs, ${w.let.length} drops let go, ${w.landed.length} caught, ${lost} fell into ${place.beside}; ${w.burns} burns, ${falls} times off the edge`);
+      check(`...every drop that caught did so exactly where it was marked, on floor he could stand on: none on ${place.beside} (dice ${seed})`, w.landed.length > 8 && w.landed.every((d) => d.offMark < 1e-6 && canStand(d.x, d.y, d.z, 0.1) && !wet(d.x, d.y, d.z)) && w.landed.length + lost + w.embers.length === w.let.length, `${w.landed.filter((d) => !canStand(d.x, d.y, d.z, 0.1)).length} off the floor`);
+    }
+    // Cut out of the air over what is beside the floor, it is gone.
+    const c = fight(Math.min(R.x1 - 1, sp.x + 8), mid.z, 3, sp);
+    play(c, still, (q) => q.f.state === 'circle' && q.f.stateTime > 0.5);
+    let over: { x: number; z: number } | null = null;
+    for (let x = place.air.x0 + 1; x < place.air.x1 && !over; x += 1) for (let z = place.air.z0 + 1; z < place.air.z1 && !over; z += 1) if (!canStand(x, 0, z, 0.1) && canFly(x, 0, z, 0.1) && canFly(x, F.height, z, F.radius)) over = { x, z };
+    if (over) {
+      c.f.x = over.x;
+      c.f.z = over.z;
+      c.f.takeHit(1, 0, 0);
+      c.heard.length = 0;
+      for (let i = 0; i < 60 * 3; i++) step(c);
+    }
+    check(`cut out of the air over ${place.beside}, it goes down into it and is gone`, !!over && !c.f.alive && c.f.y < -5 && c.heard.includes('lost'), over ? `over ${over.x}, ${over.z}; ${c.f.y.toFixed(1)} up` : 'no such place in its air');
+  }
+  // The Foundry: a rat up on the Slag Run, over its head, is left alone; and the Slag Crew is still only the island's.
+  {
+    const L = LEVELS.find((l) => l.id === 'foundry')!;
+    enter(L);
+    const sp = L.enemies.find((e) => e.type === 'firefly')!;
+    const f = new Firefly(sp);
+    f.canStand = canStand;
+    f.canFly = canFly;
+    for (let i = 0; i < 60 * 5; i++) f.update(DT, sp.x + 2, 8, sp.z + 12, true);
+    check('the Foundry: a rat up on the beams of the Slag Run, over its head, is left alone', f.state === 'idle' && f.drops.length === 0);
+    check('the Foundry: the Slag Crew is still only the beasts on the island', L.enemies.filter((e) => !e.uncounted).every((e) => e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1) && L.enemies.filter((e) => !e.uncounted).length === 6);
+  }
+  {
+    const L = LEVELS.find((l) => l.id === 'keep')!;
+    const guard = KEEP_WEDGES.find((w) => w.id === 'guard')!;
+    check('the Keep: the wedge for beating every guard asks for what it did, and its hint is still true (the firefly is not one of them)', L.enemies.filter((e) => !e.uncounted).every((e) => e.type !== 'firefly') && L.enemies.filter((e) => e.uncounted).length === 1 && !/firefly/i.test(guard.hint), `${L.enemies.filter((e) => !e.uncounted).length} to beat`);
+    // From the courtyard, the gatehouse wall between them, it does not see him.
+    enter(L);
+    const sp = L.enemies.find((e) => e.type === 'firefly')!;
+    const f = new Firefly(sp);
+    f.canStand = canStand;
+    f.canFly = canFly;
+    for (let i = 0; i < 60 * 5; i++) f.update(DT, sp.x, 0, 30, true);
+    check('the Keep: from the courtyard, the gatehouse wall between them, it does not come for him', f.state === 'idle');
+  }
+  enter(cave);
+}
+
+// ---- A drop falls past anything that moves ----
+{
+  const floor = makeAabb(0, -0.5, 0, 20, 1, 20);
+  const lift = makeAabb(0, 2.5, 0, 3, 1, 3);
+  const from = { x: 0, y: F.height + 3, z: 0, vx: 0, vy: 0, vz: 0, gravity: F.bombFall };
+  const all = makeEmber({ ...from }, { gravity: F.bombFall, radius: F.flameRadius, burnFor: F.flameTime }, groundFrom([floor, lift]));
+  const game = makeEmber({ ...from }, { gravity: F.bombFall, radius: F.flameRadius, burnFor: F.flameTime }, groundFrom([floor, lift], new Set([lift])));
+  check('a drop over a lift is marked on the floor under it, not on the lift (which will have moved on)', all.land?.y === 3 && game.land?.y === 0);
 }
 
 // ---- The editor, the sticker book ----

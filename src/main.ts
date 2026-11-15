@@ -46,7 +46,7 @@ import { ANT, Ant, pairAnts } from './enemies/ant';
 import { AntModel } from './enemies/antModel';
 import { FIREFLY, Firefly } from './enemies/firefly';
 import { FireflyModel } from './enemies/fireflyModel';
-import { Flames, flameHeat, makeEmber, stepEmbers, type Ember } from './world/embers';
+import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
 import type { Foe } from './enemies/foe';
@@ -828,6 +828,16 @@ function startGame(): void {
   const emberFx = new EmberFx();
   scene.add(emberFx.group);
   const fxLights: FxLight[] = [];
+  /** The floor a drop of fire falls to: the level's solid floor, but nothing that moves (a drop falls past a lift). */
+  let emberFloor: ReturnType<typeof groundFrom> | null = null;
+  let emberFloorOf: unknown = null;
+  const emberGround = (): ReturnType<typeof groundFrom> => {
+    if (!emberFloor || emberFloorOf !== chamber) {
+      emberFloor = groundFrom(chamber.colliders, new Set(chamber.movers.map((m) => m.aabb)));
+      emberFloorOf = chamber;
+    }
+    return emberFloor;
+  };
   const lanterns = new WeakMap<Firefly, FxLight>();
   const globGeo = new THREE.SphereGeometry(0.2, 6, 5);
   const globMat = new THREE.MeshBasicMaterial({ color: 0x8aff5a });
@@ -1813,7 +1823,7 @@ function startGame(): void {
       // (and marked on the floor). One let go over no floor (a pit, a wall's top, water) falls and is gone.
       if (e instanceof Firefly) {
         for (const d of e.drops.splice(0)) {
-          const em = makeEmber(d, { gravity: FIREFLY.bombFall, radius: FIREFLY.flameRadius, burnFor: FIREFLY.flameTime }, groundBelow);
+          const em = makeEmber(d, { gravity: FIREFLY.bombFall, radius: FIREFLY.flameRadius, burnFor: FIREFLY.flameTime }, emberGround());
           // (Nor does one catch under water, or need to in lava.)
           const L = em.land;
           const wet = !!L && [...chamber.water, ...chamber.lava].some((w) => L.x > w.x0 && L.x < w.x1 && L.z > w.z0 && L.z < w.z1 && w.y > L.y);
@@ -1856,7 +1866,7 @@ function startGame(): void {
       } else if (gm) gm.position.set(g.x, g.y, g.z);
     }
     // Drops of fire fall; where one meets the floor it catches, and the flames burn for a while.
-    for (const em of stepEmbers(embers, dt, groundBelow)) {
+    for (const em of stepEmbers(embers, dt, emberGround())) {
       if (!em.land) continue;
       flames.add(em.x, em.y, em.z, em.radius, em.burnFor);
       audio.play('emberBurst', { vol: Math.max(0.25, hearAt(em.x, em.z, 22)), rate: roll(0.92, 1.1), priority: 5 });

@@ -30,6 +30,23 @@ export interface Ember {
 /** The floor under a point: the game's `groundBelow`. Null where there is none. */
 export type GroundAt = (x: number, y: number, z: number) => number | null;
 
+/**
+ * The floor under a point, from a level's solid boxes: the highest top at or below it. `skip` are boxes that do not
+ * count: the game leaves out everything that moves (a lift, a cart), so that a drop never marks, or catches on, a
+ * floor that will not be there when it lands.
+ */
+export function groundFrom(colliders: ReadonlyArray<{ min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }>, skip?: { has(b: object): boolean }): GroundAt {
+  return (x, y, z) => {
+    let best: number | null = null;
+    for (const b of colliders) {
+      if (x < b.min.x || x > b.max.x || z < b.min.z || z > b.max.z) continue;
+      if (skip?.has(b)) continue;
+      if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
+    }
+    return best;
+  };
+}
+
 const STEP = 1 / 60;
 /** How far above the floor a drop is when it counts as landed. */
 const TOUCH = 0.08;

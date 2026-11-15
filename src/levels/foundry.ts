@@ -8,7 +8,8 @@
  *          wedge). Pistons pump up and down its sides; ride them shelf to shelf to the top.
  *          A sliding cart runs from the dock to the island; stepping stones cross from the west bank.
  *   NORTH  The Slag Run: iron beams hung over the lava, a full double jump apart, from the Hopper (a tower on the west bank)
- *          to the Ladle (a block on the east side). Fall and the lava throws you back.
+ *          to the Ladle (a block on the east side). Fall and the lava throws you back. Under it, over the north
+ *          floor, a firefly bomber.
  *   EAST   The Storehouse, shut. Burst the three steam pipes on the walls and its gate lifts. Inside: the door to the Coal
  *          Cellars. The Slag Heaps (piles to hop) stand in the north-east corner.
  *   WEST   The door to the Lift Shaft.
@@ -53,6 +54,12 @@ const LADLE = { x0: 22, x1: 30, z0: -31, z1: -24 };
 export const ISLAND = { x0: -12, x1: 12, z0: -17, z1: 5 };
 /** Where the hornet hangs, over the west end of the dock. */
 export const DOCK_HORNET = { x: -36, z: 37 };
+/**
+ * The north floor's firefly, and its air: the north floor and out over the lava beside it, under the Slag Run (it
+ * flies lower than the beams, and round the Hopper and the Ladle, which stand in it).
+ */
+export const NORTH_FIREFLY = { x: -10, z: -41 };
+export const NORTH_AIR = { x0: -46, x1: 31, z0: -47, z1: -26 };
 
 const hall: CustomLevel = {
   name: 'The Foundry',
@@ -102,6 +109,9 @@ const hall: CustomLevel = {
     box('stairs', -40, -25, -34, -15, RUN, { dir: 'n', bottom: 0 }),
     ...BEAMS.map((b) => box('platform', b.x0, BEAM_Z.z0, b.x1, BEAM_Z.z1, RUN, { bottom: RUN - 0.5 })),
     box('platform', LADLE.x0, LADLE.z0, LADLE.x1, LADLE.z1, RUN, { bottom: 0 }),
+    // Over the north floor, under the run, a firefly bomber: the floor is a strip with the lava along it, and one of
+    // the three steam pipes is on its wall. (It does not trouble a rat up on the beams: he is over its head.)
+    at('firefly', NORTH_FIREFLY.x, NORTH_FIREFLY.z, 0, { dir: 's' }),
 
     // ---- East: the Storehouse (shut until the pipes burst), and the Slag Heaps ----
     box('wall', 38, 4, 48, 5, STORE_ROOF - 0.5),
@@ -207,7 +217,7 @@ export function foundry(): LevelDef {
     ...def,
     world: 'foundry',
     // (The Slag Crew's wedge asks for the beasts on the island, as it says: nothing off it counts towards it.)
-    enemies: def.enemies.map((e) => (e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1 ? e : { ...e, uncounted: true })),
+    enemies: def.enemies.map((e) => (e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1 ? e : e.type === 'firefly' ? { ...e, uncounted: true, arena: NORTH_AIR } : { ...e, uncounted: true })),
     solids: [...def.solids, ...machines.flatMap((m) => m.solids)],
     decor: [
       ...def.decor,

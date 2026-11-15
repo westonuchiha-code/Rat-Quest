@@ -4,7 +4,8 @@
  * A fall into the pit costs a heart and puts him back on the last ground he stood on (fallBack).
  *
  *   SOUTH  The courtyard. Two guards, and a portcullis in the gatehouse wall: stand on both plates and it lifts.
- *          Behind it, the inner ward, a ledge along the wall over the pit, held by two ant pikemen.
+ *          Behind it, the inner ward, a ledge along the wall over the pit, held by two ant pikemen; and over its
+ *          west end, where a bottle cap lies, a firefly bomber.
  *   EAST   The Burning Walk: the ledge along the east wall turns to lava. Stones across it, a double jump apart at the
  *          end, with two toads spitting from the far side.
  *   NORTH  The Broken Stair: steps along the north wall rising west over the pit, some a hop apart, some a double jump.
@@ -52,6 +53,12 @@ const EAST_FAR = { x0: 38, x1: 48, z0: -38, z1: -20 };
 const COURTYARD = { x0: -48, x1: 48, z0: 28, z1: 48 };
 /** The inner ward: a ledge behind the gatehouse wall, the pit along its north side. */
 export const WARD = { x0: -48, x1: 48, z0: 18, z1: 26 };
+/**
+ * The west ward's firefly, and its air: the west half of the ward and out over the pit beside it (short of the Engine
+ * Stack; the battlements stand in its north-west corner and the gatehouse wall along its south side).
+ */
+export const WARD_FIREFLY = { x: -28, z: 22 };
+export const WARD_AIR = { x0: -47, x1: -8, z0: 6, z1: 25.4 };
 
 const keepArea: CustomLevel = {
   name: "Grimsqueak's Keep",
@@ -81,6 +88,9 @@ const keepArea: CustomLevel = {
     // Two ant pikemen hold the way east along it. They fight as a pair: one keeps him at pike's length while the
     // other goes round behind him, and the pit is at his elbow.
     at('ant', 22, 22, 0, { dir: 'w' }), at('ant', 26, 22, 0, { dir: 'w' }),
+    // And the other way along it, west, towards the cap at its end: a firefly bomber over the ledge, the wall at his
+    // back and the pit in front of him. (It is not one of the guard: the wedge for beating them does not ask for it.)
+    at('firefly', WARD_FIREFLY.x, WARD_FIREFLY.z, 0, { dir: 'e' }),
 
     // ---- East: the Burning Walk ----
     box('floor', 38, 10, 48, 18, 0),
@@ -175,6 +185,7 @@ const FLOORS = [COURTYARD, WARD, EAST_FAR, BATTLEMENTS];
 export function keep(): LevelDef {
   const def = compileCustom(keepArea, 'keep');
   const enemies = def.enemies.map((e) => {
+    if (e.type === 'firefly') return { ...e, uncounted: true, arena: WARD_AIR };
     const f = FLOORS.find((l) => e.x > l.x0 && e.x < l.x1 && e.z > l.z0 && e.z < l.z1);
     return f ? { ...e, arena: { x0: f.x0 + 1, x1: f.x1 - 1, z0: f.z0 + 1, z1: f.z1 - 1 } } : e;
   });
