@@ -3,7 +3,7 @@
  * The old Furnace is folded into the main hall (lava, braziers, a machine); the old Lift Shaft and Cellars are side areas.
  *
  *   SOUTH  The Gantry. He comes in high on an iron walkway over the dock and sees the whole hall. A cage lift and a stair
- *          go down. Under the gantry, in the dark, a bottle cap.
+ *          go down. Under the gantry, in the dark, a bottle cap. Over the west end of the dock, a hornet lancer.
  *   MIDDLE The Crucible: a great iron pot on an island in the lava. Its rim is crawling with beasts (beat them all for a
  *          wedge). Pistons pump up and down its sides; ride them shelf to shelf to the top.
  *          A sliding cart runs from the dock to the island; stepping stones cross from the west bank.
@@ -48,6 +48,11 @@ export const MOUTH = { x0: 26, x1: 30, z0: -8, z1: -4, top: 6.5 };
 /** The Hopper (start of the run) and the Ladle (the end). */
 const HOPPER = { x0: -42, x1: -33, z0: -32, z1: -25 };
 const LADLE = { x0: 22, x1: 30, z0: -31, z1: -24 };
+
+/** The island the Crucible stands on: the Slag Crew are the beasts on it. */
+export const ISLAND = { x0: -12, x1: 12, z0: -17, z1: 5 };
+/** Where the hornet hangs, over the west end of the dock. */
+export const DOCK_HORNET = { x: -36, z: 37 };
 
 const hall: CustomLevel = {
   name: 'The Foundry',
@@ -110,6 +115,9 @@ const hall: CustomLevel = {
     box('pillar', 33, -43, 35, -41, 2), box('pillar', 37, -46, 39, -44, 3.5), box('pillar', 41, -42, 43, -40, 5), box('pillar', 44, -46, 46, -44, 6.5),
 
     // ---- The dock yard: crates and barrels ----
+    // A hornet lancer hangs over the west yard's crates (one has a bottle cap in it): the first he meets, on open
+    // floor. It is no part of the Slag Crew.
+    at('hornet', DOCK_HORNET.x, DOCK_HORNET.z, 0, { dir: 'e' }),
     at('crate', -30, 34), at('crate', -29, 34), at('crate', -30, 34, 1), at('crate', -26, 38, 0, { props: { item: 'cap' } }),
     at('crate', -25, 38), at('barrel', -36, 30), at('barrel', -37, 30), at('barrel', -36, 31, 0, { props: { item: 'crumb' } }),
     at('crate', 34, 30), at('crate', 34, 30, 1), at('barrel', 38, 34),
@@ -198,6 +206,8 @@ export function foundry(): LevelDef {
   return {
     ...def,
     world: 'foundry',
+    // (The Slag Crew's wedge asks for the beasts on the island, as it says: nothing off it counts towards it.)
+    enemies: def.enemies.map((e) => (e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1 ? e : { ...e, uncounted: true })),
     solids: [...def.solids, ...machines.flatMap((m) => m.solids)],
     decor: [
       ...def.decor,

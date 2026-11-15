@@ -12,6 +12,7 @@
  *   WEST   The Webbed Gallery: three ledges over the drop joined by rope bridges, crawling with beasts. The door to Web
  *          Hollow is on the middle ledge.
  *   NORTH  The Mushroom Climb: giant caps, each a double jump higher than the last, up to the High Hollow in the wall.
+ *          The ways there are held: a hornet lancer over the east bank, two ant pikemen where the west path comes out.
  *   NE     The Crystal Grotto, lit by crystals; the door to Leap of Faith is inside. Its roof is worth a look.
  *   Three golden relics are hidden round the cave; find all three and a wedge appears in the grotto.
  *
@@ -58,6 +59,12 @@ const GALLERY_LEDGES = [
   { x0: -48, x1: -34, z0: -28, z1: -14 },
 ];
 
+/** The east bank's hornet, and the north floor's two pikemen with the floor they keep to (its west end). */
+export const BANK_HORNET = { x: 32, z: -16 };
+/** (Well back from the mouth of the west path, so that he is out on the open floor before they see him, clear of the brazier there.) */
+export const NORTH_ANTS = [{ x: -28, z: -45 }, { x: -24, z: -45 }];
+export const NORTH_WEST_FLOOR = { x0: -48, x1: -4, z0: -48, z1: -30 };
+
 const cave: CustomLevel = {
   name: 'The Hollows',
   blurb: 'A cave split by a chasm with no bottom. Spider Rock, the Faith Stones, a gallery of webs and a climb up giant mushrooms.',
@@ -100,6 +107,11 @@ const cave: CustomLevel = {
     at('toad', -44, 2, GALLERY), at('toad', -39, -24, GALLERY),
     // Two flitters roost over the first ledge: sneak past under them, or wake them and fight on the ledge.
     at('bat', -44, 19, GALLERY), at('bat', -39, 23, GALLERY),
+
+    // ---- The ways north are held. Over the east bank, a hornet lancer, the chasm at his elbow; and where the west
+    // path comes out on the north floor, two ant pikemen. (None of them is on the gallery: its wedge does not ask for them.) ----
+    at('hornet', BANK_HORNET.x, BANK_HORNET.z, 0, { dir: 's' }),
+    at('ant', NORTH_ANTS[0].x, NORTH_ANTS[0].z, 0, { dir: 's' }), at('ant', NORTH_ANTS[1].x, NORTH_ANTS[1].z, 0, { dir: 's' }),
 
     // ---- North: the Mushroom Climb and the High Hollow ----
     ...CAPS.flatMap((c) => [
@@ -171,9 +183,12 @@ export const HOLLOWS_WEDGES: WedgeDef[] = [
 export function hollows(): LevelDef {
   const def = compileCustom(cave, 'hollows');
   // The gallery's beasts keep to their own ledge (it is a long way down).
+  // (And the gallery's wedge asks for the beasts on the gallery, as it says: nothing off it counts towards it.)
   const enemies = def.enemies.map((e) => {
     const g = GALLERY_LEDGES.find((l) => e.x > l.x0 && e.x < l.x1 && e.z > l.z0 && e.z < l.z1);
-    return g ? { ...e, arena: { x0: g.x0 + 1.5, x1: g.x1 - 1, z0: g.z0 + 1, z1: g.z1 - 1 } } : e;
+    if (g) return { ...e, arena: { x0: g.x0 + 1.5, x1: g.x1 - 1, z0: g.z0 + 1, z1: g.z1 - 1 } };
+    const F = NORTH_WEST_FLOOR;
+    return e.type === 'ant' ? { ...e, uncounted: true, arena: { x0: F.x0 + 1, x1: F.x1 - 1, z0: F.z0 + 1, z1: F.z1 - 1 } } : { ...e, uncounted: true };
   });
   return {
     ...def,

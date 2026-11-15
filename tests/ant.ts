@@ -12,6 +12,8 @@ import { CombatEvents, resolveCombat } from '../src/combat/combat';
 import { buildChamber } from '../src/world/chamber';
 import { LEVELS } from '../src/levels/levels';
 import { WARD } from '../src/levels/keep';
+import { NORTH_WEST_FLOOR } from '../src/levels/hollows';
+import { GoalTracker } from '../src/levels/goals';
 import { ENEMY_PIECES, compileCustom, emptyCustom } from '../src/levels/custom';
 import { TUNING } from '../src/data/tuning';
 import { ATTACK_CLIPS } from '../src/player/animations';
@@ -537,6 +539,101 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   }, (q) => q.every((x) => !x.alive) || p.dead, 60 * 90);
   check('a rat who keeps his shield to whichever is striking, and goes in when one is open, beats the pair', ants.every((x) => !x.alive) && !p.dead, `${(r.frames * DT).toFixed(0)} s, hp ${p.hp}, blows ${r.results.join(' ') || 'none'}`);
   check('...and it takes him a while: they are not cut down where they stand', r.frames * DT > 8, `${(r.frames * DT).toFixed(1)} s`);
+}
+
+// ---- The second pair: in the Hollows, where the west path comes out on the north floor ----
+{
+  const cave = LEVELS.find((l) => l.id === 'hollows')!;
+  const ch = buildChamber({ solids: cave.solids, pit: cave.pit, water: cave.water ?? [], decor: [], movers: cave.movers });
+  const stand = (x: number, y: number, z: number, r: number): boolean => {
+    let floor = false;
+    for (const b of ch.colliders) {
+      if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
+      if (b.max.y > y + 0.25 && b.min.y < y + 0.7) return false;
+      if (Math.abs(b.max.y - y) <= 0.25 && x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z) floor = true;
+    }
+    return floor;
+  };
+  const found = cave.enemies.filter((e) => e.type === 'ant');
+  const F = NORTH_WEST_FLOOR;
+  const pair = (): Ant[] => found.map((sp) => {
+    const a = new Ant(sp);
+    a.canStand = stand;
+    a.rng = () => 0.5;
+    return a;
+  });
+  check('the Hollows has two, side by side on the north floor, facing the mouth of the west path', found.length === 2 && dist(found[0], found[1]) < N.pairRange && found.every((e) => e.x > F.x0 && e.x < F.x1 && e.z > F.z0 && e.z < F.z1 && Math.abs(e.facing ?? 9) < 1e-6 && stand(e.x, 0, e.z, N.radius)));
+  check('...they keep to that floor (the chasm is along its south side), with room on it to go round him', found.every((e) => !!e.arena && e.arena.x0 >= F.x0 && e.arena.x1 <= F.x1 && e.arena.z0 >= F.z0 && e.arena.z1 <= F.z1 && e.arena.x1 - e.arena.x0 > 30 && e.arena.z1 - e.arena.z0 > 2 * (N.holdRange + 2)));
+  const goals = new GoalTracker(cave, () => ({ have: 0, total: 0 }));
+  const wedge = cave.wedges?.find((w) => w.appears?.type === 'defeat');
+  check('...and they are no part of what the gallery\'s wedge asks for: that is still the seven beasts on the gallery', found.every((e) => e.uncounted) && goals.enemyTotal === 7 && !!wedge && /gallery/i.test(wedge.hint));
+  /** A fight with him standing wherever `at` says: the pairing and the turn-taking as in the game. */
+  const fight = (secs: number, at: (t: number, ants: Ant[]) => { x: number; z: number }, each: (ants: Ant[], p: { x: number; z: number }, t: number) => void): Ant[] => {
+    const ants = pair();
+    const director = new Director();
+    for (let t = 0; t < secs; t += DT) {
+      const p = at(t, ants);
+      director.update(DT, ants as unknown as Foe[], p.x, p.z);
+      pairAnts(ants, p.x, p.z);
+      for (const a of ants) {
+        a.update(DT, p.x, 0, p.z, true);
+        a.events.length = 0;
+      }
+      each(ants, p, t);
+    }
+    return ants;
+  };
+  // He comes up the west path and stops in its mouth.
+  const mouth = { x: -26, z: -31.5 };
+  let woke = -1;
+  const up = fight(6, (t) => ({ x: mouth.x, z: Math.max(mouth.z, -20 - t * 4) }), (ants, _p, t) => {
+    if (woke < 0 && ants.every((a) => a.awake)) woke = t;
+  });
+  check('coming up the west path he is not seen in its mouth: only once he is out on the open floor, and then both come at him', woke < 0 && up.every((a) => a.state === 'idle'), woke < 0 ? 'still at their post' : `awake after ${woke.toFixed(1)} s`);
+  let seenAt = 0;
+  const out = fight(8, (t) => ({ x: mouth.x, z: Math.max(-40, mouth.z - t * 3) }), (ants, p) => {
+    if (!seenAt && ants.every((a) => a.awake)) seenAt = p.z;
+  });
+  check('...some way in from the mouth (and from the brazier that stands in it)', seenAt < mouth.z - 3 && seenAt > -40 && out.every((a) => a.awake && a.mate !== null), `seen when he is ${(mouth.z - seenAt).toFixed(1)} in`);
+  // He stands out on the open floor east of them: one in front, one behind.
+  const open = { x: -17, z: -40 };
+  let pincer = -1;
+  let both = 0;
+  let after = 0;
+  fight(20, () => open, (ants, p, t) => {
+    const round = apart(ants[0], ants[1], p);
+    if (pincer < 0 && round > 2.6 && ants.every((a) => a.state === 'hold')) pincer = t;
+    if (pincer >= 0) {
+      after++;
+      if (round > 2.4) both++;
+    }
+  });
+  check('out on the open floor they get either side of him, as the Keep\'s two do, and stay there', pincer > 0 && pincer < 8 && both / Math.max(1, after) > 0.85, `either side after ${pincer.toFixed(1)} s, and for ${((100 * both) / Math.max(1, after)).toFixed(0)}% of the rest`);
+  // Wherever he stands on that floor, by the chasm's edge or against the wall, they stay on it.
+  let off = 0;
+  let frames = 0;
+  let seed = 5;
+  const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  let spot = open;
+  fight(90, (t) => {
+    if (Math.floor(t / 3) !== Math.floor((t - DT) / 3)) {
+      const edge = rnd() < 0.4;
+      spot = { x: F.x0 + 3 + rnd() * (F.x1 - F.x0 - 6), z: edge ? F.z1 - 0.8 : F.z0 + 1 + rnd() * (F.z1 - F.z0 - 2) };
+    }
+    return spot;
+  }, (ants) => {
+    for (const a of ants) {
+      frames++;
+      if (!stand(a.x, 0, a.z, a.radius * 0.9)) off++;
+    }
+  });
+  check('wherever he stands on it, at the chasm\'s edge or against the wall, they never leave the floor', off === 0 && frames > 10000, `${off} of ${frames} ant-frames off the floor`);
+  // He goes back down the west path: they do not follow him off their floor, and go home.
+  let followed = 0;
+  const home = fight(30, (t) => (t < 5 ? open : { x: -26, z: 10 }), (ants) => {
+    for (const a of ants) if (a.z > F.z1) followed++;
+  });
+  check('go back down the west path and they do not follow: they go back to their post', followed === 0 && home.every((a) => a.state === 'idle' && dist(a, a.home) < 0.3), home.map((a) => a.state).join(' '));
 }
 
 console.log(failures === 0 ? '\nAnt pikeman: all checks passed' : `\nAnt pikeman: ${failures} FAILED`);

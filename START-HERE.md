@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,134 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,160 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -205,9 +205,11 @@ He gave this list himself; work through it, do not ask about it again:
      angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
      EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
      ray-tested against its own body on every frame of every move) before saying it is done.
-   Built to that so far: the Orchid Mantis, the **Stag Knight**, the **Hornet Lancer** (a flyer: one hangs over
-   the east plate of the Keep's courtyard) and the **Ant Pikeman** (fights in pairs: two hold the Keep's inner ward;
-   HANDOFF has a section on each). After them, an idea (an insect, not built; do not ask): a firefly bomber.
+   Built to that so far: the Orchid Mantis, the **Stag Knight**, the **Hornet Lancer** (a flyer: one over the west
+   end of the Foundry's dock, the first he meets; one over the east bank of the Hollows; one over the east plate of
+   the Keep's courtyard) and the **Ant Pikeman** (fights in pairs: two on the north floor of the Hollows, two in the
+   Keep's inner ward; HANDOFF has a section on each, and one on where they were placed and why they do not count
+   towards the older "beat every beast" wedges). After them, an idea (an insect, not built; do not ask): a firefly bomber.
    (A spider was on the earlier list; the owner asked for insects.)
    Lessons from building these, for the next: (1) give a weapon-holder its WEAPON's place first and lay the arms to
    it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of

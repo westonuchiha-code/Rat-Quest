@@ -90,6 +90,12 @@ const hunt = LEVELS.find((l) => l.id === 'hunt')!;
   check('four of five is not enough', !g.mainDone() && g.status()[0].text === '4/5');
   g.kills = 5;
   check('five of five is', g.mainDone());
+  // A beast marked as no part of it (it is somewhere else in the level) is not asked for.
+  const more = new GoalTracker({ ...hunt, enemies: [...hunt.enemies, { type: 'hornet', x: 0, z: 0, uncounted: true }] }, () => ({ have: 0, total: 0 }));
+  more.kills = 4;
+  check('a beast marked as no part of a defeat goal is not asked for: the goal still needs its own five, no more', more.enemyTotal === 5 && !more.mainDone() && more.status()[0].text === '4/5');
+  more.kills = 5;
+  check('...and is done when those five are beaten', more.mainDone());
 }
 const leap = LEVELS.find((l) => l.id === 'leap')!;
 {

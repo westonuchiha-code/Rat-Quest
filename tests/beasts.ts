@@ -59,7 +59,7 @@ check('ironbacks in the Foundry, the Coal Cellars and the Keep; bats in the Holl
 const hollows = LEVELS.find((l) => l.id === 'hollows')!;
 check('the gallery bats keep to their ledge (it is a long way down)', hollows.enemies.filter((e) => e.type === 'bat').every((e) => e.arena && e.arena.x0 >= -48 && e.arena.x1 <= -34));
 const foundry = LEVELS.find((l) => l.id === 'foundry')!;
-check('the Slag Crew is still six beasts', foundry.enemies.length === 6);
+check('the Slag Crew is still six beasts, all on the island (the hornet over the dock is no part of it)', foundry.enemies.filter((e) => !e.uncounted).length === 6 && foundry.enemies.filter((e) => !e.uncounted).every((e) => Math.abs(e.x) < 12 && e.z > -17 && e.z < 5) && foundry.enemies.filter((e) => e.uncounted).every((e) => e.type === 'hornet'));
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 process.exit(failures ? 1 : 0);

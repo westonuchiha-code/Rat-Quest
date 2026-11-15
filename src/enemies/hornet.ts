@@ -48,6 +48,8 @@ export const HORNET = {
   lance: 1.3, // from where it holds the lance to its point
   tip: 0.28, // how wide the point's blow is
   fallTime: 0.4,
+  pitFall: 14, // how far down into a pit a dead one falls (out of sight), and how long that takes
+  pitFallTime: 1.25,
   grounded: 1.5,
   groundedParried: 2.6,
   rise: 0.6,
@@ -101,6 +103,12 @@ export class Hornet {
   private groundFor: number = HORNET.grounded;
   private fallFrom = 0;
   private landY = 0;
+  private fallX = 0;
+  private fallZ = 0;
+  private landX = 0;
+  private landZ = 0;
+  /** How long a dead one takes to come down. */
+  private fallFor: number = HORNET.fallTime;
   /** Where its dive is aimed (the floor where he stood), and where the ground was that he last stood on. */
   private readonly target: V3 = { x: 0, y: 0, z: 0 };
   private readonly ground: V3 = { x: 0, y: 0, z: 0 };
@@ -197,9 +205,36 @@ export class Hornet {
   /** Knocked out of the air: down to the floor, or, over a pit, down into the dark. */
   private knockDown(parried: boolean): void {
     this.groundFor = parried ? HORNET.groundedParried : HORNET.grounded;
-    this.fallFrom = this.y;
-    this.landY = this.landingUnder();
+    this.startFall();
     this.enter('fall');
+  }
+
+  /**
+   * Where it is coming down from, and to. Straight down if that is floor (or a pit). If something stands on the floor
+   * under it (a crate, a barrel, a pillar's foot), it comes down on the nearest floor beside that: it is not over a
+   * pit, and must not be taken for one.
+   */
+  private startFall(): void {
+    this.fallFrom = this.y;
+    this.fallFor = HORNET.fallTime;
+    this.landY = this.landingUnder();
+    this.fallX = this.x;
+    this.fallZ = this.z;
+    this.landX = this.x;
+    this.landZ = this.z;
+    const stand = this.canStand;
+    if (!stand || !this.canFly || stand(this.x, this.landY, this.z, 0.1) || this.canFly(this.x, this.landY, this.z, 0.1)) return;
+    for (const r of [0.6, 1, 1.4, 1.9, 2.5]) {
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        const x = this.x + Math.sin(a) * r;
+        const z = this.z + Math.cos(a) * r;
+        if (!stand(x, this.landY, z, this.radius)) continue;
+        this.landX = x;
+        this.landZ = z;
+        return;
+      }
+    }
   }
 
   /** The floor it would come down on: the ground he stands on if that reaches under it, its own floor if not. */
@@ -213,9 +248,12 @@ export class Hornet {
     this.hp -= damage;
     if (this.hp <= 0) {
       this.hp = 0;
-      // (Killed in the air, it comes down where it is.)
-      this.fallFrom = this.y;
-      this.landY = this.landingUnder();
+      // (Killed in the air, it comes down where it is; over a pit, down into the dark.)
+      this.startFall();
+      if (this.canStand && !this.canStand(this.landX, this.landY, this.landZ, 0.1)) {
+        this.landY -= HORNET.pitFall;
+        this.fallFor = HORNET.pitFallTime;
+      }
       this.enter('dead');
       return true;
     }
@@ -469,11 +507,19 @@ export class Hornet {
       case 'fall': {
         const k = Math.min(1, this.stateTime / H.fallTime);
         this.y = this.fallFrom + (this.landY - this.fallFrom) * k * k;
+        this.x = this.fallX + (this.landX - this.fallX) * k;
+        this.z = this.fallZ + (this.landZ - this.fallZ) * k;
         if (k >= 1) {
           // Over a pit there is no floor to land on.
           if (this.canStand && !this.canStand(this.x, this.landY, this.z, 0.1)) {
             this.events.push('lost');
             this.hp = 0;
+            // (It goes on falling, from where it is.)
+            this.fallFrom = this.y;
+            this.fallX = this.landX = this.x;
+            this.fallZ = this.landZ = this.z;
+            this.landY = this.y - HORNET.pitFall;
+            this.fallFor = HORNET.pitFallTime;
             this.enter('dead');
           } else {
             this.y = this.landY;
@@ -515,8 +561,10 @@ export class Hornet {
         break;
       }
       case 'dead': {
-        const k = Math.min(1, this.stateTime / H.fallTime);
+        const k = Math.min(1, this.stateTime / this.fallFor);
         this.y = Math.max(this.landY, this.fallFrom + (this.landY - this.fallFrom) * k * k);
+        this.x = this.fallX + (this.landX - this.fallX) * k;
+        this.z = this.fallZ + (this.landZ - this.fallZ) * k;
         if (this.respawns && this.stateTime >= H.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;

@@ -233,6 +233,8 @@ function startGame(): void {
   const antList: Ant[] = [];
   const enemyModels: FoeView[] = [];
   const counted = new WeakSet<Foe>();
+  /** Those that are no part of what a 'defeat' goal asks for (see EnemySpec.uncounted). */
+  const uncounted = new WeakSet<Foe>();
   /** Whether an enemy can stand here: floor under its middle at its own height, and nothing solid at body height. */
   const canStand = (x: number, y: number, z: number, r: number): boolean => {
     let floor = false;
@@ -444,6 +446,7 @@ function startGame(): void {
       scene.add(m.root);
     }
     enemies[enemies.length - 1].canStand = canStand;
+    if (spec.uncounted) uncounted.add(enemies[enemies.length - 1]);
   }
   const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
   const director = new Director();
@@ -1748,7 +1751,7 @@ function startGame(): void {
     for (const e of enemies) {
       if (!e.alive && !counted.has(e)) {
         counted.add(e);
-        goals.kills++;
+        if (!uncounted.has(e)) goals.kills++;
       }
     }
     const arrived = goals.director.update(dt, aliveCount());

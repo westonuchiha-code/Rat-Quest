@@ -402,7 +402,8 @@ of the Keep's courtyard (the Ironback has the west one). It is a piece in the le
   down, the raised lance through its own head (so its lance is never raised above level now), its front legs
   losing the shaft between moves, and its feelers not being counted by the floor guard. All fixed before drawing.
 - **Not done**: nobody has fought it by hand; its numbers are first guesses. In the Keep its patch is the whole
-  courtyard, so it will follow him across to the guards. Only one is placed in the game: say where else.
+  courtyard, so it will follow him across to the guards. (Two more are placed now: see "More of the new insects"
+  below.)
 
 ## New enemy: the Ant Pikeman (2026-11-15)
 A soldier ant with a pike: the first enemy that fights as a PAIR. Two hold the Keep's inner ward (the ledge behind the
@@ -446,7 +447,32 @@ in the level editor ("Ant Pikeman"): any two placed within 12 of each other pair
   model sheet's clock could run backwards on its first frame after a long set-up, which flashed the model white.
 - **Not done**: nobody has fought them by hand; the numbers are first guesses. A rat who stands still between them
   is dead in about 8 s. The ward is a ledge 8 deep with the pit along it: that may be too hard a place for them.
-  Only this one pair is placed.
+  (A second pair is placed now, in the Hollows: see the next section.)
+
+## More of the new insects, placed through the worlds (2026-11-15)
+- **Foundry**: a Hornet Lancer over the west end of the dock (`DOCK_HORNET`, -36, 37), by the crates (one has a bottle
+  cap in it). It is the first he meets, on purpose: open floor, nothing else about, and none of its patch is over the
+  lava, so it cannot be lost.
+- **Hollows**: the ways north are held. A Hornet Lancer over the east bank (`BANK_HORNET`, 32, -16), the chasm at his
+  elbow; and two Ant Pikemen on the north floor (`NORTH_ANTS`, -28/-24, -45), well back from the mouth of the west path
+  so the fight is out on the open floor, not beside the brazier in the mouth (the camera closes right in there). They
+  keep to `NORTH_WEST_FLOOR` and do not follow him down the path. The Faith Stones (the middle way) are unguarded:
+  their landing is too far from the ants to be seen from.
+- **`EnemySpec.uncounted`** (types.ts): "not one of those a 'defeat' goal asks for". `GoalTracker.enemyTotal` leaves
+  them out, and main.ts does not add their deaths to `goals.kills`. foundry() marks everything off the Crucible's
+  island (`ISLAND`), hollows() everything off the gallery ledges. So "The Slag Crew" still asks for the six on the
+  island and "The Webbed Gallery" for the seven on the gallery, as their hints say; the new ones are obstacles, not
+  part of a wedge. (The Keep's wedge asks for every guard in it, its hornet and pikemen included, and says so.)
+- **The hornet's fall, fixed**: knocked down right above a crate, a barrel or a spike of rock, it was taken to be over
+  a pit (nowhere to stand there) and was gone. Now it comes down on the nearest floor beside the thing (`startFall`
+  in hornet.ts tells "something stands here" from "nothing is here" with `canFly` at floor height). And one that IS
+  lost over a pit, or killed over one, goes on falling out of sight (`pitFall`), where it used to lie in the air at
+  the height of the floor until it shrivelled.
+- **Tests**: tests/hornet.ts +16 (each new one: clear air, real floor, not counted, a minute and a half over its own
+  patch without touching anything solid, its lance sticks in that floor, the crate and the chasm), tests/ant.ts +8
+  (the Hollows pair: seen only out on the floor, pincer, never off the floor at the chasm's edge, do not follow him
+  down the path), tests/levels.ts +2 (`uncounted`).
+- **Not done**: none of it played by hand. The Cistern (world one) was left alone on purpose: it is roaches and toads.
 
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for

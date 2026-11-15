@@ -100,9 +100,9 @@ export class GoalTracker {
     this.director = new WaveDirector(def.waves);
   }
 
-  /** How many enemies stand in the room at the start, which is what the 'defeat' goal counts. */
+  /** How many enemies stand in the room at the start, which is what the 'defeat' goal counts (but for any marked as no part of it). */
   get enemyTotal(): number {
-    return this.def.enemies.length;
+    return this.def.enemies.filter((e) => !e.uncounted).length;
   }
 
   /** Call every tick with the rat's position (feet). */

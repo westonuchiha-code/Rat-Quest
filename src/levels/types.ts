@@ -40,6 +40,11 @@ export interface EnemySpec {
   hunt?: boolean;
   /** A bat: what it hangs from (drawn above its roost). Default rock. */
   perch?: 'rock' | 'chain';
+  /**
+   * Not one of those a 'defeat' goal asks for: it is somewhere else in the level than the beasts the goal names (the
+   * hornet over the Foundry's dock is no part of the Slag Crew on the island). Beating it is its own reward.
+   */
+  uncounted?: boolean;
 }
 
 /**

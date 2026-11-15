@@ -13,6 +13,8 @@ import { ENEMY_PIECES, compileCustom, emptyCustom } from '../src/levels/custom';
 import { TUNING } from '../src/data/tuning';
 import { STICKERS } from '../src/data/stickers';
 import { stickerIcon } from '../src/ui/icons';
+import { GoalTracker } from '../src/levels/goals';
+import type { LevelDef } from '../src/levels/types';
 
 const DT = 1 / 60;
 const H = HORNET;
@@ -446,6 +448,119 @@ const YARD = { x: spec.x, z: spec.z + 7 };
   while (g.alive) g.takeHit(9, 0, 0);
   for (let i = 0; i < 90; i++) tick(g, q);
   check('killed in the air, it drops to the floor', g.state === 'dead' && g.y === 0 && !g.attackActive && !g.attacking);
+}
+
+// ---- The others: the first he meets, over the Foundry's dock; and one over the east bank of the Hollows, by the chasm ----
+{
+  const world = (L: LevelDef): { canStand: typeof canStand; canFly: typeof canFly } => {
+    const ch = buildChamber({ solids: L.solids, pit: L.pit, water: L.water ?? [], decor: [], movers: L.movers });
+    return {
+      canStand: (x, y, z, r) => {
+        let floor = false;
+        for (const b of ch.colliders) {
+          if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
+          if (b.max.y > y + 0.25 && b.min.y < y + 0.7) return false;
+          if (Math.abs(b.max.y - y) <= 0.25 && x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z) floor = true;
+        }
+        return floor;
+      },
+      canFly: (x, y, z, r) => !ch.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.02 && b.min.y < y + 0.5),
+    };
+  };
+  const places: Array<{ id: string; where: string; beasts: number; pit: boolean }> = [
+    { id: 'foundry', where: 'over the west end of the Foundry\'s dock', beasts: 6, pit: false },
+    { id: 'hollows', where: 'over the east bank of the Hollows', beasts: 7, pit: true },
+  ];
+  for (const place of places) {
+    const L = LEVELS.find((l) => l.id === place.id)!;
+    const W = world(L);
+    const found = L.enemies.filter((e) => e.type === 'hornet');
+    const sp = found[0];
+    const A = sp?.arena ?? { x0: 0, x1: 0, z0: 0, z1: 0 };
+    check(`there is one ${place.where}, hanging in clear air over real floor`, found.length === 1 && W.canStand(sp.x, sp.y ?? 0, sp.z, 0.45) && W.canFly(sp.x, (sp.y ?? 0) + H.hover, sp.z, H.radius), sp ? `at ${sp.x}, ${sp.z}` : 'none');
+    const goals = new GoalTracker(L, () => ({ have: 0, total: 0 }));
+    const wedge = L.wedges?.find((w) => w.appears?.type === 'defeat');
+    check(`...and it is no part of what that level's "beat every beast" wedge asks for: that is still ${place.beasts}, as its hint says`, !!sp?.uncounted && goals.enemyTotal === place.beasts && L.enemies.filter((e) => !e.uncounted).length === place.beasts && !!wedge && !/hornet|lancer/i.test(wedge.hint), `${goals.enemyTotal} counted of ${L.enemies.length}`);
+    // Somewhere for him to stand: every whole step of its patch that is floor (not lava, not the chasm, not a crate).
+    const spots: Array<{ x: number; z: number }> = [];
+    for (let x = Math.ceil(A.x0) + 1; x <= A.x1 - 1; x += 2) for (let z = Math.ceil(A.z0) + 1; z <= A.z1 - 1; z += 2) if (W.canStand(x, 0, z, 0.45)) spots.push({ x, z });
+    check('...with floor enough under its patch for him to fight it on', spots.length >= 40, `${spots.length} places to stand`);
+    // A minute and a half: he stands on one spot after another (one in three at the very edge of the floor).
+    const h = new Hornet(sp);
+    h.canStand = W.canStand;
+    h.canFly = W.canFly;
+    let seed = 11;
+    const rnd = (): number => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    h.rng = rnd;
+    const edge = spots.filter((q) => !W.canStand(q.x - 1.2, 0, q.z, 0.3) || !W.canStand(q.x + 1.2, 0, q.z, 0.3) || !W.canStand(q.x, 0, q.z - 1.2, 0.3) || !W.canStand(q.x, 0, q.z + 1.2, 0.3));
+    let at = spots[0];
+    let inWall = 0;
+    let out = 0;
+    let attacks = 0;
+    let stuck = 0;
+    let under = 0;
+    const seen = new Set<string>();
+    for (let i = 0; i < 60 * 90; i++) {
+      if (i % 170 === 0) at = i % 510 === 0 && edge.length ? edge[Math.floor(rnd() * edge.length)] : spots[Math.floor(rnd() * spots.length)];
+      h.update(DT, at.x, 0, at.z, true);
+      if (h.events.includes('diveWind') || h.events.includes('joustWind')) attacks++;
+      if (h.events.includes('stick')) stuck++;
+      h.events.length = 0;
+      seen.add(h.state);
+      if (h.state !== 'grounded' && h.state !== 'fall' && !W.canFly(h.x, h.y, h.z, h.radius * 0.9)) inWall++;
+      if (h.x < A.x0 - 0.01 || h.x > A.x1 + 0.01 || h.z < A.z0 - 0.01 || h.z > A.z1 + 0.01) out++;
+      if (h.y < -0.01) under++;
+    }
+    check('...through a minute and a half of him moving about under it, it is never inside anything solid, nor out of its patch, nor under the floor', inWall === 0 && out === 0 && under === 0, `${inWall} frames in something, ${out} out of its patch, ${under} under the floor`);
+    check('...and it keeps coming at him, and its lance sticks in that floor when it misses', attacks >= 12 && stuck >= 4 && h.alive, `${attacks} attacks begun, ${stuck} lances stuck; it did ${[...seen].join(' ')}`);
+    // Knocked out of the air where there is no floor under it (the lava, the chasm), it is gone: and that is a kill.
+    const g = new Hornet(sp);
+    g.canStand = W.canStand;
+    g.canFly = W.canFly;
+    g.rng = () => 0.9;
+    let over: { x: number; z: number } | null = null;
+    for (let x = A.x0 + 0.5; x <= A.x1 && !over; x += 1) for (let z = A.z0 + 0.5; z <= A.z1 && !over; z += 1) {
+      if (!W.canStand(x, 0, z, 0.1) && W.canFly(x, 0, z, 0.1) && W.canFly(x, H.hover, z, H.radius)) over = { x, z };
+    }
+    if (over) {
+      g.x = over.x;
+      g.z = over.z;
+      g.takeHit(1, 0, 0);
+      for (let i = 0; i < 120 && g.alive; i++) g.update(DT, at.x, 0, at.z, true);
+    }
+    for (let i = 0; i < 90; i++) g.update(DT, at.x, 0, at.z, true);
+    if (place.pit) check('...struck down where there is no floor under it (the chasm), it is gone for good, down out of sight (which counts as beating it)', !!over && !g.alive && g.events.includes('lost') && g.y < -8, over ? `over ${over.x.toFixed(1)}, ${over.z.toFixed(1)}; it ends ${g.y.toFixed(1)} down` : 'its patch is all floor');
+    else check('...and all of its patch is over floor: the first one he meets cannot be lost into the lava', !over, over ? `no floor at ${over.x}, ${over.z}` : '');
+    // Struck down right above something that stands on the floor (a crate, a barrel, a stalagmite): that is not a pit.
+    let onto: { x: number; z: number } | null = null;
+    for (let x = A.x0 + 0.5; x <= A.x1 && !onto; x += 0.5) for (let z = A.z0 + 0.5; z <= A.z1 && !onto; z += 0.5) {
+      if (!W.canStand(x, 0, z, 0.1) && !W.canFly(x, 0, z, 0.1) && W.canFly(x, H.hover, z, H.radius)) onto = { x, z };
+    }
+    if (onto) {
+      const c = new Hornet(sp);
+      c.canStand = W.canStand;
+      c.canFly = W.canFly;
+      c.rng = () => 0.9;
+      c.x = onto.x;
+      c.z = onto.z;
+      c.takeHit(1, 0, 0);
+      const heard: string[] = [];
+      for (let i = 0; i < 60 && c.state !== 'grounded'; i++) {
+        c.update(DT, at.x, 0, at.z, true);
+        heard.push(...c.events.splice(0));
+      }
+      check('...struck down right above something standing on the floor (a crate, a barrel, a spike of rock), it comes down on the floor beside it, where he can reach it: it is not lost', c.alive && c.state === 'grounded' && !heard.includes('lost') && heard.includes('thud') && c.y === 0 && W.canStand(c.x, 0, c.z, 0.3) && Math.hypot(c.x - onto.x, c.z - onto.z) < 3, `from over ${onto.x}, ${onto.z} to ${c.x.toFixed(1)}, ${c.z.toFixed(1)}; ${c.state}; heard ${heard.join(' ')}`);
+      // And killed there, it lies on that floor.
+      const d = new Hornet(sp);
+      d.canStand = W.canStand;
+      d.canFly = W.canFly;
+      d.x = onto.x;
+      d.z = onto.z;
+      while (d.alive) d.takeHit(9, 0, 0);
+      for (let i = 0; i < 90; i++) d.update(DT, at.x, 0, at.z, true);
+      check('...and killed there, it lies on the floor beside it, not in it or under it', d.y === 0 && W.canStand(d.x, 0, d.z, 0.3), `at ${d.x.toFixed(1)}, ${d.z.toFixed(1)}, ${d.y.toFixed(2)} up`);
+    }
+  }
 }
 
 console.log(failures === 0 ? '\nhornet: all passed' : `\nhornet: ${failures} FAILED`);
