@@ -182,6 +182,30 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Feel: no human has played the latest combat numbers, the Ironback, the Flitter, the Keep Guard, the Orchid Mantis or the Stag Knight. Tuning sliders exist for all of them.
 - Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
 
+## The owner on collectibles and wall jumps (2026-11-15: a note for future changes, not yet acted on)
+His words, in short:
+- The collectibles "sometimes feel a little annoying"; he does not like where a lot of them are. Some are too easy.
+  Some have an obvious way he is meant to get them, "but the walls and stuff aren't high enough so I can just jump
+  over stuff".
+- "We're not using the wall jump enough ... a real missed opportunity. The wall jump is a really cool mechanic that
+  we should utilize more."
+- "There should be less collectibles and each collectible should be more rewarding to get." Parkouring round a level
+  (up a wall jump, across platforms that are a little difficult, or moving) for ONE object is fun; running along
+  picking up fifteen in a row "like Pac-Man" is not.
+
+What that means for any work on a level from now on:
+- FEWER things to pick up, each one EARNED by a piece of movement. No trails of crumbs along a floor.
+- Wherever there is one intended way to a thing, CHECK THAT IT IS THE ONLY WAY: a double jump carries about 10 and
+  climbs about 4.75, a jump with a double jump and a grab climbs about 5.8. A wall he is meant to go round has to be
+  higher than that. `src/levels/reach.ts` works out what he can reach; use it, and test the short cut as well as the
+  route.
+- Build wall-jump routes: chimneys (two walls 2 to 2.5 apart) and wall-to-wall kicks across a gap.
+
+How things stand (counted 2026-11-15): 154 crumbs, 45 bottle caps and 10 relics across the game (24 crumbs in the
+Cistern, 19 in the Foundry, 18 in the Keep, 17 in the Hollows). There are TWO wall-jump chimneys in the whole game:
+behind the Cistern's tower, and up to the throne in the Keep. Several wedges ask for "all the caps" of a level, and
+crumbs are what the shop is paid in (`BALANCE`), so cutting them means re-pricing: do both together.
+
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:
 1. **Hero animations must match his actions.** Audited 2026-11-14 on the model sheet's `#moves` page (25 moves, played
