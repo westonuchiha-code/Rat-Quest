@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,672 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,681 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -407,6 +407,25 @@ tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRi
 - Enemies still know nothing of ramps or of a rider. Nothing hurts or is hurt by a rider differently.
 - A roll-out from top speed is about sixty units on the flat (`dragFlat` 1.6): longer than the garden. He can brake.
 - No level but the garden has a slope in it yet. **Next, step three: the cave.**
+
+### Getting on the shield is a hop, not a snap (2026-11-15)
+The owner: "Even if you have to use like smear frame kind of things or whatever you need to do just try to make the
+animation better for whenever he hops on his shield right now it just seems like it's like an instant snap".
+- It is DRAWN only (ratModel.ts): by the rules he is riding from the first frame, as before. Nothing about how the
+  ride plays has changed.
+- **Getting on** (`RIDE_MOUNT`, 0.36 s): he hops (`hopY`, stretched going up and squashed landing, `hopStretch`), the
+  pose is `RIDE_HOP_POSE` then `RIDE_AIR` then the ride; the shield leaves his arm (or his back) from exactly where
+  it was (`placeOf`), swings down and out in front of him turning over once, and is flat under his feet two thirds of
+  the way through (`RIDE_MOUNT_UNDER`); he comes down on it at `RIDE_MOUNT_LAND`. The SMEARS are two pale copies of
+  it trailing where it was a moment before (`boardGhosts`), and it is stretched a little along its length mid-swing.
+- **Stepping off** (`RIDE_DISMOUNT`, 0.22 s): the same swing backwards, from the ground up onto his arm. Thrown off
+  (hurt), nothing is played.
+- Sound: the whoosh as it swings, the crack when he lands on it (`rideLandIn` in main.ts).
+- To LOOK at it: the model viewer, `#view&state=ride&speed=7&t=0.15&yaw=1.1&dist=3` (t is seconds into the ride;
+  `&after=idle&t2=0.1` for stepping off), or the game in slow motion: `&slow=0.25` on the address (new; the Workshop's
+  own switch).
+- `tests/ride.ts` checks it: the shield starts where it was, only ever goes down, the smears show, he hops and lands.
+- Seen frame by frame in the viewer and at quarter speed in the running game. **Not seen at full speed by a person.**
 
 ### Grinding is DONE (2026-11-15; asked for by the owner the same day, his words are in the next section)
 Riding, **STOW** (triangle / north on a pad, H on the keyboard: it has nothing else to do while the shield is under

@@ -934,3 +934,13 @@ START-HERE has the rules. Things to know before touching it:
 - The garden's rail and kerb stop ten short of the west wall on purpose: from a rail's end at speed he needs about
   eight units to brake. A longer rail there threw the test rider into the wall.
 
+## The hop onto the shield (2026-11-15)
+- The shield under his feet (`board`) is a child of `lean`, which the hop lifts and stretches. The swing is worked
+  out in `lean`'s space as if there were no hop, then put back through it (`swingBoard`'s `place`), so the shield
+  goes to the ground while he goes up.
+- `placeOf` finds where a shield is from the joints' own matrices, up the chain to `lean`: it needs nothing drawn,
+  so it works in the tests and the viewer, where no frame is ever rendered.
+- The smears are `MeshBasicMaterial` with the shield's own vertex colours: the game's own material has no opacity.
+- The clocks run at the very top of `RatModel.update`, before the pose is chosen, so the pose and the shield start
+  on the same frame.
+

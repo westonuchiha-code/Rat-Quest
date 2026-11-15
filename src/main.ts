@@ -9,7 +9,7 @@ import { Chamber, buildChamber, storyPower } from './world/chamber';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
-import { RatModel } from './player/ratModel';
+import { RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND } from './player/ratModel';
 import { ATTACK_CLIPS } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
@@ -241,6 +241,7 @@ function startGame(): void {
   const grindSparks = new Sparks();
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
+  let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
   // Enemies in the level. Waves add more as they arrive.
   /** What the game needs from an enemy's drawn model, whatever kind of enemy it is. */
@@ -1054,6 +1055,9 @@ function startGame(): void {
   const storyOff = !!import.meta.env.VITE_EDITOR || /nostory|at=|view/.test(location.hash);
   const storyFreeze = location.hash.includes('sthold'); // dev: hold a scene still at &st=, for screenshots
   const unlockAll = location.hash.includes('unlockall');
+  // dev: `&slow=0.25` starts the game in slow motion (the Workshop's own switch), for pictures of quick things.
+  const slowHash = /[#&]slow=([\d.]+)/.exec(location.hash);
+  if (slowHash) DEV.slow = Math.min(1, Math.max(0.05, Number(slowHash[1])));
   // His purse: every crumb and cap he has picked up in the worlds, less what he has spent at Pip's.
   const wallet = new Wallet(files, () => {
     let crumbs = 0;
@@ -1516,9 +1520,11 @@ function startGame(): void {
     } else if (ev === 'climb') audio.play('ratJump2', { vol: 0.6, rate: 1.25, priority: 6 });
     // Riding his shield: it goes down under his feet, cracks off the ground and back onto it, whirls round in a
     // kickflip (a bright note if he lands one), and clatters away when he comes off.
+    // (Getting on is a hop: the swing of it now, the crack of it under his feet when he comes down on it.)
     else if (ev === 'ride') {
-      audio.play('ridePop', { vol: 0.6, rate: 0.8, priority: 6 });
+      audio.play('whoosh', { vol: 0.5, rate: 1.5, priority: 5 });
       audio.play('cloth', { vol: 0.5, priority: 4 });
+      rideLandIn = RIDE_MOUNT * RIDE_MOUNT_LAND;
     } else if (ev === 'ollie') audio.play('ridePop', { vol: 0.75, rate: roll(1.0, 1.12), priority: 6 });
     else if (ev === 'kickflip') audio.play('whoosh', { vol: 0.6, rate: 1.7, priority: 5 });
     else if (ev === 'rideLand') audio.play('ridePop', { vol: 0.6, rate: roll(0.85, 0.95), priority: 5 });
@@ -1678,6 +1684,10 @@ function startGame(): void {
     }
     audio.loop('fireflyHum', ffv * ffv * 0.5);
     // His shield on the stone, while he rides it on the ground: louder the faster he goes.
+    if (rideLandIn > 0 && (rideLandIn -= dt) <= 0 && player.riding) {
+      audio.play('ridePop', { vol: 0.7, rate: 0.8, priority: 6 });
+      rumble.land(4);
+    }
     const rideV = player.riding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.ride.max) : 0;
     audio.loop('rideScrape', player.grinding ? 0 : rideV * 0.55 + (rideV > 0 ? 0.08 : 0));
     // ...and its rim along an edge: a ringing shriek, higher and louder the faster.

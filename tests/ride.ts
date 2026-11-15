@@ -9,6 +9,7 @@ import { PlayerController, type PlayerInput, type MoveEvent } from '../src/playe
 import { aabbOf, type Aabb } from '../src/world/collision';
 import { extent, rampBox } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
+import { RatModel, RIDE_MOUNT, RIDE_DISMOUNT, type RatAnimInput } from '../src/player/ratModel';
 
 const DT = 1 / 60;
 const R = TUNING.ride;
@@ -236,6 +237,56 @@ const sneakOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerI
   check('riding off the top of a kicker he is thrown up, well above its top, with no button pressed', plain.top > 1.2 + 0.6 && plain.events.includes('rideLand'), `top ${plain.top.toFixed(2)}; ${plain.events.join()}`);
   const popped = launch(true);
   check('...and a jump at its lip goes higher than the same jump on the flat', popped.top > plain.top + 1.5 && popped.events.includes('ollie'), `top ${popped.top.toFixed(2)}; ${popped.events.join()}`);
+}
+
+// ---- Getting on is a hop, not a snap (the owner, 2026-11-15) ----
+{
+  const rat = new RatModel();
+  const base: RatAnimInput = { state: 'run', planarSpeed: 6, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 };
+  const step = (state: RatAnimInput['state'], n: number, each?: () => void): void => {
+    for (let i = 0; i < n; i++) {
+      rat.update(DT, { ...base, state });
+      each?.();
+    }
+  };
+  step('run', 40);
+  check('running, his shield is on his arm and there is none under his feet', rat.shieldOnArm && !rat.boardShown && rat.mountProgress < 0);
+  // The first frame of the ride.
+  step('ride', 1);
+  const startHeight = rat.boardHeight();
+  check('the moment he gets on, the shield is still where it was on his arm: it has not jumped to his feet', rat.mountProgress >= 0 && rat.boardShown && !rat.shieldOnArm && startHeight > 0.3, `${startHeight.toFixed(2)} up`);
+  let hop = 0;
+  let smears = 0;
+  let lastHeight = startHeight;
+  let rose = 0;
+  let frames = 1;
+  step('ride', Math.ceil(RIDE_MOUNT / DT) + 2, () => {
+    hop = Math.max(hop, rat.hopHeight);
+    smears = Math.max(smears, rat.smearsShown);
+    rose = Math.max(rose, rat.boardHeight() - lastHeight);
+    lastHeight = rat.boardHeight();
+    if (rat.mountProgress >= 0) frames++;
+  });
+  check('it takes a third of a second or so: a score of frames to be seen in', frames >= 18 && frames <= 26, `${frames} frames`);
+  check('he hops: off the ground and down again', hop > 0.2 && rat.hopHeight === 0, `${hop.toFixed(2)} up at the top`);
+  check('the shield goes DOWN to the ground all the way (never back up), trailing smears as it goes', rose < 0.02 && smears === 2, `rose ${rose.toFixed(3)} at most; ${smears} smears`);
+  check('...and ends lying under his feet, the smears gone', rat.mountProgress < 0 && rat.smearsShown === 0 && rat.boardShown && Math.abs(rat.boardHeight() - 0.03) < 0.01, `${rat.boardHeight().toFixed(3)} up`);
+  // Stepping off: it comes back up onto his arm.
+  let up = 0;
+  let offFrames = 0;
+  step('run', 1);
+  check('stepping off, the shield is still on the ground the first moment, and comes up', rat.dismountProgress >= 0 && rat.boardShown && !rat.shieldOnArm && rat.boardHeight() < 0.1, `${rat.boardHeight().toFixed(2)} up`);
+  step('run', Math.ceil(RIDE_DISMOUNT / DT) + 2, () => {
+    if (rat.dismountProgress >= 0) {
+      offFrames++;
+      up = Math.max(up, rat.boardHeight());
+    }
+  });
+  check('...and is on his arm again a fifth of a second later', rat.dismountProgress < 0 && rat.shieldOnArm && !rat.boardShown && up > 0.3 && offFrames >= 8, `${offFrames} frames, ${up.toFixed(2)} up`);
+  // Thrown off, there is no show: it is on his arm as he tumbles.
+  step('ride', 30);
+  step('hurt', 1);
+  check('thrown off it, nothing is played: no shield left turning in the air', rat.dismountProgress < 0 && !rat.boardShown && rat.smearsShown === 0);
 }
 
 // ---- Coming off ----

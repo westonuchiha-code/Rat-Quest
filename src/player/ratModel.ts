@@ -361,6 +361,28 @@ const RIDE: Pose = fullPose({
   footS: [-0.015, 0.05, -0.15], footH: [0.015, 0.05, 0.17], toeS: 0, toeH: 0, tail: [0.75, 0, 0.15], ears: 0.4,
 });
 /** In the air on it: tucked up over the shield, arms higher. */
+/**
+ * Getting on: he hops, swings the shield down off his arm so that it turns over once and slides in under his feet,
+ * and comes down on it. (The owner, 2026-11-15: "it just seems like it's like an instant snap".) All of it is drawn
+ * only: by the rules he is riding from the first moment.
+ */
+export const RIDE_MOUNT = 0.36; // seconds, start to settled
+/** ...of which the shield is under his feet by this much, and he lands on it at RIDE_MOUNT_LAND. */
+const RIDE_MOUNT_UNDER = 0.66;
+export const RIDE_MOUNT_LAND = 0.8;
+const RIDE_HOP = 0.3; // how high the hop lifts him
+/** Stepping off: the shield is kicked up from the ground onto his arm. */
+export const RIDE_DISMOUNT = 0.22;
+/** The hop: knees up, the shield arm thrown down and forward at the ground, the sword arm high for balance. */
+const RIDE_HOP_POSE: Pose = fullPose({
+  hipPos: [0, 0, 0], hips: [0.3, 0.55, 0], chest: [0.5, -0.45, 0.12], head: [-0.2, -0.4, 0],
+  armS: [-0.5, 0, -1.75], elbowS: -0.2, wrist: [0, 0, 0], armH: [-0.75, 0, 0.3], elbowH: -0.1, shield: [0, 0, 0],
+  footS: [-0.02, 0.2, -0.06], footH: [0.02, 0.23, 0.1], toeS: 0.3, toeH: 0.3, tail: [1.25, 0, 0.2], ears: 0.75,
+});
+const smooth = (x: number): number => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
 /** How much of a slope's tilt his body takes while he rides it (his shield takes all of it). */
 const RIDE_BODY_TILT = 0.6;
 const RIDE_AIR: Pose = fullPose({
@@ -415,6 +437,19 @@ export class RatModel {
   /** The shield under his feet while he rides it: the outer turns it for a kickflip, the inner lays it flat. */
   private readonly board = new THREE.Group();
   private readonly boardFlat = new THREE.Group();
+  /** Smears of it as it swings under him (or back up): pale copies trailing where it was a moment before. */
+  private readonly boardGhosts: Array<{ root: THREE.Group; mat: THREE.MeshBasicMaterial }> = [];
+  private armShield: THREE.Object3D | null = null;
+  private stowShield: THREE.Object3D | null = null;
+  private wasRiding = false;
+  /** Seconds into getting on (or stepping off): -1 when he is doing neither. */
+  private mountT = -1;
+  private dismountT = -1;
+  private readonly mountFromP = new THREE.Vector3();
+  private readonly mountFromQ = new THREE.Quaternion();
+  private hopY = 0;
+  private hopStretch = 1;
+  private boardScale = 1;
   private rideAir = 0;
   private rideLean = 0;
   private rideGrind = 0;
@@ -598,6 +633,21 @@ export class RatModel {
     this.board.add(this.boardFlat);
     this.board.visible = false;
     this.lean.add(this.board);
+    this.armShield = shieldMesh;
+    this.stowShield = stowedShield;
+    for (const opacity of [0.5, 0.26]) {
+      const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
+      const root = new THREE.Group();
+      const flat = new THREE.Group();
+      flat.rotation.x = -Math.PI / 2;
+      const mesh = new THREE.Mesh(shieldMesh.geometry, mat);
+      mesh.scale.setScalar(0.92);
+      flat.add(mesh);
+      root.add(flat);
+      root.visible = false;
+      this.lean.add(root);
+      this.boardGhosts.push({ root, mat });
+    }
     this.backSword.visible = false;
     this.backShield.visible = false;
 
@@ -735,6 +785,7 @@ export class RatModel {
   setShieldScale(k: number): void {
     this.shieldPivot.scale.setScalar(k);
     this.board.scale.setScalar(k);
+    this.boardScale = k;
   }
 
   update(dt: number, ctx: RatAnimInput): void {
@@ -745,6 +796,28 @@ export class RatModel {
     this.idleTime = state === 'idle' ? this.idleTime + dt : 0;
     this.run = ease(this.run, state === 'run' ? 1 : 0, dt, 9);
     if (moving) this.phase += dt * Math.PI * 2 * (1.5 + ctx.planarSpeed * 0.32);
+
+    // Getting on his shield and stepping off it: the clocks for the two little pieces of show.
+    {
+      const riding = state === 'ride';
+      const stopped = state === 'hurt' || state === 'dead';
+      if (riding && !this.wasRiding) {
+        this.mountT = 0;
+        this.dismountT = -1;
+        // (Where the shield was the moment before: on his arm, or on his back.)
+        this.placeOf(ctx.armed ? this.armShield : this.stowShield, this.mountFromP, this.mountFromQ);
+      } else if (!riding && this.wasRiding) {
+        this.mountT = -1;
+        this.dismountT = stopped || !ctx.armed ? -1 : 0;
+      }
+      this.wasRiding = riding;
+      if (this.mountT >= 0 && (this.mountT += dt) >= RIDE_MOUNT) this.mountT = -1;
+      if (this.dismountT >= 0 && ((this.dismountT += dt) >= RIDE_DISMOUNT || stopped || !ctx.armed)) this.dismountT = -1;
+      // The hop: up and down again by the time he lands; long as he leaves the ground, flat as he lands on it.
+      const m = this.mountT >= 0 ? this.mountT / RIDE_MOUNT : -1;
+      this.hopY = m >= 0 ? RIDE_HOP * Math.sin(Math.PI * Math.min(1, m / RIDE_MOUNT_LAND)) : 0;
+      this.hopStretch = m < 0 ? 1 : m < 0.25 ? 1 + 0.18 * Math.sin((Math.PI * m) / 0.25) : m > RIDE_MOUNT_LAND ? 1 - 0.22 * Math.sin((Math.PI * (m - RIDE_MOUNT_LAND)) / (1 - RIDE_MOUNT_LAND)) : 1;
+    }
 
     // Target pose, spring stiffness (how fast joints chase it) and damping (below 1 lets them overshoot a little).
     let pose: Pose;
@@ -834,6 +907,13 @@ export class RatModel {
       }
       stiffness = 30;
       damping = 0.85;
+      // Getting on: the hop first, then tucked over the shield as it comes under him, then down onto it.
+      if (this.mountT >= 0) {
+        const m = this.mountT / RIDE_MOUNT;
+        pose = m < 0.42 ? RIDE_HOP_POSE : m < RIDE_MOUNT_LAND ? RIDE_AIR : pose;
+        stiffness = 52;
+        damping = 0.9;
+      }
     } else if (state === 'hang') {
       // Hanging by his paws from a ledge: stretched out long against the wall, head tipped back to look up at the edge,
       // legs dangling. He swings a little as he catches it, then settles. (His paws are planted on the edge below.)
@@ -899,10 +979,22 @@ export class RatModel {
     this.sword.visible = armed && this.dress.gear;
     // (Riding, the shield is under his feet: not on his arm, nor on his back.)
     const riding = state === 'ride';
-    this.shieldPivot.visible = armed && this.dress.gear && !riding;
+    const kicking = this.dismountT >= 0 && !riding;
+    this.shieldPivot.visible = armed && this.dress.gear && !riding && !kicking;
     this.backSword.visible = !armed && this.dress.gear;
     this.backShield.visible = !armed && this.dress.gear && !riding;
-    this.board.visible = riding && this.dress.gear;
+    this.board.visible = (riding || kicking) && this.dress.gear;
+    for (const g of this.boardGhosts) g.root.visible = false;
+    this.board.scale.setScalar(this.boardScale);
+    if (kicking) {
+      // Stepping off: it comes up off the ground, turning over, onto his arm.
+      this.board.position.set(0, 0.03, 0.01);
+      this.board.rotation.set(0, 0, 0);
+      this.boardRest.p.copy(this.board.position);
+      this.boardRest.q.copy(this.board.quaternion);
+      this.placeOf(this.armShield, this.boardAim.p, this.boardAim.q);
+      this.swingBoard(this.dismountT / RIDE_DISMOUNT, this.boardRest, this.boardAim, -1, 0.1);
+    }
     if (riding) {
       const r = ctx.ride ?? { steer: 0, flip: -1, air: false };
       const flip = r.flip >= 0 ? Math.min(1, r.flip) : 0;
@@ -913,6 +1005,15 @@ export class RatModel {
       this.board.rotation.y = this.rideGrind * (Math.PI / 2);
       this.board.rotation.x = this.rideTiltX * (1 - RIDE_BODY_TILT);
       this.board.rotation.z = flip * Math.PI * 2 + this.rideTiltZ * (1 - RIDE_BODY_TILT);
+      // Getting on: from where it was on him, down and round, to where it lies. (He is in the air over it: it is
+      // on the ground, not hopping with him.)
+      if (this.mountT >= 0) {
+        this.boardRest.p.copy(this.board.position);
+        this.boardRest.q.copy(this.board.quaternion);
+        this.boardAim.p.copy(this.mountFromP);
+        this.boardAim.q.copy(this.mountFromQ);
+        this.swingBoard(this.mountT / (RIDE_MOUNT * RIDE_MOUNT_UNDER), this.boardAim, this.boardRest, 1, 0.24);
+      }
     }
     const free = state === 'idle' || state === 'walk' || state === 'run' || state === 'land';
     this.relaxed = ease(this.relaxed, !armed && free ? 1 : 0, dt, 10);
@@ -982,6 +1083,9 @@ export class RatModel {
     this.rideTiltX = ease(this.rideTiltX, onSlope ? Math.atan(-(onSlope.along ?? 0)) : 0, dt, 14);
     this.rideTiltZ = ease(this.rideTiltZ, onSlope ? Math.atan(onSlope.across ?? 0) : 0, dt, 14);
     this.lean.rotation.set(this.pitch + this.rideTiltX * RIDE_BODY_TILT, 0, this.bank + this.rideLean + this.rideTiltZ * RIDE_BODY_TILT);
+    // (The hop onto his shield: lifted, stretched as he goes up and squashed as he comes down on it.)
+    this.lean.position.y = this.hopY;
+    this.lean.scale.set(1 / Math.sqrt(this.hopStretch), this.hopStretch, 1 / Math.sqrt(this.hopStretch));
 
     this.apply(ctx.planarSpeed);
 
@@ -1036,6 +1140,87 @@ export class RatModel {
     t: new THREE.Vector3(), pole: new THREE.Vector3(), u: new THREE.Vector3(), f: new THREE.Vector3(),
     x: new THREE.Vector3(), y: new THREE.Vector3(), z: new THREE.Vector3(), m: new THREE.Matrix4(), q: new THREE.Quaternion(),
   };
+
+  private readonly boardRest = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+  private readonly boardAim = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+  private readonly swingTmp = { p: new THREE.Vector3(), q: new THREE.Quaternion(), spin: new THREE.Quaternion(), m: new THREE.Matrix4(), s: new THREE.Vector3(), flat: new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)) };
+  private static readonly LONG = new THREE.Vector3(0, 0, 1);
+
+  /**
+   * Where one of his shields is, as the shield under his feet would have to be placed (in the `lean` group's own
+   * space) to lie exactly on it. Worked out from the joints as they stand, with nothing drawn in between.
+   */
+  private placeOf(shield: THREE.Object3D | null, p: THREE.Vector3, q: THREE.Quaternion): void {
+    const t = this.swingTmp;
+    t.m.identity();
+    for (let o: THREE.Object3D | null = shield; o && o !== this.lean; o = o.parent) {
+      o.updateMatrix();
+      t.m.premultiply(o.matrix);
+    }
+    t.m.decompose(p, q, t.s);
+    // (The one under his feet is laid flat by a quarter turn of its own: take that out.)
+    q.multiply(t.flat);
+    // (`lean` is lifted and stretched by the hop; the shield is not.)
+    p.y = p.y * this.hopStretch + this.hopY;
+  }
+
+  /** One place on the swing between two placings, `s` of the way (eased), turning over once on the way. */
+  private swingAt(s: number, from: { p: THREE.Vector3; q: THREE.Quaternion }, to: { p: THREE.Vector3; q: THREE.Quaternion }, turn: number, out: number, p: THREE.Vector3, q: THREE.Quaternion): void {
+    const e = smooth(s);
+    p.lerpVectors(from.p, to.p, e);
+    // (Out in front of him and round, not straight through his legs.)
+    p.z += out * Math.sin(Math.PI * e);
+    q.slerpQuaternions(from.q, to.q, e);
+    q.multiply(this.swingTmp.spin.setFromAxisAngle(RatModel.LONG, turn * Math.PI * 2 * e));
+  }
+
+  /**
+   * Draws the shield part of the way through a swing, with its smears behind it. It moves a long way in a few frames:
+   * it is stretched along its length in the middle of the swing, and two pale copies trail where it has just been.
+   */
+  private swingBoard(s: number, from: { p: THREE.Vector3; q: THREE.Quaternion }, to: { p: THREE.Vector3; q: THREE.Quaternion }, turn: number, out: number): void {
+    const t = this.swingTmp;
+    const k = this.boardScale;
+    // (Into `lean`'s own space, which the hop has lifted and stretched.)
+    const place = (o: THREE.Object3D, at: number, stretch: number): void => {
+      this.swingAt(at, from, to, turn, out, t.p, t.q);
+      o.position.set(t.p.x, (t.p.y - this.hopY) / this.hopStretch, t.p.z);
+      o.quaternion.copy(t.q);
+      o.scale.set(k, k, k * stretch);
+    };
+    const c = Math.min(1, Math.max(0, s));
+    const fast = Math.sin(Math.PI * c);
+    place(this.board, c, 1 + 0.22 * fast);
+    this.boardGhosts.forEach((g, i) => {
+      const behind = c - 0.14 * (i + 1);
+      g.root.visible = this.board.visible && c < 0.98 && behind > 0;
+      if (g.root.visible) place(g.root, behind, 1 + 0.34 * fast);
+    });
+  }
+
+  /** How far through getting on his shield he is (0..1), or -1; and through stepping off it. For the tests. */
+  get mountProgress(): number {
+    return this.mountT >= 0 ? this.mountT / RIDE_MOUNT : -1;
+  }
+  get dismountProgress(): number {
+    return this.dismountT >= 0 ? this.dismountT / RIDE_DISMOUNT : -1;
+  }
+  /** Where the shield under his feet is drawn, in the model's own space above the ground (for the tests). */
+  boardHeight(): number {
+    return this.board.position.y * this.hopStretch + this.hopY;
+  }
+  get boardShown(): boolean {
+    return this.board.visible;
+  }
+  get shieldOnArm(): boolean {
+    return this.shieldPivot.visible;
+  }
+  get smearsShown(): number {
+    return this.boardGhosts.filter((g) => g.root.visible).length;
+  }
+  get hopHeight(): number {
+    return this.hopY;
+  }
 
   /** Writes the current spring values to the joints and solves the legs. */
   private apply(planarSpeed: number): void {

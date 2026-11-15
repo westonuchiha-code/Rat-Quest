@@ -83,8 +83,11 @@ export function runViewer(canvas: HTMLCanvasElement): void {
         flipProgress: flip ? Math.min(0.999, time / TUNING.jump.flipDuration) : 0,
       });
     }
+    const after = q.get('after') as PlayerState | null;
+    if (after) for (let time = 0; time <= num('t2', 0) + 1e-6; time += dt) rat.update(dt, { ...base, state: after, planarSpeed: num('speed2', 0) });
   }
 
+  // (`after=<state>&t2=<seconds>`: the state that follows, for looking at the change from one to the other.)
   const yaw = num('yaw', 0.5);
   const pitch = num('pitch', 0.18);
   const dist = num('dist', 2.6);
