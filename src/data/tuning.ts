@@ -121,7 +121,8 @@ export const TUNING = {
    * steep to stand on he has no choice. Speeds are along the ground, in units a second.
    */
   ride: {
-    minSlope: 0.2, // a slope has to be at least this steep (rise over run) to start a ride on it from a run
+    minSlope: 0.4, // over a slope at least this steep (rise over run) the air attack is the shield under his feet, not the dive
+    surfDrop: 10, // ...if it is no further below him than this
     gravity: 15, // how hard a slope pulls him down it (times how steep it is)
     dragSlope: 0.5, // what slows him on a slope
     dragFlat: 1.6, // ...and on the flat, where he rolls on a long way
@@ -141,6 +142,20 @@ export const TUNING = {
     again: 0.4, // after stepping off, this long before SNEAK starts another
   },
   /**
+   * Sliding on his own hide down ground too steep to stand on (the owner, 2026-11-15: "he would basically be like
+   * tripping and sliding down ... probably a little slower and you have less control"). Compare `ride`.
+   */
+  slide: {
+    grip: 0.3, // going UP such ground, this long before he loses his footing
+    gravity: 10, // how hard the slope pulls him (a shield: 15)
+    drag: 1.2, // what slows him on the slope
+    dragFlat: 7, // ...and on ground he can stand on, where he scrapes to a stop
+    max: 9.5, // his fastest (a shield: 16; a run: 6.2)
+    turn: 0.8, // how fast the stick bends his way (a shield: 2.2)
+    hop: 5.2, // the hop out of it: no second jump after
+    stop: 1.0, // slower than this on ground he can stand on, he gets up
+  },
+  /**
    * Grinding, while he rides (the owner, 2026-11-15: "go to the edge and ... press triangle and he'll ... grind
    * alongside that edge"): STOW, which has nothing else to do on the shield, puts it across the nearest ledge or rail
    * he is going along. See world/grind.ts for what counts as one.
@@ -148,7 +163,10 @@ export const TUNING = {
   grind: {
     reach: 0.85, // how far to the side of him the edge may be
     up: 0.75, // how far above his feet (he hops up onto it)
-    down: 1.5, // ...and below them (he comes down onto it out of the air)
+    down: 2.6, // ...and below them (he comes down onto it out of the air: a jump's height)
+    dropSpeed: 7, // coming down onto one from above, he starts at this speed at least...
+    dropPull: 45, // ...and gathers this much more a second
+    dropIn: 14, // ...and is drawn in over the line this fast
     minSpeed: 3.5, // he must be going this fast along it to get on
     drop: 0.4, // an edge is one to grind only with this much of a drop beside it
     drag: 0.5, // what slows him on it: less than the flat, so a rail keeps his speed

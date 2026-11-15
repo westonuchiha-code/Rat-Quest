@@ -64,6 +64,12 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Moves', path: 'moves.wallChainHold', label: 'An early jump press is kept for the next wall this long', min: 0, max: 0.6, step: 0.02 },
   { group: 'Moves', path: 'moves.climbTime', label: 'Ledge climb time', min: 0.1, max: 1, step: 0.02 },
 
+  { group: 'Riding', path: 'ride.minSlope', label: 'Air attack is the shield over slopes this steep or more (rise over run)', min: 0.05, max: 2, step: 0.05 },
+  { group: 'Riding', path: 'slide.grip', label: 'Too steep: seconds he scrabbles up before he slips', min: 0, max: 1.5, step: 0.05 },
+  { group: 'Riding', path: 'slide.gravity', label: 'Sliding on his hide: how hard a slope pulls him', min: 2, max: 30, step: 0.5 },
+  { group: 'Riding', path: 'slide.max', label: 'Sliding on his hide: top speed', min: 3, max: 20, step: 0.5 },
+  { group: 'Riding', path: 'slide.turn', label: 'Sliding on his hide: turning', min: 0, max: 4, step: 0.1 },
+  { group: 'Riding', path: 'slide.hop', label: 'Sliding on his hide: the hop out of it', min: 0, max: 10, step: 0.1 },
   { group: 'Riding', path: 'ride.gravity', label: 'How hard a slope pulls him', min: 4, max: 40, step: 0.5 },
   { group: 'Riding', path: 'ride.max', label: 'Top riding speed', min: 8, max: 30, step: 0.5 },
   { group: 'Riding', path: 'ride.dragFlat', label: 'Slow-down on the flat', min: 0, max: 8, step: 0.1 },

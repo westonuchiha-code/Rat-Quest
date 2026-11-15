@@ -944,3 +944,19 @@ START-HERE has the rules. Things to know before touching it:
 - The clocks run at the very top of `RatModel.update`, before the pose is chosen, so the pose and the shield start
   on the same frame.
 
+## The air attack onto the shield, the slide on his hide, the drop onto a rail (2026-11-15)
+START-HERE has the rules and the owner's words. Things to know before touching it:
+- `slopeBelow` looks straight down from his middle only. A slope beside him, or under his edge, does not count.
+- The surf start is checked BEFORE the sword block in `update`, so it takes the press and the dive never starts.
+- `rideGroundAge` (time on the ground since landing) is what the "too slow: step off" rule waits on, not `rideAge`:
+  he can come down out of a long jump already riding, with no speed yet, and must be given time for the slope to
+  take him.
+- A jump pressed on too-steep ground makes him slip THAT frame (`slipIfTooSteep` reads the press), so the jump is
+  the slide's hop. Otherwise the scrabble plus a full double jump was a way up things.
+- The short-hop rule again: in the tests, `jumpHeld` must be true on the frame of the press, or the jump is cut to
+  a hop a third as high. (A test that pressed STOW "at the top of his jump" was in fact a hand's height up.)
+- Coming down onto a rail, `grind.air` is his height above the line and `grind.off` how far to its side; he is
+  not `grinding` (the getter) until `air` is 0, so sparks and the ring start when he touches. If the line ends
+  under him on the way down, the grind is dropped and he is simply riding in the air.
+- Onto a rail from within 0.3 above it he is put on it at once, and the event that frame is 'grind', not 'ride'.
+

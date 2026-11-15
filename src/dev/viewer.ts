@@ -68,6 +68,7 @@ export function runViewer(canvas: HTMLCanvasElement): void {
       armed: q.get('armed') !== '0',
       stowProgress: -1,
       plungeStage: num('stage', 0),
+      slide: state === 'slide' ? { back: q.get('back') === '1', air: false, along: num('along', 0), across: 0 } : null,
     };
     rat.setTransform(origin, 0);
     // Settle into the stance first, then play the requested state for t seconds.

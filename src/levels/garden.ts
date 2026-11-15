@@ -157,9 +157,9 @@ export function garden(): LevelDef {
   solids.push({ ...extent('stone', RUN.rail.x0, RUN.rail.x1, 0, RUN.rail.y, RUN.rail.z - RUN.rail.wide / 2, RUN.rail.z + RUN.rail.wide / 2), skin: 'rustPlate' });
   solids.push(extent('stone', RUN.kerb.x0, RUN.kerb.x1, 0, RUN.kerb.y, RUN.kerb.z0, RUN.kerb.z1));
   // (Its board is on the wall over the kerb: one standing in the way hid the rail from a rider coming at it.)
-  decor.push({ kind: 'sign', x: (RUN.kerb.x0 + RUN.kerb.x1) / 2, y: 2.6, z: GARDEN.halfZ, yaw: Math.PI, w: 3.2, h: 1.5, lines: ['GRIND', 'AT AN EDGE: STOW'] });
+  decor.push({ kind: 'sign', x: (RUN.kerb.x0 + RUN.kerb.x1) / 2, y: 2.6, z: GARDEN.halfZ, yaw: Math.PI, w: 3.2, h: 1.5, lines: ['GRIND', 'JUMP, THEN STOW'] });
   // Boards: on the platform's wall for the run and the chute, and standing before the kicker.
-  decor.push({ kind: 'sign', x: T.x1, y: T.y + 1.6, z: (T.z0 + T.z1) / 2, yaw: -Math.PI / 2, w: 2.6, h: 1.4, lines: ['THE RUN', 'RUN, THEN SNEAK'] });
+  decor.push({ kind: 'sign', x: T.x1, y: T.y + 1.6, z: (T.z0 + T.z1) / 2, yaw: -Math.PI / 2, w: 2.6, h: 1.4, lines: ['THE RUN', 'JUMP, ATTACK'] });
   decor.push({ kind: 'sign', x: (RUN.chute.x0 + RUN.chute.x1) / 2, y: T.y + 1.6, z: T.z1, yaw: Math.PI, w: 2.6, h: 1.4, lines: ['TOO STEEP', 'HE SLIDES'] });
   decor.push({ kind: 'sign', x: RUN.kicker.x1 + 1.6, y: 1.5, z: RUN.kicker.z0 - 0.8, yaw: Math.PI / 2, w: 2.4, h: 1.3, lines: ['JUMP', 'THEN JUMP AGAIN'], post: 0 });
   decor.push({ kind: 'lamp', x: 22, y: 11, z: 21.5 }, { kind: 'lamp', x: 8, y: 7, z: 21.5 }, { kind: 'lamp', x: -18, y: 7, z: 21.5 });

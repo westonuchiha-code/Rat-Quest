@@ -238,6 +238,11 @@ export interface RatAnimInput {
   onWall?: boolean;
   /** Riding his shield: how hard he is steering (-1..1), how far through a kickflip (0..1, -1 when not), and whether he is in the air. */
   /**
+   * Sliding down ground too steep to stand on, on his own hide. `back`: backwards on his belly, facing up the slope
+   * he was trying to climb; otherwise feet first on his seat. `along`, `across`: how the ground lies (see `ride`).
+   */
+  slide?: { back: boolean; air: boolean; along?: number; across?: number } | null;
+  /**
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
    */
@@ -362,6 +367,21 @@ const RIDE: Pose = fullPose({
 });
 /** In the air on it: tucked up over the shield, arms higher. */
 /**
+ * Sliding on his seat down a slope too steep for him: sat back, knees up and feet out in front to brake, arms flung
+ * out and back, ears flat. He did not mean to. (His whole body is tipped back, and to the slope, by the code.)
+ */
+const SLIDE_SIT: Pose = fullPose({
+  hipPos: [0, 0, 0], hips: [-0.25, 0, 0], chest: [0.55, 0, 0], head: [0.25, 0, 0],
+  armS: [0.9, 0, -1.0], elbowS: -0.5, wrist: [0, 0, 0], armH: [0.9, 0, 1.0], elbowH: -0.5, shield: [0, 0, 0],
+  footS: [-0.09, 0.1, 0.12], footH: [0.09, 0.13, 0.16], toeS: -0.5, toeH: -0.5, tail: [0.2, 0, 0], ears: 0.9,
+});
+/** ...and on his belly, backwards, having lost his footing going up: flat to it, paws clawing above his head, legs trailing. */
+const SLIDE_BELLY: Pose = fullPose({
+  hipPos: [0, 0, 0], hips: [0, 0, 0], chest: [-0.2, 0, 0], head: [-0.75, 0, 0],
+  armS: [-2.75, 0, -0.3], elbowS: -0.35, wrist: [0, 0, 0], armH: [-2.75, 0, 0.3], elbowH: -0.35, shield: [0, 0, 0],
+  footS: [-0.08, 0.02, 0], footH: [0.08, 0.05, 0.02], toeS: 1.0, toeH: 1.0, tail: [0.9, 0, 0], ears: 0.9,
+});
+/**
  * Getting on: he hops, throws the shield down off his arm so that it tips forward onto its face and slides in under
  * his feet, and comes down on it. (The owner, 2026-11-15: "it just seems like it's like an instant snap".) All of it is drawn
  * only: by the rules he is riding from the first moment.
@@ -455,6 +475,7 @@ export class RatModel {
   private wasRiding = false;
   /** Seconds into getting on (or stepping off): -1 when he is doing neither. */
   private mountT = -1;
+  private mountInAir = false;
   private dismountT = -1;
   private readonly mountFromP = new THREE.Vector3();
   private readonly mountFromQ = new THREE.Quaternion();
@@ -815,6 +836,8 @@ export class RatModel {
       if (riding && !this.wasRiding) {
         this.mountT = 0;
         this.dismountT = -1;
+        // (In the air already, as he is when he gets on over a slope or a rail, there is no hop to draw: he is up.)
+        this.mountInAir = !!ctx.ride?.air;
         // (Where the shield was the moment before: on his arm, or on his back.)
         this.placeOf(ctx.armed ? this.armShield : this.stowShield, this.mountFromP, this.mountFromQ);
       } else if (!riding && this.wasRiding) {
@@ -825,7 +848,7 @@ export class RatModel {
       if (this.mountT >= 0 && (this.mountT += dt) >= RIDE_MOUNT) this.mountT = -1;
       if (this.dismountT >= 0 && ((this.dismountT += dt) >= RIDE_DISMOUNT || stopped || !ctx.armed)) this.dismountT = -1;
       // The hop: up and down again by the time he lands; long as he leaves the ground, flat as he lands on it.
-      const m = this.mountT >= 0 ? this.mountT / RIDE_MOUNT : -1;
+      const m = this.mountT >= 0 && !this.mountInAir ? this.mountT / RIDE_MOUNT : -1;
       this.hopY = m >= 0 ? RIDE_HOP * Math.sin(Math.PI * Math.min(1, m / RIDE_MOUNT_LAND)) : 0;
       this.hopStretch = m < 0 ? 1 : m < 0.25 ? 1 + 0.18 * Math.sin((Math.PI * m) / 0.25) : m > RIDE_MOUNT_LAND ? 1 - 0.22 * Math.sin((Math.PI * (m - RIDE_MOUNT_LAND)) / (1 - RIDE_MOUNT_LAND)) : 1;
     }
@@ -925,6 +948,33 @@ export class RatModel {
         stiffness = 52;
         damping = 0.9;
       }
+    } else if (state === 'slide') {
+      // Off his feet on a slope too steep for him: on his seat, or (if he was going up it) on his belly, clawing at
+      // it. In the air off a hop he keeps the shape he was sliding in.
+      const sl = ctx.slide ?? { back: false, air: false };
+      if (sl.back) {
+        pose = fullPose(SLIDE_BELLY);
+        // (His paws scrabble at the slope, one and then the other.)
+        const claw = Math.sin(this.time * 22);
+        pose.armS[0] += claw * 0.3;
+        pose.armH[0] -= claw * 0.3;
+        pose.elbowS -= Math.max(0, claw) * 0.4;
+        pose.elbowH -= Math.max(0, -claw) * 0.4;
+        pose.tail[1] = Math.sin(this.time * 9) * 0.5;
+        tumbleX = 1.36;
+        lift = -0.3;
+      } else {
+        pose = fullPose(SLIDE_SIT);
+        // (He rattles down it: arms and tail shaking.)
+        const jolt = Math.sin(this.time * 26);
+        pose.armS[2] -= jolt * 0.08;
+        pose.armH[2] += jolt * 0.08;
+        pose.tail[1] = Math.sin(this.time * 14) * 0.35;
+        tumbleX = -0.85;
+        lift = -0.22;
+      }
+      stiffness = 34;
+      damping = 0.8;
     } else if (state === 'hang') {
       // Hanging by his paws from a ledge: stretched out long against the wall, head tipped back to look up at the edge,
       // legs dangling. He swings a little as he catches it, then settles. (His paws are planted on the edge below.)
@@ -1091,10 +1141,12 @@ export class RatModel {
     // On the shield he leans into his turns, a long way over in a carve.
     this.rideLean = ease(this.rideLean, state === 'ride' ? -(ctx.ride?.steer ?? 0) * 0.42 : 0, dt, 9);
     // ...and he and his shield lie to the slope under them: nose down going down it, tipped across it going across.
-    const onSlope = state === 'ride' ? ctx.ride : null;
+    const onSlope = state === 'ride' ? ctx.ride : state === 'slide' ? ctx.slide : null;
     this.rideTiltX = ease(this.rideTiltX, onSlope ? Math.atan(-(onSlope.along ?? 0)) : 0, dt, 14);
     this.rideTiltZ = ease(this.rideTiltZ, onSlope ? Math.atan(onSlope.across ?? 0) : 0, dt, 14);
-    this.lean.rotation.set(this.pitch + this.rideTiltX * RIDE_BODY_TILT, 0, this.bank + this.rideLean + this.rideTiltZ * RIDE_BODY_TILT);
+    // (Sliding on his hide he lies all the way to the slope; standing on his shield, most of the way.)
+    const bodyTilt = state === 'slide' ? 1 : RIDE_BODY_TILT;
+    this.lean.rotation.set(this.pitch + this.rideTiltX * bodyTilt, 0, this.bank + this.rideLean + this.rideTiltZ * bodyTilt);
     // (The hop onto his shield: lifted, stretched as he goes up and squashed as he comes down on it.)
     this.lean.position.y = this.hopY;
     this.lean.scale.set(1 / Math.sqrt(this.hopStretch), this.hopStretch, 1 / Math.sqrt(this.hopStretch));

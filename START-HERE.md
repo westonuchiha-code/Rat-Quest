@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,684 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,704 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -370,9 +370,9 @@ level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the heigh
 ### Step two is DONE (2026-11-15): the slide and the shield ride
 He rides his shield like a small skateboard. All of it is `TUNING.ride`, and a 'Riding' group of sliders in the
 tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRide`, `bail` in controller.ts.
-- **Getting on.** Running DOWN a slope (at least `minSlope`, one up in five), press SNEAK: the shield drops under his
-  feet. On a slope too steep to stand on (over `MAX_WALK_SLOPE`) he has no choice: he slides the moment he is on it,
-  and cannot step off till he is at its foot. Weapons must be out (not on his back, not mid-swing or mid-roll).
+- **Getting on** (CHANGED the same day, see "How he gets on, and the slide on his hide" below): in the air over a
+  slope at least `minSlope` steep (two up in five), ATTACK puts the shield under his feet and he comes down riding.
+  SNEAK no longer does anything of the kind. Weapons out or on his back, either.
 - **On it.** The slope pulls him (`gravity`), the flat slows him (`dragFlat`), top speed `max` (16; a run is 6.2). The
   stick ACROSS his heading steers; hard over is a carve (sharper, and it costs speed); the stick BACK brakes. He
   cannot guard, swing, roll or stow while riding. He steps off by himself below `stop`, or at once on the ROLL button.
@@ -427,6 +427,50 @@ animation better for whenever he hops on his shield right now it just seems like
 - `tests/ride.ts` checks it: the shield starts where it was, only ever goes down, the smears show, he hops and lands.
 - Seen frame by frame in the viewer and at quarter speed in the running game. **Not seen at full speed by a person.**
 
+### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
+His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the
+downward attack when the slope below him is beyond a certain incline. Also there should be surfaces that are too
+steep for him to walk up so he will automatically start sliding down them if he gets too far up like how Mario does
+... maybe you should make an animation for him just sliding rather than board sliding, since he would basically be
+like tripping and sliding down ... So that would mean he would have two ways to slide down something, one that's
+probably a little slower and you have less control where he's not on his shield ... and then the other one that
+would be when you jump and then push the attack button above an incline". And, sent while that was being built:
+"if you're jumping above a rail and you push triangle your character should jump onto his board and grind along
+the rail ... kind of snap to the rail and slide down it, as long as you have enough speed otherwise you just hop
+off if you're below a certain speed threshold."
+What is built (controller.ts; numbers in `TUNING.ride`, `TUNING.slide`, `TUNING.grind`; sliders in the Riding group):
+- **The shield: the air attack over a slope.** In the air, with a slope straight below him at least `ride.minSlope`
+  steep (0.4: two up in five) and no more than `ride.surfDrop` (10) down, ATTACK is not the dive: `beginRide`, and he
+  lands riding. Over the flat, or a gentler slope, it is the dive as ever. **We chose 0.4**, not "too steep to
+  stand": a slope he can walk (up to one in one) can be ridden, as the garden's run is; and the dive is still his on
+  gentle ramps. It is one slider if the owner wants the mark elsewhere.
+- **The slide on his hide: ground too steep to stand on** (over `MAX_WALK_SLOPE`, one in one). `slipIfTooSteep`: going
+  UP it he has `slide.grip` (0.3 s) of scrabbling, slowly, and gets a little way (under two units up a two-in-one);
+  any other way he is on it he is off his feet at once. `slideStep`: pulled less than a shield (10 against 15),
+  slower at his fastest (9.5 against 16), steers far less (0.8 against 2.2), cannot swing, guard or roll. On ground
+  he can stand on he scrapes to a stop and gets up. Jump there is a small hop with NO second jump (so a steep slope
+  is never a way to climb higher than a jump does), but it is enough to press ATTACK in the air: out of a slide,
+  onto the shield. A rider on his shield stays on it down such ground: only one on his feet slips.
+- **A slope too steep is no longer a wall at its foot** (`moveAxis`): he steps onto it. That is what lets him "get
+  too far up", and lets a rider go up one (a pipe's far wall). One so steep that a single step is more than a step
+  up still stops him, and gives him his step back.
+- **Drawn** (ratModel.ts, state 'slide'): `SLIDE_SIT`, on his seat feet first, arms flung out; and `SLIDE_BELLY`
+  (`slideBack`), on his belly going down backwards, clawing at the slope he was climbing. He lies all the way to
+  the slope. Sounds: a yelp and a thump at the slip, the ride's scrape very quiet while he slides.
+- **Triangle in the air: onto a rail from his own feet.** STOW in the air, on foot, with a grind line in reach
+  (`grind.reach` to the side, `grind.down` 2.6 below: a jump's height) that he is going along at `grind.minSpeed`
+  (3.5; a walk is 3.2, a run 6.2) or more: the shield goes under him and he comes DOWN onto the line over a few
+  frames, drawn in over it (`grind.air`, `off`, `dropSpeed`, `dropPull`, `dropIn`): not put on it at a stroke.
+  Too slow: nothing happens. **It works on ledges as well as rails** (they are one thing in the code): say so to
+  the owner; if he wants rails only, it is the `side === 0` lines in `findGrind`.
+- The garden's boards now say 'JUMP, ATTACK' (the run) and 'JUMP, THEN STOW' (the rail).
+- Tests: `tests/ride.ts` (getting on; the slide; out of a slide onto the shield), `tests/grind.ts` (from his own
+  feet), `tests/garden.ts` (the run, the chute both ways, the rail from his feet). Watched in the running game at
+  slow speed: the air attack over the run, the slide down the chute, the scrabble up it and the slide back.
+- **Not done / to know**: the camera still loses him down the chute. Enemies know nothing of any of it. `ride.again`
+  and `rideAgain` are left over from the SNEAK start and do nothing now. The Move Garden's "1 UP IN 1" ramp is the
+  steepest he can stand on: anything steeper anywhere is now a slide.
+
 ### Which way up the shield lies (the owner, 2026-11-15)
 "I think the wood should be the part that he's standing on and the curved part of The Shield is where he should be
 sliding on ... I think he's on it upside down." And then: "we should turn the shield around as well ... it makes
@@ -446,7 +490,8 @@ his feet) puts the shield across the nearest edge he is going along, and he slid
   middle. Lines run along x or z. On a ramp they slope with it: the side of a ramp is a ledge going downhill, a thin
   ramp a rail going downhill. A line carries on from one solid to the next at the same height.
 - **Getting on**: within `reach` (0.85) to his side, no more than `up` (0.75) above his feet (he hops onto it) or
-  `down` (1.5) below (he comes down onto it out of a jump), going `minSpeed` or more, and mostly ALONG it.
+  `down` (2.6) below (he comes down onto it out of a jump), going `minSpeed` or more, and mostly ALONG it. Riding
+  already, or (since the same day) in the air on his own feet.
 - **On it**: the line carries him, the stick does nothing. A level line slows him less than the floor (`drag`), a
   sloping one pulls him as a slope does. JUMP hops off (the stick throws the hop to a side); ROLL steps off rail
   and shield; at its end he flies off still riding; too slow and he is set down; something across it at speed

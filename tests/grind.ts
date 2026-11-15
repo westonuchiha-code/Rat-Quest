@@ -25,8 +25,11 @@ const WEST = v(-1, 0);
 /** A big floor, and a hill: a landing at x 0..6, eight up, and a slope down from x = 0 to x = -16 (west is down). */
 const hill = (): Aabb[] => [aabbOf(extent('floor', -160, 60, -1, 0, -60, 60)), aabbOf(rampBox('stone', -16, 0, -4, 4, 0, 8, 'e')), aabbOf(extent('stone', 0, 6, 0, 8, -4, 4))];
 interface Run { p: PlayerController; events: MoveEvent[] }
+/** Onto his shield: he runs onto the slope, jumps, and in the air over it presses ATTACK. */
+const getOn = (p: PlayerController): Partial<PlayerInput> => ({ move: WEST, run: true, jumpPressed: p.grounded && p.position.x < -0.5, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.position.x < -0.5 && p.velocity.y < 4 });
 /**
- * He runs down the hill along z = `lane`, gets on his shield, and from then on does what `at` says. (Not riding yet,
+ * He runs down the hill along z = `lane`, gets on his shield (a jump, and ATTACK in the air over the slope), and
+ * from then on does what `at` says. (Not riding yet,
  * `at` is not asked.)
  */
 function ride(cs: Aabb[], lane: number, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): Run {
@@ -34,7 +37,7 @@ function ride(cs: Aabb[], lane: number, frames: number, at: (i: number, p: Playe
   const events: MoveEvent[] = [];
   for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
   for (let i = 0; i < frames; i++) {
-    p.update(DT, inp(p.riding ? { run: false, ...at(i, p) } : { move: WEST, run: p.position.x > -1 }), cs);
+    p.update(DT, inp(p.riding ? { run: false, ...at(i, p) } : getOn(p)), cs);
     if (p.moveEvent) events.push(p.moveEvent);
     each?.(p);
   }
@@ -59,7 +62,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   let offLine = 0;
   let speedOn = 0;
   let speedOff = 0;
-  const a = ride(cs, 0, 330, stowOnce((p) => p.position.x < -26), (p) => {
+  const a = ride(cs, 0, 440, stowOnce((p) => p.position.x < -26), (p) => {
     if (!p.grinding) return;
     onIt++;
     if (Math.abs(p.position.z + 0.5) > 1e-6 || Math.abs(p.position.y - 0.5) > 1e-6) offLine++;
@@ -73,14 +76,14 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   check('...at its end he flies off it still on his shield, and lands riding', a.events.includes('grindEnd') && a.events.indexOf('rideLand', a.events.indexOf('grindEnd')) > 0 && !a.events.includes('bail') && a.p.position.x < -50, `${a.events.join()}; x ${a.p.position.x.toFixed(1)}`);
   // He does not steer on it: the stick held hard to one side changes nothing.
   let wander = 0;
-  const b = ride(cs, 0, 260, (i, p) => ({ ...stowOnce((q) => q.position.x < -26)(i, p), ...(p.grinding ? { move: v(0, 1) } : {}) }), (p) => {
+  const b = ride(cs, 0, 370, (i, p) => ({ ...stowOnce((q) => q.position.x < -26)(i, p), ...(p.grinding ? { move: v(0, 1) } : {}) }), (p) => {
     if (p.grinding) wander = Math.max(wander, Math.abs(p.position.z + 0.5));
   });
   check('...the rail carries him: the stick does not steer him off it', wander < 1e-6 && b.events.includes('grind'));
   // Not without the button, and not from too far away.
-  const c = ride(cs, 0, 260, () => ({}));
+  const c = ride(cs, 0, 370, () => ({}));
   check('without the button he rides on beside it', !c.events.includes('grind') && c.p.riding);
-  const d = ride(cs, 2, 260, stowOnce((p) => p.position.x < -26));
+  const d = ride(cs, 2, 370, stowOnce((p) => p.position.x < -26));
   check('a rail two and a half units to his side is out of reach', !d.events.includes('grind'));
 }
 
@@ -93,7 +96,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
     const s = stow();
     let jumped = false;
     let top = 0;
-    const r = ride(cs, 0, 230, (i, p) => {
+    const r = ride(cs, 0, 340, (i, p) => {
       if (p.grinding && p.position.x < -34 && !jumped) {
         jumped = true;
         return { jumpPressed: true, jumpHeld: true, move: v(0, side) };
@@ -111,7 +114,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   check('...and the stick throws the hop to the side he holds it', south.z > 0.3 && north.z < -1.3, `south to z ${south.z.toFixed(2)}, north to z ${north.z.toFixed(2)}`);
   const s2 = stow();
   let rolled = false;
-  const stepped = ride(cs, 0, 280, (i, p) => {
+  const stepped = ride(cs, 0, 390, (i, p) => {
     if (p.grinding && p.position.x < -34 && !rolled) {
       rolled = true;
       return { dodgePressed: true };
@@ -119,15 +122,15 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
     return s2(i, p);
   });
   check('ROLL steps off rail and shield both', rolled && !stepped.p.riding && !stepped.p.grinding && stepped.events.includes('rideEnd'), stepped.events.join());
-  // A long rail on the level: he slows on it at last and is set down.
-  const long = [...hill(), aabbOf(extent('stone', -150, -24, 0, 0.5, -0.62, -0.38))];
-  const s3 = stowOnce((p) => p.position.x < -26);
-  const slow = ride(long, 0, 2400, s3);
-  check('on a rail long enough he slows and comes off it by himself, harmlessly', slow.events.includes('grind') && slow.events.includes('grindEnd') && !slow.events.includes('bail') && !slow.p.grinding && slow.p.position.x > -150, `${slow.events.join()}; x ${slow.p.position.x.toFixed(1)}`);
+  // A rail that climbs: it slows him, and when he is too slow to grind he is set down on it, off his shield.
+  const rising = [...hill(), aabbOf(rampBox('stone', -70, -24, -0.62, -0.38, 0.5, 8.5, 'w'))];
+  const s3 = stowOnce((p) => p.position.x < -24.3);
+  const slow = ride(rising, 0, 700, s3);
+  check('on a rail that climbs he slows, and too slow to grind he comes off it by himself, harmlessly', slow.events.includes('grind') && slow.events.includes('grindEnd') && !slow.events.includes('bail') && !slow.p.grinding && slow.p.position.x > -70, `${slow.events.join()}; x ${slow.p.position.x.toFixed(1)}`);
   // Something standing across a rail.
   const blocked = [...hill(), aabbOf(extent('stone', -70, -24, 0, 0.5, -0.62, -0.38)), aabbOf(extent('stone', -41, -40, 0, 3, -2, 2))];
   const s4 = stowOnce((p) => p.position.x < -26);
-  const hit = ride(blocked, 0, 300, s4);
+  const hit = ride(blocked, 0, 410, s4);
   check('a wall across the rail throws him off it at speed', hit.events.includes('grind') && hit.events.includes('bail') && hit.p.position.x > -40.5, `${hit.events.join()}; x ${hit.p.position.x.toFixed(1)}`);
 }
 
@@ -139,7 +142,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   let onIt = 0;
   let bad = 0;
   let side = 0;
-  const a = ride(cs, 0, 330, stowOnce((p) => p.position.x < -26), (p) => {
+  const a = ride(cs, 0, 440, stowOnce((p) => p.position.x < -26), (p) => {
     if (!p.grinding) return;
     onIt++;
     side = p.grindSide;
@@ -149,7 +152,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   // Going west (-x) with the drop to the north (-z): by his model that is his... +x side faces -z going +x, so -x going west.
   check('...and knows which side the drop is on', side === -1, `side ${side}`);
   const high = [...hill(), aabbOf(extent('stone', -50, -24, 0, G.up + 0.2, 0.5, 4.5))];
-  const tall = ride(high, 0, 330, stowOnce((p) => p.position.x < -26));
+  const tall = ride(high, 0, 440, stowOnce((p) => p.position.x < -26));
   check('...a ledge higher than he can hop his shield onto is a wall to him, as it was', !tall.events.includes('grind'));
   // From on top of it: riding along the kerb's top near its edge.
   const top = [...hill().slice(0, 1), aabbOf(rampBox('stone', -16, 0, -4, 4, 0.8, 8.8, 'e')), aabbOf(extent('stone', 0, 6, 0, 8.8, -4, 4)), aabbOf(extent('stone', -60, -16, 0, 0.8, -4, 4))];
@@ -158,10 +161,10 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   let pressed = false;
   let z = 0;
   for (let i = 0; i < 20; i++) p2.update(DT, inp({}), top);
-  for (let i = 0; i < 260; i++) {
+  for (let i = 0; i < 370; i++) {
     const press = p2.riding && !pressed && p2.position.x < -20;
     if (press) pressed = true;
-    p2.update(DT, inp(p2.riding ? { run: false, stowPressed: press } : { move: WEST, run: p2.position.x > -1 }), top);
+    p2.update(DT, inp(p2.riding ? { run: false, stowPressed: press } : getOn(p2)), top);
     if (p2.moveEvent) ev.push(p2.moveEvent);
     if (p2.grinding) z = p2.position.z;
   }
@@ -179,7 +182,7 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   // Two kerbs end to end at one height are one edge to him; a third, lower, is where it ends.
   const cs = [...hill(), aabbOf(extent('stone', -36, -24, 0, 0.7, 0.5, 4.5)), aabbOf(extent('stone', -50, -36, 0, 0.7, 0.5, 3)), aabbOf(extent('stone', -60, -50, 0, 0.2, 0.5, 3))];
   let last = 0;
-  const a = ride(cs, 0, 300, stowOnce((p) => p.position.x < -26), (p) => {
+  const a = ride(cs, 0, 410, stowOnce((p) => p.position.x < -26), (p) => {
     if (p.grinding) last = p.position.x;
   });
   check('an edge carries on from one box to the next at the same height, and ends where the height does', a.events.includes('grind') && last < -49 && last > -51, `ground on to x ${last.toFixed(1)}`);
@@ -192,10 +195,10 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   let outV = 0;
   let fell = 0;
   for (let i = 0; i < 20; i++) p.update(DT, inp({}), down);
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 410; i++) {
     const press = p.riding && !pressed && p.position.x < -30.2;
     if (press) pressed = true;
-    p.update(DT, inp(p.riding ? { run: false, stowPressed: press } : { move: WEST, run: p.position.x > -1 }), down);
+    p.update(DT, inp(p.riding ? { run: false, stowPressed: press } : getOn(p)), down);
     if (p.moveEvent) ev.push(p.moveEvent);
     if (p.grinding) {
       if (!inV) inV = Math.abs(p.velocity.x);
@@ -205,6 +208,65 @@ const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: Playe
   check('a rail that slopes down speeds him up', ev.includes('grind') && outV > inV + 1, `${inV.toFixed(1)} on, ${outV.toFixed(1)} off; ${ev.join()}`);
   check('...and he leaves its end going down the way it was going, not level', fell < -2, `falling at ${fell.toFixed(1)} as he leaves`);
   check('the height of a line is its solid\'s top there; past its end there is none', grindHeight({ axis: 'x', c: -0.5, side: 0 }, -36, 3.6, 0, down, G.drop) === 3.6 && grindHeight({ axis: 'x', c: -0.5, side: 0 }, -43, 0.6, 1, down, G.drop) === 'end');
+}
+
+// ---- From his own feet, in the air (the owner, 2026-11-15) ----
+{
+  // A floor and a rail on it; he runs along beside the rail, jumps, and presses STOW in the air.
+  const cs = [aabbOf(extent('floor', -160, 60, -1, 0, -60, 60)), aabbOf(extent('stone', -40, -5, 0, 0.5, -0.62, -0.38))];
+  const go = (run: boolean, lane: number, when: (p: PlayerController) => boolean): { events: MoveEvent[]; on: number; jolt: number; first: number } => {
+    const p = new PlayerController(new THREE.Vector3(6, 0, lane));
+    const events: MoveEvent[] = [];
+    let on = 0;
+    let jolt = 0;
+    let first = 0;
+    let pressed = false;
+    const last = new THREE.Vector3();
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    for (let i = 0; i < 240; i++) {
+      last.copy(p.position);
+      const press = !pressed && !p.grounded && when(p);
+      if (press) pressed = true;
+      p.update(DT, inp(p.riding ? { run: false } : { move: WEST, run, jumpPressed: p.grounded && p.position.x < -8 && !pressed, jumpHeld: true, stowPressed: press }), cs);
+      if (p.moveEvent) events.push(p.moveEvent);
+      if (p.riding) jolt = Math.max(jolt, last.distanceTo(p.position));
+      if (p.grinding) {
+        on++;
+        if (!first) first = p.position.y;
+      }
+    }
+    return { events, on, jolt, first };
+  };
+  const top = go(true, 0, (p) => p.velocity.y < 0.5);
+  check('in the air over a rail, going along it at a run, STOW puts his shield under him and brings him down onto it', top.events[0] === 'ride' && top.events[1] === 'grind' && top.on > 40 && Math.abs(top.first - 0.5) < 1e-6, `${top.on} frames on it; ${top.events.join()}`);
+  check('...he comes down onto it: he is not put on it at a stroke from the top of his jump', top.jolt < 0.75, `furthest in a step ${top.jolt.toFixed(2)}`);
+  const low = go(true, 0, (p) => p.velocity.y < -6);
+  check('...pressed late, low over it, the same', low.events.includes('grind') && low.on > 30);
+  const walk = go(false, 0, (p) => p.velocity.y < 0.5);
+  check('...too slow (at a walk) nothing happens: he comes down on his feet, his shield on his arm', !walk.events.includes('ride') && !walk.events.includes('grind') && walk.on === 0, walk.events.join());
+  const wide = go(true, 2.2, (p) => p.velocity.y < 0.5);
+  check('...and a rail well off to his side is out of reach', !wide.events.includes('ride') && wide.on === 0);
+  // The edge of a ledge, the same: along the top of a kerb, a jump and STOW.
+  const kerb = [aabbOf(extent('floor', -160, 60, -1, 0, -60, 60)), aabbOf(extent('stone', -40, 10, 0, 1.2, -6, 0))];
+  const p = new PlayerController(new THREE.Vector3(6, 1.2, -0.6));
+  const ev: MoveEvent[] = [];
+  let z = 9;
+  for (let i = 0; i < 20; i++) p.update(DT, inp({}), kerb);
+  for (let i = 0; i < 160; i++) {
+    p.update(DT, inp(p.riding ? { run: false } : { move: WEST, run: true, jumpPressed: p.grounded && p.position.x < 0, jumpHeld: true, stowPressed: !p.grounded && p.velocity.y < 0.5 }), kerb);
+    if (p.moveEvent) ev.push(p.moveEvent);
+    if (p.grinding) z = p.position.z;
+  }
+  check('a ledge is the same as a rail to him: running along a kerb\'s top, a jump and STOW grinds its edge', ev.includes('ride') && ev.includes('grind') && Math.abs(z) < 1e-6, `${ev.join()}; z ${z.toFixed(2)}`);
+  // On the ground, STOW is what it always was.
+  const g = new PlayerController(new THREE.Vector3(-10, 0, 0));
+  for (let i = 0; i < 20; i++) g.update(DT, inp({}), cs);
+  let rode = false;
+  for (let i = 0; i < 60; i++) {
+    g.update(DT, inp({ move: WEST, run: true, stowPressed: i === 20 }), cs);
+    rode ||= g.riding;
+  }
+  check('on the ground beside a rail, on his feet, STOW still puts his sword away and nothing else', !rode && !g.armed);
 }
 
 console.log(failures === 0 ? 'grind: all passed' : `grind: ${failures} FAILED`);

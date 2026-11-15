@@ -1537,6 +1537,13 @@ function startGame(): void {
       audio.play('ratHurt', { vol: 0.55, rate: 1.15, priority: 7 });
       rumble.land(9);
     } else if (ev === 'rideEnd') audio.play('step', { vol: 0.6, rate: 0.85, priority: 4 });
+    // Off his feet on ground too steep for him: a yelp and a thump, a grunt for the hop out of it, a scuff getting up.
+    else if (ev === 'slip') {
+      audio.play('ratHurt', { vol: 0.4, rate: 1.3, priority: 6 });
+      audio.play('land', { vol: 0.5, rate: 0.8, priority: 5 });
+      audio.play('cloth', { vol: 0.6, priority: 4 });
+    } else if (ev === 'slideHop') audio.play('ratJump', { vol: 0.5, rate: 1.1, priority: 4 });
+    else if (ev === 'slideEnd') audio.play('step', { vol: 0.6, rate: 0.8, priority: 4 });
     // Onto an edge with it: iron on stone, a hard knock and a ring.
     else if (ev === 'grind') {
       audio.play('ridePop', { vol: 0.7, rate: 1.35, priority: 6 });
@@ -1689,7 +1696,9 @@ function startGame(): void {
       rumble.land(4);
     }
     const rideV = player.riding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.ride.max) : 0;
-    audio.loop('rideScrape', player.grinding ? 0 : rideV * 0.55 + (rideV > 0 ? 0.08 : 0));
+    // (Sliding on his hide is the same grit, a good deal quieter.)
+    const slideV = player.sliding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.slide.max) : 0;
+    audio.loop('rideScrape', player.grinding ? 0 : Math.max(rideV * 0.55 + (rideV > 0 ? 0.08 : 0), slideV * 0.22 + (slideV > 0 ? 0.05 : 0)));
     // ...and its rim along an edge: a ringing shriek, higher and louder the faster.
     audio.loop('grindRing', player.grinding ? rideV * 0.4 + 0.12 : 0);
     let fv = 0;
@@ -3372,6 +3381,7 @@ function startGame(): void {
       climbProgress: player.climbProgress,
       kickProgress: player.kickProgress,
       onWall: player.onWall,
+      slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
