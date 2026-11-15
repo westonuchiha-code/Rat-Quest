@@ -362,8 +362,8 @@ const RIDE: Pose = fullPose({
 });
 /** In the air on it: tucked up over the shield, arms higher. */
 /**
- * Getting on: he hops, swings the shield down off his arm so that it turns over once and slides in under his feet,
- * and comes down on it. (The owner, 2026-11-15: "it just seems like it's like an instant snap".) All of it is drawn
+ * Getting on: he hops, throws the shield down off his arm so that it tips forward onto its face and slides in under
+ * his feet, and comes down on it. (The owner, 2026-11-15: "it just seems like it's like an instant snap".) All of it is drawn
  * only: by the rules he is riding from the first moment.
  */
 export const RIDE_MOUNT = 0.36; // seconds, start to settled
@@ -373,11 +373,13 @@ export const RIDE_MOUNT_LAND = 0.8;
 const RIDE_HOP = 0.3; // how high the hop lifts him
 /**
  * How the shield lies under his feet: its painted, curved FACE down on the ground, where it slides, and its flat
- * wooden back up, where he stands; its point forward. (The owner, 2026-11-15: "the wood should be the part that he's
- * standing on and the curved part of The Shield is where he should be sliding on ... he's on it upside down.")
- * A quarter turn lays it down, a half turn about its own length turns it over.
+ * wooden back up, where he stands; its TOP forward and its point behind. (The owner, 2026-11-15: "the wood should be
+ * the part that he's standing on and the curved part of The Shield is where he should be sliding on ... he's on it
+ * upside down"; and then: "the top of the shield should be the part facing forward ... if you threw it down in front
+ * of you you probably wouldn't throw it and spin it upside down".) That is the shield as he holds it, tipped
+ * straight forward onto its face: one quarter turn.
  */
-const BOARD_LIES = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
+const BOARD_LIES = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
 /** ...and how far above the ground its middle is, lying so: its boss, the lowest of it, just clear of the stone. */
 const BOARD_Y = 0.056;
 /** Stepping off: the shield is kicked up from the ground onto his arm. */
@@ -633,7 +635,7 @@ export class RatModel {
     stowedShield.position.set(0, 0, 0);
     this.backShield.add(stowedShield);
     this.chest.add(this.backSword, this.backShield);
-    // Under his feet, for the ride: lying face down, its point forward. It leans with him.
+    // Under his feet, for the ride: lying face down, its top forward. It leans with him.
     const boardMesh = shieldMesh.clone();
     boardMesh.scale.setScalar(0.92);
     boardMesh.position.set(0, 0, 0);
@@ -996,13 +998,13 @@ export class RatModel {
     for (const g of this.boardGhosts) g.root.visible = false;
     this.board.scale.setScalar(this.boardScale);
     if (kicking) {
-      // Stepping off: it comes up off the ground, turning over, onto his arm.
+      // Stepping off: it comes up off the ground, tipping back upright, onto his arm.
       this.board.position.set(0, BOARD_Y, 0.01);
       this.board.rotation.set(0, 0, 0);
       this.boardRest.p.copy(this.board.position);
       this.boardRest.q.copy(this.board.quaternion);
       this.placeOf(this.armShield, this.boardAim.p, this.boardAim.q);
-      this.swingBoard(this.dismountT / RIDE_DISMOUNT, this.boardRest, this.boardAim, -1, 0.1);
+      this.swingBoard(this.dismountT / RIDE_DISMOUNT, this.boardRest, this.boardAim, 0, 0.1);
     }
     if (riding) {
       const r = ctx.ride ?? { steer: 0, flip: -1, air: false };
@@ -1014,14 +1016,15 @@ export class RatModel {
       this.board.rotation.y = this.rideGrind * (Math.PI / 2);
       this.board.rotation.x = this.rideTiltX * (1 - RIDE_BODY_TILT);
       this.board.rotation.z = flip * Math.PI * 2 + this.rideTiltZ * (1 - RIDE_BODY_TILT);
-      // Getting on: from where it was on him, down and round, to where it lies. (He is in the air over it: it is
+      // Getting on: from where it was on him, thrown down in front of him and tipped forward onto its face, to
+      // where it lies. It is not spun over on the way: he would not throw it so. (He is in the air over it: it is
       // on the ground, not hopping with him.)
       if (this.mountT >= 0) {
         this.boardRest.p.copy(this.board.position);
         this.boardRest.q.copy(this.board.quaternion);
         this.boardAim.p.copy(this.mountFromP);
         this.boardAim.q.copy(this.mountFromQ);
-        this.swingBoard(this.mountT / (RIDE_MOUNT * RIDE_MOUNT_UNDER), this.boardAim, this.boardRest, 1, 0.24);
+        this.swingBoard(this.mountT / (RIDE_MOUNT * RIDE_MOUNT_UNDER), this.boardAim, this.boardRest, 0, 0.24);
       }
     }
     const free = state === 'idle' || state === 'walk' || state === 'run' || state === 'land';
@@ -1173,7 +1176,7 @@ export class RatModel {
     p.y = p.y * this.hopStretch + this.hopY;
   }
 
-  /** One place on the swing between two placings, `s` of the way (eased), turning over once on the way. */
+  /** One place on the swing between two placings, `s` of the way (eased); `turn`: whole turns about its length on the way. */
   private swingAt(s: number, from: { p: THREE.Vector3; q: THREE.Quaternion }, to: { p: THREE.Vector3; q: THREE.Quaternion }, turn: number, out: number, p: THREE.Vector3, q: THREE.Quaternion): void {
     const e = smooth(s);
     p.lerpVectors(from.p, to.p, e);

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,683 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,684 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -415,7 +415,7 @@ animation better for whenever he hops on his shield right now it just seems like
   ride plays has changed.
 - **Getting on** (`RIDE_MOUNT`, 0.36 s): he hops (`hopY`, stretched going up and squashed landing, `hopStretch`), the
   pose is `RIDE_HOP_POSE` then `RIDE_AIR` then the ride; the shield leaves his arm (or his back) from exactly where
-  it was (`placeOf`), swings down and out in front of him turning over once, and is flat under his feet two thirds of
+  it was (`placeOf`), is thrown down and out in front of him tipping onto its face, and is flat under his feet two thirds of
   the way through (`RIDE_MOUNT_UNDER`); he comes down on it at `RIDE_MOUNT_LAND`. The SMEARS are two pale copies of
   it trailing where it was a moment before (`boardGhosts`), and it is stretched a little along its length mid-swing.
 - **Stepping off** (`RIDE_DISMOUNT`, 0.22 s): the same swing backwards, from the ground up onto his arm. Thrown off
@@ -429,9 +429,14 @@ animation better for whenever he hops on his shield right now it just seems like
 
 ### Which way up the shield lies (the owner, 2026-11-15)
 "I think the wood should be the part that he's standing on and the curved part of The Shield is where he should be
-sliding on ... I think he's on it upside down." So: its painted, curved FACE is down on the ground and its flat
-wooden BACK is up under his feet, point forward (`BOARD_LIES` and `BOARD_Y` in ratModel.ts; `tests/ride.ts` checks
-which way it faces and that its boss is just clear of the ground). Do not turn it back.
+sliding on ... I think he's on it upside down." And then: "we should turn the shield around as well ... it makes
+more sense to have the top of the shield facing forward, just because of the way that you would want to stand on it
+and if you threw it down in front of you you probably wouldn't throw it and spin it upside down". So: its painted,
+curved FACE is down on the ground, its flat wooden BACK up under his feet, its TOP forward and its point behind
+(`BOARD_LIES` and `BOARD_Y` in ratModel.ts; `tests/ride.ts` checks which way it faces, that its boss is just clear
+of the ground, and that getting on never shows its face upward). That is the shield as he holds it tipped straight
+forward onto its face, so the hop no longer turns it over on the way down: it is thrown down in front of him.
+Do not turn it back, and do not put the spin back.
 
 ### Grinding is DONE (2026-11-15; asked for by the owner the same day, his words are in the next section)
 Riding, **STOW** (triangle / north on a pad, H on the keyboard: it has nothing else to do while the shield is under

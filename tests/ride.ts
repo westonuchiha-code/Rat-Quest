@@ -257,12 +257,16 @@ const sneakOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerI
   check('the moment he gets on, the shield is still where it was on his arm: it has not jumped to his feet', rat.mountProgress >= 0 && rat.boardShown && !rat.shieldOnArm && startHeight > 0.3, `${startHeight.toFixed(2)} up`);
   let hop = 0;
   let smears = 0;
+  let faceUp = -1;
+  const boardParts = rat as unknown as { boardFlat: THREE.Object3D; root: THREE.Object3D };
   let lastHeight = startHeight;
   let rose = 0;
   let frames = 1;
   step('ride', Math.ceil(RIDE_MOUNT / DT) + 2, () => {
     hop = Math.max(hop, rat.hopHeight);
     smears = Math.max(smears, rat.smearsShown);
+    boardParts.root.updateMatrixWorld(true);
+    faceUp = Math.max(faceUp, new THREE.Vector3(0, 0, 1).applyQuaternion(boardParts.boardFlat.children[0].getWorldQuaternion(new THREE.Quaternion())).y);
     rose = Math.max(rose, rat.boardHeight() - lastHeight);
     lastHeight = rat.boardHeight();
     if (rat.mountProgress >= 0) frames++;
@@ -270,6 +274,7 @@ const sneakOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerI
   check('it takes a third of a second or so: a score of frames to be seen in', frames >= 18 && frames <= 26, `${frames} frames`);
   check('he hops: off the ground and down again', hop > 0.2 && rat.hopHeight === 0, `${hop.toFixed(2)} up at the top`);
   check('the shield goes DOWN to the ground all the way (never back up), trailing smears as it goes', rose < 0.02 && smears === 2, `rose ${rose.toFixed(3)} at most; ${smears} smears`);
+  check('...it is thrown down and tipped onto its face, never spun over: its painted face never looks up on the way', faceUp < 0.3, `face ${faceUp.toFixed(2)} up at most`);
   check('...and ends lying under his feet, the smears gone', rat.mountProgress < 0 && rat.smearsShown === 0 && rat.boardShown && Math.abs(rat.boardHeight() - 0.056) < 0.01, `${rat.boardHeight().toFixed(3)} up`);
   // Which way up it lies: the wood of its back to his feet, its painted face to the ground.
   {
@@ -278,9 +283,9 @@ const sneakOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerI
     const mesh = parts.boardFlat.children[0];
     const q = mesh.getWorldQuaternion(new THREE.Quaternion());
     const face = new THREE.Vector3(0, 0, 1).applyQuaternion(q); // (the shield's painted face looks along its own +z)
-    const point = new THREE.Vector3(0, -1, 0).applyQuaternion(q); // (...and its point is at its own -y)
+    const top = new THREE.Vector3(0, 1, 0).applyQuaternion(q); // (...and its top is at its own +y, its point at -y)
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(parts.root.getWorldQuaternion(new THREE.Quaternion()));
-    check('he stands on the wood of its back: its painted, curved face is down on the ground, its point forward', face.y < -0.99 && point.dot(fwd) > 0.99, `face ${face.y.toFixed(2)} up, point ${point.dot(fwd).toFixed(2)} forward`);
+    check('he stands on the wood of its back: its painted, curved face is down on the ground, its top forward and its point behind', face.y < -0.99 && top.dot(fwd) > 0.99, `face ${face.y.toFixed(2)} up, top ${top.dot(fwd).toFixed(2)} forward`);
     const box = new THREE.Box3().setFromObject(mesh);
     const ground = parts.root.getWorldPosition(new THREE.Vector3()).y;
     check('...and it is on the ground, not in it: its boss just clear of the stone', box.min.y - ground > 0 && box.min.y - ground < 0.02, `${(box.min.y - ground).toFixed(3)} clear`);
