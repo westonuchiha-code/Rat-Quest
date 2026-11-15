@@ -215,6 +215,9 @@ export function keep(): LevelDef {
 // Not a side area: it is not open from the start (its door opens once he is beaten and the wedge is taken), and the way
 // out goes home to the Club, where the ending waits.
 
+/** Where the throne room's wall columns stand along its side walls (their middles; each is two long). */
+export const THRONE_COLUMNS = [-14, -2, 10, 25] as const;
+
 const throneRoom: CustomLevel = {
   name: "Grimsqueak's Throne",
   blurb: 'A cold, high hall. He floats over the dais. Dodge the light he throws, and strike when he sinks.',
@@ -230,13 +233,16 @@ const throneRoom: CustomLevel = {
     at('exit', 0, -26, 1.5),
     // He floats over the dais and says nothing until the story's opening scene (STORY.lair) gives him his few lines.
     at('npc', 0, -17, 1.5, { props: { name: 'Lord Grimsqueak', kind: 'villain', lines: [] } }),
-    // Columns set into the side walls, so nothing stands in the fight.
-    ...[-14, -2, 10, 20].flatMap((z) => [box('pillar', -20, z - 1, -19, z + 1, 16), box('pillar', 19, z - 1, 20, z + 1, 16)]),
+    // Columns set into the side walls, so nothing stands in the fight. The last pair stand IN the south corners,
+    // joined to the end wall: they stood five out from it, and that slot between column and wall was a chimney he
+    // could kick up, over the top of the walls and out of the fight (found 2026-11-15, when the jump checker was
+    // taught how wide a chimney he can really climb). No two of these, and none and an end wall, are within nine.
+    ...THRONE_COLUMNS.flatMap((z) => [box('pillar', -20, z - 1, -19, z + 1, 16), box('pillar', 19, z - 1, 20, z + 1, 16)]),
     at('brazier', -6, -18, 1.5), at('brazier', 6, -18, 1.5), at('brazier', -10, -12), at('brazier', 10, -12), at('brazier', -12, 14), at('brazier', 12, 14),
     at('lamp', -14, 18, 5), at('lamp', 14, 18, 5), at('lamp', -14, -4, 5), at('lamp', 14, -4, 5),
     at('chain', -6, 0, 9), at('chain', 6, 0, 9), at('chain', -6, 12, 9), at('chain', 6, 12, 9),
     at('light', -7.5, -25.5, 1.5, { props: { color: 'purple' } }), at('light', 7.5, -25.5, 1.5, { props: { color: 'purple' } }),
-    at('light', -19, 25, 0, { props: { color: 'red', flash: 1 } }), at('light', 19, 25, 0, { props: { color: 'red', flash: 1 } }),
+    at('light', -18.4, 25, 0, { props: { color: 'red', flash: 1 } }), at('light', 18.4, 25, 0, { props: { color: 'red', flash: 1 } }),
     at('window', -19.5, -8, 9, { dir: 'e' }), at('window', 19.5, -8, 9, { dir: 'w' }),
     // His banners down both walls and behind the dais, torches under them.
     ...[-8, 4, 16].flatMap((z) => [at('banner', -19.7, z, 7, { dir: 'w', props: { color: 'purple' } }), at('banner', 19.7, z, 7, { dir: 'e', props: { color: 'purple' } })]),

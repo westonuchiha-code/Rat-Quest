@@ -58,7 +58,10 @@ const FORT_WALL = 6.5;
 const PUMP_ROOF = 8.5;
 
 /** The Cleft (north-west): two walls 2.2 apart, standing by themselves, this high. The cap is on the north one. */
-export const CLEFT = { x0: -40, x1: -35, northZ0: -32.5, northZ1: -30, southZ0: -27.8, southZ1: -26.6, top: 10 };
+// (Half a unit east of where it first stood: it was eight from the hall's west wall, and eight is a gap he can just
+// kick up, one perfect kick after another, between that wall and the Cleft's end. It is now eight and a half from the
+// walls either side of it, which is too far: see maxChimney in reach.ts.)
+export const CLEFT = { x0: -39.5, x1: -34.5, northZ0: -32.5, northZ1: -30, southZ0: -27.8, southZ1: -26.6, top: 10 };
 /** The Flue, on the pump house roof: a wall four units in from the hall's east wall, this high. The cap is on it. */
 export const FLUE = { x0: 41.6, x1: 44, z0: -6, z1: -1, top: 15.5 };
 /**

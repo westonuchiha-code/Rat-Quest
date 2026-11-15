@@ -3,9 +3,9 @@
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
-import { computeReach, maxClimb } from '../src/levels/reach';
+import { computeReach, maxClimb, maxChimney } from '../src/levels/reach';
 import type { LevelDef } from '../src/levels/types';
-import { keep, throne, THRONE, STACK, CHIMNEY_WALL, STACK_BOX } from '../src/levels/keep';
+import { keep, throne, THRONE, STACK, CHIMNEY_WALL, STACK_BOX, THRONE_COLUMNS } from '../src/levels/keep';
 import { LEVELS } from '../src/levels/levels';
 import { HUB_DOORS } from '../src/levels/junction';
 import { STORY } from '../src/story/scenes';
@@ -94,6 +94,49 @@ check('...pressing a little late still works', late > THRONE + 1, `highest ${lat
     top = Math.max(top, p.position.y);
   }
   check('without wall kicks the chimney cannot be climbed', top < THRONE - 4, `top ${top.toFixed(2)}`);
+}
+
+// The throne room cannot be climbed out of. (Its last pair of wall columns stood five out from the south wall, and
+// the slot between column and wall was a chimney: seven kicks took him over the top of the walls and out of the
+// fight. Found 2026-11-15, when the jump checker was taught how wide a chimney he can really climb.)
+{
+  const cs = room.solids.map((b) => makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0));
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const WALLS = 16;
+  const ends = [-26, ...THRONE_COLUMNS.flatMap((z) => [z - 1, z + 1]), 26];
+  // The slots along a side wall: from the north wall to the first column, between columns, and on to the south wall.
+  const slots: Array<[number, number]> = [];
+  for (let i = 0; i + 1 < ends.length; i += 2) if (ends[i + 1] - ends[i] > 0.01) slots.push([ends[i], ends[i + 1]]);
+  check('the throne room\'s columns: the last pair stand in the south corners, joined to the end wall', THRONE_COLUMNS[THRONE_COLUMNS.length - 1] + 1 === 26 && room.solids.filter((b) => b.y1 === WALLS && b.x1 - b.x0 === 1 && b.z1 - b.z0 === 2).length === THRONE_COLUMNS.length * 2);
+  check('...and no two columns, and no column and an end wall, are near enough to kick up between', slots.every(([a, b]) => b - a > maxChimney() + 0.5), `the narrowest slot is ${Math.min(...slots.map(([a, b]) => b - a))}; a chimney can be ${maxChimney().toFixed(1)}`);
+  /** Kicking from column to column (or wall) in a slot, hard against the side wall, as well as a player could. */
+  const kicked = (x: number, z0: number, z1: number): number => {
+    let best = 0;
+    for (const delay of [0, 1, 2, 3, 5, 8]) {
+      const p = new PlayerController(new THREE.Vector3(x, 0, Math.min(z0 + 1.5, (z0 + z1) / 2)));
+      for (let i = 0; i < 10; i++) p.update(DT, inp({}), cs);
+      let dir = -1;
+      let wait = -1;
+      const mv = (d: number): THREE.Vector3 => new THREE.Vector3(0, 0, d);
+      p.update(DT, inp({ move: mv(dir), jumpPressed: true, jumpHeld: true }), cs);
+      for (let i = 0; i < 1500; i++) {
+        const before = p.velocity.z;
+        const press = wait === 0;
+        if (press) dir = -dir;
+        p.update(DT, inp({ move: mv(dir), jumpPressed: press, jumpHeld: true }), cs);
+        best = Math.max(best, p.position.y);
+        if (wait > 0) wait--;
+        else if (wait === 0) wait = -1;
+        if (wait < 0 && !p.grounded && Math.sign(before) === dir && Math.abs(before) > 0.5 && p.velocity.z === 0) wait = delay;
+        if (p.grounded && i > 40) break;
+      }
+    }
+    return best;
+  };
+  const tries = slots.flatMap(([a, b]) => [kicked(19.5, a, b), kicked(-19.5, a, b)]);
+  check('played with the real controller: kicking in every slot along both side walls, he gets nowhere near the top of the walls', tries.every((h) => h < WALLS / 2), `the best of ${tries.length} tries got ${Math.max(...tries).toFixed(1)} up; the walls are ${WALLS}`);
+  const map = computeReach(room);
+  check('...and the jump checker agrees: nothing above the dais can be stood on', map.points.every(([, , h]) => h < 6), `the highest place he can stand is ${Math.max(...map.points.map((q) => q[2])).toFixed(1)} up`);
 }
 
 console.log(failures === 0 ? 'keep: all pass' : `keep: ${failures} FAIL`);

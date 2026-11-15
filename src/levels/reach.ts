@@ -55,6 +55,29 @@ export function maxClimb(grab = true): number {
   return (v * v) / (2 * g) + (TUNING.jump.airJumps > 0 ? (v2 * v2) / (2 * g) : 0) + (grab ? 1.05 : -0.15);
 }
 
+/**
+ * How far apart two facing walls can be and still be kicked up between. A kick throws him up and across; he gains
+ * height on every kick for as long as he reaches the far wall higher than he left the near one. Worked out from the
+ * kick's numbers, and a little short of the limit (it asks for half a unit gained each kick), so that "climbable"
+ * means a climb a player could make, not one frame-perfect kick after another.
+ *
+ * It is wide: about eight units. (Until 2026-11-15 this was a fixed 4.5, taken from the chimneys the levels had; the
+ * knight himself was always able to climb between walls far wider apart than that, as the Move Garden's six-wide
+ * chimney showed, so the checker could not see every way up.)
+ *
+ * `gain` is how much each kick must gain him. The default (half a unit) is for finding ways up that should not be
+ * there: anything a determined player could do counts. The trap search asks for two units a kick (about six and a
+ * half wide): a way OUT of somewhere has to be one an ordinary player can take, or the place is a trap.
+ */
+export function maxChimney(gain = 0.5): number {
+  const g = TUNING.physics.gravity;
+  const up = TUNING.moves.wallKickUp;
+  const peak = (up * up) / (2 * g);
+  const spare = Math.max(0, peak - gain);
+  const time = up / g + Math.sqrt((2 * spare) / (g * TUNING.physics.fallGravityMultiplier));
+  return TUNING.moves.wallKickPush * time + TUNING.rat.radius * 2;
+}
+
 export interface ReachMap {
   /** Can he stand (or swim) within `r` of (x, z), at a height from `y - below` to `y + above`? */
   near(x: number, y: number, z: number, r?: number, below?: number, above?: number): boolean;
@@ -71,7 +94,7 @@ export interface ReachMap {
   traps?: Array<[number, number, number]>;
 }
 
-export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?: boolean } = {}): ReachMap {
+export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?: boolean; /** The widest gap taken as a chimney (default: what the kick allows). */ chimney?: number } = {}): ReachMap {
   const solids: Box[] = [...def.solids];
   // Gates are taken as open, unless asked: then each is a wall (a little thicker than its bars, so the grid sees it).
   if (opts.gatesShut) for (const g of def.gates ?? []) {
@@ -208,7 +231,7 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
     else edgeAt.set(k, [n]);
   }
 
-  // Wall kicks: in a chimney (two walls facing each other, close together) he can kick his way up to the lower wall's top.
+  // Wall kicks: in a chimney (two walls facing each other, near enough to kick between) he can kick his way up to the lower wall's top.
   // For each standing point, the height such a chimney lets him reach, or 0 when there is none.
   const wallTopAt = (i: number, j: number, h: number): number => {
     if (i < 0 || j < 0 || i >= ni || j >= nj) return 0;
@@ -229,6 +252,8 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
     }
     return top > h + 1.5 ? top : 0;
   };
+  const chimney = opts.chimney ?? maxChimney(opts.traps ? 2 : 0.5);
+  const chimneyCells = Math.ceil(chimney / STEP);
   const kickTop = (n: Node): number => {
     let best = 0;
     for (const [di, dj] of [[1, 0], [0, 1]]) {
@@ -237,10 +262,10 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
       let b = 0;
       let ka = 0;
       let kb = 0;
-      for (let k = 1; k <= 9 && !a; k++) if ((a = wallTopAt(n.i + di * k, n.j + dj * k, n.h))) ka = k;
-      for (let k = 1; k <= 9 && !b; k++) if ((b = wallTopAt(n.i - di * k, n.j - dj * k, n.h))) kb = k;
-      // Kicks gain height only across a narrow gap (wider, and he is falling before he reaches the other wall).
-      if (a && b && (ka + kb - 1) * STEP <= 4.5) best = Math.max(best, Math.min(a, b));
+      for (let k = 1; k <= chimneyCells && !a; k++) if ((a = wallTopAt(n.i + di * k, n.j + dj * k, n.h))) ka = k;
+      for (let k = 1; k <= chimneyCells && !b; k++) if ((b = wallTopAt(n.i - di * k, n.j - dj * k, n.h))) kb = k;
+      // Kicks gain height only while he reaches the other wall higher than he left this one (see maxChimney).
+      if (a && b && (ka + kb - 1) * STEP <= chimney + 1e-6) best = Math.max(best, Math.min(a, b));
     }
     // He needs room overhead to kick up: a ceiling over him below the walls' tops (a doorway's lintel, say) stops it.
     if (best) for (const b of cols[n.i * nj + n.j]) if (b.y0 >= n.h + 1 && b.y0 < best - 0.05) return 0;

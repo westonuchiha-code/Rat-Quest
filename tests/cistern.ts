@@ -10,7 +10,7 @@ import { PlayerController, PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber } from '../src/world/chamber';
 import { cistern, CHIMNEY_FLOOR, PERCH, SUMMIT, CLEFT, FLUE, OUTRIGGER, WINCH, DRAIN_ROOF, SPIRAL, CISTERN_WEDGES } from '../src/levels/cistern';
-import { computeReach, unreachable } from '../src/levels/reach';
+import { computeReach, unreachable, maxChimney } from '../src/levels/reach';
 import { CollectibleTracker } from '../src/world/collectibles';
 import { TUNING } from '../src/data/tuning';
 import type { LevelDef } from '../src/levels/types';
@@ -121,7 +121,7 @@ function hop(start: THREE.Vector3): number {
     check(`the Cleft, jump pressed ${delay} frames after each wall: he kicks up from the floor, lands on its north wall and has the cap`, p.grounded && Math.abs(p.position.y - CLEFT.top) < 0.05 && p.position.z < CLEFT.northZ1 && p.position.z > CLEFT.northZ0 && t.isCollected(itemAt(cleftMid.x, (CLEFT.northZ0 + CLEFT.northZ1) / 2).id), `at z ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`);
   }
   check('...it is ten up: twice what a jump and a double jump get him', hop(cleftMid) < CLEFT.top / 2 + 0.2 && CLEFT.top === 10, `a double jump gets ${hop(cleftMid).toFixed(2)}`);
-  check('...and it stands by itself: five or more from any other wall he could kick off', CLEFT.x0 - -48 > 5 && -26 - CLEFT.x1 > 5 && CLEFT.northZ0 - -48 > 5 && -12 - CLEFT.southZ1 > 5);
+  check('...and it stands by itself: further from any other wall than he can kick up between (about eight)', [CLEFT.x0 - -48, -26 - CLEFT.x1, CLEFT.northZ0 - -48, -12 - CLEFT.southZ1].every((d) => d > maxChimney() + 0.3), `nearest ${Math.min(CLEFT.x0 - -48, -26 - CLEFT.x1).toFixed(1)}; a chimney can be ${maxChimney().toFixed(2)}`);
 
   // The Flue, on the pump house roof: the hall's east wall and a wall four units in from it. The cap is on that wall.
   const roof = cs.find((b) => Math.abs(b.max.y - 8.5) < 1e-6 && b.min.x === 28)!;
