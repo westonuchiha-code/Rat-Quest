@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
 import { bead, modelKit, paint } from '../render/modelKit';
-import { Springs, aim, ease, twoBone } from '../render/bugRig';
+import { Probe, Springs, aim, ease, twoBone } from '../render/bugRig';
 import { HORNET, type HornetState } from './hornet';
 
 /**
@@ -98,32 +98,6 @@ export interface HornetAnimInput {
   floor: number;
   /** How fast it is going over the floor. */
   moving: number;
-}
-
-/** The points of some meshes, in the space of the part they belong to: for finding the lowest of them each frame. */
-class Probe {
-  private readonly pts: THREE.Vector3[] = [];
-  private readonly v = new THREE.Vector3();
-  /** `skip`: parts of it that move on their own (they are given probes of their own). */
-  constructor(private readonly part: THREE.Object3D, skip: THREE.Object3D[] = []) {
-    part.updateMatrixWorld(true);
-    const inv = part.matrixWorld.clone().invert();
-    part.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      for (let q: THREE.Object3D | null = o; q && q !== part; q = q.parent) if (skip.includes(q)) return;
-      const pos = mesh.geometry.attributes.position;
-      const m = new THREE.Matrix4().multiplyMatrices(inv, mesh.matrixWorld);
-      for (let i = 0; i < pos.count; i++) this.pts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(m));
-    });
-  }
-  /** The lowest of them now, in the space of `root` (whose child, at some depth, the part is). Matrices must be up to date. */
-  low(rootInverse: THREE.Matrix4, m: THREE.Matrix4): number {
-    m.multiplyMatrices(rootInverse, this.part.matrixWorld);
-    let low = Infinity;
-    for (const p of this.pts) low = Math.min(low, this.v.copy(p).applyMatrix4(m).y);
-    return low;
-  }
 }
 
 interface Limb {

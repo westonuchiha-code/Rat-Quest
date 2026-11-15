@@ -44,4 +44,7 @@ shot guard "guard"
 # Each thing the guard does, alone, from three sides (front, his spear side, behind): look at every one of these.
 for n in 0 1 2 3 4 5 6 7 8 9; do shot "guard$n-front" "guard&only=$n&cam=1.5,1.2,3.6,0,0.75,0.2"; shot "guard$n-side" "guard&only=$n&cam=-4,1.0,0.5,0,0.75,0.4"; shot "guard$n-back" "guard&only=$n&cam=-1.7,1.5,-3.4,0,0.75,0.2"; done
 for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
+shot ant "ant"
+# Each thing the Ant Pikeman does, alone, from three sides (14 is a pair, the knight between them): look at every one of these.
+for n in $(seq 0 14); do shot "ant$n-front" "ant&only=$n&cam=2.6,1.7,5.6,0,0.8,0.7"; shot "ant$n-side" "ant&only=$n&cam=-6.2,1.3,0.8,0,0.8,0.7"; shot "ant$n-back" "ant&only=$n&cam=-2.6,2.1,-4.8,0,0.8,0.6"; done
 ls "$OUT"

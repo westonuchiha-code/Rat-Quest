@@ -4,7 +4,7 @@
  * A fall into the pit costs a heart and puts him back on the last ground he stood on (fallBack).
  *
  *   SOUTH  The courtyard. Two guards, and a portcullis in the gatehouse wall: stand on both plates and it lifts.
- *          Behind it, the inner ward, a ledge along the wall over the pit.
+ *          Behind it, the inner ward, a ledge along the wall over the pit, held by two ant pikemen.
  *   EAST   The Burning Walk: the ledge along the east wall turns to lava. Stones across it, a double jump apart at the
  *          end, with two toads spitting from the far side.
  *   NORTH  The Broken Stair: steps along the north wall rising west over the pit, some a hop apart, some a double jump.
@@ -50,6 +50,8 @@ export const STACK_BOX = { x0: -6, x1: 6, z0: -18, z1: -6 };
 const BATTLEMENTS = { x0: -48, x1: -38, z0: -36, z1: 14 };
 const EAST_FAR = { x0: 38, x1: 48, z0: -38, z1: -20 };
 const COURTYARD = { x0: -48, x1: 48, z0: 28, z1: 48 };
+/** The inner ward: a ledge behind the gatehouse wall, the pit along its north side. */
+export const WARD = { x0: -48, x1: 48, z0: 18, z1: 26 };
 
 const keepArea: CustomLevel = {
   name: "Grimsqueak's Keep",
@@ -75,7 +77,10 @@ const keepArea: CustomLevel = {
     at('crate', -40, 44, 0, { props: { item: 'cap' } }), at('crate', -41, 44), at('crate', -40, 44, 1), at('barrel', 40, 44), at('barrel', 41, 43, 0, { props: { item: 'crumb' } }),
 
     // ---- The inner ward, along the back of the gatehouse wall ----
-    box('floor', -48, 18, 48, 26, 0),
+    box('floor', WARD.x0, WARD.z0, WARD.x1, WARD.z1, 0),
+    // Two ant pikemen hold the way east along it. They fight as a pair: one keeps him at pike's length while the
+    // other goes round behind him, and the pit is at his elbow.
+    at('ant', 22, 22, 0, { dir: 'w' }), at('ant', 26, 22, 0, { dir: 'w' }),
 
     // ---- East: the Burning Walk ----
     box('floor', 38, 10, 48, 18, 0),
@@ -159,13 +164,13 @@ export const KEEP_WEDGES: WedgeDef[] = [
   { id: 'walk', name: 'The Burning Walk', hint: 'Through the portcullis, east, and over the lava on the stones.', x: 44, y: 0, z: -24, appears: null },
   { id: 'chimney', name: 'Up the Chimney', hint: 'Up the Broken Stair to the landing, then wall-kick up the chimney to the Throne Ledge.', x: -24, y: THRONE, z: -46, appears: null },
   { id: 'stack', name: 'The Engine Stack', hint: 'From the battlements, ride the slider out over the pit to the column.', x: 0, y: STACK, z: -12, appears: null },
-  { id: 'guard', name: "The Keep's Guard", hint: 'Beat every guard: the courtyard, the far end of the Burning Walk, the battlements.', x: 0, y: 0, z: 22, appears: { type: 'defeat', label: 'Beat every guard' } },
+  { id: 'guard', name: "The Keep's Guard", hint: 'Beat every guard: the courtyard, the two pikemen in the ward behind the gate, the far end of the Burning Walk, the battlements.', x: 0, y: 0, z: 22, appears: { type: 'defeat', label: 'Beat every guard' } },
   { id: 'caps', name: 'Eight Bottle Caps', hint: 'In a crate, at the end of the ward, on the lava, in the corner, on the stair, on the landing, on the battlements.', x: 8, y: 0, z: 40, appears: collect('cap', 'Find all the caps') },
   { id: 'pyre', name: 'The Heart of the Pyre', hint: 'A fire burns in the north-east ward, past the Burning Walk, and something gold stands in the middle of it. Only what was forged in fire walks through fire.', x: (PYRE.x0 + PYRE.x1) / 2, y: 0, z: (PYRE.z0 + PYRE.z1) / 2, appears: null, gear: 'emberHelm' },
 ];
 
 /** Enemies keep to the floor they started on (there is a pit round most of it). */
-const FLOORS = [COURTYARD, EAST_FAR, BATTLEMENTS];
+const FLOORS = [COURTYARD, WARD, EAST_FAR, BATTLEMENTS];
 
 export function keep(): LevelDef {
   const def = compileCustom(keepArea, 'keep');

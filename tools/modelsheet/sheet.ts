@@ -23,6 +23,8 @@ import { WyrmModel } from '../../src/enemies/wyrmModel';
 import { WYRM, Wyrm, type WyrmState } from '../../src/enemies/wyrm';
 import { HornetModel } from '../../src/enemies/hornetModel';
 import { HORNET, Hornet, type HornetState } from '../../src/enemies/hornet';
+import { AntModel } from '../../src/enemies/antModel';
+import { ANT, Ant, pairAnts, type AntState } from '../../src/enemies/ant';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
@@ -54,7 +56,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm|hornet)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm|hornet|ant)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -161,6 +163,98 @@ if (pick === 'hornet') {
     }
   });
   for (let k = 0; k < 20; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'ant') {
+  // The Ant Pikeman in each thing it does. Each is a real fight, played by its rules until it is doing that thing,
+  // then held there. &only=N shows one alone, with the knight where he stood. The last is a pair, the knight between them.
+  type Shot = { name: string; state: AntState; at: number; rat?: 'far' | 'inside' | 'near' | 'leave'; hit?: AntState; kill?: AntState; parry?: boolean; close?: boolean; pair?: boolean };
+  const shots: Shot[] = [
+    { name: 'at its post', state: 'idle', at: 0.5, rat: 'far' },
+    { name: 'coming on', state: 'march', at: 0.7 },
+    { name: 'pike levelled', state: 'hold', at: 0.6 },
+    { name: 'thrust windup', state: 'windup', at: ANT.windup * 0.92 },
+    { name: 'thrust', state: 'thrust', at: ANT.thrustTime * 0.85 },
+    { name: 'stretched out', state: 'recover', at: 0.3 },
+    { name: 'he is inside its point', state: 'hold', at: 0.7, rat: 'inside', close: true },
+    { name: 'bite windup', state: 'biteWind', at: ANT.biteWind * 0.92, rat: 'near' },
+    { name: 'bite', state: 'bite', at: ANT.biteTime * 0.85, rat: 'near' },
+    { name: 'after the bite', state: 'biteRest', at: 0.25, rat: 'near' },
+    { name: 'struck', state: 'stagger', at: 0.15, hit: 'hold' },
+    { name: 'pike beaten down (parried)', state: 'reel', at: 0.7, parry: true },
+    { name: 'going home', state: 'return', at: 1.0, rat: 'leave' },
+    { name: 'dead', state: 'dead', at: 1.2, kill: 'hold' },
+    { name: 'a pair', state: 'hold', at: 0.5, pair: true },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const COLS = 5;
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    let ox = only >= 0 ? 0 : ((i % COLS) - (COLS - 1) / 2) * 8;
+    let oz = only >= 0 ? 0 : (Math.floor(i / COLS) - 1) * 9;
+    const n = shot.pair ? 2 : 1;
+    const ants: Ant[] = [];
+    const models: AntModel[] = [];
+    for (let k = 0; k < n; k++) {
+      const a = new Ant({ x: k * 2.4 - (n - 1) * 1.2, z: -6, facing: 0, arena: { x0: -14, x1: 14, z0: -14, z1: 14 } });
+      a.rng = () => 0.5;
+      ants.push(a);
+      const m = new AntModel();
+      models.push(m);
+      scene.add(m.root);
+    }
+    const a0 = ants[0];
+    const rat = { x: 0, z: shot.rat === 'far' ? 40 : 0 };
+    const pos = new THREE.Vector3();
+    const feed = (dt: number): void => ants.forEach((a, k) => {
+      models[k].setTransform(pos.set(a.x + ox, a.y, a.z + oz), a.facing);
+      models[k].update(dt, { state: a.state, stateTime: a.stateTime, walking: a.walking, tip: { x: a.tip.x + ox, y: a.tip.y, z: a.tip.z + oz }, level: a.level, windupTime: a.windupTime });
+    });
+    let done = false;
+    let both = 0;
+    for (let f = 0; f < 60 * 60; f++) {
+      const t = f / 60;
+      // He stands; or, once it has come up to him, he stays close in front of it (a little off its line, or right on it); or he leaves.
+      if (shot.rat === 'inside' && t > 2.5) Object.assign(rat, { x: a0.x + Math.sin(a0.facing) * 1.85, z: a0.z + Math.cos(a0.facing) * 1.85 });
+      if (shot.rat === 'near' && t > 2.5) Object.assign(rat, { x: a0.x + Math.sin(a0.facing) * 1.15, z: a0.z + Math.cos(a0.facing) * 1.15 });
+      if (shot.rat === 'leave' && t > 3) rat.z = 60;
+      pairAnts(ants, rat.x, rat.z);
+      const busy = ants.some((a) => a.attacking);
+      ants.forEach((a) => {
+        a.mayAttack = !busy && !shot.pair;
+        a.update(1 / 60, rat.x, 0, rat.z, true);
+        a.events.length = 0;
+      });
+      if (shot.hit && !done && a0.state === shot.hit && a0.stateTime > 0.5) {
+        done = true;
+        a0.takeHit(1, rat.x, rat.z);
+      }
+      if (shot.kill && !done && a0.state === shot.kill && a0.stateTime > 0.5) {
+        done = true;
+        while (a0.alive) a0.takeHit(9, rat.x, rat.z);
+      }
+      if (shot.parry && a0.state === 'thrust' && a0.stateTime > 0.1) a0.lungeLanded(false, true);
+      feed(1 / 60);
+      if (shot.pair) {
+        both = ants.every((a) => a.state === 'hold') ? both + 1 / 60 : 0;
+        if (both >= shot.at && t > 5) break;
+      } else if (a0.state === shot.state && a0.stateTime >= shot.at && (shot.close === undefined || a0.close === shot.close)) break;
+    }
+    if (only >= 0) {
+      // Alone, it is put in the middle of the picture (a pair: the knight is).
+      ox = shot.pair ? -rat.x : -a0.x;
+      oz = shot.pair ? -rat.z : -a0.z;
+      feed(0);
+    }
+    ticks.push((dt) => feed(dt));
+    labels.push({ text: `${i} ${shot.name}`, x: only >= 0 ? 0 : ox, y: (only >= 0 ? 0 : oz) + 4 });
+    if (only >= 0 && shot.rat !== 'far' && shot.rat !== 'leave') {
+      const knight = new RatModel();
+      knight.setTransform(new THREE.Vector3(rat.x + ox, 0, rat.z + oz), Math.atan2(a0.x - rat.x, a0.z - rat.z));
+      knight.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+      scene.add(knight.root);
+    }
+  });
+  for (let k = 0; k < 12; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'wyrm') {
   // The Sump Wyrm in each thing it does. Each is a real fight, played by its rules until it is doing that thing, then held.
@@ -774,7 +868,8 @@ if (location.hash.includes('faces')) {
 
 let last = performance.now();
 function frame(now: number): void {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  // (Never less than nothing: after a long set-up the first frame's clock can be behind the page's.)
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
   last = now;
   for (const t of ticks) t(dt);
   renderer.render(scene, camera);

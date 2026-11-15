@@ -135,6 +135,14 @@ for (const n of SFX_NAMES) {
   check('the stag\'s footfall is far heavier than an insect\'s tap', loud('stagStep') > loud('chitinTap') * 2 && pitch('stagStep') < pitch('chitinTap') * 0.5);
   check('a scythe going up rings thin and bright: higher than any iron in the game, and it hangs in the air', pitch('scytheRing') > pitch('clank') * 2 && pitch('scytheRing') > pitch('block') * 2 && heardFor(sfx('scytheRing')) > 0.35, `${pitch('scytheRing').toFixed(0)} Hz; ${heardFor(sfx('scytheRing')).toFixed(2)} s`);
   check('each one\'s end runs down to almost nothing', third('stagDie', 2) < third('stagDie', 0) * 0.5 && third('mantisDie', 2) < third('mantisDie', 0) * 0.4 && third('guardDie', 2) < third('guardDie', 0) * 0.5);
+  // The Ant Pikeman: jaws, wood and a scraped chirp.
+  const ANTS = ['antClick', 'pikeReady', 'antSnap', 'antHurt', 'antDie'] as const;
+  check('the Ant Pikeman has a set of sounds of its own, none too loud for the rest of the game', ANTS.every((n) => SFX_NAMES.includes(n) && loud(n) < 0.45), ANTS.map((n) => `${n} ${loud(n).toFixed(2)}`).join(', '));
+  check('its pike is wood where the guard\'s spear is steel: drawn back it is much the duller sound, and lasts as long as the wind-up it warns of, growing as it goes', pitch('pikeReady') < pitch('spearReady') * 0.7 && Math.abs(secs('pikeReady') - 0.55) < 0.02 && third('pikeReady', 2) > third('pikeReady', 0) * 1.2, `pike ${pitch('pikeReady').toFixed(0)} against spear ${pitch('spearReady').toFixed(0)}; ${secs('pikeReady').toFixed(2)} s; thirds ${third('pikeReady', 0).toFixed(3)} to ${third('pikeReady', 2).toFixed(3)}`);
+  check('its jaws clacking are low and dry: far below the mantis\'s trill and the roach\'s screech', pitch('antClick') < pitch('mantisHiss') * 0.5 && pitch('antClick') < pitch('roachScreech') * 0.5, `${pitch('antClick').toFixed(0)} against ${pitch('mantisHiss').toFixed(0)} and ${pitch('roachScreech').toFixed(0)}`);
+  check('its bite is a short hard clack, lower than the Wyrm\'s fangs', heardFor(sfx('antSnap')) < 0.2 && pitch('antSnap') < pitch('wyrmSnap') * 0.85, `${heardFor(sfx('antSnap')).toFixed(2)} s; ${pitch('antSnap').toFixed(0)} against ${pitch('wyrmSnap').toFixed(0)}`);
+  check('its cry is not the guard\'s yelp or the hornet\'s buzz: it sits between them', pitch('antHurt') > pitch('guardYelp') * 1.1 && pitch('antHurt') < pitch('hornetHurt') * 0.9, `${pitch('guardYelp').toFixed(0)} < ${pitch('antHurt').toFixed(0)} < ${pitch('hornetHurt').toFixed(0)}`);
+  check('its end is its longest sound, and runs down', secs('antDie') >= Math.max(...ANTS.map(secs)) && third('antDie', 2) < third('antDie', 0) * 0.6, `${third('antDie', 0).toFixed(3)} to ${third('antDie', 2).toFixed(3)}`);
 }
 check('the story has its own sounds', (['memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep'] as const).every((n) => SFX_NAMES.includes(n)));
 check('the same effect is the same every time', sfx('ratJump') === sfx('ratJump'));

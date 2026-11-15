@@ -26,6 +26,8 @@ import { WyrmModel } from '../src/enemies/wyrmModel';
 import { WYRM, Wyrm, type WyrmState } from '../src/enemies/wyrm';
 import { HornetModel } from '../src/enemies/hornetModel';
 import { HORNET, Hornet, type HornetState } from '../src/enemies/hornet';
+import { AntModel } from '../src/enemies/antModel';
+import { ANT, Ant, pairAnts, type AntState } from '../src/enemies/ant';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
@@ -1784,6 +1786,233 @@ const at = new THREE.Vector3(0, 0, 0);
     check('hornet: dead, it lies on its back with its legs curled up over it and its wings still', !d.h.alive && onBack < -0.7 && legsUp > 0 && wingMove < 0.02, `its back ${onBack.toFixed(2)} (down is -1); feet ${legsUp.toFixed(2)} over its chest; wings moving ${wingMove.toFixed(3)}`);
     const gone = fight(0.9, 5, still, (h, _m, t) => { if (Math.abs(t - 2) < DT / 2) while (h.alive) h.takeHit(9, 0, 0); });
     check('hornet: and then it shrivels away to nothing', !gone.h.alive && gone.m.root.scale.x < 0.01);
+  }
+}
+
+// ---- The Ant Pikeman: its pike comes first, and while it is levelled the point of it comes from the rules. Is it drawn
+// there? Are its front legs on the shaft? Does the pike pass through its own body or legs, or any of it go under the floor? ----
+{
+  const A = ANT;
+  const segPoint = (p: THREE.Vector3, a: THREE.Vector3, b: THREE.Vector3): number => {
+    const ab = b.clone().sub(a);
+    const t = Math.max(0, Math.min(1, p.clone().sub(a).dot(ab) / ab.lengthSq()));
+    return a.clone().addScaledVector(ab, t).distanceTo(p);
+  };
+  const segSeg = (a0: THREE.Vector3, a1: THREE.Vector3, b0: THREE.Vector3, b1: THREE.Vector3): number => {
+    let best = Infinity;
+    const q = new THREE.Vector3();
+    for (let i = 0; i <= 16; i++) best = Math.min(best, segPoint(q.lerpVectors(b0, b1, i / 16), a0, a1));
+    return best;
+  };
+  const seen = new Set<string>();
+  let frames = 0;
+  let sound = true;
+  let low = 9;
+  let lowIn = '';
+  let through = 9;
+  let throughIn = '';
+  let legs = 9;
+  let legsIn = '';
+  let arms = 9;
+  let armsIn = '';
+  let right = 0;
+  let left = 0;
+  let leftIn = '';
+  let offPoint = 0;
+  let offThrust = 0;
+  let offPlace = 0;
+  const levelFor = new WeakMap<Ant, number>();
+  type Rat = (t: number, ants: Ant[]) => { x: number; z: number };
+  /** A fight by the rules (one ant, or a pair taking turns), the models following every frame. */
+  const fight = (n: number, secs: number, rat: Rat, each?: (ants: Ant[], models: AntModel[], t: number) => void): { ants: Ant[]; models: AntModel[] } => {
+    const ants: Ant[] = [];
+    const models: AntModel[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = new Ant({ x: i * 2.4 - (n - 1) * 1.2, z: -6, facing: 0, arena: { x0: -14, x1: 14, z0: -14, z1: 14 } });
+      a.rng = () => 0.5;
+      ants.push(a);
+      models.push(new AntModel());
+    }
+    const pos = new THREE.Vector3();
+    for (let t = 0; t < secs; t += DT) {
+      const p = rat(t, ants);
+      pairAnts(ants, p.x, p.z);
+      const busy = ants.some((a) => a.attacking);
+      let given = false;
+      for (const a of ants) {
+        a.mayAttack = !busy && !given && a.ready;
+        if (a.mayAttack) given = true;
+      }
+      ants.forEach((a, i) => {
+        a.update(DT, p.x, 0, p.z, true);
+        a.events.length = 0;
+        const m = models[i];
+        m.setTransform(pos.set(a.x, a.y, a.z), a.facing);
+        m.update(DT, { state: a.state, stateTime: a.stateTime, walking: a.walking, tip: a.tip, level: a.level, windupTime: a.windupTime });
+      });
+      each?.(ants, models, t);
+      ants.forEach((a, i) => {
+        const m = models[i];
+        levelFor.set(a, a.level ? (levelFor.get(a) ?? 0) + DT : 0);
+        // (Dead, it shrivels away after a second and a half: nothing is measured on what is left.)
+        if (a.state === 'dead' && a.stateTime > 1.3) return;
+        frames++;
+        seen.add(a.state);
+        const P = m.parts();
+        const r = measure(m.root);
+        if (!r.finite || r.meshes < 40) sound = false;
+        if (r.box.min.y - a.y < low) {
+          low = r.box.min.y - a.y;
+          lowIn = a.state;
+        }
+        const tipAt = new THREE.Vector3(a.tip.x, a.tip.y, a.tip.z);
+        if (a.state === 'thrust') offThrust = Math.max(offThrust, P.tip.distanceTo(tipAt));
+        else if ((levelFor.get(a) ?? 0) > 0.35) offPoint = Math.max(offPoint, P.tip.distanceTo(tipAt));
+        offPlace = Math.max(offPlace, Math.hypot(P.chest.x - a.x, P.chest.z - a.z));
+        if (a.state === 'dead') return;
+        // Its pike against its head, its chest and three places down its abdomen (each as a ball), and against each
+        // piece of each walking leg; its front legs against its head and chest.
+        const balls: Array<[THREE.Vector3, number]> = [[P.chest, 0.19], [P.head, 0.2], [P.gaster[0], 0.2], [P.gaster[1], 0.235], [P.gaster[2], 0.2]];
+        balls.forEach(([c, rad], k) => {
+          const clear = segPoint(c, P.butt, P.tip) - rad - 0.028;
+          if (clear < through) {
+            through = clear;
+            throughIn = a.state;
+          }
+          if (k > 1) return;
+          for (const arm of P.arms) {
+            const c2 = Math.min(segPoint(c, arm[1], arm[2]) - (k === 1 ? 0.17 : rad) - 0.025, k === 1 ? segPoint(c, arm[0], arm[1]) - 0.17 - 0.03 : 9);
+            if (c2 < arms) {
+              arms = c2;
+              armsIn = a.state;
+            }
+          }
+        });
+        for (const leg of P.legs) {
+          const d = Math.min(segSeg(P.butt, P.tip, leg[0], leg[1]) - 0.068, segSeg(P.butt, P.tip, leg[1], leg[2]) - 0.053);
+          if (d < legs) {
+            legs = d;
+            legsIn = a.state;
+          }
+        }
+        // Its right front leg holds the shaft always; its left whenever the pike has been levelled a moment.
+        right = Math.max(right, m.reachShort[0], P.hands[0].distanceTo(P.holds[0]) - 0.01);
+        if ((levelFor.get(a) ?? 0) > 0.7) {
+          const s2 = Math.max(m.reachShort[1], P.hands[1].distanceTo(P.holds[1]) - 0.01);
+          if (s2 > left) {
+            left = s2;
+            leftIn = a.state;
+          }
+        }
+      });
+    }
+    return { ants, models };
+  };
+  const still: Rat = () => ({ x: 0, z: 0 });
+  const inFront = (d: number, turn = 0): Rat => (t, a) => (t < 2 ? { x: 0, z: 0 } : { x: a[0].x + Math.sin(a[0].facing + turn) * d, z: a[0].z + Math.cos(a[0].facing + turn) * d });
+  fight(1, 12, still);
+  fight(1, 12, (t) => ({ x: Math.sin(t * 0.9) * 2.5, z: Math.cos(t * 0.7) * 1.5 }));
+  fight(1, 12, (t, a) => ({ x: a[0].x + Math.sin(t * 1.6) * 2.6, z: a[0].z + Math.cos(t * 1.6) * 2.6 }));
+  fight(1, 10, inFront(1.0));
+  fight(1, 10, inFront(1.8, 1.3));
+  fight(1, 14, (t, a) => inFront(2.2 + Math.sin(t * 1.3) * 1.2)(t + 2, a));
+  fight(1, 10, still, (a, _m, t) => { if (Math.abs((t % 2.5) - 2) < DT / 2 && a[0].hp > 1) a[0].takeHit(1, 0, 0); });
+  fight(1, 10, inFront(1.3, 1.2), (a, _m, t) => { if (Math.abs((t % 1.7) - 1) < DT / 2 && a[0].hp > 1 && t > 3) a[0].takeHit(1, a[0].x + 1, a[0].z); });
+  fight(1, 10, still, (a) => { if (a[0].state === 'thrust' && a[0].stateTime > 0.1) a[0].lungeLanded(false, true); });
+  for (const when of ['march', 'hold', 'windup', 'thrust', 'recover', 'reel', 'biteWind'] as AntState[]) {
+    let done = false;
+    fight(1, 9, when === 'biteWind' ? inFront(1.0) : still, (a) => {
+      if (when === 'reel' && a[0].state === 'thrust' && a[0].stateTime > 0.1) a[0].lungeLanded(false, true);
+      if (!done && a[0].state === when && a[0].stateTime > 0.08) {
+        done = true;
+        a[0].takeHit(9, 0.5, 0);
+      }
+    });
+  }
+  fight(1, 14, (t) => (t < 4 ? { x: 0, z: 0 } : { x: 0, z: 40 }));
+  fight(2, 16, still);
+  fight(2, 16, (t) => ({ x: Math.sin(t * 0.8) * 4, z: Math.cos(t * 0.5) * 3 }));
+  const all: AntState[] = ['idle', 'march', 'hold', 'windup', 'thrust', 'recover', 'biteWind', 'bite', 'biteRest', 'reel', 'stagger', 'spring', 'dead', 'return'];
+  check('ant: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
+  check('ant: in the thrust the point of its pike is drawn exactly where the rules have it: what hits him is what he sees', offThrust < 1e-6, `furthest off ${offThrust.toExponential(1)}`);
+  check('ant: and whenever its pike has been levelled a moment (coming on, standing off, drawing back, stretched out)', offPoint < 1e-6, `furthest off ${offPoint.toExponential(1)}`);
+  check('ant: its body is drawn where the rules have it', offPlace < 0.45, `furthest off ${offPlace.toFixed(2)}`);
+  check('ant: its right front leg never lets go of the shaft while it lives', right < 0.02, `worst ${right.toFixed(3)} off`);
+  check('ant: and its left is on the shaft whenever the pike is levelled', left < 0.03, `worst ${left.toFixed(3)} off (${leftIn || 'none'})`);
+  check('ant: its pike never passes through its own head, chest or abdomen', through > 0, `nearest ${through.toFixed(3)} clear (${throughIn})`);
+  check('ant: nor through any of its own four legs, whichever way the pike is turned', legs > 0, `nearest ${legs.toFixed(3)} clear (${legsIn})`);
+  check('ant: its front legs do not pass through its head or its chest', arms > 0, `nearest ${arms.toFixed(3)} clear (${armsIn})`);
+  check('ant: nothing of it goes under the floor, alive or dead: body, legs, pike, ribbons', low >= -0.02, `lowest ${low.toFixed(3)} (${lowIn})`);
+
+  // What each move looks like. (Everything in its own space: as if it stood at the middle of the world facing +Z.)
+  {
+    const own = (m: AntModel): ReturnType<AntModel['parts']> => {
+      m.root.updateMatrixWorld(true);
+      const inv = new THREE.Matrix4().compose(m.root.position, m.root.quaternion, new THREE.Vector3(1, 1, 1)).invert();
+      const P = m.parts();
+      const f = (v: THREE.Vector3): THREE.Vector3 => v.applyMatrix4(inv);
+      return { ...P, tip: f(P.tip), butt: f(P.butt), chest: f(P.chest), head: f(P.head), hands: P.hands.map(f), holds: P.holds.map(f), feet: P.feet.map(f), gaster: P.gaster.map(f), arms: P.arms.map((q) => q.map(f)), legs: P.legs.map((q) => q.map(f)) };
+    };
+    /** Plays until it is in `state` for `at` seconds, and gives what it looks like then. */
+    const pose = (state: AntState, at: number, rat: Rat = still, each?: (a: Ant) => void, when: (a: Ant) => boolean = () => true): ReturnType<AntModel['parts']> | null => {
+      let got: ReturnType<AntModel['parts']> | null = null;
+      let held = 0;
+      fight(1, 14, rat, (a, m) => {
+        each?.(a[0]);
+        held = a[0].state === state && when(a[0]) ? held + DT : 0;
+        if (!got && held >= at) got = own(m[0]);
+      });
+      return got;
+    };
+    const far: Rat = () => ({ x: 0, z: 60 });
+    const post = pose('idle', 1, far);
+    const dirOf = (P: ReturnType<AntModel['parts']>): THREE.Vector3 => P.tip.clone().sub(P.butt).normalize();
+    check('ant: at its post it stands square with its pike upright at its right shoulder, its other front leg at its side', !!post && dirOf(post).y > 0.98 && post.holds[0].x < -0.25 && post.hands[1].distanceTo(post.holds[1]) > 0.3 && post.head.y > 0.9, post ? `pike ${dirOf(post).y.toFixed(2)} up; head ${post.head.y.toFixed(2)} high` : 'never');
+    const hold = pose('hold', 0.8);
+    check('ant: standing off, its pike is level at the height of his chest, along its right side, in both front legs', !!hold && Math.abs(dirOf(hold).y) < 0.05 && Math.abs(hold.tip.y - A.pikeHeight) < 1e-6 && hold.holds[0].x < -0.3 && hold.hands[1].distanceTo(hold.holds[1]) < 0.03 && Math.abs(hold.tip.x) < 1e-6, hold ? `grip ${hold.holds[0].x.toFixed(2)} to its right` : 'never');
+    const draw = pose('windup', A.windup * 0.95);
+    check('ant: before a thrust its pike is drawn right back, it sinks, and its abdomen cocks up behind it', !!draw && !!hold && draw.tip.z < hold.tip.z - 0.4 && draw.holds[0].z < hold.holds[0].z - 0.4 && draw.chest.y < hold.chest.y - 0.02 && draw.gaster[2].y > hold.gaster[2].y + 0.2, draw && hold ? `point back ${(hold.tip.z - draw.tip.z).toFixed(2)}; abdomen up ${(draw.gaster[2].y - hold.gaster[2].y).toFixed(2)}` : 'never');
+    let lunge: ReturnType<AntModel['parts']> | null = null;
+    fight(1, 8, still, (a, m) => {
+      if (!lunge && a[0].state === 'recover' && a[0].stateTime > 0.05) lunge = own(m[0]);
+    });
+    const L = lunge as ReturnType<AntModel['parts']> | null;
+    check('ant: in the thrust it throws itself out behind the point: stretched forward and low, the point far ahead', !!L && !!hold && L.tip.z > hold.tip.z + 0.5 && L.chest.z > hold.chest.z + 0.1 && L.head.y < hold.head.y - 0.05, L && hold ? `point ${L.tip.z.toFixed(2)} ahead; chest ${(L.chest.z - hold.chest.z).toFixed(2)} forward, head ${(hold.head.y - L.head.y).toFixed(2)} lower` : 'never');
+    const port = pose('hold', 0.8, inFront(1.85), undefined, (a) => a.close);
+    const overHim = port ? port.holds[0].y + ((port.tip.y - port.holds[0].y) * (1.85 - 0.3 - port.holds[0].z)) / (port.tip.z - port.holds[0].z) : 0;
+    check('ant: with him inside its point its pike is tipped up in one front leg, over his head, the other raised to fend him off', !!port && port.tip.y > 1.6 && overHim > TUNING.rat.height && port.hands[1].distanceTo(port.holds[1]) > 0.2 && port.hands[1].z > port.chest.z, port ? `point ${port.tip.y.toFixed(2)} up; the shaft ${overHim.toFixed(2)} high where he stands` : 'never');
+    const jawsWide = pose('biteWind', A.biteWind * 0.9, inFront(1.0));
+    const snap = pose('bite', A.biteTime * 0.85, inFront(1.0));
+    check('ant: before a bite it rears up and back, its head thrown back', !!jawsWide && !!hold && jawsWide.head.z < hold.head.z - 0.15 && jawsWide.head.y > hold.head.y, jawsWide && hold ? `head ${(hold.head.z - jawsWide.head.z).toFixed(2)} back` : 'never');
+    check('ant: and in the bite its head shoots forward and down, about as far ahead as its jaws reach by the rules', !!snap && !!jawsWide && snap.head.z > jawsWide.head.z + 0.3 && snap.head.y < jawsWide.head.y - 0.1 && Math.abs(snap.head.z + 0.33 - (A.radius + A.biteReach)) < 0.3, snap ? `head ${snap.head.z.toFixed(2)} ahead (jaws about ${(snap.head.z + 0.33).toFixed(2)}); the rules reach ${(A.radius + A.biteReach).toFixed(2)}` : 'never');
+    const reel = pose('reel', 0.8, still, (a) => { if (a.state === 'thrust' && a.stateTime > 0.1) a.lungeLanded(false, true); });
+    check('ant: its pike beaten down by a perfect guard, the point is on the floor out to its right and its left front leg is off the shaft', !!reel && reel.tip.y < 0.12 && reel.tip.x < -1 && reel.hands[1].distanceTo(reel.holds[1]) > 0.3 && reel.hands[0].distanceTo(reel.holds[0]) < 0.03, reel ? `point at (${reel.tip.x.toFixed(2)}, ${reel.tip.y.toFixed(2)})` : 'never');
+    const home = pose('return', 1.0, (t) => (t < 4 ? { x: 0, z: 0 } : { x: 0, z: 60 }));
+    check('ant: going back to its post its pike is sloped on its shoulder', !!home && dirOf(home).y > 0.85 && home.butt.y > 0.5, home ? `pike ${dirOf(home).y.toFixed(2)} up` : 'never');
+    // Walking, its feet step; standing off, all four are on the floor.
+    let lifted = 0;
+    let stand = 9;
+    fight(1, 6, still, (a, m) => {
+      const feet = m[0].parts().feet;
+      if (a[0].state === 'march') lifted = Math.max(lifted, ...feet.map((f) => f.y));
+      if (a[0].state === 'hold' && a[0].stateTime > 0.6 && a[0].walking < 0.05) stand = Math.min(stand, -Math.max(...feet.map((f) => f.y)));
+    });
+    check('ant: coming on, its feet lift as it steps (a little: it does not prance); standing off, all four are down on the floor', lifted > 0.06 && lifted < 0.16 && -stand < 0.045, `highest foot ${lifted.toFixed(2)} walking, ${(-stand).toFixed(3)} standing`);
+    // Dead.
+    let lying: ReturnType<AntModel['parts']> | null = null;
+    let gone = 1;
+    let done = false;
+    fight(1, 9, still, (a, m) => {
+      if (!done && a[0].state === 'hold' && a[0].stateTime > 0.5) {
+        done = true;
+        while (a[0].alive) a[0].takeHit(9, 0, 0);
+      }
+      if (a[0].state === 'dead' && a[0].stateTime > 1.1 && !lying) lying = own(m[0]);
+      if (a[0].state === 'dead' && a[0].stateTime > 2.2) gone = m[0].root.scale.x;
+    });
+    const D = lying as ReturnType<AntModel['parts']> | null;
+    check('ant: dead, it lies over on its side with its legs curled, its pike on the floor beside it and out of its hands', !!D && D.chest.y < 0.4 && D.head.y < 0.45 && D.tip.y < 0.12 && D.butt.y < 0.12 && D.hands[0].distanceTo(D.holds[0]) > 0.3 && Math.max(...D.feet.map((f) => f.y)) < 0.6, D ? `chest ${D.chest.y.toFixed(2)} up; pike ${Math.max(D.tip.y, D.butt.y).toFixed(2)} up, ${D.hands[0].distanceTo(D.holds[0]).toFixed(2)} from its hand` : 'never');
+    check('ant: and then it shrivels away to nothing', gone < 0.01, `${gone}`);
   }
 }
 

@@ -42,6 +42,8 @@ import { StagModel } from './enemies/stagModel';
 import { Bat, BAT, rouseRoost } from './enemies/bat';
 import { Hornet } from './enemies/hornet';
 import { HornetModel } from './enemies/hornetModel';
+import { ANT, Ant, pairAnts } from './enemies/ant';
+import { AntModel } from './enemies/antModel';
 import { BatModel } from './enemies/batModel';
 import type { Foe } from './enemies/foe';
 import { ScuttlerModel } from './enemies/scuttlerModel';
@@ -227,6 +229,8 @@ function startGame(): void {
     glance?(fromAngle: number): void;
   }
   const enemies: Foe[] = [];
+  /** The ant pikemen among them (they are paired up each tick). */
+  const antList: Ant[] = [];
   const enemyModels: FoeView[] = [];
   const counted = new WeakSet<Foe>();
   /** Whether an enemy can stand here: floor under its middle at its own height, and nothing solid at body height. */
@@ -394,6 +398,18 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, tip: e.tip, aim: e.aim, floor: e.floor, moving: e.moving }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'ant') {
+      const e = new Ant(spec);
+      const m = new AntModel();
+      enemies.push(e);
+      antList.push(e);
+      enemyModels.push({
+        root: m.root,
+        setTransform: (p, f) => m.setTransform(p, f),
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, walking: e.walking, tip: e.tip, level: e.level, windupTime: e.windupTime }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'bat') {
       const e = new Bat(spec);
       const m = new BatModel({ x: e.home.x, y: e.floorY + BAT.roostHeight, z: e.home.z }, spec.perch ?? 'rock');
@@ -443,9 +459,28 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet | Ant, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
+      if (e instanceof Ant) {
+        // The Ant Pikeman, in sounds of its own: its jaws clacking when it sees him; the shaft of its pike sliding
+        // back through its claw (as long as the wind-up) and the rush of the thrust with one hard clack; its jaws
+        // chattering, quick and high, before it bites, and the snap of them; a scraped chirp when it is struck, the
+        // patter of its feet as it springs back, and the knock of its pike beaten down to the floor.
+        if (ev === 'alert') audio.play('antClick', { vol: v * 0.9, priority: 6 });
+        else if (ev === 'windup') audio.play('pikeReady', { vol: Math.max(0.3, v * 0.9), rate: Math.max(0.6, Math.min(1.8, 0.55 / e.windupTime)), priority: 7 });
+        else if (ev === 'thrust') {
+          audio.play('whoosh', { vol: v, rate: 1.45, priority: 7 });
+          audio.play('antSnap', { vol: v * 0.6, rate: 1.3, priority: 6 });
+        } else if (ev === 'biteWind') audio.play('antClick', { vol: Math.max(0.3, v), rate: Math.max(1, Math.min(2.2, 0.6 / ANT.biteWind)), priority: 7 });
+        else if (ev === 'bite') audio.play('antSnap', { vol: Math.max(0.35, v), priority: 8 });
+        else if (ev === 'reel') {
+          audio.play('plateKnock', { vol: v, rate: 1.2, priority: 8 });
+          audio.play('antHurt', { vol: v * 0.8, rate: 0.8, priority: 7 });
+        } else if (ev === 'hurt') audio.play('antHurt', { vol: v, priority: 6 });
+        else if (ev === 'spring') audio.play('chitinTap', { vol: v * 0.6, rate: 0.85, priority: 3 });
+        continue;
+      }
       if (e instanceof Hornet) {
         // The Hornet Lancer: an angry buzz when it sees him; its wings climbing to a whine as its lance comes down
         // to point at him (as long as the wind-up), the rush of the dive and the crack of its lance into the floor;
@@ -1201,6 +1236,7 @@ function startGame(): void {
     braziers = def.decor.filter((d) => d.kind === 'brazier').map((d) => ({ x: d.x, y: d.y + 0.8, z: d.z }));
     motes.setTheme(def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
     enemies.length = 0;
+    antList.length = 0;
     enemyModels.length = 0;
     drops.clear();
     debris.clear();
@@ -1407,6 +1443,8 @@ function startGame(): void {
         if (e.state === 'dead') audio.play('guardDie', { vol: v, priority: 6 });
       } else if (e.kind === 'hornet') {
         if (e.state === 'dead') audio.play('hornetDie', { vol: v, priority: 6 });
+      } else if (e.kind === 'ant') {
+        if (e.state === 'dead') audio.play('antDie', { vol: v, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('mantisDie', { vol: v, priority: 6 });
       } else if (e.kind === 'wyrm') {
@@ -1663,6 +1701,8 @@ function startGame(): void {
     // Who may attack: up close they take turns. Roosting bats hear him unless he sneaks.
     SENSES.quiet = sneak && player.grounded;
     director.update(dt, enemies, player.position.x, player.position.z);
+    // The ants find their mates, and settle which of each pair holds him and which goes round him.
+    if (antList.length) pairAnts(antList, player.position.x, player.position.z);
     const swinging = player.state === 'attack';
     for (const e of enemies) {
       if (!DEV.still) e.update(dt, player.position.x, player.position.y, player.position.z, !player.dead, swinging);
@@ -1681,7 +1721,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet || e instanceof Ant) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);

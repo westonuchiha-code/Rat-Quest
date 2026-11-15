@@ -190,6 +190,9 @@ export const SFX_NAMES = [
   'mantisHiss', 'scytheRing', 'scytheCut', 'mantisWings', 'mantisCry', 'mantisDie',
   // The Keep Guard: a soldier's bark, his spear sliding back over the rim of his shield, a yelp, and his end.
   'guardBark', 'spearReady', 'guardYelp', 'guardDie',
+  // The Ant Pikeman: its jaws clacking (how an ant shouts), its pike sliding back through its claw, its jaws
+  // shutting on a bite, a scraped chirp when it is struck, and its end.
+  'antClick', 'pikeReady', 'antSnap', 'antHurt', 'antDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -721,6 +724,52 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const hz = 420 * Math.exp(-u * 1.5) + 90;
       const groan = c.lp(0, saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 2.01), 0.35) * 0.22 + (c.r() * 2 - 1) * 0.12, 0.5) * 1.5 * (1 - u) ** 0.8 * Math.min(1, t / 0.02);
       return Math.tanh((groan + gear(t - 0.55) * 0.9) * 0.9) * Math.min(1, (0.95 - t) / 0.08);
+    };
+  }, { bits: 7 }),
+  // The Ant Pikeman. Its jaws clacking together a few times, quickening: how an ant shouts.
+  antClick: () => draw(0.34, RATE_HI, 171, (c) => {
+    const clack = rattle(c, RATE_HI, 0.34, 11, 26, 1150, 0.972);
+    const low = knock(520, RATE_HI, 0.985);
+    return (t) => {
+      const x = clack(t);
+      return Math.tanh((x + low(x) * 3) * 1.6) * Math.min(1, (0.34 - t) / 0.04);
+    };
+  }, { bits: 7 }),
+  // Its pike drawn back: the ash shaft sliding through its claw (a dry wooden rasp, the catches coming quicker), and
+  // the creak of the ant setting itself behind it.
+  pikeReady: () => draw(0.55, RATE_HI, 172, (c) => {
+    const wood = knock(470, RATE_HI, 0.99);
+    const wood2 = knock(810, RATE_HI, 0.988);
+    return (t) => {
+      const u = t / 0.55;
+      const x = sq(c.osc(0, 34 + 70 * u), 0.25) > 0 && t < 0.5 ? c.r() * 2 - 1 : 0;
+      const creak = sq(c.osc(1, 150 + 90 * u * u), 0.2) * 0.02 * u * (sq(c.osc(2, 23 + 30 * u), 0.5) > 0 ? 1 : 0.2);
+      return ((wood(x) + wood2(x) * 0.6) * (0.2 + 0.8 * u) + creak) * Math.min(1, (0.55 - t) / 0.03);
+    };
+  }, { bits: 7 }),
+  // Its jaws shut: two hard clacks a hair apart, horn on horn; lower and drier than the wyrm's fangs.
+  antSnap: () => draw(0.2, RATE_HI, 173, (c) => {
+    const a = struck(c, [[720, 1, 40], [1150, 0.6, 55], [450, 0.8, 32]], 0.6);
+    const b = struck(c, [[810, 1, 44], [1290, 0.5, 60], [500, 0.7, 36]], 0.5, 3);
+    return (t) => Math.tanh((a(t) + b(t - 0.022) * 0.9) * 0.9) * Math.min(1, (0.2 - t) / 0.04);
+  }, { bits: 7 }),
+  // Struck: a scraped chirp (an ant's cry is made by rubbing), falling.
+  antHurt: () => draw(0.2, RATE_HI, 174, (c) => (t) => {
+    const u = t / 0.2;
+    const hz = 1240 - 540 * u;
+    const chirp = c.lp(0, sq(c.osc(0, hz), 0.3) * 0.5 + sq(c.osc(1, hz * 1.51), 0.25) * 0.3 + (c.r() * 2 - 1) * 0.12, 0.45);
+    const scrape = sq(c.osc(2, 95 - 30 * u), 0.6) > 0 ? 1 : 0.15;
+    return chirp * scrape * bell(t, 0.2);
+  }, { bits: 7 }),
+  // Its end: the chirp running down and slowing, and its pike clattering on the floor: wood, twice.
+  antDie: () => draw(0.9, RATE_HI, 175, (c) => {
+    const pike = struck(c, [[330, 0.9, 13], [690, 0.5, 19], [1130, 0.3, 27]], 0.8, 3);
+    const pike2 = struck(c, [[365, 0.8, 16], [760, 0.45, 22], [1240, 0.25, 30]], 0.6, 6);
+    return (t) => {
+      const u = Math.min(1, t / 0.55);
+      const hz = 1050 * Math.exp(-u * 1.3) + 200;
+      const chirp = c.lp(0, sq(c.osc(0, hz), 0.3) * 0.5 + sq(c.osc(1, hz * 1.51), 0.25) * 0.3, 0.45) * 1.6 * (sq(c.osc(2, 80 * (1 - u) + 12), 0.55) > 0 ? 1 : 0.1) * (1 - u) ** 0.7 * Math.min(1, t / 0.01);
+      return Math.tanh((chirp * 0.9 + pike(t - 0.42) + pike2(t - 0.6) * 0.8) * 0.9) * Math.min(1, (0.9 - t) / 0.08);
     };
   }, { bits: 7 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),

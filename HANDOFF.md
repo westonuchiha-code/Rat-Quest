@@ -253,7 +253,7 @@ He sent screenshots as he played. Each of these is his report, the cause, and th
 - **Every crate dropped nacho cheese.** `CRATE_DROPS` chance 1 -> 0.1 (he said "an RNG thing, 10%"; speech-to-text wrote "orangey"). Slider "Chance a broken crate or barrel drops a nacho can". tests/drops.ts.
 
 ## Shared insect rig (src/render/bugRig.ts)
-`Springs` (a row of numbers on springs), `aim(obj, dir, edge)` (point a part's +X along a direction), `Walker` (legs of two bones with feet planted in the world, stepping in pairs; `fold` says where a foot goes when it is off the ground), `ease`. The mantis model uses all of it; the Stag Knight's is to.
+`Springs` (a row of numbers on springs), `aim(obj, dir, edge)` (point a part's +X along a direction), `Walker` (legs of two bones with feet planted in the world, stepping in pairs; `fold` says where a foot goes when it is off the ground), `ease`, `twoBone` (two bones laid from a joint to a target), `Probe` (the points of a part's meshes, for holding it off the floor: the hornet's and the ant's use it). The mantis model uses all of it; the Stag Knight's is to.
 
 ## New enemy: the Stag Knight
 - The heavy. Where the Keep Guard asks "when do I swing?" and the mantis "can I make it miss?", this one asks "where do I stand, and how greedy am I?".
@@ -403,6 +403,50 @@ of the Keep's courtyard (the Ironback has the west one). It is a piece in the le
   losing the shaft between moves, and its feelers not being counted by the floor guard. All fixed before drawing.
 - **Not done**: nobody has fought it by hand; its numbers are first guesses. In the Keep its patch is the whole
   courtyard, so it will follow him across to the guards. Only one is placed in the game: say where else.
+
+## New enemy: the Ant Pikeman (2026-11-15)
+A soldier ant with a pike: the first enemy that fights as a PAIR. Two hold the Keep's inner ward (the ledge behind the
+gate, x 22 and 26, facing west; `WARD` in keep.ts is now one of the Keep's `FLOORS`, so they keep to it). It is a piece
+in the level editor ("Ant Pikeman"): any two placed within 12 of each other pair up by themselves.
+- **Rules** `src/enemies/ant.ts` (kind `ant`, `ANT` table, 14 sliders under "Ant Pikemen"). hp 4.
+  - It comes to pike's length (3.0, further than the sword reaches) and keeps its point on him. The point (`tip`) is
+    what strikes, given to combat as `bite.at`, as the hornet's is.
+  - *The thrust*: the pike slides back (0.55 s; its point glints; it follows him for half of that), then a lunge to
+    3.44 from where it stood. 1 heart. Step aside (it is stretched out 0.8 s: `recover`), shield it (1.1 s), or a
+    perfect guard beats the pike down to the floor (`reel`, 1.9 s: long enough to kill it).
+  - *Inside its point* (`close`: nearer than 2.1) it cannot thrust: it tips its pike up out of the way (`level` is
+    false), gives ground, and if he is in front of it within 1.55 it BITES (jaws wide 0.38 s, then a snap forward;
+    1 heart; back off, or shield it). 1.55 is more than the sword's reach on purpose: there is no distance from
+    which he can cut it and it can do nothing.
+  - Every blow staggers it, but it does not stand to be cut down: 0.38 s after the first blow it SPRINGS BACK about
+    2.4 (slantwise if a wall or the ledge's edge is behind it). So getting in is worth two cuts, not his whole
+    combo (which would kill a 4-hp enemy outright); he has to get past the point twice. A second blow does not
+    restart the stagger. (Before this, a test rat killed the pair in under 5 s by standing and swinging.)
+  - *The pair* (`pairAnts(ants, px, pz)`, called once a tick from main.ts just after the director): nearest two
+    within `pairRange` are mates. The nearer to him is the FRONT (holds him), the other the FLANK (goes round him at
+    3.8 to the far side from its mate). They change over when the other comes 0.6 nearer. One waking wakes the
+    other. The game's director already makes them thrust by turns; and when he is inside one's point, or cutting at
+    it, the other's wait is cut to 0.3 s (`hurry`). Its abdomen is a second hit circle (`parts`), 0.6 behind it.
+- **Model** `src/enemies/antModel.ts`: four walking legs on the shared `Walker`, its front pair holding the pike. THE
+  PIKE COMES FIRST: while `level`, it is laid with its point exactly on the rules' `tip`, running back along the
+  ant's right side; the right front leg holds it fast near the butt and the shaft slides through the left. Not
+  levelled (upright at its post, sloped going home, tipped up when he is inside, beaten down, dropped) the pose says
+  where it is, on springs. It is held near the butt on purpose: with the hand at shoulder height the butt stays
+  above its own knees whichever way the pike turns (`CLEAR`); the first version, held further up, swung its butt
+  through its own legs. Dying, the pike is flung out sideways before it falls, clear of its legs.
+- **Sounds** (its own): `antClick` (jaws clacking: seen him; faster, before a bite), `pikeReady` (the wind-up, as
+  long as it is), `antSnap` (the bite; and with the thrust), `antHurt`, `antDie`.
+- **Tests**: tests/ant.ts (54: every move and each answer to it, the pair, the changeover, the ledge, a whole fight;
+  in the Keep's real ward with the real controller, combat and director), tests/models.ts (22: point drawn where
+  the rules have it, front legs on the shaft, pike never through its body or legs, nothing under the floor, each
+  move's look), tests/audio.ts (6). Sheet: `#ant` (`&only=N`, 0 to 14; 14 is a pair). Every state looked at alone
+  from three sides.
+- **Also fixed on the way**: `Walker` threw a creature's feet out ahead of it for a quarter of a second whenever it
+  was first placed or put somewhere new (it took the jump for speed). That was true of the mantis too. And the
+  model sheet's clock could run backwards on its first frame after a long set-up, which flashed the model white.
+- **Not done**: nobody has fought them by hand; the numbers are first guesses. A rat who stands still between them
+  is dead in about 8 s. The ward is a ledge 8 deep with the pit along it: that may be too hard a place for them.
+  Only this one pair is placed.
 
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for

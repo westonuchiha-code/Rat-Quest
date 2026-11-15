@@ -148,6 +148,8 @@ export class Walker {
     const here = this.root.getWorldPosition(T.here);
     if (dt > 0) this.speed.copy(here).sub(this.lastPos).divideScalar(dt);
     const jumped = this.first || this.lastPos.distanceTo(here) > 1.2 || dt === 0;
+    // (Put somewhere new, it has not moved there at any speed: its feet go down under it, not out ahead of it.)
+    if (jumped) this.speed.set(0, 0, 0);
     this.first = false;
     this.lastPos.copy(here);
     const moving = this.speed.length();
@@ -218,5 +220,31 @@ export class Walker {
   feet(): THREE.Vector3[] {
     this.root.updateMatrixWorld(true);
     return this.legs.map((leg) => leg.shin.localToWorld(new THREE.Vector3(this.o.shin, 0, 0)));
+  }
+}
+
+/** The points of some meshes, in the space of the part they belong to: for finding the lowest of them each frame. */
+export class Probe {
+  private readonly pts: THREE.Vector3[] = [];
+  private readonly v = new THREE.Vector3();
+  /** `skip`: parts of it that move on their own (they are given probes of their own). */
+  constructor(private readonly part: THREE.Object3D, skip: THREE.Object3D[] = []) {
+    part.updateMatrixWorld(true);
+    const inv = part.matrixWorld.clone().invert();
+    part.traverse((o) => {
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (let q: THREE.Object3D | null = o; q && q !== part; q = q.parent) if (skip.includes(q)) return;
+      const pos = mesh.geometry.attributes.position;
+      const m = new THREE.Matrix4().multiplyMatrices(inv, mesh.matrixWorld);
+      for (let i = 0; i < pos.count; i++) this.pts.push(new THREE.Vector3().fromBufferAttribute(pos, i).applyMatrix4(m));
+    });
+  }
+  /** The lowest of them now, in the space of `root` (whose child, at some depth, the part is). Matrices must be up to date. */
+  low(rootInverse: THREE.Matrix4, m: THREE.Matrix4): number {
+    m.multiplyMatrices(rootInverse, this.part.matrixWorld);
+    let low = Infinity;
+    for (const p of this.pts) low = Math.min(low, this.v.copy(p).applyMatrix4(m).y);
+    return low;
   }
 }

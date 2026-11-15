@@ -14,6 +14,7 @@ import { WYRM } from '../enemies/wyrm';
 import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { HORNET } from '../enemies/hornet';
+import { ANT } from '../enemies/ant';
 import { GRIM } from '../enemies/grimsqueak';
 import { BALANCE } from '../data/balance';
 
@@ -186,6 +187,21 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Hornet Lancers', path: 'hornet.joustDamage', label: 'Run damage (hearts)', min: 0, max: 5, step: 1 },
   { group: 'Hornet Lancers', path: 'hornet.grounded', label: 'Time on the floor when struck', min: 0.3, max: 4, step: 0.1 },
   { group: 'Hornet Lancers', path: 'hornet.groundedParried', label: 'Time on the floor after a perfect guard', min: 0.3, max: 6, step: 0.1 },
+
+  { group: 'Ant Pikemen', path: 'ant.hp', label: 'Health', min: 1, max: 12, step: 1, later: 'from the next level' },
+  { group: 'Ant Pikemen', path: 'ant.pairRange', label: 'Two this near each other fight as a pair', min: 4, max: 30, step: 1 },
+  { group: 'Ant Pikemen', path: 'ant.holdRange', label: 'How far off it stands', min: 2, max: 5, step: 0.1 },
+  { group: 'Ant Pikemen', path: 'ant.flankSpeed', label: 'How fast one goes round behind him', min: 1, max: 8, step: 0.1 },
+  { group: 'Ant Pikemen', path: 'ant.turnRate', label: 'How fast it turns to keep its point on him', min: 1, max: 10, step: 0.5 },
+  { group: 'Ant Pikemen', path: 'ant.windup', label: 'Warning before a thrust', min: 0.2, max: 1.5, step: 0.05 },
+  { group: 'Ant Pikemen', path: 'ant.track', label: 'How much of that warning it follows him for', min: 0, max: 1, step: 0.05 },
+  { group: 'Ant Pikemen', path: 'ant.pikeOut', label: 'How far the thrust reaches', min: 2.3, max: 4, step: 0.1 },
+  { group: 'Ant Pikemen', path: 'ant.damage', label: 'Thrust damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'Ant Pikemen', path: 'ant.recover', label: 'Stretched out after a thrust that misses (the opening)', min: 0.2, max: 3, step: 0.1 },
+  { group: 'Ant Pikemen', path: 'ant.crowdRange', label: 'Nearer than this it cannot thrust', min: 1.6, max: 3, step: 0.1 },
+  { group: 'Ant Pikemen', path: 'ant.biteWind', label: 'Warning before a bite', min: 0.1, max: 1.2, step: 0.02 },
+  { group: 'Ant Pikemen', path: 'ant.biteDamage', label: 'Bite damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'Ant Pikemen', path: 'ant.reel', label: 'Open after a perfect guard', min: 0.3, max: 5, step: 0.1 },
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
   { group: 'Flitters', path: 'bat.hearQuiet', label: 'Hears sneaking from', min: 0, max: 8, step: 0.25 },
@@ -236,7 +252,7 @@ export const TWEAKS: TweakDef[] = [
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
   { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Fighting', 'Camera'] },
-  { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers'] },
+  { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },
 ];
@@ -248,7 +264,7 @@ export const TWEAK_GROUPS: string[] = (() => {
 })();
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {
