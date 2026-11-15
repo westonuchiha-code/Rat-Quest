@@ -106,7 +106,7 @@ import { compileCustom, CustomLevel } from './levels/custom';
 import { platform } from './platform/platform';
 import { makeAabb } from './world/collision';
 import { AudioEngine, nearness } from './audio/audio';
-import { SFX_NAMES, sfx, type SfxName } from './audio/synth';
+import { SFX_NAMES, loudness, sfx, type SfxName } from './audio/synth';
 import { TRACK_NAMES, type TrackName } from './audio/music';
 import { speak } from './audio/speech';
 import { Rumble } from './core/rumble';
@@ -2305,9 +2305,7 @@ function startGame(): void {
     tweaksChanged: () => tweaks.count(),
     sounds: () => (soundList ??= SFX_NAMES.map((name) => {
       const smp = sfx(name);
-      let q = 0;
-      for (const v of smp.data) q += v * v;
-      return { name, loud: Math.sqrt(q / smp.data.length), secs: smp.data.length / smp.rate, loop: smp.loop };
+      return { name, loud: loudness(smp), secs: smp.data.length / smp.rate, loop: smp.loop };
     }).sort((a, b) => a.name.localeCompare(b.name))),
     playSound: (name, rate, vol) => {
       audio.playSample(`ws:${name}`, { ...sfx(name as SfxName), loop: false }, { rate, vol, priority: 9, verb: 0.05 });

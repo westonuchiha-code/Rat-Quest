@@ -116,6 +116,19 @@ function knock(hz: number, rate: number, ring: number): (x: number) => number {
   };
 }
 
+/**
+ * Struck metal: a hard tick, then partials that are not in tune with each other, each dying at its own rate (the high
+ * ones first). `parts` are [hz, how loud, how fast it dies]; `from` is the first oscillator slot it may use.
+ */
+function struck(c: Ctx, parts: ReadonlyArray<readonly [number, number, number]>, tick: number, from = 0): (t: number) => number {
+  return (t) => {
+    if (t < 0) return 0;
+    let v = (c.r() * 2 - 1) * Math.exp(-t * 260) * tick;
+    for (let i = 0; i < parts.length; i++) v += sine(c.osc(from + i, parts[i][0])) * parts[i][1] * Math.exp(-t * parts[i][2]);
+    return v * Math.min(1, t / 0.0008);
+  };
+}
+
 // ---- The sounds ----
 
 export const SFX_NAMES = [
@@ -159,36 +172,43 @@ const RECIPES: Record<SfxName, () => Sample> = {
   hall: () => draw(4, RATE_LO, 74, (c) => (t) => sine(c.osc(0, 41)) * 0.4 + sine(c.osc(1, 61.5)) * 0.22 * (0.6 + 0.4 * wob(t, 4, 1)) + c.lp(2, c.r() * 2 - 1, 0.02) * 0.6, { bits: 6, loop: true, gain: 0.6 }),
   // Near lava: a deep roil, and bubbles popping.
   lavaBubble: () => draw(2, RATE_LO, 75, (c) => {
-    const pops = Array.from({ length: 7 }, () => ({ at: c.r() * 1.9, hz: 120 + c.r() * 160 }));
+    const pops = Array.from({ length: 11 }, () => ({ at: c.r() * 1.85, hz: 110 + c.r() * 170, amp: 0.5 + c.r() * 0.5 }));
     return (t) => {
-      let v = c.lp(0, c.r() * 2 - 1, 0.04) * 0.9;
-      for (const p of pops) {
-        const d = t - p.at;
-        if (d > 0 && d < 0.09) v += sine(c.osc(1, p.hz * (1 + d * 6))) * Math.exp(-d * 40) * 0.8;
+      // (The roil is a low rumble and, over it, a slow thick seething that small speakers can carry.)
+      const n = c.r() * 2 - 1;
+      let v = c.lp(0, n, 0.04) * 1.5 + (c.lp(2, n, 0.2) - c.lp(3, n, 0.07)) * 0.55 * (0.6 + 0.4 * wob(t, 2, 3));
+      for (let i = 0; i < pops.length; i++) {
+        const d = t - pops[i].at;
+        if (d > 0 && d < 0.11) v += sine(c.osc(4 + i, pops[i].hz * (1 + d * 6))) * Math.exp(-d * 34) * pops[i].amp * 0.5 * Math.min(1, d / 0.004);
       }
       return v;
     };
-  }, { bits: 6, loop: true, gain: 0.75 }),
+  }, { bits: 6, loop: true, gain: 0.55 }),
   // Near a brazier: crackle and a soft roar.
   fire: () => draw(1.5, RATE_HI, 76, (c) => (t) => c.lp(0, c.r() * 2 - 1, 0.2) * 1.6 * (0.8 + 0.2 * wob(t, 1.5, 2)) + (c.r() < 0.004 ? (c.r() * 2 - 1) * 0.9 : 0), { bits: 7, loop: true, gain: 0.6 }),
   // ---- Far-off noises, heard now and then ----
+  // Iron struck on iron: it rings for half a second (two of its partials a hair apart, so it shimmers).
   clank: () => draw(0.9, RATE_HI, 77, (c) => {
-    const a = knock(640, RATE_HI, 0.997);
-    const b = knock(1210, RATE_HI, 0.995);
-    return (t) => {
-      const x = t < 0.004 ? c.r() * 2 - 1 : 0;
-      return a(x) * 1.2 + b(x) * 0.7;
-    };
+    const ring = struck(c, [[640, 1, 7], [652, 0.45, 8], [1210, 0.6, 10], [1873, 0.4, 14], [2890, 0.24, 22]], 0.9);
+    return (t) => ring(t) * Math.min(1, (0.9 - t) / 0.08);
   }, { bits: 7 }),
   hiss: () => draw(1.1, RATE_HI, 78, (c) => (t) => ((c.r() * 2 - 1) - c.lp(0, c.r() * 2 - 1, 0.3)) * bell(t, 1.1) * (t < 0.15 ? t / 0.15 : 1), { bits: 7, gain: 0.6 }),
+  // A handful of stones coming down: a dozen knocks, big and small, each with a little body to it.
   pebbles: () => draw(0.8, RATE_HI, 79, (c) => {
-    const hits = Array.from({ length: 6 }, (_, i) => ({ at: i * 0.09 + c.r() * 0.08, ring: knock(900 + c.r() * 900, RATE_HI, 0.98) }));
-    return (t) => hits.reduce((v, h) => v + h.ring(Math.abs(t - h.at) < 0.002 ? c.r() * 2 - 1 : 0), 0) * 1.4;
+    const hits = Array.from({ length: 12 }, (_, i) => ({ at: i * 0.052 + c.r() * 0.05, amp: 0.6 + c.r() * 0.4, ring: knock(700 + c.r() * 1100, RATE_HI, 0.994), low: knock(260 + c.r() * 160, RATE_HI, 0.988) }));
+    return (t) => {
+      let v = 0;
+      for (const h of hits) {
+        const x = Math.abs(t - h.at) < 0.0025 ? (c.r() * 2 - 1) * h.amp : 0;
+        v += h.ring(x) + h.low(x) * 0.8;
+      }
+      return v;
+    };
   }, { bits: 7 }),
+  // A chain shifting: five links knocking, one after another, each a small bright ring.
   chainClink: () => draw(0.6, RATE_HI, 80, (c) => {
-    const a = knock(2200, RATE_HI, 0.993);
-    const b = knock(2900, RATE_HI, 0.992);
-    return (t) => a(t < 0.003 ? c.r() * 2 - 1 : 0) + b(Math.abs(t - 0.13) < 0.003 ? c.r() * 2 - 1 : 0) * 0.8;
+    const links = ([[0, 1, 1], [0.07, 0.5, 1.12], [0.13, 0.8, 0.94], [0.24, 0.42, 1.2], [0.31, 0.3, 1.05]] as const).map(([at, amp, pitch], i) => ({ at, amp, ring: struck(c, [[2200 * pitch, 1, 26], [2900 * pitch, 0.7, 32], [4150 * pitch, 0.35, 44]], 0.8, i * 3) }));
+    return (t) => links.reduce((v, l) => v + l.ring(t - l.at) * l.amp, 0);
   }, { bits: 7 }),
   // A big bell, far away: a low note with the out-of-tune overtones real bells have.
   toll: () => draw(3.5, RATE_LO, 81, (c) => (t) => (sine(c.osc(0, 98)) + sine(c.osc(1, 98 * 2.4)) * 0.5 + sine(c.osc(2, 98 * 3.9)) * 0.25 + sine(c.osc(3, 98 * 0.5)) * 0.4) * Math.exp(-t * 1.3) * Math.min(1, t / 0.01), { bits: 7 }),
@@ -213,7 +233,7 @@ const RECIPES: Record<SfxName, () => Sample> = {
   // Taking a hit: a harsh falling buzz with a thud at the front.
   hurt: () => draw(0.32, RATE_HI, 9, (c) => (t) => (saw(c.osc(0, 540 - 350 * (t / 0.32))) * 0.55 + sq(c.osc(2, 270 - 175 * (t / 0.32)), 0.3) * 0.3 + (c.r() * 2 - 1) * 0.3) * decay(t, 0.25) + sine(c.osc(1, 120 * Math.exp(-10 * t) + 50)) * Math.exp(-t * 18) * 0.8),
   // A blow caught on the shield: a hard clank and a ring of out-of-tune partials, like struck iron.
-  block: () => draw(0.42, RATE_HI, 10, (c) => (t) => ((c.r() * 2 - 1) * Math.exp(-t * 110) * 1.1 + sine(c.osc(0, 873)) * 0.42 * Math.exp(-t * 9) + sine(c.osc(1, 1397)) * 0.3 * Math.exp(-t * 12) + sine(c.osc(2, 2318)) * 0.22 * Math.exp(-t * 17) + sq(c.osc(3, 3105), 0.5) * 0.08 * Math.exp(-t * 26) + sine(c.osc(4, 140 * Math.exp(-14 * t) + 60)) * 0.6 * Math.exp(-t * 24)) * Math.min(1, t / 0.001) * Math.min(1, (0.42 - t) / 0.05)),
+  block: () => draw(0.42, RATE_HI, 10, (c) => (t) => ((c.r() * 2 - 1) * Math.exp(-t * 110) * 0.9 + sine(c.osc(0, 873)) * 0.62 * Math.exp(-t * 7.5) + sine(c.osc(1, 1397)) * 0.44 * Math.exp(-t * 10) + sine(c.osc(2, 2318)) * 0.3 * Math.exp(-t * 15) + sq(c.osc(3, 3105), 0.5) * 0.09 * Math.exp(-t * 26) + sine(c.osc(4, 140 * Math.exp(-14 * t) + 60)) * 0.7 * Math.exp(-t * 22)) * Math.min(1, t / 0.001) * Math.min(1, (0.42 - t) / 0.05)),
   // A crate smashed: a hard crack and a heavy low thump as it gives, the boards knocking against each other as they
   // come apart (each knock is a burst of noise through a few wooden resonances), and a crackle of splinters after.
   crate: () => draw(0.62, RATE_HI, 11, (c) => {
@@ -286,13 +306,11 @@ const RECIPES: Record<SfxName, () => Sample> = {
   // The roach's screech: a harsh saw with fast buzzing and breath, sliding up then down.
   roachScreech: () => draw(0.4, RATE_HI, 46, (c) => (t) => (saw(c.osc(0, 2200 + 900 * Math.sin((t / 0.4) * Math.PI) + 200 * sine(c.osc(1, 55)))) * 0.55 + (c.r() * 2 - 1) * 0.3) * (0.65 + 0.35 * sq(c.osc(2, 70), 0.5)) * bell(t, 0.4), { bits: 7 }),
   snort: () => draw(0.5, RATE_LO, 82, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.35) * 1.2 + sine(c.osc(1, 70 + 30 * Math.sin(t * 20))) * 0.5) * (t < 0.08 ? t / 0.08 : Math.exp(-(t - 0.08) * 5)), { bits: 6 }),
+  // A great weight of iron going over onto stone: a thud under a low clang that takes most of a second to die.
   flipClang: () => draw(1.0, RATE_HI, 83, (c) => {
-    const a = knock(210, RATE_HI, 0.996);
-    const b = knock(470, RATE_HI, 0.994);
-    return (t) => {
-      const x = t < 0.006 ? c.r() * 2 - 1 : 0;
-      return a(x) * 1.4 + b(x) * 0.8 + c.lp(0, c.r() * 2 - 1, 0.2) * Math.exp(-t * 18) * 0.6;
-    };
+    const ring = struck(c, [[210, 1, 6], [217, 0.5, 6.5], [470, 0.7, 8], [795, 0.42, 11], [1130, 0.26, 15]], 0.5);
+    // (Pushed a little into soft clipping, as the crate is: it should sound heavy.)
+    return (t) => Math.tanh((ring(t) + sine(c.osc(8, 55 + 130 * Math.exp(-14 * t))) * Math.exp(-t * 16) * 0.9 + c.lp(0, c.r() * 2 - 1, 0.2) * Math.exp(-t * 18) * 0.6) * 0.45) * Math.min(1, (1 - t) / 0.08);
   }, { bits: 7 }),
   batSqueak: () => draw(0.16, RATE_HI, 84, (c) => (t) => (sq(c.osc(0, 3400 + 1800 * Math.sin((t / 0.16) * Math.PI * 3)), 0.25) * 0.5 + tri(c.osc(1, 5200 - 2000 * (t / 0.16))) * 0.3) * bell(t, 0.16), { bits: 7, gain: 0.7 }),
   flap: () => draw(0.12, RATE_LO, 85, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.18) * 1.3 + sine(c.osc(1, 110 - 300 * t)) * 0.3) * bell(t, 0.12), { bits: 6, gain: 0.6 }),
@@ -357,7 +375,7 @@ const RECIPES: Record<SfxName, () => Sample> = {
   // Cloth: a paw on a scarf, something tucked away. Two soft brushes.
   cloth: () => draw(0.3, RATE_HI, 62, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.28) - c.lp(1, c.r() * 2 - 1, 0.06)) * (bell(t, 0.13) + 0.7 * bell(t - 0.14, 0.16)), { bits: 7, gain: 0.5 }),
   // A small thing picked up off stone: a scrape, a tick, and a tiny ring.
-  keepsake: () => draw(0.4, RATE_HI, 63, (c) => (t) => c.lp(0, c.r() * 2 - 1, 0.5) * bell(t, 0.07) * 0.5 + (c.r() * 2 - 1) * Math.exp(-Math.max(0, t - 0.08) * 160) * (t > 0.08 ? 0.7 : 0) + (sine(c.osc(0, 1760)) * 0.3 + sine(c.osc(1, 2640)) * 0.15) * Math.exp(-Math.max(0, t - 0.08) * 11) * (t > 0.08 ? 1 : 0), { bits: 7, gain: 0.7 }),
+  keepsake: () => draw(0.4, RATE_HI, 63, (c) => (t) => c.lp(0, c.r() * 2 - 1, 0.5) * bell(t, 0.07) * 0.5 + (c.r() * 2 - 1) * Math.exp(-Math.max(0, t - 0.08) * 160) * (t > 0.08 ? 0.7 : 0) + (sine(c.osc(0, 1760)) * 0.46 + sine(c.osc(1, 2640)) * 0.22) * Math.exp(-Math.max(0, t - 0.08) * 8) * (t > 0.08 ? 1 : 0) * Math.min(1, (0.4 - t) / 0.05), { bits: 7, gain: 0.85 }),
   // He knows it: two low, slow bell notes, the second a little sad.
   recall: () => draw(1.4, RATE_HI, 64, (c) => (t) => {
     const a = (sine(c.osc(0, 392)) * 0.5 + sine(c.osc(1, 784)) * 0.2 + sine(c.osc(2, 1180)) * 0.06) * Math.exp(-t * 3) * Math.min(1, t / 0.006);
@@ -368,7 +386,7 @@ const RECIPES: Record<SfxName, () => Sample> = {
   // A soft rush of air: a jump seen from far off.
   whoosh: () => draw(0.3, RATE_HI, 65, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.06 + 0.3 * Math.sin(Math.PI * (t / 0.3))) - c.lp(1, c.r() * 2 - 1, 0.03)) * bell(t, 0.3), { bits: 7, gain: 0.5 }),
   // A footstep for story scenes and memories: a soft pat on stone.
-  softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.6 }),
+  softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.78 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),
 };
 
@@ -393,6 +411,32 @@ export function decodeRecorded(r: Recorded): Sample {
 }
 
 const cache = new Map<SfxName, Sample>();
+/**
+ * How loud a sound seems: the level (rms, 0..1) of its loudest fifth of a second, or of all of it if it is shorter.
+ * (Its level over its whole length says more about how much silence it ends with: by that a laugh with gaps in it
+ * reads as quiet, and a tick followed by nothing reads the same as a ring that fades.)
+ */
+export function loudness(s: Sample): number {
+  const d = s.data;
+  const win = Math.min(d.length, Math.round(s.rate * 0.2));
+  let run = 0;
+  let best = 0;
+  for (let i = 0; i < d.length; i++) {
+    run += d[i] * d[i];
+    if (i >= win) run -= d[i - win] * d[i - win];
+    if (i >= win - 1 && run > best) best = run;
+  }
+  return Math.sqrt(best / win);
+}
+/** How long a sound can be heard for, in seconds: up to the last moment it is above a whisper. */
+export function heardFor(s: Sample): number {
+  let last = 0;
+  for (let i = 0; i < s.data.length; i++) if (Math.abs(s.data[i]) > 0.03) last = i;
+  return last / s.rate;
+}
+/** Below this (see `loudness`) a sound is lost under the others. Nothing in the game is. */
+export const QUIET = 0.1;
+
 /** Draws a sound (once; the result is kept). */
 export function sfx(name: SfxName): Sample {
   let s = cache.get(name);

@@ -307,6 +307,25 @@ ends are snapped (slant, point, notch) with bare wood showing; a barrel gives st
 halves. A tumbling piece rests on its lowest corner (`Debris.low`), so boards bounce on their ends and never dip into
 the floor. tests/crates.ts checks all of it, loudness included.
 
+## The quiet sounds (2026-11-15)
+The sound test marked nine sounds as too quiet. Measured, most were not quiet so much as nearly empty: `clank` was a
+twentieth of a second's tick followed by 0.85 s of silence (its resonators died in 15 ms), `flipClang` and
+`chainClink` much the same. In `src/audio/synth.ts`:
+- `struck(c, parts, tick)`: struck metal as a tick plus partials that are not in tune, each dying at its own rate.
+  `clank` (rings 0.43 s, two partials a hair apart so it shimmers), `flipClang` (a thud under a low clang, 0.57 s,
+  soft-clipped a little for weight: the 0.45 in its recipe), `chainClink` (five links knocking, not two ticks).
+- `pebbles`: a dozen knocks with some body. `lavaBubble`: a mid seething over the rumble (which small speakers
+  cannot carry) and more pops; about as loud as the fire now. `block`, `keepsake`, `softStep`: the same sounds with
+  more of their ring, or simply turned up a little.
+- `villainLaugh` was not touched: it is a recording, loud where it sounds and quiet only in its gaps. That is why the
+  measure changed from the average over a sound's whole length to its loudest fifth of a second.
+- NOT changed: the volumes these are played at. So the far-off clanks, chains and pebbles of the ambience
+  (`src/audio/ambience.ts`), the Ironback going over, a shield breaking, the Stag Knight kneeling and a blow off an
+  iron-bound crate are all louder than they were. Nobody has heard them yet: if any is too much, turn down its `vol`
+  where it is played, not the sound.
+tests/audio.ts: no sound is under `QUIET`; struck iron rings; block >= hit; the great clang is the heaviest metal and
+a crate heavier still; soft things stay soft; nothing over 0.3 (not flattened into a buzz).
+
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
 beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.
@@ -426,9 +445,9 @@ themselves (`TWEAK_SECTIONS` only orders them under headings) and tests/editops.
 new: a search across every slider, a "Changed" filter, a box for an exact number beside each slider.
 
 **Workshop** (`src/ui/workshop.ts`; host functions in main.ts next to the builder's).
-- *Sound test*: every sound by name, playable at any pitch, each with a bar for how loud it is on average (red:
-  under 0.09, quiet enough to be lost). It is how the crate sound would have been caught. As of now it marks these
-  as quiet: clank, flipClang, pebbles, chainClink, keepsake, lavaBubble (not changed; worth a look). The five tunes.
+- *Sound test*: every sound by name, playable at any pitch, each with a bar for how loud it seems (`loudness()` in
+  `src/audio/synth.ts`: the level of its loudest fifth of a second; red: under `QUIET`, 0.1, quiet enough to be
+  lost). It is how the crate sound would have been caught. Nothing is red now (see "The quiet sounds"). The five tunes.
 - *Go to a place*: any level, by world; the retired ones too.
 - *Test switches* (`src/core/devSwitches.ts`, `DEV`; never saved, all off at start; what is on is written small at
   the top of the screen): no damage (`player.untouchable`), speed (1, 0.5, 0.25, 0.1), hit shapes

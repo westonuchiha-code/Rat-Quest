@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,901 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,909 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`

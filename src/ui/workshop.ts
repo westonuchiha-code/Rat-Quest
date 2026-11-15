@@ -5,6 +5,7 @@
  */
 import { esc, icon, useDevTheme } from './devTheme';
 import { DEV, type DevKey } from '../core/devSwitches';
+import { QUIET } from '../audio/synth';
 
 export interface WorkshopPlace {
   id: string;
@@ -172,7 +173,7 @@ export class Workshop {
     const all = this.host.sounds().filter((s) => !find || s.name.toLowerCase().includes(find));
     if (!all.length) return '<div class="hint">No sound by that name.</div>';
     return all
-      .map((s) => `<button data-snd="${esc(s.name)}" title="${s.secs.toFixed(2)} s${s.loop ? ', a loop (one turn of it is played)' : ''}"><b>${esc(s.name)}</b><em><span class="meter"><u class="${s.loud < 0.09 ? 'low' : s.loud > 0.32 ? 'high' : ''}" style="width:${Math.min(100, Math.round(s.loud * 250))}%"></u></span>${s.loud.toFixed(2)}</em></button>`)
+      .map((s) => `<button data-snd="${esc(s.name)}" title="${s.secs.toFixed(2)} s${s.loop ? ', a loop (one turn of it is played)' : ''}"><b>${esc(s.name)}</b><em><span class="meter"><u class="${s.loud < QUIET ? 'low' : s.loud > 0.36 ? 'high' : ''}" style="width:${Math.min(100, Math.round(s.loud * 160))}%"></u></span>${s.loud.toFixed(2)}</em></button>`)
       .join('');
   }
   private soundPage(): string {
@@ -184,7 +185,7 @@ export class Workshop {
         <label>Pitch <input type="range" data-f="rate" min="0.4" max="2" step="0.05" value="${this.rate}" /><output data-o="rate">x${this.rate.toFixed(2)}</output></label>
         <label>Volume <input type="range" data-f="vol" min="0.1" max="1" step="0.05" value="${this.vol}" /><output data-o="vol">${Math.round(this.vol * 100)}%</output></label>
         <button data-a="pitch1">Pitch back to x1</button></div>
-      <div class="hint">Click a sound to hear it. The bar is how loud it is on average: red is quiet enough to be lost under other sounds, orange is among the loudest.</div>
+      <div class="hint">Click a sound to hear it. The bar is how loud it is at its loudest (over a fifth of a second): red would be quiet enough to be lost under other sounds, orange is among the loudest.</div>
       <div class="snd" style="margin-top:0.7em">${this.soundList()}</div></div>`;
   }
 

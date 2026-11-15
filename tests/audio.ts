@@ -1,5 +1,5 @@
 // Sound: every effect renders, stays in range, is squashed to a low bit depth; loops are seamless; music is deterministic; voices are limited.
-import { SFX_NAMES, sfx, instrument, RATE_HI, RATE_LO } from '../src/audio/synth';
+import { SFX_NAMES, sfx, instrument, RATE_HI, RATE_LO, loudness, heardFor, QUIET } from '../src/audio/synth';
 import { TRACK_NAMES, trackNamed, notesBetween, stepSeconds } from '../src/audio/music';
 import { VoicePool } from '../src/audio/voices';
 import { CRUMB_STREAK, VARY, playRate } from '../src/audio/audio';
@@ -40,6 +40,20 @@ for (const n of SFX_NAMES) {
   for (let i = 0; i < 20; i++) top = playRate('crumb', 700 + CRUMB_STREAK.window + i * 100, streak);
   check('the run tops out at an octave', Math.abs(top - 2) < 1e-9);
   check('everyday sounds vary a little, others not at all', playRate('hit', 0, streak, 0) < 1 && playRate('hit', 0, streak, 1) > 1 && Math.abs(playRate('hit', 0, streak, 1) - 1) <= (VARY.hit ?? 0) + 1e-9 && playRate('doorOpen', 0, streak, 1) === 1);
+}
+// How loud each sound seems (its loudest fifth of a second). Nine of them were once so thin as to be lost under the
+// others: the far-off clank was a twentieth of a second's tick and then silence.
+{
+  const loud = (n: Parameters<typeof sfx>[0]): number => loudness(sfx(n));
+  const lost = SFX_NAMES.filter((n) => loud(n) < QUIET);
+  check('no sound is quiet enough to be lost under the others', lost.length === 0, lost.map((n) => `${n} ${loud(n).toFixed(3)}`).join(', '));
+  check('struck iron rings: the clank and the great clang can be heard for most of half a second, not a tick', heardFor(sfx('clank')) > 0.35 && heardFor(sfx('flipClang')) > 0.45, `clank ${heardFor(sfx('clank')).toFixed(2)} s, flipClang ${heardFor(sfx('flipClang')).toFixed(2)} s`);
+  check('a chain is several links knocking, and falling stones a run of knocks', heardFor(sfx('chainClink')) > 0.3 && heardFor(sfx('pebbles')) > 0.5, `chain ${heardFor(sfx('chainClink')).toFixed(2)} s, pebbles ${heardFor(sfx('pebbles')).toFixed(2)} s`);
+  check('a blow caught on the shield is at least as loud as one that lands', loud('block') >= loud('hit'), `block ${loud('block').toFixed(3)}, hit ${loud('hit').toFixed(3)}`);
+  check('the great clang (an Ironback going over, a shield broken) is the heaviest of the metal, and a crate breaking heavier still', loud('flipClang') > loud('clank') * 1.2 && loud('flipClang') > loud('block') * 1.3 && loud('crate') > loud('flipClang'), `clang ${loud('flipClang').toFixed(3)}, clank ${loud('clank').toFixed(3)}, block ${loud('block').toFixed(3)}, crate ${loud('crate').toFixed(3)}`);
+  check('the lava seethes about as loudly as a fire or a machine, no more', loud('lavaBubble') > loud('fire') * 0.9 && loud('lavaBubble') < loud('machine') * 1.3, `lava ${loud('lavaBubble').toFixed(3)}, fire ${loud('fire').toFixed(3)}, machine ${loud('machine').toFixed(3)}`);
+  check('soft things stay soft: a soft step, cloth and a small thing picked up are among the quietest', (['softStep', 'cloth', 'keepsake'] as const).every((n) => loud(n) < 0.16), (['softStep', 'cloth', 'keepsake'] as const).map((n) => `${n} ${loud(n).toFixed(3)}`).join(', '));
+  check('nothing was flattened into a buzz to get there', (['clank', 'flipClang', 'chainClink', 'pebbles', 'block', 'keepsake'] as const).every((n) => loud(n) < 0.3), (['clank', 'flipClang', 'chainClink', 'pebbles', 'block', 'keepsake'] as const).map((n) => `${n} ${loud(n).toFixed(3)}`).join(', '));
 }
 check('the story has its own sounds', (['memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep'] as const).every((n) => SFX_NAMES.includes(n)));
 check('the same effect is the same every time', sfx('ratJump') === sfx('ratJump'));
