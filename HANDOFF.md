@@ -515,7 +515,7 @@ the level editor's cube button, or `#flyedit`. It wears the suite's look and sho
 - While he types in the piece search, the game is told nothing is pressed (`fly.typing` in main.ts), and the Escape
   or Enter that shuts the list is not also read as "back to the map" or "place" (`deaf`).
 - The fly arrows on the left show only on a touch screen. The mouse wheel goes forward and back.
-- tests/place3d.ts (29, the d-pad among them): placing, what is pointed at (side, top, the room's wall, a crate), copy putting down the
+- tests/place3d.ts (28, the d-pad among them): placing, what is pointed at (side, top, the room's wall, a crate), copy putting down the
   same piece, what a piece stands on, sticking out. The screen itself was driven in a browser at desktop and phone
   size (keys, the list, copy, move, undo, redo, into 3D from the level editor and back with the change kept).
 - **With a controller** the d-pad shapes the piece (`PadShaper` in place3d.ts; main.ts feeds it `gamepadDpad`, which
