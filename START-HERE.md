@@ -220,10 +220,14 @@ to find"). Eight things where there were thirty-two: five caps and three HUNKS o
   second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
 The other fifteen levels are as they were.
 
-## Research the owner has asked for (2026-11-15: on the list, not yet begun)
+## Research the owner has asked for (2026-11-15: begun, BLOCKED by the network; see research_notes/README.md)
 He asked for these to be added to the list. Each is in-depth research from real sources (interviews with the people
 who made the games, postmortems, design analyses), written up in the repo with its sources, and each write-up ends
-with what it means for THIS game: things to do, not just things learned. Suggested home: `docs/research/<game>.md`.
+with what it means for THIS game: things to do, not just things learned. Home: notes in `research_notes/<title>/`, reports in `reports/`.
+**Where it stands:** nine researchers were sent out and came back with little: this environment's network rules refuse
+every site but the search tool's summaries. `research_notes/README.md` says what is there, which sites to allow, and
+how to finish. No reports are written. The one first-hand part (Mario 64's movement numbers from its source) is set
+beside our knight's in that file: he jumps far higher for his size than Mario, with nothing to earn it by.
 1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
    the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
 2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
