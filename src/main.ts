@@ -40,6 +40,8 @@ import { DEV, devSummary } from './core/devSwitches';
 import { HitShapes } from './render/hitShapes';
 import { StagModel } from './enemies/stagModel';
 import { Bat, BAT, rouseRoost } from './enemies/bat';
+import { Hornet } from './enemies/hornet';
+import { HornetModel } from './enemies/hornetModel';
 import { BatModel } from './enemies/batModel';
 import type { Foe } from './enemies/foe';
 import { ScuttlerModel } from './enemies/scuttlerModel';
@@ -378,6 +380,19 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, walking: e.walking, counter: e.counter }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'hornet') {
+      const e = new Hornet(spec);
+      const m = new HornetModel();
+      e.canFly = canFly;
+      enemies.push(e);
+      enemyModels.push({
+        root: m.root,
+        // (Its model is put where the rules have it each frame, lance and all: see its tick.)
+        setTransform: () => undefined,
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, tip: e.tip, aim: e.aim, floor: e.floor, moving: e.moving }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'bat') {
       const e = new Bat(spec);
       const m = new BatModel({ x: e.home.x, y: e.floorY + BAT.roostHeight, z: e.home.z }, spec.perch ?? 'rock');
@@ -427,9 +442,28 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
+      if (e instanceof Hornet) {
+        // The Hornet Lancer: an angry buzz when it sees him; its wings climbing to a whine as its lance comes down
+        // to point at him (as long as the wind-up), the rush of the dive and the crack of its lance into the floor;
+        // the same whine, lower, before it runs at him; a knock as it wrenches its lance free; a buzz when it is
+        // struck and the thump of it landing. (The drone of its wings is a loop: see below.)
+        if (ev === 'alert') audio.play('hornetHurt', { vol: v * 0.8, rate: 0.8, priority: 6 });
+        else if (ev === 'diveWind') audio.play('hornetWhine', { vol: Math.max(0.45, v), rate: 0.8 / e.windTime, priority: 8 });
+        else if (ev === 'dive') audio.play('whoosh', { vol: v, rate: 1.2, priority: 7 });
+        else if (ev === 'stick') {
+          audio.play('spikeHit', { vol: Math.max(0.4, v), rate: 1.15, priority: 8 });
+          shake = Math.max(shake, 0.05 * v);
+        } else if (ev === 'joustWind') audio.play('hornetWhine', { vol: Math.max(0.45, v), rate: (0.8 / e.windTime) * 0.8, priority: 8 });
+        else if (ev === 'joust') audio.play('whoosh', { vol: v, rate: 0.75, priority: 7 });
+        else if (ev === 'free') audio.play('plateKnock', { vol: v * 0.8, rate: 1.5, priority: 5 });
+        else if (ev === 'hurt') audio.play('hornetHurt', { vol: v, priority: 6 });
+        else if (ev === 'thud') audio.play('land', { vol: v, rate: 1.3, priority: 5 });
+        else if (ev === 'lost') audio.play('hornetDie', { vol: v * 0.7, rate: 1.3, priority: 5 });
+        continue;
+      }
       if (e instanceof Wyrm) {
         // The Sump Wyrm, in sounds of its own: its roar when it sees him and again when it turns angry; the tap of
         // all its feet; a wet hiss with its fangs ticking as its head goes up, and the clack of them shutting; its
@@ -1361,6 +1395,8 @@ function startGame(): void {
       } else if (e.kind === 'guard') {
         // (What he does has its own sounds, in beastSounds; only his fall is here.)
         if (e.state === 'dead') audio.play('ratDie', { vol: v, rate: 0.75, priority: 6 });
+      } else if (e.kind === 'hornet') {
+        if (e.state === 'dead') audio.play('hornetDie', { vol: v, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 1.5, priority: 6 });
       } else if (e.kind === 'wyrm') {
@@ -1432,6 +1468,13 @@ function startGame(): void {
       lv = Math.max(lv, nearness(Math.hypot(dx, dz, Math.max(0, player.position.y - l.y) * 1.2), 14));
     }
     audio.loop('lavaBubble', lv * lv * 0.45);
+    // A hornet in the air near him: the drone of its wings (louder while it winds up; nothing once it is down).
+    let hv = 0;
+    for (const e of enemies) {
+      if (!(e instanceof Hornet) || !e.alive || e.state === 'grounded' || e.state === 'fall') continue;
+      hv = Math.max(hv, nearness(Math.hypot(e.x - player.position.x, e.y - player.position.y, e.z - player.position.z), 15) * (e.attacking || e.state === 'stuck' ? 1 : 0.7));
+    }
+    audio.loop('hornetBuzz', hv * hv * 0.5);
     let fv = 0;
     for (const b of braziers) fv = Math.max(fv, nearness(Math.hypot(b.x - player.position.x, b.y - player.position.y, b.z - player.position.z), 6));
     audio.loop('fire', fv * fv * 0.3);
@@ -1628,7 +1671,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);

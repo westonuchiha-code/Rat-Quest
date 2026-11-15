@@ -349,6 +349,40 @@ twentieth of a second's tick followed by 0.85 s of silence (its resonators died 
 tests/audio.ts: no sound is under `QUIET`; struck iron rings; block >= hit; the great clang is the heaviest metal and
 a crate heavier still; soft things stay soft; nothing over 0.3 (not flattened into a buzz).
 
+## New enemy: the Hornet Lancer (2026-11-15)
+A great hornet with a lance: the first flyer that fights, not just swoops. One is in the game, over the east plate
+of the Keep's courtyard (the Ironback has the west one). It is a piece in the level editor ("Hornet Lancer").
+- **Rules** `src/enemies/hornet.ts` (kind `hornet`, `HORNET` table, 14 sliders under "Hornet Lancers"). hp 4. Its `y`
+  is the BOTTOM of its body, as the bat's is, so combat's same-level test is true only when it is low.
+  - At its post it hangs 2.7 up. Seeing him (11 off) it comes to hang 6.2 from him, going slowly round, facing him.
+  - *The dive* (the usual one): its lance swings down to point at him (0.8 s; it follows him for 70% of that, then
+    is set on the spot), and it comes down the line of the lance at 15. The blow is the lance's POINT (`tip`, given
+    to combat as `bite.at`): 1 heart; a shield stops it; a perfect guard knocks it out of the air. Whatever happens,
+    the lance goes into the floor and STICKS for 1.6 s (`stuck`), the hornet hanging on it: that is the opening.
+  - *The joust* (40% of the time, from 5 or more off): it drops to chest height (0.55), levels its lance (0.75 s),
+    and runs straight through where he stood and 5 past, at 12.5. Step aside (a cut timed as it passes knocks it
+    down), jump it, or shield it (it glances off and pulls up: no opening); a perfect guard knocks it down.
+  - Struck in the air it falls and lies 1.5 s (2.6 after a perfect guard). Over a drop it is gone.
+  - Its attacks are aimed at the GROUND he stands on (or last stood on, if he is in the air), so jumping does not
+    confuse it, and it will dive onto a ledge he is on. `floor` is the height it has to do with at the moment.
+- **Model** `src/enemies/hornetModel.ts`: THE LANCE COMES FIRST and its point comes from the rules: diving, stuck and
+  running, the lance is laid with its point exactly on the rules' `tip` and its front legs are then laid to the shaft
+  (`twoBone`). Otherwise the lance is carried from a place under its chest on its right (so it runs past its body
+  and under its head, not through them) and swings round on a spring. Probes hold every part off the floor it is
+  given: its body is lifted, wings turned on their hinges (whichever way lifts them), knees and elbows held up, the
+  pennant folded over on its side. Four wings beating 11 times a second; a shadow on the floor under it.
+- **Sounds** (its own): `hornetBuzz` (a loop while one is near, in main.ts by the lava's), `hornetWhine` (the
+  wind-ups, as long as they are), `hornetHurt`, `hornetDie`; `spikeHit` for the lance going in.
+- **Tests**: tests/hornet.ts (40: every attack and each of its answers, in the Keep's real courtyard with the real
+  controller and combat; never in a wall in a minute and a half; goes home) and tests/models.ts (13: point drawn
+  where the rules have it, legs on the shaft, lance never through its body, nothing under the floor, each move's
+  look). Sheet: `#hornet` (`&only=N`). Every state looked at alone from three sides.
+- **Measured before any picture** (as asked): the first run found wings and the pennant under the floor when it lay
+  down, the raised lance through its own head (so its lance is never raised above level now), its front legs
+  losing the shaft between moves, and its feelers not being counted by the floor guard. All fixed before drawing.
+- **Not done**: nobody has fought it by hand; its numbers are first guesses. In the Keep its patch is the whole
+  courtyard, so it will follow him across to the guards. Only one is placed in the game: say where else.
+
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
 beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.

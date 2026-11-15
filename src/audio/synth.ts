@@ -179,6 +179,9 @@ export const SFX_NAMES = [
   // faster before it runs, its head meeting a wall, the crack of its tail, the creak of its coil drawing tight and
   // the crunch when it closes, a sword on its plates, its cry when its head is struck, and its end.
   'wyrmRoar', 'wyrmHiss', 'wyrmSnap', 'wyrmRattle', 'wyrmRam', 'wyrmLash', 'wyrmCreak', 'wyrmCrunch', 'plateKnock', 'wyrmCry', 'wyrmDie',
+  // The Hornet Lancer: the drone of its wings (looped, while one is near), the whine as it winds up to dive or run,
+  // an angry buzz when it is struck, and its wings giving out.
+  'hornetBuzz', 'hornetWhine', 'hornetHurt', 'hornetDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -558,6 +561,32 @@ const RECIPES: Record<SfxName, () => Sample> = {
       return (growl * (0.6 + 0.4 * tri(c.osc(3, 24 - 18 * u))) + (n - c.lp(0, n, 0.3)) * 0.35) * (1 - u) ** 1.2 * Math.min(1, t / 0.05) + plates(t) * 0.9 * Math.min(1, u * 2) * Math.min(1, (2.2 - t) / 0.15);
     };
   }, { bits: 6 }),
+  // The Hornet Lancer's wings: a low drone with an edge on it, wavering a little. (Every pitch in it turns a whole
+  // number of times in the loop, so it joins up.)
+  hornetBuzz: () => draw(0.8, RATE_HI, 131, (c) => (t) => {
+    const waver = 1 + 0.012 * wob(t, 0.8, 3);
+    const beat = 0.72 + 0.28 * wob(t, 0.8, 5);
+    return (sq(c.osc(0, 135 * waver), 0.3) * 0.5 + saw(c.osc(1, 270 * waver)) * 0.3 + tri(c.osc(2, 67.5)) * 0.35 + (c.r() * 2 - 1) * 0.08) * beat;
+  }, { bits: 7, loop: true, gain: 0.6 }),
+  // Winding up: the drone climbing to a whine, louder and louder.
+  hornetWhine: () => draw(0.8, RATE_HI, 132, (c) => (t) => {
+    const u = t / 0.8;
+    const hz = 140 + 300 * u * u;
+    const flutter = 0.75 + 0.25 * sq(c.osc(3, 38 + 30 * u), 0.5);
+    return (sq(c.osc(0, hz), 0.28) * 0.5 + saw(c.osc(1, hz * 2.01)) * 0.35 + (c.r() * 2 - 1) * 0.1) * flutter * (0.3 + 0.7 * u) * Math.min(1, t / 0.04) * Math.min(1, (0.8 - t) / 0.03);
+  }, { bits: 7 }),
+  // Struck: one short angry buzz, up and down.
+  hornetHurt: () => draw(0.22, RATE_HI, 133, (c) => (t) => {
+    const hz = 260 + 240 * Math.sin(Math.PI * (t / 0.22));
+    return (sq(c.osc(0, hz), 0.3) * 0.55 + saw(c.osc(1, hz * 1.99)) * 0.3 + (c.r() * 2 - 1) * 0.2) * (0.6 + 0.4 * sq(c.osc(2, 64), 0.5)) * bell(t, 0.22);
+  }, { bits: 7 }),
+  // Its wings giving out: the drone sinking and breaking up into separate bursts, and then nothing.
+  hornetDie: () => draw(0.95, RATE_HI, 134, (c) => (t) => {
+    const u = t / 0.95;
+    const hz = 300 * Math.exp(-u * 1.7) + 55;
+    const sputter = sq(c.osc(2, 30 - 24 * u), 0.55 - 0.3 * u) > 0 ? 1 : 0.08;
+    return (sq(c.osc(0, hz), 0.3) * 0.55 + saw(c.osc(1, hz * 2)) * 0.3 + (c.r() * 2 - 1) * 0.12) * sputter * (1 - u) ** 0.8 * Math.min(1, t / 0.01);
+  }, { bits: 7 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),
 };
 

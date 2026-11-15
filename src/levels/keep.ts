@@ -70,6 +70,8 @@ const keepArea: CustomLevel = {
     at('guard', -8, 31, 0, { dir: 's' }), at('guard', 8, 31, 0, { dir: 's' }),
     // An ironback guards the west plate. The gatehouse wall is right behind it: let it ram that.
     at('beetle', -30, 31),
+    // And a hornet lancer hangs over the east one: step off the spot it dives at, and its lance sticks in the yard.
+    at('hornet', 30, 33, 0, { dir: 's' }),
     at('crate', -40, 44, 0, { props: { item: 'cap' } }), at('crate', -41, 44), at('crate', -40, 44, 1), at('barrel', 40, 44), at('barrel', 41, 43, 0, { props: { item: 'crumb' } }),
 
     // ---- The inner ward, along the back of the gatehouse wall ----

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,948 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,006 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -202,8 +202,9 @@ He gave this list himself; work through it, do not ask about it again:
      angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
      EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
      ray-tested against its own body on every frame of every move) before saying it is done.
-   Built to that so far: the Orchid Mantis and the **Stag Knight** (HANDOFF has a section on each). After them,
-   ideas (all insects, none built; pick one, do not ask): a hornet lancer that dives, an ant pikeman that fights in
+   Built to that so far: the Orchid Mantis, the **Stag Knight** and the **Hornet Lancer** (a flyer: one hangs over
+   the east plate of the Keep's courtyard; HANDOFF has a section on each). After them, ideas (all insects, none
+   built; pick one, do not ask): an ant pikeman that fights in
    pairs, a firefly bomber. (A spider was on the earlier list; the owner asked for insects.)
    Lessons from building these, for the next: (1) give a weapon-holder its WEAPON's place first and lay the arms to
    it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of
@@ -238,5 +239,5 @@ stick means. Lock-on pressed with nobody near brings the view round behind him. 
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
 Also open: raise the door costs to match 47 wedges or leave them; fire and iron-bound crates in the level builder;
-playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
+playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

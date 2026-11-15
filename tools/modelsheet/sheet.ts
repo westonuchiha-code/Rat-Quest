@@ -21,6 +21,8 @@ import { BroodModel } from '../../src/enemies/broodModel';
 import { BROOD, type BroodState } from '../../src/enemies/brood';
 import { WyrmModel } from '../../src/enemies/wyrmModel';
 import { WYRM, Wyrm, type WyrmState } from '../../src/enemies/wyrm';
+import { HornetModel } from '../../src/enemies/hornetModel';
+import { HORNET, Hornet, type HornetState } from '../../src/enemies/hornet';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
@@ -52,7 +54,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm|hornet)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -96,6 +98,69 @@ if (pick === 'guard') {
     labels.push({ text: 'the knight', x: -12.5, y: 0 });
   }
   for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'hornet') {
+  // The Hornet Lancer in each thing it does. Each is a real fight, played by its rules until it is doing that thing,
+  // then held there (its wings go on beating). &only=N shows one alone, with the knight where he stood.
+  type Shot = { name: string; state: HornetState; at: number; roll: number; hit?: HornetState; kill?: HornetState };
+  const shots: Shot[] = [
+    { name: 'at its post', state: 'idle', at: 0.5, roll: 0.9 },
+    { name: 'alert', state: 'alert', at: HORNET.alert * 0.8, roll: 0.9 },
+    { name: 'hovering', state: 'hover', at: 1.0, roll: 0.9 },
+    { name: 'dive windup', state: 'diveWind', at: HORNET.diveWind * 0.92, roll: 0.9 },
+    { name: 'dive', state: 'dive', at: 0.2, roll: 0.9 },
+    { name: 'lance stuck', state: 'stuck', at: 0.62, roll: 0.9 },
+    { name: 'pulling free', state: 'free', at: HORNET.free * 0.6, roll: 0.9 },
+    { name: 'joust windup', state: 'joustWind', at: HORNET.joustWind * 0.92, roll: 0.1 },
+    { name: 'joust', state: 'joust', at: 0.3, roll: 0.1 },
+    { name: 'pulling up', state: 'climb', at: HORNET.climb * 0.5, roll: 0.1 },
+    { name: 'knocked down', state: 'fall', at: HORNET.fallTime * 0.6, roll: 0.9, hit: 'hover' },
+    { name: 'on the floor', state: 'grounded', at: 0.8, roll: 0.9, hit: 'hover' },
+    { name: 'dead', state: 'dead', at: 1.3, roll: 0.9, kill: 'hover' },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const COLS = 5;
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    let ox = only >= 0 ? 0 : ((i % COLS) - (COLS - 1) / 2) * 9;
+    let oz = only >= 0 ? 0 : (Math.floor(i / COLS) - 1) * 10;
+    const h = new Hornet({ x: 0, z: -6, facing: 0 });
+    h.rng = () => shot.roll;
+    const m = new HornetModel();
+    scene.add(m.root);
+    const rat = { x: 0, z: shot.state === 'idle' ? 40 : 1 };
+    const feed = (dt: number): void => m.update(dt, { state: h.state, stateTime: h.stateTime, x: h.x + ox, y: h.y, z: h.z + oz, facing: h.facing, tip: { x: h.tip.x + ox, y: h.tip.y, z: h.tip.z + oz }, aim: h.aim, floor: h.floor, moving: h.moving });
+    let done = false;
+    for (let f = 0; f < 60 * 60; f++) {
+      h.update(1 / 60, rat.x, 0, rat.z, true);
+      h.events.length = 0;
+      if (shot.hit && !done && h.state === shot.hit && h.stateTime > 0.8) {
+        done = true;
+        h.takeHit(1, 0, 0);
+      }
+      if (shot.kill && !done && h.state === shot.kill && h.stateTime > 0.8) {
+        done = true;
+        while (h.alive) h.takeHit(9, 0, 0);
+      }
+      feed(1 / 60);
+      if (h.state === shot.state && h.stateTime >= shot.at) break;
+    }
+    if (only >= 0) {
+      // Alone, it is put in the middle of the picture (its floor at 0).
+      ox = -h.x;
+      oz = -h.z;
+      feed(0);
+    }
+    ticks.push((dt) => feed(dt));
+    labels.push({ text: shot.name, x: only >= 0 ? 0 : ox, y: (only >= 0 ? 0 : oz) + 4 });
+    if (only >= 0) {
+      const knight = new RatModel();
+      knight.setTransform(new THREE.Vector3(rat.x + ox, 0, rat.z + oz), Math.atan2(h.x - rat.x, h.z - rat.z));
+      knight.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+      scene.add(knight.root);
+    }
+  });
+  for (let k = 0; k < 20; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'wyrm') {
   // The Sump Wyrm in each thing it does. Each is a real fight, played by its rules until it is doing that thing, then held.

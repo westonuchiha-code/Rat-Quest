@@ -24,6 +24,8 @@ import { BroodModel } from '../src/enemies/broodModel';
 import { BROOD, type BroodState } from '../src/enemies/brood';
 import { WyrmModel } from '../src/enemies/wyrmModel';
 import { WYRM, Wyrm, type WyrmState } from '../src/enemies/wyrm';
+import { HornetModel } from '../src/enemies/hornetModel';
+import { HORNET, Hornet, type HornetState } from '../src/enemies/hornet';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
@@ -1610,6 +1612,178 @@ const at = new THREE.Vector3(0, 0, 0);
     const d = fight(8, () => ({ x: 0, z: 0 }), (w2) => { if (w2.state === 'prowl' && w2.alive && w2.stateTime > 0.5) while (w2.alive) w2.takeHit(4, 0, 0); });
     const rolledOver = inside(d.m).segs.filter((s) => Math.abs((s.group as THREE.Object3D).rotation.z) > 1).length;
     check('wyrm: dead, every segment has rolled over onto its side with its legs curled in', !d.w.alive && rolledOver === W.segments && d.m.parts().feet.every((f) => f.y > -0.03), `${rolledOver} of ${W.segments} rolled`);
+  }
+}
+
+// ---- The Hornet Lancer: its lance comes first, and the point of it comes from the rules. Is it drawn there? Do its
+// front legs hold the shaft? Does the lance pass through its own body, or any of it go under the floor? ----
+{
+  type Inside = { frame: THREE.Object3D; wings: Array<{ flap: THREE.Object3D }>; legs: Array<{ fore: THREE.Object3D }>; lance: THREE.Object3D };
+  const inside = (m: HornetModel): Inside => m as unknown as Inside;
+  const H = HORNET;
+  /** The states in which it is low: the floor it is given is a real floor right under it. */
+  const LOW: HornetState[] = ['stuck', 'free', 'joust', 'fall', 'grounded', 'dead'];
+  const segDist = (p: THREE.Vector3, a: THREE.Vector3, b: THREE.Vector3): number => {
+    const ab = b.clone().sub(a);
+    const t = Math.max(0, Math.min(1, p.clone().sub(a).dot(ab) / ab.lengthSq()));
+    return a.clone().addScaledVector(ab, t).distanceTo(p);
+  };
+  const seen = new Set<string>();
+  let frames = 0;
+  let sound = true;
+  let low = 9;
+  let lowIn = '';
+  let through = -9;
+  let throughIn = '';
+  let short = 0;
+  let shortIn = '';
+  let offPoint = 0;
+  let offPlace = 0;
+  /** A fight by the rules, the model following every frame. `roll`: 0.9 it always dives, 0.1 it runs at him. */
+  const fight = (roll: number, secs: number, rat: (t: number, h: Hornet) => { x: number; y?: number; z: number }, each?: (h: Hornet, m: HornetModel, t: number) => void): { h: Hornet; m: HornetModel } => {
+    const h = new Hornet({ x: 0, z: -6, facing: 0 });
+    h.rng = () => roll;
+    const m = new HornetModel();
+    for (let t = 0; t < secs; t += DT) {
+      const p = rat(t, h);
+      h.update(DT, p.x, p.y ?? 0, p.z, true);
+      h.events.length = 0;
+      m.update(DT, { state: h.state, stateTime: h.stateTime, x: h.x, y: h.y, z: h.z, facing: h.facing, tip: h.tip, aim: h.aim, floor: h.floor, moving: h.moving });
+      each?.(h, m, t);
+      // (Dead, it shrivels away after a second and a half: nothing is measured on what is left.)
+      if (h.state === 'dead' && h.stateTime > 1.5) continue;
+      frames++;
+      seen.add(h.state);
+      const P = m.parts();
+      const r = measure(m.root);
+      if (!r.finite || r.meshes < 30) sound = false;
+      if (LOW.includes(h.state) && r.box.min.y - h.floor < low) {
+        low = r.box.min.y - h.floor;
+        lowIn = h.state;
+      }
+      // Its lance against its chest, its head and four places down its abdomen (each as a ball).
+      const balls: Array<[THREE.Vector3, number]> = [[P.chest, 0.23], [P.head, 0.19], [P.abdomen[0], 0.2], [P.abdomen[1], 0.26], [P.abdomen[2], 0.22], [P.abdomen[3], 0.12]];
+      for (const [c, rad] of balls) {
+        const into = rad - segDist(c, P.butt, P.tip);
+        if (into > through) {
+          through = into;
+          throughIn = h.state;
+        }
+      }
+      // Its front legs on the shaft (dropped, on the floor, only its right one keeps a hold).
+      const lying = h.state === 'grounded' || h.state === 'dead';
+      const s2 = lying ? 0 : Math.max(m.reachShort[0], m.reachShort[1]);
+      if (s2 > short) {
+        short = s2;
+        shortIn = h.state;
+      }
+      if (!lying) for (let i = 0; i < 2; i++) short = Math.max(short, P.hands[i].distanceTo(P.holds[i]) - 0.02);
+      if (h.state === 'dive' || h.state === 'stuck' || h.state === 'joust') offPoint = Math.max(offPoint, P.tip.distanceTo(new THREE.Vector3(h.tip.x, h.tip.y, h.tip.z)));
+      // Its body is drawn where the rules have it (it leans and bobs about its chest, no more).
+      if (h.state !== 'fall' && h.state !== 'dead' && h.state !== 'grounded') offPlace = Math.max(offPlace, Math.hypot(P.chest.x - h.x, P.chest.z - h.z));
+    }
+    return { h, m };
+  };
+  const still = (): { x: number; z: number } => ({ x: 0, z: 2 });
+  fight(0.9, 14, still);
+  fight(0.1, 14, still);
+  fight(0.9, 9, still, (h, _m, t) => { if (Math.abs(t - 2) < DT / 2) h.takeHit(1, 0, 0); });
+  fight(0.9, 9, still, (h) => { if (h.state === 'dive' && h.stateTime > 0.2) h.lungeLanded(false, true); });
+  for (const when of ['hover', 'diveWind', 'dive', 'stuck', 'joust', 'grounded'] as HornetState[]) {
+    let done = false;
+    fight(when === 'joust' ? 0.1 : 0.9, 16, still, (h, _m, t) => {
+      if (when === 'grounded' && h.state === 'hover' && t > 1 && h.hp === H.hp) h.takeHit(1, 0, 0);
+      if (!done && h.state === when && h.stateTime > 0.15) {
+        done = true;
+        while (h.alive) h.takeHit(9, 0, 0);
+      }
+    });
+  }
+  // He runs round close under it (steep dives), and he stands on a ledge three up (its floor is not his).
+  fight(0.9, 20, (t, h) => ({ x: h.x + Math.sin(t * 2) * 1.2, z: h.z + Math.cos(t * 2) * 1.2 }));
+  fight(0.9, 14, () => ({ x: 0, y: 3, z: 2 }));
+  const all: HornetState[] = ['alert', 'hover', 'diveWind', 'dive', 'stuck', 'free', 'joustWind', 'joust', 'climb', 'fall', 'grounded', 'rise', 'dead'];
+  check('hornet: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
+  check('hornet: the point of its lance is drawn exactly where the rules have it, diving, stuck and running: what hits him is what he sees', offPoint < 1e-6, `furthest off ${offPoint.toExponential(1)}`);
+  check('hornet: its body is drawn where the rules have it', offPlace < 0.25, `furthest off ${offPlace.toFixed(2)}`);
+  check('hornet: its front legs are on the shaft of its lance in everything it does in the air', short < 0.03, `worst ${short.toFixed(3)} short (${shortIn || 'none'})`);
+  check('hornet: its lance never passes through its own chest, head or abdomen', through < 0, `nearest ${(-through).toFixed(3)} clear (${throughIn})`);
+  check('hornet: low down, nothing of it goes under the floor: body, wings, legs, lance, pennant', low >= -0.03, `lowest ${low.toFixed(3)} (${lowIn})`);
+
+  // What each move looks like.
+  {
+    const up = new THREE.Vector3();
+    const fwd = new THREE.Vector3();
+    const axes = (m: HornetModel): void => {
+      inside(m).frame.updateMatrixWorld(true);
+      up.set(0, 1, 0).transformDirection(inside(m).frame.matrixWorld);
+      fwd.set(0, 0, 1).transformDirection(inside(m).frame.matrixWorld);
+    };
+    let noseDive = 0;
+    let stuckTipY = 9;
+    let stuckFeet = 9;
+    let stuckBody = 0;
+    let beatAir = 0;
+    let lastFlap = 0;
+    fight(0.9, 8, still, (h, m) => {
+      axes(m);
+      const P = m.parts();
+      if (h.state === 'dive' && h.stateTime > 0.2) noseDive = Math.max(noseDive, -fwd.y);
+      if (h.state === 'stuck' && h.stateTime > 0.5) {
+        stuckTipY = Math.min(stuckTipY, P.tip.y);
+        stuckFeet = Math.min(stuckFeet, Math.max(...P.feet.map((f) => f.y)));
+        stuckBody = Math.max(stuckBody, P.chest.y);
+      }
+      const flap = inside(m).wings[0].flap.rotation.z;
+      if (h.state === 'hover') beatAir = Math.max(beatAir, Math.abs(flap - lastFlap));
+      lastFlap = flap;
+    });
+    check('hornet: in the air its wings beat (they are never still from one frame to the next for long)', beatAir > 0.3, `most a wing moves in a frame ${beatAir.toFixed(2)} rad`);
+    check('hornet: diving, its nose is down the line of its lance', noseDive > 0.3, `nose ${noseDive.toFixed(2)} down`);
+    check('hornet: stuck, the point of its lance is on the floor, it hangs above on the shaft, and all four of its other feet are down on the floor to push', Math.abs(stuckTipY) < 1e-6 && stuckBody > 0.5 && stuckFeet < 0.08, `point ${stuckTipY.toFixed(3)}, chest ${stuckBody.toFixed(2)} up, highest foot ${stuckFeet.toFixed(2)}`);
+    let level = 9;
+    let chestHigh = 0;
+    fight(0.1, 8, still, (h, m) => {
+      const P = m.parts();
+      if (h.state === 'joust' && h.stateTime > 0.1) {
+        level = Math.min(level, 9) === 9 ? Math.abs(P.tip.y - P.butt.y) : Math.max(level, Math.abs(P.tip.y - P.butt.y));
+        chestHigh = P.tip.y;
+      }
+    });
+    check('hornet: running at him its lance is near level, at the height of his chest', level < 0.35 && chestHigh > 0.4 && chestHigh < 0.9, `point and butt ${level.toFixed(2)} apart in height; point ${chestHigh.toFixed(2)} up`);
+    let flat = 9;
+    let lanceLow = 9;
+    let stillWings = 9;
+    let lastZ = 0;
+    const g = fight(0.9, 3.6, still, (h, m, t) => {
+      if (Math.abs(t - 2) < DT / 2) h.takeHit(1, 0, 0);
+      const P = m.parts();
+      if (h.state === 'grounded' && h.stateTime > 0.8) {
+        flat = Math.min(flat, 9) === 9 ? P.chest.y : Math.max(flat, P.chest.y);
+        lanceLow = Math.max(P.tip.y, P.butt.y);
+      }
+      void lastZ;
+      void stillWings;
+    });
+    check('hornet: knocked down, it lies on the floor with its lance on the floor beside it', g.h.state === 'grounded' && flat < 0.4 && lanceLow < 0.4, `chest ${flat.toFixed(2)} up; the lance's higher end ${lanceLow.toFixed(2)} up`);
+    let onBack = 1;
+    let legsUp = -9;
+    let wingMove = 9;
+    let wasFlap = 0;
+    const d = fight(0.9, 3.4, still, (h, m, t) => {
+      if (Math.abs(t - 2) < DT / 2) while (h.alive) h.takeHit(9, 0, 0);
+      if (h.state === 'dead' && h.stateTime > 1.0 && h.stateTime < 1.4) {
+        axes(m);
+        onBack = up.y;
+        const P = m.parts();
+        legsUp = Math.min(...P.feet.map((f) => f.y)) - P.chest.y;
+        wingMove = Math.abs(inside(m).wings[0].flap.rotation.z - wasFlap);
+      }
+      wasFlap = inside(m).wings[0].flap.rotation.z;
+    });
+    check('hornet: dead, it lies on its back with its legs curled up over it and its wings still', !d.h.alive && onBack < -0.7 && legsUp > 0 && wingMove < 0.02, `its back ${onBack.toFixed(2)} (down is -1); feet ${legsUp.toFixed(2)} over its chest; wings moving ${wingMove.toFixed(3)}`);
+    const gone = fight(0.9, 5, still, (h, _m, t) => { if (Math.abs(t - 2) < DT / 2) while (h.alive) h.takeHit(9, 0, 0); });
+    check('hornet: and then it shrivels away to nothing', !gone.h.alive && gone.m.root.scale.x < 0.01);
   }
 }
 
