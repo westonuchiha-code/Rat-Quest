@@ -3040,6 +3040,8 @@ function startGame(): void {
     player.prevPosition.copy(player.position);
     follow.yaw = yaw || 0;
     follow.snap();
+    // (`&riding`: and on his shield from the start, for pictures of the ride.)
+    if (/[#&]riding\b/.test(location.hash)) player.devRide();
   }
   if (cutAt || location.hash.includes('cutscene')) startCutscene(cutAt ? Number(cutAt[1]) : 0);
   // Development aids: #story=open or #story=exit plays that scene of this level now; &st=4.5 starts it that many seconds in.

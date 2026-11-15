@@ -862,7 +862,22 @@ export class PlayerController {
     if (this.riding && rideSpeed > T.ride.bailSpeed && Math.hypot(this.velocity.x, this.velocity.z) < rideSpeed * 0.6) this.bail();
 
     // Vertical motion, including landing and head bumps.
+    const fallBefore = this.velocity.y;
     this.moveVertical(dt, colliders);
+    // A rider coming down on a slope keeps what of his fall the slope turns along itself: dropping in onto the wall
+    // of a pipe is how he gets his speed. (Before, every landing threw his falling speed away, slope or flat.)
+    if (this.riding && this.grounded && !this.wasGrounded && fallBefore < 0) {
+      const on = this.slopeUnder();
+      if (on) {
+        const along = this.velocity.x * on.dx + this.velocity.z * on.dz;
+        const turned = (along - on.steep * fallBefore) / (1 + on.steep * on.steep);
+        if (turned > along) {
+          const more = Math.min(turned, T.ride.max) - along;
+          this.velocity.x += on.dx * more;
+          this.velocity.z += on.dz * more;
+        }
+      }
+    }
     if (rideLift !== null && this.riding && !this.grounded && this.velocity.y <= 0 && rideLift !== 0) {
       this.velocity.y = rideLift;
       this.jumpCut = true; // (it is the ramp's throw, not a jump: no button is held, and none let go cuts it short)
@@ -1115,7 +1130,8 @@ export class PlayerController {
       vz += under.dz * pull * dt;
     }
     let speed = Math.hypot(vx, vz);
-    if (speed > 0.3) this.slideHeading = Math.atan2(vx, vz);
+    const reversed = vx * Math.sin(this.slideHeading) + vz * Math.cos(this.slideHeading) < 0;
+    if (speed > 0.3 || (reversed && speed > 1e-6)) this.slideHeading = Math.atan2(vx, vz);
     if (this.grounded) {
       // (The stick across the way he is sliding bends it, slowly.)
       const across = input.move.x * Math.cos(this.slideHeading) - input.move.z * Math.sin(this.slideHeading);
@@ -1160,6 +1176,11 @@ export class PlayerController {
       }
     }
     return !!under?.ramp && p.y - top <= TUNING.ride.surfDrop && slopeOf(under) >= TUNING.ride.minSlope - 1e-6;
+  }
+
+  /** Development aid (the address's `&riding`): he starts on his shield where he stands, for pictures of the ride. */
+  devRide(): void {
+    this.beginRide();
   }
 
   /** Onto his shield, wherever he is: in the air (the air attack over a slope, or onto a rail) he comes down riding. */
@@ -1371,7 +1392,11 @@ export class PlayerController {
       vz += under.dz * pull * dt;
     }
     let speed = Math.hypot(vx, vz);
-    if (speed > 0.3) this.rideHeading = Math.atan2(vx, vz);
+    // He goes the way he is moving. (And when a slope has stopped him and started him back down, that is the other
+    // way: without this he hung at the top of his climb for ever, his speed pointed up the wall each step and the
+    // slope taking it off again.)
+    const reversed = vx * Math.sin(this.rideHeading) + vz * Math.cos(this.rideHeading) < 0;
+    if (speed > 0.3 || (reversed && speed > 1e-6)) this.rideHeading = Math.atan2(vx, vz);
     // The stick, against the way he is going: across it steers, back along it brakes.
     const hx = Math.sin(this.rideHeading);
     const hz = Math.cos(this.rideHeading);
@@ -1420,8 +1445,11 @@ export class PlayerController {
         this.rideFlipDone = true;
       }
     }
-    // Too slow to ride, on ground he can stand on: he steps off. (On a slope too steep to stand on he never does.)
-    if (this.grounded && speed < R.stop && this.rideGroundAge > 0.4 && !(under && under.steep > MAX_WALK_SLOPE + 1e-6)) this.endRide('rideEnd');
+    // Too slow to ride, on ground that will not start him again: he steps off. A slope will start him again, so on
+    // one he stays on unless he is braking (and on one too steep to stand on, whatever he does): the top of his
+    // climb up the wall of a pipe is the slowest he ever is, and he was stepped off there every time.
+    const steepness = under ? under.steep : 0;
+    if (this.grounded && speed < R.stop && this.rideGroundAge > 0.4 && steepness <= MAX_WALK_SLOPE + 1e-6 && (steepness < R.restSlope || fwd < -0.5)) this.endRide('rideEnd');
     return speed;
   }
 
@@ -1444,8 +1472,26 @@ export class PlayerController {
       // its slope under his middle, where he will be standing: on any ramp he can take a step up, that is never more
       // than a step above where he stood the moment before. (That is so of one too steep to STAND on as well: he
       // gets onto it, and a little way up it, before he slips.)
+      // One who was over a ramp already, before this step of his, has not walked into it by this step: it is under
+      // him (or under his edge), and where its slope puts him is the business of the step up and down. A ramp is a
+      // wall only to one who comes to it from outside it: at its sides and its high end. (Riding fast up the steep
+      // wall of a pipe, the next facet up was already under his edge, a little higher than a step: with the least
+      // drift ALONG the pipe it was taken for a wall across that drift, and he was put out at the end of the pipe,
+      // eleven units away.)
+      if (b.ramp && feet >= b.min.y - EPS) {
+        const was = p[axis] - delta;
+        // (Truly over it: one stopped at its side stands exactly a body's half-width off, and is not.)
+        const in0 = (axis === 'x' ? b.min.x : b.min.z) + 1e-4;
+        const in1 = (axis === 'x' ? b.max.x : b.max.z) - 1e-4;
+        if (was + r > in0 && was - r < in1) continue;
+      }
       const high = !b.ramp ? b.max.y : topAt(b, p.x, p.z);
-      if (high <= feet + TUNING.physics.stepHeight + EPS) continue;
+      // (Going up a ramp fast, its slope rises under him by more than a step in one step of his: that is the ramp
+      // he is on, not a wall. A rider at speed up the wall of a pipe met it as a wall, and was thrown off.)
+      // (And coming to the foot of one up another ramp, as from one facet of a curve to the next: the ground he is
+      // on rises to meet it under him, by his own half-width of its slope, before his middle is there.)
+      const rise = (b.ramp && b.ramp.axis === axis ? Math.abs(delta) * slopeOf(b) : 0) + (b.ramp && this.onRamp && this.groundBox ? slopeOf(this.groundBox) * r : 0);
+      if (high <= feet + TUNING.physics.stepHeight + rise + EPS) continue;
       // One so steep that a single step up it is more than he can take, met going up it: he is given his step
       // back, no more. It does not put him at its foot, which may be a long way behind one who jumped at it.
       if (b.ramp && slopeOf(b) > MAX_WALK_SLOPE + 1e-6 && b.ramp.axis === axis && delta * b.ramp.up > 0) {
@@ -1505,7 +1551,13 @@ export class PlayerController {
     let under: Aabb | null = null;
     for (const b of colliders) {
       if (!this.overlapsXZ(b, r)) continue;
-      // (A ramp's top is its slope under his middle; beside it, its nearest edge.)
+      // (A ramp's top is its slope under his middle; beside it, its nearest edge. But not its LOW edge: one whose
+      // middle has not reached the foot of a ramp is not on it yet. Where one facet of a curve met the next, the
+      // steeper one's foot held him up before he got to it: a shelf a body's half-width deep at every join.)
+      if (b.ramp) {
+        const a = b.ramp.axis === 'x' ? p.x : p.z;
+        if (b.ramp.up > 0 ? a < (b.ramp.axis === 'x' ? b.min.x : b.min.z) : a > (b.ramp.axis === 'x' ? b.max.x : b.max.z)) continue;
+      }
       const top = b.ramp ? topAt(b, p.x, p.z) : b.max.y;
       // Support must be reachable: at most a step above where we started, and at or below our feet now.
       // (Riding fast down a steep one it falls away further in a step than at a run.)
@@ -1513,7 +1565,9 @@ export class PlayerController {
       // middle is over it: one who runs off a landing onto a chute is put on the chute, he does not sail over it.)
       const hold = b.ramp ? Math.max(RAMP_HOLD, (Math.hypot(this.velocity.x, this.velocity.z) * dt + r) * slopeOf(b) + (this.riding ? 0.15 : 0.05)) : RAMP_HOLD;
       const held = wasOn && (b.ramp || this.onRamp) && top >= prevY - hold;
-      if (top <= prevY + TUNING.physics.stepHeight + EPS && (p.y <= top + EPS || held)) {
+      // (The same going up one fast: it has risen under him by as much as he has gone along it.)
+      const rise = b.ramp ? Math.hypot(this.velocity.x, this.velocity.z) * dt * slopeOf(b) : 0;
+      if (top <= prevY + TUNING.physics.stepHeight + rise + EPS && (p.y <= top + EPS || held)) {
         if (support === null || top > support) {
           support = top;
           under = b;

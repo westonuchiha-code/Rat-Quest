@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,704 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,719 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -426,6 +426,39 @@ animation better for whenever he hops on his shield right now it just seems like
   own switch).
 - `tests/ride.ts` checks it: the shield starts where it was, only ever goes down, the smears show, he hops and lands.
 - Seen frame by frame in the viewer and at quarter speed in the running game. **Not seen at full speed by a person.**
+
+### The pipe: a floor that curves across his way (2026-11-15, the first step toward the downhill level)
+The Move Garden has a half-pipe down its middle (`PIPE`, `pipeFacets`, `pipeDeck` in garden.ts): the room's own floor
+three wide, and either side a wall curving up a quarter circle (radius four) to a deck three up, with a ramp up to
+each deck at the south end. **A curve here is FACETS**: five ramps side by side to a wall, each steeper than the
+last (0.13, 0.42, 0.77, 1.31, 2.41 up for one along). Nothing new was added to what the ground can be: it is still
+boxes and ramps along x or z. That is the answer, for now, to "decide how a pipe is made": facets work, and
+everything that knows ramps knows them.
+**He drops in**: stands at the lip, a small hop out over the wall, ATTACK. (A running jump clears the whole wall
+and lands on the floor: he gets no speed from the wall that way.) He comes down on the wall riding, crosses the
+floor, climbs the far wall most of the way to its deck, and swings to and fro, lower each time, till he is on the
+floor and steps off. Leaning along the pipe turns him down it.
+**What the pipe showed in the controller, all fixed (each has a check; all were wrong for ANY ramp, not only here):**
+- At the top of a climb he hung for ever: his speed was pointed up the wall each step and the slope took it off
+  again. He now goes the way he is moving (`rideStep`, `reversed`).
+- At the top of a climb he was stepped off the shield (slowest there). He steps off slow only on ground flatter
+  than `ride.restSlope` (0.12), or when braking.
+- Landing threw his falling speed away. A rider coming down on a slope now keeps what the slope turns along itself
+  (`fallBefore` in `update`): the drop-in is where his speed comes from.
+- A ramp already under him (or under his edge) was taken for a WALL by a move across it, and he was put out at the
+  far end of the box (eleven units, at the pipe). A ramp is a wall only to one who comes to it from outside
+  (`moveAxis`).
+- The foot of the next facet up held him before he reached it: a shelf at every join. A ramp's LOW edge no longer
+  holds one whose middle has not reached it (`moveVertical`).
+- A fast rider up a steep facet rose more than a step in a step and met it as a wall. The step-up allowed on a
+  ramp grows with how far he went along it.
+**Not done:** the pipe is LEVEL. One that runs downhill needs ground that slopes two ways at once (down along it,
+and up across it), and a ramp here slopes one way. That is the next thing to decide for the level: either a ramp
+that can tilt both ways (`Aabb.ramp` gets a second slope: collision, drawing, the camera's `sight`, the jump
+checker and shadows all read `topAt`, so it is mostly one function), or a pipe that goes down in level lengths
+joined by straight drops. He cannot yet fly out over the lip and come back in (he rides onto the deck instead).
+Nobody has ridden it with a controller: the drop-in asks for a slow approach, which may or may not feel right.
+For pictures: `&riding` on the address starts him on his shield where `at=` puts him (new).
 
 ### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
 His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the

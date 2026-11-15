@@ -960,3 +960,15 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   under him on the way down, the grind is dropped and he is simply riding in the air.
 - Onto a rail from within 0.3 above it he is put on it at once, and the event that frame is 'grind', not 'ride'.
 
+## The pipe, and ramps met from on top (2026-11-15)
+- In `moveAxis` a ramp is skipped as a wall if his footprint already overlapped it BEFORE this axis' move (with a
+  ten-thousandth of slack, or one standing exactly against its side counts as on it and walks in). Boxes that are
+  not ramps are as they were.
+- In `moveVertical` a ramp does not hold one whose middle is beyond its LOW end. Its high end and its sides still
+  do (that is the ledge of a landing).
+- The step-up allowance on a ramp is `stepHeight` + how far he went along it times its slope (+ in `moveAxis`,
+  his half-width of the slope he is standing on, for the join from one facet up to the next).
+- `rideGroundAge`, `restSlope`: see START-HERE. Braking (stick back) still steps him off on a slope he can stand on.
+- My picture script could not time a drop-in by keyboard (the page's first seconds run unevenly): `&riding` and
+  `&slow=0.1` with `at=` on the wall was the way to see the ride across the pipe.
+

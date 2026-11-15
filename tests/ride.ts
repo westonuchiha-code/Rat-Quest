@@ -394,6 +394,45 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   check('thrown off it, nothing is played: no shield left turning in the air', rat.dismountProgress < 0 && !rat.boardShown && rat.smearsShown === 0);
 }
 
+// ---- Coming down on a slope, and the top of a climb (what the pipe showed, 2026-11-15) ----
+{
+  // A slope one up for one along, sixteen long and wide; he is set riding in the air over it, still, at two heights.
+  const cs = [aabbOf(extent('floor', -160, 60, -1, 0, -60, 60)), aabbOf(rampBox('stone', -16, 0, -8, 8, 0, 16, 'e'))];
+  const land = (above: number): number => {
+    const p = new PlayerController(new THREE.Vector3(-4, 12 + above, 0));
+    let got = 0;
+    for (let i = 0; i < 120; i++) {
+      p.update(DT, inp({ attackPressed: !p.riding && !p.grounded }), cs);
+      if (p.moveEvent === 'rideLand') got = speedOf(p);
+    }
+    return got;
+  };
+  const low = land(0.5);
+  const high = land(4);
+  check('a rider coming down on a slope keeps what of his fall the slope turns along itself: the higher the drop, the faster he is off down it', low > 0.5 && high > low + 2, `${low.toFixed(1)} from half a unit, ${high.toFixed(1)} from four`);
+  const flat = new PlayerController(new THREE.Vector3(-40, 5, 0));
+  let onFlat = -1;
+  for (let i = 0; i < 120; i++) {
+    flat.update(DT, inp({}), [...cs, aabbOf(rampBox('stone', -44, -36, -8, 8, -4, 0, 'e'))]);
+    if (flat.grounded && onFlat < 0) onFlat = speedOf(flat);
+  }
+  check('...on the flat a fall is only a fall', onFlat === 0);
+  // Up a slope from the flat, with what speed he has: he slows, stops, and comes back down. He is not stepped off.
+  const hillUp = [aabbOf(extent('floor', -160, 60, -1, 0, -60, 60)), aabbOf(rampBox('stone', -16, 0, -8, 8, 0, 8, 'e')), aabbOf(extent('stone', 0, 6, 0, 8, -8, 8)), aabbOf(rampBox('stone', -60, -44, -8, 8, 0, 8, 'w'))];
+  let highest = 0;
+  let turnedBack = false;
+  let stuck = 0;
+  const r = play(hillUp, 8, 700, (i, p) => {
+    if (p.riding && p.position.x < -44) {
+      highest = Math.max(highest, p.position.y);
+      if (p.velocity.x > 0.5) turnedBack = true;
+      if (p.grounded && speedOf(p) < 0.2) stuck++;
+    }
+    return surfOnSlope()(i, p);
+  });
+  check('riding up a slope he slows, stops and comes back down it: he does not hang at the top of his climb, and is not stepped off there', highest > 1 && turnedBack && stuck < 6 && r.events.filter((e) => e === 'ride').length === 1, `${highest.toFixed(2)} up; ${stuck} frames still; ${r.events.join()}`);
+}
+
 // ---- Coming off ----
 {
   const cs = hill(16, 8);

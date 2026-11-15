@@ -128,6 +128,7 @@ export const TUNING = {
     dragFlat: 1.6, // ...and on the flat, where he rolls on a long way
     max: 16, // top speed
     stop: 1.4, // slower than this, on ground he can stand on, he steps off
+    restSlope: 0.12, // ...if it is flatter than this (or he is braking): a real slope will start him again
     turn: 2.2, // how fast he turns with the stick held to one side (radians a second)
     carve: 1.8, // ...and how much faster with it held hard over: a carve, his tail out
     carveDrag: 3.2, // a carve scrubs speed off

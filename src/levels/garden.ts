@@ -107,6 +107,48 @@ export const RUN = {
   kerb: { x0: -26, x1: -12, z0: 22.4, z1: GARDEN.halfZ, y: 0.7 },
 } as const;
 
+/**
+ * The pipe: a half-pipe down the middle of the room, running north and south, to see how the shield takes a floor
+ * that CURVES across his way (the owner, 2026-11-15, of the level to come: "a circular level design with an
+ * interesting curved slope ... it'll be interesting to see how the board slide mechanics deal with that").
+ * Its floor is the room's own, three wide; either side of that a wall curves up, a quarter of a circle four in
+ * radius, to a deck three up. The curve is FACETS: ramps side by side, each steeper than the last (the ground here
+ * is boxes and ramps along x or z, and a curve is made of those). The top facet is far too steep to stand on.
+ * A ramp at the south end of each deck is the way up. He drops in from a deck: a jump out over the wall, and ATTACK.
+ */
+export const PIPE = {
+  /** Its middle line, and half the width of its flat floor. */
+  x: -1.5,
+  flat: 1.5,
+  radius: 4,
+  /** How many facets a wall is cut into, and how much of the quarter circle each takes (degrees). */
+  facets: 5,
+  turn: 15,
+  deck: 2,
+  z0: -14,
+  z1: 8,
+  /** The ramps up to the decks: this long, south from the pipe's south end. */
+  way: 4,
+} as const;
+/** One wall's facets, from the floor outward: how far out each starts and ends, and how high. */
+export function pipeFacets(): Array<{ d0: number; d1: number; h0: number; h1: number }> {
+  const at = (i: number): [number, number] => {
+    const a = (i * PIPE.turn * Math.PI) / 180;
+    return [PIPE.radius * Math.sin(a), PIPE.radius * (1 - Math.cos(a))];
+  };
+  return Array.from({ length: PIPE.facets }, (_, i) => {
+    const [d0, h0] = at(i);
+    const [d1, h1] = at(i + 1);
+    return { d0, d1, h0, h1 };
+  });
+}
+/** How high its decks are, and how far out from its middle line a wall ends and a deck begins. */
+export const pipeDeck = (): { y: number; out: number } => {
+  const f = pipeFacets();
+  const last = f[f.length - 1];
+  return { y: last.h1, out: PIPE.flat + last.d1 };
+};
+
 export function garden(): LevelDef {
   const W = -GARDEN.halfX;
   const N = -GARDEN.halfZ;
@@ -163,6 +205,25 @@ export function garden(): LevelDef {
   decor.push({ kind: 'sign', x: (RUN.chute.x0 + RUN.chute.x1) / 2, y: T.y + 1.6, z: T.z1, yaw: Math.PI, w: 2.6, h: 1.4, lines: ['TOO STEEP', 'HE SLIDES'] });
   decor.push({ kind: 'sign', x: RUN.kicker.x1 + 1.6, y: 1.5, z: RUN.kicker.z0 - 0.8, yaw: Math.PI / 2, w: 2.4, h: 1.3, lines: ['JUMP', 'THEN JUMP AGAIN'], post: 0 });
   decor.push({ kind: 'lamp', x: 22, y: 11, z: 21.5 }, { kind: 'lamp', x: 8, y: 7, z: 21.5 }, { kind: 'lamp', x: -18, y: 7, z: 21.5 });
+
+  // ---- The pipe ----
+  {
+    const deck = pipeDeck();
+    for (const side of [-1, 1] as const) {
+      for (const f of pipeFacets()) {
+        const a = PIPE.x + side * (PIPE.flat + f.d0);
+        const b = PIPE.x + side * (PIPE.flat + f.d1);
+        solids.push(rampBox('stone', Math.min(a, b), Math.max(a, b), PIPE.z0, PIPE.z1, f.h0, f.h1, side > 0 ? 'e' : 'w', 0));
+      }
+      const in0 = PIPE.x + side * deck.out;
+      const out0 = PIPE.x + side * (deck.out + PIPE.deck);
+      solids.push(extent('stone', Math.min(in0, out0), Math.max(in0, out0), 0, deck.y, PIPE.z0, PIPE.z1));
+      // The way up to it: a ramp at its south end, climbing north.
+      solids.push(rampBox('stone', Math.min(in0, out0), Math.max(in0, out0), PIPE.z1, PIPE.z1 + PIPE.way, 0, deck.y, 'n'));
+    }
+    // (Its board stands at its south end, beside the way in along its floor, not in it.)
+    decor.push({ kind: 'sign', x: PIPE.x + PIPE.flat + 1.7, y: 1.5, z: PIPE.z1 + 0.8, yaw: south, w: 2.8, h: 1.4, lines: ['THE PIPE', 'DROP IN FROM TOP'], post: 0 });
+  }
 
   // ---- The pole and the strip ----
   decor.push({ kind: 'ruler', x: POLE.x, y: 0, z: POLE.z, yaw: south, length: POLE.height, width: 1, pole: true });
