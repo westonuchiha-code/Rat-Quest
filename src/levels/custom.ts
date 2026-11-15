@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { BRAZIER, COUCH, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { BRAZIER, COUCH, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -20,7 +20,7 @@ export type PieceType =
   | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
-  | 'stairs' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
+  | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** The pieces that are enemies (the Broodmother, a boss, among them). */
 export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm'];
 
@@ -341,6 +341,15 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'barrel': {
         const idx = crate(p.t === 'crate' ? { ...extent('rubble', cx - 0.5, cx + 0.5, p.top, p.top + 1, cz - 0.5, cz + 0.5), ...(p.props?.tough ? { tough: true } : {}) } : extent('barrel', cx - 0.5, cx + 0.5, p.top, p.top + 1.1, cz - 0.5, cz + 0.5));
         if (p.props?.item) contents[idx] = items.add(p.props.item, cx, p.top + 0.5, cz, idx);
+        break;
+      }
+      case 'ramp': {
+        // A slope from the bottom height up to the top height, climbing toward the way it faces. (Like the stairs,
+        // but one smooth piece: see `rampBox`.) Its look is stone unless the piece says otherwise.
+        const base = p.bottom ?? 0;
+        // (Solid down to the floor it stands on, like the stairs.)
+        const stone = p.skin ?? (theme.id === 'sewer' ? undefined : theme.skins.stone);
+        if (p.top > base + 0.05) solids.push({ ...rampBox('stone', x0, Math.max(x1, x0 + 0.5), z0, Math.max(z1, z0 + 0.5), base, p.top, p.dir ?? 'n'), ...(stone ? { skin: stone } : {}) });
         break;
       }
       case 'stairs': {

@@ -9,7 +9,7 @@
  */
 import { TUNING } from '../data/tuning';
 import type { LevelDef } from './types';
-import type { Box } from '../world/layout';
+import { MAX_WALK_SLOPE, type Box } from '../world/layout';
 
 const STEP = 0.5;
 const HEADROOM = 0.9;
@@ -21,6 +21,8 @@ interface Node {
   h: number;
   /** Swimming here rather than standing. */
   swim: boolean;
+  /** On a ramp's slope. */
+  ramp?: boolean;
 }
 
 /** Horizontal reach of a running jump that lands `dh` higher (negative: lower). 0 when it cannot be reached. */
@@ -127,6 +129,8 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
   const px = (i: number): number => x0 + (i + 0.5) * STEP;
   const pz = (j: number): number => z0 + (j + 0.5) * STEP;
 
+  /** The column-wide pieces ramps are cut into (below), and whether a ramp is too steep to walk. */
+  const rampSlices = new Set<Box>();
   // Solids by column, so each point only looks at the boxes over it.
   const cols: Box[][] = Array.from({ length: ni * nj }, () => []);
   for (const b of solids) {
@@ -134,7 +138,19 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
     const ja = Math.max(0, Math.floor((b.z0 - z0) / STEP)), jb = Math.min(nj - 1, Math.floor((b.z1 - z0 - 1e-6) / STEP));
     for (let i = ia; i <= ib; i++) for (let j = ja; j <= jb; j++) {
       const x = px(i), z = pz(j);
-      if (x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) cols[i * nj + j].push(b);
+      if (!(x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1)) continue;
+      if (!b.ramp) {
+        cols[i * nj + j].push(b);
+        continue;
+      }
+      // A ramp is taken a column at a time: over each point, a box as high as its slope is there. (He walks from
+      // one to the next whatever the rise between them, as long as the ramp is one he can walk: see the walking step.)
+      const r = b.ramp;
+      let f = r.axis === 'x' ? (x - b.x0) / (b.x1 - b.x0) : (z - b.z0) / (b.z1 - b.z0);
+      if (r.up < 0) f = 1 - f;
+      const slice: Box = { ...b, ramp: undefined, y1: r.low + (b.y1 - r.low) * f };
+      rampSlices.add(slice);
+      cols[i * nj + j].push(slice);
     }
   }
   const surfAt: Node[][] = Array.from({ length: ni * nj }, () => []);
@@ -153,7 +169,7 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
       if (blocked(c, h, h + HEADROOM, b)) continue;
       if (lava && h < lava.y + 0.05) continue;
       if (water && h < water.y) continue; // under water he swims at the top instead
-      list.push({ i, j, h, swim: false });
+      list.push(rampSlices.has(b) ? { i, j, h, swim: false, ramp: true } : { i, j, h, swim: false });
     }
     // Swimming, he keeps low: he fits under a lid a jump would hit (the Cistern's old drain).
     if (water && !blocked(c, water.y, water.y + SWIM_HEADROOM)) list.push({ i, j, h: water.y, swim: true });
@@ -298,7 +314,8 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
       if (i < 0 || j < 0 || i >= ni || j >= nj) continue;
       const c = cols[i * nj + j];
       for (const m of surfAt[i * nj + j]) {
-        if (m.h > n.h + (n.swim ? 0.5 : 0.4)) continue;
+        // (Up a ramp the next point is higher by as much as the ramp is steep: he walks that, where he could not step it.)
+        if (m.h > n.h + (n.swim ? 0.5 : m.ramp && (n.ramp || m.h - n.h <= 0.4) ? MAX_WALK_SLOPE * STEP + 0.06 : 0.4)) continue;
         // A step, or a drop with nothing in the way between where he is and where he lands.
         if (m.h >= n.h - 0.4 || !blocked(c, m.h, n.h + HEADROOM)) add(m);
       }

@@ -6,7 +6,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS } from '../render/ps1Material';
 import { getTexture, TextureName } from '../render/textures';
-import { Aabb, makeAabb } from './collision';
+import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
@@ -244,6 +244,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const cy = (b.y0 + b.y1) / 2;
     const cz = (b.z0 + b.z1) / 2;
     const aabb = makeAabb(cx, cy, cz, w, h, d);
+    if (b.ramp) aabb.ramp = b.ramp; // its top is a slope: see collision.ts
     if (b.kind === 'pillar' && !b.hidden) aabb.lip = PILLAR_LIP; // its capital overhangs: see below
     colliders.push(aabb);
     if (b.hidden) continue; // collider only
@@ -288,6 +289,17 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     // would sit in the same plane and flicker into each other. The collider still reaches the full height.
     const shaft = b.kind === 'pillar' && h > 1.2 ? 0.4 : 0;
     const geo = new THREE.BoxGeometry(w, h - shaft, d, cut(w), cut(h - shaft), cut(d));
+    if (b.ramp) {
+      // A ramp is drawn as what is solid of it: the box, pressed down under its slope. Each corner keeps its place on
+      // the ground and its share of the height, but of the height the slope has THERE, not of the whole box's.
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const share = (pos.getY(i) + h / 2) / h;
+        const top = topAt(aabb, cx + pos.getX(i), cz + pos.getZ(i));
+        pos.setY(i, b.y0 + share * (top - b.y0) - cy);
+      }
+      geo.computeVertexNormals();
+    }
     const skin = b.skin ?? DEFAULT_SKIN[b.kind];
     if (b.kind !== 'rubble') applyWorldUvs(geo, TILE[skin] ?? 2); // crates keep one whole picture per face
     bakeVertexColor(geo, b.skin && b.kind !== 'rubble' ? 0xeeeeee : PALETTE[b.kind]);

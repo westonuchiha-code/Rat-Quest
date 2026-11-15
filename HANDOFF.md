@@ -886,3 +886,16 @@ changed and where. Open things, said plainly:
 - The exit door's frame becomes solid when the door has finished growing out of the wall; before that there is
   nothing there to bump into.
 
+## Ramps (2026-11-15: step one of slopes, the cave and the shield ride)
+START-HERE has what a ramp is and who knows about it. Things to know before touching it:
+- The order of a step is: move sideways (`moveAxis`), then up and down (`moveVertical`). So when `moveAxis` asks
+  whether a ramp is in his way, his feet are still where they were the moment before; a walkable ramp is judged by
+  its slope under his middle (where he is about to stand), not by the uphill edge of his footprint, or the steepest
+  ramp stops him. A ramp too steep to walk is judged by that uphill edge, which is what stops him at its foot.
+- Stepping off a landing onto a ramp going down, he has been standing on the landing's edge with the slope already
+  most of a third of a unit below his middle: `RAMP_HOLD` (0.48) is as big as it is for that.
+- He is only held to the ground on a ramp (or stepping onto one). Stairs and ledges are as they were.
+- A ramp's low end may be above its box's bottom (`low` > `y0`): a ramp up from a step.
+- Things still treating a ramp as its whole box (safe, but blunt): every enemy, the wall-kick chain's look ahead
+  (`wallAhead`), wall hangings (`mount`), the camera's "low thing in the way" rule, crushing.
+

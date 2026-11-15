@@ -7,6 +7,7 @@
  * moment it is let go (`emberLanding` runs the same fall), so the game can mark the spot on the floor: what is drawn
  * there is where the flames will be.
  */
+import { topAt, type Aabb } from './collision';
 export interface Ember {
   x: number;
   y: number;
@@ -35,13 +36,15 @@ export type GroundAt = (x: number, y: number, z: number) => number | null;
  * count: the game leaves out everything that moves (a lift, a cart), so that a drop never marks, or catches on, a
  * floor that will not be there when it lands.
  */
-export function groundFrom(colliders: ReadonlyArray<{ min: { x: number; y: number; z: number }; max: { x: number; y: number; z: number } }>, skip?: { has(b: object): boolean }): GroundAt {
+export function groundFrom(colliders: ReadonlyArray<Aabb>, skip?: { has(b: object): boolean }): GroundAt {
   return (x, y, z) => {
     let best: number | null = null;
     for (const b of colliders) {
       if (x < b.min.x || x > b.max.x || z < b.min.z || z > b.max.z) continue;
       if (skip?.has(b)) continue;
-      if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
+      // (On a ramp, the height of its slope there.)
+      const top = topAt(b, x, z);
+      if (top <= y + 0.05 && (best === null || top > best)) best = top;
     }
     return best;
   };

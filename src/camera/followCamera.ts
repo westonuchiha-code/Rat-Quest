@@ -59,10 +59,30 @@ export function sight(a: THREE.Vector3, b: THREE.Vector3, colliders: Aabb[], gro
       tmax = Math.min(tmax, t2);
       miss = tmin > tmax;
     }
-    if (!miss) {
-      first = tmin;
-      if (met) met.box = box;
+    if (miss) continue;
+    const r = box.ramp;
+    if (r) {
+      // A ramp: what is solid is the wedge under its slope. Along the part of the line that is inside its box, how
+      // far the line is ABOVE the slope changes evenly, so it is enough to look at the two ends of that part: under
+      // the slope where it comes into the box, it is met there; over it there and under it where it leaves, it is
+      // met where it crosses; over it at both, it is not met at all (it passes through the air over the low end).
+      const over = (t: number): number => {
+        const along = r.axis === 'x' ? a.x + dx * t : a.z + dz * t;
+        const lo = r.axis === 'x' ? box.min.x : box.min.z;
+        const hi = r.axis === 'x' ? box.max.x : box.max.z;
+        let f = Math.min(1, Math.max(0, (along - lo) / (hi - lo)));
+        if (r.up < 0) f = 1 - f;
+        return a.y + dy * t - (r.low + (box.max.y - r.low) * f + grow);
+      };
+      const o0 = over(tmin);
+      if (o0 > 0) {
+        const o1 = over(tmax);
+        if (o1 > 0) continue;
+        tmin += ((tmax - tmin) * o0) / (o0 - o1);
+      }
     }
+    first = tmin;
+    if (met) met.box = box;
   }
   return first;
 }

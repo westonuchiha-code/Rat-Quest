@@ -1,6 +1,7 @@
+import { MAX_WALK_SLOPE } from '../world/layout';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
-import { Aabb } from '../world/collision';
+import { Aabb, topAt, topUnder, slopeOf } from '../world/collision';
 import type { WaterVolume } from '../world/layout';
 import { NO_GEAR, type GearMods } from '../data/equipment';
 import { ATTACK_CLIPS } from './animations';
@@ -15,6 +16,12 @@ export type PlungeStage = 0 | 1 | 2 | 3;
 export type DodgeKind = 'roll' | 'back';
 
 const EPS = 1e-4;
+/**
+ * How far a ramp may fall away under his feet in one step and still hold him. Running down the steepest he walks it
+ * falls a tenth of a unit a step; stepping off a landing onto one, he has been standing on the landing's edge with
+ * the slope already most of a third of a unit down under his middle.
+ */
+const RAMP_HOLD = 0.48;
 /** Seconds for stowing or drawing the weapons. */
 const STOW_TIME = 0.6;
 
@@ -127,6 +134,8 @@ export class PlayerController {
   private comboQueued = false;
 
   private dodgeKind: DodgeKind = 'roll';
+  /** Standing on a ramp (see moveVertical). */
+  private onRamp = false;
   private dodgeTimer = -1; // -1 means not dodging
   private dodgeDuration = 0;
   private dodgeSpeed = 0;
@@ -747,7 +756,9 @@ export class PlayerController {
     if (this.grounded || swimming) this.longJump = false;
     // Ledge grab: falling past the top of a wall he is facing, with room on top, he catches it.
     const wb = this.wallBox;
-    if (wb && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
+    // (Of a ramp, only the wall at its high end has an edge to catch: its sides slope, and its low end is no wall.)
+    const edge = !wb?.ramp || (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up);
+    if (wb && edge && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
       const top = wb.max.y;
       const p = this.position;
       // Pushing toward the wall at all (a stick held at an angle slides him along it, turning him sideways), or facing it.
@@ -917,8 +928,15 @@ export class PlayerController {
       if (b.min.y >= head - EPS) continue;
       if (p.x + r <= b.min.x || p.x - r >= b.max.x) continue;
       if (p.z + r <= b.min.z || p.z - r >= b.max.z) continue;
+      // A ramp is a wall only where it stands higher than a step above his feet: at its high end and along its
+      // sides. Where its slope is under him, or is the air over its low end, it is not. What he has to step onto is
+      // its slope under his middle, where he will be standing: on a ramp he can walk, that is never more than a
+      // step above where he stood the moment before. (One too steep to walk is judged by the uphill edge of his
+      // footprint instead, which stops him at its foot.)
+      const high = !b.ramp ? b.max.y : slopeOf(b) <= MAX_WALK_SLOPE + 1e-6 ? topAt(b, p.x, p.z) : topUnder(b, p.x, p.z, r);
+      if (high <= feet + TUNING.physics.stepHeight + EPS) continue;
       // Touching a tall wall in the air: remember it for a wall kick or a ledge grab.
-      if (!this.grounded && b.max.y > p.y + 0.6) {
+      if (!this.grounded && high > p.y + 0.6) {
         this.wallTimer = TUNING.moves.wallKickWindow;
         this.wallNX = axis === 'x' ? (delta > 0 ? -1 : 1) : 0;
         this.wallNZ = axis === 'z' ? (delta > 0 ? -1 : 1) : 0;
@@ -956,13 +974,23 @@ export class PlayerController {
     }
 
     // Falling or standing: find the highest support we have reached this step.
+    // On a ramp the floor falls away under him as he walks down it, by more in a step than gravity takes him: so one
+    // who was standing (on a ramp, or stepping onto one) is kept on the slope under his feet, if it is no further
+    // down than a ramp can fall away in a step. (Without this he left the ground at every step downhill.)
+    const wasOn = this.grounded && this.velocity.y <= 0;
     let support: number | null = null;
+    let under: Aabb | null = null;
     for (const b of colliders) {
       if (!this.overlapsXZ(b, r)) continue;
-      const top = b.max.y;
+      // (A ramp's top is its slope under his middle; beside it, its nearest edge.)
+      const top = b.ramp ? topAt(b, p.x, p.z) : b.max.y;
       // Support must be reachable: at most a step above where we started, and at or below our feet now.
-      if (top <= prevY + TUNING.physics.stepHeight + EPS && p.y <= top + EPS) {
-        if (support === null || top > support) support = top;
+      const held = wasOn && (b.ramp || this.onRamp) && top >= prevY - RAMP_HOLD;
+      if (top <= prevY + TUNING.physics.stepHeight + EPS && (p.y <= top + EPS || held)) {
+        if (support === null || top > support) {
+          support = top;
+          under = b;
+        }
       }
     }
 
@@ -970,8 +998,10 @@ export class PlayerController {
       p.y = support;
       this.velocity.y = 0;
       this.grounded = true;
+      this.onRamp = !!under?.ramp;
     } else {
       this.grounded = false;
+      this.onRamp = false;
     }
   }
 

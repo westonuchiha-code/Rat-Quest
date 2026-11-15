@@ -113,7 +113,7 @@ import { SHOP } from './data/shop';
 import { nachoIcon } from './ui/icons';
 import { compileCustom, CustomLevel } from './levels/custom';
 import { platform } from './platform/platform';
-import { makeAabb } from './world/collision';
+import { makeAabb, topAt } from './world/collision';
 import { AudioEngine, nearness } from './audio/audio';
 import { SFX_NAMES, loudness, sfx, type SfxName } from './audio/synth';
 import { TRACK_NAMES, type TrackName } from './audio/music';
@@ -273,9 +273,10 @@ function startGame(): void {
     let best: number | null = null;
     for (const b of chamber.colliders) {
       if (x <= b.min.x || x >= b.max.x || z <= b.min.z || z >= b.max.z) continue;
-      if (b.max.y > y - 0.1 || b.max.y < y - 3) continue;
+      const top = topAt(b, x, z);
+      if (top > y - 0.1 || top < y - 3) continue;
       if (chamber.movers.some((m) => m.aabb === b)) continue;
-      if (best === null || b.max.y > best) best = b.max.y;
+      if (best === null || top > best) best = top;
     }
     if (best === null) return null;
     const floor = best;
@@ -2911,7 +2912,8 @@ function startGame(): void {
     let best: number | null = null;
     for (const b of chamber.colliders) {
       if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
-      if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
+      const top = topAt(b, x, z);
+      if (top <= y + 0.05 && (best === null || top > best)) best = top;
     }
     return best;
   }
@@ -2919,7 +2921,8 @@ function startGame(): void {
     let best: number | null = null;
     for (const b of chamber.colliders) {
       if (x < b.min.x || x > b.max.x || z < b.min.z || z > b.max.z) continue;
-      if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
+      const top = topAt(b, x, z);
+      if (top <= y + 0.05 && (best === null || top > best)) best = top;
     }
     return best;
   }

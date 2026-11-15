@@ -9,6 +9,57 @@ export interface Aabb {
    * shaft; a rat hanging from the top hangs from the capital's edge, this far out, not inside it.
    */
   lip?: number;
+  /**
+   * A ramp: the box's top is not flat but runs up from `low` at one end to the box's own top at the other. What is
+   * solid is the wedge under that slope; the air over the low end, inside the box, is air.
+   */
+  ramp?: Ramp;
+}
+
+/** How a ramp's top runs: along x or z, climbing toward the + end of that axis (`up` 1) or the - end (-1), from `low`. */
+export interface Ramp {
+  axis: 'x' | 'z';
+  up: 1 | -1;
+  low: number;
+}
+
+/** How far along a ramp a point is, from its low end (0) to its high end (1); points beyond either end count as that end. */
+function along(b: Aabb, r: Ramp, x: number, z: number): number {
+  const lo = r.axis === 'x' ? b.min.x : b.min.z;
+  const hi = r.axis === 'x' ? b.max.x : b.max.z;
+  const t = Math.min(1, Math.max(0, ((r.axis === 'x' ? x : z) - lo) / (hi - lo)));
+  return r.up > 0 ? t : 1 - t;
+}
+
+/**
+ * The height of a solid's top at a place: a box's top is the same everywhere; a ramp's is its slope there. A place
+ * beside the solid (not over it) is given the height of its nearest edge.
+ */
+export function topAt(b: Aabb, x: number, z: number): number {
+  const r = b.ramp;
+  return r ? r.low + (b.max.y - r.low) * along(b, r, x, z) : b.max.y;
+}
+
+/** The highest its top gets anywhere under a square footprint `half` wide round a place: what he would have to step up onto. */
+export function topUnder(b: Aabb, x: number, z: number, half: number): number {
+  const r = b.ramp;
+  if (!r) return b.max.y;
+  // (Its top only climbs one way, so its highest point under the footprint is at the footprint's uphill edge.)
+  return r.axis === 'x' ? topAt(b, x + half * r.up, z) : topAt(b, x, z + half * r.up);
+}
+
+/** A ramp's steepness: how much it rises for each unit along it (0 for a box). */
+export function slopeOf(b: Aabb): number {
+  const r = b.ramp;
+  if (!r) return 0;
+  return (b.max.y - r.low) / (r.axis === 'x' ? b.max.x - b.min.x : b.max.z - b.min.z);
+}
+
+/** The collider for a level's box (a ramp's slope goes with it). */
+export function aabbOf(b: { x0: number; x1: number; y0: number; y1: number; z0: number; z1: number; ramp?: Ramp }): Aabb {
+  const a = makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0);
+  if (b.ramp) a.ramp = b.ramp;
+  return a;
 }
 
 /** Builds an AABB from a center point and full size. */

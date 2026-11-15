@@ -22,6 +22,11 @@ export interface Box {
   hidden?: boolean;
   /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
   tough?: boolean;
+  /**
+   * A ramp: its top runs up from `low` at one end to y1 at the other, along x or z, climbing toward the + end of that
+   * axis (`up` 1) or the - end (-1). (North is -z: a ramp that climbs north has axis 'z', up -1.) See collision.ts.
+   */
+  ramp?: { axis: 'x' | 'z'; up: 1 | -1; low: number };
   x0: number;
   x1: number;
   y0: number;
@@ -46,6 +51,17 @@ export const RING = {
 
 export function extent(kind: Kind, x0: number, x1: number, y0: number, y1: number, z0: number, z1: number): Box {
   return { kind, x0, x1, y0, y1, z0, z1 };
+}
+
+/** How steep a ramp may be and still be walked up: one up for one along (45 degrees). */
+export const MAX_WALK_SLOPE = 1;
+/**
+ * A ramp given by its ground plan, the height of its low end and of its high end, and the way it climbs
+ * ('n' is -z, 's' +z, 'e' +x, 'w' -x). It is solid down to `bottom` (default: its low end's height).
+ */
+export function rampBox(kind: Kind, x0: number, x1: number, z0: number, z1: number, low: number, high: number, toward: 'n' | 's' | 'e' | 'w', bottom = low): Box {
+  const axis = toward === 'e' || toward === 'w' ? 'x' : 'z';
+  return { kind, x0, x1, y0: Math.min(bottom, low), y1: high, z0, z1, ramp: { axis, up: toward === 'e' || toward === 's' ? 1 : -1, low } };
 }
 
 /** A pool the rat can swim in. y is the surface height. */

@@ -5,7 +5,7 @@
 import type { Piece, PieceType } from './custom';
 
 const SINGLES = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
-const FACING = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
+const FACING = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
 const POOLS = new Set<PieceType>(['water', 'river', 'lava']);
 
 export function isSingle(t: PieceType): boolean {
@@ -15,7 +15,7 @@ export function isSingle(t: PieceType): boolean {
 /** How high above the surface a new piece starts, before he changes it. */
 export function defaultRaise(t: PieceType): number {
   if (t === 'platform' || t === 'plank' || t === 'stone') return 1;
-  if (t === 'pillar' || t === 'wall' || t === 'stairs') return 3;
+  if (t === 'pillar' || t === 'wall' || t === 'stairs' || t === 'ramp') return 3;
   if (t === 'lamp' || t === 'chain') return 3;
   if (t === 'light') return 2.5;
   return 0;
@@ -49,7 +49,7 @@ export function makePiece(t: PieceType, x: number, y: number, z: number, o: Plac
     if (o.raise > 0 && (t === 'platform' || t === 'plank' || t === 'stone' || t === 'pillar' || t === 'wall') && surf !== 0) p.bottom = surf;
   }
   if (FACING.has(t)) p.dir = o.dir;
-  if (t === 'stairs') {
+  if (t === 'stairs' || t === 'ramp') {
     p.bottom = surf;
     p.top = Math.round((surf + (o.raise > 0 ? o.raise : 3)) * 10) / 10;
   }
@@ -94,7 +94,7 @@ export function settingsFrom(p: Piece, under: number): PlaceOpts {
   const round = (v: number): number => Math.round(v * 10) / 10;
   let raise = round(p.top - under);
   if (POOLS.has(p.t)) raise = 0;
-  else if (p.t === 'stairs') raise = round(p.top - (p.bottom ?? under));
+  else if (p.t === 'stairs' || p.t === 'ramp') raise = round(p.top - (p.bottom ?? under));
   else if (!isSingle(p.t) && p.bottom !== undefined) raise = round(p.top - p.bottom);
   return { w: Math.max(1, Math.round(Math.abs(p.x1 - p.x0))), d: Math.max(1, Math.round(Math.abs(p.z1 - p.z0))), raise, dir: p.dir ?? 'n' };
 }

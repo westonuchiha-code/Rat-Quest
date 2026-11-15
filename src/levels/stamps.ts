@@ -33,6 +33,7 @@ export const STAMPS: Stamp[] = [
   { id: 'wall3', label: 'Crate wall', make: (x, z, top) => [0, 1, 2].flatMap((i) => [one('crate', x + i, z, top), one('crate', x + i, z, top + 1)]) },
   { id: 'stones', label: 'Stepping stones', make: (x, z, top) => [0, 1, 2, 3].map((i) => box('stone', x, z - i * 3 - 2, x + 2, z - i * 3, top)) },
   { id: 'stairs', label: 'Staircase up', make: (x, z, top) => [box('stairs', x, z - 6, x + 4, z, top + 3, { bottom: top, dir: 'n' })] },
+  { id: 'ramp', label: 'Ramp up', make: (x, z, top) => [box('ramp', x, z - 6, x + 4, z, top + 3, { bottom: top, dir: 'n' })] },
   { id: 'bridge', label: 'Plank bridge', make: (x, z, top) => [box('plank', x, z - 10, x + 2, z, top)] },
   { id: 'island', label: 'Island + prize', make: (x, z, top) => [box('platform', x, z, x + 5, z + 5, top + 0.5), one('cap', x + 2, z + 2, top + 0.5)] },
   { id: 'pillars', label: 'Pillar ring', make: (x, z, top) => [[0, 0], [4, 0], [0, 4], [4, 4]].map(([dx, dz]) => box('pillar', x + dx, z + dz, x + dx + 1, z + dz + 1, top + 4)) },

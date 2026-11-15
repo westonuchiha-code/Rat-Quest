@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,546 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,591 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -344,10 +344,33 @@ What that means for the code (our notes, nothing built yet): every solid in the 
 the jump checker, the camera's `sight`, the enemies' footing and the level builder all assume the same. A slope is a
 new kind of ground for ALL of them, so do it in this order and test each step with the real controller before the
 next: (1) a ramp solid (a box whose top runs from one height to another along one axis) that he can stand, walk and
-jump on, with the camera, shadows, enemies and `reach.ts` taught about it; (2) the slide (too steep to stand: he
+jump on, with the camera, shadows and `reach.ts` taught about it (done: see below; enemies are not taught yet); (2) the slide (too steep to stand: he
 slides; and the shield ride as a move of its own: speed from the slope, the tail steering, a jump and a kickflip off
 it); (3) the cave area built for it, where the sewer has broken through. The Move Garden is the place to try (1)
 and (2) first. Do not start it as a side task: it is a job for a turn of its own.
+
+### Step one is DONE (2026-11-15): ramps
+A ramp is a box whose top is a slope: `Box.ramp` / `Aabb.ramp` (`{ axis, up, low }`: its top runs from `low` at one
+end up to the box's own top at the other). `rampBox(kind, x0, x1, z0, z1, low, high, toward)` in layout.ts makes one;
+the level piece is `'ramp'` (like `'stairs'`: `box('ramp', x0, z0, x1, z1, top, { bottom, dir })`), and it is in the
+level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the height of any solid's top at a place.
+**Who knows about ramps:**
+- The knight (controller.ts): its slope is his ground (`moveVertical`); it is a wall only at its high end and along
+  its sides (`moveAxis`); he is HELD to it going downhill (`RAMP_HOLD`: the slope falls away under him faster than he
+  falls, so without that he left the ground at every step); only its high end has an edge to catch. He walks slopes
+  up to one up for one along (`MAX_WALK_SLOPE`); a steeper one stops him at its foot. He does not slide, and does not
+  lean: that is step two.
+- Shadows and where he is drawn (`groundBelow`, `feetGround`, `floorAt` in main.ts), falling embers (`groundFrom`),
+  the camera's line of sight (`sight`: a ramp is its wedge, so standing on one he is not "inside" it), how it is
+  drawn (chamber.ts: the box pressed down under its slope), the jump checker (reach.ts takes it a column at a time).
+- **NOT yet: enemies.** To every creature a ramp is still its whole box: an obstacle they will not walk onto. None
+  may be placed on one until they are taught (their footing is `canStand` in main.ts and each one's own `y`).
+- The Move Garden has three in its south-east corner (one up in 4, in 2 and in 1) to a landing three up.
+- `tests/ramps.ts` plays all of it with the real controller. Nobody has walked one by hand yet.
+**Next, step two:** the slide and the shield ride. What it needs that is not there: his speed along the slope (now he
+moves across the ground at the same speed uphill and down), a slope too steep to stand on that he slides down, the
+ride itself as a state of the controller with the tail steering, a jump and a kickflip off it, his pose on the
+shield, and the camera following a fast descent.
 
 ## Drawn and solid, again (2026-11-15: what the owner found walking round the Club)
 He sent pictures of the knight standing inside things. The rule is old (what is DRAWN must match what is SOLID); these

@@ -3,7 +3,7 @@
  *
  * Mario 64's makers got the hero's movement right in a bare room of blocks before they built a course
  * (reports/Super Mario 64 design research.md). This is that room for the knight: ledges at the heights that matter,
- * chimneys of four widths, a pole and a strip to measure against, and a board on everything saying what it is (two
+ * chimneys of four widths, three ramps, a pole and a strip to measure against, and a board on everything saying what it is (two
  * lines at most, in big letters: the game is drawn coarsely, and small writing cannot be read from where he stands). The
  * numbers on the boards are the heights and widths of the things themselves (tests/garden.ts holds them to that);
  * what he can DO with them depends on the jump numbers, which are on the Tweaks sliders, with a few sets to try at
@@ -13,7 +13,7 @@
  * joined on (no gap) or nine or more apart (a kick carries him a little over eight across before he is back down
  * to where he kicked from).
  */
-import { extent, type Box, type Decor } from '../world/layout';
+import { extent, rampBox, type Box, type Decor } from '../world/layout';
 import { doorOn } from '../world/rooms';
 import { room } from './builders';
 import type { LevelDef } from './types';
@@ -69,6 +69,18 @@ export const POLE = { x: -12, z: 8, height: 9 } as const;
 /** The strip runs north from its line; he runs up from the south and jumps at the line. */
 export const STRIP = { x: 10, z: 12, length: 16, width: 1.6 } as const;
 
+/**
+ * The ramps, in the south-east: three slopes side by side, each climbing north three units to one landing against
+ * the east wall. The first is gentle, the last as steep as he can walk (one up for one along).
+ */
+export interface GardenRamp { x0: number; x1: number; length: number; lines: string[] }
+export const RAMP_LANDING = { x0: 27, x1: GARDEN.halfX, z0: -6, z1: -2, top: 3 } as const;
+export const RAMPS: readonly GardenRamp[] = [
+  { x0: 27, x1: 30, length: 12, lines: ['1 UP IN 4', 'A GENTLE SLOPE'] },
+  { x0: 30, x1: 33, length: 6, lines: ['1 UP IN 2', 'A HILL'] },
+  { x0: 33, x1: GARDEN.halfX, length: 3, lines: ['1 UP IN 1', 'THE STEEPEST'] },
+];
+
 export function garden(): LevelDef {
   const W = -GARDEN.halfX;
   const N = -GARDEN.halfZ;
@@ -98,6 +110,15 @@ export function garden(): LevelDef {
     // The board is on the end of the wall he lands on (the lower one), facing the room.
     const onEast = c.eastTop <= c.westTop;
     decor.push({ kind: 'sign', x: onEast ? f.east + CHIMNEY_WALL / 2 : c.x + CHIMNEY_WALL / 2, y: 1.9, z: f.z1, yaw: south, w: 2.3, h: 1.6, lines: c.lines });
+  }
+
+  // ---- The ramps, in the south-east ----
+  const L = RAMP_LANDING;
+  solids.push(extent('stone', L.x0, L.x1, 0, L.top, L.z0, L.z1));
+  for (const r of RAMPS) {
+    solids.push(rampBox('stone', r.x0, r.x1, L.z1, L.z1 + r.length, 0, L.top, 'n'));
+    // Its board stands at its foot, to one side of the way up.
+    decor.push({ kind: 'sign', x: r.x0 + 0.75, y: 1.5, z: L.z1 + r.length + 0.6, yaw: south, w: 1.4, h: 0.9, lines: r.lines, post: 0 });
   }
 
   // ---- The pole and the strip ----

@@ -162,7 +162,7 @@ export function resizeBy(orig: Piece, h: Handle, x: number, z: number, min = 1):
 // ---- What is in a level ----
 
 /** Ground he can stand on (not walls or pillars). */
-const isGround = (t: PieceType): boolean => (BOX_TYPES.includes(t) && t !== 'wall' && t !== 'pillar') || t === 'bridge' || t === 'stairs' || t === 'lift';
+const isGround = (t: PieceType): boolean => (BOX_TYPES.includes(t) && t !== 'wall' && t !== 'pillar') || t === 'bridge' || t === 'stairs' || t === 'ramp' || t === 'lift';
 
 /** How high the ground is at (x, z): the top of the highest floor, slab, bridge or stair there. Null over nothing. */
 export function surfaceAt(level: CustomLevel, x: number, z: number): number | null {
@@ -198,7 +198,7 @@ export function levelStats(level: CustomLevel, enemies: PieceType[]): LevelStats
     if (p.t === 'wedge') s.wedges++;
     if (enemies.includes(p.t)) s.enemies++;
     if (p.t === 'crate' || p.t === 'barrel' || p.t === 'pipe') s.breakables++;
-    if (isGround(p.t) && p.t !== 'stairs' && p.t !== 'lift') {
+    if (isGround(p.t) && p.t !== 'stairs' && p.t !== 'ramp' && p.t !== 'lift') {
       const b = pieceBounds(p);
       s.ground += (b.x1 - b.x0) * (b.z1 - b.z0);
     }

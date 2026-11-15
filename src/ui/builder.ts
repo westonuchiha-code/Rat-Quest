@@ -45,6 +45,7 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('wall', 'Wall', '', '#3a3a44', 'ground', 'A wall. He cannot pass it.'),
     P('pillar', 'Pillar', '', '#9a9a88', 'ground', 'A pillar, from the floor up to its height.'),
     P('stairs', 'Stairs', '', '#8a8a9a', 'ground', 'Steps that climb the way they face.'),
+    P('ramp', 'Ramp', '', '#9a9486', 'ground', 'A smooth slope that climbs the way it faces. He walks up one as steep as 1 up for 1 along.'),
     P('lift', 'Moving platform', '', '#e0a040', 'ground', 'A platform that glides up and down, or sideways. Its settings say how far and how fast.'),
     P('bridge', 'Rope bridge', '', '#b08850', 'ground', 'A rope bridge across a gap.'),
   ] },
@@ -120,9 +121,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
 /** Pieces that are one spot on the map, not a rectangle. */
 export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
-const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'lift', 'gate']);
+const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };
 /** Ready-made characters: picking one sets the name and the creature. */
 const CHARACTERS: Array<[string, string, 'mouse' | 'bird' | 'pigeon' | 'villain']> = [
@@ -1001,7 +1002,7 @@ export class Builder {
     h += `<div class="field"><span>Place x, z</span><div class="two">${num('x0', b.x0)}${num('z0', b.z0)}</div></div>`;
     if (!single) h += `<div class="field"><span>Size w, d</span><div class="two">${num('w', b.x1 - b.x0)}${num('d', b.z1 - b.z0)}</div></div>`;
     h += this.heightRow(p.top, false);
-    h += `<div class="field"><span>${p.t === 'stairs' ? 'Top' : 'Height'} exactly</span>${num('top', p.top, 0.1)}</div>`;
+    h += `<div class="field"><span>${p.t === 'stairs' || p.t === 'ramp' ? 'Top' : 'Height'} exactly</span>${num('top', p.top, 0.1)}</div>`;
     if (!single && p.t !== 'water' && p.t !== 'river' && p.t !== 'lava' && p.t !== 'fire' && p.t !== 'bridge') h += `<div class="field"><span>${p.t === 'stairs' ? 'Starts at' : 'Bottom'}</span>${num('bottom', p.bottom, 0.5, p.t === 'stairs' ? '0' : 'auto')}</div>`;
     if (FACES.has(p.t)) h += this.compass(p.dir ?? (ENEMY_PIECES.includes(p.t) ? 's' : 'n'));
     if (BOX_TYPES.includes(p.t)) {
@@ -1954,7 +1955,7 @@ export class Builder {
       ? { t, x0: d.sx, z0: d.sz, x1: d.sx, z1: d.sz, top: this.top }
       : { t, x0: Math.min(d.sx, d.cx), z0: Math.min(d.sz, d.cz), x1: Math.max(d.sx, d.cx) + (AREAS.has(t) ? step : 0), z1: Math.max(d.sz, d.cz) + (AREAS.has(t) ? step : 0), top: this.top };
     if (FACES.has(t)) p.dir = ENEMY_PIECES.includes(t) && this.dir === 'n' ? 's' : this.dir;
-    if (t === 'stairs') {
+    if (t === 'stairs' || t === 'ramp') {
       p.top = this.top > 0 ? this.top : 3;
       p.bottom = p.top > 3 ? p.top - 3 : 0;
     }
