@@ -57,7 +57,8 @@ export interface Chamber {
   /** Pools the rat can swim in. */
   water: WaterVolume[];
   /** Hands the nearest coloured lights (lamps, braziers, beacons) to the shader. Call once per frame after update(). */
-  updateLights(time: number, focus: THREE.Vector3): void;
+  /** `extra`: lights that come and go (a patch of flame, a firefly's lantern), besides the room's own. */
+  updateLights(time: number, focus: THREE.Vector3, extra?: ReadonlyArray<{ x: number; y: number; z: number; r: number; color: THREE.Color; power: number; flash: number; flicker: number; phase: number }>): void;
   /** Advances water, falls, gushing pipes and gates. Call once per rendered frame with seconds since start. */
   update(time: number): void;
 }
@@ -1379,7 +1380,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   };
 
   const ranked: typeof lightDefs = [];
-  const updateLights = (time: number, focus: THREE.Vector3): void => {
+  /** `extra`: lights that come and go (a patch of flame, a firefly's lantern), besides the room's own. */
+  const updateLights = (time: number, focus: THREE.Vector3, extra: ReadonlyArray<(typeof lightDefs)[number]> = []): void => {
     for (const b of bulbs) {
       const on = Math.sin(time * Math.PI * 2 * b.flash + b.phase) > -0.1;
       b.on.visible = on;
@@ -1387,7 +1389,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     }
     // The nearest few lights win; the rest are not sent to the shader.
     ranked.length = 0;
-    ranked.push(...lightDefs);
+    ranked.push(...lightDefs, ...extra);
     ranked.sort((a, b) => (a.x - focus.x) ** 2 + (a.y - focus.y) ** 2 + (a.z - focus.z) ** 2 - ((b.x - focus.x) ** 2 + (b.y - focus.y) ** 2 + (b.z - focus.z) ** 2));
     for (let i = 0; i < MAX_LIGHTS; i++) {
       const L = ranked[i];

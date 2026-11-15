@@ -13,6 +13,7 @@
  *          Hollow is on the middle ledge.
  *   NORTH  The Mushroom Climb: giant caps, each a double jump higher than the last, up to the High Hollow in the wall.
  *          The ways there are held: a hornet lancer over the east bank, two ant pikemen where the west path comes out.
+ *          And over the west end of the Undershelf a firefly bomber flies, dropping fire.
  *   NE     The Crystal Grotto, lit by crystals; the door to Leap of Faith is inside. Its roof is worth a look.
  *   Three golden relics are hidden round the cave; find all three and a wedge appears in the grotto.
  *
@@ -64,6 +65,12 @@ export const BANK_HORNET = { x: 32, z: -16 };
 /** (Well back from the mouth of the west path, so that he is out on the open floor before they see him, clear of the brazier there.) */
 export const NORTH_ANTS = [{ x: -28, z: -45 }, { x: -24, z: -45 }];
 export const NORTH_WEST_FLOOR = { x0: -48, x1: -4, z0: -48, z1: -30 };
+/**
+ * The Undershelf's firefly: over its west end, where the ways to the gallery, the west path and the Faith Stones part.
+ * Its air: that end of the shelf and out over the chasm beside it (clear of Spider Rock and the pillars under the Mouth).
+ */
+export const SHELF_FIREFLY = { x: -30, z: 40 };
+export const FIREFLY_AIR = { x0: -47, x1: -13, z0: 22, z1: 47 };
 
 const cave: CustomLevel = {
   name: 'The Hollows',
@@ -112,6 +119,8 @@ const cave: CustomLevel = {
     // path comes out on the north floor, two ant pikemen. (None of them is on the gallery: its wedge does not ask for them.) ----
     at('hornet', BANK_HORNET.x, BANK_HORNET.z, 0, { dir: 's' }),
     at('ant', NORTH_ANTS[0].x, NORTH_ANTS[0].z, 0, { dir: 's' }), at('ant', NORTH_ANTS[1].x, NORTH_ANTS[1].z, 0, { dir: 's' }),
+    // And over the west end of the Undershelf, a firefly bomber: its lantern is the first light he sees down there.
+    at('firefly', SHELF_FIREFLY.x, SHELF_FIREFLY.z, 0, { dir: 'e' }),
 
     // ---- North: the Mushroom Climb and the High Hollow ----
     ...CAPS.flatMap((c) => [
@@ -188,6 +197,7 @@ export function hollows(): LevelDef {
     const g = GALLERY_LEDGES.find((l) => e.x > l.x0 && e.x < l.x1 && e.z > l.z0 && e.z < l.z1);
     if (g) return { ...e, arena: { x0: g.x0 + 1.5, x1: g.x1 - 1, z0: g.z0 + 1, z1: g.z1 - 1 } };
     const F = NORTH_WEST_FLOOR;
+    if (e.type === 'firefly') return { ...e, uncounted: true, arena: FIREFLY_AIR };
     return e.type === 'ant' ? { ...e, uncounted: true, arena: { x0: F.x0 + 1, x1: F.x1 - 1, z0: F.z0 + 1, z1: F.z1 - 1 } } : { ...e, uncounted: true };
   });
   return {

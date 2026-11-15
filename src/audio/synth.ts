@@ -202,6 +202,10 @@ export const SFX_NAMES = [
   // Lord Grimsqueak: the Engine's light gathering, a bolt of it thrown and bursting, his swoop, his slam, the orb
   // sent and struck, his cry, the burst that throws the knight off him, the light going out of him, and his end.
   'grimGather', 'grimBolt', 'boltBurst', 'grimSwoop', 'grimSlam', 'orbHum', 'orbStrike', 'grimCry', 'grimRepel', 'grimSag', 'grimDie',
+  // The Firefly Bomber: the soft whirr of its wings (looped, while one is near), its lantern blinking faster and
+  // faster before a run, a drop of fire let go, the drop catching on the floor, its light going out, a thin peep
+  // when it is struck, and its end.
+  'fireflyHum', 'fireflyBlink', 'emberDrop', 'emberBurst', 'fireflyFade', 'fireflyHurt', 'fireflyDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -780,6 +784,86 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const chirp = c.lp(0, sq(c.osc(0, hz), 0.3) * 0.5 + sq(c.osc(1, hz * 1.51), 0.25) * 0.3, 0.45) * 1.6 * (sq(c.osc(2, 80 * (1 - u) + 12), 0.55) > 0 ? 1 : 0.1) * (1 - u) ** 0.7 * Math.min(1, t / 0.01);
       return Math.tanh((chirp * 0.9 + pike(t - 0.42) + pike2(t - 0.6) * 0.8) * 0.9) * Math.min(1, (0.9 - t) / 0.08);
     };
+  }, { bits: 7 }),
+  // ---- The Firefly Bomber (soft, and glassy: nothing like the hornet's rasp) ----
+  // Its wings: a soft whirr, a round low note with air on it, fluttering. (Every pitch in it turns a whole number of
+  // times in the loop, so it joins up.)
+  fireflyHum: () => draw(0.8, RATE_HI, 211, (c) => (t) => {
+    const flutter = 0.62 + 0.38 * tri(c.osc(3, 45));
+    const n = c.r() * 2 - 1;
+    return (tri(c.osc(0, 190)) * 0.5 + sine(c.osc(1, 95)) * 0.35 + sine(c.osc(2, 380)) * 0.12 + (c.lp(0, n, 0.12) - c.lp(1, n, 0.05)) * 0.9) * flutter * (0.85 + 0.15 * wob(t, 0.8, 2));
+  }, { bits: 7, loop: true, gain: 0.5 }),
+  // Before a run: its lantern blinking, each blink a clear glass note, faster and faster and higher and higher.
+  fireflyBlink: () => draw(0.7, RATE_HI, 212, (c) => {
+    let turn = 1;
+    let since = 1;
+    let hz = 1150;
+    return (t) => {
+      const u = t / 0.7;
+      turn += (7 + 26 * u * u) / RATE_HI;
+      since += 1 / RATE_HI;
+      if (turn >= 1) {
+        turn -= 1;
+        since = 0;
+        hz = 1150 + 1350 * u;
+      }
+      const note = (sine(c.osc(0, hz)) * 0.6 + sine(c.osc(1, hz * 1.5)) * 0.3 + sine(c.osc(2, hz * 2.76)) * 0.14) * Math.exp(-since * (22 + 30 * u)) * Math.min(1, since / 0.002);
+      return note * (0.35 + 0.65 * u) * Math.min(1, (0.7 - t) / 0.02);
+    };
+  }, { bits: 7 }),
+  // A drop of fire let go: a round little note falling away, with a spit of sparks on it.
+  emberDrop: () => draw(0.24, RATE_HI, 213, (c) => (t) => {
+    const u = t / 0.24;
+    const hz = 1150 * Math.exp(-u * 1.5) + 180;
+    const n = c.r() * 2 - 1;
+    return (sine(c.osc(0, hz)) * 0.8 + sine(c.osc(1, hz * 2.02)) * 0.2) * (1 - u) ** 1.3 * Math.min(1, t / 0.004) + (n - c.lp(0, n, 0.35)) * 0.3 * Math.exp(-t * 40);
+  }, { bits: 7 }),
+  // The drop meets the floor and catches: a soft thump, the whoomph of flame taking, and a few cracks as it settles.
+  emberBurst: () => draw(0.7, RATE_HI, 214, (c) => {
+    const cracks = Array.from({ length: 6 }, () => ({ at: 0.1 + c.r() * 0.5, amp: 0.4 + c.r() * 0.5 }));
+    return (t) => {
+      const n = c.r() * 2 - 1;
+      // (The whoomph opens up as it takes: dull at first, then air in it.)
+      const open = 0.02 + 0.1 * Math.min(1, t / 0.12);
+      let v = c.lp(0, n, open) * 1.7 * Math.min(1, t / 0.035) * Math.exp(-t * 5.5) + sine(c.osc(0, 120 * Math.exp(-t * 14) + 48)) * 0.9 * Math.exp(-t * 13);
+      for (const k of cracks) {
+        const d = t - k.at;
+        if (d > 0 && d < 0.02) v += (c.r() * 2 - 1) * k.amp * 0.3 * Math.exp(-d * 260);
+      }
+      return v * Math.min(1, (0.7 - t) / 0.1);
+    };
+  }, { bits: 7 }),
+  // Its light going out: the glass note sinking, blinking slower and slower, and dimmer.
+  fireflyFade: () => draw(0.8, RATE_HI, 215, (c) => {
+    let turn = 1;
+    let since = 1;
+    let hz = 1100;
+    return (t) => {
+      const u = t / 0.8;
+      turn += (15 - 11 * u) / RATE_HI;
+      since += 1 / RATE_HI;
+      if (turn >= 1) {
+        turn -= 1;
+        since = 0;
+        hz = 1100 * Math.exp(-u * 1.5);
+      }
+      return (sine(c.osc(0, hz)) * 0.6 + sine(c.osc(1, hz * 1.5)) * 0.25 + sine(c.osc(2, hz * 0.5)) * 0.3) * Math.exp(-since * 14) * Math.min(1, since / 0.003) * (1 - u) ** 0.8;
+    };
+  }, { bits: 7 }),
+  // Struck: a thin glass peep, bent down, with a quick shake in it.
+  fireflyHurt: () => draw(0.2, RATE_HI, 216, (c) => (t) => {
+    const u = t / 0.2;
+    const hz = (2500 - 1000 * u) * (1 + 0.05 * sine(c.osc(3, 55)));
+    return (sine(c.osc(0, hz)) * 0.7 + sine(c.osc(1, hz * 1.5)) * 0.2 + tri(c.osc(2, hz * 0.5)) * 0.15) * bell(t, 0.2) + (c.r() * 2 - 1) * 0.25 * Math.exp(-t * 90);
+  }, { bits: 7 }),
+  // Its end: its wings stuttering out under one last long note of its light, sinking and going dim.
+  fireflyDie: () => draw(1.0, RATE_HI, 217, (c) => (t) => {
+    const u = t / 1.0;
+    const stutter = sq(c.osc(4, 26 - 21 * u), 0.5 - 0.25 * u) > 0 ? 1 : 0.1;
+    const wings = (tri(c.osc(0, 190 * Math.exp(-u * 0.9))) * 0.45 + sine(c.osc(1, 95 * Math.exp(-u * 0.9))) * 0.3) * stutter * (1 - u) ** 0.7;
+    const hz = 1250 * Math.exp(-u * 1.9) + 150;
+    const light = (sine(c.osc(2, hz)) * 0.5 + sine(c.osc(3, hz * 1.5)) * 0.2) * (0.55 + 0.45 * sine(c.osc(5, 9 - 6 * u))) * (1 - u) ** 1.4;
+    return (wings + light) * Math.min(1, t / 0.008);
   }, { bits: 7 }),
   // The Ironback. Before it rams: its horn and feet scraping the floor, three long rasps, each harder than the last.
   ironScrape: () => draw(0.9, RATE_HI, 181, (c) => {

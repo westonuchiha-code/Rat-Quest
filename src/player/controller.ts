@@ -247,6 +247,15 @@ export class PlayerController {
     return this.takeHit(this.position.x + 0.01, this.position.z, damage);
   }
 
+  /** Flames on the floor: no rolling or guarding out of them, and he is thrown back from their middle. */
+  takeBurn(fromX: number, fromZ: number, damage: number): HitResult {
+    if (this.deadTimer >= 0 || this.invulnTimer > 0 || this.untouchable) return 'dodged';
+    this.dodgeTimer = -1;
+    this.guarding = false;
+    const on = Math.hypot(fromX - this.position.x, fromZ - this.position.z) < 0.02;
+    return this.takeHit(on ? this.position.x + 0.01 : fromX, fromZ, damage);
+  }
+
   /** `heavy`: a blow too big for a shield (it lands through a plain block; only a perfectly timed guard turns it). */
   takeHit(fromX: number, fromZ: number, damage: number, heavy = false): HitResult {
     if (this.invulnerable) return 'dodged';

@@ -24,6 +24,10 @@ import { WYRM, Wyrm, type WyrmState } from '../../src/enemies/wyrm';
 import { HornetModel } from '../../src/enemies/hornetModel';
 import { HORNET, Hornet, type HornetState } from '../../src/enemies/hornet';
 import { AntModel } from '../../src/enemies/antModel';
+import { FireflyModel } from '../../src/enemies/fireflyModel';
+import { FIREFLY, Firefly, type FireflyState } from '../../src/enemies/firefly';
+import { Flames, makeEmber, stepEmbers, type Ember } from '../../src/world/embers';
+import { EmberFx } from '../../src/world/emberFx';
 import { ANT, Ant, pairAnts, type AntState } from '../../src/enemies/ant';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
@@ -52,11 +56,12 @@ floor.rotation.x = -Math.PI / 2;
 scene.add(floor);
 const camera = new THREE.PerspectiveCamera(30, W / H, 0.1, 200);
 const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
+let soloY = 0; // with &only=N, how high that one figure is (the camera follows it)
 
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm|hornet|ant)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm|hornet|ant|firefly)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -154,6 +159,96 @@ if (pick === 'hornet') {
       feed(0);
     }
     ticks.push((dt) => feed(dt));
+    labels.push({ text: shot.name, x: only >= 0 ? 0 : ox, y: (only >= 0 ? 0 : oz) + 4 });
+    if (only >= 0) {
+      const knight = new RatModel();
+      knight.setTransform(new THREE.Vector3(rat.x + ox, 0, rat.z + oz), Math.atan2(h.x - rat.x, h.z - rat.z));
+      knight.update(1 / 60, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+      scene.add(knight.root);
+    }
+  });
+  for (let k = 0; k < 20; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'firefly') {
+  // The Firefly Bomber in each thing it does. Each is a real fight, played by its rules until it is doing that thing,
+  // then held there (its wings go on beating). &only=N shows one alone, with the knight where he stood. The last
+  // ones show its fire: drops in the air with the rings where they will land, and the flames they leave.
+  type Shot = { name: string; state: FireflyState; at: number; nth?: number; hit?: FireflyState; kill?: FireflyState; fire?: boolean };
+  const shots: Shot[] = [
+    { name: 'at its post', state: 'idle', at: 0.5 },
+    { name: 'alert', state: 'alert', at: FIREFLY.alert * 0.5 },
+    { name: 'circling', state: 'circle', at: 0.8 },
+    { name: 'the tell: lantern flares', state: 'runWind', at: FIREFLY.runWind * 0.92 },
+    { name: 'bombing run', state: 'run', at: 0.3 },
+    { name: 'sinking, spent', state: 'sink', at: 0.45 },
+    { name: 'spent: dark', state: 'spent', at: 0.5 },
+    { name: 'spent: light coming back', state: 'spent', at: FIREFLY.rest * 0.85 },
+    { name: 'going back up', state: 'rise', at: 0.35 },
+    { name: 'cut out of the air', state: 'fall', at: FIREFLY.fallTime * 0.55, hit: 'circle' },
+    { name: 'on the floor', state: 'grounded', at: 0.8, hit: 'spent' },
+    { name: 'dead', state: 'dead', at: 1.2, kill: 'spent' },
+    { name: 'its fire: falling, marked', state: 'run', at: 0.62, fire: true },
+    { name: 'its fire: burning', state: 'circle', at: 0.5, nth: 2, fire: true },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const COLS = 5;
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    let ox = only >= 0 ? 0 : ((i % COLS) - (COLS - 1) / 2) * 9;
+    let oz = only >= 0 ? 0 : (Math.floor(i / COLS) - 1) * 10;
+    const h = new Firefly({ x: 0, z: -6, facing: 0, arena: { x0: -30, x1: 30, z0: -30, z1: 30 } });
+    let seed = 7;
+    h.rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const m = new FireflyModel();
+    scene.add(m.root);
+    const rat = { x: 0, z: shot.state === 'idle' ? 40 : 1 };
+    const embers: Ember[] = [];
+    const flames = new Flames();
+    const fx = new EmberFx();
+    scene.add(fx.group);
+    const ground = (): number => 0;
+    const feed = (dt: number): void => {
+      m.update(dt, { state: h.state, stateTime: h.stateTime, x: h.x + ox, y: h.y, z: h.z + oz, facing: h.facing, vent: { x: h.vent.x + ox, y: h.vent.y, z: h.vent.z + oz }, light: h.light, floor: h.floor, moving: h.moving });
+      fx.group.position.set(ox, 0, oz);
+    };
+    let done = false;
+    let seen = 0;
+    let was: FireflyState = h.state;
+    let clock = 0;
+    for (let f = 0; f < 60 * 90; f++) {
+      h.update(1 / 60, rat.x, 0, rat.z, true);
+      clock += 1 / 60;
+      for (const d of h.drops.splice(0)) if (shot.fire) embers.push(makeEmber(d, { gravity: FIREFLY.bombFall, radius: FIREFLY.flameRadius, burnFor: FIREFLY.flameTime }, ground));
+      h.events.length = 0;
+      for (const e of stepEmbers(embers, 1 / 60, ground)) flames.add(e.x, e.y, e.z, e.radius, e.burnFor);
+      flames.step(1 / 60);
+      if (shot.hit && !done && h.state === shot.hit && h.stateTime > 0.8) {
+        done = true;
+        h.takeHit(1, 0, 0);
+      }
+      if (shot.kill && !done && h.state === shot.kill && h.stateTime > 0.8) {
+        done = true;
+        while (h.alive) h.takeHit(9, 0, 0);
+      }
+      feed(1 / 60);
+      if (h.state !== was && h.state === shot.state) seen++;
+      was = h.state;
+      if (h.state === shot.state && h.stateTime >= shot.at && seen >= (shot.nth ?? 1) - (shot.state === 'idle' ? 1 : 0)) break;
+    }
+    if (only >= 0) {
+      // Alone, it is put in the middle of the picture (its floor at 0); with its fire, the knight is.
+      ox = shot.fire ? -rat.x : -h.x;
+      oz = shot.fire ? -rat.z : -h.z;
+      soloY = shot.fire ? 0 : h.y;
+      feed(0);
+    }
+    fx.update(clock, embers.filter((e) => !e.done), flames.list);
+    ticks.push((dt) => {
+      feed(dt);
+      clock += dt;
+      // (Its fire is held as it was: only the flames flicker.)
+      fx.update(clock, embers.filter((e) => !e.done), flames.list);
+    });
     labels.push({ text: shot.name, x: only >= 0 ? 0 : ox, y: (only >= 0 ? 0 : oz) + 4 });
     if (only >= 0) {
       const knight = new RatModel();
@@ -564,7 +659,6 @@ if (pick === 'grim') {
   // Let every one of them come to rest in his pose before the first picture.
   for (let k = 0; k < 240; k++) for (const t of ticks) t(1 / 60);
 }
-let soloY = 0; // with &only=N, how high that one figure is (the camera follows it)
 if (pick === 'moves') {
   // Every move the hero has, played by the real controller and stopped at its telling moment. Two rows.
   // &only=N shows one alone (for a close look from any side).

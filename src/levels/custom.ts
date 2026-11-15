@@ -17,12 +17,12 @@ export type PieceType =
   | 'floor' | 'tile' | 'grate' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
   | 'water' | 'river' | 'lava' | 'fire' | 'bridge' | 'crate' | 'barrel'
   | 'crumb' | 'cap' | 'relic'
-  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
+  | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
   | 'stairs' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** The pieces that are enemies (the Broodmother, a boss, among them). */
-export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'brood', 'wyrm'];
+export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm'];
 
 /** What makes a Golden Wedge appear: there from the start, or once that job is done. */
 export type WedgeAppears = 'start' | 'defeat' | 'waves' | 'burst' | 'crumb' | 'cap' | 'relic' | 'reach';
@@ -389,21 +389,22 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'stag':
       case 'hornet':
       case 'ant':
+      case 'firefly':
       case 'brood':
       case 'wyrm':
         {
-          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag', hornet: 'hornet', ant: 'ant', brood: 'brood', wyrm: 'wyrm' } as const)[p.t];
+          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag', hornet: 'hornet', ant: 'ant', firefly: 'firefly', brood: 'brood', wyrm: 'wyrm' } as const)[p.t];
           // A boss has the run of the whole room (a little inside its walls); the others keep to a patch round where they stand.
           // (The Wyrm's floor runs right to the walls: it is running its head into one that stuns it.)
-          const arena = p.t === 'brood' ? { x0: -c.width / 2 + 2, x1: c.width / 2 - 2, z0: -c.depth / 2 + 2, z1: c.depth / 2 - 2 } : p.t === 'wyrm' ? { x0: -c.width / 2 + 0.1, x1: c.width / 2 - 0.1, z0: -c.depth / 2 + 0.1, z1: c.depth / 2 - 0.1 } : p.t === 'hornet'
-            // (A hornet hangs a little way off him and runs on past him: it wants more air than the others want floor.)
+          const arena = p.t === 'brood' ? { x0: -c.width / 2 + 2, x1: c.width / 2 - 2, z0: -c.depth / 2 + 2, z1: c.depth / 2 - 2 } : p.t === 'wyrm' ? { x0: -c.width / 2 + 0.1, x1: c.width / 2 - 0.1, z0: -c.depth / 2 + 0.1, z1: c.depth / 2 - 0.1 } : p.t === 'hornet' || p.t === 'firefly'
+            // (A hornet hangs a little way off him and runs on past him, and a firefly flies right over him: they want more air than the others want floor.)
             ? { x0: Math.max(-c.width / 2 + 0.5, cx - 12), x1: Math.min(c.width / 2 - 0.5, cx + 12), z0: Math.max(-c.depth / 2 + 0.5, cz - 12), z1: Math.min(c.depth / 2 - 0.5, cz + 12) }
             // (An ant goes round him to get behind him: a little more floor than the others.)
             : p.t === 'ant' ? { x0: cx - 9, x1: cx + 9, z0: cz - 9, z1: cz + 9 }
             : { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 };
           const spec: EnemySpec = { type, x: cx, z: cz, y: p.top, arena, respawn: p.t === 'brood' || p.t === 'wyrm' ? false : !!p.props?.respawn, ...(p.props?.perch ? { perch: p.props.perch } : {}) };
           // A guard stands at his post facing the way he is set (north by default: towards whoever comes up the room).
-          if (p.t === 'guard' || p.t === 'mantis' || p.t === 'stag' || p.t === 'hornet' || p.t === 'ant' || p.t === 'brood' || p.t === 'wyrm') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+          if (p.t === 'guard' || p.t === 'mantis' || p.t === 'stag' || p.t === 'hornet' || p.t === 'ant' || p.t === 'firefly' || p.t === 'brood' || p.t === 'wyrm') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
           const w = Math.round(p.props?.wave ?? 0);
           if (w > 0) (waveSpecs[w - 1] ??= []).push(spec);
           else enemies.push(spec);

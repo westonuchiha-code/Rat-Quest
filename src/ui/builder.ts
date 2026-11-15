@@ -78,6 +78,7 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('stag', 'Stag Knight', 'St', '#3a6a78', 'folk', 'A great beetle with a forge hammer. Slow, and it does not flinch.'),
     P('hornet', 'Hornet Lancer', 'Ho', '#f2a81e', 'folk', 'Hangs in the air out of reach and dives lance first: step aside and the lance sticks in the floor. It needs open air: a high roof and room to fly.'),
     P('ant', 'Ant Pikeman', 'An', '#9a3a1e', 'folk', 'A soldier ant with a long pike. Put two near each other and they fight as a pair: one holds you at pike\'s length while the other goes round behind you. Give them open floor.'),
+    P('firefly', 'Firefly Bomber', 'Ff', '#e8642a', 'folk', 'Flies over, out of reach, and drops fire where you are going: turn off its line. After two runs its light is spent and it hangs low: hit it then. It needs open air: a high roof and room to fly.'),
     P('brood', 'The Broodmother', 'BM', '#7a3a8a', 'folk', 'A boss: the great spider. She has the run of the whole room, so give her a big clear floor.'),
     P('wyrm', 'The Sump Wyrm', 'SW', '#b53a1e', 'folk', 'A boss: the great centipede. It charges, and stuns itself on walls: give it a big clear floor with walls all round.'),
     P('npc', 'Character', 'P', '#4a7aca', 'folk', 'Someone to talk to. Choose who, and what they say.'),
@@ -117,9 +118,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
 const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'lift', 'gate']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };

@@ -47,4 +47,8 @@ for p in roach toad ironback bat npcs; do shot "$p" "$p"; done
 shot ant "ant"
 # Each thing the Ant Pikeman does, alone, from three sides (14 is a pair, the knight between them): look at every one of these.
 for n in $(seq 0 14); do shot "ant$n-front" "ant&only=$n&cam=2.6,1.7,5.6,0,0.8,0.7"; shot "ant$n-side" "ant&only=$n&cam=-6.2,1.3,0.8,0,0.8,0.7"; shot "ant$n-back" "ant&only=$n&cam=-2.6,2.1,-4.8,0,0.8,0.6"; done
+shot firefly "firefly&cam=0,13,40,0,2,0"
+# Each thing the Firefly Bomber does, alone, from three sides (the camera is at its own height); 12 and 13 are its fire, with the knight.
+for n in $(seq 0 11); do shot "firefly$n-front" "firefly&only=$n&cam=2.2,1.1,3.2,0,0.2,-0.2"; shot "firefly$n-side" "firefly&only=$n&cam=-3.9,0.5,-0.1,0,0.2,-0.2"; shot "firefly$n-back" "firefly&only=$n&cam=-1.7,1.2,-3.6,0,0.2,-0.2"; done
+for n in 12 13; do shot "firefly$n" "firefly&only=$n&cam=7,5,10,0,1.4,-0.5"; shot "firefly$n-top" "firefly&only=$n&cam=0.01,16,0.5,0,0,0"; done
 ls "$OUT"

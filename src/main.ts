@@ -44,10 +44,14 @@ import { Hornet } from './enemies/hornet';
 import { HornetModel } from './enemies/hornetModel';
 import { ANT, Ant, pairAnts } from './enemies/ant';
 import { AntModel } from './enemies/antModel';
+import { FIREFLY, Firefly } from './enemies/firefly';
+import { FireflyModel } from './enemies/fireflyModel';
+import { Flames, flameHeat, makeEmber, stepEmbers, type Ember } from './world/embers';
+import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
 import type { Foe } from './enemies/foe';
 import { ScuttlerModel } from './enemies/scuttlerModel';
-import { CombatEvents, pickAim, resolveCombat, resolveGlobs } from './combat/combat';
+import { CombatEvents, pickAim, resolveCombat, resolveGlobs, resolveFlames } from './combat/combat';
 import { FollowCamera } from './camera/followCamera';
 import { Action, controlSources, gamepadControls, gamepadDpad, gamepadInfo, padControls, pollGamepad } from './core/controls';
 import { PadShaper } from './levels/place3d';
@@ -400,6 +404,20 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, tip: e.tip, aim: e.aim, floor: e.floor, moving: e.moving }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'firefly') {
+      const e = new Firefly(spec);
+      const m = new FireflyModel();
+      e.canFly = canFly;
+      enemies.push(e);
+      lanterns.set(e, { x: e.x, y: e.y, z: e.z, r: 6.5, color: new THREE.Color(0xd9ff5a), power: 0, flash: 0, flicker: 0, phase: 0 });
+      enemyModels.push({
+        root: m.root,
+        // (Its model is put where the rules have it each frame, the tip of its lantern and all: see its tick.)
+        setTransform: () => undefined,
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, vent: e.vent, light: e.light, floor: e.floor, moving: e.moving }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'ant') {
       const e = new Ant(spec);
       const m = new AntModel();
@@ -462,7 +480,7 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet | Ant, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet | Ant | Firefly, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
       if (e instanceof Ant) {
@@ -482,6 +500,22 @@ function startGame(): void {
           audio.play('antHurt', { vol: v * 0.8, rate: 0.8, priority: 7 });
         } else if (ev === 'hurt') audio.play('antHurt', { vol: v, priority: 6 });
         else if (ev === 'spring') audio.play('chitinTap', { vol: v * 0.6, rate: 0.85, priority: 3 });
+        continue;
+      }
+      if (e instanceof Firefly) {
+        // The Firefly Bomber, in sounds of its own: two quick blinks of its lantern when it sees him; the blinking
+        // quickening and climbing before a run (as long as the tell), the rush of the run, and a small falling note
+        // for each drop it lets go; its light running down when it is spent, and a blink or two as it comes back; a
+        // thin peep when it is struck. (The whirr of its wings is a loop, and the fire catching is with the fire: see below.)
+        if (ev === 'alert') audio.play('fireflyBlink', { vol: v * 0.7, rate: 2, priority: 6 });
+        else if (ev === 'runWind') audio.play('fireflyBlink', { vol: Math.max(0.4, v), rate: Math.max(0.5, Math.min(2.5, 0.7 / e.windTime)), priority: 8 });
+        else if (ev === 'run') audio.play('whoosh', { vol: v * 0.8, rate: 1.1, priority: 6 });
+        else if (ev === 'drop') audio.play('emberDrop', { vol: Math.max(0.3, v), priority: 6 });
+        else if (ev === 'spent') audio.play('fireflyFade', { vol: Math.max(0.3, v), priority: 6 });
+        else if (ev === 'rise') audio.play('fireflyBlink', { vol: v * 0.6, rate: 1.6, priority: 4 });
+        else if (ev === 'hurt') audio.play('fireflyHurt', { vol: v, priority: 6 });
+        else if (ev === 'thud') audio.play('land', { vol: v, rate: 1.4, priority: 5 });
+        else if (ev === 'lost') audio.play('fireflyDie', { vol: v * 0.7, rate: 1.3, priority: 5 });
         continue;
       }
       if (e instanceof Hornet) {
@@ -787,6 +821,14 @@ function startGame(): void {
   // Toad spit in flight.
   const globs: Glob[] = [];
   const globMeshes = new Map<Glob, THREE.Mesh>();
+  // A firefly's fire: the drops in the air, the flames they leave on the floor, how they are drawn, and the light
+  // they and the fireflies' lanterns throw on the room.
+  const embers: Ember[] = [];
+  const flames = new Flames();
+  const emberFx = new EmberFx();
+  scene.add(emberFx.group);
+  const fxLights: FxLight[] = [];
+  const lanterns = new WeakMap<Firefly, FxLight>();
   const globGeo = new THREE.SphereGeometry(0.2, 6, 5);
   const globMat = new THREE.MeshBasicMaterial({ color: 0x8aff5a });
   /** Grimsqueak throws the cold light of the Engine, not sludge. */
@@ -1254,6 +1296,9 @@ function startGame(): void {
     }
     globs.length = 0;
     globMeshes.clear();
+    embers.length = 0;
+    flames.clear();
+    emberFx.clear();
     for (const n of npcs) scene.remove(n.root);
     npcs.length = 0;
     if (plateGroup) scene.remove(plateGroup);
@@ -1479,6 +1524,8 @@ function startGame(): void {
         if (e.state === 'dead') audio.play('hornetDie', { vol: v, priority: 6 });
       } else if (e.kind === 'ant') {
         if (e.state === 'dead') audio.play('antDie', { vol: v, priority: 6 });
+      } else if (e.kind === 'firefly') {
+        if (e.state === 'dead') audio.play('fireflyDie', { vol: v, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('mantisDie', { vol: v, priority: 6 });
       } else if (e.kind === 'wyrm') {
@@ -1566,8 +1613,17 @@ function startGame(): void {
       hv = Math.max(hv, nearness(Math.hypot(e.x - player.position.x, e.y - player.position.y, e.z - player.position.z), 15) * (e.attacking || e.state === 'stuck' ? 1 : 0.7));
     }
     audio.loop('hornetBuzz', hv * hv * 0.5);
+    // A firefly in the air near him: the soft whirr of its wings (fainter while it hangs spent; nothing once it is down).
+    let ffv = 0;
+    for (const e of enemies) {
+      if (!(e instanceof Firefly) || !e.alive || e.state === 'grounded' || e.state === 'fall') continue;
+      ffv = Math.max(ffv, nearness(Math.hypot(e.x - player.position.x, e.y - player.position.y, e.z - player.position.z), 15) * (e.low ? 0.6 : e.attacking ? 1 : 0.8));
+    }
+    audio.loop('fireflyHum', ffv * ffv * 0.5);
     let fv = 0;
     for (const b of braziers) fv = Math.max(fv, nearness(Math.hypot(b.x - player.position.x, b.y - player.position.y, b.z - player.position.z), 6));
+    // (A firefly's flames crackle as a brazier does, for as long as they burn.)
+    for (const f of flames.list) fv = Math.max(fv, nearness(Math.hypot(f.x - player.position.x, f.y - player.position.y, f.z - player.position.z), 8) * flameHeat(f));
     audio.loop('fire', fv * fv * 0.3);
   }
 
@@ -1580,6 +1636,7 @@ function startGame(): void {
   let braziers: Array<{ x: number; y: number; z: number }> = [];
   // Lava: touching it hurts and puts him back on the last safe ground he stood on.
   const lastSafe = new THREE.Vector3();
+
   function lavaStep(): void {
     if (player.dead) return;
     const p = player.position;
@@ -1752,6 +1809,18 @@ function startGame(): void {
       if (e instanceof Grimsqueak) bossTick(e);
       const spits = e instanceof Grimsqueak ? e.spits.splice(0) : e.kind === 'toad' && (e as Toad).spit ? [(e as Toad).spit!] : [];
       if (e.kind === 'toad') (e as Toad).spit = null;
+      // A firefly's drops of fire: each is let go from the tip of its lantern, and where it will land is known at once
+      // (and marked on the floor). One let go over no floor (a pit, a wall's top, water) falls and is gone.
+      if (e instanceof Firefly) {
+        for (const d of e.drops.splice(0)) {
+          const em = makeEmber(d, { gravity: FIREFLY.bombFall, radius: FIREFLY.flameRadius, burnFor: FIREFLY.flameTime }, groundBelow);
+          // (Nor does one catch under water, or need to in lava.)
+          const L = em.land;
+          const wet = !!L && [...chamber.water, ...chamber.lava].some((w) => L.x > w.x0 && L.x < w.x1 && L.z > w.z0 && L.z < w.z1 && w.y > L.y);
+          if (L && (wet || !canStand(L.x, L.y, L.z, 0.1))) em.land = null;
+          embers.push(em);
+        }
+      }
       for (const spit of spits) {
         const g: Glob = { ...spit, age: 0, done: false };
         globs.push(g);
@@ -1764,7 +1833,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet || e instanceof Ant) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet || e instanceof Ant || e instanceof Firefly) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);
@@ -1786,10 +1855,20 @@ function startGame(): void {
         globs.splice(i, 1);
       } else if (gm) gm.position.set(g.x, g.y, g.z);
     }
+    // Drops of fire fall; where one meets the floor it catches, and the flames burn for a while.
+    for (const em of stepEmbers(embers, dt, groundBelow)) {
+      if (!em.land) continue;
+      flames.add(em.x, em.y, em.z, em.radius, em.burnFor);
+      audio.play('emberBurst', { vol: Math.max(0.25, hearAt(em.x, em.z, 22)), rate: roll(0.92, 1.1), priority: 5 });
+    }
+    for (let i = embers.length - 1; i >= 0; i--) if (embers[i].done) embers.splice(i, 1);
+    flames.step(dt);
     soundWorld(dt);
 
     resolveCombat(player, enemies, events, [...chamber.crates, ...chamber.pipes]);
     lavaStep();
+    // A firefly's flames: whoever stands in them is burned (no roll or shield helps). In the Ember Helm he walks through.
+    resolveFlames(player, flames, FIREFLY.burn, events);
     for (const e of enemies) {
       if (!e.alive && !counted.has(e)) {
         counted.add(e);
@@ -3270,7 +3349,19 @@ function startGame(): void {
 
     chamber.update(time);
     bossDraw(time);
-    chamber.updateLights(time, fly.open ? camera.position : renderPos);
+    // A firefly's fire, drawn as it is now; it and the fireflies' lanterns light the room round them.
+    fxLights.length = 0;
+    emberFx.update(time, embers, flames.list, fxLights);
+    for (const e of enemies) {
+      const L = e instanceof Firefly ? lanterns.get(e) : undefined;
+      if (!L || !(e instanceof Firefly) || !e.alive || e.light < 0.1) continue;
+      L.x = e.vent.x;
+      L.y = e.vent.y;
+      L.z = e.vent.z;
+      L.power = 0.55 * Math.min(1.8, e.light);
+      fxLights.push(L);
+    }
+    chamber.updateLights(time, fly.open ? camera.position : renderPos, fxLights);
     debris.update(frameDt);
     // Each board knocks as it lands (one knock a frame at most; more boards at once make it a little louder).
     const knocks = debris.takeKnocks();

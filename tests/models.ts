@@ -25,6 +25,8 @@ import { BROOD, type BroodState } from '../src/enemies/brood';
 import { WyrmModel } from '../src/enemies/wyrmModel';
 import { WYRM, Wyrm, type WyrmState } from '../src/enemies/wyrm';
 import { HornetModel } from '../src/enemies/hornetModel';
+import { FireflyModel } from '../src/enemies/fireflyModel';
+import { FIREFLY, Firefly, type FireflyState } from '../src/enemies/firefly';
 import { HORNET, Hornet, type HornetState } from '../src/enemies/hornet';
 import { AntModel } from '../src/enemies/antModel';
 import { ANT, Ant, pairAnts, type AntState } from '../src/enemies/ant';
@@ -2013,6 +2015,174 @@ const at = new THREE.Vector3(0, 0, 0);
     const D = lying as ReturnType<AntModel['parts']> | null;
     check('ant: dead, it lies over on its side with its legs curled, its pike on the floor beside it and out of its hands', !!D && D.chest.y < 0.4 && D.head.y < 0.45 && D.tip.y < 0.12 && D.butt.y < 0.12 && D.hands[0].distanceTo(D.holds[0]) > 0.3 && Math.max(...D.feet.map((f) => f.y)) < 0.6, D ? `chest ${D.chest.y.toFixed(2)} up; pike ${Math.max(D.tip.y, D.butt.y).toFixed(2)} up, ${D.hands[0].distanceTo(D.holds[0]).toFixed(2)} from its hand` : 'never');
     check('ant: and then it shrivels away to nothing', gone < 0.01, `${gone}`);
+  }
+}
+
+// ---- The Firefly Bomber: its fire leaves it from the tip of its lantern, and that tip comes from the rules. Is it
+// drawn there? Does its lantern show how much light it has? Does any of it (or its glow) go under the floor? ----
+{
+  const F = FIREFLY;
+  const FLYING: FireflyState[] = ['idle', 'alert', 'circle', 'runWind', 'run', 'return'];
+  const seen = new Set<string>();
+  let frames = 0;
+  let sound = true;
+  let low = 9;
+  let lowIn = '';
+  let glowLow = 9;
+  let offTip = 0;
+  let offTipFlying = 0;
+  let offPlace = 0;
+  const v = new THREE.Vector3();
+  /** The lowest point of everything of it that is drawn solid: its lit body and its lantern (not its shadow or its glow). */
+  const lowest = (root: THREE.Object3D): number => {
+    let y = Infinity;
+    root.updateMatrixWorld(true);
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || m.geometry.type === 'CircleGeometry' || (m.material as THREE.Material).blending === THREE.AdditiveBlending) return;
+      const pos = m.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) y = Math.min(y, v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).y);
+    });
+    return y;
+  };
+  /** A fight by the rules, the model following every frame. */
+  const fight = (secs: number, rat: (t: number, f: Firefly) => { x: number; y?: number; z: number }, each?: (f: Firefly, m: FireflyModel, t: number) => void, seed = 3): { f: Firefly; m: FireflyModel } => {
+    const f = new Firefly({ x: 0, z: -9, facing: 0, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+    let s = seed;
+    f.rng = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const m = new FireflyModel();
+    for (let t = 0; t < secs; t += DT) {
+      const p = rat(t, f);
+      f.update(DT, p.x, p.y ?? 0, p.z, true);
+      f.drops.length = 0;
+      f.events.length = 0;
+      m.update(DT, { state: f.state, stateTime: f.stateTime, x: f.x, y: f.y, z: f.z, facing: f.facing, vent: f.vent, light: f.light, floor: f.floor, moving: f.moving });
+      each?.(f, m, t);
+      // (Dead, it shrivels away after a second and a half: nothing is measured on what is left.)
+      if (f.state === 'dead' && f.stateTime > 1.5) continue;
+      frames++;
+      seen.add(f.state);
+      const P = m.parts();
+      const r = measure(m.root);
+      if (!r.finite || r.meshes < 25) sound = false;
+      const lo = lowest(m.root) - f.floor;
+      if (lo < low) {
+        low = lo;
+        lowIn = f.state;
+      }
+      if (P.glow) glowLow = Math.min(glowLow, P.glow.at.y - P.glow.r - f.floor);
+      const off = P.tip.distanceTo(new THREE.Vector3(f.vent.x, f.vent.y, f.vent.z));
+      if (f.state === 'run' || f.state === 'runWind') offTip = Math.max(offTip, off);
+      else if (FLYING.includes(f.state) && f.stateTime > 0.3) offTipFlying = Math.max(offTipFlying, off);
+      if (FLYING.includes(f.state) || f.low) offPlace = Math.max(offPlace, Math.hypot(P.chest.x - f.x, P.chest.z - f.z));
+    }
+    return { f, m };
+  };
+  const still = (): { x: number; z: number } => ({ x: 0, z: 0 });
+  fight(30, still);
+  fight(30, still, undefined, 11);
+  // Cut while it hangs spent (it is knocked to the floor, and gets up); cut out of the air; killed at each thing it does.
+  fight(30, still, (f) => { if (f.state === 'spent' && f.stateTime > 1 && f.stateTime < 1 + DT * 1.5) f.takeHit(1, 0, 0); });
+  fight(12, still, (f, _m, t) => { if (Math.abs(t - 2) < DT / 2) f.takeHit(1, 0, 0); });
+  for (const when of ['circle', 'runWind', 'run', 'sink', 'spent', 'grounded'] as FireflyState[]) {
+    let done = false;
+    fight(26, still, (f) => {
+      if (when === 'grounded' && f.state === 'spent' && f.stateTime > 0.5 && f.hp === F.hp) f.takeHit(1, 0, 0);
+      if (!done && f.state === when && f.stateTime > 0.15) {
+        done = true;
+        while (f.alive) f.takeHit(9, 0, 0);
+      }
+    });
+  }
+  // He runs about under it, and he stands on a ledge three up (its floor is not his).
+  fight(30, (t) => ({ x: Math.sin(t * 1.2) * 5, z: Math.cos(t * 1.2) * 5 }));
+  fight(20, () => ({ x: 0, y: 3, z: 0 }));
+  // Away from him, it goes home.
+  fight(14, (t) => (t < 3 ? { x: 0, z: 0 } : { x: 60, z: 60 }));
+  const all: FireflyState[] = ['idle', 'alert', 'circle', 'runWind', 'run', 'sink', 'spent', 'rise', 'fall', 'grounded', 'dead', 'return'];
+  check('firefly: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
+  check('firefly: the tip of its lantern is drawn exactly where the rules have it, lining up and on a run: a drop of fire appears where the lantern is', offTip < 1e-6, `furthest off ${offTip.toExponential(1)}`);
+  check('firefly: flying about, its lantern still trails where the rules have it', offTipFlying < 0.12, `furthest off ${offTipFlying.toFixed(3)}`);
+  check('firefly: its body is drawn where the rules have it', offPlace < 0.1, `furthest off ${offPlace.toFixed(3)}`);
+  check('firefly: nothing of it ever goes under the floor: body, lantern, wing cases, wings, legs, feelers', low >= -0.005, `lowest ${low.toFixed(3)} (${lowIn})`);
+  check('firefly: nor does its glow go through the floor', glowLow >= -0.005, `lowest ${glowLow.toFixed(3)}`);
+
+  // Each thing it does, held and looked at.
+  const held = (when: FireflyState, at: number, hit?: FireflyState, kill = false): { f: Firefly; m: FireflyModel } => {
+    const f = new Firefly({ x: 0, z: -9, facing: 0, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+    let s = 3;
+    f.rng = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    const m = new FireflyModel();
+    let done = false;
+    for (let i = 0; i < 60 * 60; i++) {
+      f.update(DT, 0, 0, when === 'idle' ? 60 : 0, true);
+      f.drops.length = 0;
+      f.events.length = 0;
+      if (hit && !done && f.state === hit && f.stateTime > 0.6) {
+        done = true;
+        if (kill) while (f.alive) f.takeHit(9, 0, 0);
+        else f.takeHit(1, 0, 0);
+      }
+      m.update(DT, { state: f.state, stateTime: f.stateTime, x: f.x, y: f.y, z: f.z, facing: f.facing, vent: f.vent, light: f.light, floor: f.floor, moving: f.moving });
+      if (f.state === when && f.stateTime >= at) break;
+    }
+    return { f, m };
+  };
+  /** A point of it in its own space (x to its right, y up from the bottom of its body, z forward). */
+  const own = (m: FireflyModel, p: THREE.Vector3): THREE.Vector3 => m.root.worldToLocal(p.clone());
+  const bright = (c: THREE.Color): number => (c.r + c.g + c.b) / 3;
+  {
+    const { f, m } = held('circle', 1);
+    const P = m.parts();
+    const box = measure(m.root).box;
+    const cases = P.cases.map((c) => own(m, c));
+    const chest = own(m, P.chest);
+    check('firefly: it is an insect about the knight\'s size, flying well over his head', box.max.y - box.min.y > 0.7 && box.max.y - box.min.y < 2 && box.min.y - f.floor > 3 && Math.max(box.max.x - box.min.x, box.max.z - box.min.z) < 2.6, size(box));
+    check('firefly: flying, its wing cases stand up and out of the way of its wings', cases.every((c) => c.y - chest.y > 0.35 && Math.abs(c.x) > 0.2) && cases[0].x * cases[1].x < 0, cases.map((c) => `${(c.y - chest.y).toFixed(2)} up, ${Math.abs(c.x).toFixed(2)} out`).join('; '));
+    check('firefly: its lantern hangs behind and below it, lit: bright yellow-green (breathing a little), with a glow round it', own(m, P.tip).z < -0.6 && own(m, P.tip).y < chest.y && P.lantern.g > 0.75 && P.lantern.g > P.lantern.b * 2 && P.halo > 0.05, `#${P.lantern.getHexString()}`);
+    // Its wings beat.
+    let hi = -9;
+    let lo = 9;
+    for (let i = 0; i < 30; i++) {
+      m.update(DT, { state: f.state, stateTime: f.stateTime, x: f.x, y: f.y, z: f.z, facing: f.facing, vent: f.vent, light: f.light, floor: f.floor, moving: f.moving });
+      const w = own(m, m.parts().wings[0]).y;
+      hi = Math.max(hi, w);
+      lo = Math.min(lo, w);
+    }
+    check('firefly: in the air its wings beat', hi - lo > 0.4, `a wing's end goes ${(hi - lo).toFixed(2)} up and down`);
+    const full = bright(P.lantern);
+    const tell = held('runWind', F.runWind * 0.95).m.parts();
+    check('firefly: the tell is in its lantern: it flares far brighter than full, towards white, and its glow swells', bright(tell.lantern) > full * 1.25 && tell.lantern.b > 0.6 && tell.halo > P.halo * 2, `#${tell.lantern.getHexString()} against #${P.lantern.getHexString()}; glow ${tell.halo.toFixed(2)} against ${P.halo.toFixed(2)}`);
+    const dark = held('spent', 0.3);
+    const D = dark.m.parts();
+    check('firefly: spent, its lantern is dark and has no glow', bright(D.lantern) < full * 0.2 && D.halo === 0, `#${D.lantern.getHexString()}`);
+    const chestD = own(dark.m, D.chest);
+    const casesD = D.cases.map((c) => own(dark.m, c));
+    check('firefly: spent, it sags: its abdomen hangs straight down under it, clear of the floor, and its wing cases droop', own(dark.m, D.tip).y < chestD.y - 0.5 && Math.abs(own(dark.m, D.tip).z - own(dark.m, D.abdomen[0]).z) < 0.3 && D.tip.y - dark.f.floor > 0.05 && casesD.every((c, i) => c.y - chestD.y < cases[i].y - chest.y - 0.15), `tip ${(D.tip.y - dark.f.floor).toFixed(2)} off the floor; cases ${casesD.map((c) => (c.y - chestD.y).toFixed(2)).join(', ')} up`);
+    const filling = held('spent', F.rest * 0.9).m.parts();
+    check('firefly: its lantern fills again as it hangs: nearly full by the time it goes up', bright(filling.lantern) > full * 0.7 && bright(filling.lantern) > bright(D.lantern) * 3 && filling.halo > 0, `#${filling.lantern.getHexString()}`);
+  }
+  {
+    const { f, m } = held('grounded', 0.8, 'spent');
+    const P = m.parts();
+    const lo = lowest(m.root) - f.floor;
+    const feet = P.feet.map((p) => p.y - f.floor);
+    check('firefly: knocked down, it lies on its belly on the floor (not over it, not in it), its feet on the floor round it, its lantern all but out', lo > -0.005 && lo < 0.03 && Math.max(...feet) < 0.08 && Math.min(...feet) > -0.005 && P.chest.y - f.floor < 0.45 && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.2, `lowest ${lo.toFixed(3)}; feet ${Math.min(...feet).toFixed(2)} to ${Math.max(...feet).toFixed(2)}; chest ${(P.chest.y - f.floor).toFixed(2)} up`);
+  }
+  {
+    const { f, m } = held('dead', 1.2, 'spent', true);
+    const P = m.parts();
+    const lo = lowest(m.root) - f.floor;
+    const feet = P.feet.map((p) => p.y);
+    check('firefly: dead, it lies on its back on the floor, its legs curled up over it, its lantern out', lo > -0.005 && lo < 0.03 && Math.min(...feet) > P.chest.y && P.halo === 0 && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.06, `lowest ${lo.toFixed(3)}; feet ${(Math.min(...feet) - P.chest.y).toFixed(2)} above its chest`);
+    for (let i = 0; i < 90; i++) m.update(DT, { state: 'dead', stateTime: 1.2 + i * DT, x: f.x, y: f.y, z: f.z, facing: f.facing, vent: f.vent, light: 0, floor: f.floor, moving: 0 });
+    check('firefly: ...and then it shrivels away to nothing', m.root.scale.x < 0.01);
+  }
+  {
+    // Cut out of the air it tumbles, and is never under the floor on the way down or when it lands.
+    const { m } = held('fall', F.fallTime * 0.5, 'circle');
+    const roll = (m as unknown as { frame: THREE.Object3D }).frame.rotation.z;
+    check('firefly: cut out of the air, it tumbles', Math.abs(roll) > 1, `rolled ${roll.toFixed(1)}`);
   }
 }
 

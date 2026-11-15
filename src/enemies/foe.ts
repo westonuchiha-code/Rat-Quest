@@ -37,7 +37,7 @@ export interface BodyPart {
 
 /** What the combat code needs from any enemy, whatever kind it is. */
 export interface Foe {
-  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant';
+  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly';
   x: number;
   y: number;
   z: number;

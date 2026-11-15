@@ -2,6 +2,7 @@ import { TUNING } from '../data/tuning';
 import type { HitResult, PlayerController } from '../player/controller';
 import type { BodyPart, Foe } from '../enemies/foe';
 import type { Glob } from '../enemies/toad';
+import type { Flames } from '../world/embers';
 import { TOAD } from '../enemies/toad';
 import type { Crate } from '../world/crates';
 
@@ -246,4 +247,20 @@ export function resolveGlobs(player: PlayerController, globs: Glob[], events: Co
     burst.push(g);
   }
   return burst;
+}
+
+/**
+ * A firefly's flames against the rat. Whoever stands in a patch that is burning is burned: no roll and no shield helps
+ * (it is the floor that is on fire), and he is thrown back from its middle. A jump clears them. In the Ember Helm he
+ * walks through. Returns true if they burned him.
+ */
+export function resolveFlames(player: PlayerController, flames: Flames, damage: number, events: CombatEvents): boolean {
+  if (player.dead || player.gear.fireproof || damage <= 0) return false;
+  const p = player.position;
+  const f = flames.burning(p.x, p.y, p.z, TUNING.rat.radius);
+  if (!f) return false;
+  const result = player.takeBurn(f.x, f.z, damage);
+  if (result !== 'hit' && result !== 'killed') return false;
+  events.playerResult = result;
+  return true;
 }

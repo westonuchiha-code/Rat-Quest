@@ -538,6 +538,60 @@ before, but only in words, and only for a world you had picked that was still sh
   The d-pad fix is in main.ts and is checked only by the pretend-controller script, not by a test in the suite.
 - **Not done**: no real controller, phone or TV. R and F are not shown anywhere but the help line and the marker.
 
+## New enemy: the Firefly Bomber (2026-11-15)
+A great firefly whose lantern drips fire: the first enemy that never comes at him, and the first whose harm is a
+thing left on the FLOOR. One flies over the west end of the Hollows' Undershelf (`SHELF_FIREFLY`, its air
+`FIREFLY_AIR`: that end of the shelf and out over the chasm; not counted by the gallery's wedge). A piece in the
+level editor ("Firefly Bomber"), a sticker with a flat icon, 15 sliders under "Firefly Bombers".
+- **Rules** `src/enemies/firefly.ts` (kind `firefly`, `FIREFLY` table). hp 7. Its y is the bottom of its body, as the
+  hornet's is. It takes NO turns with the others (no `ready`/`mayAttack`: the director leaves it alone) and has no
+  blow of its own (`attackActive` is always false).
+  - It flies round him 7 off and 4 up: over a jump, inside a double jump (a plunge from a double jump strikes it out
+    of the air: 3 of its 7).
+  - *The tell* (0.7 s): it stops, turns to line up, and its lantern flares white (`light` goes from 1 to 1.8). Its
+    mark (`mark`) follows where he is GOING for 85% of that (it works out where he will be when its middle drop
+    lands, from how fast he is going; never out over a pit), then the line is set.
+  - *The run*: straight along the line at 11 (he runs at 6.2), level, letting three drops go so that they land 2.4
+    apart: before its mark, on it, past it. Each drop leaves from `vent` (the tip of its lantern), drifts down for a
+    second, and leaves a patch of flame 0.95 round that burns 2.8 s.
+  - After two runs its light is SPENT: it sinks to hang 0.7 over floor he can reach (`pickRest`: never over the
+    chasm), dark, for 3.4 s while its lantern fills. That is the opening. A cut knocks it to the floor for 1.3 s
+    (once an opening: another cut as it gets up hurts it but does not put it down again, or a rat who kept swinging
+    could keep it down for good). The sword alone takes 6 of its 7 in one opening, so it is two openings, or one
+    begun with a plunge.
+  - A rat running flat out in a straight line IS burned (it leads him exactly: `lead` 1); one who turns off the line
+    once it is set is not. Standing in a patch costs a heart a second.
+- **The fire** `src/world/embers.ts` (no Three.js): `makeEmber` works out where a drop will land the moment it is
+  let go (`emberLanding`, the same fixed 1/60 steps the fall takes, so it is exact at any frame rate); `stepEmbers`;
+  `Flames` (`burning(x, y, z, radius)`: in it, near its height, and it is burning well). `resolveFlames` in
+  combat.ts: no roll and no shield helps (`PlayerController.takeBurn`, thrown back from the patch's middle); the
+  Ember Helm walks through; a jump clears it. A drop let go over a pit, a wall's top or water has no mark and
+  nothing catches (main.ts).
+- **Drawn** `src/world/emberFx.ts`: the falling drop; a ring on the floor where it WILL land, as wide as the flames
+  it will leave, from the moment it is let go (it fills as the drop falls); the flames (tongues inside the patch,
+  as high as it is hot). The flames, the falling drops and each firefly's lantern LIGHT THE ROOM round them:
+  `chamber.updateLights(time, focus, extra)` takes lights that come and go.
+- **Model** `src/enemies/fireflyModel.ts`: a soft dark body, a flat orange hood with a black spot over a small head
+  with big eyes, wing cases edged in yellow that stand up out of the way when it flies, clear wings that beat, six
+  thin legs, and an abdomen whose last three rings are the lantern. THE TIP OF THE LANTERN COMES FROM THE RULES:
+  lining up and on a run it is drawn exactly on `vent` (the body is moved the last hair), so a drop appears where
+  the lantern is. The lantern's colour is its `light` (dark, yellow-green, white-hot). Unshaded colours (the
+  lantern, the marks on the floor) come out BRIGHTER on screen than their numbers (the renderer converts them, the
+  PS1 shader's colours it leaves alone): they are chosen for how they look, and say so where they are set.
+- **Sounds** (its own): `fireflyHum` (its wings, a loop: a soft whirr, nothing like the hornet's rasp),
+  `fireflyBlink` (the tell: glass notes quickening, as long as the tell; also, short, when it sees him and when it
+  goes back up), `emberDrop`, `emberBurst` (a drop catching), `fireflyFade` (spent), `fireflyHurt`, `fireflyDie`.
+  Its flames crackle with the braziers' `fire` loop.
+- **Tests**: tests/firefly.ts (69: in the Hollows' real cave with the real controller, combat and falling fire: the
+  tell, the run, where every drop lands against where it was marked, leading a runner, the flames against shield,
+  roll, jump and helm, the opening and what it is worth, its end, a minute's fight three times over), tests/models.ts
+  (18 looks checks), tests/audio.ts (7). Sheet: `#firefly` (`&only=N`, 0 to 13; 12 and 13 are its fire). Every state
+  looked at alone from three sides, and a fight watched in the built game.
+- **Found on the way**: a flier stopped by a ledge under it tried one way only and stuck there (it now slides along
+  whatever stops it; the hornet's `moveTo` still has the older form and has not shown the fault).
+- **Not done**: nobody has fought it by hand or heard it; every number is a first guess. Only one is placed. Its fire
+  does nothing to other creatures or to crates.
+
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
 beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.

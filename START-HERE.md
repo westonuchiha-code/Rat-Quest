@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,217 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,319 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -210,8 +210,10 @@ He gave this list himself; work through it, do not ask about it again:
    Built to that so far: the Orchid Mantis, the **Stag Knight**, the **Hornet Lancer** (a flyer: one over the west
    end of the Foundry's dock, the first he meets; one over the east bank of the Hollows; one over the east plate of
    the Keep's courtyard) and the **Ant Pikeman** (fights in pairs: two on the north floor of the Hollows, two in the
-   Keep's inner ward; HANDOFF has a section on each, and one on where they were placed and why they do not count
-   towards the older "beat every beast" wedges). After them, an idea (an insect, not built; do not ask): a firefly bomber.
+   Keep's inner ward) and the **Firefly Bomber** (a flyer that never comes at him: it drops fire where he is GOING,
+   and hangs low and dark when its light is spent; one over the west end of the Hollows' Undershelf). HANDOFF has a
+   section on each, and one on where they were placed and why they do not count towards the older "beat every
+   beast" wedges.
    (A spider was on the earlier list; the owner asked for insects.)
    Lessons from building these, for the next: (1) give a weapon-holder its WEAPON's place first and lay the arms to
    it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of
@@ -246,5 +248,5 @@ stick means. Lock-on pressed with nobody near brings the view round behind him. 
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
 Also open: fire and iron-bound crates in the level builder;
-playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, Ant Pikemen, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
+playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, Ant Pikemen, Firefly Bomber, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

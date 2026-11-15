@@ -15,6 +15,7 @@ import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { HORNET } from '../enemies/hornet';
 import { ANT } from '../enemies/ant';
+import { FIREFLY } from '../enemies/firefly';
 import { GRIM } from '../enemies/grimsqueak';
 import { BALANCE } from '../data/balance';
 
@@ -202,6 +203,21 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Ant Pikemen', path: 'ant.biteWind', label: 'Warning before a bite', min: 0.1, max: 1.2, step: 0.02 },
   { group: 'Ant Pikemen', path: 'ant.biteDamage', label: 'Bite damage (hearts)', min: 0, max: 5, step: 1 },
   { group: 'Ant Pikemen', path: 'ant.reel', label: 'Open after a perfect guard', min: 0.3, max: 5, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.hp', label: 'Health', min: 1, max: 12, step: 1, later: 'from the next level' },
+  { group: 'Firefly Bombers', path: 'firefly.height', label: 'How high it flies', min: 2.5, max: 6, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.standOff', label: 'How far off it flies round him', min: 3, max: 12, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.runWind', label: 'Warning before a bombing run', min: 0.2, max: 2, step: 0.05 },
+  { group: 'Firefly Bombers', path: 'firefly.runTrack', label: 'How much of that warning it follows him for', min: 0, max: 1, step: 0.05 },
+  { group: 'Firefly Bombers', path: 'firefly.lead', label: 'How far ahead of him it aims (0 where he is, 1 where he will be)', min: 0, max: 1.2, step: 0.05 },
+  { group: 'Firefly Bombers', path: 'firefly.runSpeed', label: 'Run speed', min: 6, max: 20, step: 0.5 },
+  { group: 'Firefly Bombers', path: 'firefly.bombs', label: 'Drops of fire in a run', min: 1, max: 5, step: 1 },
+  { group: 'Firefly Bombers', path: 'firefly.bombGap', label: 'How far apart they land', min: 1, max: 5, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.flameRadius', label: 'How wide the flames are', min: 0.4, max: 2, step: 0.05 },
+  { group: 'Firefly Bombers', path: 'firefly.flameTime', label: 'How long the flames burn', min: 0.5, max: 8, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.burn', label: 'Burn damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'Firefly Bombers', path: 'firefly.runs', label: 'Runs before its light is spent', min: 1, max: 6, step: 1 },
+  { group: 'Firefly Bombers', path: 'firefly.rest', label: 'Hanging low with its light out (the opening)', min: 0.5, max: 8, step: 0.1 },
+  { group: 'Firefly Bombers', path: 'firefly.grounded', label: 'Time on the floor when struck', min: 0.3, max: 4, step: 0.1 },
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
   { group: 'Flitters', path: 'bat.hearQuiet', label: 'Hears sneaking from', min: 0, max: 8, step: 0.25 },
@@ -252,7 +268,7 @@ export const TWEAKS: TweakDef[] = [
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
   { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Fighting', 'Camera'] },
-  { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen'] },
+  { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },
 ];
@@ -264,7 +280,7 @@ export const TWEAK_GROUPS: string[] = (() => {
 })();
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, firefly: FIREFLY as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {
