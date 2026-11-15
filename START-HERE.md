@@ -221,7 +221,52 @@ to find"). Eight things where there were thirty-two: five caps and three HUNKS o
   second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
 The other fifteen levels are as they were.
 
-## Research the owner has asked for (2026-11-15: DONE; reports in `reports/`, notes in `research_notes/`)
+## The Club, more alive (the owner, 2026-11-15: ASKED FOR, NOT STARTED. On the list.)
+His words (dictated, so read past the slips: "busy days" and "dizzy Dave's" are Dizzy Dave's; "conquer" is Conker):
+- "I want the main room you know where dizzy Dave and everybody else hangs out I want it to be a little more
+  populated I'm thinking like I want it to feel almost like the Star Wars Cantina or maybe a better example would be
+  like the bar at the beginning of Conker's Bad Fur Day".
+- "I want to have more props and objects and maybe have the characters have sort of idle animations where ... they're
+  kind of doing something maybe it looks like they're talking to each other you know like have maybe two characters
+  drinking at a table".
+- "you're going to end up having to create more characters but you can do like you did with the others where you just
+  take an animal make it into a cute character and then you can make two of them by changing some textures and a
+  little bit about the model". **"Ideas for animals are turtles, a ferret, maybe an owl, a fox could be cool."**
+- "go crazy with the designs try to make some cool looking stuff ... think about the Legend of Zelda, think about
+  Dark Souls and just the variety of different types of characters and enemies".
+- **Enemies can be regulars too**: "those little things that shoot coconuts or whatever at you [in] Ocarina of Time
+  those things can be friendly once you beat them they ... talk to you like people so maybe one of the ants that's an
+  enemy can also just kind of be a chill dude drinking at dizzy Dave's Bar".
+- **It grows**: "it would be even cooler actually if the room sort of grows over time so the more you clear out areas
+  and maybe some of the little mini bosses will come hang out there or maybe like just once you've beaten enough ants
+  like some of them just start hanging around ... to sort of show growth in the world".
+- **But it is full from the first minute. This is the rule of the whole job**: "I want it to feel pretty alive
+  regardless cuz I don't want people to have to like earn the reward of a world that feels good I don't want to just
+  give them an empty world to have to fill themselves I want it to feel like a full world that gains extras over
+  time."
+What is there now, for whoever starts it: the Club is the hub in `src/levels/kingdom.ts` (level id `hub`), with six
+characters: Dizzy Dave (the pigeon behind the bar), Mellow Mort and Pip (mice), Wren and Finch (birds), and
+Grimsqueak hidden. Characters are `src/npc/npc.ts`: four builds (`NpcKind`: mouse, bird, villain, pigeon), and
+`lookOf(kind, name)` gives two of one build different looks, which is the trick he means. They stand still and talk
+when spoken to: none of them DOES anything. The furniture so far is the couch, the fire bowls, barrels, the speaker.
+What it will take (our notes, nothing decided): new builds (turtle, ferret, owl, fox, and a friendly ant made from
+the Ant Pikeman's own model); a way for a character to be doing something on a loop (drinking, talking in a pair,
+leaning, dozing, playing cards), which is an idle animation plus a prop in the paw; tables, stools, mugs, a card
+table, more of the bar; a table of "who is here once X is done" read from the save (areas cleared, a boss beaten, a
+count of ants beaten), on top of a room that is already busy with nothing done. Each new creature gets the same care
+as an enemy: looked at from all sides on the model sheet before it goes in (see the spear-through-the-head note).
+These are OUR characters in that spirit: not the cantina's or that bar's own people, places or jokes.
+
+## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
+**TWO MORE ASKED FOR 2026-11-15, NOT STARTED:** "Conker's Bad Fur Day from the Nintendo 64 is probably a really good
+thing for you to research or add to your research for this game specifically because I think they're going to end up
+being very similar in a lot of ways. Also Rayman 2 the one that was on the Nintendo 64 the 3D one that one is also a
+good game to reference for this game." Same shape as the others: real sources (the makers' own interviews and
+postmortems first), written up in `reports/` with the notes in `research_notes/`, each ending in what it means for
+THIS game. For Conker, look hardest at its opening bar and hub (how a small room is made to feel full: who is in
+it, what they are doing, how it changes), its context-sensitive pads, and how its humour is carried by animation;
+for Rayman 2, its movement and its linear, set-piece levels (the slides and the rides are the nearest thing to our
+downhill level). Do the Conker one BEFORE building the Club job above: it is the reference he named for it.
 He asked for these to be added to the list. Each is in-depth research from real sources (interviews with the people
 who made the games, postmortems, design analyses), written up in the repo with its sources, and each write-up ends
 with what it means for THIS game: things to do, not just things learned. Home: notes in `research_notes/<title>/`, reports in `reports/`.
