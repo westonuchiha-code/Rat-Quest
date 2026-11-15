@@ -270,7 +270,21 @@ const sneakOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerI
   check('it takes a third of a second or so: a score of frames to be seen in', frames >= 18 && frames <= 26, `${frames} frames`);
   check('he hops: off the ground and down again', hop > 0.2 && rat.hopHeight === 0, `${hop.toFixed(2)} up at the top`);
   check('the shield goes DOWN to the ground all the way (never back up), trailing smears as it goes', rose < 0.02 && smears === 2, `rose ${rose.toFixed(3)} at most; ${smears} smears`);
-  check('...and ends lying under his feet, the smears gone', rat.mountProgress < 0 && rat.smearsShown === 0 && rat.boardShown && Math.abs(rat.boardHeight() - 0.03) < 0.01, `${rat.boardHeight().toFixed(3)} up`);
+  check('...and ends lying under his feet, the smears gone', rat.mountProgress < 0 && rat.smearsShown === 0 && rat.boardShown && Math.abs(rat.boardHeight() - 0.056) < 0.01, `${rat.boardHeight().toFixed(3)} up`);
+  // Which way up it lies: the wood of its back to his feet, its painted face to the ground.
+  {
+    const parts = rat as unknown as { boardFlat: THREE.Object3D; root: THREE.Object3D };
+    parts.root.updateMatrixWorld(true);
+    const mesh = parts.boardFlat.children[0];
+    const q = mesh.getWorldQuaternion(new THREE.Quaternion());
+    const face = new THREE.Vector3(0, 0, 1).applyQuaternion(q); // (the shield's painted face looks along its own +z)
+    const point = new THREE.Vector3(0, -1, 0).applyQuaternion(q); // (...and its point is at its own -y)
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(parts.root.getWorldQuaternion(new THREE.Quaternion()));
+    check('he stands on the wood of its back: its painted, curved face is down on the ground, its point forward', face.y < -0.99 && point.dot(fwd) > 0.99, `face ${face.y.toFixed(2)} up, point ${point.dot(fwd).toFixed(2)} forward`);
+    const box = new THREE.Box3().setFromObject(mesh);
+    const ground = parts.root.getWorldPosition(new THREE.Vector3()).y;
+    check('...and it is on the ground, not in it: its boss just clear of the stone', box.min.y - ground > 0 && box.min.y - ground < 0.02, `${(box.min.y - ground).toFixed(3)} clear`);
+  }
   // Stepping off: it comes back up onto his arm.
   let up = 0;
   let offFrames = 0;

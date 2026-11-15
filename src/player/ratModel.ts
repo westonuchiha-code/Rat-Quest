@@ -371,6 +371,15 @@ export const RIDE_MOUNT = 0.36; // seconds, start to settled
 const RIDE_MOUNT_UNDER = 0.66;
 export const RIDE_MOUNT_LAND = 0.8;
 const RIDE_HOP = 0.3; // how high the hop lifts him
+/**
+ * How the shield lies under his feet: its painted, curved FACE down on the ground, where it slides, and its flat
+ * wooden back up, where he stands; its point forward. (The owner, 2026-11-15: "the wood should be the part that he's
+ * standing on and the curved part of The Shield is where he should be sliding on ... he's on it upside down.")
+ * A quarter turn lays it down, a half turn about its own length turns it over.
+ */
+const BOARD_LIES = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2));
+/** ...and how far above the ground its middle is, lying so: its boss, the lowest of it, just clear of the stone. */
+const BOARD_Y = 0.056;
 /** Stepping off: the shield is kicked up from the ground onto his arm. */
 export const RIDE_DISMOUNT = 0.22;
 /** The hop: knees up, the shield arm thrown down and forward at the ground, the sword arm high for balance. */
@@ -624,11 +633,11 @@ export class RatModel {
     stowedShield.position.set(0, 0, 0);
     this.backShield.add(stowedShield);
     this.chest.add(this.backSword, this.backShield);
-    // Under his feet, for the ride: lying flat, its point forward. It leans with him.
+    // Under his feet, for the ride: lying face down, its point forward. It leans with him.
     const boardMesh = shieldMesh.clone();
     boardMesh.scale.setScalar(0.92);
     boardMesh.position.set(0, 0, 0);
-    this.boardFlat.rotation.x = -Math.PI / 2;
+    this.boardFlat.quaternion.copy(BOARD_LIES);
     this.boardFlat.add(boardMesh);
     this.board.add(this.boardFlat);
     this.board.visible = false;
@@ -639,7 +648,7 @@ export class RatModel {
       const mat = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
       const root = new THREE.Group();
       const flat = new THREE.Group();
-      flat.rotation.x = -Math.PI / 2;
+      flat.quaternion.copy(BOARD_LIES);
       const mesh = new THREE.Mesh(shieldMesh.geometry, mat);
       mesh.scale.setScalar(0.92);
       flat.add(mesh);
@@ -988,7 +997,7 @@ export class RatModel {
     this.board.scale.setScalar(this.boardScale);
     if (kicking) {
       // Stepping off: it comes up off the ground, turning over, onto his arm.
-      this.board.position.set(0, 0.03, 0.01);
+      this.board.position.set(0, BOARD_Y, 0.01);
       this.board.rotation.set(0, 0, 0);
       this.boardRest.p.copy(this.board.position);
       this.boardRest.q.copy(this.board.quaternion);
@@ -999,7 +1008,7 @@ export class RatModel {
       const r = ctx.ride ?? { steer: 0, flip: -1, air: false };
       const flip = r.flip >= 0 ? Math.min(1, r.flip) : 0;
       // It sits under his feet (which tuck up in the air), and in a kickflip turns once round its length, popping up.
-      this.board.position.set(0, 0.03 + this.rideAir * 0.095 + Math.sin(flip * Math.PI) * 0.05, 0.01);
+      this.board.position.set(0, BOARD_Y + this.rideAir * 0.095 + Math.sin(flip * Math.PI) * 0.05, 0.01);
       // (He leans most of the way with the slope; the shield lies the whole way on it.)
       // (Grinding, it is turned across the way he is going: its middle is on the edge.)
       this.board.rotation.y = this.rideGrind * (Math.PI / 2);
@@ -1143,7 +1152,7 @@ export class RatModel {
 
   private readonly boardRest = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
   private readonly boardAim = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
-  private readonly swingTmp = { p: new THREE.Vector3(), q: new THREE.Quaternion(), spin: new THREE.Quaternion(), m: new THREE.Matrix4(), s: new THREE.Vector3(), flat: new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0)) };
+  private readonly swingTmp = { p: new THREE.Vector3(), q: new THREE.Quaternion(), spin: new THREE.Quaternion(), m: new THREE.Matrix4(), s: new THREE.Vector3(), flat: BOARD_LIES.clone().invert() };
   private static readonly LONG = new THREE.Vector3(0, 0, 1);
 
   /**
@@ -1158,7 +1167,7 @@ export class RatModel {
       t.m.premultiply(o.matrix);
     }
     t.m.decompose(p, q, t.s);
-    // (The one under his feet is laid flat by a quarter turn of its own: take that out.)
+    // (The one under his feet is laid down and turned over by a turn of its own: take that out.)
     q.multiply(t.flat);
     // (`lean` is lifted and stretched by the hop; the shield is not.)
     p.y = p.y * this.hopStretch + this.hopY;

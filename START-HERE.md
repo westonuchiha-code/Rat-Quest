@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,681 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,683 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -426,6 +426,12 @@ animation better for whenever he hops on his shield right now it just seems like
   own switch).
 - `tests/ride.ts` checks it: the shield starts where it was, only ever goes down, the smears show, he hops and lands.
 - Seen frame by frame in the viewer and at quarter speed in the running game. **Not seen at full speed by a person.**
+
+### Which way up the shield lies (the owner, 2026-11-15)
+"I think the wood should be the part that he's standing on and the curved part of The Shield is where he should be
+sliding on ... I think he's on it upside down." So: its painted, curved FACE is down on the ground and its flat
+wooden BACK is up under his feet, point forward (`BOARD_LIES` and `BOARD_Y` in ratModel.ts; `tests/ride.ts` checks
+which way it faces and that its boss is just clear of the ground). Do not turn it back.
 
 ### Grinding is DONE (2026-11-15; asked for by the owner the same day, his words are in the next section)
 Riding, **STOW** (triangle / north on a pad, H on the keyboard: it has nothing else to do while the shield is under
