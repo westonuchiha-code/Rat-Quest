@@ -430,7 +430,8 @@ const YARD = { x: spec.x + 8, z: spec.z };
 }
 {
   // Its mark is never out over the chasm: a rat running at the edge is aimed at on the floor he can stand on.
-  const w = fight(-16, 34);
+  // (He starts just west of the fire bowl that stands at -16, 34: he used to be started inside it.)
+  const w = fight(-17.6, 34);
   let off = 0;
   let marks = 0;
   play(w, (q) => {

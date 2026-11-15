@@ -2,6 +2,7 @@
 // a brazier or a crate, it ended up inside his head. Now something LOW in the way does not pull it in: it rises to look
 // over it, from as far off as ever. A wall still pulls it in, but pulled in close it goes up over his head and looks
 // ahead of him. It never turns to do either. All of it against the real levels' own solid boxes.
+import { BRAZIER } from '../src/world/layout';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { FollowCamera, sight } from '../src/camera/followCamera';
@@ -104,9 +105,10 @@ function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => TH
 
 // ---- A brazier behind him (the Hollows, where the west path comes out: the one the owner's pikemen fought beside) ----
 {
-  const B = { x: -26, z: -28, half: 0.4, top: 1.1 };
-  const box = hollows.find((b) => Math.abs((b.min.x + b.max.x) / 2 - B.x) < 0.01 && Math.abs((b.min.z + b.max.z) / 2 - B.z) < 0.01 && b.max.y < 1.5);
-  check('the brazier there is a small solid thing: under a unit wide, a little over a unit high', !!box && Math.abs(box.max.x - box.min.x - 0.8) < 0.01 && Math.abs(box.max.y - B.top) < 0.01);
+  // (Its bowl is the widest and highest of it: that is what stands between him and the view.)
+  const B = { x: -26, z: -28, half: BRAZIER.bowl * 0.9, top: BRAZIER.rim };
+  const box = hollows.find((b) => Math.abs((b.min.x + b.max.x) / 2 - B.x) < 0.01 && Math.abs((b.min.z + b.max.z) / 2 - B.z) < 0.01 && Math.abs(b.max.y - B.top) < 0.01);
+  check('the brazier there is a low solid thing: its bowl a little over a unit wide, its rim a little over a unit high', !!box && Math.abs(box.max.x - box.min.x - B.half * 2) < 0.01 && B.half * 2 > 1 && B.half * 2 < 1.4 && B.top > 1 && B.top < 1.3);
   // He stands with his back against it; the view is behind him, beyond it.
   const z = B.z + B.half + TUNING.rat.radius + 0.02;
   const before = oldView();

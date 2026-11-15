@@ -1,4 +1,5 @@
 import { rulerStrip, signBoard } from './signs';
+import { buildBrazier } from './brazierModel';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -8,7 +9,7 @@ import { Aabb, makeAabb } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
-import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, moverOffset } from './layout';
+import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset } from './layout';
 import { TUNING } from '../data/tuning';
 
 /** A portcullis in the room. `open()` lifts it; once it is up its collider is gone. */
@@ -209,6 +210,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const waterMat = createPs1Material({ tex: getTexture('sludge') });
   const trimMat = mat('archTrim');
   const plainMat = createPs1Material({ lit: true });
+  let ironMaterial: THREE.ShaderMaterial | null = null;
+  /** Wrought iron for things that stand in the room (a fire bowl): its picture, lifted, so that it is iron and not a black shape in a dark hall. */
+  const ironMat = (): THREE.ShaderMaterial => (ironMaterial ??= createPs1Material({ tex: getTexture('wroughtIron'), color: new THREE.Color().setRGB(2.1, 2.05, 2.0) }));
+  let coalMaterial: THREE.ShaderMaterial | null = null;
+  /** The coals in a fire bowl: their picture, unlit, so the fire between the lumps glows in the dark. */
+  const coalMat = (): THREE.ShaderMaterial => (coalMaterial ??= createPs1Material({ tex: getTexture('coals'), lit: false }));
   const darkMat = createPs1Material({});
   /** Cloth seen from both sides (banners). */
   const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
@@ -240,7 +247,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     if (b.kind === 'barrel') {
       // A barrel: bulging staves, two iron hoops, a lid. Its collider stays the box.
       const r = Math.min(w, d) / 2;
-      const body = new THREE.CylinderGeometry(r * 0.9, r * 0.9, h, 10, 4);
+      // (Drawn inside its box all the way round: its bulge and its hoops used to stand a little proud of it.)
+      const body = new THREE.CylinderGeometry(r * 0.86, r * 0.86, h, 10, 4);
       const p = body.attributes.position;
       for (let i = 0; i < p.count; i++) {
         const yy = p.getY(i) / (h / 2);
@@ -253,14 +261,14 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const mesh = addMesh(body, mat(b.skin ?? 'planks'), cx, cy, cz);
       const parts: THREE.BufferGeometry[] = [];
       for (const yy of [-0.3, 0.3]) {
-        const hoop = new THREE.CylinderGeometry(r * 1.06, r * 1.06, 0.1, 10, 1, true);
+        const hoop = new THREE.CylinderGeometry(r * 0.99, r * 0.99, 0.1, 10, 1, true);
         hoop.translate(0, yy * h, 0);
         parts.push(hoop);
       }
       const hoopGeo = bakeVertexColor(mergeAll(parts), 0x3a3a40);
       const hoops = new THREE.Mesh(hoopGeo, plainMat);
       mesh.add(hoops);
-      const lid = new THREE.CircleGeometry(r * 0.9, 10);
+      const lid = new THREE.CircleGeometry(r * 0.86, 10);
       lid.rotateX(-Math.PI / 2);
       lid.translate(0, h / 2 + 0.005, 0);
       bakeVertexColor(lid, 0x8a6040);
@@ -388,6 +396,46 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         }
       }
     });
+  };
+
+  // ---- The ceiling: over everything inside the outer walls; and the walls carried on up to it where it is higher. ----
+  const ceiling = ceilingOf(layout.solids as Box[]);
+  if (ceiling) {
+    const skin = (ceiling.skin ?? DEFAULT_SKIN.wall) as TextureName;
+    const tile = TILE[skin] ?? 2;
+    const w = ceiling.x1 - ceiling.x0;
+    const d = ceiling.z1 - ceiling.z0;
+    const cx = (ceiling.x0 + ceiling.x1) / 2;
+    const cz = (ceiling.z0 + ceiling.z1) / 2;
+    const cuts = (len: number): number => Math.min(32, Math.max(1, Math.ceil(len / 3)));
+    // (Seen from underneath only: from above, as in the level builder, it is not there.)
+    const roof = new THREE.PlaneGeometry(w, d, cuts(w), cuts(d));
+    roof.rotateX(Math.PI / 2);
+    roof.translate(cx, ceiling.y, cz);
+    applyWorldUvs(roof, tile);
+    bakeVertexColor(roof, 0x9c9c92, false);
+    addMesh(roof, mat(skin), 0, 0, 0);
+    const band = ceiling.y - ceiling.wallTop;
+    if (band > 0.05) {
+      const side = (len: number, x: number, z: number, yaw: number): void => {
+        const g = new THREE.PlaneGeometry(len, band, cuts(len), Math.max(1, Math.ceil(band / 3)));
+        g.rotateY(yaw);
+        g.translate(x, ceiling.wallTop + band / 2, z);
+        applyWorldUvs(g, tile);
+        bakeVertexColor(g, 0xb4b4aa, false);
+        addMesh(g, mat(skin), 0, 0, 0);
+      };
+      side(w, cx, ceiling.z0, 0);
+      side(w, cx, ceiling.z1, Math.PI);
+      side(d, ceiling.x0, cz, Math.PI / 2);
+      side(d, ceiling.x1, cz, -Math.PI / 2);
+    }
+  }
+  /** What a hanging thing at (x, y, z) hangs from: the underside of whatever is over it, or the ceiling. */
+  const roofOver = (x: number, y: number, z: number): number => {
+    let best = ceiling ? ceiling.y : y + 8;
+    for (const b of colliders) if (b.min.y > y && b.min.y < best && x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z) best = b.min.y;
+    return best;
   };
 
   // ---- Decor: drawn only. ----
@@ -675,9 +723,32 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       pt.rotation.y = d.yaw;
       group.add(pt);
     } else if (d.kind === 'lamp') {
-      const lamp = new THREE.BoxGeometry(0.9, 0.35, 0.5);
-      bakeVertexColor(lamp, 0xfff0b0, false);
-      addMesh(lamp, darkMat, d.x, d.y, d.z);
+      // A lantern hung by a rod from whatever is over it: an iron cap and frame round panes of warm light.
+      // (It used to be a bright block floating in the air, hung from nothing.)
+      const iron = 0x2c2c32;
+      const parts: THREE.BufferGeometry[] = [];
+      const piece = (g: THREE.BufferGeometry, x: number, y: number, z: number): void => {
+        g.translate(x, y, z);
+        parts.push(g);
+      };
+      const top = roofOver(d.x, d.y + 0.6, d.z);
+      const rod = new THREE.BoxGeometry(0.05, Math.max(0.05, top - (d.y + 0.52)), 0.05);
+      piece(rod, 0, (top + d.y + 0.52) / 2 - d.y, 0);
+      piece(new THREE.BoxGeometry(0.22, 0.05, 0.22), 0, top - d.y - 0.025, 0); // the plate it is fixed to
+      const ring = new THREE.TorusGeometry(0.07, 0.02, 4, 6);
+      piece(ring, 0, 0.48, 0);
+      const cap = new THREE.ConeGeometry(0.4, 0.22, 4, 1);
+      cap.rotateY(Math.PI / 4);
+      piece(cap, 0, 0.33, 0);
+      piece(new THREE.BoxGeometry(0.56, 0.05, 0.56), 0, 0.2, 0); // the cap's brim
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) piece(new THREE.BoxGeometry(0.05, 0.42, 0.05), sx * 0.22, -0.02, sz * 0.22);
+      piece(new THREE.BoxGeometry(0.52, 0.06, 0.52), 0, -0.25, 0); // the floor of it
+      piece(new THREE.BoxGeometry(0.1, 0.1, 0.1), 0, -0.32, 0); // a knob underneath
+      addMesh(bakeVertexColor(mergeAll(parts), iron), plainMat, d.x, d.y, d.z);
+      // The light itself: the panes, a little inside the frame.
+      const panes = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+      bakeVertexColor(panes, 0xfff0b0, false);
+      addMesh(panes, darkMat, d.x, d.y - 0.02, d.z);
       lightDefs.push({ x: d.x, y: d.y - 0.5, z: d.z, r: 10, color: new THREE.Color(0xffc860), power: 0.8, flash: 0, flicker: 0.06, phase: d.x * 1.3 + d.z });
     } else if (d.kind === 'light') {
       // A little post with a bulb on top; it glows in its colour, and flashes if it is a warning light.
@@ -722,22 +793,15 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       web.rotation.y = d.yaw;
       group.add(web);
     } else if (d.kind === 'brazier') {
-      const bowl = new THREE.CylinderGeometry(0.55, 0.3, 0.45, 8, 1);
-      bakeVertexColor(bowl, 0x5a5650);
-      addMesh(bowl, plainMat, d.x, d.y + 0.85, d.z);
-      const stem = new THREE.CylinderGeometry(0.12, 0.2, 0.65, 6, 1);
-      bakeVertexColor(stem, 0x4a4640);
-      addMesh(stem, plainMat, d.x, d.y + 0.33, d.z);
-      const flame = new THREE.ConeGeometry(0.42, 1.0, 6, 1);
-      bakeVertexColor(flame, 0xffb030, false);
-      const col = flame.attributes.color;
-      for (let i = 0; i < col.count; i++) {
-        const top = flame.attributes.position.getY(i) > 0.3;
-        col.setXYZ(i, top ? 1 : 1, top ? 0.95 : 0.45, top ? 0.4 : 0.05);
-      }
-      const fm = addMesh(flame, darkMat, d.x, d.y + 1.4, d.z);
-      flames.push({ mesh: fm, base: d.y + 1.4, phase: d.x * 3.1 + d.z * 1.7 });
-      lightDefs.push({ x: d.x, y: d.y + 1.6, z: d.z, r: 9, color: new THREE.Color(0xff8a30), power: 0.95, flash: 0, flicker: 0.2, phase: d.x * 3.1 + d.z * 1.7 });
+      // A fire bowl on its stand (brazierModel.ts): stone foot, iron stem and bowl, burnt inside, coals, the fire.
+      const b = buildBrazier({ stone: mat('stone'), iron: ironMat(), char: mat('charred'), coals: coalMat(), flame: darkMat });
+      b.group.position.set(d.x, d.y, d.z);
+      // (Each stands turned a little differently, so a row of them does not look stamped out.)
+      b.group.rotation.y = (d.x * 1.3 + d.z * 0.7) % (Math.PI * 2);
+      group.add(b.group);
+      const phase = d.x * 3.1 + d.z * 1.7;
+      for (const f of b.flames) flames.push({ mesh: f.mesh, base: f.base, phase: phase + f.phase });
+      lightDefs.push({ x: d.x, y: d.y + 1.6, z: d.z, r: 9, color: new THREE.Color(0xff8a30), power: 0.95, flash: 0, flicker: 0.2, phase });
     } else if (d.kind === 'banner') {
       // Hung from a rod; the cloth is a swallow-tailed shape, gold trim down each side and a gold diamond in the middle.
       const pivot = new THREE.Group();

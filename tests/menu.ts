@@ -5,6 +5,8 @@ import { Inventory } from '../src/player/inventory';
 import { doorLetsIn, doorState, doorWords, HUB_DOORS } from '../src/levels/junction';
 import { BALANCE } from '../src/data/balance';
 import type { LevelRow } from '../src/ui/menu';
+import { TweaksPanel } from '../src/ui/tweaksPanel';
+import { JUMP_SETS, TWEAKS, TWEAK_GROUPS, Tweaks, defaultTweak } from '../src/core/tweaks';
 
 const fakeEl = (): Record<string, unknown> => ({
   className: '',
@@ -117,9 +119,12 @@ menu.press('down');
 menu.press('confirm');
 check('LOAD loads and closes the menu', loaded === 1 && !menu.open);
 menu.show(); // still on the SAVE screen, cursor on LOAD
-menu.press('down'); // RESTART
+menu.press('down'); // SETTINGS
+menu.press('down'); // TOOLS
+menu.press('confirm'); // the tools: RESTART (TESTING) is the only one this game has
+check('TOOLS opens a list of its own, and the menu stays up', restarted === 0 && menu.open);
 menu.press('confirm');
-check('restart needs a second confirm', restarted === 0 && menu.open);
+check('restart is there, and needs a second confirm', restarted === 0 && menu.open);
 menu.press('confirm');
 check('the second confirm restarts and closes', restarted === 1 && !menu.open);
 // The level list: the cursor starts on the current level; go down to the second one and select it.
@@ -143,12 +148,17 @@ const desk = new Menu(fakeEl() as unknown as HTMLElement, {
 });
 desk.show();
 for (let i = 0; i < 3; i++) desk.press('tabNext'); // SAVE
-for (let i = 0; i < 3; i++) desk.press('down'); // FULLSCREEN
+for (let i = 0; i < 2; i++) desk.press('down'); // SETTINGS
+desk.press('confirm'); // its own list: CONTROLS, FULLSCREEN, BACK
+desk.press('down'); // FULLSCREEN
 desk.press('confirm');
-check('the fullscreen row toggles fullscreen', fs);
-desk.press('down'); // CONTROLS
+check('the fullscreen row (under SETTINGS) toggles fullscreen', fs);
+desk.press('up'); // CONTROLS
 desk.press('confirm');
 check('the controls row changes nothing', fs && quits === 0 && desk.open);
+desk.press('back');
+check('back leaves SETTINGS for the main list, and does not close the menu', desk.open && quits === 0);
+desk.press('down'); // TOOLS
 desk.press('down'); // QUIT
 desk.press('confirm');
 check('quit needs a second press', quits === 0);
@@ -158,6 +168,72 @@ for (let i = 0; i < 5; i++) desk.press('down');
 desk.press('up');
 desk.press('confirm');
 check('the cursor stops at the last row', quits === 1);
+
+// ---- The SAVE screen is organised: a short main list; the settings on a page of their own, under headings ----
+// (The owner, 2026-11-15: "settings need to be organized better in menu". It was one list of seventeen rows, saving,
+// sound, picture, controls and tools all in a row, scrolling in a small box.)
+{
+  const made: Array<{ innerHTML: string }> = [];
+  (globalThis as unknown as { document: { createElement: () => unknown } }).document.createElement = () => {
+    const el = fakeEl() as unknown as { innerHTML: string };
+    made.push(el);
+    return el;
+  };
+  let sfx = 0.5;
+  let screenWide = true;
+  let opened = '';
+  const m = new Menu(fakeEl() as unknown as HTMLElement, {
+    equipment: new Equipment(null), inventory: new Inventory(null), useItem: () => null,
+    quest: () => ({ name: 'T', goals: [], collectibles: [] }), levels: () => [], goLevel: () => undefined,
+    health: () => ({ hp: 5, max: 5 }), save: () => true, load: () => false, savedAt: () => null,
+    restart: () => undefined, onToggle: () => undefined,
+    audio: { sfx: () => sfx, music: () => 0.5, setSfx: (v: number) => { sfx = v; }, setMusic: () => undefined },
+    rumble: { level: () => 'full', set: () => undefined },
+    fullscreen: () => false, toggleFullscreen: () => undefined, quit: () => undefined, toTitle: () => undefined, openPhoto: () => undefined,
+    openBuilder: () => { opened = 'builder'; }, openTweaks: () => { opened = 'tweaks'; }, openWorkshop: () => { opened = 'workshop'; },
+    extras: [
+      { id: 'quick', group: 'save', label: () => 'LOAD QUICKSAVE', change: () => undefined },
+      { id: 'glyphs', group: 'controls', label: () => 'BUTTON ICONS: AUTO', change: () => undefined },
+      { id: 'screen', label: () => `SCREEN: ${screenWide ? 'WIDE' : '4:3'}`, change: () => { screenWide = !screenWide; } },
+      { id: 'filter', label: () => 'FILTER: OFF', change: () => undefined },
+    ],
+  } as never);
+  const page = (): string => [...made].reverse().map((e) => e.innerHTML).find((h) => typeof h === 'string' && h.includes('rq-acts')) ?? '';
+  const labels = (html: string): string[] => [...html.matchAll(/class="rq-btn[^"]*" data-row="\d+">([^<]*)</g)].map((x) => x[1]);
+  const heads = (html: string): string[] => [...html.matchAll(/class="rq-sub">([^<]*)</g)].map((x) => x[1]);
+  m.show();
+  for (let i = 0; i < 3; i++) m.press('tabNext'); // SAVE
+  const main = labels(page());
+  check('the main list is short: saving, then SETTINGS and TOOLS, then leaving', main.join(' | ') === 'SAVE GAME | LOAD SAVED GAME | LOAD QUICKSAVE | SETTINGS | TOOLS | PHOTO MODE | SAVE AND QUIT TO TITLE | QUIT GAME', main.join(' | '));
+  check('...with no setting and no tool in it', !main.some((l) => /SOUND|MUSIC|RUMBLE|FULLSCREEN|SCREEN:|FILTER|CONTROLS|BUTTON|EDITOR|TWEAKS|WORKSHOP|RESTART/.test(l)));
+  for (let i = 0; i < 3; i++) m.press('down'); // SETTINGS
+  m.press('confirm');
+  const set = labels(page());
+  check('SETTINGS opens a page of its own: sound, then controls, then the picture, each under its heading, and BACK', heads(page()).join() === 'SOUND,CONTROLS,PICTURE' && set.join(' | ') === 'SOUND: 50% | MUSIC: 50% | RUMBLE: FULL | CONTROLS | BUTTON ICONS: AUTO | FULLSCREEN: OFF | SCREEN: WIDE | FILTER: OFF | BACK', `${heads(page()).join()} / ${set.join(' | ')}`);
+  check('...in two columns, sound and controls in one and the picture in the other, so nothing has to scroll', (page().match(/rq-col rq-acts/g) ?? []).length === 2 && page().indexOf('PICTURE') > page().lastIndexOf('rq-col rq-acts'));
+  m.press('right');
+  check('left and right change the setting the cursor is on', sfx === 0.75 && /SOUND: 75%/.test(page()));
+  for (let i = 0; i < 6; i++) m.press('down'); // SCREEN
+  m.press('confirm');
+  check('...and so does selecting it', !screenWide && /SCREEN: 4:3/.test(page()));
+  m.press('back');
+  check('back goes to the main list with the cursor on SETTINGS; the menu stays up', m.open && /rq-btn sel[^>]*>SETTINGS</.test(page()));
+  m.press('down'); // TOOLS
+  m.press('confirm');
+  check('TOOLS opens the editor, the tweaks, the workshop and the restart, and BACK', labels(page()).join(' | ') === 'LEVEL EDITOR | TWEAKS (GAME FEEL) | WORKSHOP (ALL TOOLS) | RESTART (TESTING) | BACK', labels(page()).join(' | '));
+  m.press('down');
+  m.press('confirm');
+  check('...and choosing one opens it and closes the menu', opened === 'tweaks' && !m.open);
+  m.show();
+  check('opened again, the menu is on the main list, not left inside TOOLS', labels(page()).includes('SETTINGS'));
+  m.press('confirm'); // (SAVE GAME)
+  for (let i = 0; i < 3; i++) m.press('down');
+  m.press('confirm'); // SETTINGS
+  m.press('tabNext');
+  m.press('tabPrev');
+  check('changing screen and coming back also lands on the main list', labels(page()).includes('SETTINGS') && !labels(page()).includes('BACK'));
+  m.close();
+}
 
 // ---- The Club's doors on the WORLDS page: what each asks, and how near he is to it ----
 {
@@ -249,6 +325,67 @@ check('the cursor stops at the last row', quits === 1);
   card.scrollHeight = 200;
   m.scroll(1);
   check('a card that fits is not moved, and has no markers', card.scrollTop === 0 && !m.more().below && !m.more().above && marks['.rq-more'].hidden && marks['.rq-readon'].hidden);
+}
+
+// ---- The tweaks (Game Feel) panel worked from a controller ----
+// (The owner, 2026-11-15: "game tweak menu can not be navigated via controller". It was mouse, touch and keys only.)
+{
+  const doc = globalThis as unknown as { document: { createElement: () => unknown; getElementById?: (id: string) => unknown; head: unknown } };
+  doc.document.getElementById = () => null;
+  let root: { innerHTML: string } | null = null;
+  doc.document.createElement = () => {
+    const el = { ...fakeEl(), classList: { add() {}, remove() {}, toggle() {} }, querySelector: () => null, querySelectorAll: () => [] } as unknown as { innerHTML: string };
+    root = el;
+    return el;
+  };
+  const t = new Tweaks(null);
+  let closed = 0;
+  const panel = new TweaksPanel(fakeEl() as unknown as HTMLElement, t, () => closed++);
+  const html = (): string => root?.innerHTML ?? '';
+  panel.press('down');
+  check('with the panel shut, a press does nothing', panel.cursor().row === -1);
+  panel.show();
+  check('opened by mouse or touch it shows no cursor and no controller help', !/class="tw[^"]* cur/.test(html()) && !html().includes('class="pad"'));
+  panel.press('down');
+  check('the first press from a controller only shows the cursor, on the first slider of the group, with the help line', panel.cursor().row === 0 && panel.cursor().group === TWEAK_GROUPS[0] && /class="tw[^"]* cur/.test(html()) && html().includes('class="pad"'));
+  const first = TWEAKS.filter((x) => x.group === TWEAK_GROUPS[0]);
+  panel.press('down');
+  check('down moves to the next slider', panel.cursor().row === 1);
+  const x = first[1];
+  const was = t.get(x.path);
+  panel.press('right');
+  panel.press('right');
+  check('right raises the slider under the cursor a step at a time', Math.abs(t.get(x.path) - (was + 2 * x.step)) < 1e-6 && t.isChanged(x.path), `${x.label}: ${was} to ${t.get(x.path)}`);
+  panel.press('left');
+  check('left lowers it', Math.abs(t.get(x.path) - (was + x.step)) < 1e-6);
+  panel.press('reset');
+  check('the reset button puts that one slider back', t.get(x.path) === defaultTweak(x.path) && !t.isChanged(x.path));
+  for (let i = 0; i < 60; i++) panel.press('down');
+  check('the cursor stops at the last slider of the group', panel.cursor().row === first.length - 1);
+  for (let i = 0; i < 60; i++) panel.press('up');
+  check('...and at the first', panel.cursor().row === 0);
+  panel.press('tabNext');
+  check('the right bumper goes to the next group, cursor at its top', panel.cursor().group === TWEAK_GROUPS[1] && panel.cursor().row === 0);
+  panel.press('tabPrev');
+  panel.press('tabPrev');
+  check('the left bumper goes back, and round from the first group to the last', panel.cursor().group === TWEAK_GROUPS[TWEAK_GROUPS.length - 1]);
+  // The jump sets: a row of their own at the top of Jumping.
+  while (panel.cursor().group !== 'Jumping') panel.press('tabNext');
+  check('in Jumping the cursor starts on the row of jump sets, on the one in use', panel.cursor().row === 0 && panel.cursor().set === 0 && /class="sets cur"/.test(html()) && /class="on cur"/.test(html()));
+  panel.press('right');
+  panel.press('right');
+  panel.press('right');
+  check('left and right move along the sets without using one', panel.cursor().set === 3 && t.count() === 0);
+  panel.press('confirm');
+  check('confirm uses the set under the cursor', t.activeSet(JUMP_SETS) === JUMP_SETS[3] && t.count() === Object.keys(JUMP_SETS[3].values).length);
+  panel.press('down');
+  check('down from the sets goes to the first jump slider', panel.cursor().row === 1 && /class="tw[^"]* cur/.test(html()));
+  panel.press('up');
+  for (let i = 0; i < 9; i++) panel.press('left');
+  panel.press('confirm');
+  check('..."As it is" puts the jump sliders back', t.count() === 0);
+  panel.press('back');
+  check('back closes the panel: he plays', !panel.open && closed === 1);
 }
 
 console.log(failures === 0 ? '\nMenu checks passed.' : `\n${failures} menu check(s) failed.`);

@@ -862,3 +862,27 @@ what is in it and the table of what each jump set measures to.
 - Open: nobody has played it by hand. The room is plain (one look, eight lamps). It has nothing that moves; a
   moving platform and a wall-to-wall run over a gap would be the next things to add if the owner wants them.
 
+## The jump checker and wide chimneys (2026-11-15)
+`maxChimney(gain)` in reach.ts works out, from the kick's own numbers, how far apart two walls can be and still be
+kicked up between: about 8.1 with the default (half a unit gained a kick: anything a determined player could do), about
+6.7 for the trap search (two units a kick: a way OUT has to be one an ordinary player can take). tests/reach.ts holds
+it against the real controller. It found Grimsqueak's throne room could be climbed out of (the last wall columns now
+stand in the corners, `THRONE_COLUMNS`) and that the Cistern's Cleft was just near enough to the hall's west wall.
+Rule for building: walls not meant as a chimney go NINE or more apart, or joined.
+
+## What the owner found walking round the Club (2026-11-15)
+START-HERE ("Drawn and solid, again"; "The pause menu's SAVE screen, and the tweaks panel on a controller") has what
+changed and where. Open things, said plainly:
+- Nobody has played any of it by hand. The pictures were taken in the running game; the tweaks panel was worked with
+  a pretend controller in a real browser.
+- The barrel picture he sent may have been about something else than the barrel's width (his head simply being in
+  front of it): ask if it comes up again.
+- Standing on steps is a matter of how he is DRAWN; the rules still lift his body onto a step when the edge of his
+  footprint reaches it. Enemies are drawn as the rules have them.
+- A fire bowl's solid is two square boxes for a round thing: a little inside the bowl on the straight, a little
+  outside it at the corners.
+- The ceiling is dark, like everything far from a lamp; lanterns hang on plain rods, not chains (a chain of links for
+  every lamp in a big level is a great many corners for a phone to draw).
+- The exit door's frame becomes solid when the door has finished growing out of the wall; before that there is
+  nothing there to bump into.
+

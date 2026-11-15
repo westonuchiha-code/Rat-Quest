@@ -96,7 +96,8 @@ export interface MenuHost {
   /** False while the menu is open over the title screen (OPTIONS): no game is chosen yet, so nothing to save or load. */
   inGame?(): boolean;
   /** More options shown as rows on the SAVE screen. Selecting (or left/right) calls change. */
-  extras?: Array<{ id: string; label(): string; change(dir: 1 | -1): void }>;
+  /** `group` says where it goes: with the saving on the main list, or under one of the SETTINGS headings (default: picture). */
+  extras?: Array<{ id: string; label(): string; change(dir: 1 | -1): void; group?: 'save' | 'sound' | 'controls' | 'picture' }>;
   /** Key and button rebinding. When given, CONTROLS on the SAVE screen opens the rebind list. */
   rebind?: {
     rows(): Array<{ id: string; name: string; key: string; pad: string }>;
@@ -236,6 +237,8 @@ const CSS = `
 .rq-sticker.sel { transform: rotate(var(--tilt, 0deg)) scale(1.14); box-shadow: 0 0 0 2px #0009, 0 0 1em #ffe27a99; border-color: #ffe27a; z-index: 1; }
 .rq-unk { font-size: 2.4em; font-weight: 800; color: #6a655a; }
 .rq-btn.dim { opacity: 0.4; }
+.rq-sub { color: #9aa68a; font-size: 0.72em; font-weight: 800; letter-spacing: 0.18em; margin: 0.5em 0 0.35em 0.3em; }
+.rq-sub:first-child { margin-top: 0; }
 .rq-acts.tighter .rq-btn { padding: 0.4em 1em; margin-bottom: 0.3em; }
 .rq-acts.tight .rq-btn { padding: 0.6em 1em; margin-bottom: 0.45em; }
 .rq-btn.warn { border-color: #8a4a3a; }
@@ -302,6 +305,8 @@ export class Menu {
   private tile = 0;
   private zone: 'cats' | 'grid' = 'cats';
   private saveRow = 0;
+  /** The SAVE screen has a short main list; SETTINGS and TOOLS on it each open a list of their own. */
+  private savePage: 'main' | 'settings' | 'tools' = 'main';
   /** Rebind list: open or not, which row and column (0 key, 1 pad), and a pending capture. */
   private rebinding = false;
   private rbRow = 0;
@@ -340,6 +345,7 @@ export class Menu {
 
   show(): void {
     this.open_ = true;
+    if (this.savePage !== 'main') this.openSavePage('main');
     this.message = '';
     this.confirmRestart = false;
     this.confirmQuit = false;
@@ -361,6 +367,10 @@ export class Menu {
   showAt(screen: number): void {
     this.show();
     this.setScreen(screen);
+    if (screen === 3 && this.host.inGame?.() === false) {
+      this.openSavePage('settings');
+      this.render();
+    }
   }
 
   close(): void {
@@ -439,6 +449,12 @@ export class Menu {
     else this.host.sound?.('move');
     if (key === 'tabPrev') return this.setScreen(this.screen - 1);
     if (key === 'tabNext') return this.setScreen(this.screen + 1);
+    // Back out of SETTINGS or TOOLS to the save screen's main list first; from there it closes the menu. (From the
+    // title, where OPTIONS opens straight onto SETTINGS, back closes at once.)
+    if (key === 'back' && this.screen === 3 && this.savePage !== 'main' && this.host.inGame?.() !== false) {
+      this.openSavePage('main');
+      return this.render();
+    }
     if (key === 'back') return this.close();
     if (key === 'confirm') return this.activate();
     this.move(key);
@@ -512,7 +528,7 @@ export class Menu {
     const tail = (i: number, label: string): string => `<div class="rq-btn${this.rbRow === rows.length + i ? ' sel' : ''}" data-rb="${rows.length + i}:0">${label}</div>`;
     return `<div class="rq-cols two">
       <div class="rq-col"><div class="rq-h">REBIND<span>KEYBOARD · CONTROLLER</span></div><div class="rq-scroll">${list}${tail(0, 'RESET TO DEFAULTS')}${tail(1, 'DONE')}</div></div>
-      <div class="rq-col"><div class="rq-h">CURRENT</div><div class="rq-card" style="line-height:1.7">${this.host.rebind?.summary() ?? ''}</div><div class="rq-msg">${this.message}</div></div></div>`;
+      <div class="rq-col"><div class="rq-h">CURRENT</div><div class="rq-card" style="line-height:1.7">${this.host.rebind?.summary() ?? ''}<p style="margin:0.6em 0 0;line-height:1.5;color:#c9d2b8"><b>Long jump:</b> while running, hold SNEAK and press JUMP.<br><b>Wall kick:</b> press JUMP as you hit a wall in the air.<br><b>Ledge grab:</b> fall past an edge you face to catch it; JUMP climbs, pull back to let go.</p></div><div class="rq-msg">${this.message}</div></div></div>`;
   }
 
   // ---- Cursor movement ----
@@ -582,6 +598,7 @@ export class Menu {
     const next = (i + SCREENS.length) % SCREENS.length;
     this.slide = next > this.screen || (this.screen === SCREENS.length - 1 && next === 0) ? 'r' : 'l';
     if (this.screen === 0 && next === SCREENS.length - 1) this.slide = 'l';
+    if (next !== this.screen && this.savePage !== 'main') this.openSavePage('main');
     this.screen = next;
     this.rebinding = false;
     this.capture = null;
@@ -633,6 +650,10 @@ export class Menu {
         this.close();
         this.host.toTitle?.();
         return;
+      } else if (id === 'settings' || id === 'tools') {
+        this.openSavePage(id);
+      } else if (id === 'back') {
+        this.openSavePage('main');
       } else if (id === 'fullscreen') {
         this.host.toggleFullscreen?.();
         this.message = '';
@@ -694,6 +715,7 @@ export class Menu {
 
     let body = '';
     let help = helpLine([[['tabPrev', 'tabNext'], 'change screen'], ['nav', 'choose'], ['confirm', 'select'], ['back', 'close']]);
+    if (this.screen === 3 && this.savePage !== 'main') help = helpLine([['nav', this.savePage === 'settings' ? 'choose; left and right change it' : 'choose'], ['confirm', 'select'], ['back', this.host.inGame?.() === false ? 'close' : 'back']]);
     // What moves the details when they do not fit: the right stick, or R and F. (A finger just drags them.)
     const device = lastDevice();
     const reader = device === 'touch' ? '' : device === 'keyboard' ? keyChip('#R') + keyChip('#F') : prompt('look');
@@ -888,28 +910,55 @@ export class Menu {
       : `<div class="rq-door row ${d.open ? 'open' : 'shut'}"><div class="top">${name}${cost}</div>${bar}</div>`;
   }
 
-  /** The buttons on the save screen, in order. */
-  private saveItems(): Array<{ id: string; label: string; warn?: boolean; dim?: boolean }> {
+  /**
+   * The buttons on the save screen, in order, for the list that is open. The main list is short: saving, then
+   * SETTINGS and TOOLS (each opens a list of its own), then leaving. A row's `group` is the heading it stands under.
+   */
+  private saveItems(): Array<{ id: string; label: string; warn?: boolean; dim?: boolean; group?: string }> {
     const at = this.host.savedAt();
     const a = this.host.audio;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const game = this.host.inGame?.() !== false;
-    const items: Array<{ id: string; label: string; warn?: boolean; dim?: boolean }> = [
-      ...(game && this.host.openPhoto ? [{ id: 'photo', label: 'PHOTO MODE' }] : []),
-      ...(game ? [{ id: 'save', label: 'SAVE GAME' }, { id: 'load', label: 'LOAD SAVED GAME', dim: !at }] : []),
-      ...(game && this.host.toTitle ? [{ id: 'title', label: 'SAVE AND QUIT TO TITLE' }] : []),
+    const extras = (g: 'save' | 'sound' | 'controls' | 'picture', heading?: string) => (this.host.extras ?? []).filter((x) => (x.group ?? 'picture') === g).map((x) => ({ id: `x:${x.id}`, label: x.label(), group: heading }));
+    const back = { id: 'back', label: 'BACK' };
+    if (this.savePage === 'settings') {
+      return [
+        ...(a ? [{ id: 'sfx', label: `SOUND: ${pct(a.sfx())}`, group: 'SOUND' }, { id: 'music', label: `MUSIC: ${pct(a.music())}`, group: 'SOUND' }] : []),
+        ...(this.host.rumble ? [{ id: 'rumble', label: `RUMBLE: ${this.host.rumble.level().toUpperCase()}`, group: 'SOUND' }] : []),
+        ...extras('sound', 'SOUND'),
+        { id: 'controls', label: 'CONTROLS', group: 'CONTROLS' },
+        ...extras('controls', 'CONTROLS'),
+        { id: 'fullscreen', label: this.host.toggleFullscreen ? `FULLSCREEN: ${this.host.fullscreen?.() ? 'ON' : 'OFF'}` : 'FULLSCREEN: F11', group: 'PICTURE' },
+        ...extras('picture', 'PICTURE'),
+        back,
+      ];
+    }
+    const tools = [
+      ...(this.host.openBuilder ? [{ id: 'builder', label: 'LEVEL EDITOR' }] : []),
+      ...(this.host.openTweaks ? [{ id: 'tweaks', label: 'TWEAKS (GAME FEEL)' }] : []),
+      ...(this.host.openWorkshop ? [{ id: 'workshop', label: 'WORKSHOP (ALL TOOLS)' }] : []),
       ...(game ? [{ id: 'restart', label: this.confirmRestart ? 'SELECT AGAIN TO RESTART' : 'RESTART (TESTING)', warn: true }] : []),
-      { id: 'fullscreen', label: this.host.toggleFullscreen ? `FULLSCREEN: ${this.host.fullscreen?.() ? 'ON' : 'OFF'}` : 'FULLSCREEN: F11' },
     ];
-    if (a) items.push({ id: 'sfx', label: `SOUND: ${pct(a.sfx())}` }, { id: 'music', label: `MUSIC: ${pct(a.music())}` });
-    if (this.host.rumble) items.push({ id: 'rumble', label: `RUMBLE: ${this.host.rumble.level().toUpperCase()}` });
-    for (const x of this.host.extras ?? []) items.push({ id: `x:${x.id}`, label: x.label() });
-    items.push({ id: 'controls', label: 'CONTROLS' });
-    if (this.host.openBuilder) items.push({ id: 'builder', label: 'LEVEL EDITOR' });
-    if (this.host.openTweaks) items.push({ id: 'tweaks', label: 'TWEAKS (GAME FEEL)' });
-    if (this.host.openWorkshop) items.push({ id: 'workshop', label: 'WORKSHOP (ALL TOOLS)' });
-    if (this.host.quit) items.push({ id: 'quit', label: this.confirmQuit ? 'SELECT AGAIN TO QUIT' : 'QUIT GAME', warn: true });
-    return items;
+    if (this.savePage === 'tools') return [...tools, back];
+    return [
+      ...(game ? [{ id: 'save', label: 'SAVE GAME' }, { id: 'load', label: 'LOAD SAVED GAME', dim: !at }] : []),
+      ...extras('save'),
+      { id: 'settings', label: 'SETTINGS' },
+      ...(tools.length ? [{ id: 'tools', label: 'TOOLS' }] : []),
+      ...(game && this.host.openPhoto ? [{ id: 'photo', label: 'PHOTO MODE' }] : []),
+      ...(game && this.host.toTitle ? [{ id: 'title', label: 'SAVE AND QUIT TO TITLE' }] : []),
+      ...(this.host.quit ? [{ id: 'quit', label: this.confirmQuit ? 'SELECT AGAIN TO QUIT' : 'QUIT GAME', warn: true }] : []),
+    ];
+  }
+
+  /** Opens one of the save screen's lists, the cursor on its first row (or, going back, on the row that led there). */
+  private openSavePage(page: 'main' | 'settings' | 'tools'): void {
+    const from = this.savePage;
+    this.savePage = page;
+    this.saveRow = page === 'main' ? Math.max(0, this.saveItems().findIndex((it) => it.id === from)) : 0;
+    this.message = '';
+    this.confirmRestart = false;
+    this.confirmQuit = false;
   }
 
   private saveRows(): number {
@@ -950,20 +999,34 @@ export class Menu {
     const at = this.host.savedAt();
     const when = at ? new Date(at).toLocaleString() : 'No save yet';
     const items = this.saveItems();
-    const btns = items
-      .map((it, i) => `<div class="rq-btn${i === this.saveRow ? ' sel' : ''}${it.dim ? ' dim' : ''}${it.warn ? ' warn' : ''}" data-row="${i}">${it.label}</div>`)
-      .join('');
     if (this.rebinding) return this.rebindScreen();
-    const onControls = items[this.saveRow]?.id === 'controls';
-    const controls = `<div class="rq-card"><div class="big">Controls</div>
-          <p style="margin:0.5em 0 0;line-height:1.7">${this.host.rebind?.summary() ?? ''}<br><small>Select to change keys and buttons.</small></p>
-          <p style="margin:0.6em 0 0;line-height:1.5;color:#c9d2b8"><b>Long jump:</b> while running, hold SNEAK and press JUMP.<br><b>Wall kick:</b> press JUMP as you hit a wall in the air.<br><b>Ledge grab:</b> fall past an edge you face to catch it; JUMP climbs, pull back to let go.</p></div>`;
+    const btn = (it: (typeof items)[number], i: number): string => `<div class="rq-btn${i === this.saveRow ? ' sel' : ''}${it.dim ? ' dim' : ''}${it.warn ? ' warn' : ''}" data-row="${i}">${it.label}</div>`;
+    /** Rows under their headings, for the rows whose heading is one of `groups` (or which have none, with `rest`). */
+    const rows = (groups: string[], rest = false): string => {
+      let out = '';
+      let last: string | undefined;
+      items.forEach((it, i) => {
+        if (it.group ? !groups.includes(it.group) : !rest) return;
+        if (it.group && it.group !== last) out += `<div class="rq-sub">${it.group}</div>`;
+        last = it.group;
+        out += btn(it, i);
+      });
+      return out;
+    };
+    if (this.savePage === 'settings') {
+      // Two columns, each group under its heading: sound and controls on the left, the picture on the right.
+      return `<div class="rq-cols two">
+      <div class="rq-col rq-acts tighter"><div class="rq-h">SETTINGS<span>left and right change one</span></div><div class="rq-scroll">${rows(['SOUND', 'CONTROLS'])}</div></div>
+      <div class="rq-col rq-acts tighter"><div class="rq-h">&nbsp;</div><div class="rq-scroll">${rows(['PICTURE'], true)}</div><div class="rq-msg">${this.message}</div></div></div>`;
+    }
     const f = this.host.fileInfo?.();
     const file = `<div class="rq-card"><div class="big">${f ? `File ${f.file} &middot; ${f.where}` : 'Save file'}</div>${f ? `<p style="margin:0.5em 0 0">${wedgeIcon(16)} ${f.wedges}/${f.total} Golden Wedges &middot; ${f.played} played</p>` : ''}<small>Last saved: ${when}</small>
           <p style="margin:0.6em 0 0;color:#c9d2b8">Saving remembers where you stand and your health. Gear, wedges and collectibles are kept automatically. To change files, save and quit to the title.</p></div>`;
+    const tools = `<div class="rq-card"><div class="big">Tools</div><p style="margin:0.5em 0 0;line-height:1.6;color:#c9d2b8">For building and testing the game: the level editor, the sliders for how it feels, and the rest of the workshop.</p></div>`;
+    const all = rows([], true);
     return `<div class="rq-cols two">
-      <div class="rq-col"><div class="rq-h">${onControls ? 'CONTROLS' : 'SAVE FILE'}</div>${onControls ? controls : file}</div>
-      <div class="rq-col rq-acts${items.length > 9 ? ' tighter' : items.length > 5 ? ' tight' : ''}"><div class="rq-h">ACTIONS</div><div class="rq-scroll">${btns}</div><div class="rq-msg">${this.message}</div></div></div>`;
+      <div class="rq-col"><div class="rq-h">${this.savePage === 'tools' ? 'TOOLS' : 'SAVE FILE'}</div>${this.savePage === 'tools' ? tools : file}</div>
+      <div class="rq-col rq-acts${items.length > 7 ? ' tighter' : items.length > 5 ? ' tight' : ''}"><div class="rq-h">${this.savePage === 'tools' ? 'TOOLS' : 'ACTIONS'}</div><div class="rq-scroll">${all}</div><div class="rq-msg">${this.message}</div></div></div>`;
   }
 
   // ---- Taps ----

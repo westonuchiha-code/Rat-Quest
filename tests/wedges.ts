@@ -60,9 +60,9 @@ check('more wedges open more doors', [...HUB_DOORS].sort((a, b) => a.need - b.ne
   const counter = hub!.solids.find((b) => b.x0 === -17.5 && b.x1 === -16.5);
   check('Pip is in talking range from the front of his counter', !!pip && !!counter && Math.abs(pip.x - (counter.x1 + 0.3)) < 2.2);
   const f = hub!.restSpot;
-  // The brazier itself is solid (small, right in the middle); everything else stays back.
-  check('the brazier is solid but small, so he can rest right up against it', !!f && hub!.solids.some((b) => b.x1 - b.x0 < 1 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1));
-  check('the Club has a fire to rest at, clear of the furniture', !!f && !hub!.solids.some((b) => !(b.x1 - b.x0 < 1 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1) && b.y1 > f.y + 0.3 && b.x0 < f.x + 2.5 && b.x1 > f.x - 2.5 && b.z0 < f.z + 2.5 && b.z1 > f.z - 2.5 && b.y0 < f.y + 1));
+  // The brazier itself is solid (small, right in the middle: its foot, and its bowl, which is a little wider); everything else stays back.
+  check('the brazier is solid but small, so he can rest right up against it', !!f && hub!.solids.some((b) => b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1));
+  check('the Club has a fire to rest at, clear of the furniture', !!f && !hub!.solids.some((b) => !(b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1) && b.y1 > f.y + 0.3 && b.x0 < f.x + 2.5 && b.x1 > f.x - 2.5 && b.z0 < f.z + 2.5 && b.z1 > f.z - 2.5 && b.y0 < f.y + 1));
 }
 
 // Side areas: the Pump Room belongs to the Cistern world, its door is in the pump house, and its way out leads back.
@@ -79,12 +79,16 @@ check('more wedges open more doors', [...HUB_DOORS].sort((a, b) => a.need - b.ne
   check('the Pump Room way out is near where he comes in', Math.hypot(pump.exit.x - pump.spawn.x, pump.exit.z - pump.spawn.z) < 10);
 }
 
-console.log(failures === 0 ? 'wedges: all pass' : `wedges: ${failures} FAIL`);
-process.exit(failures ? 1 : 0);
 
 // Furniture is solid: couches and speakers in the Club have colliders under them.
 {
   const inside = (x: number, y: number, z: number): boolean => hub!.solids.some((b) => x > b.x0 && x < b.x1 && y > b.y0 && y < b.y1 && z > b.z0 && z < b.z1);
   check('the couches by the fire are solid', inside(-5, 0.4, 0) && inside(5, 0.4, 0) && inside(0, 0.4, -5));
+  // The couch at (0, -5) faces south: its arms are at its east and west ends, its cushion on the seat. All solid, as
+  // drawn. (They were not: standing on the seat he sank into the cushion, and he walked through the arms.)
+  check('...and so are a couch\'s arms (to their tops, above the seat) and the cushion on its seat', inside(-1.15, 0.9, -5) && inside(1.15, 0.9, -5) && !inside(0, 0.9, -4.8) && inside(0.5, 0.8, -4.9) && !inside(-0.5, 0.8, -4.9));
   check('the speakers on the stage are solid', inside(-7, 2, -20) && inside(7, 2, -20));
 }
+
+console.log(failures === 0 ? 'wedges: all pass' : `wedges: ${failures} FAIL`);
+process.exit(failures ? 1 : 0);

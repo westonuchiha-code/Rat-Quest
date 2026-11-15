@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { BRAZIER, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -300,11 +300,16 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         break;
       case 'brazier':
         decor.push({ kind: 'brazier', x: cx, y: p.top, z: cz });
-        solids.push({ ...extent('stone', cx - 0.4, cx + 0.4, p.top, p.top + 1.1, cz - 0.4, cz + 0.4), hidden: true });
+        // Solid as drawn (brazierModel.ts): its foot and stem, and its bowl, which is wider. (A square stands in for a
+        // round bowl: a little inside it on the straight, a little outside it at the corners. It used to be one box
+        // narrower than the bowl, and he walked into the bowl's side.)
+        solids.push({ ...extent('stone', cx - BRAZIER.foot, cx + BRAZIER.foot, p.top, p.top + BRAZIER.bowlFrom, cz - BRAZIER.foot, cz + BRAZIER.foot), hidden: true });
+        solids.push({ ...extent('stone', cx - BRAZIER.bowl * 0.9, cx + BRAZIER.bowl * 0.9, p.top + BRAZIER.bowlFrom, p.top + BRAZIER.rim, cz - BRAZIER.bowl * 0.9, cz + BRAZIER.bowl * 0.9), hidden: true });
         break;
       case 'light':
         decor.push({ kind: 'light', x: cx, y: p.top, z: cz, color: LIGHT_COLORS[p.props?.color ?? 'red'] ?? 0xff2a2a, flash: p.props?.flash ?? 0 });
-        solids.push({ ...extent('stone', cx - 0.17, cx + 0.17, p.top, p.top + 0.75, cz - 0.17, cz + 0.17), hidden: true });
+        // (Solid to the top of its bulb, as drawn: it stopped short of it, so standing on one sank his feet into the bulb.)
+        solids.push({ ...extent('stone', cx - 0.17, cx + 0.17, p.top, p.top + 0.88, cz - 0.17, cz + 0.17), hidden: true });
         break;
       case 'speaker':
       case 'couch':
@@ -314,15 +319,20 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         // Solid, matching the model. Parts are laid out facing +z (lx across, lz front-back), then turned.
         const cs = Math.round(Math.cos(yaw));
         const sn = Math.round(Math.sin(yaw));
-        const part = (kind: 'plank' | 'stone', lx0: number, lx1: number, y1: number, lz0: number, lz1: number): void => {
+        const part = (kind: 'plank' | 'stone', lx0: number, lx1: number, y1: number, lz0: number, lz1: number, y0 = 0): void => {
           const xs = [lx0 * cs + lz0 * sn, lx1 * cs + lz1 * sn];
           const zs = [-lx0 * sn + lz0 * cs, -lx1 * sn + lz1 * cs];
-          solids.push({ ...extent(kind, cx + Math.min(...xs), cx + Math.max(...xs), p.top, p.top + y1, cz + Math.min(...zs), cz + Math.max(...zs)), hidden: true });
+          solids.push({ ...extent(kind, cx + Math.min(...xs), cx + Math.max(...xs), p.top + y0, p.top + y1, cz + Math.min(...zs), cz + Math.max(...zs)), hidden: true });
         };
         if (p.t === 'speaker') part('stone', -0.85, 0.85, 2.9, -0.6, 0.6);
         else {
-          part('plank', -1.3, 1.3, 0.72, -0.225, 0.55); // the seat: stand on it
+          part('plank', -0.975, 0.975, 0.72, -0.225, 0.55); // the seat, between the arms: stand on it
           part('plank', -1.3, 1.3, 1.45, -0.575, -0.225); // the back
+          // The arms (in front of the back, either side of the seat) and the cushion (on the seat), as drawn. (They
+          // were not solid: standing on the seat he sank into the cushion, and walking along it he went through the arms.)
+          part('plank', -1.325, -0.975, 1.0, -0.225, 0.55);
+          part('plank', 0.975, 1.325, 1.0, -0.225, 0.55);
+          part('plank', 0.15, 0.85, 0.84, -0.1, 0.3, 0.72);
         }
         break;
       }

@@ -86,6 +86,12 @@ export function fireAt(fires: readonly FireVolume[] | undefined, x: number, y: n
   return null;
 }
 
+/**
+ * A fire bowl on its stand, as drawn (brazierModel.ts) and as solid (custom.ts): its foot's half-width, its bowl's, how
+ * high the bowl begins and how high its rim is, and where the coals lie in it.
+ */
+export const BRAZIER = { foot: 0.46, bowl: 0.66, bowlFrom: 0.8, rim: 1.16, coals: 1.02 } as const;
+
 /** Things that are only drawn: pipes along the walls, dark drain mouths, lamps. They are never collided with. */
 export type Decor =
   | { kind: 'pipe'; a: [number, number, number]; b: [number, number, number]; r: number; color?: number }
@@ -227,6 +233,42 @@ export interface Layout {
   water: WaterVolume[];
   pipes?: PipeSpec[];
   gates?: GateSpec[];
+}
+
+/**
+ * The ceiling of a level: it has one wherever it has walls round it (the Kingdom Below is under the ground; over the
+ * walls there used to be nothing but the dark). It covers everything inside the outermost walls. It sits on top of
+ * the walls, or higher where something inside stands so tall that he could bang his head: then the walls are carried
+ * on up to it (`wallTop` is where the built walls stop and that extra band of wall begins). It is only drawn.
+ */
+export interface Ceiling {
+  x0: number;
+  x1: number;
+  z0: number;
+  z1: number;
+  y: number;
+  wallTop: number;
+  /** The picture the outer walls wear (the ceiling and the band of wall under it wear it too). */
+  skin?: Skin;
+}
+/** Clear air over the highest thing he can stand on: a double jump from it and his own height. */
+export const CEILING_CLEAR = 5.9;
+export function ceilingOf(solids: readonly Box[]): Ceiling | null {
+  const walls = solids.filter((b) => b.kind === 'wall' && !b.hidden);
+  if (!walls.length) return null;
+  const x0 = Math.min(...walls.map((b) => b.x0));
+  const x1 = Math.max(...walls.map((b) => b.x1));
+  const z0 = Math.min(...walls.map((b) => b.z0));
+  const z1 = Math.max(...walls.map((b) => b.z1));
+  const outer = walls.filter((b) => b.x0 === x0 || b.x1 === x1 || b.z0 === z0 || b.z1 === z1);
+  const outerTop = Math.max(...outer.map((b) => b.y1));
+  let inside = -Infinity;
+  for (const b of solids) if (!outer.includes(b)) inside = Math.max(inside, b.y1);
+  // The picture most of the outer walls wear.
+  const count = new Map<Skin | undefined, number>();
+  for (const b of outer) count.set(b.skin, (count.get(b.skin) ?? 0) + (b.x1 - b.x0) * (b.z1 - b.z0));
+  const skin = [...count.entries()].sort((a, c) => c[1] - a[1])[0][0];
+  return { x0, x1, z0, z1, y: Math.max(outerTop, inside + CEILING_CLEAR), wallTop: Math.min(...outer.map((b) => b.y1)), skin };
 }
 
 export function buildLayout(): Layout {

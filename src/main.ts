@@ -93,7 +93,7 @@ import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
 import { CourseDoors } from './world/courseDoors';
-import { atDoor, doorCamera } from './world/rooms';
+import { atDoor, doorCamera, doorFrameBoxes, type DoorSpec } from './world/rooms';
 import { Fader } from './ui/fader';
 import { Inventory } from './player/inventory';
 import { DropField } from './world/drops';
@@ -201,6 +201,21 @@ function startGame(): void {
   let resting = -1;
   let nearFire = false;
   let courseVis: CourseDoors | null = null;
+  /** Whether the exit door's stone frame has been made solid yet (it is not there until the door has grown out of the wall). */
+  let exitFrameSolid = false;
+  /**
+   * Makes a door's frame solid: its two jambs and its step, as drawn. With `careful`, not while he is standing where
+   * one of them will be (the exit door grows out of the wall while he may be right beside it): it says false, and is
+   * asked again.
+   */
+  function addDoorFrame(door: DoorSpec, careful = false): boolean {
+    const boxes = doorFrameBoxes(door);
+    const R = TUNING.rat.radius;
+    const p = player.position;
+    if (careful && boxes.some((b) => p.x + R > b.x0 && p.x - R < b.x1 && p.z + R > b.z0 && p.z - R < b.z1 && p.y < b.y1 && p.y + TUNING.rat.height > b.y0)) return false;
+    for (const b of boxes) chamber.colliders.push(makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0));
+    return true;
+  }
   let wedgeWasOut: boolean[] = [];
   /** For each shy wedge (by its place in the level's list), the beasts that keep it. */
   let shyKeepers = new Map<number, Foe[]>();
@@ -1374,7 +1389,10 @@ function startGame(): void {
         return { open: doorOpen(cd), got, of };
       }), def.theme ?? 'sewer');
       scene.add(courseVis.group);
+      // Their stone frames are solid, as drawn (he used to walk into the jambs).
+      for (const cd of doors) addDoorFrame(cd.door);
     }
+    exitFrameSolid = false;
     for (const spec of def.npcs ?? []) {
       // A copy, because a story scene may move him about.
       const n = new Npc({ ...spec });
@@ -2157,9 +2175,9 @@ function startGame(): void {
     },
     quit: platform.desktop ? () => platform.quit() : undefined,
     extras: [
-      { id: 'quick', label: () => saveRowLabel('LOAD QUICKSAVE', 'quick'), change: (d) => { if (d === 1 && applySave(readSave(storage, 'quick'))) menu.close(); } },
-      { id: 'auto', label: () => saveRowLabel('LOAD AUTOSAVE', 'auto'), change: (d) => { if (d === 1 && applySave(readSave(storage, 'auto'))) menu.close(); } },
-      { id: 'glyphs', label: () => `BUTTON ICONS: ${glyphModeLabel()}`, change: (d) => setGlyphMode(GLYPH_MODES[(GLYPH_MODES.indexOf(glyphMode()) + d + GLYPH_MODES.length) % GLYPH_MODES.length]) },
+      { id: 'quick', group: 'save', label: () => saveRowLabel('LOAD QUICKSAVE', 'quick'), change: (d) => { if (d === 1 && applySave(readSave(storage, 'quick'))) menu.close(); } },
+      { id: 'auto', group: 'save', label: () => saveRowLabel('LOAD AUTOSAVE', 'auto'), change: (d) => { if (d === 1 && applySave(readSave(storage, 'auto'))) menu.close(); } },
+      { id: 'glyphs', group: 'controls', label: () => `BUTTON ICONS: ${glyphModeLabel()}`, change: (d) => setGlyphMode(GLYPH_MODES[(GLYPH_MODES.indexOf(glyphMode()) + d + GLYPH_MODES.length) % GLYPH_MODES.length]) },
       { id: 'screen', label: () => `SCREEN: ${display.aspect === 'wide' ? 'WIDE' : '4:3'}`, change: () => display.toggleAspect() },
       { id: 'filter', label: () => `FILTER: ${display.filterLabel()}`, change: (d) => display.cycleFilter(d) },
       { id: 'text', label: () => `TALK TEXT: ${display.largeText ? 'LARGE' : 'NORMAL'}`, change: () => display.toggleText() },
@@ -2745,6 +2763,33 @@ function startGame(): void {
       if (tweaksPanel.open) tweaksPanel.hide();
       else if (!menu.open) tweaksPanel.show();
     }
+    if (tweaksPanel.open) {
+      // The sliders, worked from a controller (or the touch pad): the bumpers change group, the stick or d-pad moves
+      // the cursor and changes the slider it is on, repeating while held. (The keyboard is left to the panel itself:
+      // its boxes are typed into.)
+      const asked = new Set<MenuKey>();
+      for (const [key] of MENU_KEYS) if (consumeAction(key)) asked.add(key);
+      const ax = controlSources.reduce((a, s2) => a + s2.moveX, 0);
+      const ay = controlSources.reduce((a, s2) => a + s2.moveY, 0);
+      const dir: MenuKey | null = Math.abs(ay) > Math.abs(ax) ? (ay > 0.6 ? 'up' : ay < -0.6 ? 'down' : null) : ax > 0.6 ? 'right' : ax < -0.6 ? 'left' : null;
+      if (dir !== navDir) {
+        navDir = dir;
+        navTimer = 0.35;
+        if (dir) asked.add(dir);
+      } else if (dir) {
+        navTimer -= dt;
+        if (navTimer <= 0) {
+          // (Left and right on a slider run faster the longer they are held: a slider can have a hundred steps.)
+          navTimer = dir === 'left' || dir === 'right' ? 0.06 : 0.15;
+          asked.add(dir);
+        }
+      }
+      const resetOne = consumeAction('stow');
+      for (const key of menuOrder(asked)) tweaksPanel.press(key);
+      if (resetOne) tweaksPanel.press('reset');
+      for (const a2 of ['jump', 'attack', 'dodge', 'respawn', 'menu'] as const) consumeAction(a2);
+      return;
+    }
     if (!menu.open && !dialog.open && !boot.blocking && !story.scene && !cutscene.active && !trans.active && !builder.open && !tweaksPanel.open) {
       if (input.consumePressed('F5') && !player.dead) {
         writeSave(storage, snapshot(), 'quick');
@@ -2843,6 +2888,19 @@ function startGame(): void {
   }
 
   /** Height of the highest surface under a point, or null over the pit. */
+  /** Where he is drawn (see where it is set): his place, but standing on what is under his feet. */
+  const drawnPos = new THREE.Vector3();
+  let drawnY = 0;
+  /** The highest floor under his FEET (a small square round his middle, not his whole footprint), at or below `y`. */
+  function feetGround(x: number, y: number, z: number): number | null {
+    const r = 0.1;
+    let best: number | null = null;
+    for (const b of chamber.colliders) {
+      if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
+      if (b.max.y <= y + 0.05 && (best === null || b.max.y > best)) best = b.max.y;
+    }
+    return best;
+  }
   function groundBelow(x: number, y: number, z: number): number | null {
     let best: number | null = null;
     for (const b of chamber.colliders) {
@@ -3189,6 +3247,7 @@ function startGame(): void {
     }
     fader.set(Math.max(cover, story.scene && storyFrame ? storyFrame.cover : 0));
     doorway.setReveal(doorSparkle, doorFade, time);
+    if (doorFade >= 1 && !exitFrameSolid && !cur.hub) exitFrameSolid = addDoorFrame(cur.exit, true);
     if (wedgeVis && cur.wedges) {
       const ws = cur.wedges;
       const alive = aliveCount();
@@ -3221,7 +3280,19 @@ function startGame(): void {
     if (builder.live) builder.setPlayer(renderPos.x, renderPos.z, player.facing);
     if (builder.live) builder.info(`hearts ${player.hp}  ${gs ? `${gs.label} ${gs.text}` : ''}${open ? '  DOOR OPEN' : ''}`);
 
-    rat.setTransform(renderPos, player.facing + (photo.open ? photo.turn : 0));
+    // Where he is DRAWN standing. The rules stand him on the highest thing any part of his round footprint is over, so
+    // coming up to a step he is lifted onto it while his feet are still over the tread below, and he floated there.
+    // He is drawn on what is under his FEET (when that is no more than a step below where the rules have him), and
+    // eased onto it, so that he walks up and down stairs instead of hopping from one height to the next.
+    {
+      const under = player.state === 'swim' || player.state === 'hang' || player.state === 'climb' || player.velocity.y > 0.01 ? null : feetGround(renderPos.x, renderPos.y, renderPos.z);
+      const want = under !== null && renderPos.y - under <= TUNING.physics.stepHeight + 0.05 ? under : renderPos.y;
+      // (More than a step away it is a jump, a fall or a new place: no easing.)
+      if (Math.abs(want - drawnY) > 0.6) drawnY = want;
+      else if (frameDt > 0) drawnY += (want - drawnY) * Math.min(1, frameDt * 22);
+      drawnPos.set(renderPos.x, drawnY, renderPos.z);
+    }
+    rat.setTransform(drawnPos, player.facing + (photo.open ? photo.turn : 0));
     // In photo mode he holds the chosen pose (he still breathes; nothing else moves).
     const posing = photo.open ? photo.gesture : null;
     rat.update(photo.open ? rawDt : animDt, {

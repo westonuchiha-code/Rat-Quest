@@ -6,6 +6,7 @@
  */
 import { JUMP_SETS, TWEAKS, TWEAK_GROUPS, TWEAK_SECTIONS, Tweaks, defaultTweak, type TweakDef } from '../core/tweaks';
 import { esc, icon, useDevTheme } from './devTheme';
+import { ensureGlyphCss, helpLine } from './glyphs';
 
 const CSS = `
 .rq-tw { position: absolute; inset: 0; z-index: 62; display: none; flex-direction: column; background: #0f1218f2; touch-action: pan-y; }
@@ -34,6 +35,11 @@ const CSS = `
 .rq-tw > footer { display: flex; gap: 0.5em; align-items: center; padding: 0.55em 1em; border-top: 1px solid var(--line); background: #151a24; flex-wrap: wrap; }
 .rq-tw > footer .msg { flex: 1; color: #fff3c4; font-size: 0.9em; min-width: 6em; }
 .rq-tw .none { color: var(--dim); padding: 1.5em 0; }
+.rq-tw .tw.cur { background: #2a2410; box-shadow: inset 0 0 0 2px var(--gold); border-radius: 0.5em; }
+.rq-tw .tw { padding-left: 0.5em; padding-right: 0.5em; }
+.rq-tw .sets button.cur { box-shadow: 0 0 0 2px var(--gold); }
+.rq-tw .sets.cur h3 { color: var(--gold); }
+.rq-tw > footer .pad { width: 100%; color: var(--dim); font-size: 0.85em; }
 .rq-tw .sets { padding: 0.7em 0 0.8em; border-bottom: 1px solid #232a38; }
 .rq-tw .sets h3 { margin: 0 0 0.5em; }
 .rq-tw .sets .row { display: flex; flex-wrap: wrap; gap: 0.5em; }
@@ -50,9 +56,16 @@ export class TweaksPanel {
   private onlyChanged = false;
   private pasting = false;
   private armedReset = false;
+  /**
+   * Where a controller's cursor is, once one has been used: a row of the list on show (the row of sets, where there is
+   * one, is row 0), and which set along that row. -1: no controller has been used, and no cursor is drawn.
+   */
+  private curRow = -1;
+  private setIdx = 0;
 
   constructor(parent: HTMLElement, private readonly tweaks: Tweaks, private readonly onClose: () => void) {
     useDevTheme();
+    ensureGlyphCss();
     if (!document.getElementById('rq-tw-css')) {
       const st = document.createElement('style');
       st.id = 'rq-tw-css';
@@ -93,6 +106,60 @@ export class TweaksPanel {
     this.onClose();
   }
 
+  /** The sliders on show for the cursor to move over (the group's own; the cursor does not go into a search). */
+  private shown(): TweakDef[] {
+    return TWEAKS.filter((x) => x.group === this.group);
+  }
+  private hasSets(): boolean {
+    return this.group === 'Jumping' || this.group === 'Moves';
+  }
+
+  /**
+   * A press from a controller: the bumpers change group; up and down move the cursor through the group's sliders
+   * (and its row of sets); left and right change the slider the cursor is on by one step (or move along the sets);
+   * confirm uses the set under the cursor; 'reset' puts the slider back to its default; back plays.
+   */
+  press(key: 'left' | 'right' | 'up' | 'down' | 'tabPrev' | 'tabNext' | 'confirm' | 'back' | 'reset'): void {
+    if (!this.open) return;
+    if (key === 'back') return this.hide();
+    // A controller works on a group, not on a search or the "changed" list.
+    this.find = '';
+    this.onlyChanged = false;
+    this.pasting = false;
+    const list = this.shown();
+    const sets = this.hasSets() ? 1 : 0;
+    const rows = list.length + sets;
+    if (key === 'tabPrev' || key === 'tabNext') {
+      const i = TWEAK_GROUPS.indexOf(this.group);
+      this.group = TWEAK_GROUPS[(i + (key === 'tabNext' ? 1 : -1) + TWEAK_GROUPS.length) % TWEAK_GROUPS.length];
+      this.curRow = 0;
+      this.setIdx = Math.max(0, JUMP_SETS.indexOf(this.tweaks.activeSet(JUMP_SETS) ?? JUMP_SETS[0]));
+    } else if (this.curRow < 0) {
+      // The first press only shows the cursor.
+      this.curRow = 0;
+      this.setIdx = Math.max(0, JUMP_SETS.indexOf(this.tweaks.activeSet(JUMP_SETS) ?? JUMP_SETS[0]));
+    } else if (key === 'up') this.curRow = Math.max(0, this.curRow - 1);
+    else if (key === 'down') this.curRow = Math.min(rows - 1, this.curRow + 1);
+    else if (sets && this.curRow === 0) {
+      if (key === 'left') this.setIdx = Math.max(0, this.setIdx - 1);
+      else if (key === 'right') this.setIdx = Math.min(JUMP_SETS.length - 1, this.setIdx + 1);
+      else if (key === 'confirm') this.tweaks.useSet(JUMP_SETS[this.setIdx], JUMP_SETS);
+    } else {
+      const x = list[this.curRow - sets];
+      if (x && (key === 'left' || key === 'right')) this.tweaks.set(x.path, this.tweaks.get(x.path) + (key === 'right' ? x.step : -x.step));
+      else if (x && key === 'reset') this.tweaks.reset(x.path);
+    }
+    this.curRow = Math.min(Math.max(0, rows - 1), this.curRow);
+    this.render();
+    (this.root.querySelector('.cur') as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
+    (this.root.querySelector('.groups button.on') as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  /** For the tests: where the cursor is. */
+  cursor(): { group: string; row: number; set: number } {
+    return { group: this.group, row: this.curRow, set: this.setIdx };
+  }
+
   private fmt(v: number, step: number): string {
     const d = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
     return v.toFixed(d);
@@ -103,7 +170,8 @@ export class TweaksPanel {
     const v = t.get(x.path);
     const ch = t.isChanged(x.path);
     const note = ch ? `was ${this.fmt(defaultTweak(x.path), x.step)}` : '';
-    return `<div class="tw${ch ? ' ch' : ''}"><label>${esc(x.label)}<small>${[note, x.later ?? ''].filter(Boolean).join(' · ')}</small></label>
+    const cur = !this.find && !this.onlyChanged && this.curRow >= 0 && this.shown()[this.curRow - (this.hasSets() ? 1 : 0)] === x;
+    return `<div class="tw${ch ? ' ch' : ''}${cur ? ' cur' : ''}"><label>${esc(x.label)}<small>${[note, x.later ?? ''].filter(Boolean).join(' · ')}</small></label>
       <input type="range" data-p="${x.path}" min="${x.min}" max="${x.max}" step="${x.step}" value="${v}" />
       <input type="number" data-n="${x.path}" min="${x.min}" max="${x.max}" step="${x.step}" value="${this.fmt(v, x.step)}" title="${x.min} to ${x.max}" />
       <button data-r="${x.path}" class="ghost" title="Back to the default (${this.fmt(defaultTweak(x.path), x.step)})"${ch ? '' : ' disabled'}>${icon('undo')}</button></div>`;
@@ -113,7 +181,8 @@ export class TweaksPanel {
   private setsHtml(): string {
     if (this.group !== 'Jumping' && this.group !== 'Moves') return '';
     const now = this.tweaks.activeSet(JUMP_SETS);
-    return `<div class="sets"><h3>Jump sets to try (in the Move Garden)</h3><div class="row">${JUMP_SETS.map((s) => `<button data-set="${s.id}" class="${s === now ? 'on' : ''}">${esc(s.name)}</button>`).join('')}</div>
+    const on = this.curRow === 0;
+    return `<div class="sets${on ? ' cur' : ''}"><h3>Jump sets to try (in the Move Garden)</h3><div class="row">${JUMP_SETS.map((s, i) => `<button data-set="${s.id}" class="${s === now ? 'on' : ''}${on && i === this.setIdx ? ' cur' : ''}">${esc(s.name)}</button>`).join('')}</div>
       <p>${esc(now ? now.note : 'The jump sliders are somewhere of their own: none of these sets.')}</p></div>`;
   }
 
@@ -147,7 +216,7 @@ export class TweaksPanel {
         <button data-a="changed" class="${this.onlyChanged ? 'on' : ''}" title="Show only what is off its default">${n ? `<span class="badge warn">${n}</span>` : ''}Changed</button>
         <button class="go" data-a="close">${icon('play')}Play</button></header>
       <div class="body"><div class="groups">${groups}</div><div class="list">${this.listHtml()}${this.pasting ? '<p class="muted">Paste tweak text here (the JSON line is enough):</p><textarea data-paste rows="4"></textarea><p><button class="primary" data-a="usepaste">Use it</button></p>' : ''}</div></div>
-      <footer><span class="msg">${esc(this.msg)}</span>
+      <footer>${this.curRow >= 0 ? `<span class="pad">${helpLine([[['tabPrev', 'tabNext'], 'group'], ['nav', 'up and down: slider; left and right: change it'], ['confirm', 'use a set'], ['stow', 'back to default'], ['back', 'play']])}</span>` : ''}<span class="msg">${esc(this.msg)}</span>
         <button data-a="copy" title="The changed values as text: send it to Claude to make them the game's defaults">${icon('copy')}Copy settings</button><button data-a="paste">${icon('paste')}Paste</button>
         <button data-a="resetgroup">Reset ${esc(this.group)}</button><button data-a="resetall" class="danger">${this.armedReset ? 'Sure? Click again' : 'Reset everything'}</button></footer>`;
   }

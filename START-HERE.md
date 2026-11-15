@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,460 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,523 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -328,6 +328,60 @@ your enemies." So: `dodge.cooldown` is now the pause from one roll (or backstep)
 pause is kept and comes out when it is over. Hits pass through him 44% of the time while he does that (it was 66%),
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
+
+## NEXT BIG JOB, asked for by the owner (2026-11-15): slopes, a cave, and riding the shield
+His words, in the order he sent them:
+- "everything right now it VERY angular. I want to introduce some more inclines. we are to do a cave level maybe a
+  part of the sewer that eroded and met with a cave system. we can have inclined surfaces like the hill in Mario 64
+  and zelda, we can introduce a sliding mechanic, perhaps a shield surf? maybe a butt slide like mario does. this will
+  require a lot of effort because it will be working with angles and stuff we have not addressed before so be extra
+  meticulous about it."
+- "i was thinking for the slide, he could shield surf but he rides it like a skateboard, we could even give him a kick
+  flip, his shield is not super long so he rides it like a much smaller board but he uses his tail to balance and make
+  hard curves."
+What that means for the code (our notes, nothing built yet): every solid in the game is a box square to the axes
+(`Box`, `Aabb`); the controller's ground is the top of a box (`moveVertical`), its walls a box's sides (`moveAxis`);
+the jump checker, the camera's `sight`, the enemies' footing and the level builder all assume the same. A slope is a
+new kind of ground for ALL of them, so do it in this order and test each step with the real controller before the
+next: (1) a ramp solid (a box whose top runs from one height to another along one axis) that he can stand, walk and
+jump on, with the camera, shadows, enemies and `reach.ts` taught about it; (2) the slide (too steep to stand: he
+slides; and the shield ride as a move of its own: speed from the slope, the tail steering, a jump and a kickflip off
+it); (3) the cave area built for it, where the sewer has broken through. The Move Garden is the place to try (1)
+and (2) first. Do not start it as a side task: it is a job for a turn of its own.
+
+## Drawn and solid, again (2026-11-15: what the owner found walking round the Club)
+He sent pictures of the knight standing inside things. The rule is old (what is DRAWN must match what is SOLID); these
+were the places it was broken, and how each is held now:
+- **Door frames** were only drawn. `doorFrameBoxes` (rooms.ts) gives a door's two jambs and its step from the same
+  numbers `doorway.ts` draws them with (`DOOR_FRAME`); main.ts makes them solid, a course door's at once and the exit
+  door's when it has grown out of the wall (and not while he stands where a jamb will be). tests/rooms.ts.
+- **A couch's arms and cushion**, and **a beacon's bulb**, were not solid; **a barrel** was drawn a little wider than
+  its box. custom.ts, chamber.ts; tests/wedges.ts (whose furniture checks stood after the file's `process.exit` and
+  had never run: they run now).
+- **Stairs:** the rules stand him on the highest thing any part of his round footprint is over, so coming up to a step
+  he was lifted onto it while his feet were still over the tread below. He is now DRAWN on what is under his feet
+  (`feetGround` and `drawnY` in main.ts), eased, so he walks up and down steps. The rules themselves are unchanged.
+- **The fire bowl** (`brazier`) is a new model (`src/world/brazierModel.ts`): a stone foot, an iron stem on three
+  feet, a wide iron bowl with a rim, a band and ring handles, burnt black inside, a bed of coals, four tongues of
+  flame. Its sizes are `BRAZIER` in layout.ts, and custom.ts builds its two solid boxes from them. Three new textures
+  for it (`wroughtIron`, `charred`, `coals`), not offered in the level builder.
+- **Lamps** were a bright block floating in the air. Each is now a lantern (iron cap and frame, panes of light) hung
+  on a rod from whatever is over it (`roofOver` in chamber.ts), which is usually the ceiling.
+- **Ceilings:** over the walls there was nothing but the dark. Every level with walls round it now has one
+  (`ceilingOf` in layout.ts): on top of the outer walls, or higher where something inside stands tall (then the walls
+  are carried on up to it). It is only drawn, wears the walls' picture, and is seen from underneath only, so the
+  level builder's view from above is as it was. tests/rooms.ts.
+
+## The pause menu's SAVE screen, and the tweaks panel on a controller (2026-11-15)
+- "settings need to be organized better in menu": the SAVE screen was one list of seventeen rows. It is now a short
+  main list (save, load, the quick and auto saves, SETTINGS, TOOLS, photo mode, quit); SETTINGS opens a page in two
+  columns under the headings SOUND, CONTROLS and PICTURE; TOOLS opens the editor, the tweaks, the workshop and the
+  restart. Back leaves a page for the main list. From the title, OPTIONS opens straight onto SETTINGS. A setting the
+  game adds (`extras` in main.ts) says which heading it goes under with `group`. tests/menu.ts.
+- "game tweak menu can not be navigated via controller": `TweaksPanel.press` (bumpers: group; up and down: slider;
+  left and right: change it, faster while held; the bottom button uses a jump set; the top one puts a slider back;
+  the right one plays). main.ts feeds it from the controller and the touch pad while the panel is open. The keyboard
+  is still the panel's own (its boxes are typed into). tests/menu.ts.
 
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:

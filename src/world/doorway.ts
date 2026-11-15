@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { bakeVertexColor, createPs1Material } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import type { TextureName } from '../render/textures';
-import type { DoorSpec } from './rooms';
+import { DOOR_FRAME, type DoorSpec } from './rooms';
 
 type Theme = 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
 
@@ -35,7 +35,7 @@ const LOOKS: Record<Theme, Look> = {
 
 const SPARKLES = 150;
 const OUTLINE = 90; // the first sparkles trace the arch, the rest drift inside it
-const DEPTH = 0.7; // how deep each stone is: it starts this far back inside the wall
+const DEPTH = DOOR_FRAME.depth; // how deep each stone is: it starts this far back inside the wall
 const GLOW_LO = 0xffb347;
 const GLOW_HI = 0xfff2b8;
 
@@ -106,7 +106,7 @@ export class Doorway {
     const look = LOOKS[theme];
     const r = w / 2;
     const straight = h - r; // height where the arch begins
-    const t = 0.55; // how thick the stone frame is, either side of the opening
+    const t = DOOR_FRAME.jamb; // how thick the stone frame is, either side of the opening
     const lift = new THREE.Color().setRGB(look.bright, look.bright, look.bright);
     const frameMat = createPs1Material({ tex: getTexture(look.frame), color: lift });
     const keyMat = createPs1Material({ tex: getTexture(look.key), color: lift });
@@ -126,11 +126,12 @@ export class Doorway {
     const rows = 4;
     const rowH = straight / rows;
     // The step at the foot comes first.
-    addBlock(new THREE.BoxGeometry(w + 2 * t + 0.3, 0.1, 1.1), frameMat, 0, 0.05, 0.35, 0, 0, 0.95);
+    const st = DOOR_FRAME.step;
+    addBlock(new THREE.BoxGeometry(w + 2 * t + st.extra, st.height, st.depth), frameMat, 0, st.height / 2, st.out, 0, 0, 0.95);
     for (let i = 0; i < rows; i++) {
       for (const sx of [-1, 1]) {
-        const stagger = i % 2 ? 0.07 : 0; // alternate courses overhang a little, like laid stone
-        addBlock(new THREE.BoxGeometry(t + stagger, rowH * 0.97, DEPTH), frameMat, sx * (r + (t + stagger) / 2), rowH * (i + 0.5), 0.15, 0, 0.06 + (i / rows) * 0.38, jitter(i * 2 + (sx > 0 ? 1 : 0)));
+        const stagger = i % 2 ? DOOR_FRAME.stagger : 0; // alternate courses overhang a little, like laid stone
+        addBlock(new THREE.BoxGeometry(t + stagger, rowH * 0.97, DEPTH), frameMat, sx * (r + (t + stagger) / 2), rowH * (i + 0.5), DOOR_FRAME.out, 0, 0.06 + (i / rows) * 0.38, jitter(i * 2 + (sx > 0 ? 1 : 0)));
       }
     }
     const wedges = 7;

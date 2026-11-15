@@ -1043,6 +1043,64 @@ const paintMagmaRock: Painter = (p, rand) => {
 
 // ---- shared ---------------------------------------------------------------
 
+// ---- props: what things are made of (a fire bowl's iron, its burnt inside, its coals) ----
+
+/** Black iron beaten by hand: dark, with the dull marks of the hammer, a band across it and a row of studs. */
+const paintWroughtIron: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 5, 3);
+  const iron = [0x17181c, 0x212329, 0x2c2f36, 0x3a3d45, 0x4a4e57];
+  p.each((x, y) => ramp(f[y * s + x], iron, x, y, 0.35));
+  // Hammer marks: small pale crescents, each with a dark side.
+  for (let k = 0; k < 14; k++) {
+    const x = Math.floor(rand() * s), y = Math.floor(rand() * s);
+    p.blend(x, y, 0x70747e, 0.55);
+    p.blend(x + 1, y, 0x5a5e68, 0.45);
+    p.blend(x, y + 1, 0x0c0c0f, 0.6);
+    p.blend(x + 1, y + 1, 0x0c0c0f, 0.4);
+  }
+  // A band round it, with a lit top edge and a row of studs.
+  const by = Math.floor(s * 0.62);
+  p.rect(0, by, s, 5, 0x1b1c21);
+  p.hline(0, by, s, 0x5c606a);
+  p.hline(0, by + 4, s, 0x08080a);
+  for (let x = 3; x < s; x += 8) rivet(p, x, by + 2, 0x8a8e98, 0x08080a);
+  // A little rust where the wet has got at it.
+  p.speckle(rand, 18, [0x4a2a18, 0x5e3418]);
+};
+
+/** The inside of a fire bowl: burnt black, flaked with grey ash, cracked, an ember or two still alive in it. */
+const paintCharred: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 4, 3);
+  const soot = [0x050505, 0x0b0a09, 0x14110f, 0x1e1a17, 0x2a2521];
+  p.each((x, y) => ramp(f[y * s + x] * 0.9, soot, x, y, 0.4));
+  for (let k = 0; k < 5; k++) p.crack(rand, Math.floor(rand() * s), Math.floor(rand() * s), 6 + rand() * 8, rand() * Math.PI * 2, 0x000000);
+  p.speckle(rand, 34, [0x4a4844, 0x5e5a54, 0x38342f]); // ash
+  p.speckle(rand, 5, [0x8a2a0c, 0xc84a12]); // embers
+};
+
+/** A bed of coals: black lumps, the fire showing between them. It is drawn unlit, so the cracks glow in the dark. */
+const paintCoals: Painter = (p, rand) => {
+  const s = p.size;
+  const n = 5;
+  const cells = voronoi(s, n, rand);
+  const lump = [0x0a0706, 0x140c09, 0x21110b, 0x33170c];
+  const f = fbm(s, rand, 6, 2);
+  for (let y = 0; y < s; y++) {
+    for (let x = 0; x < s; x++) {
+      const c = cells[y * s + x];
+      // Near the edge of a lump the fire shows; in its middle it is black, with a dull red where it is hot through.
+      const e = (c.d2 - c.d1) / (s / n);
+      if (e < 0.1) p.set(x, y, 0xffd24a);
+      else if (e < 0.24) p.set(x, y, 0xff7a14);
+      else if (e < 0.4) p.set(x, y, bayer(x, y) < 0.6 ? 0xb8300c : 0x5a1608);
+      else p.set(x, y, ramp(f[y * s + x] * 0.8 + (c.id % 3) * 0.08, lump, x, y, 0.3));
+    }
+  }
+  p.speckle(rand, 8, 0x6a6660); // ash on the lumps
+};
+
 const paintCrate: Painter = (p, rand) => {
   const s = p.size;
   const grain = [0x3a2412, 0x6a4628, 0x784f2e, 0x86593a];
@@ -1288,6 +1346,10 @@ const DEFS = {
   ironDoor: { size: 64, seed: 402, paint: paintIronDoor },
   ironBars: { size: 32, seed: 403, paint: paintIronBars },
   hazardTrim: { size: 32, seed: 404, paint: paintHazardTrim },
+  // props (not offered in the level builder: they are what things are made of, not what rooms are built from)
+  wroughtIron: { size: 32, seed: 601, paint: paintWroughtIron },
+  charred: { size: 32, seed: 602, paint: paintCharred },
+  coals: { size: 32, seed: 603, paint: paintCoals },
   // keep
   keepStone: { size: 32, seed: 501, paint: paintKeepStone },
   royalCarpet: { size: 32, seed: 502, paint: paintRoyalCarpet },
