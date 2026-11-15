@@ -347,8 +347,9 @@ the hero's own squeaks slowed down for the guard. Sixteen recipes in `src/audio/
 - Nobody has heard these either: built by measurement and by looking at their pitch over time. tests/audio.ts: the
   mantis's cry over three times higher than the guard's and the guard's over three times higher than the stag's;
   the guard lower than the hero; tells as long as their wind-ups; the hammer heavier than an Ironback going over.
-- What still borrows: the roach and toad have always had their own; the Ironback and the bat have theirs. Nothing
-  else borrows a voice now.
+- What still borrows: the Ironback has its own snort and clang but uses the roach's wind-up (slowed) for its toss
+  and the roach's lunge for its ram; Grimsqueak's attacks are put together from shared sounds (`rumble`, `spit`,
+  `memoryOut`, `block`). The roach, toad and bat have always had their own.
 
 ## The quiet sounds (2026-11-15)
 The sound test marked nine sounds as too quiet. Measured, most were not quiet so much as nearly empty: `clank` was a
