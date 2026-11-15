@@ -120,6 +120,21 @@ for (const n of SFX_NAMES) {
   check('the thread she hangs by rings on after it is let go', heardFor(sfx('threadTwang')) > 0.4, `${heardFor(sfx('threadTwang')).toFixed(2)} s`);
   check('a hard foot on stone is a tick, quieter than a blow', heardFor(sfx('chitinTap')) < 0.06 && loud('chitinTap') < loud('hit'), `${heardFor(sfx('chitinTap')).toFixed(3)} s, ${loud('chitinTap').toFixed(3)}`);
   check('a sword on its plates is a dull knock: it does not ring as iron does, and is duller than a shield', heardFor(sfx('plateKnock')) < 0.15 && heardFor(sfx('plateKnock')) < heardFor(sfx('clank')) * 0.5 && pitch('plateKnock') < pitch('block'), `${heardFor(sfx('plateKnock')).toFixed(2)} s; ${pitch('plateKnock').toFixed(0)} against the shield's ${pitch('block').toFixed(0)}`);
+  // The Stag Knight, the Orchid Mantis and the Keep Guard have voices of their own too (they borrowed the roach's, the
+  // Ironback's snort and the hero's own squeaks, slowed down).
+  const STAG = ['stagBellow', 'stagStep', 'hammerHum', 'hammerSlam', 'stagRattle', 'stagDie'] as const;
+  const MANTIS = ['mantisHiss', 'scytheRing', 'scytheCut', 'mantisWings', 'mantisCry', 'mantisDie'] as const;
+  const GUARD = ['guardBark', 'spearReady', 'guardYelp', 'guardDie'] as const;
+  check('the Stag Knight, the Orchid Mantis and the Keep Guard each have a set of sounds of their own', [...STAG, ...MANTIS, ...GUARD].every((n) => SFX_NAMES.includes(n)));
+  check('none of those is too loud for the rest of the game', [...STAG, ...MANTIS, ...GUARD].every((n) => loud(n) < 0.45), [...STAG, ...MANTIS, ...GUARD].map((n) => `${n} ${loud(n).toFixed(2)}`).join(', '));
+  check('the mantis is the highest voice, the guard between, the stag the lowest: each cry a different creature', pitch('mantisCry') > pitch('guardYelp') * 3 && pitch('guardYelp') > pitch('stagBellow') * 3 && pitch('mantisDie') > pitch('guardDie') * 3 && pitch('guardDie') > pitch('stagDie') * 2, `cries ${pitch('mantisCry').toFixed(0)}, ${pitch('guardYelp').toFixed(0)}, ${pitch('stagBellow').toFixed(0)} Hz; ends ${pitch('mantisDie').toFixed(0)}, ${pitch('guardDie').toFixed(0)}, ${pitch('stagDie').toFixed(0)} Hz`);
+  check('the guard is a rat, but his voice is lower than the hero\'s', pitch('guardBark') < pitch('ratAttack') && pitch('guardYelp') < pitch('ratHurt'), `bark ${pitch('guardBark').toFixed(0)} against ${pitch('ratAttack').toFixed(0)}; yelp ${pitch('guardYelp').toFixed(0)} against ${pitch('ratHurt').toFixed(0)}`);
+  check('the tells last as long as what they warn of: the hammer going up, the wing cases, the scythe, the wings, the spear', Math.abs(secs('hammerHum') - 0.9) < 0.02 && Math.abs(secs('stagRattle') - 0.55) < 0.02 && Math.abs(secs('scytheRing') - 0.5) < 0.02 && Math.abs(secs('mantisWings') - 0.6) < 0.02 && Math.abs(secs('spearReady') - 0.5) < 0.02);
+  check('the hammer\'s hum climbs and its rattle quickens: louder at the end than at the start', third('hammerHum', 2) > third('hammerHum', 0) * 1.3 && third('stagRattle', 2) > third('stagRattle', 0) * 1.5 && third('mantisWings', 2) > third('mantisWings', 0) * 1.5);
+  check('the hammer landing is iron on stone: heavier than an Ironback going over, and it rings on for most of a second', loud('hammerSlam') > loud('flipClang') && heardFor(sfx('hammerSlam')) > 0.6, `${loud('hammerSlam').toFixed(2)} against ${loud('flipClang').toFixed(2)}; ${heardFor(sfx('hammerSlam')).toFixed(2)} s`);
+  check('the stag\'s footfall is far heavier than an insect\'s tap', loud('stagStep') > loud('chitinTap') * 2 && pitch('stagStep') < pitch('chitinTap') * 0.5);
+  check('a scythe going up rings thin and bright: higher than any iron in the game, and it hangs in the air', pitch('scytheRing') > pitch('clank') * 2 && pitch('scytheRing') > pitch('block') * 2 && heardFor(sfx('scytheRing')) > 0.35, `${pitch('scytheRing').toFixed(0)} Hz; ${heardFor(sfx('scytheRing')).toFixed(2)} s`);
+  check('each one\'s end runs down to almost nothing', third('stagDie', 2) < third('stagDie', 0) * 0.5 && third('mantisDie', 2) < third('mantisDie', 0) * 0.4 && third('guardDie', 2) < third('guardDie', 0) * 0.5);
 }
 check('the story has its own sounds', (['memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep'] as const).every((n) => SFX_NAMES.includes(n)));
 check('the same effect is the same every time', sfx('ratJump') === sfx('ratJump'));

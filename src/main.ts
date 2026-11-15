@@ -27,9 +27,9 @@ import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, pressPlate } from './world/plates';
 import { pinnedUnder } from './world/crush';
-import { Mantis } from './enemies/mantis';
+import { MANTIS, Mantis } from './enemies/mantis';
 import { MantisModel } from './enemies/mantisModel';
-import { Stag } from './enemies/stag';
+import { STAG, Stag } from './enemies/stag';
 import { Brood } from './enemies/brood';
 import { BroodModel } from './enemies/broodModel';
 import { Wyrm } from './enemies/wyrm';
@@ -541,67 +541,71 @@ function startGame(): void {
         else if (ev === 'rise') audio.play('broodHiss', { vol: v * 0.8, rate: 0.9, priority: 5 });
         else if (ev === 'hurt') audio.play('broodHurt', { vol: v * 0.5, priority: 4 });
       } else if (e instanceof Stag) {
-        // The Stag Knight: a deep snort when it sees the rat; each heavy footfall; the creak of the hammer going up
-        // and the crash of it landing (the floor shakes); the rush of the sweep; the rattle of its wing cases and
-        // the thump of the stomp; a clang as it goes down on one knee. A sword on it is a dull knock, no more.
-        if (ev === 'alert') audio.play('snort', { vol: v, rate: 0.5, priority: 6 });
+        // The Stag Knight, in sounds of its own: its bellow when it sees the rat; each heavy footfall, plates and
+        // all; the creak and climbing hum of the hammer going up (as long as the wind-up, and quicker and higher for
+        // the sweep) and the iron of it on the stone, over the floor shaking; the rush of the sweep; its wing cases
+        // rattling and the thump of the stomp; a groan and a clang as it goes down on one knee. A sword on it is a
+        // dull knock, no more.
+        if (ev === 'alert') audio.play('stagBellow', { vol: v, priority: 6 });
         else if (ev === 'step') {
-          audio.play('land', { vol: v * 0.7, rate: 0.55, priority: 3 });
+          audio.play('stagStep', { vol: v * 0.7, priority: 3 });
           shake = Math.max(shake, 0.025 * v);
-        } else if (ev === 'windup') {
-          audio.play('swing', { vol: v * 0.8, rate: 0.4, priority: 7 });
-          audio.play('sparkle', { vol: v * 0.5, rate: 0.7, priority: 6 });
-        } else if (ev === 'slam') {
+        } else if (ev === 'windup') audio.play('hammerHum', { vol: v * 0.9, rate: 0.9 / STAG.windup, priority: 7 });
+        else if (ev === 'slam') {
           audio.play('shock', { vol: Math.max(0.5, v), rate: 0.8, priority: 9 });
+          audio.play('hammerSlam', { vol: Math.max(0.5, v), priority: 9 });
           shake = Math.max(shake, 0.22 * v);
           if (v > 0.4) rumble.shock();
-        } else if (ev === 'sweepWind') audio.play('swing', { vol: v * 0.7, rate: 0.5, priority: 6 });
+        } else if (ev === 'sweepWind') audio.play('hammerHum', { vol: v * 0.7, rate: 0.9 / STAG.sweepWindup, priority: 6 });
         else if (ev === 'sweep') audio.play('whoosh', { vol: v, rate: 0.6, priority: 7 });
-        else if (ev === 'stompWind') {
-          audio.play('flap', { vol: v, rate: 0.7, priority: 7 });
-          audio.play('roachWind', { vol: v * 0.7, rate: 0.5, priority: 6 });
-        } else if (ev === 'stomp') {
+        else if (ev === 'stompWind') audio.play('stagRattle', { vol: v, rate: 0.55 / STAG.stompWindup, priority: 7 });
+        else if (ev === 'stomp') {
           audio.play('shock', { vol: Math.max(0.4, v), rate: 1.25, priority: 8 });
+          audio.play('stagStep', { vol: Math.max(0.4, v), rate: 0.7, priority: 7 });
           shake = Math.max(shake, 0.14 * v);
           if (v > 0.5) rumble.shock();
-        } else if (ev === 'kneel') audio.play('flipClang', { vol: v, rate: 0.7, priority: 8 });
-        else if (ev === 'rise') audio.play('snort', { vol: v * 0.8, rate: 0.7, priority: 5 });
-        else if (ev === 'hurt') audio.play('block', { vol: v * 0.8, rate: 0.7, priority: 5 });
+        } else if (ev === 'kneel') {
+          audio.play('flipClang', { vol: v, rate: 0.7, priority: 8 });
+          audio.play('stagBellow', { vol: v * 0.6, rate: 1.35, priority: 6 });
+        } else if (ev === 'rise') audio.play('stagBellow', { vol: v * 0.7, rate: 1.2, priority: 5 });
+        else if (ev === 'hurt') audio.play('plateKnock', { vol: v * 0.9, rate: 0.75, priority: 5 });
         continue;
       }
       if (e instanceof Mantis) {
-        // The mantis: a dry rattle when it sees the rat; a thin ring as a scythe goes up, and the cut; the buzz of its
-        // wings before a leap, the rush of it and the crack as its scythes hit the floor; a flutter as it springs away.
-        if (ev === 'alert') audio.play('roachWind', { vol: v * 0.9, rate: 1.7, priority: 6 });
-        else if (ev === 'windup') {
-          audio.play('sparkle', { vol: v * 0.5, rate: e.held ? 1.3 : 2.2, priority: 6 });
-          audio.play('swing', { vol: v * 0.5, rate: 0.75, priority: 5 });
-        } else if (ev === 'slash') audio.play('whoosh', { vol: v, rate: 2.1, priority: 7 });
-        else if (ev === 'crouch') {
-          audio.play('flap', { vol: v, rate: 1.9, priority: 7 });
-          audio.play('roachWind', { vol: v * 0.8, rate: 0.75, priority: 6 });
-        } else if (ev === 'leap') audio.play('whoosh', { vol: v, rate: 0.9, priority: 7 });
+        // The mantis, in sounds of its own: a dry trill when it sees the rat; the thin ring of a scythe going up (as
+        // long as the wind-up: lower and longer when the second cut is held) and the tight cut of it; its wings
+        // flaring before a leap, the rush of it and the crack as its scythes go into the floor; a flutter as it
+        // springs away; two chirps when it is struck.
+        if (ev === 'alert') audio.play('mantisHiss', { vol: v * 0.9, priority: 6 });
+        else if (ev === 'windup') audio.play('scytheRing', { vol: v * 0.7, rate: Math.max(0.7, Math.min(1.8, 0.5 / e.windupTime)), priority: 6 });
+        else if (ev === 'slash') audio.play('scytheCut', { vol: v, priority: 7 });
+        else if (ev === 'crouch') audio.play('mantisWings', { vol: v, rate: 0.6 / MANTIS.leapWindup, priority: 7 });
+        else if (ev === 'leap') audio.play('whoosh', { vol: v, rate: 0.9, priority: 7 });
         else if (ev === 'land') {
           audio.play('land', { vol: Math.max(0.3, v), rate: 1.4, priority: 7 });
-          audio.play('flipClang', { vol: v * 0.5, rate: 1.9, priority: 6 });
+          audio.play('spikeHit', { vol: v * 0.8, rate: 1.3, priority: 6 });
           shake = Math.max(shake, 0.07 * v);
-        } else if (ev === 'hop') audio.play('flap', { vol: v * 0.8, rate: 2.4, priority: 6 });
-        else if (ev === 'reel') audio.play('flipClang', { vol: v, rate: 1.7, priority: 8 });
-        else if (ev === 'hurt') audio.play('roachScreech', { vol: v * 0.8, rate: 1.55, priority: 6 });
+        } else if (ev === 'hop') audio.play('mantisWings', { vol: v * 0.6, rate: 2.2, priority: 6 });
+        else if (ev === 'reel') {
+          audio.play('scytheRing', { vol: v, rate: 0.6, priority: 8 });
+          audio.play('mantisCry', { vol: v * 0.8, rate: 0.8, priority: 7 });
+        } else if (ev === 'hurt') audio.play('mantisCry', { vol: v * 0.8, priority: 6 });
         continue;
       }
       if (e instanceof Guard) {
-        // The guard: a gruff squeak when he sees the rat, steel as he draws back, his grunt and the rush of the thrust,
-        // and the clatter of his shield knocked wide. (A sword on his shield clanks by itself, as off the ironback.)
-        if (ev === 'alert') audio.play('ratAttack', { vol: v * 0.9, rate: 0.68, priority: 6 });
-        else if (ev === 'windup') {
-          audio.play('swing', { vol: v * 0.7, rate: 0.6, priority: 6 });
-          audio.play('sparkle', { vol: v * 0.4, rate: 1.9, priority: 5 });
-        } else if (ev === 'thrust') {
+        // The guard, in sounds of his own: a soldier's bark when he sees the rat; his spear sliding back over the rim
+        // of his shield (as long as the wind-up); his bark again and the rush of the thrust; a yelp when he is
+        // struck, and with the clatter of his shield knocked wide. (A sword on his shield clanks by itself, as off
+        // the ironback.)
+        if (ev === 'alert') audio.play('guardBark', { vol: v * 0.9, rate: 0.9, priority: 6 });
+        else if (ev === 'windup') audio.play('spearReady', { vol: v * 0.7, rate: Math.max(0.7, Math.min(1.6, 0.5 / e.windupTime)), priority: 6 });
+        else if (ev === 'thrust') {
           audio.play('whoosh', { vol: v, rate: 1.6, priority: 7 });
-          audio.play('ratAttack', { vol: v * 0.8, rate: 0.75, priority: 6 });
-        } else if (ev === 'broken') audio.play('flipClang', { vol: v, rate: 1.45, priority: 8 });
-        else if (ev === 'hurt') audio.play('ratHurt', { vol: v, rate: 0.75, priority: 6 });
+          audio.play('guardBark', { vol: v * 0.8, rate: 1.2, priority: 6 });
+        } else if (ev === 'broken') {
+          audio.play('flipClang', { vol: v, rate: 1.45, priority: 8 });
+          audio.play('guardYelp', { vol: v * 0.8, rate: 0.85, priority: 6 });
+        } else if (ev === 'hurt') audio.play('guardYelp', { vol: v, priority: 6 });
         continue;
       }
       if (ev === 'snort') audio.play('snort', { vol: v, priority: 6 });
@@ -1400,11 +1404,11 @@ function startGame(): void {
         else if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: roll(0.9, 1.1), priority: 6 });
       } else if (e.kind === 'guard') {
         // (What he does has its own sounds, in beastSounds; only his fall is here.)
-        if (e.state === 'dead') audio.play('ratDie', { vol: v, rate: 0.75, priority: 6 });
+        if (e.state === 'dead') audio.play('guardDie', { vol: v, priority: 6 });
       } else if (e.kind === 'hornet') {
         if (e.state === 'dead') audio.play('hornetDie', { vol: v, priority: 6 });
       } else if (e.kind === 'mantis') {
-        if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 1.5, priority: 6 });
+        if (e.state === 'dead') audio.play('mantisDie', { vol: v, priority: 6 });
       } else if (e.kind === 'wyrm') {
         if (e.state === 'dead') {
           audio.play('wyrmDie', { vol: 1, priority: 9 });
@@ -1419,7 +1423,7 @@ function startGame(): void {
       } else if (e.kind === 'stag') {
         if (e.state === 'dead') {
           audio.play('flipClang', { vol: v, rate: 0.5, priority: 8 });
-          audio.play('roachDie', { vol: v, rate: 0.5, priority: 6 });
+          audio.play('stagDie', { vol: v, priority: 6 });
         }
       } else if (e instanceof Grimsqueak) {
         // His sounds come from what he does (bossEvents), not from his states; only his fall is here.

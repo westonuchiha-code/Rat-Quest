@@ -182,6 +182,14 @@ export const SFX_NAMES = [
   // The Hornet Lancer: the drone of its wings (looped, while one is near), the whine as it winds up to dive or run,
   // an angry buzz when it is struck, and its wings giving out.
   'hornetBuzz', 'hornetWhine', 'hornetHurt', 'hornetDie',
+  // The Stag Knight: its bellow, its footfall, the hammer going up (a creak and a climbing hum) and coming down
+  // (iron on stone), its wing cases rattling before a stomp, and its end.
+  'stagBellow', 'stagStep', 'hammerHum', 'hammerSlam', 'stagRattle', 'stagDie',
+  // The Orchid Mantis: a dry trill when it sees him, the thin ring of a scythe going up and the cut of it, its
+  // wings flaring before a leap, two chirps when it is struck, and its end.
+  'mantisHiss', 'scytheRing', 'scytheCut', 'mantisWings', 'mantisCry', 'mantisDie',
+  // The Keep Guard: a soldier's bark, his spear sliding back over the rim of his shield, a yelp, and his end.
+  'guardBark', 'spearReady', 'guardYelp', 'guardDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -586,6 +594,134 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const hz = 300 * Math.exp(-u * 1.7) + 55;
     const sputter = sq(c.osc(2, 30 - 24 * u), 0.55 - 0.3 * u) > 0 ? 1 : 0.08;
     return (sq(c.osc(0, hz), 0.3) * 0.55 + saw(c.osc(1, hz * 2)) * 0.3 + (c.r() * 2 - 1) * 0.12) * sputter * (1 - u) ** 0.8 * Math.min(1, t / 0.01);
+  }, { bits: 7 }),
+  // ---- The Stag Knight (deep, and iron) ----
+  // Its bellow: a horn's note from a chest like a barrel, swelling and falling, with breath on it.
+  stagBellow: () => draw(0.9, RATE_LO, 141, (c) => (t) => {
+    const u = t / 0.9;
+    const hz = 74 + 22 * Math.sin(Math.PI * Math.min(1, u * 1.3)) + 2 * sine(c.osc(4, 5.5));
+    const horn = saw(c.osc(0, hz)) * 0.5 + sq(c.osc(1, hz * 2), 0.4) * 0.28 + sine(c.osc(2, hz * 3)) * 0.22 + sine(c.osc(3, hz * 0.5)) * 0.4;
+    // (Its edge, which a small speaker can carry: the same note two octaves up, unsoftened.)
+    const edge = saw(c.osc(5, hz * 4)) * 0.2 + sq(c.osc(6, hz * 6), 0.3) * 0.1;
+    return (c.lp(1, horn, 0.45) * 1.6 + edge + c.lp(0, c.r() * 2 - 1, 0.3) * 0.35) * Math.min(1, t / 0.1) * Math.min(1, (0.9 - t) / 0.3);
+  }, { bits: 6 }),
+  // One of its feet coming down: its weight, and its plates knocking together a moment after.
+  stagStep: () => draw(0.26, RATE_HI, 142, (c) => {
+    const plates = struck(c, [[620, 0.9, 30], [1090, 0.6, 40], [1710, 0.35, 54]], 0.7);
+    return (t) => Math.tanh((sine(c.osc(6, 46 + 80 * Math.exp(-20 * t))) * Math.exp(-t * 15) * 1.4 + c.lp(0, c.r() * 2 - 1, 0.2) * Math.exp(-t * 26) * 0.7 + plates(t - 0.012)) * 0.9) * Math.min(1, (0.26 - t) / 0.04);
+  }, { bits: 7 }),
+  // The hammer going up: the creak of the shaft in its grip, and the hum of the iron heating, climbing, with sparks.
+  hammerHum: () => draw(0.9, RATE_HI, 143, (c) => {
+    const creak = rattle(c, RATE_HI, 0.9, 30, 14, 520, 0.985);
+    return (t) => {
+      const u = t / 0.9;
+      const hz = 82 + 96 * u * u;
+      const hum = (sine(c.osc(0, hz)) * 0.6 + saw(c.osc(1, hz * 2.01)) * 0.25 + sine(c.osc(2, hz * 3.02)) * 0.2) * (0.25 + 0.75 * u) * (0.85 + 0.15 * sine(c.osc(3, 11)));
+      const sparks = (c.r() < 0.012 + 0.03 * u ? c.r() * 2 - 1 : 0) * 0.7 * u;
+      return (hum + sparks + creak(t) * 0.35 * (1 - u)) * Math.min(1, t / 0.05) * Math.min(1, (0.9 - t) / 0.04);
+    };
+  }, { bits: 7 }),
+  // The hammer landing: iron on stone. A great low clang (two of its notes a hair apart) over the boom of the floor.
+  hammerSlam: () => draw(1.0, RATE_HI, 144, (c) => {
+    const iron = struck(c, [[176, 1, 4.5], [183, 0.5, 5], [412, 0.75, 6.5], [705, 0.5, 9], [1120, 0.3, 13], [1890, 0.18, 20]], 1.0);
+    return (t) => Math.tanh((iron(t) + sine(c.osc(8, 42 + 90 * Math.exp(-12 * t))) * Math.exp(-t * 7) * 1.3 + c.lp(0, c.r() * 2 - 1, 0.3) * Math.exp(-t * 14) * 0.8) * 0.5) * Math.min(1, (1 - t) / 0.1);
+  }, { bits: 7 }),
+  // Its wing cases lifting before a stomp: a dry clatter, quickening.
+  stagRattle: () => draw(0.55, RATE_HI, 145, (c) => {
+    const g = rattle(c, RATE_HI, 0.55, 14, 44, 980, 0.984);
+    return (t) => Math.tanh(g(t) * 1.2) * (0.5 + 0.5 * (t / 0.55)) * Math.min(1, (0.55 - t) / 0.04);
+  }, { bits: 7 }),
+  // Its end: the bellow sinking out of it, and its plates settling.
+  stagDie: () => draw(1.4, RATE_LO, 146, (c) => {
+    const plates = rattle(c, RATE_LO, 1.4, 16, 2.5, 700, 0.985);
+    return (t) => {
+      const u = t / 1.4;
+      const hz = 92 * Math.exp(-u * 1.1) + 30;
+      const horn = saw(c.osc(0, hz)) * 0.5 + sq(c.osc(1, hz * 2), 0.4) * 0.28 + sine(c.osc(2, hz * 3)) * 0.2 + sine(c.osc(3, hz * 0.5)) * 0.4;
+      const edge = saw(c.osc(5, hz * 4)) * 0.2 + sq(c.osc(6, hz * 6), 0.3) * 0.1;
+      return (c.lp(1, horn, 0.45) * 1.6 + edge) * (1 - u) ** 1.1 * Math.min(1, t / 0.05) + plates(t) * 0.8 * Math.min(1, u * 2) * Math.min(1, (1.4 - t) / 0.12);
+    };
+  }, { bits: 6 }),
+  // ---- The Orchid Mantis (thin, dry and sharp) ----
+  // Seeing him: a dry trill, rising (wing on wing case).
+  mantisHiss: () => draw(0.45, RATE_HI, 151, (c) => {
+    const trill = rattle(c, RATE_HI, 0.45, 38, 76, 3300, 0.955);
+    return (t) => {
+      const n = c.r() * 2 - 1;
+      return (Math.tanh(trill(t) * 1.4) + (n - c.lp(0, n, 0.45)) * 0.25 * (t / 0.45)) * Math.min(1, t / 0.02) * Math.min(1, (0.45 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // A scythe going up: the scrape of it coming free and a thin bright ring, like a blade drawn.
+  scytheRing: () => draw(0.5, RATE_HI, 152, (c) => {
+    const blade = struck(c, [[2640, 1, 7], [2668, 0.5, 8], [3960, 0.55, 10], [5310, 0.3, 14]], 0.25);
+    return (t) => {
+      const n = c.r() * 2 - 1;
+      return (blade(t) + (n - c.lp(0, n, 0.5)) * Math.exp(-t * 30) * 0.5) * Math.min(1, (0.5 - t) / 0.06);
+    };
+  }, { bits: 7, gain: 0.8 }),
+  // The cut: quick and tight, climbing.
+  scytheCut: () => draw(0.16, RATE_HI, 153, (c) => (t) => {
+    const u = t / 0.16;
+    const n = c.r() * 2 - 1;
+    return (c.lp(0, n, 0.2 + 0.7 * u) - c.lp(1, n, 0.12)) * bell(t, 0.16) * 1.6 + sine(c.osc(0, 3200 + 1800 * u)) * 0.12 * bell(t, 0.16);
+  }, { bits: 7 }),
+  // Its wings flaring before a leap: a papery flutter, swelling.
+  mantisWings: () => draw(0.6, RATE_HI, 154, (c) => (t) => {
+    const u = t / 0.6;
+    const n = c.r() * 2 - 1;
+    const flutter = 0.5 + 0.5 * sq(c.osc(0, 34 + 22 * u), 0.5);
+    return ((c.lp(0, n, 0.35) - c.lp(1, n, 0.08)) * 1.4 + tri(c.osc(1, 168 + 40 * u)) * 0.3) * flutter * (0.3 + 0.7 * u) * Math.min(1, t / 0.04) * Math.min(1, (0.6 - t) / 0.05);
+  }, { bits: 7 }),
+  // Struck: two thin chirps, the second lower.
+  mantisCry: () => draw(0.2, RATE_HI, 155, (c) => (t) => {
+    const second = t > 0.09;
+    const d = second ? t - 0.09 : t;
+    const hz = (second ? 3000 : 3900) - 600 * (d / 0.1);
+    return (sq(c.osc(0, hz), 0.2) * 0.5 + sine(c.osc(1, hz * 1.5)) * 0.25) * bell(d, second ? 0.11 : 0.08);
+  }, { bits: 7, gain: 0.65 }),
+  // Its end: the trill running down, thinner and slower.
+  mantisDie: () => draw(0.95, RATE_HI, 156, (c) => {
+    const trill = rattle(c, RATE_HI, 0.95, 60, 5, 3000, 0.96);
+    return (t) => {
+      const u = t / 0.95;
+      const hz = 3400 * Math.exp(-u * 1.3) + 500;
+      return (sq(c.osc(0, hz), 0.2) * 0.35 * (1 - u) ** 1.5 + Math.tanh(trill(t) * 1.3) * (1 - 0.6 * u)) * Math.min(1, t / 0.01) * Math.min(1, (0.95 - t) / 0.1);
+    };
+  }, { bits: 7 }),
+  // ---- The Keep Guard (a rat, but a soldier) ----
+  // His bark: a rat's voice, low and short.
+  guardBark: () => draw(0.2, RATE_HI, 161, (c) => (t) => {
+    const u = t / 0.2;
+    const hz = 300 - 110 * u + 30 * Math.sin(u * Math.PI);
+    const voice = saw(c.osc(0, hz)) * 0.5 + sq(c.osc(1, hz * 2.02), 0.35) * 0.25 + (c.r() * 2 - 1) * 0.18;
+    return c.lp(0, voice, 0.55) * 1.5 * (0.7 + 0.3 * sq(c.osc(2, 48), 0.5)) * bell(t, 0.2);
+  }, { bits: 7 }),
+  // His spear drawn back: steel sliding over the rim of his shield. (A scrape is many small catches: noise let through
+  // in a patter that quickens, into two ringing notes.)
+  spearReady: () => draw(0.5, RATE_HI, 162, (c) => {
+    const rim = knock(1900, RATE_HI, 0.995);
+    const rim2 = knock(2850, RATE_HI, 0.994);
+    return (t) => {
+      const u = t / 0.5;
+      const x = sq(c.osc(0, 60 + 120 * u), 0.3) > 0 && t < 0.42 ? c.r() * 2 - 1 : 0;
+      return (rim(x) + rim2(x) * 0.7) * (0.4 + 0.6 * u) * Math.min(1, (0.5 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // Struck: a pained squeak, low for a rat.
+  guardYelp: () => draw(0.26, RATE_HI, 163, (c) => (t) => {
+    const u = t / 0.26;
+    const hz = 620 - 330 * u + 40 * sine(c.osc(2, 22));
+    return c.lp(0, saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 1.5), 0.3) * 0.25 + (c.r() * 2 - 1) * 0.15, 0.6) * 1.4 * bell(t, 0.26);
+  }, { bits: 7 }),
+  // His end: a groan going down, and his gear hitting the floor.
+  guardDie: () => draw(0.95, RATE_HI, 164, (c) => {
+    const gear = struck(c, [[540, 0.8, 9], [556, 0.4, 10], [1230, 0.5, 13], [2010, 0.3, 19]], 0.9, 3);
+    return (t) => {
+      const u = Math.min(1, t / 0.6);
+      const hz = 420 * Math.exp(-u * 1.5) + 90;
+      const groan = c.lp(0, saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 2.01), 0.35) * 0.22 + (c.r() * 2 - 1) * 0.12, 0.5) * 1.5 * (1 - u) ** 0.8 * Math.min(1, t / 0.02);
+      return Math.tanh((groan + gear(t - 0.55) * 0.9) * 0.9) * Math.min(1, (0.95 - t) / 0.08);
+    };
   }, { bits: 7 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),
 };

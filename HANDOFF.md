@@ -330,6 +330,26 @@ recipes in `src/audio/synth.ts` (under "The great insects"), played from `beastS
   lies, whether a rattle quickens) and by looking at pictures of their pitch over time. tests/audio.ts holds those
   measurements: her voice at least three times higher than its, rattles quicken, ends run down, the ram heaviest.
 
+## The Stag Knight's, the Mantis's and the Keep Guard's own sounds (2026-11-15)
+They borrowed too: the Ironback's snort and the roach's wind-up for the stag, the roach's screech for the mantis,
+the hero's own squeaks slowed down for the guard. Sixteen recipes in `src/audio/synth.ts`, played from `beastSounds`:
+- **Stag Knight** (the lowest voice, and iron): `stagBellow` (sees him; shorter and higher when it rises or is
+  brought to its knee), `stagStep` (weight, then plates), `hammerHum` (the hammer going up: a creak, then a hum that
+  climbs, with sparks; played quicker and higher for the sweep), `hammerSlam` (iron on stone, over the old `shock`
+  for the floor), `stagRattle` (wing cases before a stomp), `stagDie`. A sword on it is `plateKnock`, slowed.
+- **Orchid Mantis** (the highest, thin and dry): `mantisHiss` (a rising trill), `scytheRing` (a scythe going up: lower
+  and longer when the second cut is the held one, which is the tell that matters), `scytheCut`, `mantisWings` (before
+  a leap; short and fast for a hop away), `mantisCry` (two chirps), `mantisDie`. Its scythes into the floor: `spikeHit`.
+- **Keep Guard** (a rat, but lower than the hero): `guardBark` (sees him; again as he thrusts), `spearReady` (his
+  spear sliding back over his shield's rim), `guardYelp`, `guardDie` (a groan, then his gear hitting the floor).
+- Every tell is as long as its wind-up and is played at `length / wind-up`, so it follows the sliders.
+- Still shared on purpose: `whoosh`, `land`, `shock`, `flipClang` (a shield knocked wide, a knee going down).
+- Nobody has heard these either: built by measurement and by looking at their pitch over time. tests/audio.ts: the
+  mantis's cry over three times higher than the guard's and the guard's over three times higher than the stag's;
+  the guard lower than the hero; tells as long as their wind-ups; the hammer heavier than an Ironback going over.
+- What still borrows: the roach and toad have always had their own; the Ironback and the bat have theirs. Nothing
+  else borrows a voice now.
+
 ## The quiet sounds (2026-11-15)
 The sound test marked nine sounds as too quiet. Measured, most were not quiet so much as nearly empty: `clank` was a
 twentieth of a second's tick followed by 0.85 s of silence (its resonators died in 15 ms), `flipClang` and
