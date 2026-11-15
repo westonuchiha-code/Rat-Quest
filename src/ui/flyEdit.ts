@@ -9,7 +9,8 @@
  *           E or Enter place, X delete, Q copy, G move, Z undo, Y redo, [ ] change piece, B all the pieces,
  *           R / F raise or lower, 1 2 width, 3 4 depth, T turn, J jump check, H the controls, Escape back to the map.
  * Pad: left stick fly, right stick look, jump up, sneak down, attack place, dodge delete, lock-on copy,
- *      L1 / R1 change piece, stow turns, the menu button goes back to the map.
+ *      L1 / R1 change piece, stow turns, the menu button goes back to the map. The d-pad shapes the piece: left and
+ *      right narrower and wider, up and down deeper and shallower, or (Select switches) higher and lower.
  * Touch: drag the picture to look, and the buttons.
  */
 import * as THREE from 'three';
@@ -52,6 +53,9 @@ const CSS = `
 .rq-fly .step button { min-width: 2.2em; padding: 0.2em; font-weight: 800; }
 .rq-fly .turn output { font-weight: 700; color: var(--gold); min-width: 3em; text-align: left; }
 .rq-fly .off { opacity: 0.35; pointer-events: none; }
+/* With a controller: the measures its d-pad changes just now are marked. */
+.rq-fly .step.bypad label { color: var(--gold); }
+.rq-fly .step.bypad output { box-shadow: 0 0 0 1px var(--gold); border-radius: 0.3em; }
 .rq-fly .acts { position: absolute; right: 0.6em; top: 50%; transform: translateY(-50%); display: grid; grid-template-columns: 1fr 1fr; gap: 0.4em; width: 11.5em; }
 .rq-fly .acts button { position: relative; flex-direction: column; gap: 0.15em; padding: 0.45em 0.3em; min-height: 3.5em; background: #171b24ea; font-size: 0.94em; touch-action: none; }
 .rq-fly .acts button:hover { background: #303850; }
@@ -127,6 +131,8 @@ export interface FlyInput {
   /** Turn the jump checker on or off. */
   check: boolean;
   exit: boolean;
+  /** With a controller in use: whether its d-pad's up and down change the height (true) or the depth (false). Null: no controller. */
+  padLift?: boolean | null;
 }
 
 export interface FlyHost {
@@ -179,6 +185,7 @@ export class FlyEdit {
   private targetIdx = -1;
   private bad = false;
   private readonly held = new Set<string>();
+  private padLift: boolean | null = null;
   /** Frames for which presses are not listened to (see the search box's keys). */
   private deaf = 0;
   private drag: { id: number; x: number; y: number } | null = null;
@@ -481,7 +488,7 @@ export class FlyEdit {
           ${k('J', 'jump check')}${k('H', 'this card')}${k('Esc', 'back to the map')}</div>
         <div><h4>Controller</h4>
           ${w('Left stick', 'fly')}${w('Right stick', 'look round')}${w('Jump', 'up')}${w('Sneak', 'down')}${w('Attack', 'place')}${w('Dodge', 'delete')}
-          ${w('Lock-on', 'copy the piece pointed at')}${w('L1 R1', 'the piece before, the next')}${w('Stow', 'turn it')}${w('Menu', 'back to the map')}
+          ${w('Lock-on', 'copy the piece pointed at')}${w('L1 R1', 'the piece before, the next')}${w('D-pad', 'left, right: narrower, wider. Up, down: deeper, shallower')}${w('Select', 'switches the d-pad\'s up and down to higher, lower (and back)')}${w('Stow', 'turn it')}${w('Menu', 'back to the map')}
           <h4>Touch</h4>
           ${w('Drag', 'the picture to look round')}${w('Arrows', 'on the left: fly, and up and down')}${w('Buttons', 'everything else')}</div>
       </div>
@@ -715,6 +722,14 @@ export class FlyEdit {
   /** Every frame while open: fly, aim, and work the buttons. */
   frame(dt: number, inp: FlyInput): void {
     if (!this.open) return;
+    // A controller's d-pad: which measures it changes are marked on the bar, and a switch of them is said.
+    const lift = inp.padLift ?? null;
+    if (lift !== this.padLift) {
+      const was = this.padLift;
+      this.padLift = lift;
+      for (const g of ['w', 'd', 'r']) (this.root.querySelector(`[data-g="${g}"]`) as HTMLElement).classList.toggle('bypad', lift !== null && (g === 'w' || (g === 'r') === lift));
+      if (was !== null && lift !== null) this.say(lift ? 'D-pad up and down now change its HEIGHT. (Select switches back.)' : 'D-pad up and down now change its DEPTH. (Select switches.)', 3);
+    }
     if (this.msgT > 0 && (this.msgT -= dt) <= 0) this.sync();
     if (this.deaf > 0) {
       this.deaf--;

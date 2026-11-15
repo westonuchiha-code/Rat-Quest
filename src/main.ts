@@ -47,7 +47,8 @@ import type { Foe } from './enemies/foe';
 import { ScuttlerModel } from './enemies/scuttlerModel';
 import { CombatEvents, pickAim, resolveCombat, resolveGlobs } from './combat/combat';
 import { FollowCamera } from './camera/followCamera';
-import { Action, controlSources, gamepadControls, gamepadInfo, padControls, pollGamepad } from './core/controls';
+import { Action, controlSources, gamepadControls, gamepadDpad, gamepadInfo, padControls, pollGamepad } from './core/controls';
+import { PadShaper } from './levels/place3d';
 import { bindings, BindAction, BIND_ACTIONS, BIND_NAMES } from './core/bindings';
 import { ensureGlyphCss, GLYPH_MODES, glyphMode, glyphModeLabel, helpLine, keyChip, keyLabel, kindForSteamType, lastDevice, loadGlyphMode, padLabel, pair, prompt, promptStamp, setDefaultDevice, setGlyphMode } from './ui/glyphs';
 import { setPadKindOverride } from './core/controls';
@@ -2219,6 +2220,9 @@ function startGame(): void {
   if (/[#&]tweaks\b/.test(location.hash)) setTimeout(() => tweaksPanel.show(), 300);
   // 3D editing from the builder: the game holds still while a free camera flies through the level.
   let flyDone: ((l: CustomLevel) => void) | null = null;
+  const flyShaper = new PadShaper();
+  /** In the 3D editor: whether a controller's d-pad up and down change the piece's height (or else its depth). */
+  let flyLift = false;
   const fly = new FlyEdit(gameWrap, {
     scene,
     camera,
@@ -2496,11 +2500,17 @@ function startGame(): void {
       const press = (...codes: string[]): boolean => codes.map((c) => input.consumePressed(c)).some(Boolean);
       // (While he types a piece's name into its search, none of those keys are the editor's.)
       const typing = fly.typing;
+      // A controller's d-pad shapes the piece here (see PadShaper); it does not fly, as it walks in the game.
+      // (Select switches its up and down between the piece's depth and its height.)
+      if (consumeAction('respawn')) flyLift = !flyLift;
+      const shape = flyShaper.step(dt, gamepadDpad.x, gamepadDpad.y, flyLift);
+      const dpadX = gamepadDpad.walks ? gamepadControls.moveX : 0;
+      const dpadY = gamepadDpad.walks ? gamepadControls.moveY : 0;
       const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
       const z = press('KeyZ');
       const inp = {
-        moveX: Math.max(-1, Math.min(1, k('KeyD') - k('KeyA') + sum('moveX'))),
-        moveY: Math.max(-1, Math.min(1, k('KeyW') - k('KeyS') + sum('moveY'))),
+        moveX: Math.max(-1, Math.min(1, k('KeyD') - k('KeyA') + sum('moveX') - dpadX)),
+        moveY: Math.max(-1, Math.min(1, k('KeyW') - k('KeyS') + sum('moveY') - dpadY)),
         lookX: Math.max(-1, Math.min(1, k('ArrowRight') - k('ArrowLeft') + sum('lookX'))),
         lookY: Math.max(-1, Math.min(1, k('ArrowUp') - k('ArrowDown') + sum('lookY'))),
         up: input.isDown('Space') || controlSources.some((s) => s.jumpHeld),
@@ -2512,9 +2522,9 @@ function startGame(): void {
         move: press('KeyG'),
         prev: press('BracketLeft') || consumeAction('tabPrev'),
         next: press('BracketRight') || consumeAction('tabNext'),
-        raise: (press('KeyR') ? 1 : 0) - (press('KeyF') ? 1 : 0),
-        width: (press('Digit2') ? 1 : 0) - (press('Digit1') ? 1 : 0),
-        depth: (press('Digit4') ? 1 : 0) - (press('Digit3') ? 1 : 0),
+        raise: (press('KeyR') ? 1 : 0) - (press('KeyF') ? 1 : 0) + shape.raise,
+        width: (press('Digit2') ? 1 : 0) - (press('Digit1') ? 1 : 0) + shape.width,
+        depth: (press('Digit4') ? 1 : 0) - (press('Digit3') ? 1 : 0) + shape.depth,
         turn: press('KeyT') || consumeAction('stow'),
         undo: z && !shift,
         redo: press('KeyY') || (z && shift),
@@ -2522,9 +2532,10 @@ function startGame(): void {
         help: press('KeyH'),
         check: press('KeyJ'),
         exit: press('Escape', 'KeyP') || consumeAction('menu') || consumeAction('back'),
+        padLift: gamepadInfo.connected ? flyLift : null,
       };
       fly.frame(dt, typing ? { ...inp, moveX: 0, moveY: 0, lookX: 0, lookY: 0, up: false, down: false, fast: false, place: false, del: false, pick: false, move: false, prev: false, next: false, raise: 0, width: 0, depth: 0, turn: false, undo: false, redo: false, palette: false, help: false, check: false, exit: false } : inp);
-      for (const a of ['jump', 'respawn', 'confirm', 'left', 'right', 'up', 'down'] as const) consumeAction(a);
+      for (const a of ['jump', 'confirm', 'left', 'right', 'up', 'down'] as const) consumeAction(a);
       input.takeAnyPressed();
       return;
     }

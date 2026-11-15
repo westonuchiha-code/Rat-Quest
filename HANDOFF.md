@@ -515,10 +515,18 @@ the level editor's cube button, or `#flyedit`. It wears the suite's look and sho
 - While he types in the piece search, the game is told nothing is pressed (`fly.typing` in main.ts), and the Escape
   or Enter that shuts the list is not also read as "back to the map" or "place" (`deaf`).
 - The fly arrows on the left show only on a touch screen. The mouse wheel goes forward and back.
-- tests/place3d.ts (21): placing, what is pointed at (side, top, the room's wall, a crate), copy putting down the
+- tests/place3d.ts (29, the d-pad among them): placing, what is pointed at (side, top, the room's wall, a crate), copy putting down the
   same piece, what a piece stands on, sticking out. The screen itself was driven in a browser at desktop and phone
   size (keys, the list, copy, move, undo, redo, into 3D from the level editor and back with the change kept).
-- Not done: a pad cannot change width, depth or height (its d-pad flies); nobody has used it on a real phone.
+- **With a controller** the d-pad shapes the piece (`PadShaper` in place3d.ts; main.ts feeds it `gamepadDpad`, which
+  controls.ts now gives: the d-pad as held, and whether it is what he is walking by). Left and right: narrower and
+  wider. Up and down: deeper and shallower, or, after Select, higher and lower (Select switches back). A press acts
+  at once; held, it repeats. The measures it changes are marked gold on the bar. In the game the d-pad walks when
+  the stick is at rest; in here that is taken back out of the movement, so shaping does not fly him about.
+  Height is a switch and not a held button because every button a thumb could hold already does something here
+  (guard is L1, which is also "the piece before": my first try, and it changed the piece).
+- Not done: nobody has used it on a real phone or with a real controller (it was driven with a pretend one in a
+  browser: d-pad right for a second took a slab from 3 wide to 13, and the view did not move).
 
 **Game feel** (`src/ui/tweaksPanel.ts`, rewritten). **A real fault was found here:** the panel's list of groups was
 kept by hand and six groups (Ironbacks, Flitters, Keep Guards, Mantises, Stag Knights, The Broodmother: 67 sliders)

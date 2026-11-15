@@ -100,6 +100,47 @@ export function settingsFrom(p: Piece, under: number): PlaceOpts {
 }
 
 /**
+ * A controller's d-pad in the 3D editor: it shapes the piece. Left and right make it narrower and wider, up and down
+ * deeper and shallower (its footprint, as on a map); with `lift` on (the Select button switches it), up and down
+ * raise and lower it instead. A press acts at once; held, it waits a moment and then repeats, so a floor can be
+ * drawn out quickly. (Lift is a switch and not a held button because every button a thumb could hold while the other
+ * is on the d-pad already does something here.)
+ */
+export class PadShaper {
+  private dir = '';
+  private left = 0;
+  /** `x`, `y`: the d-pad as held (-1, 0, 1; up is 1). Returns what to change this frame, each -1, 0 or 1. */
+  step(dt: number, x: number, y: number, lift: boolean): { width: number; depth: number; raise: number } {
+    const out = { width: 0, depth: 0, raise: 0 };
+    // (Left and right win over up and down if a thumb is on a corner.)
+    const dir = x < 0 ? 'left' : x > 0 ? 'right' : y > 0 ? (lift ? 'raise' : 'deep') : y < 0 ? (lift ? 'lower' : 'shallow') : '';
+    let act = false;
+    if (dir !== this.dir) {
+      this.dir = dir;
+      this.left = PadShaper.WAIT;
+      act = dir !== '';
+    } else if (dir) {
+      this.left -= dt;
+      if (this.left <= 0) {
+        this.left += PadShaper.EVERY;
+        act = true;
+      }
+    }
+    if (!act) return out;
+    if (dir === 'left') out.width = -1;
+    else if (dir === 'right') out.width = 1;
+    else if (dir === 'deep') out.depth = 1;
+    else if (dir === 'shallow') out.depth = -1;
+    else if (dir === 'raise') out.raise = 1;
+    else if (dir === 'lower') out.raise = -1;
+    return out;
+  }
+  /** Held, it starts repeating after this long, and then repeats this often. */
+  static readonly WAIT = 0.35;
+  static readonly EVERY = 0.08;
+}
+
+/**
  * The point that tells which piece the crosshair is on: just inside the surface it meets. (A piece is placed AGAINST
  * a side he points at, half a square out from it; but the piece he is pointing at is the one whose side that is, not
  * the floor in front of it.)

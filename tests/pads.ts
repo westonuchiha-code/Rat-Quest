@@ -37,6 +37,14 @@ check('a full push is 1 and a half push is in between', Math.abs(fx - 1) < 1e-6 
 // D-pad walks when the stick is at rest.
 const dp = readPad(pad(XBOX, 'standard', 4, 17, { buttons: [12, 15] }));
 check('the d-pad walks when the stick is idle', dp.moveY === 1 && dp.moveX === 1);
+// The d-pad is also given as it is held, and whether it is what he is walking by (the 3D editor uses it for something else).
+{
+  const both = readPad(pad(XBOX, 'standard', 4, 17, { buttons: [12, 15], axes: { 0: 1, 1: 0 } }));
+  const none = readPad(pad(XBOX, 'standard', 4, 17, { axes: { 0: 1, 1: 0 } }));
+  const leftDown = readPad(pad(XBOX, 'standard', 4, 17, { buttons: [13, 14] }));
+  check('the d-pad is reported as held: up and right, down and left, or not at all', dp.dpadX === 1 && dp.dpadY === 1 && leftDown.dpadX === -1 && leftDown.dpadY === -1 && none.dpadX === 0 && none.dpadY === 0);
+  check('it is what he walks by only while the stick is at rest', dp.dpadWalks && leftDown.dpadWalks && !both.dpadWalks && both.moveX === 1 && !none.dpadWalks);
+}
 
 // Non-standard pads.
 const xlin = readPad(pad('Microsoft X-Box 360 pad (Vendor: 045e Product: 028e)', '', 8, 11, { rest: { 2: -1, 5: -1 }, axes: { 5: 1, 6: -1, 7: 1, 3: 0.9 }, buttons: [0] }));

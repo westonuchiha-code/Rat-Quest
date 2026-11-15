@@ -1,5 +1,5 @@
 // 3D editing: pieces placed where the crosshair points, and the right piece picked for deleting.
-import { aimPoint, defaultRaise, faces, makePiece, pickPiece, settingsFrom, standsOn, sticksOut } from '../src/levels/place3d';
+import { PadShaper, aimPoint, defaultRaise, faces, makePiece, pickPiece, settingsFrom, standsOn, sticksOut } from '../src/levels/place3d';
 import { compileCustom, emptyCustom } from '../src/levels/custom';
 import type { Piece } from '../src/levels/custom';
 
@@ -72,6 +72,47 @@ check('looking at nothing picks nothing', pickPiece(pieces, eye, toward(0, 30, -
   check('what a piece stands on: the slab under a crumb, the floor under a slab, nothing under the floor', standsOn(pieces, { t: 'crumb', x0: 3, z0: 3, x1: 3, z1: 3, top: 2 }) === 2 && standsOn(pieces, pieces[1]) === 0 && standsOn(pieces, pieces[0]) === 0);
   check('only pieces that face a way can be turned', faces('guard') && faces('stairs') && !faces('platform') && !faces('crumb'));
   check('a piece over the edge of the room sticks out; the exit door, which stands in the wall, never does', sticksOut(makePiece('platform', 19.5, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40) && !sticksOut(makePiece('platform', 18, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40) && !sticksOut(makePiece('exit', 0, 0, 20.5, { w: 1, d: 1, raise: 0, dir: 'n' }), 40, 40));
+}
+
+// A controller's d-pad shapes the piece.
+{
+  const DT = 1 / 60;
+  /** Holds the d-pad one way for `secs`, and adds up what it did. */
+  const hold = (sh: PadShaper, secs: number, x: number, y: number, lift = false): { width: number; depth: number; raise: number; first: number } => {
+    const sum = { width: 0, depth: 0, raise: 0, first: -1 };
+    for (let i = 0; i < Math.round(secs * 60); i++) {
+      const r = sh.step(DT, x, y, lift);
+      if ((r.width || r.depth || r.raise) && sum.first < 0) sum.first = i;
+      sum.width += r.width;
+      sum.depth += r.depth;
+      sum.raise += r.raise;
+    }
+    return sum;
+  };
+  const sh = new PadShaper();
+  check('with nothing held the d-pad changes nothing', JSON.stringify(hold(sh, 0.5, 0, 0)) === JSON.stringify({ width: 0, depth: 0, raise: 0, first: -1 }));
+  const tap = hold(sh, 0.1, 1, 0);
+  check('a press to the right makes the piece one wider, at once', tap.width === 1 && tap.first === 0 && tap.depth === 0 && tap.raise === 0);
+  hold(sh, 0.1, 0, 0);
+  const held = hold(sh, 1, 1, 0);
+  check('held, it waits a moment and then goes on widening (a floor can be drawn out without thirty presses)', held.width >= 8 && held.width <= 10 && hold(new PadShaper(), PadShaper.WAIT - 0.02, 1, 0).width === 1, `${held.width} in a second`);
+  hold(sh, 0.1, 0, 0);
+  check('left makes it narrower; up and down make it deeper and shallower (its footprint, as on a map)', hold(sh, 0.05, -1, 0).width === -1 && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, 1).depth === 1) && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, -1).depth === -1));
+  hold(sh, 0.1, 0, 0);
+  const up = hold(sh, 0.05, 0, 1, true);
+  hold(sh, 0.1, 0, 0);
+  const down = hold(sh, 0.05, 0, -1, true);
+  hold(sh, 0.1, 0, 0);
+  const side = hold(sh, 0.05, 1, 0, true);
+  check('switched to height (Select), up and down raise and lower it instead (left and right still widen and narrow)', up.raise === 1 && up.depth === 0 && down.raise === -1 && down.depth === 0 && side.width === 1 && side.raise === 0);
+  hold(sh, 0.1, 0, 0);
+  const corner = hold(sh, 0.05, 1, 1);
+  check('a thumb on a corner does one thing, not two', corner.width === 1 && corner.depth === 0);
+  // Switching in the middle of a hold is a new press, of the other thing.
+  hold(sh, 0.1, 0, 0);
+  const a = hold(sh, 0.05, 0, 1, false);
+  const b2 = hold(sh, 0.05, 0, 1, true);
+  check('switching while up is held goes from deeper to higher, at once', a.depth === 1 && b2.raise === 1 && b2.depth === 0);
 }
 
 // What it places compiles.

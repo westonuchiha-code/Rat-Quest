@@ -51,6 +51,13 @@ export const padControls = createControlState();
 /** Set by a real gamepad: Xbox, PlayStation, Switch and most generic pads, picked up automatically. */
 export const gamepadControls = createControlState();
 
+/**
+ * The real gamepad's d-pad, as held: x is -1 (left) .. 1 (right), y is -1 (down) .. 1 (up). `walks`: its left stick is
+ * at rest, so the d-pad is what moveX and moveY are just now. (In the game the d-pad walks; the 3D editor gives it
+ * another job and has to take it back out of the movement.)
+ */
+export const gamepadDpad = { x: 0, y: 0, walks: false };
+
 /** Every source the game listens to. */
 export const controlSources = [padControls, gamepadControls];
 
@@ -83,6 +90,10 @@ export interface PadSnapshot {
   lookX: number;
   lookY: number;
   down: Record<PadButton, boolean>;
+  /** The d-pad as held (-1, 0 or 1 each way; up is 1), and whether it is what moveX and moveY came from. */
+  dpadX: number;
+  dpadY: number;
+  dpadWalks: boolean;
 }
 
 /** The parts of a browser Gamepad this file reads. Tests pass plain objects. */
@@ -218,6 +229,9 @@ export function readPad(gp: PadLike): PadSnapshot {
     lookX: lx,
     lookY: -ly,
     down,
+    dpadX,
+    dpadY,
+    dpadWalks: mx === 0 && my === 0 && (dpadX !== 0 || dpadY !== 0),
   };
 }
 
@@ -267,6 +281,8 @@ function releaseAll(): void {
   const g = gamepadControls;
   g.moveX = g.moveY = g.lookX = g.lookY = 0;
   g.runHeld = g.guardHeld = g.jumpHeld = false;
+  gamepadDpad.x = gamepadDpad.y = 0;
+  gamepadDpad.walks = false;
   before = {};
 }
 
@@ -311,6 +327,9 @@ export function pollGamepad(): void {
   g.moveY = s.moveY;
   g.lookX = s.lookX;
   g.lookY = s.lookY;
+  gamepadDpad.x = s.dpadX;
+  gamepadDpad.y = s.dpadY;
+  gamepadDpad.walks = s.dpadWalks;
   g.jumpHeld = s.down[bindings.pad('jump')];
   g.guardHeld = s.down[bindings.pad('guard')];
   g.runHeld = s.down[bindings.pad('sneak')];
