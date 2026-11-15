@@ -231,6 +231,27 @@ Ocarina). `research_notes/README.md` says what was read, what could not be, and 
 `reports/Super Mario 64 design research.md`, `reports/Dark Souls and Kingdom Hearts 2 design.md`,
 `reports/Ocarina of Time design research.md`. **Read each report's last section before designing a level, an enemy or
 a move.** Nothing in the game has been changed on the strength of them yet.
+**What they say, in brief** (the reports give the sources and how firm each is):
+- *Mario 64* (from its own source code): every one of Mario's high jumps is EARNED (by speed, by a second jump within
+  0.17 s of landing, by a crouch or a turn, or by a wall), and one wall kick (3.0 of his heights) out-climbs his
+  second jump (2.8). Our knight is the reverse: a double jump anywhere reaches 4.3 of his heights, a wall kick 2.5.
+  That is a large part of "I can just jump over stuff" and of the wall jump having little to do. Its team spent half
+  the project on movement in a room of blocks, and changed the levels midway so a jump "close enough" lands.
+- *Dark Souls with Kingdom Hearts 2*: Dark Souls is fair because it is READABLE (a shown wind-up, a committed blow, an
+  opening after), not because it is slow; its makers' faster games kept those rules. Kingdom Hearts 2 gets fast by
+  letting the hero grow over the game, and keeps its best fights fair by having the boss break out after a fixed
+  number of hits (a hidden count, which its critics fault for being hidden). Our game already has this blend: the
+  knight swings faster than any enemy warns, and several enemies already refuse to be mashed. What is missing is
+  shortcuts that fold a world back on itself (wall-kick climbs are the natural ones) and showing those counts.
+- *Ocarina of Time*: its lock-on came from a staged sword fight (one attacks, the rest wait), and its Stalfos
+  fights harder when it is the one locked on to; ours ignore the lock. Its dungeon designer's ramp: one idea a room,
+  then whole places built on one idea, then everything together; fewer enemies near a puzzle; no reward where it is
+  useless. The Water Temple had to be rebuilt late because the hero's numbers changed after its maps were made:
+  SETTLE THE JUMP NUMBERS BEFORE REBUILDING MORE LEVELS.
+- *Found in our own code while writing them (checked, true, not yet changed):* the wait before the next roll (0.5 s)
+  starts when a roll STARTS and a roll lasts 0.5 s, so rolls chain back to back: faster than running (7.0 against
+  6.2) and safe from hits for two thirds of each roll. And when a locked-on enemy dies the lock moves to another by
+  itself (`keepTarget`), which turns the view without the right stick.
 1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
    the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
 2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
