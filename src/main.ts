@@ -73,7 +73,7 @@ import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
-import { HUB_GUEST_DOORS, doorLetsIn } from './levels/junction';
+import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
 import type { CourseDoorDef } from './levels/types';
 import { isUnlocked, nextInOrder } from './levels/campaign';
 import { compileScene, sceneFrame } from './story/scene';
@@ -1206,6 +1206,15 @@ function startGame(): void {
     for (const st of STICKERS) discoveries.add(st.id);
     for (const l of LEVELS.slice(0, 9)) discoveries.add(`place:${l.id}`);
   }
+  // Development aid: #...&wedges=9 gives him the first nine Golden Wedges (in the order of the worlds), for looking at
+  // the doors and the pause menu part-way through the game. (They are kept, as anything found is.)
+  const giveWedges = /wedges=(\d+)/.exec(location.hash);
+  if (giveWedges) {
+    let left = Number(giveWedges[1]);
+    for (const id of ['cistern', 'pumpworks', 'works', 'sludgepit', 'sump', 'foundry', 'shaft', 'coalcellars', 'hollows', 'webs', 'faith', 'dark', 'brood', 'keep', 'lair']) {
+      for (const w of LEVELS.find((l) => l.id === id)?.wedges ?? []) if (left-- > 0) discoveries.add(`wedge:${id}:${w.id}`);
+    }
+  }
   dialog.morePrompt = () => (lastDevice() === 'touch' ? '' : prompt('jump'));
   dialog.onStart = (name) => {
     const id = charIdFor(name);
@@ -2226,7 +2235,9 @@ function startGame(): void {
     };
     const base = (l: LevelDef) => ({ id: l.id, name: l.name, blurb: l.blurb, cleared: levelProgress.cleared(l.id), perfect: levelProgress.perfect(l.id), current: l.id === cur.id });
     const rows: LevelRow[] = [];
-    if (hubLevel) rows.push({ ...base(hubLevel), kind: 'home' });
+    // Each of the Club's doors: what it asks and how near he is (every wedge he holds counts towards every door).
+    const doorOf = (cd: CourseDoorDef): DoorState => doorState(cd, total, !!cd.to && discoveries.has(`place:${cd.to}`), unlockAll || DEV.openDoors);
+    if (hubLevel) rows.push({ ...base(hubLevel), kind: 'home', doors: hubDoors().filter((cd) => !!cd.to).map(doorOf) });
     for (const cd of hubDoors()) {
       const w = cd.to ? levelById(cd.to) : null;
       if (!w) {
@@ -2236,7 +2247,7 @@ function startGame(): void {
       const areas = worldAreas(w).sort((a, b) => (a.id === w.id ? -1 : b.id === w.id ? 1 : 0));
       const all = wedgeInfo(areas);
       const shut = !doorOpen(cd);
-      rows.push({ ...base(w), kind: 'world', wedges: all.wedges, wedgeList: wedgeInfo([w]).list, locked: shut, lockText: `Its door in the Club needs ${cd.need} Golden Wedges. You have ${total}.` });
+      rows.push({ ...base(w), kind: 'world', wedges: all.wedges, wedgeList: wedgeInfo([w]).list, locked: shut, lockText: `Its door in the Club needs ${cd.need} Golden Wedges. You have ${total}.`, door: doorOf(cd) });
       for (const a of areas) {
         if (a.id === w.id) continue;
         const seen = discoveries.has(`place:${a.id}`) || unlockAll || DEV.openDoors;

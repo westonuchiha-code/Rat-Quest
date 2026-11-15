@@ -107,6 +107,30 @@ export function doorLetsIn(need: number, wedges: number, beenThrough: boolean): 
   return wedges >= need || beenThrough;
 }
 
+/** What one of the Club's doors asks, and how near he is to it: for the WORLDS page of the pause menu. */
+export interface DoorState {
+  name: string;
+  /** Golden Wedges it asks for. */
+  need: number;
+  /** Golden Wedges he holds (all of them count towards every door). */
+  have: number;
+  open: boolean;
+  /** He has been through it before (so it is open whatever it asks now). */
+  been: boolean;
+}
+/** `openAll`: every door is open (a development switch). */
+export function doorState(door: { name: string; need: number }, wedges: number, beenThrough: boolean, openAll = false): DoorState {
+  return { name: door.name, need: door.need, have: wedges, open: openAll || doorLetsIn(door.need, wedges, beenThrough), been: beenThrough };
+}
+/** In plain words: what a door wants and where he stands with it. */
+export function doorWords(d: DoorState): string {
+  const wedges = (n: number): string => `${n} Golden Wedge${n === 1 ? '' : 's'}`;
+  if (d.need <= 0) return 'No lock on this door: it is always open.';
+  if (d.have >= d.need) return `Open. It wanted ${wedges(d.need)}; you have ${d.have}.`;
+  if (d.open) return d.been ? `Open: you have been through it. (It asks ${wedges(d.need)} now; you have ${d.have}.)` : `Open. (It asks ${wedges(d.need)}; you have ${d.have}.)`;
+  return `It wants ${wedges(d.need)}. You have ${d.have}: ${d.need - d.have} more to go.`;
+}
+
 export const HUB_DOORS: CourseDoorDef[] = [
   { to: 'cistern', name: 'The Great Cistern', need: 0, door: doorOn('west', HX, 12, HZ, 0) },
   // How many wedges each wants is read from the balance table (tunable in Tweaks).

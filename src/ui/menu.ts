@@ -7,7 +7,8 @@ import { ITEMS, ItemDef, Slot } from '../data/equipment';
 import { CONSUMABLES } from '../data/consumables';
 import type { Equipment } from '../player/equipment';
 import type { Inventory } from '../player/inventory';
-import { capIcon, crumbIcon, heartIcon, itemIcon, lockIcon, nachoIcon, relicIcon, tabIcon, wedgeIcon } from './icons';
+import { capIcon, crumbIcon, doorIcon, heartIcon, itemIcon, lockIcon, nachoIcon, relicIcon, tabIcon, wedgeIcon } from './icons';
+import { doorWords, type DoorState } from '../levels/junction';
 import { ensureGlyphCss, helpLine, prompt } from './glyphs';
 import type { RumbleLevel } from '../core/rumble';
 
@@ -34,6 +35,10 @@ export interface LevelRow {
   wedges?: { got: number; of: number };
   /** Each wedge in this area, for the details. */
   wedgeList?: Array<{ name: string; got: boolean }>;
+  /** A world: the door in the Club that leads to it, what it asks and how near he is. */
+  door?: DoorState;
+  /** Home: every door in the Club, in the order they hang there. */
+  doors?: DoorState[];
 }
 
 /** One sticker in the book. Not found yet means a dark shape and question marks. */
@@ -237,6 +242,27 @@ const CSS = `
 .rq-lv.area { margin-left: 1.6em; padding: 0.4em 0.8em; }
 .rq-lv.home { background: #2a2216; border-color: #6a5430; }
 .rq-lv .wg { display: flex; align-items: center; gap: 0.25em; color: #ffe27a; font-weight: 700; }
+.rq-lv .need { display: flex; align-items: center; gap: 0.3em; color: #a9b496; font-weight: 700; }
+.rq-lv .need svg { opacity: 0.8; }
+/* A door of the Club: its name, what it asks, a bar for how near he is. */
+.rq-doors { display: flex; flex-direction: column; gap: 0.4em; }
+.rq-door { display: flex; flex-direction: column; gap: 0.15em; padding: 0.4em 0.65em 0.5em; border-radius: 0.7em; background: #141b12; border: 1px solid #2f3a2b; }
+.rq-door .top { display: flex; align-items: center; gap: 0.5em; font-weight: 700; }
+.rq-door .top .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq-door .top .cost { display: flex; align-items: center; gap: 0.25em; color: #ffe27a; white-space: nowrap; }
+.rq-door.shut .top .nm { color: #c9d2b8; }
+.rq-door.open .top .cost { color: #9fe08a; }
+.rq-door .rq-bar { margin-top: 0.15em; }
+.rq-door.open .rq-bar i { background: linear-gradient(#b6ec9c, #5fa64a); }
+.rq-door p { font-size: 0.9em; }
+/* In the list of all the Club's doors each is two thin lines with no box round it: its name and what it asks, and the
+   bar under them. (Four of them, and the rest of the card, must fit a small screen.) */
+.rq-doors { gap: 0.3em; font-size: 0.92em; }
+.rq-door.row { background: none; border: none; border-radius: 0; padding: 0; gap: 0.05em; }
+.rq-door.row .rq-bar { height: 0.42em; margin-top: 0; }
+.rq-doorlist { display: flex; flex-direction: column; gap: 0.35em; }
+.rq-detail .tag.door { background: #2c4a26; color: #c8f0b4; display: inline-flex; align-items: center; gap: 0.25em; vertical-align: middle; }
+.rq-detail .rq-h { margin: 0.2em 0 0; }
 .rq-wl { margin: 0.5em 0 0; padding: 0; list-style: none; }
 .rq-wl li { display: flex; align-items: center; gap: 0.45em; padding: 0.15em 0; }
 .rq-wl li.no { color: #9a9a88; }
@@ -738,7 +764,10 @@ export class Menu {
     const rows = lv
       .map((l, i) => {
         const wg = l.wedges && l.wedges.of ? `<span class="wg">${wedgeIcon(16, l.wedges.got > 0)}${l.wedges.got}/${l.wedges.of}</span>` : '';
-        const mark = l.locked ? lockIcon(18) : wg || (l.perfect ? '<span class="rq-star">&#9733;</span>' : l.cleared ? '<span class="rq-ok">&#10003;</span>' : '');
+        // A world behind a shut door shows how near he is to it; home shows how many of its doors are open.
+        const shut = l.locked && l.door && !l.door.open ? `<span class="need">${lockIcon(18)}${wedgeIcon(14, l.door.have > 0)}${l.door.have}/${l.door.need}</span>` : '';
+        const doors = l.doors?.length ? `<span class="wg">${doorIcon(18, true)}${l.doors.filter((d) => d.open).length}/${l.doors.length}</span>` : '';
+        const mark = shut || doors || (l.locked ? lockIcon(18) : wg || (l.perfect ? '<span class="rq-star">&#9733;</span>' : l.cleared ? '<span class="rq-ok">&#10003;</span>' : ''));
         const hidden = l.locked && l.kind === 'area';
         const lead = l.kind === 'home' ? '&#8962;' : l.kind === 'area' ? '&#8627;' : l.kind === 'world' ? '&#9673;' : String(i + 1);
         return `<div class="rq-lv${i === this.levelIdx ? ' sel' : ''}${l.current ? ' here' : ''}${l.locked ? ' locked' : ''}${l.kind ? ` ${l.kind}` : ''}" data-lv="${i}"><div class="no">${lead}</div><div class="nm">${hidden ? '? ? ?' : l.name}</div>${mark}</div>`;
@@ -749,15 +778,40 @@ export class Menu {
       ? `<ul class="rq-wl">${cur.wedgeList.map((w) => `<li class="${w.got ? '' : 'no'}">${wedgeIcon(16, w.got)}${w.name}</li>`).join('')}</ul>`
       : '';
     const go = cur?.kind === 'home' ? 'X  go home' : 'X  go there';
+    // A world behind a shut door: the door, what it asks, a bar, and the same in words. A world whose door is open: a
+    // small tag by its name (its list of wedges is what matters then, and must not be pushed off the card). At home:
+    // every door of the Club at a glance, before anything else, so that on a small screen it is never the doors that
+    // are cut off.
+    const door = cur?.door && !cur.door.open ? Menu.doorCard(cur.door, 'Its door', true) : '';
+    const doorTag = cur?.door?.open ? `<span class="tag door">${doorIcon(14, true)}door open${cur.door.need > 0 ? ` &middot; ${wedgeIcon(12)}${cur.door.need}` : ''}</span>` : '';
+    const doors = cur?.doors?.length
+      ? `<div class="rq-doorlist"><div class="rq-h">THE DOORS<span>${wedgeIcon(14)} ${cur.doors[0].have} in your purse</span></div><div class="rq-doors">${cur.doors.map((d) => Menu.doorCard(d, d.name, false)).join('')}</div></div>`
+      : '';
     const detail = cur?.locked
-      ? `<div class="rq-detail"><div class="ic">${lockIcon(48)}</div><b>${cur.kind === 'area' ? '? ? ?' : cur.name}</b><p>${cur.lockText ?? 'Clear the level before this one to open it.'}</p></div>`
+      ? `<div class="rq-detail"><div class="ic">${lockIcon(48)}</div><b>${cur.kind === 'area' ? '? ? ?' : cur.name}</b>${door || `<p>${cur.lockText ?? 'Clear the level before this one to open it.'}</p>`}</div>`
       : cur
-      ? `<div class="rq-detail"><div><b>${cur.name}</b>${cur.current ? '<span class="tag">you are here</span>' : ''}</div><p>${cur.blurb}</p>${list}<small>${go}</small></div>`
+      ? `<div class="rq-detail"><div><b>${cur.name}</b>${cur.current ? '<span class="tag">you are here</span>' : ''}${doorTag}</div>${doors}<p>${cur.blurb}</p>${list}<small>${go}</small></div>`
       : '';
     const total = lv.filter((l) => l.kind === 'world').reduce((n, l) => n + (l.wedges?.got ?? 0), 0);
     return `<div class="rq-cols items">
       <div class="rq-col"><div class="rq-h">WORLDS<span>${wedgeIcon(14)} ${total}</span></div><div class="rq-scroll">${rows}</div></div>
       <div class="rq-col"><div class="rq-h">DETAILS</div>${detail}</div></div>`;
+  }
+
+  /**
+   * One door of the Club: its name (or a title), what it asks, and a bar for how near he is to it. Open, the bar is
+   * full and green. With `words`, a line under it says the same in plain words.
+   */
+  static doorCard(d: DoorState, title: string, words: boolean): string {
+    const share = d.open || d.need <= 0 ? 100 : Math.max(0, Math.min(100, (100 * d.have) / d.need));
+    // (What it asks: shut, how many he has of how many; open, a tick and what it asked, or just "open" if it asked nothing.)
+    const cost = `<span class="cost">${d.open ? (d.need > 0 ? `&#10003; ${wedgeIcon(14)}${d.need}` : 'open') : `${wedgeIcon(14, d.have > 0)}${d.have} / ${d.need}`}</span>`;
+    const bar = `<div class="rq-bar"><i style="width:${share.toFixed(0)}%"></i></div>`;
+    const name = `${doorIcon(20, d.open)}<span class="nm">${title}</span>`;
+    // On its own, with the words: name and cost, the bar under them, then the words. In the list: all on one line.
+    return words
+      ? `<div class="rq-door ${d.open ? 'open' : 'shut'}"><div class="top">${name}${cost}</div>${bar}<p>The door is in the Club. ${doorWords(d)}</p></div>`
+      : `<div class="rq-door row ${d.open ? 'open' : 'shut'}"><div class="top">${name}${cost}</div>${bar}</div>`;
   }
 
   /** The buttons on the save screen, in order. */

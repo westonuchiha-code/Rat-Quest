@@ -79,6 +79,13 @@ export function lockIcon(size = 40): string {
   return svg(`<rect x="11" y="18" width="18" height="15" rx="3" fill="#39422f"/><path d="M14 18 V13 a6 6 0 0 1 12 0 V18" stroke="#39422f" stroke-width="3.5" fill="none"/>`, size);
 }
 
+/** An arched door in its frame: shut, with a brass lock on it; or open, the dark way through and the door swung aside. */
+export function doorIcon(size = 18, open = true): string {
+  return open
+    ? svg(`<path d="M9 36 V15 a11 11 0 0 1 22 0 V36 Z" fill="#10140e" stroke="#c9a24a" stroke-width="2.6" stroke-linejoin="round"/><path d="M9 36 V15 a11 11 0 0 1 3.2 -7.8 L19 12.5 V38.5 Z" fill="#8a5a2a" stroke="#3a240e" stroke-width="1.6" stroke-linejoin="round"/>`, size)
+    : svg(`<path d="M9 36 V15 a11 11 0 0 1 22 0 V36 Z" fill="#6a4524" stroke="#2c1b0a" stroke-width="2.6" stroke-linejoin="round"/><path d="M20 4.5 V36" stroke="#2c1b0a" stroke-width="1.6"/><rect x="15.5" y="20" width="9" height="7.5" rx="1.6" fill="#c9a24a" stroke="#2c1b0a" stroke-width="1.3"/>`, size);
+}
+
 export function crumbIcon(size = 24): string {
   return svg(`<path d="M5 28 L5 14 L35 22 L35 28 Z" fill="#f2c230" stroke="#7a5a08" stroke-width="1.5"/><circle cx="14" cy="23" r="2" fill="#b98a14"/><circle cx="26" cy="25" r="1.6" fill="#b98a14"/>`, size);
 }

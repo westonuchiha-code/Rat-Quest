@@ -503,6 +503,24 @@ in the level editor ("Ant Pikeman"): any two placed within 12 of each other pair
   down the path), tests/levels.ts +2 (`uncounted`).
 - **Not done**: none of it played by hand. The Cistern (world one) was left alone on purpose: it is roaches and toads.
 
+## The Club's doors on the WORLDS page (2026-11-15)
+The pause menu's WORLDS page now shows what each door in the Club asks and how near he is to it. (It did say so
+before, but only in words, and only for a world you had picked that was still shut.)
+- **The Club chosen** (the top row; it is what is chosen when he opens the menu at home): DETAILS starts with THE
+  DOORS: every door of the Club, its name, a bar, and "open", or a tick and what it asked, or how many he has of how
+  many (`9 / 12`). The doors come BEFORE the Club's blurb on purpose: on a small screen it is the blurb that is cut
+  off, never a door (looked at down to 740 x 360). The Club's row in the list shows how many doors are open (`2/4`).
+- **A world behind a shut door**: its row shows a lock and `9/12`; its DETAILS show the door with a bar and the same
+  in plain words ("It wants 12 Golden Wedges. You have 9: 3 more to go.").
+- **A world whose door is open**: only a small tag by its name ("door open, 5"). A card there pushed the list of its
+  wedges off the bottom of DETAILS, which a controller cannot scroll: the wedges matter more once you are in.
+- **Where it lives**: `doorState()` and `doorWords()` in levels/junction.ts (pure, tested); `LevelRow.door` / `.doors`
+  filled by `worldRows()` in main.ts; `Menu.doorCard()` and `doorIcon()` (a flat arched door, shut with a brass lock or
+  open) draw it. A door he has been through shows open even if he is short of what it asks now, and says so.
+- **Dev hash** `#...&wedges=9`: gives him the first nine wedges, for looking at this part-way through the game.
+- **Tests**: tests/menu.ts +15. **Not done**: nobody has looked at it on a real phone or TV; a player's own levels hung
+  on the Club's guest doors are listed too (up to six rows), which has not been looked at.
+
 ## Boss: the Broodmother (the first of the owner's two boss battles)
 A giant spider in her own pit off the Hollows (level id `brood`, door on the gallery's north ledge; one wedge, for
 beating her). Not strictly an insect: she was one of the boss ideas offered earlier, and the Hollows is all webs.
