@@ -129,6 +129,29 @@ function struck(c: Ctx, parts: ReadonlyArray<readonly [number, number, number]>,
   };
 }
 
+/**
+ * A dry rattle: hard little clicks, each a knock on a plate of chitin tuned to `hz`, coming `from` .. `to` times a
+ * second over `len` seconds (so it can quicken, or run down). No two clicks are quite as loud as each other.
+ */
+function rattle(c: Ctx, rate: number, len: number, from: number, to: number, hz: number, ring: number): (t: number) => number {
+  const a = knock(hz, rate, ring);
+  const b = knock(hz * 1.62, rate, ring * 0.996);
+  let turn = 1; // (so that it starts with a click)
+  let left = 0;
+  let amp = 1;
+  return (t) => {
+    const k = Math.max(0, Math.min(1, t / len));
+    turn += (from + (to - from) * k) / rate;
+    if (turn >= 1) {
+      turn -= 1;
+      left = Math.max(2, Math.round(rate * 0.0013));
+      amp = 0.6 + c.r() * 0.4;
+    }
+    const x = left-- > 0 ? (c.r() * 2 - 1) * amp : 0;
+    return (a(x) + b(x) * 0.7) / (1 - ring) / 6;
+  };
+}
+
 // ---- The sounds ----
 
 export const SFX_NAMES = [
@@ -147,6 +170,15 @@ export const SFX_NAMES = [
   'boot', 'villainLaugh',
   // Story: a memory opening and closing, cloth, a small found thing, the pang of knowing it, a soft whoosh.
   'memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep',
+  // The great insects. A hard foot on stone (both of them, and anything else with feet like that).
+  'chitinTap',
+  // The Broodmother: her scream, the rasp before a spike comes down and the crack of it going in, the rattle before
+  // her legs sweep, the thread let go, her cry when she is hurt, and her end.
+  'broodScream', 'broodHiss', 'broodRattle', 'spikeHit', 'threadTwang', 'broodHurt', 'broodDie',
+  // The Sump Wyrm: its roar, the wet hiss before it bites and the clack of its fangs, its plates rattling faster and
+  // faster before it runs, its head meeting a wall, the crack of its tail, the creak of its coil drawing tight and
+  // the crunch when it closes, a sword on its plates, its cry when its head is struck, and its end.
+  'wyrmRoar', 'wyrmHiss', 'wyrmSnap', 'wyrmRattle', 'wyrmRam', 'wyrmLash', 'wyrmCreak', 'wyrmCrunch', 'plateKnock', 'wyrmCry', 'wyrmDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -387,6 +419,145 @@ const RECIPES: Record<SfxName, () => Sample> = {
   whoosh: () => draw(0.3, RATE_HI, 65, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.06 + 0.3 * Math.sin(Math.PI * (t / 0.3))) - c.lp(1, c.r() * 2 - 1, 0.03)) * bell(t, 0.3), { bits: 7, gain: 0.5 }),
   // A footstep for story scenes and memories: a soft pat on stone.
   softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.78 }),
+  // ---- The great insects ----
+  // One hard foot coming down on stone.
+  chitinTap: () => draw(0.07, RATE_HI, 101, (c) => {
+    const hit = struck(c, [[1900, 1, 85], [3300, 0.55, 120], [430, 0.8, 70]], 1.1);
+    return (t) => hit(t);
+  }, { bits: 7, gain: 0.8 }),
+  // The Broodmother's scream: thin and high, climbing fast, hanging, then breaking downward; chopped by a chitter
+  // that slows as her breath runs out.
+  broodScream: () => draw(1.1, RATE_HI, 102, (c) => (t) => {
+    const u = t / 1.1;
+    const hz = 1250 + 1500 * Math.min(1, u / 0.18) - 900 * Math.max(0, (u - 0.6) / 0.4) ** 1.5 + 140 * sine(c.osc(3, 31));
+    const voice = sq(c.osc(0, hz), 0.22) * 0.5 + sq(c.osc(1, hz * 1.497), 0.3) * 0.3 + saw(c.osc(2, hz * 0.5)) * 0.25;
+    const n = c.r() * 2 - 1;
+    const breath = (n - c.lp(0, n, 0.25)) * 0.35;
+    const chitter = sq(c.osc(4, 46 - 18 * u), 0.55) > 0 ? 1 : 0.3;
+    return (voice + breath) * chitter * Math.min(1, t / 0.03) * Math.min(1, (1.1 - t) / 0.25);
+  }, { bits: 7 }),
+  // A spike going up: the rasp of leg on leg, a hiss chopped fifty to eighty times a second, brighter as it goes.
+  broodHiss: () => draw(0.6, RATE_HI, 103, (c) => (t) => {
+    const u = t / 0.6;
+    const n = c.r() * 2 - 1;
+    const air = n - c.lp(0, n, 0.1 + 0.25 * u);
+    const rasp = 0.5 + 0.5 * tri(c.osc(0, 52 + 30 * u));
+    return air * rasp * Math.min(1, t / 0.05) * (0.35 + 0.65 * u) * Math.min(1, (0.6 - t) / 0.06);
+  }, { bits: 7, gain: 0.8 }),
+  // Before her legs sweep: a light, quick rattle that quickens.
+  broodRattle: () => draw(0.5, RATE_HI, 104, (c) => {
+    const g = rattle(c, RATE_HI, 0.5, 22, 62, 2600, 0.98);
+    return (t) => Math.tanh(g(t) * 1.5) * (0.5 + 0.5 * (t / 0.5)) * Math.min(1, (0.5 - t) / 0.04);
+  }, { bits: 7 }),
+  // A spike driven into the stone: the crack of it, a short hard ring, and the thump through the floor.
+  spikeHit: () => draw(0.35, RATE_HI, 105, (c) => {
+    const ring = struck(c, [[1180, 1, 17], [2070, 0.7, 24], [3350, 0.4, 36]], 1.3);
+    return (t) => Math.tanh((ring(t) + sine(c.osc(6, 60 + 150 * Math.exp(-22 * t))) * Math.exp(-t * 14) * 0.9 + c.lp(0, c.r() * 2 - 1, 0.25) * Math.exp(-t * 20) * 0.8) * 0.8) * Math.min(1, (0.35 - t) / 0.05);
+  }, { bits: 7 }),
+  // The thread she hangs by, let go: a taut string's note that sags as the pull comes off it, shivering, the high
+  // part of it dying first.
+  threadTwang: () => draw(0.7, RATE_HI, 106, (c) => (t) => {
+    const f = 610 * (1 + 0.09 * Math.exp(-t * 7));
+    let v = 0;
+    for (let k = 1; k <= 6; k++) v += (sine(c.osc(k, f * k * (1 + 0.0009 * k * k))) / k) * Math.exp(-t * (3.5 + 2.2 * k));
+    const shiver = 1 + 0.3 * sine(c.osc(0, 23)) * Math.exp(-t * 3);
+    const snap = (c.r() * 2 - 1) * Math.exp(-t * 180) * 0.8;
+    return (v * shiver + snap) * Math.min(1, t / 0.002) * Math.min(1, (0.7 - t) / 0.08);
+  }, { bits: 7 }),
+  // Struck: a short yelp, falling.
+  broodHurt: () => draw(0.2, RATE_HI, 107, (c) => (t) => {
+    const hz = 2500 - 1100 * (t / 0.2) + 120 * sine(c.osc(2, 60));
+    return (sq(c.osc(0, hz), 0.25) * 0.5 + sq(c.osc(1, hz * 1.5), 0.3) * 0.25 + (c.r() * 2 - 1) * 0.25) * (sq(c.osc(3, 55), 0.6) > 0 ? 1 : 0.35) * bell(t, 0.2);
+  }, { bits: 7 }),
+  // Her end: the scream going out of her, falling and slowing; what is left is her legs ticking as they curl.
+  broodDie: () => draw(1.5, RATE_HI, 108, (c) => {
+    const legs = rattle(c, RATE_HI, 1.5, 30, 3, 2300, 0.975);
+    return (t) => {
+      const u = t / 1.5;
+      const hz = 2100 * Math.exp(-u * 2.2) + 240;
+      const voice = sq(c.osc(0, hz), 0.22) * 0.5 + sq(c.osc(1, hz * 1.497), 0.3) * 0.28 + saw(c.osc(2, hz * 0.5)) * 0.3;
+      const chitter = sq(c.osc(4, 40 - 30 * u), 0.5) > 0 ? 1 : 0.25;
+      return (voice * chitter + (c.r() * 2 - 1) * 0.2) * (1 - u) ** 1.3 * Math.min(1, t / 0.02) + legs(t) * 0.9 * Math.min(1, u * 1.6) * Math.min(1, (1.5 - t) / 0.1);
+    };
+  }, { bits: 7 }),
+  // The Sump Wyrm's roar: a throat the size of a drain. A low growl that swells and sags, shaken by the rattle of
+  // its plates, under a rush of air.
+  wyrmRoar: () => draw(1.4, RATE_LO, 111, (c) => (t) => {
+    const u = t / 1.4;
+    const hz = 58 + 34 * Math.sin(Math.PI * Math.min(1, u * 1.25)) + 5 * sine(c.osc(5, 7));
+    const growl = saw(c.osc(0, hz)) * 0.6 + sq(c.osc(1, hz * 1.5), 0.35) * 0.3 + sine(c.osc(2, hz * 0.5)) * 0.5;
+    const shake = 0.6 + 0.4 * tri(c.osc(3, 21 + 9 * u));
+    const n = c.r() * 2 - 1;
+    const air = (n - c.lp(0, n, 0.3)) * 0.4 + c.lp(1, n, 0.25) * 0.5;
+    return (growl * shake + air * (0.5 + 0.5 * shake)) * Math.min(1, t / 0.12) * Math.min(1, (1.4 - t) / 0.35);
+  }, { bits: 6 }),
+  // Its head going up over him: a wet hiss, with its fangs ticking.
+  wyrmHiss: () => draw(0.55, RATE_HI, 120, (c) => {
+    const fangs = rattle(c, RATE_HI, 0.55, 9, 16, 1500, 0.97);
+    return (t) => {
+      const u = t / 0.55;
+      const n = c.r() * 2 - 1;
+      const air = (c.lp(0, n, 0.45) - c.lp(1, n, 0.08)) * (0.75 + 0.25 * tri(c.osc(0, 37)));
+      return (air * 1.5 * Math.min(1, t / 0.07) * (0.5 + 0.5 * u) + fangs(t) * 0.5) * Math.min(1, (0.55 - t) / 0.06);
+    };
+  }, { bits: 7, gain: 0.8 }),
+  // Its fangs shutting: two hard clacks a moment apart, and the thud of its jaw.
+  wyrmSnap: () => draw(0.25, RATE_HI, 113, (c) => {
+    const a = struck(c, [[1450, 1, 30], [2380, 0.6, 42], [820, 0.8, 24]], 1.4);
+    const b = struck(c, [[1620, 1, 34], [2700, 0.5, 48], [900, 0.7, 27]], 1.2, 3);
+    return (t) => Math.tanh((a(t) + b(t - 0.035) * 0.9 + sine(c.osc(8, 70 + 120 * Math.exp(-25 * t))) * Math.exp(-t * 18) * 0.9) * 0.8) * Math.min(1, (0.25 - t) / 0.04);
+  }, { bits: 7 }),
+  // Before it runs: its plates rattling, slowly and then faster and faster.
+  wyrmRattle: () => draw(0.85, RATE_HI, 112, (c) => {
+    const g = rattle(c, RATE_HI, 0.85, 9, 36, 640, 0.988);
+    return (t) => Math.tanh(g(t) * 1.1) * (0.45 + 0.55 * (t / 0.85)) * Math.min(1, (0.85 - t) / 0.04);
+  }, { bits: 7 }),
+  // Its head meeting the wall: the blow, the boom of the wall taking it, and grit coming down after.
+  wyrmRam: () => draw(0.9, RATE_LO, 114, (c) => {
+    const plates = struck(c, [[310, 1, 14], [730, 0.6, 22], [1240, 0.3, 34]], 1.2, 2);
+    return (t) => {
+      const boom = sine(c.osc(0, 48 + 70 * Math.exp(-9 * t))) * Math.exp(-t * 5) * 1.5;
+      const grit = (c.r() < 0.05 ? c.r() * 2 - 1 : 0) * Math.exp(-t * 4.5) * (t > 0.1 ? 0.9 : 0);
+      return Math.tanh((boom + plates(t) + c.lp(0, c.r() * 2 - 1, 0.25) * Math.exp(-t * 8) * 0.8 + grit) * 0.75) * Math.min(1, (0.9 - t) / 0.1);
+    };
+  }, { bits: 6 }),
+  // Its tail coming round: air, brighter and louder, and the crack of the end of it.
+  wyrmLash: () => draw(0.32, RATE_HI, 115, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const u = Math.min(1, t / 0.2);
+    const air = (c.lp(0, n, 0.05 + 0.5 * u * u) - c.lp(1, n, 0.03)) * u * u * (t < 0.2 ? 1 : Math.exp(-(t - 0.2) * 30));
+    const d = t - 0.2;
+    const crack = d > 0 ? (c.r() * 2 - 1) * Math.exp(-d * 45) * 1.4 + sine(c.osc(0, 2400 * Math.exp(-d * 30) + 500)) * Math.exp(-d * 30) * 0.9 : 0;
+    return Math.tanh(air * 1.9 + crack);
+  }, { bits: 7 }),
+  // Its ring drawing tight: plates grinding over each other, sticking and slipping, faster and faster.
+  wyrmCreak: () => draw(0.65, RATE_HI, 116, (c) => {
+    const g = rattle(c, RATE_HI, 0.65, 24, 110, 390, 0.99);
+    return (t) => Math.tanh(g(t) * 0.45) * (0.4 + 0.6 * (t / 0.65)) * Math.min(1, t / 0.03) * Math.min(1, (0.65 - t) / 0.03);
+  }, { bits: 7, gain: 0.7 }),
+  // ...and the ring closing.
+  wyrmCrunch: () => draw(0.4, RATE_HI, 121, (c) => (t) => Math.tanh(((c.r() * 2 - 1) * Math.exp(-t * 28) * 1.3 + c.lp(0, c.r() * 2 - 1, 0.15) * Math.exp(-t * 12) * 1.4 + sine(c.osc(1, 50 + 90 * Math.exp(-t * 16))) * Math.exp(-t * 9) * 1.2 + (c.r() < 0.06 ? c.r() * 2 - 1 : 0) * Math.exp(-t * 9)) * 0.9) * Math.min(1, (0.4 - t) / 0.05), { bits: 7 }),
+  // A sword on its plates: a dull knock. (They are not iron, and do not ring.)
+  plateKnock: () => draw(0.16, RATE_HI, 117, (c) => {
+    const hit = struck(c, [[460, 1, 38], [1040, 0.55, 55], [1730, 0.25, 80]], 0.9);
+    return (t) => hit(t) + sine(c.osc(4, 85 + 80 * Math.exp(-30 * t))) * Math.exp(-t * 30) * 0.7;
+  }, { bits: 7 }),
+  // Struck on its head: a roar cut short into a cry, falling.
+  wyrmCry: () => draw(0.45, RATE_LO, 118, (c) => (t) => {
+    const hz = 310 - 170 * (t / 0.45) + 22 * sine(c.osc(3, 27));
+    return (saw(c.osc(0, hz)) * 0.55 + sq(c.osc(1, hz * 2.01), 0.3) * 0.3 + (c.r() * 2 - 1) * 0.25) * (0.6 + 0.4 * tri(c.osc(2, 33))) * bell(t, 0.45);
+  }, { bits: 6 }),
+  // Its end: the roar going out of it, sinking, and its plates rattling slower and slower until they stop.
+  wyrmDie: () => draw(2.2, RATE_LO, 119, (c) => {
+    const plates = rattle(c, RATE_LO, 2.2, 26, 2.5, 600, 0.985);
+    return (t) => {
+      const u = t / 2.2;
+      const hz = 120 * Math.exp(-u * 1.6) + 34;
+      const growl = saw(c.osc(0, hz)) * 0.6 + sq(c.osc(1, hz * 1.5), 0.35) * 0.3 + sine(c.osc(2, hz * 0.5)) * 0.5;
+      const n = c.r() * 2 - 1;
+      return (growl * (0.6 + 0.4 * tri(c.osc(3, 24 - 18 * u))) + (n - c.lp(0, n, 0.3)) * 0.35) * (1 - u) ** 1.2 * Math.min(1, t / 0.05) + plates(t) * 0.9 * Math.min(1, u * 2) * Math.min(1, (2.2 - t) / 0.15);
+    };
+  }, { bits: 6 }),
   gush: () => draw(1.5, RATE_LO, 39, (c) => (t) => (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.5) * 0.6) * (0.75 + 0.25 * Math.sin(t * Math.PI * 2 * 4)), { bits: 6, loop: true, gain: 0.7 }),
 };
 

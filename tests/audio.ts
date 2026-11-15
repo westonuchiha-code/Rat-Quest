@@ -55,6 +55,72 @@ for (const n of SFX_NAMES) {
   check('soft things stay soft: a soft step, cloth and a small thing picked up are among the quietest', (['softStep', 'cloth', 'keepsake'] as const).every((n) => loud(n) < 0.16), (['softStep', 'cloth', 'keepsake'] as const).map((n) => `${n} ${loud(n).toFixed(3)}`).join(', '));
   check('nothing was flattened into a buzz to get there', (['clank', 'flipClang', 'chainClink', 'pebbles', 'block', 'keepsake'] as const).every((n) => loud(n) < 0.3), (['clank', 'flipClang', 'chainClink', 'pebbles', 'block', 'keepsake'] as const).map((n) => `${n} ${loud(n).toFixed(3)}`).join(', '));
 }
+// The two great insects have voices of their own (they used to borrow the roach's screech, slowed down).
+{
+  const BROOD = ['broodScream', 'broodHiss', 'broodRattle', 'spikeHit', 'threadTwang', 'broodHurt', 'broodDie'] as const;
+  const WYRM = ['wyrmRoar', 'wyrmHiss', 'wyrmSnap', 'wyrmRattle', 'wyrmRam', 'wyrmLash', 'wyrmCreak', 'wyrmCrunch', 'plateKnock', 'wyrmCry', 'wyrmDie'] as const;
+  type Name = Parameters<typeof sfx>[0];
+  const loud = (n: Name): number => loudness(sfx(n));
+  const secs = (n: Name): number => sfx(n).data.length / sfx(n).rate;
+  /** Where the weight of a sound's spectrum lies, in Hz: high for a thin high voice, low for a deep one. */
+  const pitch = (n: Name): number => {
+    const { data: d, rate } = sfx(n);
+    const N = 2048;
+    let num = 0;
+    let den = 0;
+    for (let off = 0; off + N <= d.length || off === 0; off += N) {
+      const re = new Float64Array(N);
+      const im = new Float64Array(N);
+      for (let i = 0; i < N && off + i < d.length; i++) re[i] = d[off + i] * (0.5 - 0.5 * Math.cos((2 * Math.PI * i) / N));
+      for (let i = 1, j = 0; i < N; i++) {
+        let bit = N >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) [re[i], re[j]] = [re[j], re[i]];
+      }
+      for (let len = 2; len <= N; len <<= 1) {
+        const ang = (-2 * Math.PI) / len;
+        for (let i = 0; i < N; i += len) for (let k = 0; k < len / 2; k++) {
+          const wr = Math.cos(ang * k);
+          const wi = Math.sin(ang * k);
+          const p = i + k;
+          const q = p + len / 2;
+          const xr = re[q] * wr - im[q] * wi;
+          const xi = re[q] * wi + im[q] * wr;
+          re[q] = re[p] - xr;
+          im[q] = im[p] - xi;
+          re[p] += xr;
+          im[p] += xi;
+        }
+      }
+      for (let k = 1; k < N / 2; k++) {
+        const pw = re[k] * re[k] + im[k] * im[k];
+        num += pw * ((k * rate) / N);
+        den += pw;
+      }
+    }
+    return den ? num / den : 0;
+  };
+  /** The level of one third of a sound (0, 1 or 2). */
+  const third = (n: Name, k: number): number => {
+    const d = sfx(n).data;
+    const a = Math.floor((d.length * k) / 3);
+    const b = Math.floor((d.length * (k + 1)) / 3);
+    let q = 0;
+    for (let i = a; i < b; i++) q += d[i] * d[i];
+    return Math.sqrt(q / (b - a));
+  };
+  check('the Broodmother and the Sump Wyrm each have a set of sounds of their own, and feet', [...BROOD, ...WYRM, 'chitinTap' as const].every((n) => SFX_NAMES.includes(n)));
+  check('none of them is too loud for the rest of the game', [...BROOD, ...WYRM].every((n) => loud(n) < 0.45), [...BROOD, ...WYRM].map((n) => `${n} ${loud(n).toFixed(2)}`).join(', '));
+  check('her voice is high and thin, its voice is low: they cannot be mistaken for each other', pitch('broodScream') > pitch('wyrmRoar') * 3 && pitch('broodHurt') > pitch('wyrmCry') * 2 && pitch('broodDie') > pitch('wyrmDie') * 2, `scream ${pitch('broodScream').toFixed(0)} against roar ${pitch('wyrmRoar').toFixed(0)}; hurt ${pitch('broodHurt').toFixed(0)} against cry ${pitch('wyrmCry').toFixed(0)}`);
+  check('the rattles that warn of an attack quicken: louder at the end than at the start', third('wyrmRattle', 2) > third('wyrmRattle', 0) * 1.5 && third('broodRattle', 2) > third('broodRattle', 0) * 1.5 && third('wyrmCreak', 2) > third('wyrmCreak', 0) * 1.5);
+  check('each one\'s end is its longest sound, and runs down to almost nothing', secs('broodDie') >= Math.max(...BROOD.map(secs)) && secs('wyrmDie') >= Math.max(...WYRM.map(secs)) && third('broodDie', 2) < third('broodDie', 0) * 0.4 && third('wyrmDie', 2) < third('wyrmDie', 0) * 0.5 && third('broodDie', 2) > 0.02 && third('wyrmDie', 2) > 0.02);
+  check('the Wyrm\'s head meeting a wall is the heaviest thing either of them does, heavier than an Ironback going over', WYRM.every((n) => loud('wyrmRam') >= loud(n)) && BROOD.every((n) => loud('wyrmRam') >= loud(n)) && loud('wyrmRam') > loud('flipClang'), `ram ${loud('wyrmRam').toFixed(2)}`);
+  check('the wind-ups last as long as what they warn of', Math.abs(secs('wyrmRattle') - 0.85) < 0.02 && Math.abs(secs('wyrmHiss') - 0.55) < 0.02 && Math.abs(secs('wyrmCreak') - 0.65) < 0.02, `${secs('wyrmRattle').toFixed(2)}, ${secs('wyrmHiss').toFixed(2)}, ${secs('wyrmCreak').toFixed(2)}`);
+  check('the thread she hangs by rings on after it is let go', heardFor(sfx('threadTwang')) > 0.4, `${heardFor(sfx('threadTwang')).toFixed(2)} s`);
+  check('a hard foot on stone is a tick, quieter than a blow', heardFor(sfx('chitinTap')) < 0.06 && loud('chitinTap') < loud('hit'), `${heardFor(sfx('chitinTap')).toFixed(3)} s, ${loud('chitinTap').toFixed(3)}`);
+  check('a sword on its plates is a dull knock: it does not ring as iron does, and is duller than a shield', heardFor(sfx('plateKnock')) < 0.15 && heardFor(sfx('plateKnock')) < heardFor(sfx('clank')) * 0.5 && pitch('plateKnock') < pitch('block'), `${heardFor(sfx('plateKnock')).toFixed(2)} s; ${pitch('plateKnock').toFixed(0)} against the shield's ${pitch('block').toFixed(0)}`);
+}
 check('the story has its own sounds', (['memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep'] as const).every((n) => SFX_NAMES.includes(n)));
 check('the same effect is the same every time', sfx('ratJump') === sfx('ratJump'));
 check('voices exist for the rat and the roach', SFX_NAMES.includes('ratJump') && SFX_NAMES.includes('ratHurt') && SFX_NAMES.includes('roachScreech'));

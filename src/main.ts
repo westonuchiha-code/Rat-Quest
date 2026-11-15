@@ -431,78 +431,80 @@ function startGame(): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
       if (e instanceof Wyrm) {
-        // The Sump Wyrm: a long low scream when it sees him and again when it turns angry; the dry patter of all its
-        // feet; a hiss as its head goes up and the clack of its fangs; a rising rattle and a scream before it charges,
-        // the rush of it, and the crash when it finds a wall; the rattle of its tail and the whip of it; the grind of
-        // its plates as it winds its coil and the crunch as it tightens.
+        // The Sump Wyrm, in sounds of its own: its roar when it sees him and again when it turns angry; the tap of
+        // all its feet; a wet hiss with its fangs ticking as its head goes up, and the clack of them shutting; its
+        // plates rattling faster and faster before it runs (with a short roar), the rush of it, and its head meeting
+        // the wall; the same rattle, quick and high, from its tail, and the crack of that; the slow grind as it winds
+        // its coil, the creak as it draws tight and the crunch when it closes. A sword on its plates is a dull knock;
+        // on its head while it is helpless, a cry.
         const loud = Math.max(0.5, v);
         if (ev === 'roar' || ev === 'rage') {
-          audio.play('roachScreech', { vol: loud, rate: ev === 'rage' ? 0.3 : 0.36, priority: 9 });
+          audio.play('wyrmRoar', { vol: loud, rate: ev === 'rage' ? 0.85 : 1, priority: 9 });
           audio.play('rumble', { vol: loud * 0.6, rate: 1.1, priority: 6 });
           shake = Math.max(shake, 0.12);
-        } else if (ev === 'step') audio.play('softStep', { vol: v * 0.45, rate: roll(2.1, 2.8), priority: 2 });
-        else if (ev === 'biteWind') audio.play('hiss', { vol: v * 0.9, rate: e.windTime < 0.5 ? 1.5 : 1.1, priority: 7 });
-        else if (ev === 'bite') {
-          audio.play('lunge', { vol: v, rate: 0.8, priority: 7 });
-          audio.play('block', { vol: v * 0.6, rate: 1.7, priority: 6 });
-        } else if (ev === 'chargeWind') {
-          audio.play('roachWind', { vol: loud, rate: 0.45, priority: 8 });
-          audio.play('roachScreech', { vol: loud * 0.7, rate: 0.6, priority: 8 });
+        } else if (ev === 'step') audio.play('chitinTap', { vol: v * 0.32, rate: roll(1.25, 1.7), priority: 2 });
+        else if (ev === 'biteWind') audio.play('wyrmHiss', { vol: v * 0.9, rate: Math.max(1, Math.min(1.9, 0.55 / e.windTime)), priority: 7 });
+        else if (ev === 'bite') audio.play('wyrmSnap', { vol: v, priority: 7 });
+        else if (ev === 'chargeWind') {
+          // (The rattle lasts as long as the wind-up does: shorter, and so higher, before the second of two charges.)
+          audio.play('wyrmRattle', { vol: loud, rate: Math.max(1, Math.min(1.8, 0.85 / e.windTime)), priority: 8 });
+          audio.play('wyrmRoar', { vol: loud * 0.55, rate: 1.7, priority: 8 });
         } else if (ev === 'charge') {
           audio.play('whoosh', { vol: loud, rate: 0.5, priority: 8 });
           shake = Math.max(shake, 0.08);
         } else if (ev === 'ram') {
-          audio.play('shock', { vol: loud, rate: 0.7, priority: 9 });
-          audio.play('barrel', { vol: loud * 0.8, rate: 0.6, priority: 8 });
+          audio.play('wyrmRam', { vol: loud, priority: 9 });
           shake = Math.max(shake, 0.32);
           rumble.shock();
         } else if (ev === 'bump') {
           // (Angry, the first wall only turns it.)
-          audio.play('shock', { vol: loud * 0.7, rate: 1.1, priority: 8 });
+          audio.play('wyrmRam', { vol: loud * 0.7, rate: 1.35, priority: 8 });
           shake = Math.max(shake, 0.16);
-        } else if (ev === 'whipWind') audio.play('roachWind', { vol: v, rate: 1.5, priority: 7 });
-        else if (ev === 'whip') audio.play('whoosh', { vol: v, rate: 1.4, priority: 7 });
-        else if (ev === 'coil') audio.play('roachWind', { vol: loud, rate: 0.7, priority: 7 });
+        } else if (ev === 'whipWind') audio.play('wyrmRattle', { vol: v * 0.8, rate: 1.7, priority: 7 });
+        else if (ev === 'whip') audio.play('wyrmLash', { vol: v, priority: 7 });
+        else if (ev === 'coil') audio.play('wyrmRattle', { vol: loud * 0.8, rate: 0.7, priority: 7 });
         else if (ev === 'coilWind') {
-          audio.play('hiss', { vol: loud, rate: 0.7, priority: 9 });
-          audio.play('roachScreech', { vol: loud * 0.7, rate: 0.5, priority: 8 });
+          audio.play('wyrmCreak', { vol: loud, priority: 9 });
+          audio.play('wyrmHiss', { vol: loud * 0.7, rate: 0.8, priority: 8 });
         } else if (ev === 'squeeze') {
-          audio.play('crate', { vol: loud, rate: 0.6, priority: 9 });
+          audio.play('wyrmCrunch', { vol: loud, priority: 9 });
           shake = Math.max(shake, 0.16);
-        } else if (ev === 'reel') audio.play('roachDie', { vol: v, rate: 0.7, priority: 8 });
-        else if (ev === 'crit') audio.play('roachDie', { vol: v * 0.6, rate: 1.5, priority: 6 });
-        else if (ev === 'hurt') audio.play('block', { vol: v * 0.5, rate: 0.9, priority: 4 });
+        } else if (ev === 'reel') audio.play('wyrmCry', { vol: v, rate: 0.8, priority: 8 });
+        else if (ev === 'crit') audio.play('wyrmCry', { vol: v * 0.7, rate: 1.4, priority: 6 });
+        else if (ev === 'hurt') audio.play('plateKnock', { vol: v * 0.7, priority: 4 });
       } else if (e instanceof Brood) {
-        // The Broodmother: a scream when she sees him and again when she turns angry; the patter of her feet; a hiss
-        // as a spike goes up and the crack of it into the floor; the dry rattle before the scissor and the rush of
-        // it; a creak as she sinks to spring; the floor shaking where she lands; the thread twanging before she drops.
+        // The Broodmother, in sounds of her own: her scream when she sees him and again when she turns angry; the tap
+        // of her feet; the rasp of a spike going up and the crack of it into the floor; a quick light rattle before
+        // her legs sweep and the rush of them; a long low rasp as she sinks to spring; the floor shaking where she
+        // lands; the thread she hangs by let go before she drops; a yelp when she is struck.
         const loud = Math.max(0.5, v);
         if (ev === 'roar' || ev === 'rage') {
-          audio.play('roachScreech', { vol: loud, rate: ev === 'rage' ? 0.42 : 0.5, priority: 9 });
+          audio.play('broodScream', { vol: loud * 0.9, rate: ev === 'rage' ? 0.82 : 1, priority: 9 });
           audio.play('rumble', { vol: loud * 0.6, rate: 1.3, priority: 6 });
           shake = Math.max(shake, 0.12);
-        } else if (ev === 'step') audio.play('softStep', { vol: v * 0.5, rate: roll(1.5, 2.1), priority: 2 });
-        else if (ev === 'stabWind') audio.play('hiss', { vol: v * 0.8, rate: e.windTime < 0.5 ? 1.7 : 1.3, priority: 7 });
+        } else if (ev === 'step') audio.play('chitinTap', { vol: v * 0.45, rate: roll(0.8, 1.1), priority: 2 });
+        else if (ev === 'stabWind') audio.play('broodHiss', { vol: v * 0.9, rate: e.windTime < 0.5 ? 1.5 : 1.15, priority: 7 });
         else if (ev === 'stab') {
-          audio.play('whoosh', { vol: v * 0.9, rate: 1.5, priority: 7 });
-          audio.play('clank', { vol: v * 0.7, rate: 1.6, priority: 6 });
+          audio.play('whoosh', { vol: v * 0.7, rate: 1.5, priority: 6 });
+          audio.play('spikeHit', { vol: v * 0.9, priority: 7 });
           shake = Math.max(shake, 0.06 * v);
-        } else if (ev === 'sweepWind' || ev === 'whirlWind') audio.play('roachWind', { vol: v, rate: ev === 'whirlWind' ? 0.8 : 0.6, priority: 7 });
+        } else if (ev === 'sweepWind' || ev === 'whirlWind') audio.play('broodRattle', { vol: v, rate: ev === 'whirlWind' ? 0.75 : 0.65, priority: 7 });
         else if (ev === 'sweep' || ev === 'whirl') audio.play('whoosh', { vol: v, rate: ev === 'whirl' ? 0.9 : 0.7, priority: 7 });
-        else if (ev === 'crouch') audio.play('toadWind', { vol: v, rate: 0.6, priority: 7 });
+        else if (ev === 'crouch') audio.play('broodHiss', { vol: v, rate: 0.62, priority: 7 });
         else if (ev === 'leap') audio.play('whoosh', { vol: v, rate: 0.55, priority: 7 });
         else if (ev === 'slam') {
           audio.play('shock', { vol: loud, rate: 0.75, priority: 9 });
+          audio.play('spikeHit', { vol: loud * 0.7, rate: 0.7, priority: 7 });
           shake = Math.max(shake, 0.26 * Math.max(0.4, v));
           rumble.shock();
-        } else if (ev === 'climb') audio.play('whoosh', { vol: v * 0.8, rate: 1.2, priority: 6 });
-        else if (ev === 'twang') {
-          audio.play('chainClink', { vol: loud, rate: 2.2, priority: 9 });
-          audio.play('hiss', { vol: loud * 0.7, rate: 2, priority: 7 });
-        } else if (ev === 'drop') audio.play('plunge', { vol: loud, rate: 0.7, priority: 8 });
-        else if (ev === 'kneel') audio.play('roachDie', { vol: v, rate: 0.6, priority: 8 });
-        else if (ev === 'rise') audio.play('hiss', { vol: v * 0.8, rate: 0.9, priority: 5 });
-        else if (ev === 'hurt') audio.play('roachDie', { vol: v * 0.35, rate: 1.8, priority: 4 });
+        } else if (ev === 'climb') {
+          audio.play('whoosh', { vol: v * 0.8, rate: 1.2, priority: 6 });
+          audio.play('broodRattle', { vol: v * 0.6, rate: 1.3, priority: 5 });
+        } else if (ev === 'twang') audio.play('threadTwang', { vol: loud, priority: 9 });
+        else if (ev === 'drop') audio.play('plunge', { vol: loud, rate: 0.7, priority: 8 });
+        else if (ev === 'kneel') audio.play('broodHurt', { vol: v, rate: 0.55, priority: 8 });
+        else if (ev === 'rise') audio.play('broodHiss', { vol: v * 0.8, rate: 0.9, priority: 5 });
+        else if (ev === 'hurt') audio.play('broodHurt', { vol: v * 0.5, priority: 4 });
       } else if (e instanceof Stag) {
         // The Stag Knight: a deep snort when it sees the rat; each heavy footfall; the creak of the hammer going up
         // and the crash of it landing (the floor shakes); the rush of the sweep; the rattle of its wing cases and
@@ -1363,13 +1365,13 @@ function startGame(): void {
         if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 1.5, priority: 6 });
       } else if (e.kind === 'wyrm') {
         if (e.state === 'dead') {
-          audio.play('roachDie', { vol: 1, rate: 0.32, priority: 9 });
+          audio.play('wyrmDie', { vol: 1, priority: 9 });
           audio.play('recall', { vol: 0.7, rate: 0.5, priority: 8 });
         }
       } else if (e.kind === 'brood') {
         // (What she does has its own sounds, in beastSounds; only her fall is here.)
         if (e.state === 'dead') {
-          audio.play('roachDie', { vol: 1, rate: 0.4, priority: 9 });
+          audio.play('broodDie', { vol: 1, priority: 9 });
           audio.play('recall', { vol: 0.7, rate: 0.6, priority: 8 });
         }
       } else if (e.kind === 'stag') {

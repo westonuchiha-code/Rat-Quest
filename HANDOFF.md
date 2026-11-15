@@ -307,6 +307,29 @@ ends are snapped (slant, point, notch) with bare wood showing; a barrel gives st
 halves. A tumbling piece rests on its lowest corner (`Debris.low`), so boards bounce on their ends and never dip into
 the floor. tests/crates.ts checks all of it, loudness included.
 
+## The bosses' own sounds (2026-11-15)
+Both bosses used to borrow: the roach's screech slowed down for a scream, a crate breaking for the coil. Nineteen new
+recipes in `src/audio/synth.ts` (under "The great insects"), played from `beastSounds` in main.ts:
+- `chitinTap`: one hard foot on stone. Both of them walk on it (hers lower and louder, its quicker and lighter).
+- **The Broodmother** (high and thin): `broodScream` (sees him; lower when she turns angry), `broodHiss` (the rasp as
+  a spike goes up; slowed right down as she sinks to spring), `spikeHit` (the spike going in), `broodRattle` (before
+  her legs sweep or whirl), `threadTwang` (the thread let go before she drops: the tell to move), `broodHurt`,
+  `broodDie` (her scream running down into her legs ticking).
+- **The Sump Wyrm** (low and heavy): `wyrmRoar`, `wyrmHiss` (head going up to bite) and `wyrmSnap` (the fangs),
+  `wyrmRattle` (its plates, slow then fast: THE tell for a charge; quick and high from its tail before a lash; slow as
+  it winds its coil), `wyrmRam` (head into the wall: the heaviest sound either makes), `wyrmLash`, `wyrmCreak` (the
+  coil drawing tight) and `wyrmCrunch` (it closing), `plateKnock` (a sword on its plates: dull, it does not ring),
+  `wyrmCry` (struck on the head while helpless; parried), `wyrmDie`.
+- The wind-up sounds are as long as the wind-ups (0.55, 0.85, 0.65 s) and are played faster when a wind-up is
+  shorter (the second bite, the second charge), so the sound still ends as the blow lands. Change a wind-up's length
+  on its slider and the sound follows; change the default and look at the recipe's length too.
+- `rattle(c, rate, len, from, to, hz, ring)` is the helper: clicks on a tuned plate at a rate that changes.
+- Still shared, on purpose: `whoosh` (air), `shock` and `rumble` (the floor), `plunge` (her drop), `recall` (the two
+  sad notes at a boss's end, Grimsqueak's too).
+- Nobody has HEARD any of these: they were built by measurement (how loud, how long, where the weight of the pitch
+  lies, whether a rattle quickens) and by looking at pictures of their pitch over time. tests/audio.ts holds those
+  measurements: her voice at least three times higher than its, rattles quicken, ends run down, the ram heaviest.
+
 ## The quiet sounds (2026-11-15)
 The sound test marked nine sounds as too quiet. Measured, most were not quiet so much as nearly empty: `clank` was a
 twentieth of a second's tick followed by 0.85 s of silence (its resonators died in 15 ms), `flipClang` and
@@ -352,8 +375,8 @@ beating her). Not strictly an insect: she was one of the boss ideas offered earl
 - **Tests**: tests/brood.ts (47: the pit, every attack and its answer, the thread, a whole seeded fight staying on
   her floor), tests/models.ts (15 more: every frame of 63 moves measured: forelegs reach their tips, pass through
   none of her, nothing under the floor). Sheet: `#brood` (`&only=N`). Looked at alone from three sides, every state.
-- **Not done**: nobody has fought her by hand; her numbers are a first guess. Her sounds are made from existing ones
-  (roach screech slowed for the scream, a chain clink sped up for the thread). No story scene.
+- **Not done**: nobody has fought her by hand; her numbers are a first guess. No story scene. (Her sounds are her
+  own now: "The bosses' own sounds".)
 
 ## Boss: the Sump Wyrm (the second of the owner's two boss battles)
 A great centipede in its own room off the Cistern (level id `sump`, door in the Cistern's north-east corner; one
@@ -396,7 +419,8 @@ wedge, for beating it). Its whole body is in the fight: thirteen segments behind
 - **Tests**: tests/wyrm.ts (55: the room and door, the long body in combat, every attack and its answer, a whole
   fight, the twenty-fight stress run), tests/models.ts (16: drawn where it is solid, every leg reaches, nothing
   through itself or under the floor, each move's look). Sheet: `#wyrm` (`&only=N`, `&focus=head`).
-- **Not done**: nobody has fought it by hand; its numbers are first guesses. Its sounds are made from existing ones.
+- **Not done**: nobody has fought it by hand; its numbers are first guesses. (Its sounds are its own now: "The
+  bosses' own sounds".)
   A rat who keeps running round it close can stay off its head for a while (it cannot curl onto itself to follow):
   the lash and the coil are its answers, and whether they are enough needs a hand on the pad. No story scene.
 
