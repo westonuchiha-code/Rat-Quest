@@ -21,7 +21,7 @@ import { esc, icon, useDevTheme } from './devTheme';
 export type ToolId = PieceType | 'select' | 'erase' | 'pan' | 'measure' | `stamp:${string}`;
 type LayerId = 'ground' | 'water' | 'things' | 'collect' | 'folk' | 'decor' | 'marks';
 
-interface PieceInfo {
+export interface PieceInfo {
   t: PieceType;
   label: string;
   /** One line on what it is, for the status bar and the tooltip. */
@@ -106,7 +106,9 @@ const INFO = new Map<PieceType, PieceInfo>(GROUPS.flatMap((g) => g.items).map((i
 const info = (t: PieceType): PieceInfo => INFO.get(t) ?? P(t, t, '?', '#888888', 'things', '');
 const LAYERS: Array<[LayerId, string]> = [['ground', 'Ground'], ['water', 'Water and fire'], ['things', 'Breakables and machines'], ['collect', 'Collectibles'], ['folk', 'Creatures'], ['decor', 'Decor'], ['marks', 'Start, exit, markers']];
 
-/** The palette as the 3D editor reads it: groups of tools. (EDIT is the editor's own tools, SHAPES the ready-made shapes.) */
+/** Every piece with its colour, letter and one-line description, in palette order: the 3D editor shows the same palette. */
+export const PIECE_GROUPS: ReadonlyArray<{ id: string; label: string; items: ReadonlyArray<PieceInfo> }> = GROUPS;
+/** The palette as groups of tools. (EDIT is the editor's own tools, SHAPES the ready-made shapes.) */
 export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: string }> }> = [
   { group: 'EDIT', items: [{ t: 'select', label: 'Select' }, { t: 'erase', label: 'Erase' }, { t: 'pan', label: 'Pan' }, { t: 'measure', label: 'Measure' }] },
   ...GROUPS.map((g) => ({ group: g.label.toUpperCase(), items: g.items.map((i) => ({ t: i.t as ToolId, label: i.label })) })),

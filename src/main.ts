@@ -2445,26 +2445,37 @@ function startGame(): void {
       const sum = (k: 'moveX' | 'moveY' | 'lookX' | 'lookY'): number => controlSources.reduce((a, s) => a + s[k], 0);
       const k = (c: string): number => (input.isDown(c) ? 1 : 0);
       const press = (...codes: string[]): boolean => codes.map((c) => input.consumePressed(c)).some(Boolean);
-      fly.frame(dt, {
+      // (While he types a piece's name into its search, none of those keys are the editor's.)
+      const typing = fly.typing;
+      const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
+      const z = press('KeyZ');
+      const inp = {
         moveX: Math.max(-1, Math.min(1, k('KeyD') - k('KeyA') + sum('moveX'))),
         moveY: Math.max(-1, Math.min(1, k('KeyW') - k('KeyS') + sum('moveY'))),
         lookX: Math.max(-1, Math.min(1, k('ArrowRight') - k('ArrowLeft') + sum('lookX'))),
         lookY: Math.max(-1, Math.min(1, k('ArrowUp') - k('ArrowDown') + sum('lookY'))),
         up: input.isDown('Space') || controlSources.some((s) => s.jumpHeld),
         down: input.isDown('KeyC') || controlSources.some((s) => s.runHeld),
-        fast: input.isDown('ShiftLeft') || input.isDown('ShiftRight'),
+        fast: shift,
         place: press('KeyE', 'Enter') || consumeAction('attack'),
         del: press('KeyX', 'Delete', 'Backspace') || consumeAction('dodge'),
+        pick: press('KeyQ') || consumeAction('lock'),
+        move: press('KeyG'),
         prev: press('BracketLeft') || consumeAction('tabPrev'),
         next: press('BracketRight') || consumeAction('tabNext'),
         raise: (press('KeyR') ? 1 : 0) - (press('KeyF') ? 1 : 0),
         width: (press('Digit2') ? 1 : 0) - (press('Digit1') ? 1 : 0),
         depth: (press('Digit4') ? 1 : 0) - (press('Digit3') ? 1 : 0),
         turn: press('KeyT') || consumeAction('stow'),
-        undo: press('KeyZ'),
+        undo: z && !shift,
+        redo: press('KeyY') || (z && shift),
+        palette: press('KeyB'),
+        help: press('KeyH'),
+        check: press('KeyJ'),
         exit: press('Escape', 'KeyP') || consumeAction('menu') || consumeAction('back'),
-      });
-      for (const a of ['jump', 'respawn', 'confirm', 'left', 'right', 'up', 'down', 'lock'] as const) consumeAction(a);
+      };
+      fly.frame(dt, typing ? { ...inp, moveX: 0, moveY: 0, lookX: 0, lookY: 0, up: false, down: false, fast: false, place: false, del: false, pick: false, move: false, prev: false, next: false, raise: 0, width: 0, depth: 0, turn: false, undo: false, redo: false, palette: false, help: false, check: false, exit: false } : inp);
+      for (const a of ['jump', 'respawn', 'confirm', 'left', 'right', 'up', 'down'] as const) consumeAction(a);
       input.takeAnyPressed();
       return;
     }

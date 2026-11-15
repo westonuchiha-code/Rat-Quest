@@ -39,6 +39,12 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   const same = new History();
   same.push('s'); same.push('s');
   check('the same level is not recorded twice running', same.depth === 1);
+  // (The 3D editor: a piece picked up to be moved and then put back was never a change, so it is not to be redone.)
+  const lift = new History();
+  lift.push('whole');
+  const put = lift.undo('lifted');
+  lift.dropRedo();
+  check('stepping back over something that was never a change of its own leaves nothing to redo', put === 'whole' && !lift.canRedo && !lift.canUndo);
 }
 
 // ---- Flip, paste, stretch ----

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,909 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,919 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -221,7 +221,8 @@ one look (`src/ui/devTheme.ts`): the **level editor** (`src/ui/builder.ts`, rewr
 `src/levels/editOps.ts`), **Game feel** (the tweaks panel) and the **Workshop** (`src/ui/workshop.ts`: a hub for
 those two plus a sound test, go-to-any-place, and test switches: no damage, slow motion, hit shapes, creatures
 still, every door open). The Workshop is on the title screen, in the pause menu, on F4 and at `#...&workshop`.
-The title screen (`src/ui/boot.ts`) was rebuilt the same day: CONTINUE, NEW GAME, LOAD GAME, LEVEL EDITOR, WORKSHOP,
+The 3D editor (`src/ui/flyEdit.ts`, the level editor's cube button) was given the same look on 2026-11-15, with
+copy, move, redo and the full palette. The title screen (`src/ui/boot.ts`) was rebuilt the same day as the suite: CONTINUE, NEW GAME, LOAD GAME, LEVEL EDITOR, WORKSHOP,
 OPTIONS, with a card saying what the chosen one does. The owner has seen none of it yet: expect notes.
 
 **The owner plays the builds and sends screenshots of what looks wrong.** On 2026-11-14 he sent seven from the

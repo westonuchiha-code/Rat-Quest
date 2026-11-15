@@ -34,6 +34,10 @@ export class History {
     this.past.push(now);
     return s;
   }
+  /** Forgets what could be redone (after stepping back over something that was never meant as a change of its own). */
+  dropRedo(): void {
+    this.future.length = 0;
+  }
   get canUndo(): boolean {
     return this.past.length > 0;
   }

@@ -57,7 +57,58 @@ export function makePiece(t: PieceType, x: number, y: number, z: number, o: Plac
   return p;
 }
 
-/** Where the ray from the eye meets a level piece: what the Delete button would remove. */
+/** Whether a piece faces a way (so Turn means something for it). */
+export function faces(t: PieceType): boolean {
+  return FACING.has(t);
+}
+
+/** Whether a piece would stick out of a room this wide and deep. (The exit door stands in the wall, so it may.) */
+export function sticksOut(p: Piece, width: number, depth: number): boolean {
+  if (p.t === 'exit') return false;
+  return Math.max(Math.abs(p.x0), Math.abs(p.x1)) > width / 2 + 0.01 || Math.max(Math.abs(p.z0), Math.abs(p.z1)) > depth / 2 + 0.01;
+}
+
+/**
+ * The height of what a piece stands on: the highest top, among the solid boxes under its middle, that is not above
+ * its own base. 0 (the room's floor) if there is nothing.
+ */
+export function standsOn(pieces: Piece[], p: Piece): number {
+  const mx = (p.x0 + p.x1) / 2;
+  const mz = (p.z0 + p.z1) / 2;
+  const limit = isSingle(p.t) ? p.top + 0.05 : (p.bottom ?? p.top - 0.05) + 0.01;
+  let best: number | null = null;
+  for (const q of pieces) {
+    if (q === p || isSingle(q.t) || POOLS.has(q.t)) continue;
+    if (mx < Math.min(q.x0, q.x1) - 0.01 || mx > Math.max(q.x0, q.x1) + 0.01 || mz < Math.min(q.z0, q.z1) - 0.01 || mz > Math.max(q.z0, q.z1) + 0.01) continue;
+    if (q.top > limit) continue;
+    if (best === null || q.top > best) best = q.top;
+  }
+  return best ?? 0;
+}
+
+/**
+ * The settings that would put down another piece like `p` (its size, how far it stands above what is under it, the
+ * way it faces): what Pick and Move take from the piece he points at. `under` is the height of what it stands on.
+ */
+export function settingsFrom(p: Piece, under: number): PlaceOpts {
+  const round = (v: number): number => Math.round(v * 10) / 10;
+  let raise = round(p.top - under);
+  if (POOLS.has(p.t)) raise = 0;
+  else if (p.t === 'stairs') raise = round(p.top - (p.bottom ?? under));
+  else if (!isSingle(p.t) && p.bottom !== undefined) raise = round(p.top - p.bottom);
+  return { w: Math.max(1, Math.round(Math.abs(p.x1 - p.x0))), d: Math.max(1, Math.round(Math.abs(p.z1 - p.z0))), raise, dir: p.dir ?? 'n' };
+}
+
+/**
+ * The point that tells which piece the crosshair is on: just inside the surface it meets. (A piece is placed AGAINST
+ * a side he points at, half a square out from it; but the piece he is pointing at is the one whose side that is, not
+ * the floor in front of it.)
+ */
+export function aimPoint(point: { x: number; y: number; z: number }, normal: { x: number; y: number; z: number }, dist: number): { x: number; y: number; z: number; dist: number } {
+  return { x: point.x - normal.x * 0.05, y: point.y - normal.y * 0.05, z: point.z - normal.z * 0.05, dist };
+}
+
+/** Where the ray from the eye meets a level piece: what Copy, Move and Delete would act on. `hit` is the `aimPoint`. */
 export function pickPiece(
   pieces: Piece[],
   eye: { x: number; y: number; z: number },
@@ -82,7 +133,8 @@ export function pickPiece(
       bestT = t;
     }
   });
-  if (best >= 0 && (!hit || bestT < hit.dist + 0.5)) return best;
+  // (The line of sight meets its skin before it comes nearest its middle: that much further on is still it.)
+  if (best >= 0 && (!hit || bestT < hit.dist + 0.8)) return best;
   if (!hit) return -1;
   // Boxes: the one whose footprint holds the point, with its top nearest the point's height (the last drawn wins ties).
   let box = -1;

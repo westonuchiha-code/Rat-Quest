@@ -436,7 +436,31 @@ its QUEST page (two styles both called `.rq-q` made the goals 2.4 times too big;
   `tough`), **falls put him back** (`fallBack`) and **how far he sees** (`fogRange`, from a short list).
 - A placed piece is no longer left selected (the same piece can be placed again at once), and selecting a piece no
   longer changes the height of the next one (it used to: pick a river and the next slab went in at -0.85).
-- Not done: the 3D editor (`flyEdit.ts`) still has its old look; nothing was tried by hand on a real touch screen.
+- Not done: nothing was tried by hand on a real touch screen.
+
+**The 3D editor** (`src/ui/flyEdit.ts`, rewritten 2026-11-15; its rules are in `src/levels/place3d.ts`). Reached by
+the level editor's cube button, or `#flyedit`. It wears the suite's look and shows the level editor's own palette
+(`PIECE_GROUPS`, exported from builder.ts: the same groups, colours and one-line descriptions).
+- The bar along the bottom: the piece (click it, or B, for the whole list with a search: type a name, Enter takes the
+  first), its width, depth and height above the surface pointed at, and the way it faces (only for pieces that face).
+- On the right: Place, Copy, Move, Undo, Redo, Delete. **Copy** (Q, or lock-on) takes the piece pointed at, size,
+  height, facing and SETTINGS (what a crate holds, what a character says: placing from the list used to be the only
+  way, and always made a plain one); Place then puts down others like it. **Move** (G) picks it up: Place puts it
+  down, Esc or Undo puts it back, and it is one step to undo. Redo is new (`History`, shared with the level editor).
+- Gold outline: what Place would add (red, and the crosshair too, if it would stick out of the room). Blue outline:
+  the piece pointed at. **That used to be wrong on a side face**: point at the side of a slab and it took the floor in
+  front of it (Delete would have removed the floor). `aimPoint` now says which piece the crosshair is ON; a piece is
+  still placed AGAINST a side, half a square out.
+- Along the top: back to the map, where the crosshair is and what it is on, the jump check (J: it can be switched on
+  and off in here now), and a card of every control (H) for keyboard, controller and touch.
+- The game's own hearts, counts and goal are hidden while it is open (`.rq-fly-on`, as photo mode does).
+- While he types in the piece search, the game is told nothing is pressed (`fly.typing` in main.ts), and the Escape
+  or Enter that shuts the list is not also read as "back to the map" or "place" (`deaf`).
+- The fly arrows on the left show only on a touch screen. The mouse wheel goes forward and back.
+- tests/place3d.ts (21): placing, what is pointed at (side, top, the room's wall, a crate), copy putting down the
+  same piece, what a piece stands on, sticking out. The screen itself was driven in a browser at desktop and phone
+  size (keys, the list, copy, move, undo, redo, into 3D from the level editor and back with the change kept).
+- Not done: a pad cannot change width, depth or height (its d-pad flies); nobody has used it on a real phone.
 
 **Game feel** (`src/ui/tweaksPanel.ts`, rewritten). **A real fault was found here:** the panel's list of groups was
 kept by hand and six groups (Ironbacks, Flitters, Keep Guards, Mantises, Stag Knights, The Broodmother: 67 sliders)
