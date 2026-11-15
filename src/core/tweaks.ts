@@ -284,6 +284,26 @@ export const TWEAK_GROUPS: string[] = (() => {
 type Table = Record<string, unknown>;
 const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, firefly: FIREFLY as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
+/**
+ * Sets to try: a few sliders moved together, for a question that takes more than one of them. The jump sets are
+ * for the Move Garden (reports/Super Mario 64 design research.md: Mario's wall kick out-climbs his second jump; the
+ * knight's double jump out-climbs his wall kick). Using a set puts every slider that any set moves back to its
+ * default first, so the sets do not pile up on one another.
+ */
+export interface TweakSet {
+  id: string;
+  name: string;
+  note: string;
+  values: Record<string, number>;
+}
+export const JUMP_SETS: TweakSet[] = [
+  { id: 'asis', name: 'As it is', note: 'The game as it is: a double jump reaches 4.6, a wall kick climbs 2.8.', values: {} },
+  { id: 'kick', name: 'Stronger wall kick', note: 'A wall kick climbs 3.9 where it climbed 2.8. Nothing else changes.', values: { 'moves.wallKickUp': 12 } },
+  { id: 'double', name: 'Smaller double jump', note: 'A double jump reaches 3.4 where it reached 4.6. Nothing else changes.', values: { 'jump.doubleVelocity': 6 } },
+  { id: 'both', name: 'Both', note: 'A wall kick climbs 3.9 and a double jump reaches 3.4: the wall is the way up.', values: { 'moves.wallKickUp': 12, 'jump.doubleVelocity': 6 } },
+  { id: 'mario', name: "Mario's proportions", note: 'For his size, what Mario has: a double jump that reaches 3 and a wall kick that climbs 3.4.', values: { 'moves.wallKickUp': 11, 'jump.doubleVelocity': 4.5 } },
+];
+
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {
   const parts = path.split('.');
@@ -349,6 +369,19 @@ export class Tweaks {
   reset(path?: string): void {
     for (const t of TWEAKS) if (!path || t.path === path) this.apply(t, DEFAULTS[t.path]);
     this.save();
+  }
+
+  /** Uses a set: every slider any of `sets` moves goes back to its default, then this set's are put on. */
+  useSet(set: TweakSet, sets: TweakSet[]): void {
+    const paths = new Set(sets.flatMap((s) => Object.keys(s.values)));
+    for (const t of TWEAKS) if (paths.has(t.path)) this.apply(t, set.values[t.path] ?? DEFAULTS[t.path]);
+    this.save();
+  }
+
+  /** Which of `sets` the sliders are at now (every slider the sets move is where that set puts it), or null. */
+  activeSet(sets: TweakSet[]): TweakSet | null {
+    const paths = [...new Set(sets.flatMap((s) => Object.keys(s.values)))];
+    return sets.find((s) => paths.every((p) => Math.abs(readTweak(p) - (s.values[p] ?? DEFAULTS[p])) < 1e-9)) ?? null;
   }
 
   /** The changed values as text: what to send to Claude to make them the game's defaults. */

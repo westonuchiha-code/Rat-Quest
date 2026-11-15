@@ -12,7 +12,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Every mechanic has been built and tested by machine; the owner has not reported back on the latest builds.
 
 ## The owner's standing rules (follow all of them)
-- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all ten files it writes.
+- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all eleven files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
   owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
 - No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,411 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,453 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -37,10 +37,11 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
    One test: `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`
 
 ## Builds
-- `bash scripts/deliver.sh ../deliver` writes all ten files:
+- `bash scripts/deliver.sh ../deliver` writes all eleven files:
   - ratquest.html (with the test pad)
   - ratquest-hub/cistern/foundry/hollows/keep.html (open on that place)
   - ratquest-testroom.html (the Club with every door open)
+  - ratquest-garden.html (the Move Garden: a test room for the jump numbers; see "The Move Garden" below)
   - ratquest-nopad.html
   - ratquest-editor.html
   - ratquest-source.zip
@@ -266,6 +267,41 @@ a move.** Nothing in the game has been changed on the strength of them yet.
    with the game we're making" and expects it to be useful for "basically everything".
 The first bears on the level work now under way (the Cistern is done; the Foundry, the Hollows and the Keep are
 not): do it before the next level is reworked.
+
+## The Move Garden and the jump sets (2026-11-15)
+All three research reports say the same thing about order: settle the hero's numbers BEFORE building more levels to
+them. So there is now a test room for feeling them, `src/levels/garden.ts` (`#level=garden`, the file
+`ratquest-garden.html`, or the Workshop's list of places under "Test rooms"). It is no part of the game: not in
+LEVELS, ALL_LEVELS or the archive, nothing to collect, its door leads back to the Club.
+- **What is in it:** four steps on the west wall (2.3, 3.4, 4.5 and 5.6 up: what one jump, a jump and a grab, a double
+  jump, and a double jump and a grab get him onto, from the floor, as the game is); four chimneys on the north wall
+  (2.2, 4 and 6 wide, and a "one kick" ledge 6 up across a 3.5 gap from a tall wall), each with a ruler up the wall
+  behind it; a ruler on a pole in the open to jump beside (not solid); and a ruler on the floor to jump along. Every
+  thing has a board saying what it is (new decor kinds `sign` and `ruler`, `src/world/signs.ts`: only drawn).
+  Whatever he could kick between is joined on or eight or more apart, so no climb is there by accident.
+- **The jump sets:** at the top of "Jumping" and "Moves" in the Tweaks panel, five buttons that move the jump
+  sliders together (`JUMP_SETS` in `src/core/tweaks.ts`): As it is; Stronger wall kick (`wallKickUp` 12); Smaller
+  double jump (`doubleVelocity` 6); Both; Mario's proportions (11 and 4.5). They are sliders like any other: kept on
+  the device, and they change the WHOLE game until "As it is" is pressed, so levels built for the present numbers
+  will break under them. That is the point of trying them in the garden first.
+- **What they measure to** (`tests/garden.ts` plays the room with the real controller under each set and prints
+  this; a jump is 2.43 up in all of them):
+
+  | Set | Double jump reaches | One wall kick lifts | Steps he can still jump onto | Kicks up the 4-wide chimney |
+  |---|---|---|---|---|
+  | As it is | 4.60 | 2.83 | all four | 3 |
+  | Stronger wall kick | 4.60 | 3.90 | all four | 2 |
+  | Smaller double jump | 3.38 | 2.83 | 2.3, 3.4, and 4.5 with a grab | 3 |
+  | Both | 3.38 | 3.90 | 2.3, 3.4, and 4.5 with a grab | 2 |
+  | Mario's proportions | 2.95 | 3.35 | 2.3 and 3.4 only | 3 |
+
+  (The game's notes have long said "2.5 and 4.75": that is the arithmetic; played at sixty steps a second he gets
+  2.43 and 4.6.) As the game is, a six-wide chimney can be climbed too (three kicks to 8 up): a kick carries him
+  about seven and a half across before he is back down to where he kicked from. `reach.ts` only knows chimneys up
+  to 4.5 wide, so two walls five to seven apart are a climb the checker does not see.
+- **Nothing in the game's own numbers has changed.** The owner is to try the sets and say which (or what sliders);
+  then that becomes the default, `reach.ts` and every level test are run again, and the levels that break are
+  mended BEFORE the Foundry, the Hollows and the Keep are reworked.
 
 ## What the owner wants next (his own list, 2026-11-14)
 He gave this list himself; work through it, do not ask about it again:

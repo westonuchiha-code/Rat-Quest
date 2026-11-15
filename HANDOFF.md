@@ -845,3 +845,20 @@ new: a search across every slider, a "Changed" filter, a box for an exact number
 shapes, the sound loudness numbers). The screens themselves have no tests (they need a browser); they were driven
 with puppeteer scripts and looked at.
 
+## The Move Garden (2026-11-15)
+A test room, no part of the game: `src/levels/garden.ts`, opened by `#level=garden`, by `ratquest-garden.html`, or from
+the Workshop's places ("Test rooms"; `TEST_ROOMS` in `levels.ts`, which `levelById` also looks in). START-HERE has
+what is in it and the table of what each jump set measures to.
+- Boards and rulers are two new kinds of decor, `sign` and `ruler` (`src/world/signs.ts`, built in `chamber.ts`):
+  writing painted on a canvas, drawn only, nothing collides with them. The game is drawn coarsely, so a board holds
+  two short lines at most (`tests/garden.ts` holds them to that); smaller writing cannot be read from where he stands.
+  A ruler lying on the floor cannot be read either: little number boards stand beside the strip. They are not in the
+  level builder's list of pieces.
+- The jump sets are `JUMP_SETS` in `src/core/tweaks.ts` (`Tweaks.useSet`, `Tweaks.activeSet`); their buttons are drawn
+  by `setsHtml` in `src/ui/tweaksPanel.ts`. Each set's note states its numbers, and the test checks the notes
+  against the room, so a set that is changed must have its note changed with it.
+- `tests/garden.ts` (in `npm run test:sim`): each step needs the move on its board and no less; each chimney is
+  climbed by kicks and by nothing else, under every set; the one-kick ledge; the table.
+- Open: nobody has played it by hand. The room is plain (one look, eight lamps). It has nothing that moves; a
+  moving platform and a wall-to-wall run over a gap would be the next things to add if the owner wants them.
+

@@ -4,7 +4,7 @@
  * for an exact number and a way back to its default. A search box finds a slider in any group; "changed" shows only
  * what is off its default. The bottom row copies the changes as text (to send to Claude), pastes some in, or resets.
  */
-import { TWEAKS, TWEAK_GROUPS, TWEAK_SECTIONS, Tweaks, defaultTweak, type TweakDef } from '../core/tweaks';
+import { JUMP_SETS, TWEAKS, TWEAK_GROUPS, TWEAK_SECTIONS, Tweaks, defaultTweak, type TweakDef } from '../core/tweaks';
 import { esc, icon, useDevTheme } from './devTheme';
 
 const CSS = `
@@ -34,6 +34,11 @@ const CSS = `
 .rq-tw > footer { display: flex; gap: 0.5em; align-items: center; padding: 0.55em 1em; border-top: 1px solid var(--line); background: #151a24; flex-wrap: wrap; }
 .rq-tw > footer .msg { flex: 1; color: #fff3c4; font-size: 0.9em; min-width: 6em; }
 .rq-tw .none { color: var(--dim); padding: 1.5em 0; }
+.rq-tw .sets { padding: 0.7em 0 0.8em; border-bottom: 1px solid #232a38; }
+.rq-tw .sets h3 { margin: 0 0 0.5em; }
+.rq-tw .sets .row { display: flex; flex-wrap: wrap; gap: 0.5em; }
+.rq-tw .sets button.on { background: #3a3110; border-color: var(--gold); color: #fff3c4; }
+.rq-tw .sets p { margin: 0.6em 0 0; color: var(--dim); font-size: 0.9em; }
 `;
 
 export class TweaksPanel {
@@ -104,11 +109,19 @@ export class TweaksPanel {
       <button data-r="${x.path}" class="ghost" title="Back to the default (${this.fmt(defaultTweak(x.path), x.step)})"${ch ? '' : ' disabled'}>${icon('undo')}</button></div>`;
   }
 
+  /** The sets to try, over the groups whose sliders they move: several sliders moved together, one press. */
+  private setsHtml(): string {
+    if (this.group !== 'Jumping' && this.group !== 'Moves') return '';
+    const now = this.tweaks.activeSet(JUMP_SETS);
+    return `<div class="sets"><h3>Jump sets to try (in the Move Garden)</h3><div class="row">${JUMP_SETS.map((s) => `<button data-set="${s.id}" class="${s === now ? 'on' : ''}">${esc(s.name)}</button>`).join('')}</div>
+      <p>${esc(now ? now.note : 'The jump sliders are somewhere of their own: none of these sets.')}</p></div>`;
+  }
+
   /** The sliders on show: one group, or (searching, or showing only what has changed) whatever matches, from every group. */
   private listHtml(): string {
     const t = this.tweaks;
     const find = this.find.trim().toLowerCase();
-    if (!find && !this.onlyChanged) return TWEAKS.filter((x) => x.group === this.group).map((x) => this.row(x)).join('');
+    if (!find && !this.onlyChanged) return this.setsHtml() + TWEAKS.filter((x) => x.group === this.group).map((x) => this.row(x)).join('');
     const hits = TWEAKS.filter((x) => (!find || x.label.toLowerCase().includes(find) || x.group.toLowerCase().includes(find) || x.path.toLowerCase().includes(find)) && (!this.onlyChanged || t.isChanged(x.path)));
     if (!hits.length) return `<div class="none">${this.onlyChanged && !find ? 'Nothing has been changed: everything is at its default.' : 'No slider by that name.'}</div>`;
     return TWEAK_GROUPS.map((g) => {
@@ -169,6 +182,9 @@ export class TweaksPanel {
       this.find = '';
       this.onlyChanged = false;
       this.pasting = false;
+    } else if (ds.set) {
+      const set = JUMP_SETS.find((x) => x.id === ds.set);
+      if (set) this.tweaks.useSet(set, JUMP_SETS);
     } else if (ds.r) {
       this.tweaks.reset(ds.r);
     } else if (ds.a === 'close') return this.hide();

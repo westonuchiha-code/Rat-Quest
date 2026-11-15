@@ -134,7 +134,18 @@ export type Decor =
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }
   /** The curved underside of an archway (the solid parts are boxes): spans x0..x1 along the wall (or z if `alongZ`). */
-  | { kind: 'arch'; x0: number; x1: number; z: number; y: number; thick: number; alongZ?: boolean; skin?: Skin };
+  | { kind: 'arch'; x0: number; x1: number; z: number; y: number; thick: number; alongZ?: boolean; skin?: Skin }
+  /**
+   * A painted board with writing on it (a test room's labels): up to three lines, the first the big one. On a wall
+   * that faces `yaw`, its middle at x, y, z; `post` stands it on a post from the floor at `post` instead.
+   */
+  | { kind: 'sign'; x: number; y: number; z: number; yaw: number; w: number; h: number; lines: string[]; post?: number }
+  /**
+   * A ruler: a tick and a number at every unit. Standing (the default) it is on a wall that faces `yaw`, its zero at
+   * x, y, z; `pole` stands it in the open, read from both sides. `flat` lays it on the floor, running from x, y, z
+   * the way `yaw` points.
+   */
+  | { kind: 'ruler'; x: number; y: number; z: number; yaw: number; length: number; width: number; flat?: boolean; pole?: boolean };
 
 /**
  * A pipe running up a wall that can be smashed. It stands at (x, z) on a floor at `y`, rises to `top`,

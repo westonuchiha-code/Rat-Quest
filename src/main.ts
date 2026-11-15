@@ -75,7 +75,7 @@ import { PickupVisuals } from './world/pickups';
 import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt } from './world/layout';
-import { ALL_LEVELS, ARCHIVE, LEVELS, levelById, setExtraLevels } from './levels/levels';
+import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
 import type { CourseDoorDef } from './levels/types';
@@ -874,7 +874,7 @@ function startGame(): void {
   const files = new FileStore(deviceStore, lastFile(deviceStore));
   const levelProgress = new LevelProgress(files);
   // (The archive's levels are tracked too, so one opened by #level= still works; only the worlds count towards the purse.)
-  const tracker = new CollectibleTracker(ALL_LEVELS.map((l) => ({ id: l.id, name: l.name, items: l.collectibles })), files);
+  const tracker = new CollectibleTracker([...ALL_LEVELS, ...TEST_ROOMS].map((l) => ({ id: l.id, name: l.name, items: l.collectibles })), files);
   let collectVisuals!: CollectibleVisuals;
   const revealedCrates = new Set<number>(); // crates broken so far, so the things inside show
   const collectHud = new CollectHud(gameWrap);
@@ -2559,6 +2559,7 @@ function startGame(): void {
       return [
         ...world,
         ...mine().map((l) => ({ id: l.id, name: l.name, group: 'My Levels', here: l.id === cur.id })),
+        ...TEST_ROOMS.map((l) => ({ id: l.id, name: l.name, group: 'Test rooms', here: l.id === cur.id })),
         ...ARCHIVE.map((l) => ({ id: l.id, name: l.name, group: 'Old levels (retired)', here: l.id === cur.id })),
       ];
     },

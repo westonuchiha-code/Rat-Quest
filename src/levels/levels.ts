@@ -18,6 +18,7 @@ import { keep, throne } from './keep';
 import { cisternWorks, sludgePit, cisternSump } from './cisternHalls';
 import { cistern } from './cistern';
 import { junction } from './junction';
+import { garden } from './garden';
 import { CAMPAIGN } from './campaign';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
@@ -229,6 +230,12 @@ export const LEVELS: LevelDef[] = ALL_LEVELS.filter((l) => l.hub || !!l.world);
  */
 export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
 
+/**
+ * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
+ * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
+ */
+export const TEST_ROOMS: LevelDef[] = [garden()];
+
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */
 export function setExtraLevels(f: () => LevelDef[]): void {
@@ -236,5 +243,5 @@ export function setExtraLevels(f: () => LevelDef[]): void {
 }
 
 export function levelById(id: string): LevelDef | undefined {
-  return LEVELS.find((l) => l.id === id) ?? extra().find((l) => l.id === id) ?? ARCHIVE.find((l) => l.id === id);
+  return LEVELS.find((l) => l.id === id) ?? extra().find((l) => l.id === id) ?? ARCHIVE.find((l) => l.id === id) ?? TEST_ROOMS.find((l) => l.id === id);
 }

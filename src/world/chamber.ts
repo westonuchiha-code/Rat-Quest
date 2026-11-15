@@ -1,3 +1,4 @@
+import { rulerStrip, signBoard } from './signs';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -463,6 +464,41 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       mark.position.set(d.x + Math.sin(d.yaw) * 0.03, d.y, d.z + Math.cos(d.yaw) * 0.03);
       mark.rotation.y = d.yaw;
       group.add(mark);
+    } else if (d.kind === 'sign') {
+      const board = signBoard(d.lines, d.w, d.h);
+      board.position.set(d.x + Math.sin(d.yaw) * 0.04, d.y, d.z + Math.cos(d.yaw) * 0.04);
+      board.rotation.y = d.yaw;
+      group.add(board);
+      if (d.post !== undefined) {
+        // Standing in the open: a post under it, and a plain back to the board.
+        const post = new THREE.BoxGeometry(0.14, d.y - d.post, 0.14);
+        bakeVertexColor(post, 0x4a3320);
+        const pm = new THREE.Mesh(post, plainMat);
+        pm.position.set(d.x - Math.sin(d.yaw) * 0.05, (d.y + d.post) / 2, d.z - Math.cos(d.yaw) * 0.05);
+        group.add(pm);
+        const back = new THREE.PlaneGeometry(d.w, d.h);
+        bakeVertexColor(back, 0x4a3320);
+        const bm = new THREE.Mesh(back, plainMat);
+        bm.position.set(d.x - Math.sin(d.yaw) * 0.01, d.y, d.z - Math.cos(d.yaw) * 0.01);
+        bm.rotation.y = d.yaw + Math.PI;
+        group.add(bm);
+      }
+    } else if (d.kind === 'ruler') {
+      const strip = rulerStrip(d.length, d.width, !!d.pole);
+      if (d.flat) {
+        // Laid on the floor: its zero at x, z; it runs the way `yaw` points, and reads from its zero end.
+        const lie = new THREE.Group();
+        lie.position.set(d.x, d.y + 0.03, d.z);
+        lie.rotation.y = d.yaw;
+        strip.rotation.x = -Math.PI / 2;
+        strip.rotation.z = Math.PI;
+        lie.add(strip);
+        group.add(lie);
+      } else {
+        strip.position.set(d.x + Math.sin(d.yaw) * 0.04, d.y, d.z + Math.cos(d.yaw) * 0.04);
+        strip.rotation.y = d.yaw;
+        group.add(strip);
+      }
     } else if (d.kind === 'shelf') {
       const sh = new THREE.Group();
       const plank = (w: number, h: number, dp: number, x: number, y: number, color: number): void => {
