@@ -84,7 +84,8 @@ export const RAMPS: readonly GardenRamp[] = [
 /**
  * The run, for riding the shield: along the south wall. A platform in the south-east corner, eight up; a walkable
  * ramp up to it from the north, against the east wall; the RUN itself, a long slope west from it down to the floor
- * (one up in two), with the whole length of the room to roll out along, and a kicker on the way to jump from; and the
+ * (one up in two), with the whole length of the room to roll out along, a kicker on the way to jump from, and past
+ * that a rail and a kerb to grind; and the
  * CHUTE, north off the platform, too steep to stand on (two up for one along): on that he slides whether he will or no.
  */
 export const RUN = {
@@ -97,6 +98,13 @@ export const RUN = {
   chute: { x0: 30, x1: 33, z0: 15, z1: 19 },
   /** The kicker: a little ramp across the roll-out, high at its west end. It stands before the door, so a rider is in the air past it. */
   kicker: { x0: 4, x1: 7, z0: 19.5, z1: 23.5, y: 1.2 },
+  /**
+   * Things to grind, further along the roll-out, one to each side of the way: a RAIL (an iron bar a quarter wide,
+   * half a unit high) and a KERB against the south wall, whose edge is a ledge. Riding straight down the middle he
+   * is in reach of neither: he has to go to one. (They stop ten short of the west wall: room to brake in.)
+   */
+  rail: { x0: -26, x1: -12, z: 20.5, wide: 0.24, y: 0.5 },
+  kerb: { x0: -26, x1: -12, z0: 22.4, z1: GARDEN.halfZ, y: 0.7 },
 } as const;
 
 export function garden(): LevelDef {
@@ -146,6 +154,10 @@ export function garden(): LevelDef {
   solids.push(rampBox('stone', RUN.slope.x0, RUN.slope.x1, RUN.slope.z0, RUN.slope.z1, 0, T.y, 'e'));
   solids.push(rampBox('stone', RUN.chute.x0, RUN.chute.x1, RUN.chute.z0, RUN.chute.z1, 0, T.y, 's'));
   solids.push(rampBox('stone', RUN.kicker.x0, RUN.kicker.x1, RUN.kicker.z0, RUN.kicker.z1, 0, RUN.kicker.y, 'w'));
+  solids.push({ ...extent('stone', RUN.rail.x0, RUN.rail.x1, 0, RUN.rail.y, RUN.rail.z - RUN.rail.wide / 2, RUN.rail.z + RUN.rail.wide / 2), skin: 'rustPlate' });
+  solids.push(extent('stone', RUN.kerb.x0, RUN.kerb.x1, 0, RUN.kerb.y, RUN.kerb.z0, RUN.kerb.z1));
+  // (Its board is on the wall over the kerb: one standing in the way hid the rail from a rider coming at it.)
+  decor.push({ kind: 'sign', x: (RUN.kerb.x0 + RUN.kerb.x1) / 2, y: 2.6, z: GARDEN.halfZ, yaw: Math.PI, w: 3.2, h: 1.5, lines: ['GRIND', 'AT AN EDGE: STOW'] });
   // Boards: on the platform's wall for the run and the chute, and standing before the kicker.
   decor.push({ kind: 'sign', x: T.x1, y: T.y + 1.6, z: (T.z0 + T.z1) / 2, yaw: -Math.PI / 2, w: 2.6, h: 1.4, lines: ['THE RUN', 'RUN, THEN SNEAK'] });
   decor.push({ kind: 'sign', x: (RUN.chute.x0 + RUN.chute.x1) / 2, y: T.y + 1.6, z: T.z1, yaw: Math.PI, w: 2.6, h: 1.4, lines: ['TOO STEEP', 'HE SLIDES'] });

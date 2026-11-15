@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,643 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,672 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -407,6 +407,55 @@ tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRi
 - Enemies still know nothing of ramps or of a rider. Nothing hurts or is hurt by a rider differently.
 - A roll-out from top speed is about sixty units on the flat (`dragFlat` 1.6): longer than the garden. He can brake.
 - No level but the garden has a slope in it yet. **Next, step three: the cave.**
+
+### Grinding is DONE (2026-11-15; asked for by the owner the same day, his words are in the next section)
+Riding, **STOW** (triangle / north on a pad, H on the keyboard: it has nothing else to do while the shield is under
+his feet) puts the shield across the nearest edge he is going along, and he slides along it throwing sparks.
+- **What can be ground** is found in the solids, nothing is marked (`world/grind.ts`): a LEDGE is the top edge of any
+  solid with a drop of `grind.drop` (0.4) or more beside it; a RAIL is any solid under half a unit across, down its
+  middle. Lines run along x or z. On a ramp they slope with it: the side of a ramp is a ledge going downhill, a thin
+  ramp a rail going downhill. A line carries on from one solid to the next at the same height.
+- **Getting on**: within `reach` (0.85) to his side, no more than `up` (0.75) above his feet (he hops onto it) or
+  `down` (1.5) below (he comes down onto it out of a jump), going `minSpeed` or more, and mostly ALONG it.
+- **On it**: the line carries him, the stick does nothing. A level line slows him less than the floor (`drag`), a
+  sloping one pulls him as a slope does. JUMP hops off (the stick throws the hop to a side); ROLL steps off rail
+  and shield; at its end he flies off still riding; too slow and he is set down; something across it at speed
+  throws him off (`bail`, no hearts).
+- **In the controller** it is `grind` (still `riding`, state still 'ride'), `startGrind`, `grindStep`, `leaveGrind`.
+  While grinding nothing else moves him: `update` returns after `grindStep`, as it does for hanging from a ledge.
+- **Drawn**: the shield turns across the way he goes (`board.rotation.y`), he crouches lower with his arms wide and
+  his tail shivering; sparks (`grindSparks` in main.ts); sound `grindRing` (a loop) over a knock as he gets on.
+- **The garden** has a RAIL and a KERB on the roll-out past the kicker (`RUN.rail`, `RUN.kerb`), and the run's own
+  sides are ledges going downhill. Six 'Grind:' sliders are in the Riding group.
+- `tests/grind.ts` plays every rule with the real controller; `tests/garden.ts` grinds the rail and the kerb. Watched
+  in the running game on the rail (from behind) and down the edge of the run (from the side).
+- **Not done**: no trick or score for it; he cannot kickflip ONTO a rail and have it count; a rail's end met head-on
+  on the ground is a wall (he must be beside it, or jump and come down on it); lines do not turn corners or curve;
+  enemies know nothing of it. Nobody has done it with a controller in hand.
+
+### What the owner asked for after riding it (2026-11-15, his words)
+- **Grinding** (asked for now; done, see above): "it would also be cool if you added in being able to grind a Ledge like so if you're
+  board sliding down you can actually go to the edge and maybe like press triangle and he'll ... grind alongside that
+  edge."
+- **A whole downhill level, LATER**: "later we need to add a level that's just like a really long steep decline that's
+  like a sewer pipe going down through some tunnels or something you could even have it break off into like an
+  underground Railway and you can grind along the railroad tracks or just like slide down alongside them ... to sort
+  of test out the limits of that sort of gameplay, I'm thinking like Sonic Adventure 2 level 1 Escape From the City
+  kind of totally downhill and you're just on the board the whole time ... potentially with the grinding mechanic and
+  some clever railroads and stuff but it's just a whole level where you're on the shield board sliding the whole
+  time." (That is the KIND of level he means: all downhill, never off the board. Ours is our own place, the sewer
+  pipe and the railway: not a copy of that level's layout, look or music.)
+- **In that level**: "when you're sliding down the pipes ... there should be like a little bit of liquid in the bottom
+  to give a sense that it's not in use anymore but it still carries some like slimy water and they'll be natural
+  obstacles like maybe little plants growing out of cracks in the pipe ... it'll be sort of a circular level design
+  with an interesting curved slope through the entire level or at least through the entire pipe sections so it'll be
+  interesting to see how the board slide mechanics deal with that".
+  What that needs that is NOT there: a ground that curves ACROSS his path (a pipe's bowl). Every slope now is a flat
+  ramp along x or z. A pipe wants either many narrow ramps side by side (cheap, faceted, works with everything that
+  knows ramps) or a new kind of ground. Decide that before building the level; try it in the garden first.
+- **BACK BURNER, his word**: "maybe we can even add some like easy one hit enemies that are in the level so while
+  you're bored sliding you can swing your sword at them and just kill them in one [hit] but put that on the back
+  burner as an idea." (Now he cannot swing while riding at all.)
 
 ## Drawn and solid, again (2026-11-15: what the owner found walking round the Club)
 He sent pictures of the knight standing inside things. The rule is old (what is DRAWN must match what is SOLID); these

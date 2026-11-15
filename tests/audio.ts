@@ -177,9 +177,9 @@ check('the story has its own sounds', (['memoryIn', 'memoryOut', 'cloth', 'keeps
 check('the same effect is the same every time', sfx('ratJump') === sfx('ratJump'));
 {
   // The ride: the shield scraping along the stone is a loop (its join is checked with the other loops, above).
-  const RIDE = ['rideScrape', 'ridePop', 'rideClatter'] as const;
+  const RIDE = ['rideScrape', 'ridePop', 'rideClatter', 'grindRing'] as const;
   check('the shield ride has its own sounds, none lost and none too loud', RIDE.every((n) => SFX_NAMES.includes(n) && loudness(sfx(n)) > QUIET && loudness(sfx(n)) < 0.45), RIDE.map((n) => `${n} ${loudness(sfx(n)).toFixed(2)}`).join(', '));
-  check('the scrape of the shield is a loop, the pop and the clatter are not', !!sfx('rideScrape').loop && !sfx('ridePop').loop && !sfx('rideClatter').loop);
+  check('the scrape of the shield is a loop, the pop and the clatter are not', !!sfx('rideScrape').loop && !!sfx('grindRing').loop && !sfx('ridePop').loop && !sfx('rideClatter').loop);
 }
 check('voices exist for the rat and the roach', SFX_NAMES.includes('ratJump') && SFX_NAMES.includes('ratHurt') && SFX_NAMES.includes('roachScreech'));
 check('rat voices differ from each other', sfx('ratJump').data.length !== sfx('ratDie').data.length || sfx('ratJump').data[40] !== sfx('ratJump2').data[40]);

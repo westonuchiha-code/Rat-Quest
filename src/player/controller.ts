@@ -1,4 +1,5 @@
 import { MAX_WALK_SLOPE } from '../world/layout';
+import { findGrind, grindHeight, type GrindLine } from '../world/grind';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
 import { Aabb, topAt, topUnder, slopeOf } from '../world/collision';
@@ -8,7 +9,7 @@ import { ATTACK_CLIPS } from './animations';
 
 export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride';
 /** A move that just happened this step, for sounds and rumble. */
-export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | null;
+export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | null;
 /** 'parried' is a block made just as the shield came up: no shove, and the attacker reels. */
 export type HitResult = 'dodged' | 'blocked' | 'parried' | 'hit' | 'killed';
 /** 0 not plunging, 1 hanging with the sword raised, 2 diving, 3 stuck in the ground after landing. */
@@ -149,6 +150,24 @@ export class PlayerController {
   private rideFlip = -1;
   private rideFlipDone = false;
   private rideAgain = 0;
+  /**
+   * Grinding: his shield across a ledge or a rail, sliding along it (see `grindStep`, TUNING.grind, world/grind.ts).
+   * He is still `riding`. `s` is where he is along the line, `h` its height there, `v` his speed along it (+ toward
+   * the + end of its axis), `slope` how it is rising that way.
+   */
+  private grind: { line: GrindLine; s: number; h: number; v: number; slope: number } | null = null;
+  private grindAgain = 0;
+  get grinding(): boolean {
+    return this.grind !== null;
+  }
+  /** Which side of him the drop is on as he grinds (+1 his model's +x side, -1 the other, 0 on a rail or not grinding). */
+  get grindSide(): number {
+    const g = this.grind;
+    if (!g || g.line.side === 0) return 0;
+    // (His model's +x, facing along +x, is toward -z; facing along +z, toward +x.)
+    const dir = g.v >= 0 ? 1 : -1;
+    return g.line.axis === 'x' ? -g.line.side * dir : g.line.side * dir;
+  }
   get rideFlipProgress(): number {
     return this.riding ? this.rideFlip : -1;
   }
@@ -157,6 +176,8 @@ export class PlayerController {
    * +x. Nothing on the flat or in the air. (His shield is drawn lying on the slope, not level and half inside it.)
    */
   get rideGround(): { along: number; across: number } {
+    // (On a rail that slopes, it is the rail's slope the way he is going.)
+    if (this.grind) return { along: this.grind.slope * Math.sign(this.grind.v), across: 0 };
     const under = this.riding ? this.slopeUnder() : null;
     if (!under) return { along: 0, across: 0 };
     const fx = Math.sin(this.facing);
@@ -430,6 +451,7 @@ export class PlayerController {
     this.landTimer = 0;
     this.airJumpsLeft = TUNING.jump.airJumps;
     this.riding = false;
+    this.grind = null;
     this.rideFlip = -1;
     this.flipTimer = -1;
     this.attackStep = 0;
@@ -525,6 +547,20 @@ export class PlayerController {
       this.updateState(0, false);
       if (this.hang) return;
       if (this.climbT >= 0) return;
+    }
+
+    // Grinding: he is on a line, and nothing else moves him till he is off it.
+    this.grindAgain = Math.max(0, this.grindAgain - dt);
+    if (helpless || !this.riding) this.grind = null;
+    if (this.grind) {
+      this.grindStep(dt, input, colliders);
+      this.updateState(Math.hypot(this.velocity.x, this.velocity.z), false);
+      return;
+    }
+    // Riding, STOW (which the shield under his feet leaves nothing else for) puts it across the nearest edge.
+    if (this.riding && input.stowPressed && !helpless && this.grindAgain <= 0 && this.startGrind(colliders)) {
+      this.updateState(Math.hypot(this.velocity.x, this.velocity.z), false);
+      return;
     }
 
     // Jump buffering: remember a press briefly so an early press still jumps on landing.
@@ -1035,17 +1071,132 @@ export class PlayerController {
     this.hurtTimer = Math.max(this.hurtTimer, TUNING.ride.bailTime);
   }
 
+  /** Onto the nearest ledge or rail he is riding along, if one is in reach. */
+  private startGrind(colliders: Aabb[]): boolean {
+    const G = TUNING.grind;
+    const p = this.position;
+    const found = findGrind(p.x, p.y, p.z, this.velocity.x, this.velocity.z, colliders, G);
+    if (!found) return false;
+    this.grind = { line: found.line, s: found.s, h: found.h, v: found.v, slope: 0 };
+    this.placeOnGrind();
+    // (A kickflip he was in the middle of is over: his shield is on the rail. He has his air jump again for after.)
+    this.rideFlip = -1;
+    this.rideFlipDone = false;
+    this.airJumpsLeft = TUNING.jump.airJumps;
+    this.jumpBuffer = 0;
+    this.rideSteer = 0;
+    this.moveEvent = 'grind';
+    return true;
+  }
+
+  /** Puts him where his grind has him: on the line, at its height, going along it. */
+  private placeOnGrind(): void {
+    const g = this.grind;
+    if (!g) return;
+    if (g.line.axis === 'x') {
+      this.position.set(g.s, g.h, g.line.c);
+      this.velocity.set(g.v, 0, 0);
+    } else {
+      this.position.set(g.line.c, g.h, g.s);
+      this.velocity.set(0, 0, g.v);
+    }
+    this.grounded = true;
+    this.onRamp = false;
+    this.groundBox = null;
+    this.wasGrounded = true;
+    this.coyoteTimer = TUNING.jump.coyoteTime;
+    this.rideHeading = Math.atan2(this.velocity.x, this.velocity.z);
+    this.facing = this.rideHeading;
+  }
+
+  /** Off the line, into the air, with what speed he had along it (and the rise or fall it was giving him). */
+  private leaveGrind(up: number, side: number): void {
+    const g = this.grind;
+    if (!g) return;
+    this.grind = null;
+    this.grindAgain = TUNING.grind.again;
+    const ax = g.line.axis === 'x';
+    this.velocity.set(ax ? g.v : side, up, ax ? side : g.v);
+    this.grounded = false;
+    this.wasGrounded = false;
+    this.jumpCut = true; // (no button's letting go cuts this short)
+  }
+
   /**
-   * One step of riding the shield: the slope pulls him down it, the stick turns him (hard over is a carve, which
-   * turns him faster and scrubs speed off; pulled back it brakes), the ground slows him, and jump is an ollie (and,
-   * in the air, a kickflip). Sets his sideways speed; comes back with how fast that is.
+   * A step of a grind. The line carries him: he does not steer. A rail that slopes pulls him down it as a slope
+   * does; on the level he slows a little. Jump hops off it (the stick throws the hop to one side); the ROLL button
+   * steps off; at its end he flies off with the speed he had. Something across it at speed throws him off.
    */
+  private grindStep(dt: number, input: PlayerInput, colliders: Aabb[]): void {
+    const g = this.grind;
+    if (!g) return;
+    const G = TUNING.grind;
+    const R = TUNING.ride;
+    this.rideAge += dt;
+    this.guarding = false;
+    this.rideSteer = 0;
+    if (input.jumpPressed) {
+      // (Across the line: the stick's push to the side he will land on.)
+      const push = (g.line.axis === 'x' ? input.move.z : input.move.x) * G.hopSide;
+      this.leaveGrind(G.hop + Math.max(0, g.v * g.slope), push);
+      this.jumpCut = false;
+      this.coyoteTimer = 0;
+      this.jumpBuffer = 0;
+      this.moveEvent = 'ollie';
+      return;
+    }
+    if (input.dodgePressed) {
+      this.leaveGrind(0, 0);
+      this.endRide('rideEnd');
+      return;
+    }
+    let v = g.v - ((R.gravity * g.slope) / Math.sqrt(1 + g.slope * g.slope)) * dt;
+    const slowed = Math.max(0, Math.abs(v) - G.drag * dt);
+    v = Math.sign(v) * Math.min(R.max, slowed);
+    if (Math.abs(v) < G.stop) {
+      // Too slow to grind: he is set down where he is, and the ride goes on (or ends) from there.
+      this.grind = null;
+      this.grindAgain = G.again;
+      this.moveEvent = 'grindEnd';
+      return;
+    }
+    const moved = v * dt;
+    const next = grindHeight(g.line, g.s + moved, g.h, moved, colliders, G.drop);
+    // (He is as wide as he is: what stands across the line stops him when his front reaches it, not his middle.)
+    const reach = Math.sign(v) * TUNING.rat.radius;
+    if (next === 'wall' || grindHeight(g.line, g.s + moved + reach, g.h, moved + reach, colliders, G.drop) === 'wall') {
+      this.grind = null;
+      this.grindAgain = G.again;
+      if (Math.abs(v) > R.bailSpeed) this.bail();
+      else this.moveEvent = 'grindEnd';
+      return;
+    }
+    if (next === 'end') {
+      g.v = v;
+      g.s += moved;
+      this.placeOnGrind();
+      this.leaveGrind(v * g.slope, 0);
+      this.moveEvent = 'grindEnd';
+      return;
+    }
+    g.slope = moved !== 0 ? (next - g.h) / moved : g.slope;
+    g.v = v;
+    g.s += moved;
+    g.h = next;
+    this.placeOnGrind();
+  }
+
   /** How fast the slope he is riding on is carrying him up (or, going down it, down): nothing on the flat or in the air. */
   private rideClimb(): number {
     const under = this.riding ? this.slopeUnder() : null;
     return under ? -(this.velocity.x * under.dx + this.velocity.z * under.dz) * under.steep : 0;
   }
 
+  /**
+   * One step of riding the shield: the slope pulls him down it, the stick turns him (hard over is a carve, which
+   * turns him faster and scrubs speed off; pulled back it brakes), the ground slows him, and jump is an ollie (and,
+   * in the air, a kickflip). Sets his sideways speed; comes back with how fast that is.
+   */
   private rideStep(dt: number, input: PlayerInput): number {
     const R = TUNING.ride;
     this.rideAge += dt;

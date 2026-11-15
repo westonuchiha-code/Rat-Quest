@@ -208,7 +208,7 @@ export const SFX_NAMES = [
   'fireflyHum', 'fireflyBlink', 'emberDrop', 'emberBurst', 'fireflyFade', 'fireflyHurt', 'fireflyDie',
   // Riding his shield: the rim grinding along on stone (looped while he rides, louder and higher the faster he
   // goes), the crack of it leaving the ground or coming down again, and the clatter when he comes off it.
-  'rideScrape', 'ridePop', 'rideClatter',
+  'rideScrape', 'ridePop', 'rideClatter', 'grindRing',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -797,6 +797,15 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const hollow = c.lp(2, n, 0.03) * 2.2;
     const catchy = 0.75 + 0.25 * wob(t, 0.6, 7) * wob(t, 0.6, 3);
     return (grit * 0.9 + hollow * 0.5 + sine(c.osc(0, 310)) * 0.05) * catchy;
+  }, { bits: 7, loop: true, gain: 0.5 }),
+  // Its iron rim along a stone edge: a thin ringing shriek over grit, shivering. (A loop: every pitch and wobble in it
+  // turns a whole number of times in its half second.)
+  grindRing: () => draw(0.5, RATE_HI, 224, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const grit = c.lp(0, n, 0.6) - c.lp(1, n, 0.2);
+    const ring = sine(c.osc(0, 1840)) * 0.34 + sine(c.osc(1, 2764)) * 0.2 + sine(c.osc(2, 4120)) * 0.1;
+    const shiver = 0.7 + 0.3 * wob(t, 0.5, 11);
+    return (ring * shiver + grit * 0.55) * (0.85 + 0.15 * wob(t, 0.5, 4));
   }, { bits: 7, loop: true, gain: 0.5 }),
   // It leaves the ground, or meets it again: one hard crack of iron and wood, with the board's own hollow note.
   ridePop: () => draw(0.26, RATE_HI, 222, (c) => {

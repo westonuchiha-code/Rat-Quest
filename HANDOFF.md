@@ -918,3 +918,19 @@ START-HERE has the rules. Things to know before touching it:
 - For pictures of it: `ride.mjs` in the scratchpad pattern (keys down/up, `burst:N` screenshots) worked better than
   timed single shots; the first second after a page loads runs slow, so start him close to the slope.
 
+## Grinding (2026-11-15)
+START-HERE has the rules. Things to know before touching it:
+- `grindHeight(line, s, was, moved, ...)` is the whole of "is there still a line here": the highest top at a point
+  just inside the line that is no more than a little above where he was (`give` grows with how far he moved, so a
+  steep rail is followed), 'end' if that has dropped away or the ground beside it has come up, 'wall' if something
+  stands across it. The controller asks it again a body's half-width ahead, so he stops at a wall with his front.
+- A ledge's line is ON the box's edge: his middle is on the edge, half of him over the drop. He is placed, not
+  collided, while grinding. When it ends the ordinary rules have him again from exactly there.
+- `findGrind` wants the solid's own top to be the top of what is there (nothing standing on the edge) and tests the
+  drop at the very place he gets on. The seam between two boxes at one height is not an edge (no drop).
+- Where he is DRAWN while grinding is where the rules have him (`drawnY` in main.ts skips `feetGround`): his middle
+  is on a box's boundary, and what is "under his feet" there could be the floor below.
+- STOW's own press still clears `autoStowed` in the controller; nothing else of stowing happens while riding.
+- The garden's rail and kerb stop ten short of the west wall on purpose: from a rail's end at speed he needs about
+  eight units to brake. A longer rail there threw the test rider into the wall.
+

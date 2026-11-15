@@ -140,6 +140,23 @@ export const TUNING = {
     bailTime: 0.5, // ...and is this long picking himself up
     again: 0.4, // after stepping off, this long before SNEAK starts another
   },
+  /**
+   * Grinding, while he rides (the owner, 2026-11-15: "go to the edge and ... press triangle and he'll ... grind
+   * alongside that edge"): STOW, which has nothing else to do on the shield, puts it across the nearest ledge or rail
+   * he is going along. See world/grind.ts for what counts as one.
+   */
+  grind: {
+    reach: 0.85, // how far to the side of him the edge may be
+    up: 0.75, // how far above his feet (he hops up onto it)
+    down: 1.5, // ...and below them (he comes down onto it out of the air)
+    minSpeed: 3.5, // he must be going this fast along it to get on
+    drop: 0.4, // an edge is one to grind only with this much of a drop beside it
+    drag: 0.5, // what slows him on it: less than the flat, so a rail keeps his speed
+    stop: 1.2, // slower than this he comes off it
+    hop: 7.4, // the jump off it
+    hopSide: 3.6, // ...and how hard the stick throws that jump to one side
+    again: 0.25, // after leaving one, this long before he can get on another
+  },
     /** Attacking in the air: a short hang, a straight dive, and a shockwave all round on landing. */
   plunge: {
     windup: 0.16, // seconds hanging with the sword raised

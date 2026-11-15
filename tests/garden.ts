@@ -411,6 +411,49 @@ for (const r of rows) {
     return { run: false, jumpHeld: popped && !p.grounded };
   });
   check('...JUMP at its top and JUMP AGAIN in the air: a kickflip, landed', tricked.events.includes('ollie') && tricked.events.includes('kickflip') && tricked.events.includes('trick') && !tricked.events.includes('bail'), tricked.events.join());
+  // The rail and the kerb: riding down the middle neither is in reach; steered to one, STOW grinds it to its end.
+  const grindRun = (toward: number, line: number, top: number): { ground: number; from: number; to: number; events: string[]; missed: boolean } => {
+    let pressed = false;
+    let ground = 0;
+    let from = 0;
+    let to = 0;
+    let wrong = 0;
+    // (He rides half a unit to its near side, as a player would: steering at that line, and straight along it.)
+    const beside = line - toward * 0.5;
+    const r = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 520, (i, p) => {
+      if (!p.riding) return { move: p.position.x < RUN.kicker.x0 ? new THREE.Vector3() : WEST, run: p.position.x > RUN.slope.x1 - 0.6 };
+      if (p.grinding) return { run: false };
+      // (Past its end he brakes.)
+      if (p.grounded && p.position.x < RUN.rail.x0 - 0.3) return { move: EAST, run: false };
+      if (toward === 0) {
+        const press = !pressed && p.position.x < RUN.rail.x1 - 0.5;
+        if (press) pressed = true;
+        return { run: false, stowPressed: press };
+      }
+      // Which way he is going, as an angle off due west (+ toward the south), and which way he wants to be going.
+      const going = Math.atan2(p.velocity.z, -p.velocity.x);
+      const want = Math.max(-0.45, Math.min(0.45, (beside - p.position.z) / 5));
+      const turn = Math.max(-0.8, Math.min(0.8, (want - going) * 4));
+      const steer = p.grounded && p.position.x < RUN.kicker.x0 - 6;
+      const press = !pressed && p.position.x < RUN.rail.x1 - 0.5 && Math.abs(p.position.z - line) < TUNING.grind.reach - 0.15 && Math.abs(going) < 0.3;
+      if (press) pressed = true;
+      return { run: false, stowPressed: press, move: steer ? new THREE.Vector3(0, 0, turn) : new THREE.Vector3() };
+    }, (p) => {
+      if (!p.grinding) return;
+      ground++;
+      if (!from) from = p.position.x;
+      to = p.position.x;
+      if (Math.abs(p.position.z - line) > 1e-6 || Math.abs(p.position.y - top) > 1e-6) wrong++;
+    });
+    return { ground, from, to, events: r.events, missed: wrong > 0 };
+  };
+  const middle = grindRun(0, 0, 0);
+  check('GRIND: riding down the middle of the way, neither the rail nor the kerb is in reach of him', !middle.events.includes('grind') && Math.abs(midZ - RUN.rail.z) > TUNING.grind.reach && Math.abs(midZ - RUN.kerb.z0) > TUNING.grind.reach, middle.events.join());
+  const onRail = grindRun(-1, RUN.rail.z, RUN.rail.y);
+  check('...steered to the rail, STOW puts him on it and he grinds it to its end', onRail.events.includes('grind') && !onRail.missed && onRail.to < RUN.rail.x0 + 0.5 && onRail.events.includes('grindEnd') && !onRail.events.includes('bail'), `${onRail.ground} frames, x ${onRail.from.toFixed(1)} to ${onRail.to.toFixed(1)}; ${onRail.events.join()}`);
+  const onKerb = grindRun(1, RUN.kerb.z0, RUN.kerb.y);
+  check('...steered to the kerb, STOW hops him onto its edge and he grinds that to its end', onKerb.events.includes('grind') && !onKerb.missed && onKerb.to < RUN.kerb.x0 + 0.5 && onKerb.events.includes('grindEnd') && !onKerb.events.includes('bail'), `${onKerb.ground} frames, x ${onKerb.from.toFixed(1)} to ${onKerb.to.toFixed(1)}; ${onKerb.events.join()}`);
+  check('...and a board says so', signs.some((d) => d.lines[0] === 'GRIND' && d.lines[1] === 'AT AN EDGE: STOW'));
   // The chute: he runs off the top onto it and is on his shield whether he chose it or not, down to the floor.
   let slidFrom = 0;
   let outOnTheFloor = false;

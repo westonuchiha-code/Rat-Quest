@@ -76,6 +76,12 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Riding', path: 'ride.flipLift', label: 'Kickflip lift', min: 0, max: 12, step: 0.1 },
   { group: 'Riding', path: 'ride.flipTime', label: 'Kickflip: seconds it takes', min: 0.15, max: 1, step: 0.01 },
   { group: 'Riding', path: 'ride.trickBoost', label: 'Speed a landed kickflip gives', min: 0, max: 8, step: 0.1 },
+  { group: 'Riding', path: 'grind.reach', label: 'Grind: how near the edge he must be', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'Riding', path: 'grind.up', label: 'Grind: how high an edge he can hop onto', min: 0, max: 2, step: 0.05 },
+  { group: 'Riding', path: 'grind.minSpeed', label: 'Grind: slowest he can get on at', min: 0.5, max: 10, step: 0.25 },
+  { group: 'Riding', path: 'grind.drag', label: 'Grind: slow-down on a level edge', min: 0, max: 4, step: 0.1 },
+  { group: 'Riding', path: 'grind.hop', label: 'Grind: the jump off it', min: 3, max: 14, step: 0.1 },
+  { group: 'Riding', path: 'grind.hopSide', label: 'Grind: how far the stick throws that jump sideways', min: 0, max: 8, step: 0.2 },
   { group: 'Riding', path: 'ride.stop', label: 'He steps off below this speed', min: 0.2, max: 5, step: 0.1 },
 
   { group: 'Fighting', path: 'health.max', label: 'Hearts', min: 1, max: 12, step: 1, later: 'after the game restarts' },

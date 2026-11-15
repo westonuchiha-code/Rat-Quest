@@ -237,7 +237,11 @@ export interface RatAnimInput {
   kickProgress?: number;
   onWall?: boolean;
   /** Riding his shield: how hard he is steering (-1..1), how far through a kickflip (0..1, -1 when not), and whether he is in the air. */
-  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number } | null;
+  /**
+   * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
+   * +x side, -1 the other, 0 on a rail).
+   */
+  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number } | null;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
@@ -413,6 +417,7 @@ export class RatModel {
   private readonly boardFlat = new THREE.Group();
   private rideAir = 0;
   private rideLean = 0;
+  private rideGrind = 0;
   private rideTiltX = 0;
   private rideTiltZ = 0;
   private helmet: THREE.Group;
@@ -807,6 +812,19 @@ export class RatModel {
       pose.tail[0] += Math.abs(r.steer) * 0.25;
       pose.chest[2] = -r.steer * 0.18;
       pose.hipPos[1] -= Math.abs(r.steer) * 0.035;
+      // Grinding: the shield is across the edge under him, and he is down low over it, arms wide, tail straight out
+      // behind and shivering with the rattle of it; on a ledge he leans a little in from the drop.
+      this.rideGrind = ease(this.rideGrind, r.grind ? 1 : 0, dt, 16);
+      if (this.rideGrind > 0.01) {
+        const k = this.rideGrind;
+        pose.hipPos[1] -= 0.05 * k;
+        pose.chest[0] += 0.14 * k;
+        pose.armS[2] -= 0.22 * k;
+        pose.armH[2] += 0.22 * k;
+        pose.tail[0] += 0.2 * k;
+        pose.tail[1] = Math.sin(this.time * 38) * 0.16 * k;
+        pose.chest[2] += (r.grindSide ?? 0) * 0.1 * k;
+      }
       // A kickflip: his feet come up off it while it turns.
       if (r.flip >= 0) {
         const up = Math.sin(Math.min(1, r.flip) * Math.PI);
@@ -891,6 +909,8 @@ export class RatModel {
       // It sits under his feet (which tuck up in the air), and in a kickflip turns once round its length, popping up.
       this.board.position.set(0, 0.03 + this.rideAir * 0.095 + Math.sin(flip * Math.PI) * 0.05, 0.01);
       // (He leans most of the way with the slope; the shield lies the whole way on it.)
+      // (Grinding, it is turned across the way he is going: its middle is on the edge.)
+      this.board.rotation.y = this.rideGrind * (Math.PI / 2);
       this.board.rotation.x = this.rideTiltX * (1 - RIDE_BODY_TILT);
       this.board.rotation.z = flip * Math.PI * 2 + this.rideTiltZ * (1 - RIDE_BODY_TILT);
     }

@@ -92,6 +92,7 @@ import { GoalHud } from './ui/goalHud';
 import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
+import { Sparks } from './world/itemModels';
 import { CourseDoors } from './world/courseDoors';
 import { atDoor, doorCamera, doorFrameBoxes, type DoorSpec } from './world/rooms';
 import { Fader } from './ui/fader';
@@ -236,6 +237,10 @@ function startGame(): void {
 
   const trail = new SwordTrail();
   scene.add(trail.mesh);
+  // The sparks his shield strikes from an edge as he grinds along it.
+  const grindSparks = new Sparks();
+  scene.add(grindSparks.group);
+  let grindSparkIn = 0;
 
   // Enemies in the level. Waves add more as they arrive.
   /** What the game needs from an enemy's drawn model, whatever kind of enemy it is. */
@@ -1526,6 +1531,12 @@ function startGame(): void {
       audio.play('ratHurt', { vol: 0.55, rate: 1.15, priority: 7 });
       rumble.land(9);
     } else if (ev === 'rideEnd') audio.play('step', { vol: 0.6, rate: 0.85, priority: 4 });
+    // Onto an edge with it: iron on stone, a hard knock and a ring.
+    else if (ev === 'grind') {
+      audio.play('ridePop', { vol: 0.7, rate: 1.35, priority: 6 });
+      audio.play('clank', { vol: 0.45, rate: 1.5, priority: 5 });
+      rumble.land(4);
+    } else if (ev === 'grindEnd') audio.play('ridePop', { vol: 0.4, rate: 1.2, priority: 4 });
     if (!heard.grounded && player.grounded && !inWater) {
       audio.play('land', { vol: Math.min(1, 0.35 + Math.abs(vyBefore) / 12), rate: roll(0.9, 1.1) });
       rumble.land(Math.abs(vyBefore));
@@ -1668,7 +1679,9 @@ function startGame(): void {
     audio.loop('fireflyHum', ffv * ffv * 0.5);
     // His shield on the stone, while he rides it on the ground: louder the faster he goes.
     const rideV = player.riding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.ride.max) : 0;
-    audio.loop('rideScrape', rideV * 0.55 + (rideV > 0 ? 0.08 : 0));
+    audio.loop('rideScrape', player.grinding ? 0 : rideV * 0.55 + (rideV > 0 ? 0.08 : 0));
+    // ...and its rim along an edge: a ringing shriek, higher and louder the faster.
+    audio.loop('grindRing', player.grinding ? rideV * 0.4 + 0.12 : 0);
     let fv = 0;
     for (const b of braziers) fv = Math.max(fv, nearness(Math.hypot(b.x - player.position.x, b.y - player.position.y, b.z - player.position.z), 6));
     // (A firefly's flames crackle as a brazier does, for as long as they burn.)
@@ -3322,7 +3335,7 @@ function startGame(): void {
     // He is drawn on what is under his FEET (when that is no more than a step below where the rules have him), and
     // eased onto it, so that he walks up and down stairs instead of hopping from one height to the next.
     {
-      const under = player.state === 'swim' || player.state === 'hang' || player.state === 'climb' || player.velocity.y > 0.01 ? null : feetGround(renderPos.x, renderPos.y, renderPos.z);
+      const under = player.state === 'swim' || player.state === 'hang' || player.state === 'climb' || player.grinding || player.velocity.y > 0.01 ? null : feetGround(renderPos.x, renderPos.y, renderPos.z);
       const want = under !== null && renderPos.y - under <= TUNING.physics.stepHeight + 0.05 ? under : renderPos.y;
       // (More than a step away it is a jump, a fall or a new place: no easing.)
       if (Math.abs(want - drawnY) > 0.6) drawnY = want;
@@ -3349,7 +3362,7 @@ function startGame(): void {
       climbProgress: player.climbProgress,
       kickProgress: player.kickProgress,
       onWall: player.onWall,
-      ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround } : null,
+      ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.
@@ -3385,6 +3398,13 @@ function startGame(): void {
     talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (npcs.some((n) => n.near) || (nearFire && resting < 0)) && player.grounded);
 
     collectVisuals.update(frameDt, time, camera.quaternion);
+    // Grinding throws sparks from under the shield, a few at a time, as long as it lasts.
+    grindSparkIn -= frameDt;
+    if (player.grinding && frameDt > 0 && grindSparkIn <= 0) {
+      grindSparkIn = 0.045;
+      grindSparks.burst(drawnPos.x, drawnPos.y + 0.06, drawnPos.z, time * 7 % 1 < 0.5 ? 0xffd070 : 0xffa040, 2, 1.7, 0.11);
+    }
+    grindSparks.update(frameDt, camera.quaternion);
     if (ringAge < 0.35) {
       ringAge += frameDt;
       const k = Math.min(1, ringAge / 0.35);
