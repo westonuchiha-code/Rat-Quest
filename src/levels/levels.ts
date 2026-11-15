@@ -15,7 +15,7 @@ import { kingdomLevels } from './kingdom';
 import { foundry, foundryShaft, foundryCellars } from './foundry';
 import { hollows, hollowsWebs, hollowsFaith, hollowsDark, hollowsPit } from './hollows';
 import { keep, throne } from './keep';
-import { cisternWorks, sludgePit } from './cisternHalls';
+import { cisternWorks, sludgePit, cisternSump } from './cisternHalls';
 import { cistern } from './cistern';
 import { junction } from './junction';
 import { CAMPAIGN } from './campaign';
@@ -209,7 +209,7 @@ function crates(): LevelDef {
   };
 }
 
-const built: LevelDef[] = [sewer(), caps(), hunt(), waves(), leap(), crates(), waterworks(), ...kingdomLevels(), pumpworks(), junction(), cistern(), foundry(), foundryShaft(), foundryCellars(), hollows(), hollowsWebs(), hollowsFaith(), hollowsDark(), hollowsPit(), keep(), throne(), cisternWorks(), sludgePit()];
+const built: LevelDef[] = [sewer(), caps(), hunt(), waves(), leap(), crates(), waterworks(), ...kingdomLevels(), pumpworks(), junction(), cistern(), foundry(), foundryShaft(), foundryCellars(), hollows(), hollowsWebs(), hollowsFaith(), hollowsDark(), hollowsPit(), keep(), throne(), cisternWorks(), sludgePit(), cisternSump()];
 const rank = (l: LevelDef): number => {
   const i = (CAMPAIGN as readonly string[]).indexOf(l.id);
   return i < 0 ? CAMPAIGN.length : i;

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 1,817 checks, about 3 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 1,901 checks, about 4 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -66,6 +66,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 | (hub) | hub | The Club | 0 | Doors to the worlds. Pip's shop, rest at the fire |
 | Cistern (door 0) | cistern | The Great Cistern | 6 | Includes the drain secret (Sludge Scarf) |
 | | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 4 / 2 | Side areas (returnTo cistern). works: the Fencer's Wedge (three perfect guards; the Buckler makes it fair) |
+| | sump | The Sump | 1 | A boss: the Sump Wyrm, a great centipede. Its door is in the Cistern's north-east corner. Its wedge appears where it lay |
 | Foundry (door 4) | foundry | The Foundry | 6 | Ironback behind the Crucible. Mouth secret (Royal Scarf) |
 | | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 4 | Ironback behind the cellar gate. coalcellars: the Coal Bin secret (Cleaver) |
 | Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
@@ -74,7 +75,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 | Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Two Keep Guards and an Ironback in the courtyard; a guard, and bats on chains, on the battlements |
 | | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
 
-- 46 wedges in all (41 until 2026-11-14; four gear secrets and the Broodmother's were added and the door costs were NOT raised, so
+- 47 wedges in all (41 until 2026-11-14; four gear secrets and the two bosses' were added and the door costs were NOT raised, so
   the doors are very slightly easier to open than before: the owner has been told). Door costs are in
   `src/data/balance.ts` (BALANCE). Shop prices are there too.
 - 13 retired levels live in ARCHIVE (`levelById` still finds them).
@@ -208,13 +209,12 @@ He gave this list himself; work through it, do not ask about it again:
    it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of
    every move: weapon against own body, hands on the weapon, nothing under the floor; (3) a head that sticks out in
    front, or horns over it, will be in the way of anything held in two hands: decide where the weapon lives first.
-5. **Two boss battles.** The first is built: **the Broodmother**, a giant spider, in the Brood Pit off the Hollows
-   (HANDOFF, "Boss: the Broodmother"). The owner has not played her yet. The second is not built. Ideas (pick one, do
-   not ask): a great centipede in the Cistern that bursts out of the wall drains and charges (its body following its
-   head along the floor: it will need the sword to be able to hit any part of a long body, which combat cannot do
-   yet); or a Great Ironback / forge beetle in the Foundry over the lava. A boss gets its name and health along the
-   bottom of the screen (`src/ui/bossBar.ts`: give the creature a `bossName`, `maxHp` and `awake` and add it to the
-   loop in main.ts that feeds the bar; Grimsqueak has it too now).
+5. **Two boss battles: both built, neither played by the owner yet.** **The Broodmother**, a giant spider, in the
+   Brood Pit off the Hollows (HANDOFF, "Boss: the Broodmother"), and **the Sump Wyrm**, a great centipede with a long
+   body every piece of which is solid and can be hit, in the Sump off the Cistern (HANDOFF, "Boss: the Sump Wyrm").
+   A boss gets its name and health along the bottom of the screen (`src/ui/bossBar.ts`: give the creature a
+   `bossName`, `maxHp` and `awake` and add it to the loop in main.ts that feeds the bar; Grimsqueak has it too).
+   A third idea, not built and not asked for: a Great Ironback / forge beetle in the Foundry over the lava.
 
 **The development suite (rebuilt 2026-11-14 at the owner's asking; HANDOFF, "The development suite").** Three things,
 one look (`src/ui/devTheme.ts`): the **level editor** (`src/ui/builder.ts`, rewritten; its rules are in
@@ -236,6 +236,6 @@ that back by another road: the left stick steers relative to the view, so a view
 stick means. Lock-on pressed with nobody near brings the view round behind him. After a wall kick he is carried
 straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
 
-Also open: raise the door costs to match 46 wedges or leave them; fire and iron-bound crates in the level builder;
-playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight and the Broodmother (none of them has been played by hand; the Broodmother's numbers are a first guess, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
+Also open: raise the door costs to match 47 wedges or leave them; fire and iron-bound crates in the level builder;
+playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
 over his head, blade up, before he dives.)

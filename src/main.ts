@@ -32,6 +32,8 @@ import { MantisModel } from './enemies/mantisModel';
 import { Stag } from './enemies/stag';
 import { Brood } from './enemies/brood';
 import { BroodModel } from './enemies/broodModel';
+import { Wyrm } from './enemies/wyrm';
+import { WyrmModel } from './enemies/wyrmModel';
 import { BossBar } from './ui/bossBar';
 import { Workshop } from './ui/workshop';
 import { DEV, devSummary } from './core/devSwitches';
@@ -312,6 +314,21 @@ function startGame(): void {
         tick: (dt, f) => m.update(dt, { state: f.state as IronbackState, stateTime: f.stateTime, moving: f.state === 'chase' || f.state === 'return' }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'wyrm') {
+      // The Sump Wyrm. Its body is drawn wherever the rules have each segment, in the world's own places: the model
+      // is not moved about as one thing, only told how high the floor is.
+      const m = new WyrmModel();
+      const e = new Wyrm(spec);
+      e.wallAt = wallAt;
+      m.setFloor(e.floorY);
+      enemies.push(e);
+      enemyModels.push({
+        root: m.root,
+        setTransform: () => m.setFloor(e.floorY),
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, windTime: e.windTime, x: e.x, z: e.z, facing: e.facing, body: e.body, crawled: e.crawled, moving: e.moving, raging: e.raging, coilAt: e.coilAt }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'brood') {
       // The Broodmother. She is drawn on the floor under her even when the rules have her up in the air (the model
       // lifts her itself), and her whirl turns her on top of the way she faces.
@@ -410,10 +427,52 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
-      if (e instanceof Brood) {
+      if (e instanceof Wyrm) {
+        // The Sump Wyrm: a long low scream when it sees him and again when it turns angry; the dry patter of all its
+        // feet; a hiss as its head goes up and the clack of its fangs; a rising rattle and a scream before it charges,
+        // the rush of it, and the crash when it finds a wall; the rattle of its tail and the whip of it; the grind of
+        // its plates as it winds its coil and the crunch as it tightens.
+        const loud = Math.max(0.5, v);
+        if (ev === 'roar' || ev === 'rage') {
+          audio.play('roachScreech', { vol: loud, rate: ev === 'rage' ? 0.3 : 0.36, priority: 9 });
+          audio.play('rumble', { vol: loud * 0.6, rate: 1.1, priority: 6 });
+          shake = Math.max(shake, 0.12);
+        } else if (ev === 'step') audio.play('softStep', { vol: v * 0.45, rate: roll(2.1, 2.8), priority: 2 });
+        else if (ev === 'biteWind') audio.play('hiss', { vol: v * 0.9, rate: e.windTime < 0.5 ? 1.5 : 1.1, priority: 7 });
+        else if (ev === 'bite') {
+          audio.play('lunge', { vol: v, rate: 0.8, priority: 7 });
+          audio.play('block', { vol: v * 0.6, rate: 1.7, priority: 6 });
+        } else if (ev === 'chargeWind') {
+          audio.play('roachWind', { vol: loud, rate: 0.45, priority: 8 });
+          audio.play('roachScreech', { vol: loud * 0.7, rate: 0.6, priority: 8 });
+        } else if (ev === 'charge') {
+          audio.play('whoosh', { vol: loud, rate: 0.5, priority: 8 });
+          shake = Math.max(shake, 0.08);
+        } else if (ev === 'ram') {
+          audio.play('shock', { vol: loud, rate: 0.7, priority: 9 });
+          audio.play('barrel', { vol: loud * 0.8, rate: 0.6, priority: 8 });
+          shake = Math.max(shake, 0.32);
+          rumble.shock();
+        } else if (ev === 'bump') {
+          // (Angry, the first wall only turns it.)
+          audio.play('shock', { vol: loud * 0.7, rate: 1.1, priority: 8 });
+          shake = Math.max(shake, 0.16);
+        } else if (ev === 'whipWind') audio.play('roachWind', { vol: v, rate: 1.5, priority: 7 });
+        else if (ev === 'whip') audio.play('whoosh', { vol: v, rate: 1.4, priority: 7 });
+        else if (ev === 'coil') audio.play('roachWind', { vol: loud, rate: 0.7, priority: 7 });
+        else if (ev === 'coilWind') {
+          audio.play('hiss', { vol: loud, rate: 0.7, priority: 9 });
+          audio.play('roachScreech', { vol: loud * 0.7, rate: 0.5, priority: 8 });
+        } else if (ev === 'squeeze') {
+          audio.play('crate', { vol: loud, rate: 0.6, priority: 9 });
+          shake = Math.max(shake, 0.16);
+        } else if (ev === 'reel') audio.play('roachDie', { vol: v, rate: 0.7, priority: 8 });
+        else if (ev === 'crit') audio.play('roachDie', { vol: v * 0.6, rate: 1.5, priority: 6 });
+        else if (ev === 'hurt') audio.play('block', { vol: v * 0.5, rate: 0.9, priority: 4 });
+      } else if (e instanceof Brood) {
         // The Broodmother: a scream when she sees him and again when she turns angry; the patter of her feet; a hiss
         // as a spike goes up and the crack of it into the floor; the dry rattle before the scissor and the rush of
         // it; a creak as she sinks to spring; the floor shaking where she lands; the thread twanging before she drops.
@@ -1302,6 +1361,11 @@ function startGame(): void {
         if (e.state === 'dead') audio.play('ratDie', { vol: v, rate: 0.75, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 1.5, priority: 6 });
+      } else if (e.kind === 'wyrm') {
+        if (e.state === 'dead') {
+          audio.play('roachDie', { vol: 1, rate: 0.32, priority: 9 });
+          audio.play('recall', { vol: 0.7, rate: 0.5, priority: 8 });
+        }
       } else if (e.kind === 'brood') {
         // (What she does has its own sounds, in beastSounds; only her fall is here.)
         if (e.state === 'dead') {
@@ -1562,7 +1626,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);
@@ -2957,7 +3021,7 @@ function startGame(): void {
     let fought: { name: string; frac: number } | null = null;
     if (!story.scene && !cutscene.active && !trans.active && !menu.open) {
       for (const e of enemies) {
-        if (e instanceof Brood && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
+        if ((e instanceof Brood || e instanceof Wyrm) && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
         else if (e instanceof Grimsqueak && e.alive && !e.asleep) fought = { name: 'Lord Grimsqueak', frac: e.hp / GRIM.hp };
       }
     }

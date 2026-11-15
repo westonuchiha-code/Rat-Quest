@@ -1,6 +1,6 @@
 import { TUNING } from '../data/tuning';
 import type { HitResult, PlayerController } from '../player/controller';
-import type { Foe } from '../enemies/foe';
+import type { BodyPart, Foe } from '../enemies/foe';
 import type { Glob } from '../enemies/toad';
 import { TOAD } from '../enemies/toad';
 import type { Crate } from '../world/crates';
@@ -49,20 +49,37 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
     const dz = e.z - p.z;
     const dist = Math.hypot(dx, dz);
     const sameLevel = Math.abs(p.y - e.y) < 0.9;
+    const parts = e.parts ?? NO_PARTS;
 
-    // Sword against enemy.
+    // Sword against enemy: its own circle first (for a long body, that is its head), then the rest of it, nearest first.
     if (player.attackActive && e.lastSwing !== player.swingId && sameLevel) {
       const clip = player.attackClip;
-      const inArc = dist < e.radius + 0.25 || angleBetween(Math.atan2(dx, dz), player.facing) <= clip.arc;
-      if (inArc && dist - e.radius <= clip.reach) {
+      const reached = (cx: number, cz: number, r: number): number => {
+        const d = Math.hypot(cx - p.x, cz - p.z);
+        const inArc = d < r + 0.25 || angleBetween(Math.atan2(cx - p.x, cz - p.z), player.facing) <= clip.arc;
+        return inArc && d - r <= clip.reach ? d - r : Infinity;
+      };
+      let part = -1;
+      let best = reached(e.x, e.z, e.radius);
+      if (best === Infinity) {
+        for (let k = 0; k < parts.length; k++) {
+          const d = reached(parts[k].x, parts[k].z, parts[k].r);
+          if (d < best) {
+            best = d;
+            part = k;
+          }
+        }
+      }
+      if (best < Infinity) {
         e.lastSwing = player.swingId;
-        if (e.deflects?.(p.x, p.z, 'sword')) {
+        if (e.deflects?.(p.x, p.z, 'sword', part)) {
           // Off the shell: no harm, and his arm bounces back.
           events.glanced = e;
-          player.recoil(e.x, e.z);
+          const at = part >= 0 ? parts[part] : e;
+          player.recoil(at.x, at.z);
         } else {
           events.enemyHit = e;
-          if (e.takeHit(clip.damage * player.gear.damage, p.x, p.z, 'sword')) events.enemyKilled = true;
+          if (e.takeHit(clip.damage * player.gear.damage, p.x, p.z, 'sword', part)) events.enemyKilled = true;
         }
       }
     }
@@ -72,28 +89,41 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
       const P = TUNING.plunge;
       let damage = 0;
       let how: 'plunge' | 'shock' = 'plunge';
-      if (player.plungeStage === 2 && dist <= e.radius + P.diveRadius && e.y <= p.y + 0.3) damage = P.diveDamage;
-      else if (player.plungeImpact && sameLevel && dist - e.radius <= P.shockRadius) {
+      let part = -1;
+      // How near the nearest piece of it is (its own circle, or any part), edge to middle.
+      let near = dist - e.radius;
+      for (let k = 0; k < parts.length; k++) {
+        const d = Math.hypot(parts[k].x - p.x, parts[k].z - p.z) - parts[k].r;
+        if (d < near) {
+          near = d;
+          part = k;
+        }
+      }
+      if (player.plungeStage === 2 && near <= P.diveRadius && e.y <= p.y + 0.3) damage = P.diveDamage;
+      else if (player.plungeImpact && sameLevel && near <= P.shockRadius) {
         damage = P.shockDamage;
         how = 'shock';
       }
       if (damage > 0) {
         e.lastSwing = player.swingId;
-        if (e.deflects?.(p.x, p.z, how)) events.glanced = e;
+        if (e.deflects?.(p.x, p.z, how, part)) events.glanced = e;
         else {
           events.enemyHit = e;
-          if (e.takeHit(damage, p.x, p.z, how)) events.enemyKilled = true;
+          if (e.takeHit(damage, p.x, p.z, how, part)) events.enemyKilled = true;
         }
       }
     }
 
-    // Bite against the rat.
+    // Bite against the rat. (A blow may come from a place on its body other than its middle: a tail.)
     if (e.attackActive && sameLevel && !player.dead) {
       const S = TUNING.scuttler;
       const B = e.bite ?? { reach: S.biteReach, arc: S.biteArc, damage: S.damage };
-      const inFront = angleBetween(Math.atan2(-dx, -dz), e.biteDir ?? e.facing) <= B.arc;
-      if (inFront && dist <= e.radius + B.reach + TUNING.rat.radius && !(B.ground && !player.grounded)) {
-        const result = player.takeHit(e.x, e.z, B.damage, !!B.heavy);
+      const from = B.at ?? { x: e.x, z: e.z, r: e.radius };
+      const bx = from.x - p.x;
+      const bz = from.z - p.z;
+      const inFront = angleBetween(Math.atan2(-bx, -bz), e.biteDir ?? e.facing) <= B.arc;
+      if (inFront && Math.hypot(bx, bz) <= from.r + B.reach + TUNING.rat.radius && !(B.ground && !player.grounded)) {
+        const result = player.takeHit(from.x, from.z, B.damage, !!B.heavy);
         events.playerResult = result;
         if (result !== 'dodged') e.lungeLanded(result === 'blocked', result === 'parried');
       }
@@ -101,11 +131,23 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
 
     // Keep the two bodies apart. The roach gives way, except in the middle of its lunge.
     const minDist = e.radius + TUNING.rat.radius;
-    if (e.alive && e.immovable && sameLevel && dist < minDist && dist > 1e-4) {
-      // Against something too heavy to shove, it is the rat who is moved.
-      const push = minDist - dist;
-      p.x -= (dx / dist) * push;
-      p.z -= (dz / dist) * push;
+    if (e.alive && e.immovable && sameLevel) {
+      // Against something too heavy to shove, it is the rat who is moved: out of its middle, and out of every other part of it.
+      if (dist < minDist && dist > 1e-4) {
+        const push = minDist - dist;
+        p.x -= (dx / dist) * push;
+        p.z -= (dz / dist) * push;
+      }
+      for (const q of parts) {
+        const qx = q.x - p.x;
+        const qz = q.z - p.z;
+        const d = Math.hypot(qx, qz);
+        const min = q.r + TUNING.rat.radius;
+        if (d < min && d > 1e-4) {
+          p.x -= (qx / d) * (min - d);
+          p.z -= (qz / d) * (min - d);
+        }
+      }
     } else
     if (e.alive && e.state !== 'lunge' && e.state !== 'hop' && e.state !== 'pounce' && e.state !== 'swoop' && e.state !== 'ram' && e.state !== 'thrust' && e.state !== 'slash' && e.state !== 'leap' && sameLevel && dist < minDist && dist > 1e-4) {
       const push = minDist - dist;
@@ -113,6 +155,8 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
     }
   }
 }
+
+const NO_PARTS: ReadonlyArray<BodyPart> = [];
 
 /** How much harder than a plain sword a blade must hit to break an iron-bound crate (the Cleaver's is 2). */
 export const HEAVY_BLADE = 2;
@@ -166,14 +210,18 @@ export function pickAim(player: PlayerController, enemies: Foe[], stickX: number
   let bestDist = Infinity;
   for (const e of enemies) {
     if (!e.alive || Math.abs(player.position.y - e.y) >= 0.9) continue;
-    const dx = e.x - player.position.x;
-    const dz = e.z - player.position.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist > TUNING.attack.aimRange + e.radius || dist >= bestDist) continue;
-    const yaw = Math.atan2(dx, dz);
-    if (angleBetween(yaw, want) > TUNING.attack.aimCone / 2 && dist > 1.0) continue;
-    best = yaw;
-    bestDist = dist;
+    // Its middle, and every other part of a long body: he turns to whichever piece is nearest in the way he is pointing.
+    for (let k = -1; k < (e.parts?.length ?? 0); k++) {
+      const c = k < 0 ? { x: e.x, z: e.z, r: e.radius } : e.parts![k];
+      const dx = c.x - player.position.x;
+      const dz = c.z - player.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist > TUNING.attack.aimRange + c.r || dist >= bestDist) continue;
+      const yaw = Math.atan2(dx, dz);
+      if (angleBetween(yaw, want) > TUNING.attack.aimCone / 2 && dist > 1.0) continue;
+      best = yaw;
+      bestDist = dist;
+    }
   }
   return best;
 }

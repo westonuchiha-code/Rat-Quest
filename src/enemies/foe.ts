@@ -28,9 +28,16 @@ export function keepOnFloor(e: { x: number; y: number; z: number; radius: number
   }
 }
 
+/** One round piece of a body, on the floor. */
+export interface BodyPart {
+  x: number;
+  z: number;
+  r: number;
+}
+
 /** What the combat code needs from any enemy, whatever kind it is. */
 export interface Foe {
-  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood';
+  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm';
   x: number;
   y: number;
   z: number;
@@ -47,13 +54,19 @@ export interface Foe {
   readonly attackActive: boolean;
   /** The shape of that attack, if it is not the roach's bite: how far beyond its body, how wide (radians each side of its facing), how hard. */
   /** `heavy`: a shield does not stop it (only a perfect guard does). `ground`: it runs along the floor, and misses a rat in the air. */
-  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean };
+  /** `at`: the blow comes from there (a place on its body, with that part's radius), not from its middle: a tail's lash. */
+  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; at?: BodyPart };
+  /**
+   * The rest of a long body: more circles, besides its own (x, z, radius), that the sword can hit and the rat cannot walk
+   * through. A blow that lands on one is passed to takeHit with that part's place in this list (its own circle is -1).
+   */
+  readonly parts?: ReadonlyArray<BodyPart>;
   /** Too heavy to be shouldered aside: where the two bodies meet, it is the rat who gives way. */
   readonly immovable?: boolean;
   /** Which way that attack points, if not where it faces (the ironback's buck kicks backwards). */
   readonly biteDir?: number;
   /** True if a hit from there would glance off its armour (the ironback's shell): no harm, and the sword bounces back. */
-  deflects?(fromX: number, fromZ: number, how?: HitHow): boolean;
+  deflects?(fromX: number, fromZ: number, how?: HitHow, part?: number): boolean;
   /** Set by the game for the creatures that need them. */
   wallAt?: WallAt | null;
   canFly?: CanFly | null;
@@ -61,7 +74,7 @@ export interface Foe {
   readonly ready?: boolean;
   readonly attacking?: boolean;
   mayAttack?: boolean;
-  takeHit(damage: number, fromX: number, fromZ: number, how?: HitHow): boolean;
+  takeHit(damage: number, fromX: number, fromZ: number, how?: HitHow, part?: number): boolean;
   /** Its attack reached the rat: he was hit, or he blocked it, or he turned it aside with a perfectly timed shield. */
   lungeLanded(blocked: boolean, parried?: boolean): void;
   nudge(dx: number, dz: number): void;

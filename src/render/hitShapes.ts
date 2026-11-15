@@ -14,8 +14,10 @@ export interface ShapeFoe {
   alive: boolean;
   attackActive: boolean;
   attacking?: boolean;
-  bite?: { reach: number; arc: number; ground?: boolean; heavy?: boolean };
+  bite?: { reach: number; arc: number; ground?: boolean; heavy?: boolean; at?: { x: number; z: number; r: number } };
   biteDir?: number;
+  /** The rest of a long body. */
+  parts?: ReadonlyArray<{ x: number; z: number; r: number }>;
 }
 export interface ShapeRat {
   x: number;
@@ -87,11 +89,14 @@ export class HitShapes {
       this.arc(e.x, y, e.z, e.radius, 0, Math.PI, WHITE);
       // Which way it faces.
       this.seg(e.x, y, e.z, e.x + Math.sin(e.facing) * (e.radius + 0.35), y, e.z + Math.cos(e.facing) * (e.radius + 0.35), WHITE);
+      for (const q of e.parts ?? []) this.arc(q.x, y, q.z, q.r, 0, Math.PI, WHITE);
       if ((e.attackActive || e.attacking) && e.bite) {
-        const reach = e.radius + e.bite.reach + rat.radius;
-        this.arc(e.x, y + 0.02, e.z, reach, e.biteDir ?? e.facing, Math.min(Math.PI, e.bite.arc), e.attackActive ? RED : YELLOW, e.radius);
+        // (A blow may come from a place on its body other than its middle: a tail.)
+        const from = e.bite.at ?? { x: e.x, z: e.z, r: e.radius };
+        const reach = from.r + e.bite.reach + rat.radius;
+        this.arc(from.x, y + 0.02, from.z, reach, e.biteDir ?? e.facing, Math.min(Math.PI, e.bite.arc), e.attackActive ? RED : YELLOW, from.r);
         // A blow that runs along the floor (jump it) is marked with a second, lower line.
-        if (e.bite.ground) this.arc(e.x, y + 0.02, e.z, reach - 0.12, e.biteDir ?? e.facing, Math.min(Math.PI, e.bite.arc), e.attackActive ? RED : YELLOW, reach - 0.12);
+        if (e.bite.ground) this.arc(from.x, y + 0.02, from.z, reach - 0.12, e.biteDir ?? e.facing, Math.min(Math.PI, e.bite.arc), e.attackActive ? RED : YELLOW, reach - 0.12);
       }
     }
     const y = rat.y + 0.06;

@@ -19,6 +19,8 @@ import { StagModel } from '../../src/enemies/stagModel';
 import { STAG, type StagState } from '../../src/enemies/stag';
 import { BroodModel } from '../../src/enemies/broodModel';
 import { BROOD, type BroodState } from '../../src/enemies/brood';
+import { WyrmModel } from '../../src/enemies/wyrmModel';
+import { WYRM, Wyrm, type WyrmState } from '../../src/enemies/wyrm';
 import { MANTIS, type MantisState } from '../../src/enemies/mantis';
 import { GUARD, type GuardState } from '../../src/enemies/guard';
 import { capGeometry, crumbGeometry, itemMaterial, relicGeometry, relicRingGeometry, wedgeGeometry } from '../../src/world/itemModels';
@@ -50,7 +52,7 @@ const spin = Number(/spin=([-\d.]+)/.exec(location.hash)?.[1] ?? 0.6);
 type Tick = (dt: number) => void;
 const ticks: Tick[] = [];
 const labels: Array<{ text: string; x: number; y: number }> = [];
-const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood)/.exec(location.hash)?.[1];
+const pick = /#(bat|ironback|roach|toad|npcs|hero|moves|grim|items|guard|mantis|stag|brood|wyrm)/.exec(location.hash)?.[1];
 const which = pick === 'bat' || pick === 'ironback' ? pick : pick ? 'other' : 'both';
 
 if (pick === 'guard') {
@@ -94,6 +96,81 @@ if (pick === 'guard') {
     labels.push({ text: 'the knight', x: -12.5, y: 0 });
   }
   for (let k = 0; k < 240; k++) for (const tk of ticks) tk(1 / 60);
+}
+if (pick === 'wyrm') {
+  // The Sump Wyrm in each thing it does. Each is a real fight, played by its rules until it is doing that thing, then held.
+  // &only=N shows one alone (with the knight beside it for size).
+  type Shot = { name: string; state: WyrmState; at: number; angry?: boolean; rat?: 'ring' | 'tail' | 'still'; kill?: WyrmState; parry?: boolean };
+  const shots: Shot[] = [
+    { name: 'asleep', state: 'idle', at: 0.5 },
+    { name: 'roar', state: 'roar', at: WYRM.roar * 0.8 },
+    { name: 'prowl', state: 'prowl', at: 1.6 },
+    { name: 'bite windup', state: 'biteWind', at: WYRM.biteWind * 0.9 },
+    { name: 'bite', state: 'bite', at: WYRM.biteTime * 0.9 },
+    { name: 'reeling (parried)', state: 'reel', at: 0.6, parry: true },
+    { name: 'charge windup', state: 'chargeWind', at: WYRM.chargeWind * 0.9 },
+    { name: 'charge', state: 'charge', at: 0.5 },
+    { name: 'stunned', state: 'stunned', at: 1.2 },
+    { name: 'lash windup', state: 'whipWind', at: WYRM.whipWind * 0.9, rat: 'tail' },
+    { name: 'lash', state: 'whip', at: WYRM.whipTime * 0.5, rat: 'tail' },
+    { name: 'coiling', state: 'coil', at: 0.9, angry: true, rat: 'still' },
+    { name: 'coil reared', state: 'coilWind', at: WYRM.coilWind * 0.9, angry: true, rat: 'still' },
+    { name: 'coil spent', state: 'spent', at: 0.8, angry: true, rat: 'still' },
+    { name: 'dead', state: 'dead', at: 1.8, kill: 'prowl' },
+  ];
+  const only = Number(/only=(\d+)/.exec(location.hash)?.[1] ?? -1);
+  const COLS = 5;
+  shots.forEach((shot, i) => {
+    if (only >= 0 && i !== only) return;
+    let ox = only >= 0 ? 0 : ((i % COLS) - (COLS - 1) / 2) * 17;
+    let oz = only >= 0 ? 0 : (Math.floor(i / COLS) - 1) * 17;
+    const w = new Wyrm({ x: 0, z: -3, arena: { x0: -11, x1: 11, z0: -11, z1: 11 }, facing: 0 });
+    let sd = 7 + i * 13;
+    w.rng = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    if (shot.angry) for (let k = 0; k < 17; k++) w.takeHit(1, 0, 0, 'sword', 4);
+    const m = new WyrmModel();
+    m.setFloor(0);
+    scene.add(m.root);
+    let rat = { x: 0, z: 30 };
+    const feed = (dt: number): void => m.update(dt, { state: w.state, stateTime: w.stateTime, windTime: w.windTime, x: w.x + ox, z: w.z + oz, facing: w.facing, body: w.body.map((b) => ({ x: b.x + ox, z: b.z + oz, dir: b.dir })), crawled: w.crawled, moving: w.moving, raging: w.raging, coilAt: { x: w.coilAt.x + ox, z: w.coilAt.z + oz } });
+    // Play it until it is doing the thing (for no more than two minutes of its time).
+    let killed = false;
+    for (let f = 0; f < 60 * 120; f++) {
+      const t = f / 60;
+      if (shot.state === 'idle') rat = { x: 0, z: 40 };
+      else if (shot.rat === 'tail' && w.awake) rat = { x: w.tail.x + 1.3, z: w.tail.z };
+      else if (shot.rat === 'still') rat = { x: 2, z: 2 };
+      else rat = { x: Math.sin(t * 0.3) * 6, z: Math.cos(t * 0.3) * 6 };
+      w.update(1 / 60, rat.x, 0, rat.z, true);
+      w.events.length = 0;
+      if (shot.parry && w.state === 'bite' && w.stateTime > 0.05) w.lungeLanded(false, true);
+      if (shot.kill && !killed && w.state === shot.kill && w.stateTime > 1) {
+        killed = true;
+        while (w.alive) w.takeHit(4, 0, 0);
+      }
+      feed(1 / 60);
+      if (w.state === shot.state && w.stateTime >= shot.at) break;
+    }
+    if (only >= 0) {
+      // Alone, it is put with the middle of its body in the middle of the picture.
+      ox = -(w.x + w.body.reduce((a, b) => a + b.x, 0)) / (w.body.length + 1);
+      oz = -(w.z + w.body.reduce((a, b) => a + b.z, 0)) / (w.body.length + 1);
+      // &focus=head puts its head there instead, turned to face +z (for a close look at it).
+      if (location.hash.includes('focus=head')) {
+        ox = -w.x;
+        oz = -w.z;
+      }
+      feed(0);
+    }
+    ticks.push((dt) => feed(dt));
+    labels.push({ text: shot.name, x: only >= 0 ? 0 : ox, y: (only >= 0 ? 0 : oz) + 7 });
+    if (only >= 0) {
+      const knight = new RatModel();
+      knight.setTransform(new THREE.Vector3(rat.x + ox, 0, rat.z + oz), Math.atan2(w.x - rat.x, w.z - rat.z));
+      scene.add(knight.root);
+    }
+  });
+  for (let k = 0; k < 30; k++) for (const tk of ticks) tk(1 / 60);
 }
 if (pick === 'brood') {
   // The Broodmother in each thing she does, with the knight beside the first for size. &only=N shows one alone.
@@ -558,7 +635,10 @@ if (which === 'both' || which === 'bat') {
     labels.push({ text: st, x, y: z });
   });
 }
-if (pick === 'brood') {
+if (pick === 'wyrm') {
+  camera.position.set(0, 34, 62);
+  camera.lookAt(0, 0, 2);
+} else if (pick === 'brood') {
   camera.position.set(0, 9, 62);
   camera.lookAt(0, 1.5, 0);
 } else if (pick === 'stag') {

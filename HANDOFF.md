@@ -336,6 +336,51 @@ beating her). Not strictly an insect: she was one of the boss ideas offered earl
 - **Not done**: nobody has fought her by hand; her numbers are a first guess. Her sounds are made from existing ones
   (roach screech slowed for the scream, a chain clink sped up for the thread). No story scene.
 
+## Boss: the Sump Wyrm (the second of the owner's two boss battles)
+A great centipede in its own room off the Cistern (level id `sump`, door in the Cistern's north-east corner; one
+wedge, for beating it). Its whole body is in the fight: thirteen segments behind the head, each solid, each hittable.
+- **A long body in combat** (`src/enemies/foe.ts`, `src/combat/combat.ts`): a `Foe` may have `parts` (extra circles:
+  `{ x, z, r }`). The sword tries its own circle first, then the nearest part; `takeHit(damage, fx, fz, how, part)`
+  is told which (-1: its own circle), and so is `deflects`. Plunges, shockwaves and lock-on aim use the nearest piece;
+  an `immovable` foe pushes him out of every part. `bite.at` lets a blow come from somewhere other than its middle
+  (the tail). Hit shapes (the Workshop switch) draw a ring for every part. Nothing else uses `parts` yet.
+- **Rules** `src/enemies/wyrm.ts` (kind `wyrm`, `immovable`, `WYRM` table, 17 sliders under "The Sump Wyrm"). hp 32.
+  Its body follows the path its head has crawled (`trail`, a point every 0.05; segments 0.85 apart).
+  - It prowls round him in a ring (5.5 off) and then means to *bite* or *charge* (an `intent`), comes round to face
+    him by crawling, and does it when it can.
+  - *Bite*: head up over him (0.55 s, turning with him for 60%), snaps forward (1 heart; a shield stops it, a perfect
+    guard throws its head back for 1.8 s: `reel`). Angry: two bites.
+  - *Charge*: rears and screams (0.85 s, eyes red), then runs at 14 until it meets a wall (2 hearts, `heavy`: no
+    shield). It stuns itself there for 2.6 s. Angry: charges come in twos, the first wall only turns it (`bump`).
+  - *Tail lash*: struck on its last four segments, or with him hanging about them while it is slow, its tail goes up
+    (0.5 s) and whips round along the floor (`ground`: jump it; `bite.at` is its tail).
+  - *Coil* (angry, every 9 to 13 s): winds a ring round where he stands (a ring on the floor marks it), rears
+    (0.65 s), tightens (2 hearts): jump out over its body. Then it lies spent for 2.3 s, its grip easing back out.
+  - Its head takes double while it is helpless (stunned, reeling, spent). Angry below half.
+- **It must not tie itself up** (most of the work, and easy to break). A body that may not pass through itself, in a
+  walled room, driven by simple steering, winds into knots, wedges its head between a wall and its own side, or sits
+  against a wall for good. What stops that, in `wyrm.ts`:
+  - it turns by crawling (no tighter than `MIN_TURN`), with a little swing of the head where it stands in wind-ups;
+  - `windRoom()`: its heading may never be more than `WIND` (4.5: three quarters of a ring) from that of any segment
+    behind it, counted along its body, so it cannot curl right round onto itself (the coil apart);
+  - `ownBody()`: a step is refused if it brings its head nearer a segment it is already touching, measured against
+    where the segments WILL be after the step (measured against where they are, a head spiralling in is never caught);
+  - `wayOut()`: stopped by a wall or itself, it swings its head to the nearest open way (within its neck's reach and
+    the winding limit); stopped for half a second, it BACKS UP 2.4 along its own path (`retreat`; the path is kept 6.5
+    past its tail for this) and then turns the other way for a moment.
+  tests/wyrm.ts plays twenty fights with a rat all over it and fails if it is ever stopped for a second, lies through
+  itself, or leaves its floor. Change anything about how it moves and run that.
+- **Model** `src/enemies/wyrmModel.ts`: drawn in world coordinates exactly where the rules have each segment
+  (`setFloor(y)`), so what is seen is what is hit. Springs for the head's poses; legs by `twoBone` in a wave down the
+  body (they walk backwards when it backs up, since `crawled` goes down); `Probe` floor guards for the head, fangs,
+  feelers, spurs and feet. Eyes green, red before a charge and in the coil.
+- **Tests**: tests/wyrm.ts (55: the room and door, the long body in combat, every attack and its answer, a whole
+  fight, the twenty-fight stress run), tests/models.ts (16: drawn where it is solid, every leg reaches, nothing
+  through itself or under the floor, each move's look). Sheet: `#wyrm` (`&only=N`, `&focus=head`).
+- **Not done**: nobody has fought it by hand; its numbers are first guesses. Its sounds are made from existing ones.
+  A rat who keeps running round it close can stay off its head for a while (it cannot curl onto itself to follow):
+  the lash and the coil are its answers, and whether they are enough needs a hand on the pad. No story scene.
+
 ## The development suite (the owner, 2026-11-14)
 He asked for the start menu to be overhauled, and for the development tools to be reworked: friendlier, better
 looking, more intuitive, more options in the editor, and any other tools that would help. What was done:

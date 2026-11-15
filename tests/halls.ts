@@ -3,7 +3,7 @@
 import { computeReach } from '../src/levels/reach';
 import { LEVELS } from '../src/levels/levels';
 import { cistern } from '../src/levels/cistern';
-import { cisternWorks, sludgePit } from '../src/levels/cisternHalls';
+import { cisternSump, cisternWorks, sludgePit } from '../src/levels/cisternHalls';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -11,9 +11,9 @@ function check(name: string, ok: boolean, detail = ''): void {
   if (!ok) failures++;
 }
 const c = cistern();
-const halls = [cisternWorks(), sludgePit()];
+const halls = [cisternWorks(), sludgePit(), cisternSump()];
 const doors = c.courseDoors ?? [];
-check('three side doors lead off the Cistern', doors.length === 3 && ['pumpworks', 'works', 'sludgepit'].every((id) => doors.some((d) => d.to === id)));
+check('four side doors lead off the Cistern (the fourth to the Sump, where the Wyrm is)', doors.length === 4 && ['pumpworks', 'works', 'sludgepit', 'sump'].every((id) => doors.some((d) => d.to === id)));
 check('each hall is in the Cistern\'s world and leads back to it', halls.every((h) => h.world === 'cistern' && h.returnTo === 'cistern'));
 check('each hall\'s door back is beside where he comes in', halls.every((h) => Math.hypot(h.exit.x - h.spawn.x, h.exit.z - h.spawn.z) < 8), halls.map((h) => Math.hypot(h.exit.x - h.spawn.x, h.exit.z - h.spawn.z).toFixed(1)).join(', '));
 // Each Cistern door stands on ground he can reach.
@@ -35,7 +35,7 @@ for (const l of LEVELS) for (const x of l.collectibles) {
 }
 check('no two places in the game share a pickup', clash.length === 0, clash.slice(0, 3).join('; '));
 const wedgeTotal = LEVELS.reduce((n, l) => n + (l.wedges?.length ?? 0), 0);
-check('the game now has 46 Golden Wedges (seven of them gear secrets, one the Broodmother\'s)', wedgeTotal === 46, `${wedgeTotal}`);
+check('the game now has 47 Golden Wedges (seven of them gear secrets, one the Broodmother\'s, one the Sump Wyrm\'s)', wedgeTotal === 47, `${wedgeTotal}`);
 
 console.log(failures === 0 ? 'halls: all pass' : `halls: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);

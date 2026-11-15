@@ -10,6 +10,7 @@ import { GUARD } from '../enemies/guard';
 import { MANTIS } from '../enemies/mantis';
 import { STAG } from '../enemies/stag';
 import { BROOD } from '../enemies/brood';
+import { WYRM } from '../enemies/wyrm';
 import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
 import { GRIM } from '../enemies/grimsqueak';
@@ -152,6 +153,23 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The Broodmother', path: 'brood.dropStuck', label: 'In a heap after a drop', min: 0.3, max: 5, step: 0.05 },
   { group: 'The Broodmother', path: 'brood.poise', label: 'Quick blows that put her down', min: 1, max: 16, step: 1 },
   { group: 'The Broodmother', path: 'brood.kneel', label: 'How long she is down', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.hp', label: 'Health', min: 4, max: 80, step: 1, later: 'from the next level' },
+  { group: 'The Sump Wyrm', path: 'wyrm.speed', label: 'Crawling speed', min: 1, max: 9, step: 0.1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.orbit', label: 'How far off it circles him', min: 2, max: 12, step: 0.5 },
+  { group: 'The Sump Wyrm', path: 'wyrm.biteWind', label: 'Warning before the bite', min: 0.25, max: 2, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.reel', label: 'Reeling after a perfect guard', min: 0.4, max: 4, step: 0.1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.chargeWind', label: 'Warning before the charge', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.chargeSpeed', label: 'Charge speed', min: 6, max: 24, step: 0.5 },
+  { group: 'The Sump Wyrm', path: 'wyrm.chargeDamage', label: 'Charge damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.chargeChance', label: 'Far off: how often it charges, not comes in to bite', min: 0, max: 1, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.stunned', label: 'Stunned after running into a wall', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.soft', label: 'Head hit while helpless: times the harm', min: 1, max: 4, step: 0.5 },
+  { group: 'The Sump Wyrm', path: 'wyrm.tailTime', label: 'Seconds he may hang about its tail before it lashes', min: 0.2, max: 4, step: 0.1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.whipWind', label: 'Warning before the lash', min: 0.2, max: 2, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.rageAt', label: 'Angry below this much of its health', min: 0, max: 1, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.coilWind', label: 'Coil: warning once it has closed', min: 0.25, max: 2, step: 0.05 },
+  { group: 'The Sump Wyrm', path: 'wyrm.squeezeDamage', label: 'Coil damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Sump Wyrm', path: 'wyrm.spent', label: 'Spent after the coil', min: 0.5, max: 5, step: 0.1 },
 
   { group: 'Flitters', path: 'bat.hp', label: 'Health', min: 1, max: 6, step: 1, later: 'from the next level' },
   { group: 'Flitters', path: 'bat.hear', label: 'Hears footsteps from', min: 1, max: 16, step: 0.5 },
@@ -204,7 +222,7 @@ export const TWEAKS: TweakDef[] = [
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
   { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights'] },
-  { title: 'Bosses', groups: ['The Broodmother', 'Grimsqueak'] },
+  { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },
 ];
 /** Every group that has a slider, sections first. */
@@ -215,7 +233,7 @@ export const TWEAK_GROUPS: string[] = (() => {
 })();
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /** The table and key a path points at: "toad.hp" is in TOAD, "jump.velocity" in TUNING. */
 function locate(path: string): { obj: Table; key: string } | null {

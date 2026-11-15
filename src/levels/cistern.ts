@@ -232,6 +232,8 @@ export function cistern(): LevelDef {
       { to: 'works', name: 'The Waterworks', need: 0, door: doorOn('north', 48, -36, 48, 0) },
       // By the crate yard.
       { to: 'sludgepit', name: 'The Sludge Pit', need: 0, door: doorOn('east', 48, 40, 48, 0) },
+      // In the north-east corner, past the cliffs: the way down to where it all drains.
+      { to: 'sump', name: 'The Sump', need: 0, door: doorOn('east', 48, -32, 48, 0) },
     ],
     // A big hall: the fog sits further back, so the landmarks can be seen from the balcony.
     fogRange: [40, 150],

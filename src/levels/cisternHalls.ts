@@ -66,6 +66,69 @@ export function cisternWorks(): LevelDef {
 }
 
 // ======================================================================================================================
+// The Sump (off the Cistern's north-east corner): the lowest room of the works, where everything drains to. One wide,
+// bare floor with walls all round, and the Sump Wyrm asleep on it. Nothing stands on the floor: it needs the run of it
+// to charge, and the walls are what stop it. Beat it and its wedge is where it lay.
+
+/** The floor it fights on: the whole room, right up to the walls (running its head into one is what stuns it). */
+/** A square ring of floor round the middle of a room, from `outer` in to `inner`, as four strips that do not overlap. */
+function ringOf(kind: 'floor' | 'grate', outer: number, inner: number) {
+  return [
+    box(kind, -outer, -outer, outer, -inner, 0), box(kind, -outer, inner, outer, outer, 0),
+    box(kind, -outer, -inner, -inner, inner, 0), box(kind, inner, -inner, outer, inner, 0),
+  ];
+}
+
+export const SUMP_ARENA = { x0: -21.9, x1: 21.9, z0: -21.9, z1: 21.9 };
+const sump: CustomLevel = {
+  name: 'The Sump',
+  blurb: 'The lowest room of the works: a wide wet floor, drains in every wall, and the thing that lives in them.',
+  theme: 'sewer',
+  music: 'march',
+  width: 44, depth: 44, wallHeight: 18,
+  pieces: [
+    // A wet stone floor with a ring of grating round a tiled middle, so the room reads as a great drain.
+    // (Laid as rings that meet edge to edge: no piece lies inside another.)
+    ...ringOf('floor', 22, 9), ...ringOf('grate', 9, 6), box('tile', -6, -6, 6, 6, 0),
+    at('spawn', 0, 19),
+    at('exit', 0, 22),
+    // Slime down the walls, gauges, and lamps and chains hung high: nothing on the floor.
+    ...[-14, 0, 14].flatMap((v) => [at('slime', -21.9, v, 9, { dir: 'e' }), at('slime', 21.9, v, 10, { dir: 'w' }), at('slime', v, -21.9, 9, { dir: 's' })]),
+    at('gauge', -8, 21.7, 3, { dir: 's' }), at('gauge', 8, 21.7, 3, { dir: 's' }),
+    at('lamp', -12, -12, 7), at('lamp', 12, -12, 7), at('lamp', -12, 12, 7), at('lamp', 12, 12, 7), at('lamp', 0, 0, 9),
+    at('chain', -16, 0, 10), at('chain', 16, 0, 10), at('chain', 0, -16, 10), at('chain', -7, 16, 10), at('chain', 7, 16, 10),
+  ],
+};
+
+export const SUMP_WEDGES: WedgeDef[] = [
+  { id: 'wyrm', name: 'The Sump Wyrm', hint: 'Beat it. Hit any of it, but its head is where it hurts. Get out of the line of its charge and let it run into the wall; jump the lash of its tail; and when it winds a ring round you, jump out over its body.', x: 0, y: 0, z: -8, appears: { type: 'defeat', label: 'Beat the Sump Wyrm' } },
+];
+
+export function cisternSump(): LevelDef {
+  const def = compileCustom(sump, 'sump');
+  // The drains it lives in: great barred mouths in the three far walls, and pipes along them.
+  const decor = [...def.decor];
+  for (const v of [-11, 11]) {
+    decor.push({ kind: 'hole', x: v, y: 4.2, z: -21.95, yaw: 0, r: 2.6 });
+    decor.push({ kind: 'hole', x: -21.95, y: 4.2, z: v, yaw: Math.PI / 2, r: 2.6 });
+    decor.push({ kind: 'hole', x: 21.95, y: 4.2, z: v, yaw: -Math.PI / 2, r: 2.6 });
+  }
+  for (const side of [-1, 1]) decor.push({ kind: 'pipe', a: [side * 21.5, 11.5, -21], b: [side * 21.5, 11.5, 21], r: 0.45 });
+  decor.push({ kind: 'pipe', a: [-21, 12.6, -21.5], b: [21, 12.6, -21.5], r: 0.45 });
+  return {
+    ...def,
+    world: 'cistern',
+    returnTo: 'cistern',
+    decor,
+    // It lies curled in the north half, facing the way he comes in.
+    enemies: [...def.enemies, { type: 'wyrm', x: 0, y: 0, z: -8, facing: 0, arena: SUMP_ARENA, respawn: false }],
+    fogRange: [28, 100],
+    wedges: SUMP_WEDGES,
+    goals: goalsOf(SUMP_WEDGES),
+  };
+}
+
+// ======================================================================================================================
 // The Sludge Pit.
 
 const pit: CustomLevel = {

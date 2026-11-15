@@ -22,6 +22,8 @@ import { StagModel, STAG_HAMMER } from '../src/enemies/stagModel';
 import { STAG, type StagState } from '../src/enemies/stag';
 import { BroodModel } from '../src/enemies/broodModel';
 import { BROOD, type BroodState } from '../src/enemies/brood';
+import { WyrmModel } from '../src/enemies/wyrmModel';
+import { WYRM, Wyrm, type WyrmState } from '../src/enemies/wyrm';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { buildChamber, PILLAR_LIP } from '../src/world/chamber';
@@ -1438,6 +1440,176 @@ const at = new THREE.Vector3(0, 0, 0);
     check('brood: dead, she is curled up small: every leg drawn in, nothing under the floor', box.min.y > -0.03 && box.max.x - box.min.x < 3.6 && P.feet.every((f) => Math.hypot(f.x, f.z) < 1.5), `${size(box)}`);
     run(m, 'dead', 3.2);
     check('brood: and then shrivels away to nothing', m.root.scale.x < 0.01);
+  }
+}
+
+// ---- The Sump Wyrm: its body is drawn where the rules put it. Is it? And does any of it go into the floor? ----
+{
+  type Inside = { head: THREE.Object3D; segs: Array<{ group: THREE.Object3D; taper: number }>; ring: THREE.Mesh; wave: THREE.Mesh; eyeMat: THREE.MeshBasicMaterial; fangs: THREE.Object3D[]; spurs: THREE.Object3D[] };
+  const inside = (m: WyrmModel): Inside => m as unknown as Inside;
+  const W = WYRM;
+  const ARENA = { x0: -20, x1: 20, z0: -20, z1: 20 };
+  /** A fight, played by the rules with the model following every frame. `rat` says where he is; `each` looks at every frame. */
+  const fight = (secs: number, rat: (w: Wyrm, t: number) => { x: number; z: number; y?: number }, each: (w: Wyrm, m: WyrmModel, t: number) => void, before?: (w: Wyrm) => void, seed = 11): { w: Wyrm; m: WyrmModel } => {
+    const w = new Wyrm({ x: 0, z: -6, arena: ARENA, facing: 0 });
+    let sd = seed;
+    w.rng = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    const m = new WyrmModel();
+    m.setFloor(0);
+    before?.(w);
+    for (let t = 0; t < secs; t += DT) {
+      const r = rat(w, t);
+      w.update(DT, r.x, r.y ?? 0, r.z, true);
+      w.events.length = 0;
+      m.update(DT, { state: w.state, stateTime: w.stateTime, windTime: w.windTime, x: w.x, z: w.z, facing: w.facing, body: w.body, crawled: w.crawled, moving: w.moving, raging: w.raging, coilAt: w.coilAt });
+      each(w, m, t);
+    }
+    return { w, m };
+  };
+  const seen = new Map<string, number>();
+  let offPlace = 0;
+  let lowBody = 9;
+  let lowFoot = 9;
+  let lowTip = 9;
+  let short = 0;
+  let sound = true;
+  let frames = 0;
+  const sunkIn = new Set<string>();
+  let crossed = 0;
+  let crossedIn = '';
+  let unwinding = 0;
+  const look = (w: Wyrm, m: WyrmModel): void => {
+    frames++;
+    // Does any part of it lie through another part? (Neighbours overlap, as a chain does; and tightened in its coil it is
+    // squeezed into itself on purpose, and is still unwinding for a moment after.)
+    if (w.state === 'squeeze' || w.state === 'spent') unwinding = 2;
+    else unwinding = Math.max(0, unwinding - DT);
+    if (unwinding <= 0) {
+      const all = [{ x: w.x, z: w.z, r: w.radius }, ...w.parts];
+      for (let a = 0; a < all.length; a++) for (let b = a + 4; b < all.length; b++) {
+        const over = all[a].r + all[b].r - Math.hypot(all[a].x - all[b].x, all[a].z - all[b].z);
+        if (over > crossed) {
+          crossed = over;
+          crossedIn = `${w.state}: part ${a} and part ${b}`;
+        }
+      }
+    }
+    seen.set(w.state, (seen.get(w.state) ?? 0) + 1);
+    const P = m.parts();
+    offPlace = Math.max(offPlace, Math.hypot(P.head.x - w.x, P.head.z - w.z));
+    P.segments.forEach((sg, i) => (offPlace = Math.max(offPlace, Math.hypot(sg.x - w.parts[i].x, sg.z - w.parts[i].z))));
+    short = Math.max(short, m.reachShort);
+    for (const f of P.feet) lowFoot = Math.min(lowFoot, f.y);
+    for (const tip of [...P.fangTips, ...P.spurTips, ...P.feelerTips]) lowTip = Math.min(lowTip, tip.y);
+    if (frames % 4 === 0) {
+      const r = measure(m.root);
+      if (!r.finite || r.meshes < 80) sound = false;
+      if (r.box.min.y < -0.03) sunkIn.add(`${w.state} ${r.box.min.y.toFixed(2)}`);
+      lowBody = Math.min(lowBody, r.box.min.y);
+    }
+  };
+  // He walks a slow ring round the room: it prowls, bites, charges (into walls and not), lashes.
+  fight(70, (_w, t) => ({ x: Math.sin(t * 0.25) * 9, z: Math.cos(t * 0.25) * 9 }), look);
+  // Angry from the start: two bites, two charges, and the coil (he stands still for it, then is squeezed).
+  fight(60, (_w, t) => ({ x: Math.sin(t * 0.2) * 5, z: 4 + Math.cos(t * 0.2) * 3 }), look, (w) => { for (let k = 0; k < 17; k++) w.takeHit(1, 0, 0, 'sword', 4); }, 5);
+  // He keeps to its tail: the lash.
+  fight(30, (w) => ({ x: w.tail.x + 1.4, z: w.tail.z }), look);
+  // A perfect guard on its bite: reeling. (Told so directly, in the middle of a bite.)
+  fight(14, () => ({ x: 0, z: 0 }), (w, m) => { if (w.state === 'bite' && w.stateTime > 0.05) w.lungeLanded(false, true); look(w, m); });
+  // Killed while crawling, while reared, and while stunned.
+  for (const when of ['prowl', 'biteWind', 'stunned'] as const) {
+    let dead = 0;
+    fight(40, (_w, t) => ({ x: Math.sin(t * 0.25) * 9, z: Math.cos(t * 0.25) * 9 }), (w, m) => { if (w.state === when && !dead) { while (w.alive) w.takeHit(4, 0, 0); } if (!w.alive) dead += DT; if (dead < 2.3) look(w, m); });
+  }
+  const all: WyrmState[] = ['idle', 'roar', 'prowl', 'biteWind', 'bite', 'recover', 'reel', 'chargeWind', 'charge', 'stunned', 'skid', 'whipWind', 'whip', 'settle', 'coil', 'coilWind', 'squeeze', 'spent', 'dead'];
+  check('wyrm: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((s) => seen.has(s)), `${frames} frames; not seen: ${all.filter((s) => !seen.has(s)).join(', ') || 'none'}`);
+  check('wyrm: its head and every segment are drawn exactly where the rules have them: what can be hit is what is seen', offPlace < 1e-6, `furthest off ${offPlace.toExponential(1)}`);
+  check('wyrm: every leg reaches its foot', short < 0.03, `worst ${short.toFixed(3)} short`);
+  check('wyrm: its head never crosses its own body, so no part of it lies through another', crossed < 0.2, `the most two parts overlap is ${crossed.toFixed(2)} (${crossedIn})`);
+  check('wyrm: nothing of it goes under the floor: body, head, feet, fangs, feelers, tail spurs', lowBody >= -0.03 && lowFoot >= -0.03 && lowTip >= -0.02, `body ${lowBody.toFixed(2)}, feet ${lowFoot.toFixed(2)}, tips ${lowTip.toFixed(2)}${sunkIn.size ? `; in: ${[...sunkIn].slice(0, 6).join(', ')}` : ''}`);
+  {
+    const { w, m } = fight(1.5, () => ({ x: 0, z: 30 }), () => undefined);
+    const I = inside(m);
+    const wide = I.segs.map((sg, i) => {
+      const b = new THREE.Box3().setFromObject(sg.group.children[0], true);
+      return { drawn: (b.max.x - b.min.x) / 2, solid: w.parts[i].r, z: (b.max.z - b.min.z) / 2 };
+    });
+    // (It lies curled, so a segment's box is a little wider than the segment: the comparison is of its smaller half-width.)
+    const fits = wide.every((s) => Math.min(s.drawn, s.z) >= s.solid - 0.02 && Math.min(s.drawn, s.z) <= s.solid + 0.14);
+    check('wyrm: each segment is drawn as thick as it is solid, tapering to its tail', fits && wide[12].solid < wide[0].solid * 0.8, wide.filter((_s, i) => i % 4 === 0).map((s) => `${Math.min(s.drawn, s.z).toFixed(2)}/${s.solid.toFixed(2)}`).join(' '));
+    const gaps = w.parts.map((p, i) => Math.hypot(p.x - (i ? w.parts[i - 1].x : w.x), p.z - (i ? w.parts[i - 1].z : w.z)));
+    check('wyrm: asleep it lies curled, its segments touching in a row with no gap a rat could walk through', gaps.every((g, i) => g < (i ? w.parts[i - 1].r : w.radius) + w.parts[i].r + 2 * TUNING.rat.radius - 0.05), `gaps ${Math.min(...gaps).toFixed(2)}..${Math.max(...gaps).toFixed(2)}`);
+    const P = m.parts();
+    check('wyrm: lying still its legs are down, a pair to a segment, feet on the floor either side of it', P.feet.length === W.segments * 2 && P.feet.every((f) => f.y > -0.03 && f.y < 0.1));
+  }
+  {
+    // What each move looks like.
+    let rearedBite = 0;
+    let fangsWide = 0;
+    let fangsShut = 9;
+    let rearedRoar = 0;
+    let lowCharge = 9;
+    let redCharge = false;
+    let greenProwl = false;
+    let rolled = 0;
+    let stunnedY = 9;
+    const gap = (m: WyrmModel): number => m.parts().fangTips[0].distanceTo(m.parts().fangTips[1]);
+    fight(70, (_w, t) => ({ x: Math.sin(t * 0.25) * 9, z: Math.cos(t * 0.25) * 9 }), (w, m) => {
+      const I = inside(m);
+      const y = I.head.position.y;
+      const c = I.eyeMat.color;
+      if (w.state === 'roar') rearedRoar = Math.max(rearedRoar, y);
+      if (w.state === 'biteWind' && w.stateTime > W.biteWind * 0.8) { rearedBite = Math.max(rearedBite, y); fangsWide = Math.max(fangsWide, gap(m)); }
+      if (w.state === 'recover' && w.stateTime < 0.1) fangsShut = Math.min(fangsShut, gap(m));
+      if (w.state === 'charge' && w.stateTime > 0.3) { lowCharge = Math.min(lowCharge, y); if (c.r > 0.8 && c.g < 0.3) redCharge = true; }
+      if (w.state === 'prowl' && w.stateTime > 1 && c.g > c.r) greenProwl = true;
+      if (w.state === 'stunned' && w.stateTime > 1) { rolled = Math.max(rolled, Math.abs(I.head.rotation.z)); stunnedY = Math.min(stunnedY, measure(I.head).box.min.y); }
+    });
+    check('wyrm: seeing him it rears right up; before a bite its head goes up over him with its fangs wide, and they shut as it snaps', rearedRoar > 1.6 && rearedBite > 1.3 && fangsWide > fangsShut + 0.5, `roar ${rearedRoar.toFixed(2)}, bite ${rearedBite.toFixed(2)} up; fangs ${fangsWide.toFixed(2)} apart, then ${fangsShut.toFixed(2)}`);
+    check('wyrm: charging, its head is down on the floor and its eyes are red (no shield stops it); prowling they are green', lowCharge < 0.7 && redCharge && greenProwl, `head ${lowCharge.toFixed(2)} up`);
+    check('wyrm: stunned against a wall, its head lies rolled on its side on the floor', rolled > 0.7 && stunnedY < 0.12 && stunnedY > -0.03, `rolled ${rolled.toFixed(2)}, its lowest point ${stunnedY.toFixed(2)} off the floor`);
+    // The lash.
+    let spursUp = 0;
+    let spursFlat = 9;
+    let waveOn = false;
+    let tailLift = 0;
+    fight(30, (w) => ({ x: w.tail.x + 1.4, z: w.tail.z }), (w, m) => {
+      const P = m.parts();
+      const I = inside(m);
+      if (w.state === 'whipWind' && w.stateTime > W.whipWind * 0.8) { spursUp = Math.max(spursUp, ...P.spurTips.map((p) => p.y)); tailLift = Math.max(tailLift, P.segments[W.segments - 1].y); }
+      if (w.state === 'prowl' && w.stateTime > 1.5) spursFlat = Math.min(spursFlat, Math.max(...P.spurTips.map((p) => p.y)));
+      if (w.state === 'whip' && I.wave.visible && Math.hypot(I.wave.position.x - w.tail.x, I.wave.position.z - w.tail.z) < 0.01) waveOn = true;
+    });
+    check('wyrm: before a lash its tail lifts and the two spurs go up; then a ring runs out along the floor from its tail', spursUp > spursFlat + 0.6 && tailLift > 0.5 && waveOn, `spurs ${spursUp.toFixed(2)} up (trailing: ${spursFlat.toFixed(2)})`);
+    // The coil.
+    let ringFaint = false;
+    let ringBright = false;
+    let towering = 0;
+    let looksIn = 9;
+    let closed = 9;
+    fight(60, (_w) => ({ x: 2, z: 3 }), (w, m) => {
+      const I = inside(m);
+      const op = (I.ring.material as THREE.MeshBasicMaterial).opacity;
+      if (w.state === 'coil' && I.ring.visible && op < 0.4 && Math.hypot(I.ring.position.x - w.coilAt.x, I.ring.position.z - w.coilAt.z) < 0.01) ringFaint = true;
+      if (w.state === 'coilWind' && w.stateTime > W.coilWind * 0.7) {
+        if (op > 0.25) ringBright = true;
+        towering = Math.max(towering, I.head.position.y);
+        const want = Math.atan2(w.coilAt.x - w.x, w.coilAt.z - w.z);
+        looksIn = Math.min(looksIn, Math.abs(Math.atan2(Math.sin(I.head.rotation.y - want), Math.cos(I.head.rotation.y - want))));
+        // Its head has come round to its tail: the ring is shut.
+        closed = Math.min(closed, Math.hypot(w.x - w.tail.x, w.z - w.tail.z) - w.radius - w.tail.r);
+      }
+    }, (w) => { for (let k = 0; k < 17; k++) w.takeHit(1, 0, 0, 'sword', 4); }, 5);
+    check('wyrm: coiling, a ring on the floor marks where it will close: faint while it winds, bright once it has reared', ringFaint && ringBright);
+    check('wyrm: wound right round him, its head meets its tail, and it rears up tall looking down into the middle', closed < 2 * TUNING.rat.radius && towering > 1.7 && looksIn < 0.35, `gap ${closed.toFixed(2)}, head ${towering.toFixed(2)} up, ${looksIn.toFixed(2)} off the middle`);
+  }
+  {
+    const { w, m } = fight(12, () => ({ x: 0, z: 0 }), (w2) => { if (w2.state === 'prowl' && w2.alive) while (w2.alive) w2.takeHit(4, 0, 0); });
+    const I = inside(m);
+    check('wyrm: dead, and then it shrivels away to nothing', !w.alive && I.head.scale.x < 0.01 && I.segs.every((s) => s.group.scale.x < 0.01));
+    const d = fight(8, () => ({ x: 0, z: 0 }), (w2) => { if (w2.state === 'prowl' && w2.alive && w2.stateTime > 0.5) while (w2.alive) w2.takeHit(4, 0, 0); });
+    const rolledOver = inside(d.m).segs.filter((s) => Math.abs((s.group as THREE.Object3D).rotation.z) > 1).length;
+    check('wyrm: dead, every segment has rolled over onto its side with its legs curled in', !d.w.alive && rolledOver === W.segments && d.m.parts().feet.every((f) => f.y > -0.03), `${rolledOver} of ${W.segments} rolled`);
   }
 }
 

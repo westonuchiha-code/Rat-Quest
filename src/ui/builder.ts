@@ -77,6 +77,7 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('mantis', 'Orchid Mantis', 'Ma', '#e88ab0', 'folk', 'Will not stand and be hit: it springs back, then leaps.'),
     P('stag', 'Stag Knight', 'St', '#3a6a78', 'folk', 'A great beetle with a forge hammer. Slow, and it does not flinch.'),
     P('brood', 'The Broodmother', 'BM', '#7a3a8a', 'folk', 'A boss: the great spider. She has the run of the whole room, so give her a big clear floor.'),
+    P('wyrm', 'The Sump Wyrm', 'SW', '#b53a1e', 'folk', 'A boss: the great centipede. It charges, and stuns itself on walls: give it a big clear floor with walls all round.'),
     P('npc', 'Character', 'P', '#4a7aca', 'folk', 'Someone to talk to. Choose who, and what they say.'),
   ] },
   { id: 'level', label: 'Start, exit and goals', items: [
@@ -112,9 +113,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'brood', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'brood']);
+const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
 const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'lift', 'gate']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };
@@ -1035,10 +1036,10 @@ export class Builder {
     }
     if (ENEMY_PIECES.includes(p.t)) {
       h += '<h4>In the fight</h4>';
-      if (p.t !== 'brood') {
+      if (p.t !== 'brood' && p.t !== 'wyrm') {
         h += `<div class="field"><span>Arrives</span><input type="number" min="0" step="1" data-pp="wave" value="${pr.wave ?? 0}" title="0: there from the start. 1, 2, 3: comes with that wave, once the one before is beaten" /></div>`;
         h += `<div class="field"><span>Comes back</span><input class="chk" type="checkbox" data-pp="respawn"${pr.respawn ? ' checked' : ''} title="Returns a while after it is beaten" /></div>`;
-      } else h += '<div class="note">A boss: her name and health show along the bottom while she fights. Give her a wide, clear floor.</div>';
+      } else h += '<div class="note">A boss: its name and health show along the bottom while it fights. Give it a wide, clear floor.</div>';
       if (p.t === 'bat') h += `<div class="field"><span>Hangs from</span>${sel('perch', pr.perch ?? 'rock', [['rock', 'a knob of rock'], ['chain', 'a chain']])}</div>`;
     }
     if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed']])}</div>`;
@@ -2255,7 +2256,7 @@ export class Builder {
     if (SINGLE.has(p.t)) {
       const x = sx(p.x0);
       const z = sz(p.z0);
-      const rr = Math.max(4, s * (p.t === 'brood' ? 1.05 : 0.42));
+      const rr = Math.max(4, s * (p.t === 'brood' ? 1.05 : p.t === 'wyrm' ? 0.62 : 0.42));
       g.beginPath();
       if (p.t === 'spawn' || p.t === 'exit' || p.t === 'npc' || p.t === 'crate') g.rect(x - rr, z - rr, rr * 2, rr * 2);
       else g.arc(x, z, rr, 0, 7);
