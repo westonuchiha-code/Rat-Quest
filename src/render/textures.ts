@@ -2084,6 +2084,246 @@ function paintRollerUnder(p: Px, rand: Rand): void {
   }
 }
 
+/**
+ * Cave: steps cut in the rock. Pale dressed blocks, two courses to a tile, chisel marks across each and its upper
+ * edge worn light. (The owner, 2026-11-16, of the steps out of the Rift in the Glimmer Deep: "I genuinely couldn't
+ * see these stairs because they use the same texture as the wall". What he climbs is not what he climbs past.)
+ */
+function paintCaveStep(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 5, 3);
+  const stone = [0x39424a, 0x4d5860, 0x647078, 0x7e8a90, 0x9aa5a8, 0xb6bfbe, 0xd2d8d2];
+  const ROW = S / 2;
+  const tone = [0.04, -0.05, 0.0, 0.07];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const row = Math.floor(y / ROW);
+      const xx = (x + row * (S / 4)) % S;
+      const bx = xx % (S / 2);
+      const by = y % ROW;
+      let v = 0.62 + tone[row * 2 + Math.floor(xx / (S / 2))] + (f[y * S + x] - 0.5) * 0.3;
+      // Chisel marks: short strokes, slanting.
+      if ((bx + by * 2) % 7 === 0 && f[y * S + x] > 0.45) v -= 0.12;
+      // A block's joints, and its upper edge worn light by feet.
+      if (bx === 0 || by === 0) v = 0.02;
+      else if (by === 1 || by === 2) v += 0.26;
+      else if (bx === 1) v += 0.12;
+      else if (by === ROW - 1 || bx === S / 2 - 1) v -= 0.16;
+      p.set(x, y, ramp(v, stone, x, y, 0.16));
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// THE STAG KNIGHT AND THE TURTLES. (The owner, 2026-11-16, of the stag at the Club: "I like this Beetle that he needs a
+// texture"; and: "The turtles are also fairly texturless".) These are pictures of a SURFACE, in greys near white: each
+// model keeps its own colours, painted on it part by part, and its picture is laid over them (a material multiplies
+// the two). So one picture of beaten steel does for his blued shell and for its copper rim.
+// ---------------------------------------------------------------------------
+
+/** Greys for a surface picture: dark in its grooves, white on its ridges. */
+const SURFACE = [0x4e5258, 0x6c7076, 0x8a8e92, 0xa8abae, 0xc6c8ca, 0xe2e3e4, 0xffffff];
+
+/**
+ * The Stag Knight's shell: a beetle's wing case in beaten steel. Grooves run the length of it (down the picture), a
+ * row of pits between each two, the ridges rubbed bright; hammer marks under it all, and a few long scratches.
+ */
+function paintStagShell(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 6, 3);
+  const g = fbm(S, rand, 10, 2);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const c = x % 8;
+      let v = 0.66 + (f[y * S + x] - 0.5) * 0.34;
+      // A groove, the bright shoulder beside it, and the fall away to the next.
+      if (c === 0) v -= 0.36;
+      else if (c === 1) v += 0.2;
+      else if (c === 7) v -= 0.1;
+      // Pits, down the middle of each strip, every other strip half a step on.
+      if (c === 4 && (y + ((x >> 3) % 2) * 3) % 6 === 2) v -= 0.3;
+      if (c === 4 && (y + ((x >> 3) % 2) * 3) % 6 === 3) v += 0.12;
+      // Rubbed bright in patches.
+      if (g[y * S + x] > 0.66) v += (g[y * S + x] - 0.66) * 0.9;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.16));
+    }
+  }
+  for (let k = 0; k < 7; k++) {
+    const x = Math.floor(rand() * S);
+    const y0 = Math.floor(rand() * S);
+    const len = 8 + Math.floor(rand() * 16);
+    const lean = rand() < 0.5 ? 3 : 4;
+    for (let i = 0; i < len; i++) p.blend(x + Math.floor(i / lean), y0 + i, 0xffffff, 0.55);
+  }
+}
+
+/** The Stag Knight's belly: plates one over the next down him, each with a dark seam and a pale lip, ribbed fine. */
+function paintStagBelly(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 6, 2);
+  const BAND = 8;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      // (Down the picture is down him: a plate's lip is its lower edge, over the top of the plate below.)
+      const t = y % BAND;
+      const odd = Math.floor(y / BAND) % 2;
+      let v = (odd ? 0.5 : 0.78) + (f[y * S + x] - 0.5) * 0.2 + 0.03 * t;
+      if (t === 0) v = 0.08;
+      else if (t === BAND - 1) v += 0.2;
+      else if (t === 1) v -= 0.14;
+      if (x % 4 === 0 && t > 1) v -= 0.07;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.14));
+    }
+  }
+}
+
+/** Horn: his limbs, his antlers, his claws. Grain along it (up the picture), a ring at each joint, pores. */
+function paintStagHorn(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 4, 3);
+  const grain = Array.from({ length: S }, () => (rand() - 0.5) * 0.22);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      let v = 0.7 + grain[x] + (f[y * S + x] - 0.5) * 0.26;
+      if (y % 8 === 0) v -= 0.3;
+      else if (y % 8 === 1) v += 0.16;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.16));
+    }
+  }
+  for (let k = 0; k < 26; k++) p.tint(Math.floor(rand() * S), Math.floor(rand() * S), 0.62);
+}
+
+/** One iron plate of his hammer's head: forged, dented, its edge worn bright, a rivet at each corner. */
+function paintStagIron(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 5, 3);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const edge = Math.min(x, y, S - 1 - x, S - 1 - y);
+      let v = 0.56 + (f[y * S + x] - 0.5) * 0.5;
+      if (edge === 0) v = 0.2;
+      else if (edge === 1) v += 0.34;
+      else if (edge === 2) v += 0.14;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.18));
+    }
+  }
+  // Dents: a dark dot with a bright lip under it.
+  for (let k = 0; k < 7; k++) {
+    const x = 5 + Math.floor(rand() * (S - 10));
+    const y = 5 + Math.floor(rand() * (S - 10));
+    p.rect(x, y, 2, 1, 0x4e5258);
+    p.rect(x, y + 1, 2, 1, 0xe2e3e4);
+  }
+  for (const [x, y] of [[4, 4], [S - 6, 4], [4, S - 6], [S - 6, S - 6]]) {
+    p.rect(x, y, 2, 2, 0xffffff);
+    p.rect(x, y + 2, 2, 1, 0x4e5258);
+    p.set(x + 2, y + 1, 0x4e5258);
+  }
+}
+
+/** An ash shaft: long grain up it, darker streaks, a knot. */
+function paintAshWood(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 2);
+  const grain = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      // (The grain wanders a little from side to side as it goes up.)
+      const gx = (x + Math.round(Math.sin(y / 5 + x / 9) * 1.2) + S) % S;
+      let v = 0.7 + (grain[gx] - 0.5) * 0.5 + (f[y * S + x] - 0.5) * 0.16;
+      if (grain[gx] < 0.16) v -= 0.2;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.12));
+    }
+  }
+  const kx = 9;
+  const ky = 20;
+  for (let y = -3; y <= 3; y++) for (let x = -2; x <= 2; x++) if ((x * x) / 4 + (y * y) / 9 <= 1) p.set(kx + x, ky + y, (x * x) / 4 + (y * y) / 9 < 0.3 ? 0x4e5258 : 0x8a8e92);
+}
+
+/**
+ * One plate of a turtle's shell (npc/patrons.ts `shellGeometry`): its middle in the middle of the picture. The rings
+ * it has grown by, one inside the next (eight-sided, as his plates are cut), fine lines running out across them, and
+ * dark toward its edge, where the seam is.
+ */
+function paintTurtleScute(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 5, 3);
+  const spokes = Array.from({ length: 40 }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const dx = (x + 0.5) / S - 0.5;
+      const dy = (y + 0.5) / S - 0.5;
+      // (Eight-sided "how far out": the larger of the square's and the diamond's.)
+      const r = Math.max(Math.abs(dx), Math.abs(dy), (Math.abs(dx) + Math.abs(dy)) * 0.7071) * 2;
+      const a = Math.atan2(dy, dx);
+      let v = 0.9 - 0.3 * r + (f[y * S + x] - 0.5) * 0.24;
+      // Rings: closer together toward the edge, where he grew slowly.
+      const ring = (Math.sqrt(r) * 7.5) % 1;
+      if (r > 0.14 && ring < 0.18) v -= 0.26;
+      else if (r > 0.14 && ring < 0.34) v += 0.1;
+      // Lines out across them.
+      if (r > 0.2 && spokes[Math.floor(((a + Math.PI) / (Math.PI * 2)) * 40) % 40] < 0.3) v -= 0.1;
+      // His middle: the oldest of it, worn smooth and pale.
+      if (r < 0.14) v += 0.08;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.16));
+    }
+  }
+}
+
+/** A turtle's skin: small rounded scales in rows, each a pale pad with dark between, the rows half a scale apart. */
+function paintTurtleSkin(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 4, 2);
+  const W = 8;
+  const H = 6;
+  const tone = Array.from({ length: 64 }, () => (rand() - 0.5) * 0.22);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const row = Math.floor(y / H);
+      const xx = (x + (row % 2) * (W / 2)) % S;
+      const cx = (xx % W) - (W - 1) / 2;
+      const cy = (y % H) - (H - 1) / 2;
+      const d = (cx * cx) / 12.25 + (cy * cy) / 6.25;
+      // (Soft: a scale is a little paler than the skin between, no more. It is skin, not a wall.)
+      let v = 0.9 + tone[(row * 5 + Math.floor(xx / W)) % 64] * 0.5 + (f[y * S + x] - 0.5) * 0.1;
+      if (d > 1) v = 0.6;
+      else if (cy < -1 && d > 0.35) v += 0.1;
+      else if (cy > 1) v -= 0.1;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.1));
+    }
+  }
+}
+
+/**
+ * The shield of a turtle's front. It is wrapped once round a flattened ball, so his front is the picture's left half
+ * and its middle line is a quarter of the way across (the right half, the same again, is against his shell and is
+ * never seen). A seam down the middle, five across, each plate ringed with the lines it grew by.
+ */
+function paintTurtleBelly(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 5, 2);
+  const HALF = S / 2;
+  const ROW = S / 8;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const hx = x % HALF;
+      const fromMid = Math.abs(hx + 0.5 - HALF / 2);
+      const ty = (y % ROW) + 0.5;
+      const fromSeam = Math.min(ty, ROW - ty);
+      let v = 0.9 + (f[y * S + x] - 0.5) * 0.16;
+      // Growth lines: each plate ringed inside its edges.
+      const inFrom = Math.min(fromMid, fromSeam);
+      if (inFrom > 2 && inFrom < 3) v -= 0.12;
+      // The seams.
+      if (fromMid < 0.8 || fromSeam < 0.6) v = 0.4;
+      else if (fromMid < 1.6 || fromSeam < 1.6) v += 0.08;
+      // Scuffed darker toward his sides, where it rubs.
+      v -= 0.012 * Math.max(0, fromMid - 6);
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.12));
+    }
+  }
+}
+
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
 function paintStarfield(p: Px, rand: Rand): void {
   const S = p.size;
@@ -2270,9 +2510,19 @@ const DEFS = {
   caveRock: { size: 64, seed: 811, paint: paintCaveRock },
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
   glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },
+  caveStep: { size: 64, seed: 815, paint: paintCaveStep },
   // The Frost Roller (enemies/rollerModel.ts): one plate of its shell, and its dark underside.
   rollerShell: { size: 64, seed: 811, paint: paintRollerShell },
   rollerUnder: { size: 32, seed: 812, paint: paintRollerUnder },
+  // Surface pictures for creatures that keep their own painted colours: the Stag Knight, and the Club's turtles.
+  stagShell: { size: 64, seed: 841, paint: paintStagShell },
+  stagBelly: { size: 64, seed: 842, paint: paintStagBelly },
+  stagHorn: { size: 32, seed: 843, paint: paintStagHorn },
+  stagIron: { size: 32, seed: 844, paint: paintStagIron },
+  ashWood: { size: 32, seed: 845, paint: paintAshWood },
+  turtleScute: { size: 64, seed: 846, paint: paintTurtleScute },
+  turtleSkin: { size: 64, seed: 847, paint: paintTurtleSkin },
+  turtleBelly: { size: 64, seed: 848, paint: paintTurtleBelly },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },

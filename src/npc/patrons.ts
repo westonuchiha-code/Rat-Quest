@@ -13,9 +13,10 @@
  * y = 0 facing +z. `Npc` (npc.ts) owns where he is, his name, his lines and the marker over his head; this is his body.
  */
 import * as THREE from 'three';
+import { getTexture } from '../render/textures';
 import { createPs1Material } from '../render/ps1Material';
 import { buildMug } from '../world/tavernModels';
-import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
+import { bead, modelKit, type ColorAt } from '../render/modelKit';
 
 export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl';
 export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl'];
@@ -61,6 +62,12 @@ export const SEAT = 0.44;
 
 const mat = createPs1Material({ lit: true });
 const kit = modelKit(mat);
+// What a turtle is made of. Each has a picture of its SURFACE, in greys (render/textures.ts): his colours are his own,
+// painted on him part by part, and the picture is laid over them. (The owner, 2026-11-16: "The turtles are also
+// fairly texturless".)
+const scuteMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('turtleScute') }); // a plate of his shell, its rings
+const skinKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleSkin') })); // scales
+const bellyKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleBelly') })); // the shield of his front
 const WHITE = new THREE.MeshBasicMaterial({ color: 0xf4f0e4 });
 const BLACK = new THREE.MeshBasicMaterial({ color: 0x14100c });
 
@@ -102,14 +109,18 @@ export function shellGeometry(seam: number, plate: number, rim: number): THREE.B
   const middle = new THREE.Vector3(0, 0, -0.06);
   const pos: number[] = [];
   const col: number[] = [];
-  const tri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, color: THREE.Color): void => {
+  const uvs: number[] = [];
+  /** A corner: where it is, and where on the plate's picture (`turtleScute`: a plate's middle is the picture's). */
+  type Corner = [THREE.Vector3, number, number];
+  const tri = (a: Corner, b: Corner, c: Corner, color: THREE.Color): void => {
     // (Wound so that it faces out of the shell.)
-    const n = b.clone().sub(a).cross(c.clone().sub(a));
-    const out = a.clone().add(b).add(c).divideScalar(3).sub(middle);
+    const n = b[0].clone().sub(a[0]).cross(c[0].clone().sub(a[0]));
+    const out = a[0].clone().add(b[0]).add(c[0]).divideScalar(3).sub(middle);
     const [p, q, r] = n.dot(out) >= 0 ? [a, b, c] : [a, c, b];
-    for (const v of [p, q, r]) {
+    for (const [v, s, t] of [p, q, r]) {
       pos.push(v.x, v.y, v.z);
       col.push(color.r, color.g, color.b);
+      uvs.push(s, t);
     }
   };
   const SEAM = new THREE.Color(seam);
@@ -121,11 +132,21 @@ export function shellGeometry(seam: number, plate: number, rim: number): THREE.B
     const inner = verts.map((v) => v.clone().lerp(c, inset).addScaledVector(n, 0.012));
     const light = new THREE.Color(plate).multiplyScalar(shade);
     const top = c.clone().addScaledVector(n, 0.012);
+    // On the picture: its corners round the picture's edge, in order; its light face drawn in from them as it is here.
+    const on = (i: number, far: number): [number, number] => {
+      const a = ((i + 0.5) / verts.length) * Math.PI * 2;
+      return [0.5 + Math.cos(a) * far, 0.5 + Math.sin(a) * far];
+    };
+    const mid: Corner = [top, 0.5, 0.5];
     for (let i = 0; i < verts.length; i++) {
       const k = (i + 1) % verts.length;
-      tri(top, inner[i], inner[k], light);
-      tri(verts[i], verts[k], inner[k], SEAM);
-      tri(verts[i], inner[k], inner[i], SEAM);
+      const oi: Corner = [verts[i], ...on(i, 0.5)];
+      const ok: Corner = [verts[k], ...on(k, 0.5)];
+      const ii: Corner = [inner[i], ...on(i, 0.5 * (1 - inset))];
+      const ik: Corner = [inner[k], ...on(k, 0.5 * (1 - inset))];
+      tri(mid, ii, ik, light);
+      tri(oi, ok, ik, SEAM);
+      tri(oi, ik, ii, SEAM);
     }
   };
   // The plate in the middle of his back: an octagon.
@@ -137,15 +158,18 @@ export function shellGeometry(seam: number, plate: number, rim: number): THREE.B
   // The rim, turned under.
   const RIM = new THREE.Color(rim);
   for (let i = 0; i < SIDES; i++) {
-    tri(at(2, i), at(2, i + 1), at(3, i + 1), RIM);
-    tri(at(2, i), at(3, i + 1), at(3, i), RIM);
+    // (A length of rim is a band across a plate's picture, near its edge: the rings run along it.)
+    const band = (j: number, far: number): Corner => [at(j, i + far), 0.2 + 0.6 * far, j === 2 ? 0.88 : j === 3 ? 0.76 : 0.6];
+    tri(band(2, 0), band(2, 1), band(3, 1), RIM);
+    tri(band(2, 0), band(3, 1), band(3, 0), RIM);
     // (Under the rim, in to his front: in the seam's dark.)
-    tri(at(3, i), at(3, i + 1), at(4, i + 1), SEAM);
-    tri(at(3, i), at(4, i + 1), at(4, i), SEAM);
+    tri(band(3, 0), band(3, 1), band(4, 1), SEAM);
+    tri(band(3, 0), band(4, 1), band(4, 0), SEAM);
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
   geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
   geo.computeVertexNormals();
   return geo;
 }
@@ -219,8 +243,9 @@ class Turtle implements PatronBody {
     // like bumps"). One octagonal plate in the middle of his back, eight round it, eight more below those, and a pale
     // rim: each a flat face with a dark seam round it. And the flat pale shield of his front.
     this.shell.position.set(0, 0.5, -0.06);
-    this.shell.add(new THREE.Mesh(shellGeometry(C.shell, C.scute, C.rim), mat));
-    this.shell.add(kit.blob(0.3, 0.34, 0.13, (nx, ny) => (Math.abs(ny) < 0.06 || Math.abs(nx) < 0.07 ? mix(C.belly, 0x6a5a30, 0.35) : C.belly), 0, -0.01, 0.11, 8, 6, 0.18));
+    this.shell.add(new THREE.Mesh(shellGeometry(C.shell, C.scute, C.rim), scuteMat));
+    // (Its seams are in its picture, `turtleBelly`: one down the middle and those across.)
+    this.shell.add(bellyKit.blob(0.3, 0.34, 0.13, C.belly, 0, -0.01, 0.11, 8, 6, 0.18));
     this.body.add(this.shell);
     if (look === 'mo') {
       // Moss on the old one's shell, where it has been damp longest.
@@ -230,8 +255,8 @@ class Turtle implements PatronBody {
     for (const side of [-1, 1]) {
       const leg = new THREE.Group();
       leg.position.set(side * 0.17, 0.2, 0.03);
-      leg.add(kit.blob(0.105, 0.13, 0.11, C.skin, 0, -0.08, 0, 7, 5));
-      leg.add(kit.blob(0.115, 0.045, 0.15, C.skinDark, 0, -0.17, 0.04, 7, 4));
+      leg.add(skinKit.blob(0.105, 0.13, 0.11, C.skin, 0, -0.08, 0, 7, 5));
+      leg.add(skinKit.blob(0.115, 0.045, 0.15, C.skinDark, 0, -0.17, 0.04, 7, 4));
       this.body.add(leg);
       this.legs.push(leg);
     }
@@ -240,10 +265,10 @@ class Turtle implements PatronBody {
       const arm = new THREE.Group();
       arm.position.set(side * 0.31, 0.66, 0.06);
       arm.userData.side = side;
-      arm.add(kit.blob(0.085, 0.16, 0.085, C.skin, 0, -0.13, 0, 7, 5));
+      arm.add(skinKit.blob(0.085, 0.16, 0.085, C.skin, 0, -0.13, 0, 7, 5));
       const paw = new THREE.Group();
       paw.position.set(0, -0.28, 0.01);
-      paw.add(kit.blob(0.085, 0.065, 0.09, C.skinDark, 0, 0, 0.01, 7, 4));
+      paw.add(skinKit.blob(0.085, 0.065, 0.09, C.skinDark, 0, 0, 0.01, 7, 4));
       for (const k of [-1, 0, 1]) paw.add(kit.blob(0.022, 0.022, 0.035, 0xe8dfc0, k * 0.045, -0.02, 0.085, 5, 4, 0));
       arm.add(paw);
       if (side > 0) {
@@ -256,19 +281,19 @@ class Turtle implements PatronBody {
     }
     // A stub of a tail.
     this.tail.position.set(0, 0.2, -0.3);
-    const tip = kit.cone(0.05, 0.16, C.skin, 5);
+    const tip = skinKit.cone(0.05, 0.16, C.skin, 5);
     tip.rotation.x = -1.9;
     this.tail.add(tip);
     this.body.add(this.tail);
     // The neck (it slides out of the shell and back) and the head on the end of it.
     this.neck.position.set(0, 0.8, 0.08);
     this.body.add(this.neck);
-    this.neck.add(kit.blob(0.085, 0.2, 0.085, (_x, ny) => (ny < -0.2 ? C.skinDark : C.skin), 0, 0, 0, 7, 5));
+    this.neck.add(skinKit.blob(0.085, 0.2, 0.085, (_x, ny) => (ny < -0.2 ? C.skinDark : C.skin), 0, 0, 0, 7, 5));
     this.head.position.set(0, 0.2, 0.02);
     this.neck.add(this.head);
-    this.head.add(kit.blob(0.145, 0.12, 0.165, (_x, ny, nz) => (nz > 0.55 && ny < 0.2 ? C.beak : C.skin), 0, 0.04, 0.05, 8, 6));
+    this.head.add(skinKit.blob(0.145, 0.12, 0.165, (_x, ny, nz) => (nz > 0.55 && ny < 0.2 ? C.beak : C.skin), 0, 0.04, 0.05, 8, 6));
     // (Wrinkles of the old one's brow; the young one's is smooth.)
-    if (look === 'mo') for (const side of [-1, 1]) this.head.add(kit.blob(0.07, 0.022, 0.03, C.skinDark, side * 0.07, 0.115, 0.14, 5, 3, 0));
+    if (look === 'mo') for (const side of [-1, 1]) this.head.add(skinKit.blob(0.07, 0.022, 0.03, C.skinDark, side * 0.07, 0.115, 0.14, 5, 3, 0));
     this.jaw.position.set(0, -0.01, 0.06);
     this.jaw.add(kit.blob(0.105, 0.035, 0.12, C.beak, 0, -0.02, 0.05, 7, 4, 0.1));
     this.head.add(this.jaw);

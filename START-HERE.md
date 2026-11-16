@@ -426,6 +426,63 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## The dream world's next pass: what the owner wants in it (2026-11-16. NOT BUILT: his notes, kept here)
+
+He sent two pictures (of another game, as a mood only: nothing of it is to be copied) "for when you're working on the
+like psychedelic like weird wacky Pomo kind of world". In his words: "some of the digital textures look kind of cool
+and also the little bit of blinking, I also think like butterflies and flowers would fit really good here and maybe
+like a couple of the normal enemies we already have like maybe some of the scarier ones but have them have like wacky
+Pomo sort of psychedelic versions that are just kind of chilled out here and sleeping and hanging out and stuff."
+What the pictures showed: (1) a hall whose walls, floor and stairs are all one fine, busy, many-coloured static, like a
+broken picture, some of it winking; (2) a sunny bed of yellow flowers with butterflies over it and a big toothy plant
+fast asleep in the middle, a bubble at its nose.
+So, for the Milky Way (levels/milkyway.ts) or the level that grows from it:
+ - Surfaces of busy "digital" static, some of whose dots BLINK. (A picture that changes is not a repeating tile with a
+   glow painted in: but keep the rule that a light is a thing put on, and try it in the running game first.)
+ - Butterflies, and flowers in beds.
+ - Two or three of the creatures he already has, the frightening ones (the mantis, the scorpion, the stag, the Widow
+   are the candidates), in loud dream colours, NOT fighting: asleep, sitting about, harmless. They are scenery with
+   manners, and a joke on what they are elsewhere. (`RatModel.wearColours` is how the knight got his dream colours;
+   the creatures' pictures are surface greys over painted colours since 2026-11-16, so new colours are cheap.)
+ - His rules stand: shown in the running game, he says yes before it is built up; a new model is not done until it
+   is textured; better means a better shape and a good picture, never more parts.
+
+## Sign boards, textures for the stag and the turtles, the cave's steps, shadows, and the old screens (2026-11-16)
+
+Five things from his list and three he sent while they were being done. Tests: `tests/signs.ts`,
+`tests/shadowcut.ts`, `tests/screens.ts` (and the models' own).
+ - THE WOODEN SIGN BOARDS (the garden's, the Long Drop's, the Milky Way's) are written in the block letters of
+   `render/pixelFont.ts`, as the door signs are: `boardPixels(lines, w, h)` in `world/signs.ts`. A dot of a letter is a
+   square dot of the board, the first line twice the size where there is room, nothing shrunk to fit. The font got a
+   comma and a colon. The ramps' boards were reworded shorter (GENTLE, A HILL, STEEPEST) so their letters are big
+   enough. The rulers' figures are as they were.
+ - "I like this Beetle that he needs a texture" (the stag at the Club) and "The turtles are also fairly texturless".
+   Both have pictures now, and the way of it is new: a SURFACE PICTURE IN GREYS laid over the colours already painted
+   on the model (the material multiplies the two). So nothing of their colours changed and one picture of beaten steel
+   does for the stag's blued shell and its copper rim. Pictures (`render/textures.ts`): `stagShell` (a wing case:
+   grooves, pits, rubbed ridges), `stagBelly` (plates down his front; the bands are in the picture now, not painted),
+   `stagHorn` (limbs, antlers, claws), `stagIron` (a plate of the hammer's head), `ashWood` (its shaft);
+   `turtleScute` (ONE plate of the shell, its growth rings: `shellGeometry` gives every plate the whole picture),
+   `turtleSkin` (soft scales), `turtleBelly` (the shield of his front, its seams). Viewer: `#view&who=stag`.
+   STILL PLAIN: the fox, the ferret, the owl, the mouse, the birds; and of the creatures the roach, the toad, the
+   firefly, the ironback, the guard, the mantis, the ant, the bat, the hornet. The same way will do for each.
+ - "I genuinely couldn't see these stairs because they use the same texture as the wall" (the steps out of the Rift
+   in the Glimmer Deep). The steps are in pale cut stone now, `caveStep`, and a small amber mushroom stands at the
+   back of each to light it; the two steps in the Glow Cave try-out wear the same. RULE: what he climbs is not what
+   he climbs past.
+ - EVERY ROUND SHADOW IS CUT WHERE ITS GROUND ENDS, as the knight's is: `render/cutShadow.ts` (`ShadowCuts`), over
+   `cutOutline` in `world/shadow.ts`. It finds a model's shadow by what it is (a flat black see-through disc), so no
+   model had to be told; main.ts calls it for every creature, every talking character and a scene's cast. A creature
+   in the air over a drop keeps its whole shadow, as before. Worked out again only when the shadow has moved.
+   Viewer: `&post=0.5` stands anything on a small post to see it.
+ - THE OLD SCREENS (the FILTER setting) were drawn for a small stretched picture: lines one screen dot thick, too fine
+   to see on the sharp picture he chose. Now each is measured from the screen (`screenMeasures` in `ui/display.ts`):
+   a television's 240 lines down it and a handheld's 144 dots, each a whole number of the screen's own dots.
+   SCANLINES: soft-edged lines, the picture brightened to make up. OLD TV: lines, the glass's red-green-blue stripes,
+   dark round corners, a little glow. VHS: the colours pulled apart sideways and smeared, washed, a tracking band, a
+   torn strip along the bottom. GREEN HANDHELD: four greens and no more (the hearts and menus too) under a grid of
+   dots. They use SVG filters on the picture: NOT TRIED ON HIS PHONE for speed. His to judge from the stills.
+
 ## The Frost Roller: a cold creature for the Cold Main (the owner's list, 2026-11-16. BUILT; `tests/roller.ts`)
 **He has not seen it. Its look and its fight are Claude's, and his to accept, change or throw out.**
 `src/enemies/roller.ts` (rules, the `ROLLER` table), `src/enemies/rollerModel.ts`. Two live on the Cold Main's ice.

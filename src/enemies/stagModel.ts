@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
 import { Springs, Walker, aim, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
@@ -162,8 +163,14 @@ export class StagModel {
   private readonly arms: Arm[] = [];
   private readonly legs: Array<WalkerLeg & { curled: THREE.Vector3 }> = [];
   private walker!: Walker;
-  private readonly mat = createPs1Material({ lit: true, shine: 0.55 });
-  private readonly matPlain = createPs1Material({ lit: true });
+  // What he is made of. Each has a picture of its SURFACE, in greys (render/textures.ts): the colours are his own,
+  // painted on him part by part below, and the picture is laid over them. (The owner, 2026-11-16, of him at the Club:
+  // "I like this Beetle that he needs a texture".)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.55, tex: getTexture('stagShell') }); // beaten steel: his shell, the plates of his limbs
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('stagHorn') }); // horn: limbs, antlers, claws, bosses
+  private readonly matBelly = createPs1Material({ lit: true, tex: getTexture('stagBelly') }); // the plates down his front
+  private readonly matIron = createPs1Material({ lit: true, shine: 0.4, tex: getTexture('stagIron') }); // the hammer's head
+  private readonly matWood = createPs1Material({ lit: true, tex: getTexture('ashWood') }); // its shaft
   private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0x5a1a08 });
   private readonly underMat = new THREE.MeshBasicMaterial({ color: C.under });
   private readonly glints: THREE.Mesh[] = [];
@@ -183,16 +190,20 @@ export class StagModel {
   readonly reachShort = [0, 0];
 
   constructor() {
-    const { blob, spar, box } = modelKit(this.mat);
+    const { blob, spar } = modelKit(this.mat);
     const plain = modelKit(this.matPlain);
+    const belly = modelKit(this.matBelly);
+    const iron = modelKit(this.matIron);
+    const wood = modelKit(this.matWood);
     const eyeMat = new THREE.MeshBasicMaterial({ color: C.eye });
     this.root.add(this.rig);
     this.rig.add(this.body);
     this.body.rotation.order = 'YXZ';
 
     // Its lower body: a barrel plated in bands, pale and warm in front, shell-dark behind.
-    const bands = (_x: number, ny: number, nz: number): number => (nz < -0.1 ? C.shellDark : Math.floor((ny + 1) * 3) % 2 ? C.belly : C.bellyDark);
-    this.body.add(plain.blob(0.42, 0.36, 0.38, bands, 0, 0.02, -0.04, 9, 7, 0.2));
+    // (The bands are in its picture, `stagBelly`: eight plates down him, each with its seam and its lip.)
+    const front = (_x: number, _ny: number, nz: number): number => (nz < -0.1 ? C.shellDark : C.belly);
+    this.body.add(belly.blob(0.42, 0.36, 0.38, front, 0, 0.02, -0.04, 9, 7, 0.2));
     // Its chest: a broad plate from shoulder to shoulder, a copper rim along its top edge, and a boss on each shoulder.
     this.body.add(blob(0.56, 0.32, 0.4, (_x, ny, nz) => (ny > 0.55 ? C.copper : nz > 0.35 && ny < 0 ? C.bellyDark : C.shell), 0, 0.52, 0.06, 9, 6, 0.25));
     for (const s of [-1, 1]) this.body.add(blob(0.17, 0.15, 0.17, (_x, ny) => (ny > 0.3 ? C.copper : C.shell), s * 0.5, 0.63, 0.08, 6, 5, 0.2));
@@ -280,7 +291,7 @@ export class StagModel {
     }
 
     // The hammer. Its own +X runs up the shaft from the right hand's grip to the head.
-    const shaft = plain.spar(0.05, 0.045, HEAD - BUTT, C.wood, 6);
+    const shaft = wood.spar(0.05, 0.045, HEAD - BUTT, C.wood, 6);
     shaft.position.x = BUTT;
     this.hammer.add(shaft, plain.blob(0.07, 0.07, 0.07, C.ironDark, BUTT, 0, 0, 5, 4));
     for (const x of [-0.04, 0.6, HEAD - HEAD_HALF - 0.06]) this.hammer.add(plain.blob(0.035, 0.062, 0.062, C.iron, x, 0, 0, 6, 3, 0));
@@ -294,7 +305,7 @@ export class StagModel {
     for (const [ax, sg] of [[0, 1], [0, -1], [1, 1], [1, -1], [2, 1], [2, -1]] as const) {
       const dims: V3 = [plateSize * 0.84, plateSize, plateSize];
       dims[ax] = 0.035;
-      const plate = box(dims[0], dims[1], dims[2], ax === 0 ? C.ironDark : C.iron, 0, 0, 0);
+      const plate = iron.box(dims[0], dims[1], dims[2], ax === 0 ? C.ironDark : C.iron, 0, 0, 0);
       plate.position.setComponent(ax, sg * (ax === 0 ? side * 0.42 : HEAD_HALF) - sg * 0.01);
       this.headAt.add(plate);
     }
@@ -432,8 +443,7 @@ export class StagModel {
 
     this.flashAmount = Math.max(0, this.flashAmount - dt * 6);
     const f = this.flashAmount * 0.75;
-    (this.mat.uniforms.flash.value as THREE.Color).setRGB(f, f, f);
-    (this.matPlain.uniforms.flash.value as THREE.Color).setRGB(f, f, f);
+    for (const m of [this.mat, this.matPlain, this.matBelly, this.matIron, this.matWood]) (m.uniforms.flash.value as THREE.Color).setRGB(f, f, f);
   }
 
   private startWave(size: number, atHammer: boolean): void {

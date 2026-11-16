@@ -95,7 +95,7 @@ const PALETTE: Record<Kind, number> = {
 const TILE: Partial<Record<TextureName, number>> = {
   wetCobbles: 2, sewerBrick: 2.5, concreteSlab: 3, mossStone: 2, planks: 1.5, ceramicTiles: 1.5, drainGrate: 1.2,
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
-  caveRock: 4, caveFloor: 4, iceBrick: 2.5, iceSheet: 5,
+  caveRock: 4, caveFloor: 4, caveStep: 2, iceBrick: 2.5, iceSheet: 5,
   // (The dream's road: one rainbow across its whole width. `ROAD.wide` in levels/milkyway.ts is this.)
   rainbowRoad: 7, pomoTiles: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,

@@ -43,3 +43,34 @@ export function shadowSpokes(colliders: readonly Aabb[], x: number, y: number, z
   out.length = spokes;
   return out;
 }
+
+/**
+ * The same, for a shadow of ANY outline (a creature's is an oval, turned as it is turned): `rim` holds the outline's
+ * points as [x, z] pairs in the room, round the middle (x, z) on ground at height `y`. How far out each point may
+ * stay, as a share of its own distance (0 to 1), is written into `out`.
+ * Returns false, and leaves `out` alone, when the MIDDLE has no ground under it at that height: a creature in the
+ * air over a drop keeps the whole of its shadow, as before, and is not cut to nothing.
+ * (The owner's fault was of the knight's shadow; every creature and every one of the Club's regulars had the same.)
+ */
+export function cutOutline(colliders: readonly Aabb[], x: number, y: number, z: number, rim: ArrayLike<number>, out: number[]): boolean {
+  if (!groundAt(colliders, x, y, z)) return false;
+  const n = rim.length >> 1;
+  for (let i = 0; i < n; i++) {
+    const dx = rim[i * 2] - x;
+    const dz = rim[i * 2 + 1] - z;
+    if (groundAt(colliders, x + dx, y, z + dz)) {
+      out[i] = 1;
+      continue;
+    }
+    let lo = 0;
+    let hi = 1;
+    for (let k = 0; k < 6; k++) {
+      const mid = (lo + hi) / 2;
+      if (groundAt(colliders, x + dx * mid, y, z + dz * mid)) lo = mid;
+      else hi = mid;
+    }
+    out[i] = lo;
+  }
+  out.length = n;
+  return true;
+}

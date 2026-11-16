@@ -76,9 +76,9 @@ export const STRIP = { x: 10, z: 12, length: 16, width: 1.6 } as const;
 export interface GardenRamp { x0: number; x1: number; length: number; lines: string[] }
 export const RAMP_LANDING = { x0: 27, x1: GARDEN.halfX, z0: -6, z1: -2, top: 3 } as const;
 export const RAMPS: readonly GardenRamp[] = [
-  { x0: 27, x1: 30, length: 12, lines: ['1 UP IN 4', 'A GENTLE SLOPE'] },
+  { x0: 27, x1: 30, length: 12, lines: ['1 UP IN 4', 'GENTLE'] },
   { x0: 30, x1: 33, length: 6, lines: ['1 UP IN 2', 'A HILL'] },
-  { x0: 33, x1: GARDEN.halfX, length: 3, lines: ['1 UP IN 1', 'THE STEEPEST'] },
+  { x0: 33, x1: GARDEN.halfX, length: 3, lines: ['1 UP IN 1', 'STEEPEST'] },
 ];
 /** The creatures by the ramps, and the patch they keep to: the ramps, the landing, and a few steps of floor before them. */
 export const RAMP_PATCH = { x0: RAMP_LANDING.x0, x1: GARDEN.halfX, z0: RAMP_LANDING.z0, z1: RAMP_LANDING.z1 + 15 } as const;

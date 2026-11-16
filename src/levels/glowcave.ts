@@ -69,14 +69,16 @@ export function glowCave(): LevelDef {
   }
   // Ledges of rock: a low shelf along the west wall, and steps up to a high one in the north-east corner.
   // (None higher than 2.4: the stalactites are hung by how high he can get from each.)
-  const ledges: Array<[number, number, number, number, number]> = [
+  // (The two steps are in pale cut stone, `caveStep`, not the wall's rock. The owner, 2026-11-16, of the Glimmer Deep:
+  // "I genuinely couldn't see these stairs because they use the same texture as the wall".)
+  const ledges: Array<[number, number, number, number, number, boolean?]> = [
     [-G.halfX, -9.5, -G.halfZ, 2, 1.1],
     [-9.5, -6.5, -G.halfZ, -7.5, 1.1],
-    [5, 8.5, -G.halfZ, -7, 1.2],
+    [5, 8.5, -G.halfZ, -7, 1.2, true],
     [8.5, G.halfX, -G.halfZ, -5, 2.4],
-    [10.5, G.halfX, -5, -1, 1.2],
+    [10.5, G.halfX, -5, -1, 1.2, true],
   ];
-  for (const [x0, x1, z0, z1, top] of ledges) solids.push(skinned(extent('stone', x0, x1, 0, top, z0, z1), 'caveRock'));
+  for (const [x0, x1, z0, z1, top, step] of ledges) solids.push(skinned(extent('stone', x0, x1, 0, top, z0, z1), step ? 'caveStep' : 'caveRock'));
 
   // Mushrooms, in stands: a tall one or two with small ones gathered round. [x, z, floor, height, colour]
   const stands: Array<[number, number, number, number, number]> = [

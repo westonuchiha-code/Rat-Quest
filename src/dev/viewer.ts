@@ -1,6 +1,8 @@
 import { Widow, WIDOW } from '../enemies/widow';
 import { WidowModel } from '../enemies/widowModel';
 import * as THREE from 'three';
+import { ShadowCuts } from '../render/cutShadow';
+import { makeAabb } from '../world/collision';
 import { ps1Uniforms } from '../render/ps1Material';
 import { RatModel, RatAnimInput } from '../player/ratModel';
 import { ScuttlerModel } from '../enemies/scuttlerModel';
@@ -13,6 +15,7 @@ import { FireflyModel } from '../enemies/fireflyModel';
 import type { ScuttlerState } from '../enemies/scuttler';
 import type { PlayerState } from '../player/controller';
 import { TUNING } from '../data/tuning';
+import { StagModel } from '../enemies/stagModel';
 import { makePatron, patronLook, type Doing, type PatronKind } from '../npc/patrons';
 
 /**
@@ -162,6 +165,14 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     };
     const P = pose[state] ?? pose.stalk;
     for (let time = 0; time <= Math.max(t, 0.6) + 1e-6; time += dt) sm.update(dt, { state, stateTime: time, tail: P.tail, light: P.light, claw: P.claw, moving: num('walk', 0) ? 3 : 0, mark: P.mark === null ? null : { ahead: aim, r: S.stingR, fill: P.mark } });
+  } else if (who === 'stag') {
+    // The Stag Knight, standing: #view&who=stag&yaw=0.6&dist=5
+    const stag = new StagModel();
+    scene.add(stag.root);
+    for (let time = 0; time <= t + 1e-6; time += dt) {
+      stag.setTransform(origin, 0);
+      stag.update(dt, { state: 'idle', stateTime: time, walking: 0 } as never);
+    }
   } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);
@@ -218,5 +229,19 @@ export function runViewer(canvas: HTMLCanvasElement): void {
   camera.position.x += lx;
   camera.position.z += lz;
   camera.lookAt(lx, h, lz);
+  // &post=0.5: it stands on a post that wide each way from its middle (&ox, &oz: the post's middle), and its shadow
+  // is cut to the post's top as it is in the game (render/cutShadow.ts).
+  if (q.has('post')) {
+    const half = num('post', 0.5);
+    const ox = num('ox', 0);
+    const oz = num('oz', 0);
+    floor.scale.set((half * 2) / 6, (half * 2) / 6, 1);
+    floor.position.set(ox, 0, oz);
+    const under = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshBasicMaterial({ color: 0x1c232c }));
+    under.rotation.x = -Math.PI / 2;
+    under.position.y = -1.5;
+    scene.add(under);
+    if (q.get('cut') !== '0') new ShadowCuts().cut(scene, [makeAabb(ox, -0.5, oz, half * 2, 1, half * 2)]);
+  }
   renderer.render(scene, camera);
 }

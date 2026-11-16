@@ -54,6 +54,7 @@ import { Roller } from './enemies/roller';
 import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
+import { ShadowCuts } from './render/cutShadow';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
 import { SkyDome } from './world/sky';
@@ -256,6 +257,7 @@ function startGame(): void {
   // (A disc of spokes lying flat: each spoke is drawn in where the ground under the shadow ends, so it never stands out
   // in the air past the edge of what he is on. See world/shadow.ts.)
   const SHADOW_R = 0.34;
+  const shadowCuts = new ShadowCuts();
   const SHADOW_SPOKES = 12;
   const shadowGeo = new THREE.BufferGeometry();
   shadowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SHADOW_SPOKES + 1) * 3), 3));
@@ -3561,6 +3563,7 @@ function startGame(): void {
         // (Stepped back, the models' own clocks do not run back: they are only put where the frame has them.)
         // (HELD, the scene's own time stands still but its people go on breathing: so a held frame is a settled pose.)
         show.stage.apply(cf, show.paused ? frameDt : Math.max(0, story.t - show.last));
+        for (const p of Object.values(show.stage.cast)) shadowCuts.cut(p.root, chamber.colliders);
         for (const snd of show.sc.def.sounds ?? []) if (snd.t > show.sounds && snd.t <= story.t) audio.play(snd.name as Parameters<typeof audio.play>[0], { vol: 0.7, verb: 0.3, priority: 7 });
         show.sounds = Math.max(show.sounds, story.t);
         show.last = story.t;
@@ -3723,8 +3726,13 @@ function startGame(): void {
       if (tip.on) root.quaternion.premultiply(tiltQ.setFromUnitVectors(UP_AXIS, tiltN.set(-tip.x, 1, -tip.z).normalize()));
       foeTilt.set(e, tip);
       enemyModels[i].tick(animDt, e);
+      // (Its shadow is cut where its ground ends, as the knight's is: render/cutShadow.ts.)
+      shadowCuts.cut(root, chamber.colliders);
     });
-    for (const n of npcs) n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);
+    for (const n of npcs) {
+      n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);
+      shadowCuts.cut(n.root, chamber.colliders);
+    }
     const hintWord = nearFire && !npcs.some((n) => n.near) ? 'rest by the fire' : 'talk';
     if (promptStamp() + hintWord !== talkShown) {
       talkShown = promptStamp() + hintWord;

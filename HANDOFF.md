@@ -1259,3 +1259,20 @@ things are:
 - tests/roller.ts `meet(what)` plays it against the real knight through `resolveCombat` (stand, guard, jump, side).
   `ROLL_TRACE=1` prints the sword-swing case.
 
+## Sign boards, surface pictures, cave steps, shadow cuts, old screens (2026-11-16; tests `tests/signs.ts`, `tests/shadowcut.ts`, `tests/screens.ts`)
+
+- `world/signs.ts`: `boardPixels(lines, w, h)` (pure: a Uint8Array picture, top row first, `big` 1 or 2) and
+  `signBoard` (a DataTexture from it, nearest filter). `render/pixelFont.ts` has `,` and `:`.
+- SURFACE PICTURES: `SURFACE` (seven greys) in `render/textures.ts`; `stagShell`, `stagBelly`, `stagHorn`, `stagIron`,
+  `ashWood`, `turtleScute`, `turtleSkin`, `turtleBelly`. `StagModel` has five materials (`mat`, `matPlain`, `matBelly`,
+  `matIron`, `matWood`), all flashed together. `npc/patrons.ts`: `scuteMat`, `skinKit`, `bellyKit`; `shellGeometry`
+  now writes a `uv` for every corner (a plate's middle is the picture's middle; the rim is a band across it).
+  A ball's picture wraps once round it: its front (+z) is a quarter of the way across.
+- `caveStep` (tile 2) for steps in a cave; `STEP_LAMP` in `levels/glimmer.ts`.
+- `render/cutShadow.ts`: `ShadowCuts.cut(root, colliders)`, `isBlobShadow`; `world/shadow.ts` `cutOutline`. Called in
+  main.ts after each creature's `tick`, each npc's `update`, and a cutscene's `stage.apply`.
+- `ui/display.ts`: `screenMeasures(height, dpr)` sets `--rq-line`, `--rq-mask`, `--rq-cell`, `--rq-gap`;
+  `FILTER_DEFS` holds the SVG filters `rq-green`, `rq-vhs`, `rq-glow`; `HANDHELD_GREENS`. The handheld's grid is a
+  pseudo-element of `#frame` (outside the green filter, which is on `#gameWrap`).
+- The dream world's next pass (blinking digital textures, butterflies, flowers, dozing dream versions of the scary
+  creatures) is the owner's note in START-HERE.md: not built.

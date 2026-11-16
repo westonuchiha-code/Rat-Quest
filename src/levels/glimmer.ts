@@ -52,6 +52,8 @@ export const RIFT_STEPS: ReadonlyArray<readonly [number, number, number]> = [
   [5.2, 8.6, 4],
   [RIFT.z0, 5.2, 6],
 ];
+/** How tall the small mushroom at the back of each step is: a lamp, too small to stand on or to be in the way. */
+export const STEP_LAMP = 0.6;
 /** The tall pink mushroom of the Far Bank: where it stands and how tall it is. */
 export const SPIRE = { x: -17, z: -11, tall: 5.5 } as const;
 export const GLIMMER_PRIZES = { air: 'glimmer-cap-air', deep: 'glimmer-cap-deep', spire: 'glimmer-relic-spire' } as const;
@@ -87,8 +89,13 @@ export function glimmerDeep(): LevelDef {
   for (const [x0, x1, z0, z1] of [[-G.halfX - 1, -G.halfX, -G.halfZ - 1, G.halfZ + 1], [G.halfX, G.halfX + 1, -G.halfZ - 1, G.halfZ + 1], [-G.halfX, G.halfX, -G.halfZ - 1, -G.halfZ], [-G.halfX, G.halfX, G.halfZ, G.halfZ + 1]]) {
     solids.push(rock(extent('wall', x0, x1, BELOW, G.wall, z0, z1)));
   }
-  // The steps out of the Rift.
-  for (const [z0, z1, top] of RIFT_STEPS) solids.push(rock(extent('stone', -G.halfX, -G.halfX + 4, RIFT.floor, top, z0, z1)));
+  // The steps out of the Rift: in pale cut stone, not the wall's rock, and a small amber mushroom at the back of each
+  // to light it. (The owner, 2026-11-16: "I genuinely couldn't see these stairs because they use the same texture as
+  // the wall".)
+  for (const [z0, z1, top] of RIFT_STEPS) {
+    solids.push({ ...extent('stone', -G.halfX, -G.halfX + 4, RIFT.floor, top, z0, z1), skin: 'caveStep' });
+    decor.push({ kind: 'mushroom', x: -G.halfX + 0.7, y: top, z: (z0 + z1) / 2 + 0.8, size: STEP_LAMP, color: AMBER });
+  }
   // A low shelf of rock on the Landing and two on the Far Bank, to break the floors up. (None near the High Shelf,
   // and no mushroom tall enough to stand on near it either: the first lay-out had a ledge five and a half from its
   // edge, and from that ledge he could get up onto the Shelf without the Caps. A test tries every such place.)
