@@ -1012,7 +1012,7 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   walls are a pair for each section.
 
 ## Boss: the Widow (2026-11-16: the Long Drop's arena)
-- Rules `src/enemies/widow.ts` (`WIDOW` table, `Widow`), look `src/enemies/widowModel.ts`, tests `tests/widow.ts` (55 checks).
+- Rules `src/enemies/widow.ts` (`WIDOW` table, `Widow`), look `src/enemies/widowModel.ts`, tests `tests/widow.ts` (56 checks).
   START-HERE.md has what she does; this is what to know before changing her.
 - **She does not move.** `px, pz` is the edge of the light in front of her; each leg turns about its own `hip(side,
   inner)`; angles are counted from the way she faces, + to her LEFT. She faces north in the level (facing pi), so
@@ -1040,4 +1040,9 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - `LevelDef.well` keeps HIM in the light; nothing keeps her out of it but her own rules (tested through whole fights).
 - The checkpoint is in `main.ts` `lavaStep`: standing on a well's floor moves `player.spawn` there.
 - `main.ts`: a level with `returnTo` is marked cleared on loading ONLY IF it has no goals.
+- Her sounds: `widow*` and `poison*` in synth.ts (seeds 225 to 233), played in `beastSounds`. `widowRear` is played
+  at `0.8 / windTime` so the creak lasts as long as the wind-up it warns of. The `spit` event is sent by her rules
+  a little past half-way through a far stab's or spit's wind-up (when the gob is drawn leaving her).
+- Her sliders: group 'The Widow' in tweaks.ts (root `widow` = the `WIDOW` table). A new number in `WIDOW` is on no
+  slider until a line is added there.
 

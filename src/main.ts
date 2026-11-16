@@ -611,36 +611,46 @@ function startGame(): void {
         else if (ev === 'crit') audio.play('wyrmCry', { vol: v * 0.7, rate: 1.4, priority: 6 });
         else if (ev === 'hurt') audio.play('plateKnock', { vol: v * 0.7, priority: 4 });
       } else if (e instanceof Widow) {
-        // The Widow (in the Broodmother's voice, till she has her own): her scream when she wakes and when she turns
-        // angry; the rasp of a leg going up and the floor shaking where it comes down; a rattle as it draws back to
-        // sweep, and the rush of it; a long low hiss before her head comes down, and the crack of her jaws; the rasp
-        // and the spike of a stab; a cry when she is thrown down, a yelp when struck, a sharper one for her head.
+        // The Widow, in sounds of her own: her scream when she wakes and when she turns angry; the creak of a leg
+        // going up (as long as its wind-up), the crack of its foot into the floor and the hiss of her poison along
+        // the line; a quick creak as it draws back, and the rush of the wave it flings; a long creak as her head
+        // rears, and her jaws shutting on the floor; a gob of poison spat or flicked, and the splash where it lands;
+        // a cry when she is thrown down, a yelp when struck, a sharper one for her head.
         const loud = Math.max(0.6, v);
         if (ev === 'wake' || ev === 'rage') {
-          audio.play('broodScream', { vol: loud, rate: ev === 'rage' ? 0.7 : 0.82, priority: 9 });
+          audio.play('widowScream', { vol: loud, rate: ev === 'rage' ? 0.85 : 1, priority: 9 });
           audio.play('rumble', { vol: loud * 0.7, rate: 1.1, priority: 6 });
           shake = Math.max(shake, 0.16);
-        } else if (ev === 'slamWind') audio.play('broodHiss', { vol: loud * 0.9, rate: 0.75 / Math.max(0.5, e.windTime), priority: 7 });
+        } else if (ev === 'slamWind') audio.play('widowRear', { vol: loud * 0.9, rate: 0.8 / Math.max(0.4, e.windTime), priority: 7 });
         else if (ev === 'slam') {
-          audio.play('shock', { vol: loud, rate: 0.7, priority: 9 });
           audio.play('spikeHit', { vol: loud * 0.8, rate: 0.6, priority: 8 });
-          shake = Math.max(shake, 0.3);
-          rumble.shock();
-        } else if (ev === 'sweepWind') audio.play('broodRattle', { vol: loud, rate: 0.6, priority: 8 });
-        else if (ev === 'sweep') audio.play('whoosh', { vol: loud, rate: 0.55, priority: 8 });
-        else if (ev === 'biteWind') audio.play('broodHiss', { vol: loud, rate: 0.55, priority: 8 });
-        else if (ev === 'bite') {
-          audio.play('broodDrop', { vol: loud, rate: 1.2, priority: 9 });
+          audio.play('poisonSlash', { vol: loud, priority: 9 });
           shake = Math.max(shake, 0.22);
           rumble.shock();
-        } else if (ev === 'stabWind') audio.play('broodHiss', { vol: loud * 0.8, rate: e.windTime < 0.5 ? 1.5 : 1.15, priority: 7 });
+        } else if (ev === 'sweepWind') audio.play('widowRear', { vol: loud * 0.8, rate: 0.8 / Math.max(0.2, e.windTime), priority: 8 });
+        else if (ev === 'sweep') {
+          audio.play('whoosh', { vol: loud * 0.7, rate: 0.6, priority: 7 });
+          audio.play('poisonWave', { vol: loud, rate: e.raging ? 1.2 : 1, priority: 9 });
+        } else if (ev === 'biteWind') audio.play('widowRear', { vol: loud, rate: 0.8 / Math.max(0.4, e.windTime), priority: 8 });
+        else if (ev === 'bite') {
+          if (e.far) audio.play('poisonSplash', { vol: loud, rate: 0.8, priority: 9 });
+          else {
+            audio.play('widowBite', { vol: loud, priority: 9 });
+            shake = Math.max(shake, 0.24);
+            rumble.shock();
+          }
+        } else if (ev === 'stabWind') audio.play('widowRear', { vol: loud * 0.7, rate: 0.8 / Math.max(0.3, e.windTime), priority: 7 });
+        else if (ev === 'spit') audio.play('poisonSpit', { vol: loud, rate: e.state === 'biteWind' ? 0.75 : 1.1, priority: 8 });
         else if (ev === 'stab') {
-          audio.play('whoosh', { vol: loud * 0.7, rate: 1.5, priority: 6 });
-          audio.play('spikeHit', { vol: loud * 0.9, priority: 7 });
-          shake = Math.max(shake, 0.08);
-        } else if (ev === 'reel') audio.play('broodHurt', { vol: loud, rate: 0.55, priority: 8 });
-        else if (ev === 'crit') audio.play('broodHurt', { vol: loud * 0.8, rate: 1.3, priority: 6 });
-        else if (ev === 'hurt') audio.play('broodHurt', { vol: loud * 0.5, priority: 4 });
+          if (e.far) audio.play('poisonSplash', { vol: loud * 0.9, rate: 1.25, priority: 8 });
+          else {
+            audio.play('whoosh', { vol: loud * 0.7, rate: 1.5, priority: 6 });
+            audio.play('spikeHit', { vol: loud * 0.9, priority: 7 });
+            shake = Math.max(shake, 0.08);
+          }
+        } else if (ev === 'reel') audio.play('widowHurt', { vol: loud, rate: 0.6, priority: 8 });
+        else if (ev === 'crit') audio.play('widowHurt', { vol: loud * 0.8, rate: 1.25, priority: 6 });
+        else if (ev === 'hurt') audio.play('widowHurt', { vol: loud * 0.5, priority: 4 });
       } else if (e instanceof Brood) {
         // The Broodmother, in sounds of her own: her scream when she sees him and again when she turns angry; the tap
         // of her feet; the rasp of a spike going up and the crack of it into the floor; a quick light rattle before
@@ -1649,7 +1659,7 @@ function startGame(): void {
         }
       } else if (e.kind === 'widow') {
         if (e.state === 'dead') {
-          audio.play('broodDie', { vol: 1, rate: 0.75, priority: 9 });
+          audio.play('widowDie', { vol: 1, priority: 9 });
           audio.play('rumble', { vol: 0.8, rate: 0.9, priority: 8 });
         }
       } else if (e.kind === 'brood') {

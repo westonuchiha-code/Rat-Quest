@@ -120,7 +120,7 @@ export class Widow {
   rng: () => number = Math.random;
   canStand: CanStand | null = null;
   mayAttack = true;
-  /** What she has done since the game last took them (it empties this), for sounds: 'wake', 'slamWind', 'slam', 'sweepWind', 'sweep', 'biteWind', 'bite', 'stabWind', 'stab', 'reel', 'rage', 'hurt', 'crit'. */
+  /** What she has done since the game last took them (it empties this), for sounds: 'wake', 'slamWind', 'slam', 'sweepWind', 'sweep', 'biteWind', 'bite', 'stabWind', 'stab', 'spit', 'reel', 'rage', 'hurt', 'crit'. */
   readonly events: string[] = [];
 
   /** The edge of the light in front of her, and the middle and radius of the lit floor. */
@@ -142,6 +142,7 @@ export class Widow {
   /** Angry: below half her health. */
   raging = false;
   private spent = false;
+  private spat = false;
   private waitLeft = 0;
   private turn = 0;
   private left = 0; // blows left in this run of them
@@ -273,6 +274,7 @@ export class Widow {
     this.state = state;
     this.stateTime = 0;
     this.spent = false;
+    this.spat = false;
   }
   private wind(t: number): number {
     return this.raging ? t * WIDOW.hurry : t;
@@ -402,6 +404,11 @@ export class Widow {
     const home = this.home;
     const onFloor = Math.hypot(px - this.field.x, pz - this.field.z) < this.field.r && py < this.floorY + 3;
 
+    // (Poison flung from afar leaves her a little after half-way through its wind-up: the game is told then.)
+    if (this.far && !this.spat && (this.state === 'stabWind' || this.state === 'biteWind') && t >= this.windTime * 0.55) {
+      this.spat = true;
+      this.events.push('spit');
+    }
     switch (this.state) {
       case 'dead':
         break;

@@ -10,6 +10,7 @@ import { GUARD } from '../enemies/guard';
 import { MANTIS } from '../enemies/mantis';
 import { STAG } from '../enemies/stag';
 import { BROOD } from '../enemies/brood';
+import { WIDOW } from '../enemies/widow';
 import { WYRM } from '../enemies/wyrm';
 import { CRATE_DROPS } from '../data/consumables';
 import { BAT } from '../enemies/bat';
@@ -164,6 +165,27 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Stag Knights', path: 'stag.stompWindup', label: 'Warning before the stomp', min: 0.2, max: 2, step: 0.05 },
   { group: 'Stag Knights', path: 'stag.poise', label: 'Quick blows that put it on one knee', min: 1, max: 12, step: 1 },
   { group: 'Stag Knights', path: 'stag.kneel', label: 'How long it is down', min: 0.5, max: 6, step: 0.1 },
+  { group: 'The Widow', path: 'widow.hp', label: 'Health', min: 4, max: 80, step: 1, later: 'from the next level' },
+  { group: 'The Widow', path: 'widow.rageAt', label: 'Angry below this much of her health', min: 0, max: 1, step: 0.05 },
+  { group: 'The Widow', path: 'widow.legPart', label: 'A blow on a foot counts this much', min: 0, max: 2, step: 0.05 },
+  { group: 'The Widow', path: 'widow.headDouble', label: 'A blow on her head counts this many times', min: 0.5, max: 5, step: 0.5 },
+  { group: 'The Widow', path: 'widow.slamWind', label: 'Warning before the slam (the red line)', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'The Widow', path: 'widow.slamTrack', label: 'How much of that the line follows him', min: 0, max: 0.95, step: 0.05 },
+  { group: 'The Widow', path: 'widow.slamDamage', label: 'Slash of poison damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Widow', path: 'widow.slamStuck', label: 'Foot stuck after a slam', min: 0.2, max: 3, step: 0.05 },
+  { group: 'The Widow', path: 'widow.sweepWind', label: 'Warning before the swipe', min: 0.1, max: 2, step: 0.02 },
+  { group: 'The Widow', path: 'widow.waveSpeed', label: 'Speed of the wave of poison', min: 4, max: 40, step: 0.5 },
+  { group: 'The Widow', path: 'widow.waveSpeedRage', label: '...when she is angry', min: 4, max: 40, step: 0.5 },
+  { group: 'The Widow', path: 'widow.sweepDamage', label: 'Wave damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Widow', path: 'widow.stabWind', label: 'Warning before the first stab', min: 0.24, max: 2, step: 0.02 },
+  { group: 'The Widow', path: 'widow.stabGap', label: 'Warning before each stab after it', min: 0.2, max: 1.5, step: 0.02 },
+  { group: 'The Widow', path: 'widow.stabStuck', label: 'Foot stuck after a stab', min: 0.2, max: 3, step: 0.05 },
+  { group: 'The Widow', path: 'widow.stabReach', label: 'How far a leg can stab (beyond: poison)', min: 2, max: 28, step: 0.5 },
+  { group: 'The Widow', path: 'widow.biteWind', label: 'Warning before the bite (the big ring)', min: 0.3, max: 2.5, step: 0.05 },
+  { group: 'The Widow', path: 'widow.biteReach', label: 'How far her head can come (beyond: she spits)', min: 2, max: 28, step: 0.5 },
+  { group: 'The Widow', path: 'widow.biteDamage', label: 'Bite and spit damage (hearts)', min: 0, max: 5, step: 1 },
+  { group: 'The Widow', path: 'widow.biteStuck', label: 'Her head lying there after a bite', min: 0.3, max: 4, step: 0.05 },
+  { group: 'The Widow', path: 'widow.reel', label: 'Thrown down by a perfect guard', min: 0.5, max: 5, step: 0.05 },
   { group: 'The Broodmother', path: 'brood.hp', label: 'Health', min: 4, max: 60, step: 1, later: 'from the next level' },
   { group: 'The Broodmother', path: 'brood.speed', label: 'Walking speed', min: 0.5, max: 6, step: 0.1 },
   { group: 'The Broodmother', path: 'brood.turnRate', label: 'Turn speed (lower: easier to get behind)', min: 0.5, max: 6, step: 0.1 },
@@ -297,7 +319,7 @@ export const TWEAKS: TweakDef[] = [
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
   { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Riding', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
-  { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'Grimsqueak'] },
+  { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },
 ];
 /** Every group that has a slider, sections first. */
@@ -308,7 +330,7 @@ export const TWEAK_GROUPS: string[] = (() => {
 })();
 
 type Table = Record<string, unknown>;
-const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, firefly: FIREFLY as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
+const ROOTS: Record<string, Table> = { toad: TOAD as unknown as Table, ironback: IRONBACK as unknown as Table, keepguard: GUARD as unknown as Table, mantis: MANTIS as unknown as Table, hornet: HORNET as unknown as Table, ant: ANT as unknown as Table, firefly: FIREFLY as unknown as Table, stag: STAG as unknown as Table, brood: BROOD as unknown as Table, widow: WIDOW as unknown as Table, wyrm: WYRM as unknown as Table, crates: CRATE_DROPS[0] as unknown as Table, bat: BAT as unknown as Table, grim: GRIM as unknown as Table, balance: BALANCE as unknown as Table };
 
 /**
  * Sets to try: a few sliders moved together, for a question that takes more than one of them. The jump sets are

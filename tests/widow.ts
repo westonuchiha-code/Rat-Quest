@@ -303,6 +303,7 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
   // Further off than the leg can reach, it flicks poison at the place instead.
   const farStill = stabbed(() => ({}), 6);
   check('further off than her leg can reach, it flicks a gob of poison onto the place instead: the same heart, and no foot left in the floor to strike', farStill.w.far && farStill.lost === W.stabDamage && farStill.w.parts.length === 0 && !farStill.w.open, `${farStill.lost}; far ${farStill.w.far}`);
+  check('...the game is told when the gob leaves her (its own sound), and when it lands', farStill.seen.sounds.includes('spit') && farStill.seen.sounds.indexOf('spit') < farStill.seen.sounds.lastIndexOf('stab') && !still.seen.sounds.includes('spit'));
   const farGuard = stabbed((w) => ({ guardHeld: w.state === 'stab' || w.stateTime > 0.2 }), 6);
   check('...a shield held toward her stops that too', farGuard.w.far && farGuard.lost === 0 && farGuard.seen.results.includes('blocked'), farGuard.seen.results.join());
   const parried = stabbed((w) => ({ guardHeld: w.state === 'stab' || (w.state === 'stabWind' && w.stateTime > w.windTime - 0.05) }));

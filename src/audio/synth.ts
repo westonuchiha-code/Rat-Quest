@@ -209,6 +209,10 @@ export const SFX_NAMES = [
   // Riding his shield: the rim grinding along on stone (looped while he rides, louder and higher the faster he
   // goes), the crack of it leaving the ground or coming down again, and the clatter when he comes off it.
   'rideScrape', 'ridePop', 'rideClatter', 'grindRing',
+  // The Widow: her scream (far deeper than the Broodmother's: she is many times the size), the creak of a leg
+  // going up, her jaws shutting on the floor, her cry when struck, and her end. And her poison: the slash of it along
+  // the floor, the wave of it running out, a gob of it spat or flicked, and the splash where one lands.
+  'widowScream', 'widowRear', 'widowBite', 'widowHurt', 'widowDie', 'poisonSlash', 'poisonWave', 'poisonSpit', 'poisonSplash',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -812,6 +816,76 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const hit = struck(c, [[520, 1, 18], [1250, 0.7, 30], [2700, 0.4, 60]], 1.2);
     return (t) => hit(t) + c.lp(0, c.r() * 2 - 1, 0.5) * Math.exp(-t * 70) * 0.5;
   }, { bits: 7, gain: 0.8 }),
+  // The Widow's scream: a great low groan forced up into a shriek and breaking back down, chopped by a slow chitter.
+  widowScream: () => draw(1.5, RATE_HI, 225, (c) => (t) => {
+    const u = t / 1.5;
+    const hz = 240 + 260 * Math.min(1, u / 0.2) - 180 * Math.max(0, (u - 0.55) / 0.45) ** 1.5 + 30 * sine(c.osc(3, 17));
+    const voice = saw(c.osc(0, hz)) * 0.45 + sq(c.osc(1, hz * 1.493), 0.3) * 0.3 + sq(c.osc(2, hz * 0.5), 0.4) * 0.35;
+    const n = c.r() * 2 - 1;
+    const breath = (n - c.lp(0, n, 0.2)) * 0.4;
+    const chitter = sq(c.osc(4, 28 - 12 * u), 0.55) > 0 ? 1 : 0.25;
+    return (voice + breath) * chitter * Math.min(1, t / 0.05) * Math.min(1, (1.5 - t) / 0.35);
+  }, { bits: 7 }),
+  // One of her legs going up: a long creak, joint on joint, rising and growing.
+  widowRear: () => draw(0.8, RATE_HI, 226, (c) => (t) => {
+    const u = t / 0.8;
+    const n = c.r() * 2 - 1;
+    const rasp = (n - c.lp(0, n, 0.08 + 0.2 * u)) * (0.5 + 0.5 * tri(c.osc(1, 24 + 40 * u)));
+    const creak = c.lp(1, saw(c.osc(0, 38 + 45 * u)), 0.25) * 0.8;
+    return (rasp + creak) * (0.3 + 0.7 * u) * Math.min(1, t / 0.04) * Math.min(1, (0.8 - t) / 0.06);
+  }, { bits: 7, gain: 0.8 }),
+  // Her jaws shutting on the floor: two hard clacks close together, and the thump of her head under them.
+  widowBite: () => draw(0.4, RATE_HI, 231, (c) => {
+    const a = struck(c, [[420, 1, 30], [760, 0.6, 40], [1500, 0.35, 60]], 1.2);
+    const b = struck(c, [[380, 0.8, 34], [700, 0.5, 44], [1380, 0.3, 64]], 1, 0.09);
+    return (t) => Math.tanh((a(t) + b(t) + sine(c.osc(6, 55 + 120 * Math.exp(-25 * t))) * Math.exp(-t * 12) * 0.9) * 0.9) * Math.min(1, (0.4 - t) / 0.05);
+  }, { bits: 7 }),
+  // Struck: a low yelp, falling.
+  widowHurt: () => draw(0.3, RATE_HI, 232, (c) => (t) => {
+    const hz = 900 - 450 * (t / 0.3) + 60 * sine(c.osc(2, 40));
+    return (sq(c.osc(0, hz), 0.25) * 0.5 + saw(c.osc(1, hz * 0.5)) * 0.35 + (c.r() * 2 - 1) * 0.2) * (sq(c.osc(3, 38), 0.6) > 0 ? 1 : 0.35) * bell(t, 0.3);
+  }, { bits: 7 }),
+  // Her end: the groan going out of her, falling a long way; what is left is her legs ticking as they fold.
+  widowDie: () => draw(2, RATE_HI, 233, (c) => {
+    const legs = rattle(c, RATE_HI, 2, 22, 2, 1500, 0.975);
+    return (t) => {
+      const u = t / 2;
+      const hz = 700 * Math.exp(-u * 2.4) + 90;
+      const voice = saw(c.osc(0, hz)) * 0.5 + sq(c.osc(1, hz * 1.497), 0.3) * 0.28 + sq(c.osc(2, hz * 0.5), 0.4) * 0.3;
+      const chitter = sq(c.osc(4, 30 - 24 * u), 0.5) > 0 ? 1 : 0.25;
+      return (voice * chitter + (c.r() * 2 - 1) * 0.2) * (1 - u) ** 1.3 * Math.min(1, t / 0.03) + legs(t) * 0.9 * Math.min(1, u * 1.6) * Math.min(1, (2 - t) / 0.1);
+    };
+  }, { bits: 7 }),
+  // Her poison along the floor: a wet hiss that starts sharp and falls, seething, over a squelch.
+  poisonSlash: () => draw(0.55, RATE_HI, 227, (c) => (t) => {
+    const u = t / 0.55;
+    const n = c.r() * 2 - 1;
+    const air = c.lp(0, n, 0.9 - 0.75 * u) - c.lp(1, n, 0.05);
+    const seethe = (n - c.lp(2, n, 0.4)) * (sq(c.osc(0, 90 - 50 * u), 0.5) > 0 ? 1 : 0.4) * 0.5;
+    const squelch = sine(c.osc(1, 900 * Math.exp(-9 * t) + 140)) * Math.exp(-t * 10) * 0.6;
+    return (air + seethe + squelch) * Math.min(1, t / 0.004) * Math.exp(-t * 5) * Math.min(1, (0.55 - t) / 0.05);
+  }, { bits: 7 }),
+  // The wave of it running out over the floor: a rush that opens and passes, bubbling.
+  poisonWave: () => draw(1, RATE_HI, 228, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const open = Math.sin(Math.PI * Math.min(1, t / 0.7)) ** 0.7;
+    const air = c.lp(0, n, 0.05 + 0.5 * open) - c.lp(1, n, 0.03);
+    const bubble = sine(c.osc(0, 300 + 250 * sine(c.osc(1, 13)))) * 0.25;
+    return (air + bubble * open) * Math.min(1, t / 0.12) * (1 - t) ** 0.8;
+  }, { bits: 7 }),
+  // A gob of it spat, or flicked off a leg: a short wet "pth".
+  poisonSpit: () => draw(0.28, RATE_HI, 229, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    return ((n - c.lp(0, n, 0.3)) * Math.exp(-t * 16) + sine(c.osc(0, 700 * Math.exp(-12 * t) + 200)) * Math.exp(-t * 14) * 0.7) * Math.min(1, t / 0.003) * Math.min(1, (0.28 - t) / 0.04);
+  }, { bits: 7 }),
+  // ...and where it lands: a splat, and the stone seething under it.
+  poisonSplash: () => draw(0.5, RATE_HI, 230, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    const thump = sine(c.osc(0, 110 + 180 * Math.exp(-30 * t))) * Math.exp(-t * 14) * 0.9;
+    const splat = c.lp(0, n, 0.5 * Math.exp(-8 * t) + 0.05) * Math.exp(-t * 9);
+    const seethe = (n - c.lp(1, n, 0.5)) * 0.3 * Math.exp(-t * 4) * (sq(c.osc(1, 70), 0.5) > 0 ? 1 : 0.3);
+    return (thump + splat + seethe) * Math.min(1, t / 0.003) * Math.min(1, (0.5 - t) / 0.06);
+  }, { bits: 7 }),
   // He comes off it: the shield skitters away over the stone, three knocks getting quicker and quieter.
   rideClatter: () => draw(0.5, RATE_HI, 223, (c) => {
     const hits = [0, 0.13, 0.23, 0.3, 0.35].map((at, k) => ({ at, hit: struck(c, [[640 + k * 90, 1, 26], [1700 + k * 160, 0.6, 44]], 1, k * 2) }));

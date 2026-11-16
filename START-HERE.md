@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,894 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,910 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -757,13 +757,24 @@ down again. She keeps the health she had.
 - Nobody has fought her by hand. Her numbers are first guesses, tested only by a rat that plays by rule.
 - Beating her and the door appearing has NOT been seen in the running game (the tests beat her; the game's door
   scene is the same one every level uses, but it has not been watched here).
-- She has no sounds of her own: she uses the Broodmother's. No sliders in the tweaks panel (`WIDOW` in widow.ts).
+- Her sounds are her own now (below), but NOBODY HAS HEARD THEM: they are drawn by sums and checked for loudness,
+  pitch and length, not by ear. Tell me which are wrong.
 - The game's view looks down at him, so most of her (her head high in the dark, her knees) is at the top edge of
   the picture or off it. What he must read is on the floor (the line, the rings, the legs and head when down), and
   that is all in view. A view that pulls back in this room would show her better; the owner's rule is that the
   view does not TURN by itself, so that is his to ask for.
 - Her legs are plain bars with a claw: they could do with joints, hair or markings. The poison is flat colour.
 - Not in the level editor. No story scene.
+**Her sounds and her sliders (2026-11-16).** Nine sounds in `src/audio/synth.ts`, played from `beastSounds` in
+main.ts by what she does: `widowScream` (waking; played a little slower when she turns angry), `widowRear` (a leg going up, or her head rearing: stretched to the length of the wind-up),
+`widowBite`, `widowHurt` (struck; slowed when she is thrown down, quicker for her head), `widowDie`; and her poison:
+`poisonSlash` (along the line), `poisonWave` (the wave leaving her), `poisonSpit` (a gob leaving her: the rules send
+a `spit` event for it) and `poisonSplash` (where it lands). She still borrows `spikeHit`, `whoosh` and `rumble`.
+Her numbers are on 21 sliders in the tweaks panel under Bosses, "The Widow" (health, what a blow on a foot or her
+head counts, every warning time, how long each piece of her stays stuck, how far her legs and head reach before
+she uses poison instead, the wave's speed, each blow's hearts). Health takes effect from the next time the level
+is loaded; the rest at once.
+
 See her: `#view&who=widow&t=<seconds>&yaw=..&pitch=..&dist=46&h=3&lz=9` (`&rage=1`, `&die=<seconds>`, `&px=&pz=` for
 where the rat stands). In the game: `#level=longdrop&nostory&at=2,0.5,1419,3.1416`.
 
