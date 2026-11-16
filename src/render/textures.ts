@@ -2635,6 +2635,28 @@ function paintSoftPaint(p: Px, rand: Rand): void {
   for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.2 + a[y * S + x] * 0.6 + (b[y * S + x] - 0.5) * 0.3, soft, x, y, 0.1));
 }
 
+/** The colours the dream's static is made of: dark blues, greens, violets; and the few bright ones that wink. */
+const STATIC_DARK = [0x0a0a24, 0x14205e, 0x1a3a8a, 0x143c50, 0x1a7a6a, 0x2a2a7a, 0x4a2a9a, 0x1f5a3a];
+const STATIC_BRIGHT = [0x3ad8ff, 0x5aff8a, 0xff5ab4, 0xffe84a, 0xbfa0ff, 0xffffff];
+/**
+ * Dream: STATIC. The owner, 2026-11-16, with a picture of a hall whose every surface is one fine busy many-coloured
+ * noise, like a broken television: "some of the digital textures look kind of cool and also the little bit of
+ * blinking". Short dashes of dark blue, green and violet, row on row, no two rows alike, a bright dot here and there.
+ * AND IT BLINKS: `blinkTextures` (below) winks a few of its dots on and off, many times a second. (A picture that
+ * changes is not a glow painted into a tile: nothing here is a light.)
+ */
+function paintDreamStatic(p: Px, rand: Rand): void {
+  const S = p.size;
+  for (let y = 0; y < S; y++) {
+    let x = 0;
+    while (x < S) {
+      const len = 1 + Math.floor(rand() * rand() * 5);
+      const c = rand() < 0.08 ? pick(rand, STATIC_BRIGHT) : pick(rand, STATIC_DARK);
+      for (let i = 0; i < len && x < S; i++, x++) p.set(x, y, c);
+    }
+  }
+}
+
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
 function paintStarfield(p: Px, rand: Rand): void {
   const S = p.size;
@@ -2850,6 +2872,7 @@ const DEFS = {
   owlWing: { size: 64, seed: 873, paint: paintOwlWing },
   // Soft painted shading: what the friendly characters wear.
   softPaint: { size: 64, seed: 871, paint: paintSoftPaint },
+  dreamStatic: { size: 64, seed: 881, paint: paintDreamStatic },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },
@@ -2911,6 +2934,29 @@ export function getTexture(name: TextureName): THREE.DataTexture {
     textureCache.set(name, tex);
   }
   return tex;
+}
+
+/** Which dots of the static are winking just now: where, and what was there. */
+const winks: Array<{ at: number; was: [number, number, number] }> = [];
+let winkedAt = -1;
+/**
+ * Winks the dream's static: a few times a second a handful of its dots turn bright and the last handful turn back.
+ * Called with the room's clock; costs nothing when nobody has asked for the picture.
+ */
+export function blinkTextures(time: number): void {
+  const tex = textureCache.get('dreamStatic');
+  if (!tex || Math.abs(time - winkedAt) < 0.11) return;
+  winkedAt = time;
+  const data = tex.image.data as Uint8Array;
+  for (const w of winks.splice(0)) data.set(w.was, w.at);
+  const n = data.length / 4;
+  for (let i = 0; i < 46; i++) {
+    const at = Math.floor(Math.random() * n) * 4;
+    winks.push({ at, was: [data[at], data[at + 1], data[at + 2]] });
+    const c = STATIC_BRIGHT[Math.floor(Math.random() * STATIC_BRIGHT.length)];
+    data.set([(c >> 16) & 255, (c >> 8) & 255, c & 255], at);
+  }
+  tex.needsUpdate = true;
 }
 
 /** Large stone blocks for pillars, rubble and platforms. */

@@ -12,12 +12,16 @@
  * of one, through the air, onto the next. A landing at the bottom (the Moon) with the way out. No walls anywhere:
  * off the side of the road is a long fall, and he is put back on the road where he last was, a heart the poorer.
  * Three bottle caps, one in the air over each gap, up where a jump off the board at the lip carries him.
+ * SECOND PASS (2026-11-16, his notes): its kerbs are in STATIC that winks (`dreamStatic`); beds of flowers with
+ * butterflies stand either side of the head pad and down the Moon; and the waking world's terrors are here in loud
+ * colours, asleep or standing about, harmless (`dozers`: world/dozers.ts).
  * The sky is a dome of stars (`sky: 'space'`), planets hang about the road (decor `planet`), and he wears the dream's
  * colours and a scarf three times as long (`look: 'dream'`). All of that is only looks: the ride is the ride.
  */
 import type { LevelDef } from './types';
 import { extent, rampBox, type Box, type Decor } from '../world/layout';
 import type { CollectibleDef } from '../world/collectibles';
+import { dozerSolids, type DozerSpec } from '../world/dozers';
 
 /** The road: how wide (its picture is laid one rainbow to this width: `TILE.rainbowRoad` in chamber.ts), how thick, how steep. */
 export const ROAD = { wide: 7, deep: 1.2, slope: 0.42 } as const;
@@ -34,7 +38,7 @@ export const LENGTHS: ReadonlyArray<{ len: number; x: number; gap?: { wide: numb
   { len: 60, x: 0 },
 ];
 /** The pad at the top, the easing-out at the bottom, and the Moon: the landing. */
-export const HEAD = { half: 6, long: 10 } as const;
+export const HEAD = { half: 9, long: 10 } as const;
 /** The gate over the lip of the pad: how thick its posts are, how high the beam's underside is, how deep the beam. */
 export const GATE = { post: 1, tall: 5.2, beam: 1 } as const;
 export const RUNOUT = { len: 18, fall: 2.2 } as const;
@@ -46,7 +50,7 @@ export const WAY_PRIZES = ['way-cap-1', 'way-cap-2', 'way-cap-3'] as const;
 export const CAP_UP = 1.35;
 
 export interface WayLength { z0: number; z1: number; y0: number; y1: number; x: number }
-interface Plan { solids: Box[]; decor: Decor[]; collectibles: CollectibleDef[]; lengths: WayLength[]; headY: number; moon: { z0: number; z1: number } }
+interface Plan { solids: Box[]; decor: Decor[]; collectibles: CollectibleDef[]; dozers: DozerSpec[]; lengths: WayLength[]; headY: number; moon: { z0: number; z1: number } }
 let plan: Plan | null = null;
 
 function build(): Plan {
@@ -60,6 +64,10 @@ function build(): Plan {
   const lengths: WayLength[] = [];
   const road = (b: Box): Box => ({ ...b, skin: 'rainbowRoad' });
   const tiles = (b: Box): Box => ({ ...b, skin: 'pomoTiles' });
+  // (The kerbs are in the dream's STATIC: a fine busy noise of colour, some of whose dots wink. The owner, 2026-11-16:
+  // "some of the digital textures look kind of cool and also the little bit of blinking".)
+  const fuzz = (b: Box): Box => ({ ...b, skin: 'dreamStatic' });
+  const dozers: DozerSpec[] = [];
   const half = ROAD.wide / 2;
 
   // THE HEAD. (The owner, 2026-11-16, of the first one, a bare pad twice as wide as the road: "I can't really figure out
@@ -75,7 +83,17 @@ function build(): Plan {
     [-HEAD.half - 1, -HEAD.half, -HEAD.long, 0], [HEAD.half, HEAD.half + 1, -HEAD.long, 0],
     [-HEAD.half - 1, -half - GATE.post, 0, 1], [half + GATE.post, HEAD.half + 1, 0, 1],
   ];
-  for (const [x0, x1, z0, z1] of kerbs) solids.push(road(extent('stone', x0, x1, headY - ROAD.deep, headY + MOON.kerb, z0, z1)));
+  for (const [x0, x1, z0, z1] of kerbs) solids.push(fuzz(extent('stone', x0, x1, headY - ROAD.deep, headY + MOON.kerb, z0, z1)));
+  // The garden either side of the road: a bed of flowers with butterflies over it, and in the middle of each bed one
+  // of the waking world's terrors, fast asleep. (The owner: "butterflies and flowers would fit really good here and
+  // maybe ... some of the scarier ones ... wacky Pomo sort of psychedelic versions that are just kind of chilled out
+  // here and sleeping and hanging out".) Each sleeper is solid, and well off the road.
+  const bedX = (half + HEAD.half) / 2;
+  for (const s of [-1, 1]) {
+    decor.push({ kind: 'flowers', x: s * bedX, y: headY, z: -5.4, w: HEAD.half - half - 1.1, d: 7.4, seed: s < 0 ? 3 : 8 });
+    decor.push({ kind: 'butterflies', x: s * bedX, y: headY + 1.3, z: -5.4, r: 1.9, count: 3 });
+  }
+  dozers.push({ type: 'mantis', x: -bedX, y: headY, z: -6.2, facing: 0.9 }, { type: 'scorpion', x: bedX, y: headY, z: -6, facing: -1.1 });
   // The gate: a post either side of the road at the lip and a beam across their tops, all in the road's rainbow.
   for (const s of [-1, 1]) solids.push(road(extent('stone', s < 0 ? -half - GATE.post : half, s < 0 ? -half : half + GATE.post, headY - ROAD.deep, headY + GATE.tall, 0, 1)));
   solids.push(road(extent('stone', -half - GATE.post, half + GATE.post, headY + GATE.tall, headY + GATE.tall + GATE.beam, 0, 1)));
@@ -108,8 +126,22 @@ function build(): Plan {
   const moon = { z0: z, z1: z + MOON.long };
   solids.push(tiles(extent('stone', -MOON.half, MOON.half, -ROAD.deep, 0, moon.z0, moon.z1)));
   for (const [x0, x1, z0, z1] of [[-MOON.half, MOON.half, moon.z1, moon.z1 + 1], [-MOON.half - 1, -MOON.half, moon.z0 + MOON.long * 0.45, moon.z1 + 1], [MOON.half, MOON.half + 1, moon.z0 + MOON.long * 0.45, moon.z1 + 1]]) {
-    solids.push(road(extent('stone', x0, x1, -ROAD.deep, MOON.kerb, z0, z1)));
+    solids.push(fuzz(extent('stone', x0, x1, -ROAD.deep, MOON.kerb, z0, z1)));
   }
+  // The Moon's garden: beds down both sides of the landing, clear of the middle where he comes in at speed. A Stag
+  // Knight kneels asleep on its hammer in one; another stands about in the other, and a mantis by the way out.
+  for (const s of [-1, 1]) {
+    decor.push({ kind: 'flowers', x: s * 7.4, y: 0, z: moon.z0 + 14, w: 5.6, d: 14, seed: s < 0 ? 5 : 11 });
+    decor.push({ kind: 'butterflies', x: s * 7.4, y: 1.4, z: moon.z0 + 11, r: 2.4, count: 3 });
+    decor.push({ kind: 'butterflies', x: s * 7, y: 1.6, z: moon.z0 + 18, r: 2.2, count: 2 });
+  }
+  dozers.push(
+    { type: 'stag', x: -7.4, y: 0, z: moon.z0 + 12, facing: 1.2 },
+    { type: 'stag', x: 7.6, y: 0, z: moon.z0 + 16, facing: -1.5, awake: true },
+    { type: 'mantis', x: 6.4, y: 0, z: moon.z0 + 9, facing: -0.8, awake: true },
+    { type: 'scorpion', x: -6.8, y: 0, z: moon.z0 + 18.5, facing: 1.9 },
+  );
+  for (const dz of dozers) solids.push(...dozerSolids(dz));
 
   // Planets, hanging about the road: none nearer than he can ever get, each its own two colours. [x, y above the road there, z, r, colour, band, ring]
   const at = (zz: number): number => {
@@ -127,7 +159,7 @@ function build(): Plan {
   ];
   for (const [x, up, zz, r, color, band, ring, tilt] of planets) decor.push({ kind: 'planet', x, y: at(Math.min(zz, moon.z0)) + up, z: zz, r, color, band, ring: ring ? { out: ring[0], color: ring[1] } : undefined, tilt });
 
-  return { solids, decor, collectibles, lengths, headY, moon };
+  return { solids, decor, collectibles, dozers, lengths, headY, moon };
 }
 export function milkyWayPlan(): Plan {
   return (plan ??= build());
@@ -162,6 +194,7 @@ export function milkyWay(): LevelDef {
     collectibles: P.collectibles.map((c) => ({ ...c })),
     crateContents: [],
     enemies: [],
+    dozers: P.dozers.map((d) => ({ ...d })),
     waves: [],
     gear: [],
     goals: [],

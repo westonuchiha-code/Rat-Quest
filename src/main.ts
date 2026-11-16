@@ -55,6 +55,7 @@ import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { ShadowCuts } from './render/cutShadow';
+import { Dozer } from './world/dozers';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
 import { SkyDome } from './world/sky';
@@ -250,6 +251,7 @@ function startGame(): void {
   let dreamRat: RatModel | null = null;
   let dreaming = false;
   const sky = new SkyDome();
+  const dozers: Dozer[] = [];
   scene.add(sky.mesh);
   scene.add(rat.root);
 
@@ -328,6 +330,9 @@ function startGame(): void {
   const canFly = (x: number, y: number, z: number, r: number): boolean =>
     !chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.02 && b.min.y < y + 0.5);
   /** What Grimsqueak's body does in each part of the fight (each attack's tell has its own shape). */
+  /** How big one of the Widow's young is, of the Broodmother's size. */
+  const HATCHLING_SIZE = 0.26;
+  const ORIGIN = new THREE.Vector3();
   const GRIM_GESTURE: Record<GrimState, GrimGesture> = {
     idle: 'rest', float: 'rest', volley: 'cast', swoopWind: 'rear', swoop: 'sweep', slamWind: 'raise', slamFall: 'smash', orbWind: 'conjure', orbWait: 'rest',
     bat: 'point', stormWind: 'cast', storm: 'cast', summon: 'rest', heal: 'rest', spent: 'slump', stunned: 'slump', repel: 'rage', rage: 'rage', dead: 'slump',
@@ -566,6 +571,29 @@ function startGame(): void {
         tick: (dt, e) => m.update(dt, { state: e.state as ToadState, stateTime: e.stateTime, moving: e.state === 'return', hopY: (e as Toad).hopY }),
       });
       scene.add(m.root);
+    } else if (spec.look === 'hatchling') {
+      // One of the Widow's young: a roach in all it does, drawn as a small spider (the Broodmother's shape, a
+      // quarter her size, in the Widow's dark colours).
+      // (The model sets its own size as it moves: so it stands in a holder that is made small, and is placed in that.)
+      const m = new BroodModel();
+      const holder = new THREE.Group();
+      holder.scale.setScalar(HATCHLING_SIZE);
+      holder.add(m.root);
+      enemies.push(new Scuttler(spec));
+      enemyModels.push({
+        root: holder,
+        setTransform: (p, f) => {
+          holder.position.copy(p);
+          m.setTransform(ORIGIN, f);
+        },
+        flash: () => m.flash(),
+        tick: (dt, e) => {
+          const st = e.state as ScuttlerState;
+          const going = st === 'chase' || st === 'return' || st === 'lunge';
+          m.update(dt, { state: st === 'dead' ? 'dead' : st === 'windup' ? 'stabWind' : st === 'lunge' ? 'stab' : going ? 'chase' : 'idle', stateTime: e.stateTime, walking: going ? 2.5 : 0, arm: 0, windTime: 0.4, stabAt: 2, air: 0, raging: false } as never);
+        },
+      });
+      scene.add(holder);
     } else {
       const m = new ScuttlerModel();
       enemies.push(new Scuttler(spec));
@@ -728,6 +756,16 @@ function startGame(): void {
         // and her jaws shutting on the floor; a cry when she is thrown down, a yelp when struck, a sharper one for
         // her head.
         const loud = Math.max(0.6, v);
+        // (Two of them in a room: the second has a DEEPER voice, every sound of hers, so the ear knows which one is
+        // pulling a leg up when she is behind the camera. The floor shows it too: a pointer from the ring to her.)
+        const pack = enemies.filter((o): o is Widow => o instanceof Widow);
+        const deep = pack.indexOf(e) > 0;
+        if (deep) {
+          const sounds: Record<string, Parameters<typeof audio.play>[0]> = { slamWind: 'widowRear', sweepWind: 'widowRear', biteWind: 'widowRear', stabWind: 'widowRear' };
+          if (sounds[ev]) audio.play(sounds[ev], { vol: loud * 0.9, rate: (0.8 / Math.max(0.3, e.windTime)) * 0.62, priority: 8 });
+        }
+        if (ev === 'rage') for (const at of e.young.splice(0)) addEnemy({ type: 'scuttler', look: 'hatchling', x: at.x, z: at.z, y: e.floorY, hunt: true, uncounted: true, respawn: false });
+        if (deep && (ev === 'slamWind' || ev === 'sweepWind' || ev === 'biteWind' || ev === 'stabWind')) continue;
         if (ev === 'wake' || ev === 'rage') {
           audio.play('widowScream', { vol: loud, rate: ev === 'rage' ? 0.85 : 1, priority: 9 });
           audio.play('rumble', { vol: loud * 0.7, rate: 1.1, priority: 6 });
@@ -1594,6 +1632,13 @@ function startGame(): void {
     braziers = def.decor.filter((d) => d.kind === 'brazier').map((d) => ({ x: d.x, y: d.y + 0.8, z: d.z }));
     motes.setTheme(def.motes ?? def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
     sky.show(def.sky);
+    // The dream's creatures: made for the place, thrown away when he leaves it.
+    for (const dz of dozers.splice(0)) dz.dispose();
+    for (const spec of def.dozers ?? []) {
+      const dz = new Dozer(spec);
+      scene.add(dz.root);
+      dozers.push(dz);
+    }
     // (The dream: he wears its colours and a scarf three times as long. Only looks.)
     if ((def.look === 'dream') !== dreaming) {
       dreaming = def.look === 'dream';
@@ -3812,6 +3857,10 @@ function startGame(): void {
       // (Its shadow is cut where its ground ends, as the knight's is: render/cutShadow.ts.)
       shadowCuts.cut(root, chamber.colliders);
     });
+    for (const dz of dozers) {
+      dz.update(animDt);
+      shadowCuts.cut(dz.root, chamber.colliders);
+    }
     for (const n of npcs) {
       n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);
       shadowCuts.cut(n.root, chamber.colliders);

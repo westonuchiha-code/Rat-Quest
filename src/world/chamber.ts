@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS, lyingOn } from '../render/ps1Material';
 import { asDecal } from '../render/layering';
-import { getTexture, TextureName } from '../render/textures';
+import { getTexture, TextureName , blinkTextures } from '../render/textures';
 import { JET_SPEED, gasAt, gasWidth } from './gusts';
 import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
@@ -97,7 +97,7 @@ const TILE: Partial<Record<TextureName, number>> = {
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
   caveRock: 4, caveFloor: 4, iceBrick: 2.5, iceSheet: 5,
   // (The dream's road: one rainbow across its whole width. `ROAD.wide` in levels/milkyway.ts is this.)
-  rainbowRoad: 7, pomoTiles: 4,
+  rainbowRoad: 7, pomoTiles: 4, dreamStatic: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
 };
 const MOSS = 0xc8f0a8; // tops of platforms pick up a green tint
@@ -236,6 +236,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const skyMatBoth = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide });
   /** Things that turn slowly on their own (radians a second). */
   const spinners: Array<{ o: THREE.Object3D; rate: number }> = [];
+  /** Flowers that nod, and butterflies: moved by the room's clock. */
+  const nodders: Array<{ o: THREE.Object3D; phase: number; lean: number }> = [];
+  const flutterers: Array<{ o: THREE.Group; wings: THREE.Object3D[]; cx: number; cy: number; cz: number; r: number; phase: number; rate: number }> = [];
+  // (The game's own material, unlit: a plain three.js one comes out pale here, its colours brightened twice.)
+  let petalMat: THREE.ShaderMaterial | null = null;
   /** Cloth seen from both sides (banners). */
   const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
   // Falling and gushing sludge scroll their own texture, fast.
@@ -1051,6 +1056,85 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       }
       group.add(globe);
       spinners.push({ o: body, rate: 0.05 + 0.03 * ((d.x * 7 + d.z * 3) % 5) / 5 });
+    } else if (d.kind === 'flowers') {
+      // A bed of flowers. The turf lies on the floor (painted on after it, as a rug is); each flower is a thin green
+      // stem with one leaf and a flat five-petalled head tipped toward the sky, a dot in its middle. They nod.
+      const rnd = ((): (() => number) => {
+        let a = (d.seed ?? 1) * 9301 + Math.floor(d.x * 31 + d.z * 17) + 49297;
+        return () => ((a = (a * 233280 + 49297) % 2147483647) / 2147483647);
+      })();
+      const turf = new THREE.PlaneGeometry(d.w, d.d, 1, 1);
+      turf.rotateX(-Math.PI / 2);
+      bakeVertexColor(turf, 0x2fa84a, false);
+      const pm = (petalMat ??= createPs1Material({ side: THREE.DoubleSide }));
+      const lawn = addMesh(turf, pm, d.x, d.y + 0.02, d.z);
+      asDecal(lawn, 1);
+      const LOUD = [0xff5ab4, 0xffe84a, 0x3ad8ff, 0xffffff, 0xff8a2a, 0xbfa0ff, 0xff3a5a];
+      const n = Math.max(6, Math.round(d.w * d.d * 2.6));
+      for (let i = 0; i < n; i++) {
+        const fx = d.x + (rnd() - 0.5) * (d.w - 0.3);
+        const fz = d.z + (rnd() - 0.5) * (d.d - 0.3);
+        const tall = 0.28 + rnd() * 0.3;
+        const col = LOUD[Math.floor(rnd() * LOUD.length)];
+        const heart = col === 0xffe84a ? 0xff8a2a : 0xffe84a;
+        const flower = new THREE.Group();
+        flower.position.set(fx, d.y + 0.02, fz);
+        flower.rotation.y = rnd() * Math.PI * 2;
+        const stem = new THREE.BoxGeometry(0.025, tall, 0.025);
+        stem.translate(0, tall / 2, 0);
+        bakeVertexColor(stem, 0x1f8a3a, false);
+        flower.add(new THREE.Mesh(stem, pm));
+        const leaf = new THREE.ConeGeometry(0.05, 0.16, 3);
+        leaf.rotateZ(-1.1);
+        leaf.translate(0.08, tall * 0.42, 0);
+        bakeVertexColor(leaf, 0x3ac85a, false);
+        flower.add(new THREE.Mesh(leaf, pm));
+        const head = new THREE.Group();
+        head.position.y = tall;
+        head.rotation.x = -0.5;
+        const R = 0.085 + rnd() * 0.04;
+        const petals = new THREE.CircleGeometry(R, 5);
+        bakeVertexColor(petals, col, false);
+        // (Its middle is a darker shade of itself, so the five petals show.)
+        const pc = petals.attributes.color as THREE.BufferAttribute;
+        const dark = new THREE.Color(col).multiplyScalar(0.72);
+        pc.setXYZ(0, dark.r, dark.g, dark.b);
+        const eye = new THREE.CircleGeometry(R * 0.36, 5);
+        eye.translate(0, 0, 0.004);
+        bakeVertexColor(eye, heart, false);
+        head.add(new THREE.Mesh(petals, pm), new THREE.Mesh(eye, pm));
+        // (A flower's face is to the sky and a little toward wherever it leans.)
+        head.rotateX(-Math.PI / 2 + 0.5);
+        flower.add(head);
+        group.add(flower);
+        nodders.push({ o: flower, phase: rnd() * 6.3, lean: 0.06 + rnd() * 0.07 });
+      }
+    } else if (d.kind === 'butterflies') {
+      // Butterflies: two wings each, a pair of colours of its own, wandering about the place and never still.
+      const pm = (petalMat ??= createPs1Material({ side: THREE.DoubleSide }));
+      const PAIRS: Array<[number, number]> = [[0xff5ab4, 0xffe84a], [0x3ad8ff, 0xffffff], [0xbfa0ff, 0xff5ab4], [0xffe84a, 0xff8a2a], [0x5aff8a, 0x3ad8ff]];
+      for (let i = 0; i < d.count; i++) {
+        const [a, b] = PAIRS[(i + Math.floor(Math.abs(d.x * 3 + d.z))) % PAIRS.length];
+        const fly = new THREE.Group();
+        const wings: THREE.Object3D[] = [];
+        for (const side of [-1, 1]) {
+          const wing = new THREE.BufferGeometry();
+          // (A wing: a big upper part and a small lower one, hinged along the body.)
+          wing.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, 0, 0.07, side * 0.13, 0, 0.11, side * 0.1, 0, -0.01, 0, 0, 0.07, side * 0.1, 0, -0.01, 0, 0, -0.06, 0, 0, -0.06, side * 0.1, 0, -0.01, side * 0.07, 0, -0.1]), 3));
+          const ca = new THREE.Color(a);
+          const cb = new THREE.Color(b);
+          wing.setAttribute('color', new THREE.BufferAttribute(new Float32Array([ca, cb, ca, ca, ca, cb, cb, ca, cb].flatMap((q) => [q.r, q.g, q.b])), 3));
+          wing.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(18), 2));
+          const m = new THREE.Mesh(wing, pm);
+          fly.add(m);
+          wings.push(m);
+        }
+        const body = new THREE.BoxGeometry(0.018, 0.018, 0.15);
+        bakeVertexColor(body, 0x1a1420, false);
+        fly.add(new THREE.Mesh(body, pm));
+        group.add(fly);
+        flutterers.push({ o: fly, wings, cx: d.x, cy: d.y, cz: d.z, r: d.r, phase: i * 2.4 + d.x, rate: 0.5 + 0.25 * ((i * 37) % 5) / 5 });
+      }
     } else if (d.kind === 'crystal') {
       // A few long four-sided crystals leaning out from one root, glowing in their colour.
       const c = new THREE.Color(d.color);
@@ -1872,6 +1956,20 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
 
   const update = (time: number): void => {
     for (const sp of spinners) sp.o.rotation.y = time * sp.rate;
+    blinkTextures(time);
+    for (const n of nodders) n.o.rotation.z = n.lean * Math.sin(time * 1.3 + n.phase);
+    for (const f of flutterers) {
+      // (Round and about: two slow circles of different sizes laid over each other, and up and down as it goes.)
+      const a = time * f.rate + f.phase;
+      const x = f.cx + (Math.cos(a) * 0.65 + Math.cos(a * 2.3 + 1) * 0.35) * f.r;
+      const z = f.cz + (Math.sin(a * 1.1) * 0.65 + Math.sin(a * 1.9 + 2) * 0.35) * f.r;
+      const y = f.cy + 0.25 * Math.sin(a * 3.1) + 0.12 * Math.sin(time * 9 + f.phase);
+      f.o.rotation.y = Math.atan2(x - f.o.position.x, z - f.o.position.z);
+      f.o.position.set(x, y, z);
+      const flap = 0.2 + 1.05 * Math.abs(Math.sin(time * 11 + f.phase));
+      f.wings[0].rotation.z = -flap;
+      f.wings[1].rotation.z = flap;
+    }
     const dt = lastTime < 0 ? 0 : Math.min(0.1, Math.max(0, time - lastTime));
     lastTime = time;
     stepFalling(dt);

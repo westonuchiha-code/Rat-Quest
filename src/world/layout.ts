@@ -284,6 +284,13 @@ export type Decor =
    * A planet hanging in the sky (the dream): a ball `r` across its middle, in bands of its two colours, lit of itself.
    * `ring`: a flat ring round it, this many times its radius out, in this colour; `tilt`: how far it leans.
    */
+  /**
+   * A bed of flowers: a patch of turf `w` by `d` lying on the floor at (x, y, z), flowers standing in it (their
+   * colours loud, no two beds alike: `seed`). Drawn only: he walks through them, as through grass.
+   */
+  | { kind: 'flowers'; x: number; y: number; z: number; w: number; d: number; seed?: number }
+  /** Butterflies about a place: `count` of them, keeping within `r` of (x, y, z), each its own colours. Drawn only. */
+  | { kind: 'butterflies'; x: number; y: number; z: number; r: number; count: number }
   | { kind: 'planet'; x: number; y: number; z: number; r: number; color: number; band: number; ring?: { out: number; color: number }; tilt?: number }
   /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
   /** `cap`: its cap's radius, `stem`: its stem's radius at the ground (each by its height if not given: see MUSHROOM). */

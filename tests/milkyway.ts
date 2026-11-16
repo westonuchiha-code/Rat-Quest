@@ -16,7 +16,8 @@ import { garden, GARDEN } from '../src/levels/garden';
 import { LEVELS, ARCHIVE, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { STREAMER, RatModel, DREAM_LOOK } from '../src/player/ratModel';
 import { MOTES } from '../src/world/motes';
-import { getTexturePixels } from '../src/render/textures';
+import { getTexturePixels, getTexture, blinkTextures } from '../src/render/textures';
+import { Dozer, DOZER, dreamColour } from '../src/world/dozers';
 import { TUNING } from '../src/data/tuning';
 import { standsOn } from '../src/enemies/footing';
 
@@ -266,6 +267,82 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   check('it flies BEHIND him and never hangs: its end is behind his neck, and no point of it comes down near the floor', behind < -0.5 && low > 0.45, `end ${(-behind).toFixed(2)} behind; lowest point ${low.toFixed(2)} up`);
   check('it flutters: no two looks at it a fifth of a second apart find it the same shape; and it is cloth, not elastic (no length of it stretches)', new Set(shapes).size === shapes.length && stretched < 1e-6, `${shapes.length} looks, ${new Set(shapes).size} shapes`);
   check('when he turns it is left behind for a moment (it is in the room, not stuck to his back) and then streams out behind him the new way', lag < 0.6 && round > 0.5, `moved ${lag.toFixed(2)} in the first frame of the turn; then ${round.toFixed(2)} behind him the other way`);
+}
+
+// ---------------------------------------------------------------- the second pass: static, flowers, butterflies, sleepers
+{
+  const def = milkyWay();
+  const P = milkyWayPlan();
+  const half = ROAD.wide / 2;
+  const fuzz = def.solids.filter((b) => b.skin === 'dreamStatic');
+  check('its kerbs are in the dream\'s STATIC, every one of them, and nothing he rides on is', fuzz.length >= 8 && fuzz.every((b) => b.y1 - Math.max(b.y0, b.y1 - MOON.kerb - ROAD.deep) > 2) && !def.solids.some((b) => b.skin === 'dreamStatic' && b.ramp));
+  // The static: many colours, mostly dark, and it WINKS.
+  const px = getTexturePixels('dreamStatic');
+  const cols = new Set<number>();
+  let bright = 0;
+  for (let i = 0; i < px.data.length; i += 4) {
+    cols.add((px.data[i] << 16) | (px.data[i + 1] << 8) | px.data[i + 2]);
+    if (px.data[i] + px.data[i + 1] + px.data[i + 2] > 380) bright++;
+  }
+  check('the static is a busy noise of many colours, mostly dark, a bright dot here and there', cols.size >= 10 && bright / (px.data.length / 4) > 0.03 && bright / (px.data.length / 4) < 0.2, `${cols.size} colours, ${((bright / (px.data.length / 4)) * 100).toFixed(0)}% bright`);
+  const tex = getTexture('dreamStatic');
+  const before = Uint8Array.from(tex.image.data as Uint8Array);
+  blinkTextures(1);
+  const first = Uint8Array.from(tex.image.data as Uint8Array);
+  blinkTextures(1.02);
+  const tooSoon = (tex.image.data as Uint8Array).every((v, i) => v === first[i]);
+  blinkTextures(2);
+  blinkTextures(3);
+  const diff = (a: Uint8Array, b: Uint8Array): number => {
+    let n = 0;
+    for (let i = 0; i < a.length; i += 4) if (a[i] !== b[i] || a[i + 1] !== b[i + 1] || a[i + 2] !== b[i + 2]) n++;
+    return n;
+  };
+  const now = Uint8Array.from(tex.image.data as Uint8Array);
+  check('it WINKS: a few dozen of its dots change a few times a second, and the ones that changed before go back (it never fills up with bright)', diff(before, first) > 10 && diff(before, first) <= 46 && tooSoon && diff(before, now) <= 46 && diff(first, now) > 10, `${diff(before, first)} dots changed; after three winks ${diff(before, now)} differ from the first picture`);
+
+  const beds = def.decor.filter((d) => d.kind === 'flowers') as Array<Extract<(typeof def.decor)[number], { kind: 'flowers' }>>;
+  const flies = def.decor.filter((d) => d.kind === 'butterflies') as Array<Extract<(typeof def.decor)[number], { kind: 'butterflies' }>>;
+  const cs = def.solids.map(aabbOf);
+  const onFloor = beds.every((b) => [[-1, -1], [1, -1], [-1, 1], [1, 1]].every(([sx, sz]) => standsOn(cs, b.x + sx * (b.w / 2 - 0.1), b.y, b.z + sz * (b.d / 2 - 0.1), 0.05)));
+  check('there are beds of flowers either side of the head pad and down both sides of the Moon: each lies wholly on floor, and none is on the road', beds.length === 4 && onFloor && beds.every((b) => Math.abs(b.x) - b.w / 2 >= half - 1e-6), beds.map((b) => `${b.x.toFixed(1)},${b.z.toFixed(0)}`).join(' '));
+  check('butterflies fly over every bed, well clear of the floor', flies.length >= 4 && beds.every((b) => flies.some((f) => Math.abs(f.x - b.x) < b.w && Math.abs(f.z - b.z) < b.d)) && flies.every((f) => f.count >= 2 && f.y - 0.5 > (Math.abs(f.z) < 20 ? P.headY : 0)));
+
+  const dz = def.dozers ?? [];
+  const kinds = new Set(dz.map((d) => d.type));
+  check('the waking world\'s terrors are here: a mantis, a scorpion and a Stag Knight, some asleep and some standing about', dz.length >= 5 && kinds.has('mantis') && kinds.has('scorpion') && kinds.has('stag') && dz.some((d) => !d.awake) && dz.some((d) => d.awake), dz.map((d) => `${d.type}${d.awake ? ' (awake)' : ''}`).join(', '));
+  check('none of them is a creature of the fight: the level has no enemies at all, and nothing here can hurt him', def.enemies.length === 0);
+  const solidOf = (d: (typeof dz)[number]): boolean => def.solids.some((b) => b.hidden && Math.abs((b.x0 + b.x1) / 2 - d.x) < 1e-6 && Math.abs((b.z0 + b.z1) / 2 - d.z) < 1e-6 && Math.abs(b.y0 - d.y) < 1e-6 && Math.abs(b.y1 - b.y0 - DOZER[d.type].tall) < 1e-6 && Math.abs((b.x1 - b.x0) / 2 - DOZER[d.type].half) < 1e-6);
+  check('each is SOLID where it is drawn, stands on floor, and is well off the road (a rider down the middle meets none of them)', dz.every(solidOf) && dz.every((d) => standsOn(def.solids.filter((b) => !b.hidden).map(aabbOf), d.x, d.y, d.z, 0.3)) && dz.every((d) => Math.abs(d.x) - DOZER[d.type].half > half + 1.4), dz.map((d) => (Math.abs(d.x) - DOZER[d.type].half - half).toFixed(1)).join(' '));
+  check('and each is in a bed of flowers', dz.every((d) => beds.some((b) => Math.abs(d.x - b.x) < b.w / 2 && Math.abs(d.z - b.z) < b.d / 2)));
+  // A dozer's colours are loud, and it is put together without a page to draw on.
+  const c = new THREE.Color();
+  const dull = [[0.1, 0.12, 0.14], [0.4, 0.3, 0.2], [0.5, 0.5, 0.5], [0.9, 0.9, 0.9], [0.05, 0.3, 0.1]].filter(([r, g, b]) => {
+    dreamColour(r, g, b, 0.42, c);
+    const hsl = { h: 0, s: 0, l: 0 };
+    c.getHSL(hsl);
+    return hsl.s < 0.75 || hsl.l < 0.4 || hsl.l > 0.75;
+  });
+  check('the dream\'s colours are LOUD: any colour at all, dark, dull or grey, comes out full of colour and never dark', dull.length === 0);
+  let made = 0;
+  for (const d of dz) {
+    const one = new Dozer(d);
+    for (let i = 0; i < 30; i++) one.update(1 / 30);
+    let meshes = 0;
+    one.root.traverse((o) => { if ((o as THREE.Mesh).isMesh) meshes++; });
+    if (meshes > 10 && one.root.children.filter((o) => (o as THREE.Sprite).isSprite).length === (d.awake ? 0 : 3)) made++;
+  }
+  check('each is made from the creature\'s own model; the sleepers have their three Z\'s and the wakers none', made === dz.length, `${made} of ${dz.length}`);
+  let built = true;
+  try {
+    const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
+    ch.update(0.5);
+    ch.update(0.6);
+  } catch (e) {
+    built = false;
+    console.log(String(e));
+  }
+  check('the place builds with all of it, and its clock runs (flowers nod, butterflies fly, the static winks)', built);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

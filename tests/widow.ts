@@ -527,5 +527,56 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   check('...and all of what she does was seen in that time', ['slamWind', 'slam', 'slamStuck', 'sweep', 'sweepEnd', 'stabWind', 'stabStuck', 'idle'].every((s) => (count[s] ?? 0) > 0), Object.keys(count).join());
 }
 
+// ---------------------------------------------------------------- her young, and the pointer to an unseen sister
+{
+  // Angry, her young come out of the dark. (The owner: "have her send out baby spiders that make you have to keep
+  // moving around".)
+  const w = widow();
+  const p = ratAt(0, 6);
+  let guard = 0;
+  while (w.young.length === 0 && w.alive && guard++ < 4000) {
+    w.update(DT, p.position.x, p.position.y, p.position.z, true);
+    w.events.length = 0;
+    if (w.hp > w.maxHp * WIDOW.rageAt - 1) w.takeHit(1, p.position.x, p.position.z, 'sword', 0);
+  }
+  const young = [...w.young];
+  const f = w.field;
+  const out = young.map((y) => Math.hypot(y.x - f.x, y.z - f.z));
+  const toHer = young.map((y) => Math.abs(Math.atan2(Math.sin(Math.atan2(y.x - f.x, y.z - f.z) - w.theta), Math.cos(Math.atan2(y.x - f.x, y.z - f.z) - w.theta))));
+  check('turned angry, she sends out her young: two of them, once', young.length === WIDOW.young && young.length === 2 && w.alive, `${young.length} at ${w.hp} of ${w.maxHp}`);
+  check('they come out at the edge of the light, on the lit floor, one either side of her', out.every((d) => d < f.r && d > f.r - 2) && toHer.every((a) => a > 0.3 && a < 1) && Math.hypot(young[0].x - young[1].x, young[0].z - young[1].z) > 3, out.map((d) => (f.r - d).toFixed(1)).join(' '));
+  w.young.length = 0;
+  for (let i = 0; i < 1200; i++) {
+    w.update(DT, p.position.x, p.position.y, p.position.z, true);
+    w.events.length = 0;
+  }
+  check('and no more after that', w.young.length === 0);
+  check('in the level each of the two Widows has young of her own to send: they count toward nothing (the goal is the Widows)', pair.length === 2 && def.goals.length === 1 && def.goals[0].type === 'defeat');
+
+  // The pointer: while a ring is on the floor a wedge runs from its edge toward HER.
+  const v = widow();
+  // (He stands on her side of the floor, where her legs reach: the far half is her sister's.)
+  const q = ratAt(Math.sign(spec.x - A.x) * 6, 0);
+  const model = new WidowModel();
+  let shown: { strip: THREE.Mesh; ring: THREE.Mesh } | null = null;
+  for (let i = 0; i < 2400 && !shown; i++) {
+    v.update(DT, q.position.x, q.position.y, q.position.z, true);
+    v.events.length = 0;
+    model.update(DT, v);
+    const m = model as unknown as { strip: THREE.Mesh; ring: THREE.Mesh };
+    if (m.ring.visible && m.strip.visible) shown = m;
+  }
+  const ok = !!shown && ((): boolean => {
+    const { strip, ring } = shown!;
+    // Its point: a unit along its own +z, turned and stretched.
+    const tip = new THREE.Vector3(0, 0, 1).multiply(strip.scale).applyEuler(strip.rotation).add(strip.position);
+    const toHerNow = Math.hypot(v.px - ring.position.x, v.pz - ring.position.z);
+    const tipToHer = Math.hypot(v.px - tip.x, v.pz - tip.z);
+    const baseOut = Math.hypot(strip.position.x - ring.position.x, strip.position.z - ring.position.z);
+    return tipToHer < toHerNow - 1 && Math.abs(baseOut - ring.scale.x) < 0.05 && Math.abs(strip.position.y - ring.position.y) < 1e-6;
+  })();
+  check('before a blow a POINTER lies on the floor with the ring: from the ring\'s edge toward her, so a blow from the one behind the camera says which side it comes from', ok);
+}
+
 console.log(failures === 0 ? 'widow: all passed' : `widow: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

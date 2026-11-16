@@ -597,11 +597,21 @@ export class RatModel {
     snoutGeo.scale(1, 0.85, 1);
     const snout = mesh(snoutGeo, (_x, y) => (y < -0.01 ? C.cream : C.fur), 0, headY - 0.05, 0.245);
     snout.rotation.x = 0.12;
+    // His two front teeth. (The owner, 2026-11-16: "we need to fix the knights teeth like we did with grimsqueak".
+    // They were two white balls hung a hair UNDER his snout, touching nothing.) Each is a small rat's incisor now,
+    // tapering to a chisel end, ROOTED in the underside of his snout near its tip: they are parts of the snout.
+    for (const s of [-1, 1]) {
+      const geo = new THREE.CylinderGeometry(0.0135, 0.009, 0.052, 4, 1);
+      geo.rotateY(Math.PI / 4);
+      geo.scale(1, 1, 0.62);
+      geo.translate(0, -0.026, 0);
+      const tooth = mesh(geo, C.white, s * 0.0135, -0.008, 0.058);
+      tooth.rotation.set(0.16, 0, s * -0.06);
+      snout.add(tooth);
+    }
     this.head.add(
       snout,
       ball(0.03, C.pinkDark, 0, headY - 0.062, 0.355, 1, 0.9, 1, 5, 4),
-      ball(0.018, C.white, -0.014, headY - 0.118, 0.31, 1, 1.4, 0.7, 4, 3), // front teeth
-      ball(0.018, C.white, 0.014, headY - 0.118, 0.31, 1, 1.4, 0.7, 4, 3),
       ball(0.033, C.eye, -0.087, headY + 0.035, 0.172, 1, 1.15, 0.7, 6, 5),
       ball(0.033, C.eye, 0.087, headY + 0.035, 0.172, 1, 1.15, 0.7, 6, 5),
       ball(0.011, C.white, -0.078, headY + 0.05, 0.197, 1, 1, 1, 4, 3),

@@ -298,10 +298,14 @@ export class WidowModel {
     }
 
     // ---- What she marks on the floor before a blow: the line a slam comes down on; the place of a bite or a stab. ----
-    const stripGeo = new THREE.PlaneGeometry(1, 1);
-    stripGeo.rotateX(-Math.PI / 2);
-    stripGeo.translate(0, 0, 0.5);
+    // (The strip is a POINTER: a long thin wedge on the floor from the ring's edge toward HER, wide at the ring and
+    // running to a point. With two of them in the room one is always behind the camera, and a ring alone does not
+    // say which side its blow is coming from. Built along +z, a unit long, its wide end at the origin.)
+    const stripGeo = new THREE.BufferGeometry();
+    stripGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-0.5, 0, 0, 0.5, 0, 0, 0, 0, 1]), 3));
+    stripGeo.setIndex([0, 2, 1]);
     this.strip = new THREE.Mesh(stripGeo, this.markMat);
+    this.strip.frustumCulled = false;
     const ringGeo = new THREE.RingGeometry(0.84, 1, 28);
     ringGeo.rotateX(-Math.PI / 2);
     this.ring = new THREE.Mesh(ringGeo, this.markMat);
@@ -514,6 +518,17 @@ export class WidowModel {
       this.ring.scale.set(r, 1, r);
       const committed = t > w.windTime * (s === 'biteWind' ? W.biteTrack : s === 'slamWind' ? W.slamTrack : W.stabTrack);
       this.markMat.opacity = committed ? 0.5 + 0.35 * beat : 0.28;
+      // The pointer: from the ring's edge toward where she is, as long as the ring is wide and more.
+      const dx = w.px - w.spot.x;
+      const dz = w.pz - w.spot.z;
+      const far = Math.hypot(dx, dz);
+      this.strip.visible = far > r + 0.6;
+      if (this.strip.visible) {
+        const a = Math.atan2(dx, dz);
+        this.strip.position.set(w.spot.x + Math.sin(a) * r, floor + 0.05, w.spot.z + Math.cos(a) * r);
+        this.strip.rotation.y = a;
+        this.strip.scale.set(r * 0.7, 1, Math.min(far - r, 3.2));
+      }
     }
 
     // ---- Struck: a flash over all of her ----

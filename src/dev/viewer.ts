@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { getTexture } from '../render/textures';
 import { makePuppet, PUPPET_FOES } from '../cutscene/stage';
 import { Npc } from '../npc/npc';
+import { Dozer } from '../world/dozers';
 import { GrimsqueakModel, type GrimSpell } from '../npc/grimsqueakModel';
 import { BatModel } from '../enemies/batModel';
 import { HornetModel } from '../enemies/hornetModel';
@@ -185,6 +186,23 @@ export function runViewer(canvas: HTMLCanvasElement): void {
       scene.add(m.root);
       if (type === 'hornet') m.root.position.y = 0.9;
     }
+  } else if (who === 'hatchling') {
+    // One of the Widow's young (a roach in what it does, a small spider to look at): #view&who=hatchling&state=chase
+    const m = new BroodModel();
+    const holder = new THREE.Group();
+    holder.scale.setScalar(0.26);
+    holder.add(m.root);
+    scene.add(holder);
+    const state = q.get('state') ?? 'idle';
+    for (let time = 0; time <= Math.max(t, 0.6) + 1e-6; time += dt) {
+      m.setTransform(origin, 0);
+      m.update(dt, { state, stateTime: time, walking: state === 'chase' ? 2.5 : 0, arm: 0, windTime: 0.4, stabAt: 2, air: 0, raging: false } as never);
+    }
+  } else if (who === 'dozer') {
+    // One of the dream's creatures: #view&who=dozer&type=mantis (&awake=1)
+    const dz = new Dozer({ type: (q.get('type') ?? 'mantis') as 'mantis', x: 0, y: 0, z: 0, facing: 0, awake: q.get('awake') === '1' }, q.get('pose') ?? undefined);
+    scene.add(dz.root);
+    for (let time = 0; time <= Math.max(t, 1) + 1e-6; time += dt) dz.update(dt);
   } else if (who === 'grim') {
     // Lord Grimsqueak casting: #view&who=grim&spell=fireball&st=0.8 (st: how many seconds into the spell)
     const g = new GrimsqueakModel();

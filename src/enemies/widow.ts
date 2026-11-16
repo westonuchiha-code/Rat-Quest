@@ -50,6 +50,9 @@ export const WIDOW = {
   hp: 32,
   radius: 3.2, // her head
   rageAt: 0.5,
+  /** Her young: how many come out of the dark beside her when she turns angry, and how far in from the edge of the light they start. */
+  young: 2,
+  youngIn: 1.2,
   rise: 1.9, // she wakes: this long before the first blow can start
   wait: [0.7, 1.2] as [number, number],
   waitRage: [0.35, 0.6] as [number, number],
@@ -189,6 +192,8 @@ export class Widow {
     for (let i = PACK.length - 1; i >= 0; i--) if (!this.shares(PACK[i]) || Math.abs(wrap(PACK[i].theta - this.theta)) < 0.01) PACK.splice(i, 1);
     PACK.push(this);
   }
+  /** Where her young have just come out of the dark; the game makes one at each and empties the list. */
+  young: Array<{ x: number; z: number }> = [];
   private shares(o: Widow): boolean {
     return o.field.x === this.field.x && o.field.z === this.field.z && o.field.r === this.field.r;
   }
@@ -346,6 +351,12 @@ export class Widow {
     if (!this.raging && this.hp <= this.maxHp * WIDOW.rageAt) {
       this.raging = true;
       this.events.push('rage');
+      // Her young come out of the dark, one from either side of her, to keep him moving. (The owner, 2026-11-16: "have
+      // her send out baby spiders that make you have to keep moving around".) The game makes one at each place.
+      for (let i = 0; i < WIDOW.young; i++) {
+        const a = this.theta + (i % 2 ? 1 : -1) * (0.5 + 0.22 * Math.floor(i / 2));
+        this.young.push({ x: this.field.x + Math.sin(a) * (this.field.r - WIDOW.youngIn), z: this.field.z + Math.cos(a) * (this.field.r - WIDOW.youngIn) });
+      }
     }
     return false;
   }

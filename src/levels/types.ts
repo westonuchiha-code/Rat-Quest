@@ -2,6 +2,7 @@
  * A level is plain data: the room, what is in it, and what he has to do to open the exit.
  * Nothing here touches three.js, so tests can check every level in node.
  */
+import type { DozerSpec } from '../world/dozers';
 import type { Box, Decor, FireVolume, GateSpec, LavaVolume, MoverSpec, PipeSpec, WaterVolume } from '../world/layout';
 import type { NpcSpec } from '../npc/npc';
 import type { CollectibleDef, CollectibleKind } from '../world/collectibles';
@@ -46,6 +47,8 @@ export interface EnemySpec {
    * coloured one flies, bombs and burns as any other does.
    */
   color?: number;
+  /** A roach in all it does, but drawn as one of the Widow's young: a small spider. Only looks. */
+  look?: 'hatchling';
   /** A bat: what it hangs from (drawn above its roost). Default rock. */
   perch?: 'rock' | 'chain';
   /**
@@ -96,6 +99,8 @@ export interface LevelDef {
   motes?: 'ice' | 'foundry' | 'cave' | 'keep' | 'sewer' | 'stars';
   /** Open sky instead of a roof: 'space' is a dome of stars all round, however far he looks. (The dream.) */
   sky?: 'space';
+  /** The dream's creatures: frightening ones from elsewhere, in loud colours, asleep or standing about (world/dozers.ts). Each is solid: its box is in `solids`. */
+  dozers?: DozerSpec[];
   /**
    * A place with no floor under it (a road in the sky): fallen this far below the last ground he stood on, he is put
    * back on that ground, a heart the poorer. (As `fallBack` does for a level whose floor is at zero.)

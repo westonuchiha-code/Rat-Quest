@@ -23,7 +23,8 @@ const box = (t: Piece['t'], x0: number, z0: number, x1: number, z1: number, top:
 const HX = 24;
 const HZ = 22;
 /** The fire in the middle: rest here. */
-export const FIRE = { x: 0, y: 0.4, z: 0 };
+/** (Its top is a step he can walk up: under the controller's step height, 0.35. It was 0.4, and he had to jump onto his own hearth.) */
+export const FIRE = { x: 0, y: 0.3, z: 0 };
 
 const club: CustomLevel = {
   name: 'The Club',
