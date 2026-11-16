@@ -167,6 +167,13 @@ export class PlayerController {
    */
   sliding = false;
   slideBack = false;
+  /**
+   * In the air after the hop out of a slide. The hop ENDS the slide: he is jumping, and looks it (the owner,
+   * 2026-11-16: "if you jump it should go back into a jump pose and he can slip again if he lands on an [incline] too
+   * steep"). But it is still only the hop a slide allows: until he lands he is carried as he was going, with no
+   * steering, no second jump, no wall kick and no catching an edge, so it does not get him up what he slid down.
+   */
+  slideHop = false;
   private slideHeading = 0;
   private slideAge = 0;
   private slipTimer = 0;
@@ -465,6 +472,7 @@ export class PlayerController {
     this.airJumpsLeft = TUNING.jump.airJumps;
     this.riding = false;
     this.sliding = false;
+    this.slideHop = false;
     this.slipTimer = 0;
     this.grind = null;
     this.rideFlip = -1;
@@ -729,6 +737,7 @@ export class PlayerController {
     const dodging = this.dodgeTimer >= 0;
     if (helpless || swimming) this.riding = false;
     if (helpless || swimming || this.riding) this.sliding = false;
+    if (this.grounded || helpless || swimming || this.riding || this.plungeStage !== 0) this.slideHop = false;
     this.rideAgain = Math.max(0, this.rideAgain - dt);
     this.rideGroundAge = this.riding && this.grounded ? this.rideGroundAge + dt : 0;
     let rideSpeed = 0;
@@ -761,6 +770,8 @@ export class PlayerController {
         this.velocity.x = approach(this.velocity.x, move.x * T.moves.longJumpSpeed * this.gear.longJump, T.moves.longJumpSteer * dt);
         this.velocity.z = approach(this.velocity.z, move.z * T.moves.longJumpSpeed * this.gear.longJump, T.moves.longJumpSteer * dt);
       }
+    } else if (this.slideHop) {
+      // The hop out of a slide: carried as he was going (see `slideHop`).
     } else if (this.kickLock > 0) {
       // Just kicked off a wall: momentum carries him out before the stick takes over again.
     } else if (this.kickFlight > 0 && !this.grounded && !swimming && this.kickCarry(move, dt)) {
@@ -788,7 +799,7 @@ export class PlayerController {
     }
 
     // Jumps. Not during a dodge. Ground jump uses coyote time; the air jump is the extra one.
-    if (!this.riding && !this.sliding && !dodging && !helpless && this.plungeStage === 0 && this.jumpBuffer > 0) {
+    if (!this.riding && !this.sliding && !this.slideHop && !dodging && !helpless && this.plungeStage === 0 && this.jumpBuffer > 0) {
       const kick = !this.grounded && !swimming && this.coyoteTimer <= 0 && this.wallTimer > 0;
       const long = this.allowLongJump && this.coyoteTimer > 0 && this.grounded && !swimming && !input.run && this.sinceFast < T.moves.longJumpWindow && this.attackTimer < 0 && !this.guarding;
       if (kick) {
@@ -896,7 +907,7 @@ export class PlayerController {
     // (Of a ramp, only the wall at its high end has an edge to catch: its sides slope, and its low end is no wall.)
     // (A ramp has an edge to catch only at its high end, and only one that is not tipped across as well.)
     const edge = !wb?.ramp || (!wb.ramp.cross && (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up));
-    if (wb && edge && !this.riding && !this.sliding && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
+    if (wb && edge && !this.riding && !this.sliding && !this.slideHop && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
       const top = wb.max.y;
       const p = this.position;
       // Pushing toward the wall at all (a stick held at an angle slides him along it, turning him sideways), or facing it.
@@ -1122,8 +1133,8 @@ export class PlayerController {
   /**
    * A step of sliding on his hide. The slope pulls him, less than it pulls a shield, and he is slower at his fastest;
    * the stick only bends his way a little. On ground he can stand on he scrapes to a stop and is on his feet again.
-   * Jump is a small hop, with no second jump after it: enough to get the shield under him in the air (the air
-   * attack), not enough to climb anything by.
+   * Jump is a small hop that ends the slide (see `slideHop`), with no second jump after it: enough to get the shield
+   * under him in the air (the air attack), not enough to climb anything by.
    */
   private slideStep(dt: number, input: PlayerInput): void {
     const S = TUNING.slide;
@@ -1157,6 +1168,10 @@ export class PlayerController {
       this.jumpBuffer = 0;
       this.jumpCut = true;
       this.airJumpsLeft = 0;
+      // (The slide is over: he is in the air on a jump, and lands on his feet, or slips again if what he lands on is
+      // too steep to stand on.)
+      this.sliding = false;
+      this.slideHop = true;
       this.moveEvent = 'slideHop';
       return;
     }

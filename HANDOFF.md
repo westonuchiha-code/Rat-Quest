@@ -953,6 +953,14 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   take him.
 - A jump pressed on too-steep ground makes him slip THAT frame (`slipIfTooSteep` reads the press), so the jump is
   the slide's hop. Otherwise the scrabble plus a full double jump was a way up things.
+- **The hop ENDS the slide (the owner, 2026-11-16: "if you jump it should go back into a jump pose and he can slip
+  again if he lands on an [incline] too steep").** It used to leave him `sliding` in the air, in the slide's pose,
+  and still sliding when he came down. Now `sliding` goes false at the hop and `slideHop` is true until he lands:
+  his state is jump, then fall (the ordinary poses); while `slideHop` holds he is carried as he was going (no
+  steering), with no second jump, no wall kick and no catching an edge, so the hop is still no way up what he slid
+  down. Landing on ground he can stand on, he is on his feet; on ground too steep, `slipIfTooSteep` takes him again.
+  (A jump held as he lands on steep ground makes him hop again at once: the slip and the hop are the same frame.)
+  Sliding OFF an edge with no jump still leaves him in the slide's pose in the air: not asked about, not changed.
 - The short-hop rule again: in the tests, `jumpHeld` must be true on the frame of the press, or the jump is cut to
   a hop a third as high. (A test that pressed STOW "at the top of his jump" was in fact a hand's height up.)
 - Coming down onto a rail, `grind.air` is his height above the line and `grind.off` how far to its side; he is

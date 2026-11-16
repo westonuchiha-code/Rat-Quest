@@ -249,11 +249,49 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   }, new THREE.Vector3(-8, 0, 0));
   const oneJump = (TUNING.jump.velocity * TUNING.jump.velocity) / (2 * TUNING.physics.gravity);
   check('...nor does jumping get him up it: every jump there is a slide\'s little hop, with no second jump after', hopper.events.includes('slideHop') && best < oneJump + 1.2 && hopper.p.position.y < 4, `best ${best.toFixed(2)} (a jump is ${oneJump.toFixed(2)}); ${hopper.events.slice(0, 6).join()}`);
+  // The hop ends the slide: he is in a jump, and looks it; carried as he was going, with no steering; and where he
+  // comes down decides what he is next. (The owner, 2026-11-16: "if you jump it should go back into a jump pose and he
+  // can slip again if he lands on an [incline] too steep".)
+  {
+    let hopAt = -1;
+    let inAir: string[] = [];
+    let slidInAir = 0;
+    let turned = 0;
+    let slipsAfter = 0;
+    let went = 0;
+    const again = play(long, 30, 200, (i, p) => {
+      // (He hops early, while he is still slow: at a slide's full speed down ground this steep a hop is a long flight.)
+      if (hopAt < 0 && p.sliding && p.grounded && p.position.x < -1) hopAt = i;
+      if (hopAt >= 0 && i > hopAt) {
+        if (!p.grounded && slipsAfter === 0) {
+          inAir.push(p.state);
+          if (p.sliding) slidInAir++;
+          // (East is back up the slope: the stick is held that way all the while he is in the air.)
+          turned = Math.max(turned, p.velocity.x - went);
+        }
+        // (Jump is pressed again and again early in the hop, and let go well before he comes down.)
+        if (p.moveEvent === 'slip') slipsAfter++;
+      }
+      if (i === hopAt + 1) went = p.velocity.x;
+      return hopAt < 0 ? { move: WEST, run: true } : i === hopAt ? { jumpPressed: true, jumpHeld: true } : { move: v(1, 0), run: true, jumpPressed: !p.grounded && i < hopAt + 16 && i % 4 === 0, jumpHeld: true };
+    });
+    check('the hop out of a slide ENDS the slide: in the air he is jumping, then falling, and never in the slide\'s pose', hopAt >= 0 && inAir.length > 10 && slidInAir === 0 && inAir.every((st) => st === 'jump' || st === 'fall') && inAir.includes('jump'), `${inAir.length} frames in the air: ${[...new Set(inAir)].join()}`);
+    check('...it is still only a hop: carried as he was going, the stick does not turn him back up the slope, and there is no second jump', turned < 1e-6 && !again.events.includes('wallkick') && !again.events.includes('grab'), `turned ${turned.toFixed(3)}; ${again.events.join()}`);
+    check('...coming down on the same too-steep ground, he slips again', slipsAfter >= 1 && again.events.filter((e) => e === 'slip').length >= 2, again.events.join());
+    // Hopping off the foot of the slope onto the flat: he lands on his feet.
+    let hop2 = false;
+    const flat = play(cs, 8, 140, (i, p) => {
+      const h = !hop2 && p.sliding && p.grounded && p.position.y < 1.2;
+      if (h) hop2 = true;
+      return hop2 ? { jumpPressed: h, jumpHeld: true } : { move: WEST, run: true };
+    });
+    check('...coming down on ground he can stand on, he lands on his feet: no slide, nothing to get up from', hop2 && flat.events.includes('slideHop') && !flat.p.sliding && flat.p.grounded && flat.p.state === 'idle' && flat.events.filter((e) => e === 'slip').length === 1 && !flat.events.includes('slideEnd'), `${flat.events.join()}; ${flat.p.state}`);
+  }
   // Out of a slide, onto the shield: hop, and the air attack.
   let hopped = false;
   const out = play(long, 30, 120, (i, p) => {
     if (p.riding) return { run: false };
-    if (!p.sliding) return { move: WEST, run: true };
+    if (!p.sliding && !hopped) return { move: WEST, run: true };
     const h = !hopped && p.grounded && p.position.x < -4;
     if (h) hopped = true;
     return { jumpPressed: h, jumpHeld: hopped, attackPressed: hopped && !p.grounded };
