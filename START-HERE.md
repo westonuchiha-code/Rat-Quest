@@ -353,6 +353,33 @@ better story when we get around to actually telling one."
 - "Find some common poses online": this session can reach only two sites, so poses would have to come from what is
   known already or from a computer session where more sites can be allowed.
 
+## A look-over of old things, and new themes (the owner, 2026-11-16: MOCK-UPS ONLY SO FAR, NOTHING REPLACED)
+His words, in short: "you've been on a roll with the textures so I'm wondering if you could also just do a texture
+pass especially through stuff that we haven't really touched in a while early characters ... go over [their] models
+go over [their] textures ... Don't go too overboard and don't override anything yet just maybe give me a few
+mock-ups of a few different characters or objects or tile sets that we could do something to improve." And new
+THEMES for levels ("variety is the spice of life ... right now we have sort of the green theme"):
+- **Ice:** "a frozen over area maybe it's got like some bursted CO2 pipes on the walls and there's [icicles] coming
+  off the ceiling and coming out of the ground".
+- **A glowing cave:** "blue glowing Moss or ... pink or orange glowing mushrooms", fought in by "glow bugs that glow
+  all different colors" (the Firefly Bomber, recoloured), and other creepy crawlies that glow.
+- **The furnace again:** "a little texture [pass] over there and maybe create some new objects and environmental
+  scenery ... animations of like steam coming up out of the ground or something we can use in different places".
+- **A dream level:** "he's like surfing on the Milky Way in outer space like some kind of downhill like rainbow road
+  ... slide down on his shield ... a full sliding level ... everything could be like crazy colors ... stars and
+  planets ... he could be like neon pink and green ... a wacky Pomo palette kind of version of himself and maybe his
+  scarf is like crazy exaggerated like [Viewtiful] Joe ... a Trippy psychedelic dream level."
+**What exists (2026-11-16):** FOURTEEN MOCK-UP TEXTURES in `src/render/textures.ts` under new names, used by NO
+level (grouped under "MOCK-UPS" there): `iceWall`, `frostCobbles`, `frostPipe`, `icicles`; `glowMossBlue`,
+`glowShrooms`, `glowVein`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`; `sewerBrickNew`,
+`wetCobblesNew`. See them: `TEX_FOCUS=name,name node .testdist/textureSheet.js` (after building
+`tests/textureSheet.ts`) writes `/tmp/texture-focus.png`.
+**Claude's own judgement of them (told to him):** the dream and furnace ones are the strongest; the ice and glow
+ones are a fair start; the two sewer "refreshes" are NOT better than the tiles the game has (the old brick with its
+vines and the old cobbles hold up): leave the sewer's as they are unless he says otherwise.
+**Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
+crate and barrel); no coloured glow bugs; no steam animation; none of the themes is a level; the dream knight.
+
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
 **TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not
 be allowed from his phone: "if you can't do the research that's fine we can save it for later". So: one researcher a
