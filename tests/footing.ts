@@ -165,7 +165,7 @@ const inScenery = (e: { x: number; z: number; radius: number }): boolean => !roo
   for (let i = 0; i < 60 * 240 && boss.alive; i++) {
     const px = 0, pz = 4;
     boss.update(1 / 60, px, 0, pz, true);
-    for (const s of boss.spits) { bolts++; if (s.kind !== 'energy' || s.y < 1.5) energy = false; }
+    for (const s of boss.spits) { bolts++; if (s.kind !== 'fire' || s.y < 1.5) energy = false; }
     boss.spits = [];
     for (const e of boss.events) { seen.add(e); if (e === 'rage') raged = true; if (e === 'slam') rings++; if (e === 'swoop') swoopSeen = true; }
     boss.events = [];
@@ -186,7 +186,7 @@ const inScenery = (e: { x: number; z: number; radius: number }): boolean => !roo
     }
     if (!room(boss.x, 0, boss.z, boss.radius)) inside = false;
   }
-  check('awake he throws bolts of light from up where he floats', bolts >= 3 && energy, `${bolts} bolts`);
+  check('awake he throws his bolts (balls of fire, since his spells went into the fight) from up where he floats', bolts >= 3 && energy, `${bolts} bolts`);
   check('floating he is above the sword; spent, he sinks within reach', highWhenClosed && openSeen);
   check('he swoops, slams a ring along the floor, and throws the orb', swoopSeen && rings > 0 && orbSeen, [...seen].join(','));
   check('the ring reaches a rat standing on the ground', ringHit);

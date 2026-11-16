@@ -14,6 +14,18 @@
  *   The orb      One slow ball of light. Strike it with the sword and it goes back to him. He bats it back, faster;
  *                strike it again. When he misses it, it hurts him and he hangs stunned for a long time.
  *
+ * AND HIS SPELLS (2026-11-16: the owner gave him casting animations, and "continue" to putting them in the fight).
+ * The four above are as they were, in their timings and their answers; two of them are dressed in a spell (the volley
+ * is FIREBALLS thrown one at a time from a cupped claw; the slam is a BLAST: he gathers himself in as he rises and
+ * bursts open as he lands). Three more come only once he has raged, so the first half of the fight is what it was:
+ *   The summoning  Once, as his rage ends: he opens a gate in the floor and two roaches crawl out of it and come for
+ *                  the rat. They count toward nothing; they are in the way.
+ *   The storm      He locks his claws on a line through where the rat stands and rakes it with lightning. Get off the
+ *                  line (it is narrow) or raise the shield. Then he sinks, spent.
+ *   The mending    Once, when he is nearly beaten: instead of rising from an opening he stays down, folds his claws
+ *                  over the shard and mends himself. Strike him and it is broken (and he is open a moment longer); leave
+ *                  him and he has three hearts back.
+ *
  * Three hits in one opening and he bursts away with a pulse that shoves the rat back, so he cannot be pinned.
  * At half health he rages: after that everything is quicker, the volley is five bolts, the slam comes down on top of
  * the rat instead of where he was floating, a missed swoop can turn straight into a slam, and the orb must be
@@ -24,9 +36,9 @@ import type { CanStand } from './foe';
 import { TOAD } from './toad';
 import type { Spit } from './toad';
 
-export type GrimState = 'idle' | 'float' | 'volley' | 'swoopWind' | 'swoop' | 'slamWind' | 'slamFall' | 'orbWind' | 'orbWait' | 'bat' | 'spent' | 'stunned' | 'repel' | 'rage' | 'dead';
-export type GrimEvent = 'bolt' | 'swoop' | 'slam' | 'orbThrow' | 'orbBack' | 'orbBat' | 'orbHit' | 'orbGone' | 'repel' | 'rage' | 'tell';
-type Attack = 'volley' | 'swoop' | 'slam' | 'orb';
+export type GrimState = 'idle' | 'float' | 'volley' | 'swoopWind' | 'swoop' | 'slamWind' | 'slamFall' | 'orbWind' | 'orbWait' | 'bat' | 'stormWind' | 'storm' | 'summon' | 'heal' | 'spent' | 'stunned' | 'repel' | 'rage' | 'dead';
+export type GrimEvent = 'bolt' | 'swoop' | 'slam' | 'orbThrow' | 'orbBack' | 'orbBat' | 'orbHit' | 'orbGone' | 'repel' | 'rage' | 'tell' | 'storm' | 'summon' | 'heal' | 'healed' | 'healBroken';
+type Attack = 'volley' | 'swoop' | 'slam' | 'orb' | 'storm';
 
 export const GRIM = {
   hp: 16,
@@ -43,6 +55,15 @@ export const GRIM = {
   swoop: { windup: 0.9, track: 0.75, speed: 15, time: 0.62, spent: 1.6, blocked: 2.4, parried: 3.2, reach: 0.7, arc: 1.0, damage: 1, chain: 0.4 },
   slam: { windup: 0.85, fall: 0.25, ringSpeed: 9, ringMax: 10.5, ringWidth: 0.45, ringHeight: 0.45, spent: 2.0, damage: 1 },
   orb: { windup: 1.0, speed: 6.5, faster: 1.25, turn: 1.3, life: 7, returns: 1, rageReturns: 2, damage: 1, hurts: 2, stun: 3.2, batTime: 0.35, catchRadius: 0.75, swingBonus: 0.7 },
+  /**
+   * The storm: how long he takes aim (he follows the rat for `track` of it and then his line is set), how long the
+   * lightning lasts, how long and how wide (to each side of its middle) the line it rakes is.
+   */
+  storm: { windup: 0.95, track: 0.6, time: 0.85, long: 13, wide: 1.05, spent: 1.8, damage: 1 },
+  /** The summoning: how long it takes, when in it they come out, how many, and how far in front of him the gate is. */
+  summon: { time: 2.8, at: 1.9, count: 2, out: 2.2 },
+  /** The mending: at what share of his health he tries it, how long it takes, what it gives, how long a broken one leaves him open. */
+  heal: { at: 0.3, time: 2.2, gives: 3, broken: 1.5 },
   /** Hits he will take in one opening before he bursts away (two more while stunned). */
   poise: 3,
   repel: { time: 0.5, radius: 3.4, push: 9 },
@@ -110,6 +131,15 @@ export class Grimsqueak {
   events: GrimEvent[] = [];
   /** Set on the tick he bursts away; the game shoves the rat and clears it. */
   repelPulse = false;
+  /** Where his summoning has put a minion on the floor; the game makes one at each and empties the list. */
+  summons: Array<{ x: number; z: number }> = [];
+  /** The line his storm rakes: which way it runs from him. */
+  stormDir = 0;
+  /** What his last attack was (the game dresses the moment after a slam). */
+  lastAttack: Attack | null = null;
+  private stormSpent = false;
+  private summoned = false;
+  private mended = false;
 
   private thinkLeft = 1.2;
   private circleDir = 1;
@@ -173,6 +203,13 @@ export class Grimsqueak {
       this.enter('rage');
       return;
     }
+    // Nearly beaten, once: he does not rise. He stays down and mends himself, unless he is struck.
+    if (this.phase === 2 && !this.mended && this.hp <= GRIM.hp * GRIM.heal.at && this.lift < 0.3) {
+      this.mended = true;
+      this.events.push('heal');
+      this.enter('heal');
+      return;
+    }
     this.enter('float');
     this.thinkLeft = (GRIM.think[0] + (GRIM.think[1] - GRIM.think[0]) * this.rng()) * this.haste;
     this.circleDir = this.rng() < 0.5 ? 1 : -1;
@@ -189,6 +226,13 @@ export class Grimsqueak {
       return true;
     }
     if (this.hp <= GRIM.hp * GRIM.rage.at && this.phase === 1) this.wantRage = true;
+    if (this.state === 'heal') {
+      // Struck at his mending: it is broken, and he is left open a little longer.
+      this.events.push('healBroken');
+      this.rest(GRIM.heal.broken);
+      this.hitsTaken = 1;
+      return false;
+    }
     if (this.open) {
       this.hitsTaken++;
       if (this.hitsTaken >= GRIM.poise + (this.state === 'stunned' ? 2 : 0)) {
@@ -274,14 +318,50 @@ export class Grimsqueak {
     return null;
   }
 
+  /**
+   * A REHEARSAL, for looking at one part of the fight by itself (the game's #bossdo= and the tests): he is put into
+   * his rage's half of it if the part belongs there, and begins that part at once.
+   */
+  rehearse(what: 'volley' | 'slam' | 'storm' | 'summon' | 'heal'): void {
+    this.wake();
+    if (what === 'storm' || what === 'summon' || what === 'heal') this.phase = 2;
+    if (what === 'summon') {
+      this.summoned = false;
+      this.enter('summon');
+    } else if (what === 'heal') {
+      this.hp = Math.min(this.hp, Math.floor(GRIM.hp * GRIM.heal.at));
+      this.mended = true;
+      this.lift = 0;
+      this.enter('heal');
+    } else this.begin(what);
+  }
+
+  /** True when the storm's lightning has just reached the rat. The game then asks him how he took it and calls stormTaken. */
+  stormAtRat(px: number, py: number, pz: number): boolean {
+    if (this.state !== 'storm' || this.stormSpent) return false;
+    const S = GRIM.storm;
+    const dx = px - this.x;
+    const dz = pz - this.z;
+    const along = dx * Math.sin(this.stormDir) + dz * Math.cos(this.stormDir);
+    const across = Math.abs(dx * Math.cos(this.stormDir) - dz * Math.sin(this.stormDir));
+    return along > 0.4 && along < S.long && across < S.wide && py - this.floorY < 2.6;
+  }
+  /** The storm hit the rat or his shield (not rolled through): it will not hit him again this time. */
+  stormTaken(): void {
+    this.stormSpent = true;
+  }
+
   private choose(): Attack {
     // The first time round he shows each attack once, in order of difficulty. After that: anything but the last one,
     // and the orb no more than one time in three.
     const order: Attack[] = ['volley', 'swoop', 'slam', 'orb'];
     if (this.done.length < order.length) return order[this.done.length];
+    // (Raged, he has the storm as well; and the first thing he does with it is show it.)
+    if (this.phase === 2 && !this.done.includes('storm')) return 'storm';
     const last = this.done[this.done.length - 1];
     const recentOrb = this.done.slice(-2).includes('orb');
-    const pool = order.filter((a) => a !== last && !(a === 'orb' && recentOrb));
+    const all: Attack[] = this.phase === 2 ? [...order, 'storm'] : order;
+    const pool = all.filter((a) => a !== last && !(a === 'orb' && recentOrb));
     return pool[Math.floor(this.rng() * pool.length) % pool.length];
   }
 
@@ -289,7 +369,8 @@ export class Grimsqueak {
     this.done.push(a);
     this.events.push('tell');
     this.fired = 0;
-    this.enter(a === 'volley' ? 'volley' : a === 'swoop' ? 'swoopWind' : a === 'slam' ? 'slamWind' : 'orbWind');
+    this.lastAttack = a;
+    this.enter(a === 'volley' ? 'volley' : a === 'swoop' ? 'swoopWind' : a === 'slam' ? 'slamWind' : a === 'storm' ? 'stormWind' : 'orbWind');
   }
 
   private bolt(px: number, py: number, pz: number): void {
@@ -302,7 +383,7 @@ export class Grimsqueak {
     const flat = Math.max(0.5, Math.hypot(dx, dz));
     const T = flat / V.boltSpeed;
     const vy = (py + 0.5 - sy + 0.5 * TOAD.globGravity * T * T) / T;
-    this.spits.push({ x: sx, y: sy, z: sz, vx: (dx / flat) * V.boltSpeed, vy, vz: (dz / flat) * V.boltSpeed, kind: 'energy' });
+    this.spits.push({ x: sx, y: sy, z: sz, vx: (dx / flat) * V.boltSpeed, vy, vz: (dz / flat) * V.boltSpeed, kind: 'fire' });
     this.events.push('bolt');
   }
 
@@ -407,6 +488,45 @@ export class Grimsqueak {
         if (this.state === 'bat' && this.stateTime >= GRIM.orb.batTime) this.enter('orbWait');
         if (!this.orb && this.state === 'orbWait') this.rise();
         break;
+      case 'stormWind': {
+        const S = GRIM.storm;
+        if (this.stateTime < S.windup * h * S.track) this.facing = turnToward(this.facing, toRat, GRIM.turnRate * dt);
+        if (this.stateTime >= S.windup * h) {
+          this.stormDir = this.facing;
+          this.stormSpent = false;
+          this.events.push('storm');
+          this.enter('storm');
+        }
+        break;
+      }
+      case 'storm':
+        if (this.stateTime >= GRIM.storm.time) this.rest(GRIM.storm.spent);
+        break;
+      case 'summon': {
+        const M = GRIM.summon;
+        this.facing = turnToward(this.facing, toRat, GRIM.turnRate * dt * 0.4);
+        if (!this.summoned && this.stateTime >= M.at) {
+          this.summoned = true;
+          // They come up out of the gate in front of him, a little apart.
+          for (let i = 0; i < M.count; i++) {
+            const a = this.facing + (i - (M.count - 1) / 2) * 0.7;
+            this.summons.push({ x: this.x + Math.sin(a) * M.out, z: this.z + Math.cos(a) * M.out });
+          }
+          this.events.push('summon');
+        }
+        if (this.stateTime >= M.time) this.rise();
+        break;
+      }
+      case 'heal':
+        // Down on the ground over his shard: within the sword's reach, if the rat is quick.
+        liftTo = 0;
+        liftRate = 5;
+        if (this.stateTime >= GRIM.heal.time) {
+          this.hp = Math.min(GRIM.hp, this.hp + GRIM.heal.gives);
+          this.events.push('healed');
+          this.rise();
+        }
+        break;
       case 'spent':
       case 'stunned':
         liftTo = 0;
@@ -419,7 +539,9 @@ export class Grimsqueak {
       case 'rage':
         if (this.stateTime >= GRIM.rage.time) {
           this.phase = 2;
-          this.rise();
+          // The first thing his rage does: it calls something up out of the floor.
+          this.events.push('tell');
+          this.enter('summon');
         }
         break;
     }

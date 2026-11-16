@@ -17,7 +17,7 @@ import { Ambience, worldSoundFor } from './audio/ambience';
 import { MoteField } from './world/motes';
 import { SENSES } from './enemies/foe';
 import type { GrimState, Orb, Ring } from './enemies/grimsqueak';
-import { GRIM_FIGHT_FLOAT, type GrimGesture } from './npc/grimsqueakModel';
+import { GRIM_FIGHT_FLOAT, type GrimGesture , type GrimInput } from './npc/grimsqueakModel';
 import { Director } from './enemies/director';
 import { Toad, ToadState, Glob, stepGlobs } from './enemies/toad';
 import { ToadModel } from './enemies/toadModel';
@@ -330,7 +330,34 @@ function startGame(): void {
   /** What Grimsqueak's body does in each part of the fight (each attack's tell has its own shape). */
   const GRIM_GESTURE: Record<GrimState, GrimGesture> = {
     idle: 'rest', float: 'rest', volley: 'cast', swoopWind: 'rear', swoop: 'sweep', slamWind: 'raise', slamFall: 'smash', orbWind: 'conjure', orbWait: 'rest',
-    bat: 'point', spent: 'slump', stunned: 'slump', repel: 'rage', rage: 'rage', dead: 'slump',
+    bat: 'point', stormWind: 'cast', storm: 'cast', summon: 'rest', heal: 'rest', spent: 'slump', stunned: 'slump', repel: 'rage', rage: 'rage', dead: 'slump',
+  };
+  /**
+   * The SPELL his body is casting in each part of the fight, and how far into it he is (it takes over the gesture
+   * above while it runs). The spells have their own timings; the fight's are kept, and each spell is run at the
+   * fight's pace: its blow lands when the fight's does.
+   */
+  const grimSpell = (boss: Grimsqueak): NonNullable<GrimInput['spell']> | undefined => {
+    const t = boss.stateTime;
+    const h = boss.phase === 2 ? GRIM.rage.haste : 1;
+    switch (boss.state) {
+      case 'volley': {
+        // A fireball for each bolt: gathered and drawn back through the tell, then throw after throw.
+        const w = GRIM.volley.windup * h;
+        if (t < w) return { kind: 'fireball', t: (t / w) * 0.68, plain: true };
+        const gap = GRIM.volley.gap * h;
+        return { kind: 'fireball', t: 0.66 + (((t - w) % gap) / gap) * 0.26, plain: true };
+      }
+      // The slam is a blast: gathered in as he rises, held as he falls, burst open as he lands.
+      case 'slamWind': return { kind: 'blast', t: Math.min(0.6, (t / (GRIM.slam.windup * h)) * 0.6), plain: true };
+      case 'slamFall': return { kind: 'blast', t: 0.6, plain: true };
+      case 'spent': return boss.lastAttack === 'slam' && t < 0.5 ? { kind: 'blast', t: 0.8 + t, plain: true } : undefined;
+      case 'stormWind': return { kind: 'lightning', t: Math.min(0.5, (t / (GRIM.storm.windup * h)) * 0.5), reach: GRIM.storm.long };
+      case 'storm': return { kind: 'lightning', t: 0.56 + Math.min(0.9, t), reach: GRIM.storm.long };
+      case 'summon': return { kind: 'summon', t };
+      case 'heal': return { kind: 'heal', t: Math.min(1.9, t) };
+      default: return undefined;
+    }
   };
   function addEnemy(spec: EnemySpec): void {
     if (spec.type === 'grimsqueak') {
@@ -347,7 +374,7 @@ function startGame(): void {
           look.act = {
             lookAt: [p.x + Math.sin(f) * 4, p.z + Math.cos(f) * 4], shrug: 0, gone: boss.asleep || !boss.alive,
             low: 1 - boss.lift, bow: boss.state === 'spent' ? 0.6 : boss.state === 'stunned' ? 1 : 0,
-            reach: 0, still: boss.state === 'stunned', gesture: GRIM_GESTURE[boss.state], float: GRIM_FIGHT_FLOAT,
+            reach: 0, still: boss.state === 'stunned', gesture: GRIM_GESTURE[boss.state], float: GRIM_FIGHT_FLOAT, spell: grimSpell(boss) ?? null,
           };
         },
         flash: () => {
@@ -360,7 +387,7 @@ function startGame(): void {
           // before the slam he draws himself up. Raging, he throbs. Struck, he jolts.
           const st = boss.state;
           const t = e.stateTime;
-          const shudder = st === 'volley' || st === 'orbWind' ? 0.06 * Math.sin(t * 46) : st === 'rage' ? 0.14 * Math.sin(t * 30) : 0;
+          const shudder = st === 'volley' || st === 'orbWind' || st === 'stormWind' || st === 'storm' ? 0.06 * Math.sin(t * 46) : st === 'rage' ? 0.14 * Math.sin(t * 30) : 0;
           const swell = st === 'swoopWind' ? 0.22 * Math.min(1, t / GRIM.swoop.windup) : st === 'slamWind' ? 0.3 * Math.min(1, t / GRIM.slam.windup) : 0;
           look.root.scale.setScalar(1 + shudder + swell + (flash > 0 ? 0.16 : 0));
           look.root.rotation.x = st === 'swoopWind' ? -0.35 * Math.min(1, t / 0.4) : st === 'swoop' ? 0.7 : 0;
@@ -872,7 +899,7 @@ function startGame(): void {
     for (const ev of boss.events.splice(0)) {
       const v = Math.max(0.4, hearAt(boss.x, boss.z));
       if (ev === 'tell') {
-        const windup = (boss.state === 'volley' ? GRIM.volley.windup : boss.state === 'swoopWind' ? GRIM.swoop.windup : boss.state === 'slamWind' ? GRIM.slam.windup : GRIM.orb.windup) * (boss.phase === 2 ? GRIM.rage.haste : 1);
+        const windup = (boss.state === 'volley' ? GRIM.volley.windup : boss.state === 'swoopWind' ? GRIM.swoop.windup : boss.state === 'slamWind' ? GRIM.slam.windup : boss.state === 'stormWind' ? GRIM.storm.windup : boss.state === 'summon' ? GRIM.summon.at : GRIM.orb.windup) * (boss.phase === 2 ? GRIM.rage.haste : 1);
         audio.play('grimGather', { vol: v * 0.8, rate: 0.9 / windup, priority: 7 });
       } else if (ev === 'bolt') audio.play('grimBolt', { vol: v, rate: roll(0.94, 1.08), priority: 6 });
       else if (ev === 'swoop') audio.play('grimSwoop', { vol: v, rate: 0.65 / GRIM.swoop.time, priority: 7 });
@@ -900,6 +927,19 @@ function startGame(): void {
       } else if (ev === 'rage') {
         audio.play('villainLaugh', { vol: 1, verb: 0.4, priority: 9 });
         audio.play('rumble', { vol: 1, priority: 8 });
+      } else if (ev === 'storm') {
+        // The storm lets go: the crack of his bolts, one on top of another, and the hall shakes with it.
+        audio.play('grimBolt', { vol: 1, rate: 0.7, priority: 8 });
+        audio.play('boltBurst', { vol: 0.9, rate: 1.3, priority: 7 });
+        shake = Math.max(shake, 0.1);
+      } else if (ev === 'summon') {
+        audio.play('rumble', { vol: 0.9, priority: 8 });
+        audio.play('chitinTap', { vol: 0.9, rate: 1.4, priority: 7 });
+      } else if (ev === 'heal') audio.play('orbHum', { vol: v, rate: 0.7, priority: 7 });
+      else if (ev === 'healed') audio.play('orbStrike', { vol: 0.8, rate: 0.6, priority: 7 });
+      else if (ev === 'healBroken') {
+        audio.play('boltBurst', { vol: 0.9, rate: 0.8, priority: 8 });
+        hitStop = Math.max(hitStop, 0.06);
       }
     }
     // (The sword finding him: a short sharp cry, but not on top of the one above, nor as he dies: his end has its own.)
@@ -916,7 +956,17 @@ function startGame(): void {
         player.velocity.z = (dz / d) * GRIM.repel.push;
       }
     }
+    // What his summoning called up: a roach at each place, hunting the rat, counting toward nothing.
+    for (const at of boss.summons.splice(0)) addEnemy({ type: 'scuttler', x: at.x, z: at.z, y: boss.floorY, hunt: true, uncounted: true, respawn: false });
     if (player.dead) return;
+    // His storm rakes its line: the rat on it is hurt, unless his shield is up or he is rolling through.
+    if (boss.stormAtRat(p.x, p.y, p.z)) {
+      const r = player.takeHit(boss.x, boss.z, GRIM.storm.damage);
+      if (r !== 'dodged') {
+        events.playerResult = r;
+        boss.stormTaken();
+      }
+    }
     // A ring from his slam reaches the rat on the ground. In the air it passes under him; a roll goes through it.
     const ringHit = boss.ringAtRat(p.x, p.y, p.z);
     if (ringHit) {
@@ -998,6 +1048,8 @@ function startGame(): void {
   const globMat = new THREE.MeshBasicMaterial({ color: 0x8aff5a });
   /** Grimsqueak throws the cold light of the Engine, not sludge. */
   const boltMat = new THREE.MeshBasicMaterial({ color: 0x7fe8f4 });
+  /** One of Grimsqueak's fireballs in flight. */
+  const fireMat = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
   // Friendly characters and the talk box.
   const npcs: Npc[] = [];
   /** Each character's solid body, so it can be taken out of the room with him and put back where he ends up. */
@@ -1855,7 +1907,7 @@ function startGame(): void {
       else if (e.state === 'dead') audio.play('croak', { vol: v, rate: 0.6, priority: 6 });
     }
     // (A toad's spit leaving its mouth. Grimsqueak's bolts have their own crack, from what he does.)
-    const slime = globs.reduce((n, g) => n + (g.kind === 'energy' ? 0 : 1), 0);
+    const slime = globs.reduce((n, g) => n + (g.kind ? 0 : 1), 0);
     if (slime > heard.globs) audio.play('spit', { vol: 0.8, priority: 6 });
     heard.globs = slime;
     const open = chamber.gates.filter((g) => g.open).length;
@@ -2160,8 +2212,8 @@ function startGame(): void {
       for (const spit of spits) {
         const g: Glob = { ...spit, age: 0, done: false };
         globs.push(g);
-        const gm = new THREE.Mesh(globGeo, spit.kind === 'energy' ? boltMat : globMat);
-        if (spit.kind === 'energy') gm.scale.setScalar(1.5);
+        const gm = new THREE.Mesh(globGeo, spit.kind === 'fire' ? fireMat : spit.kind === 'energy' ? boltMat : globMat);
+        if (spit.kind) gm.scale.setScalar(spit.kind === 'fire' ? 1.7 : 1.5);
         gm.position.set(g.x, g.y, g.z);
         scene.add(gm);
         globMeshes.set(g, gm);
@@ -2177,9 +2229,9 @@ function startGame(): void {
       ringAge = 0;
       ringSize = 0.9;
       // (A toad's spit splats, green; a bolt of the Engine's light bursts, its own colour.)
-      (ring.material as THREE.MeshBasicMaterial).color.set(g.kind === 'energy' ? 0x9fefff : 0x8aff5a);
+      (ring.material as THREE.MeshBasicMaterial).color.set(g.kind === 'fire' ? 0xffa23a : g.kind === 'energy' ? 0x9fefff : 0x8aff5a);
       ring.position.set(g.x, Math.max(0.05, g.y), g.z);
-      if (g.kind === 'energy') audio.play('boltBurst', { vol: 0.8 * hearAt(g.x, g.z, 22), rate: roll(0.92, 1.1), priority: 4 });
+      if (g.kind) audio.play('boltBurst', { vol: 0.8 * hearAt(g.x, g.z, 22), rate: roll(0.92, 1.1), priority: 4 });
       else audio.play('splat', { vol: 0.7 * hearAt(g.x, g.z, 22), priority: 4 });
     }
     for (let i = globs.length - 1; i >= 0; i--) {
@@ -3343,6 +3395,21 @@ function startGame(): void {
     storyPending = null;
     if (storyAt[1] === 'exit') player.position.set(cur.exit.x + Math.sin(cur.exit.yaw) * 1.2, player.position.y, cur.exit.z + Math.cos(cur.exit.yaw) * 1.2);
     if (make) playScene(make(storyCtx()), null, Number(/st=([\d.]+)/.exec(location.hash)?.[1] ?? 0));
+  }
+  // Development aid: #bossdo=storm (or volley, slam, summon, heal): the boss is woken and begins that part of his fight
+  // at once, to look at it.
+  {
+    const what = /bossdo=(volley|slam|storm|summon|heal)/.exec(location.hash)?.[1] as 'volley' | 'slam' | 'storm' | 'summon' | 'heal' | undefined;
+    if (what) {
+      storyPending = null;
+      wakeBoss();
+      // (Over and over: each time he is back to floating he begins it again, so it can be watched.)
+      const again = (): void => {
+        for (const e of enemies) if (e instanceof Grimsqueak && e.alive && (e.state === 'float' || e.asleep)) e.rehearse(what);
+      };
+      again();
+      window.setInterval(again, 200);
+    }
   }
   // Development aid: #bossdown beats the level's boss at once, to see what follows the fight.
   if (location.hash.includes('bossdown')) {

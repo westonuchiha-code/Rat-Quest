@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import { modelKit, paint } from '../render/modelKit';
-import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
+import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture , type GrimInput } from './grimsqueakModel';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
 import { AntModel } from '../enemies/antModel';
 import { StagModel } from '../enemies/stagModel';
@@ -97,6 +97,8 @@ export interface NpcAct {
   gesture?: GrimGesture;
   /** The villain only: how high he hangs above the ground when he is up. */
   float?: number;
+  /** The villain only: a spell he is casting, and how far into it he is (it takes over his arms and body while it runs). */
+  spell?: GrimInput['spell'] | null;
 }
 
 export class Npc {
@@ -801,7 +803,7 @@ export class Npc {
       // what his arms are doing.
       this.grim.update(dt, {
         low: this.poseNow.low, float: this.pose.float, bow: this.poseNow.bow, still: this.pose.still, talking, mouth: this.mouth,
-        gesture: this.pose.gesture, reach: this.poseNow.reach,
+        gesture: this.pose.gesture, reach: this.poseNow.reach, spell: this.act?.spell ?? undefined,
       });
       this.marker.visible = this.near && !talking;
       this.marker.position.y = this.pose.float * (1 - this.poseNow.low) + GRIM_HEIGHT + 0.35 + 0.08 * Math.sin(this.time * 4);

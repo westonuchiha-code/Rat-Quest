@@ -426,6 +426,28 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## GRIMSQUEAK'S SPELLS ARE IN HIS FIGHT (2026-11-16: he said "continue"). Tests `tests/grimfight.ts`. HIS TO ACCEPT, CHANGE OR THROW OUT
+
+The fight's four attacks keep every number they had (a test holds the table): its first half is exactly what it was.
+What changed, in `enemies/grimsqueak.ts` and main.ts (`grimSpell`):
+ - DRESSED, NOT CHANGED: the volley is FIREBALLS (each bolt thrown from a cupped claw with the fireball's throw; the
+   bolts are balls of fire, `Spit.kind: 'fire'`); the slam is a BLAST (gathered in as he rises, burst open as he lands;
+   its ring along the floor is the fight's own, as before).
+ - NEW, AND ONLY AFTER HE HAS RAGED (half health):
+   THE SUMMONING, once, as his rage ends: a gate opens in the floor before him and two roaches crawl out and hunt the
+   rat. They count toward nothing (`uncounted`). `GRIM.summon`; the game makes them from `boss.summons`.
+   THE STORM, a fifth attack: he sets his claws on a line through where the rat stands (he follows him for the first
+   six tenths of the tell, then the line is fixed) and rakes it with lightning: 13 long, about a step to either side.
+   Get off the line, or raise the shield; a roll goes through it. Then he is spent, as after his others.
+   `GRIM.storm`, `stormAtRat`, `stormTaken`.
+   THE MENDING, once, when he is at three tenths of his health or less: instead of rising from an opening he stays
+   DOWN, claws over his shard, for a little over two seconds. Strike him and it is broken (he loses the blow and is
+   left open); leave him and he has three hearts back. `GRIM.heal`.
+ - So the second half of the fight is HARDER than it was (two roaches, a fifth attack, three hearts to take off him
+   again if the mending is let finish). Nothing was made easier. It has not been played by hand: the numbers are a
+   first guess and are in one table, `GRIM`.
+ - To look at one part by itself, over and over: `#level=lair&bossdo=storm` (or volley, slam, summon, heal).
+
 ## SOFT PAINT CHOSEN; PIP, THE OWL AND GRIMSQUEAK WORKED OVER; GRIMSQUEAK'S SPELLS (2026-11-16). Tests `tests/grimspells.ts`
 
 His words, in the order they came, and what was done:

@@ -1321,3 +1321,13 @@ things are:
   `buildSpells`, `lightSpells`; the teeth are children of the snout mesh; materials wear `softPaint`.
 - `dev/viewer.ts`: `who=grim&spell=&st=`; `&soft=1` puts `softPaint` on anything.
 
+## Grimsqueak's spells in his fight (2026-11-16; test `tests/grimfight.ts`)
+
+- `enemies/grimsqueak.ts`: states `stormWind`, `storm`, `summon`, `heal`; events `storm`, `summon`, `heal`, `healed`,
+  `healBroken`; `GRIM.storm`, `GRIM.summon`, `GRIM.heal`; `summons`, `stormDir`, `lastAttack`, `stormAtRat`,
+  `stormTaken`, `rehearse(what)`. `rise()` goes to `heal` once; the end of `rage` goes to `summon`.
+- `enemies/toad.ts`: `Spit.kind` and `Glob.kind` may be `'fire'`. main.ts: `fireMat`, `grimSpell(boss)`, the storm's
+  hit and the summoned roaches in `bossTick`, sounds for the new events, `#bossdo=`.
+- `npc/npc.ts`: `NpcAct.spell`. `npc/grimsqueakModel.ts`: `spell.plain` (only what is in his claws is shown),
+  `spell.reach` (how far the forks run).
+

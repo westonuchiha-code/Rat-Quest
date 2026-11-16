@@ -66,8 +66,13 @@ export const GRIM_SPELLS: Record<GrimSpell, { length: number; strike: number; na
 };
 
 export interface GrimInput {
-  /** A spell he is casting, and how far into it he is (seconds). Leave out when he is not. */
-  spell?: { kind: GrimSpell; t: number };
+  /**
+   * A spell he is casting, and how far into it he is (seconds). Leave out when he is not.
+   * `plain`: only what is in his own claws is shown (the flame he holds, the forks, the gate, the mending): what the
+   * FIGHT draws for itself is left to it (its own bolts in flight, its own ring along the floor).
+   * `reach`: how far the lightning's forks run from his claws (the fight's line is longer than the show's).
+   */
+  spell?: { kind: GrimSpell; t: number; plain?: boolean; reach?: number };
   /** 0 floating .. 1 down on the ground. */
   low: number;
   /** How high he hangs above the ground when he floats. */
@@ -390,7 +395,7 @@ export class GrimsqueakModel {
         const flown = (t - def.strike) * 11;
         this.fire.position.copy(this.fireFrom).add(S_P.set(0, -0.04 * flown, flown));
         this.fire.scale.setScalar((0.2 + 0.02 * flown) * flick);
-        this.fire.visible = t < def.length - 0.08;
+        this.fire.visible = !spell.plain && t < def.length - 0.08;
       }
       this.fire.rotation.set(this.clock * 9, this.clock * 7, 0);
     } else if (kind === 'lightning') {
@@ -401,7 +406,9 @@ export class GrimsqueakModel {
         bolt.visible = on;
         if (!on) return;
         const from = palm(i < 3 ? left : right, S_P);
-        const far = S_Q.set((i < 3 ? -1 : 1) * 0.5 + ((i % 3) - 1) * 0.9, from.y - 0.35 + ((i % 3) - 1) * 0.3, from.z + 4.2);
+        const long = spell.reach ?? 4.2;
+        // (A long line's forks come down to the floor along it: it is the floor they rake.)
+        const far = S_Q.set((i < 3 ? -1 : 1) * 0.5 + ((i % 3) - 1) * 0.9, long > 6 ? 0.25 + (i % 3) * 0.35 : from.y - 0.35 + ((i % 3) - 1) * 0.3, from.z + long * (0.55 + 0.15 * (i % 3) + 0.15 * (i < 3 ? 0 : 1)));
         const pos = bolt.geometry.attributes.position as THREE.BufferAttribute;
         for (let k = 0; k < BOLT_POINTS; k++) {
           const u = k / (BOLT_POINTS - 1);
@@ -458,7 +465,7 @@ export class GrimsqueakModel {
     } else {
       // The blast: from the moment he flings his arms open.
       const k = Math.max(0, Math.min(1, (t - def.strike) / 0.75));
-      this.burst.visible = t >= def.strike && k < 1;
+      this.burst.visible = !spell.plain && t >= def.strike && k < 1;
       this.burst.position.set(0, 0.04, 0);
       this.burst.scale.setScalar(0.5 + 6.5 * (1 - (1 - k) * (1 - k)));
       opacity(this.burst, (1 - k) * 0.95);

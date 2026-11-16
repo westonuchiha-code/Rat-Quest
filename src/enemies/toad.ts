@@ -45,8 +45,8 @@ export const TOAD = {
 
 /** A glob it has just spat: where from, and its launch velocity. The game turns it into a flying glob. */
 export interface Spit {
-  /** What it is made of: sludge, or the cold light of the Engine. */
-  kind?: 'energy';
+  /** What it is made of: sludge, the cold light of the Engine, or fire. */
+  kind?: 'energy' | 'fire';
   x: number;
   y: number;
   z: number;
@@ -385,8 +385,8 @@ export interface Glob {
   age: number;
   /** Where it ended: 'flying', it hit something ('splat'), or it hit him ('hit'). */
   done: boolean;
-  /** One of Grimsqueak's bolts of light, not a toad's spit: it looks and sounds its own way. */
-  kind?: 'energy';
+  /** One of Grimsqueak's bolts (of light, or of fire), not a toad's spit: it looks and sounds its own way. */
+  kind?: 'energy' | 'fire';
 }
 
 /** Moves globs. A glob ends when it falls below the ground under it, or after a few seconds. */
