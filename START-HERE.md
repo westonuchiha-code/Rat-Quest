@@ -749,6 +749,24 @@ three):**
   the far side is simply out of her reach. Her crawling round the rim was also an invention he did not ask for.
 - Show him still pictures of the poses for a yes or no BEFORE rebuilding the fight.
 
+**His answer to that plan (2026-11-16): DO NOT SHRINK THE ARENA.** "This character moves too fast and jumps too high
+and far for you to shrink the arena. ... it has to be a big arena ... you don't need to shrink the arena you can make
+the spider bigger it never had to be that size ... you can make their two spiders so it's like one on each side of
+the arena and you have to take out both of them ... have her send out baby spiders that make you have to keep moving
+around ... make more baby spiders come out of the back of the Arena so they want to get her close ... there's all
+sorts of different ways gameplay wise that you can fix this problem without just shrinking the game and putting the
+player in a little box". (He also offered, if wanted: build the whole spider and make it a Dark Souls fight, take
+out two or three legs, she limps, falls, he stabs her; or a boss like the big spider in the first dungeon of
+Ocarina of Time. But: "My imagination for this battle though was how I was describing it".)
+**So the direction is: THE SAME ARENA, A MUCH BIGGER SPIDER** whose own standing front legs are big enough to reach
+well into it, her front LIT so the legs are seen to join her, and (next) baby spiders from the far side to keep him
+moving and bring him toward her; perhaps a second spider on the other side.
+**Where it stands:** a TRY-OUT only, shown to him as still pictures for a yes or no before the fight is rebuilt:
+`#view&who=widowmock&pose=rest|raise|slam|rake|bite&big=1.9` draws the present model 1.9 times its size beside the
+same floor, held in a pose (viewer.ts). For it the model was given: light that reaches well past the floor's edge
+(`lightAt`), so her head and leg roots show; `lay()` that works whatever she is drawn inside; and an optional `rake`
+foot place. THE GAME'S FIGHT IS STILL VERSION THREE (crawling, the leg laid flat): not yet replaced.
+
 She wakes when he stands on the floor (a scream, 1.9 s, the legs come out of the dark and are set down). Then, in a
 round that repeats: slams, stabs, a bite, slams, a bite, stabs.
 - **The slam and the sweep.** An outer leg is pulled up and forward; a red RING on the floor marks where it will

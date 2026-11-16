@@ -15,6 +15,8 @@ import { WIDOW, type Widow, type WidowState } from './widow';
  * over it, she is black, and all that shows of her there is her eyes.
  */
 export type WidowView = Pick<Widow, 'state' | 'stateTime' | 'windTime' | 'side' | 'angle' | 'spot' | 'x' | 'z' | 'px' | 'pz' | 'facing' | 'floorY' | 'field' | 'raging' | 'home' | 'crawling' | 'tip'> & {
+  /** (For trying a pose: the striking outer leg's foot is put here, on the floor, the leg still arched from its hip.) */
+  rake?: { x: number; z: number } | null;
   hip(side: 1 | -1, inner?: boolean): { x: number; z: number };
   dirOf(angle: number): [number, number];
 };
@@ -65,11 +67,14 @@ function bar(r0: number, r1: number, sides: number, squash = 1): THREE.BufferGeo
   g.scale(1, squash, 1);
   return flat(g);
 }
-/** Lays a bar from a to b. */
+/** Lays a bar from a to b. (By its own turning, not by looking at b: so it is right whatever she is drawn inside.) */
+const ALONG = new THREE.Vector3(0, 0, 1);
 function lay(m: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3): void {
+  const d = b.clone().sub(a);
+  const len = Math.max(0.01, d.length());
   m.position.copy(a);
-  m.lookAt(b);
-  m.scale.set(1, 1, Math.max(0.01, a.distanceTo(b)));
+  m.quaternion.setFromUnitVectors(ALONG, d.divideScalar(len));
+  m.scale.set(1, 1, len);
 }
 const ease = (t: number): number => {
   const k = Math.max(0, Math.min(1, t));
@@ -195,8 +200,11 @@ export class WidowModel {
   /** How bright a thing at `p` is: in the pool of light over the floor, or out of it. */
   private lightAt(w: WidowView, p: THREE.Vector3): number {
     const out = Math.hypot(p.x - w.field.x, p.z - w.field.z);
-    const across = Math.max(0, Math.min(1, (w.field.r + 1.4 - out) / 2.6));
-    const up = Math.max(0, Math.min(1, 1.2 - Math.max(0, p.y - w.floorY - 2.5) / 8));
+    // (The light reaches a good way past the edge of the floor and up: her front, and where her legs join her, are
+    // SEEN, fading back into the dark. Before, all of her past the edge was black, and her legs looked like loose
+    // limbs coming out of nothing.)
+    const across = Math.max(0, Math.min(1, (w.field.r + 7 - out) / 8));
+    const up = Math.max(0, Math.min(1, 1.3 - Math.max(0, p.y - w.floorY - 4) / 13));
     return across * up * this.shown;
   }
 
@@ -324,6 +332,11 @@ export class WidowModel {
         target.set(h.x + ax * restD, floor, h.z + az * restD);
         const beat = (this.age * 2.6 + i * 0.5) % 2;
         if (beat < 1) target.y = floor + 2.2 * Math.sin(beat * Math.PI);
+      }
+      if (w.rake && !leg.inner && mine) {
+        target.set(w.rake.x, floor + 0.2, w.rake.z);
+        hipY = HIP_Y;
+        snap = true;
       }
       if (dead) hipY = HIP_Y - 1.7 * this.fallen;
       if (!leg.placed || snap) leg.foot.copy(target);

@@ -85,6 +85,41 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     }
     camera.far = 400;
     camera.updateProjectionMatrix();
+  } else if (who === 'widowmock') {
+    // A TRY-OUT, not the game: the Widow's model drawn `big` times its size beside the same floor, held in one pose,
+    // to see whether a much bigger spider striking with the legs she stands on reads right.
+    // #view&who=widowmock&pose=rest|raise|slam|rake|bite&big=1.9&yaw=0&dist=60&pitch=0.4&h=4&lz=12
+    const big = num('big', 1.9);
+    const R = 13 / big;
+    const pose = q.get('pose') ?? 'rest';
+    const m = new WidowModel();
+    const holder = new THREE.Group();
+    holder.scale.setScalar(big);
+    holder.add(m.root);
+    scene.add(holder);
+    floor.visible = false;
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(13, 40), new THREE.MeshBasicMaterial({ color: 0x4a5462 }));
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.set(0, -0.001, 13 + 0.8 * big);
+    scene.add(disc);
+    const rat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.1, 8), new THREE.MeshBasicMaterial({ color: 0xd8b070 }));
+    rat.position.set(num('px', -3), 0.55, num('pz', 17));
+    scene.add(rat);
+    const spot = { x: rat.position.x / big, z: rat.position.z / big };
+    const side: 1 | -1 = spot.x >= 0 ? 1 : -1;
+    const hip = (sd: 1 | -1, inner = false): { x: number; z: number } => ({ x: sd * 3 * (inner ? 0.5 : 1), z: 0 });
+    const state = pose === 'raise' ? 'slamWind' : pose === 'slam' ? 'slamStuck' : pose === 'bite' ? 'biteStuck' : 'idle';
+    const sweep = num('sweep', -0.5);
+    const view = {
+      state, stateTime: 5, windTime: 1, side, angle: 0, spot, floorY: 0, raging: false, crawling: 0,
+      x: pose === 'bite' ? spot.x * 0.45 : 0, z: pose === 'bite' ? spot.z * 0.45 : 1.2, px: 0, pz: 0, facing: 0,
+      field: { x: 0, z: R + 0.8, r: R }, home: { x: 0, z: 1.2 }, tip: { x: 0, z: 9 },
+      rake: pose === 'rake' ? { x: hip(side).x + Math.sin(sweep) * 9.6, z: Math.cos(sweep) * 9.6 } : null,
+      hip, dirOf: (a: number): [number, number] => [Math.sin(a), Math.cos(a)],
+    };
+    for (let i = 0; i < 240; i++) m.update(dt, view as never);
+    camera.far = 500;
+    camera.updateProjectionMatrix();
   } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);
