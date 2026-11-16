@@ -68,12 +68,14 @@ const kit = modelKit(mat);
 // fairly texturless".)
 /**
  * A coat of fur: a surface picture in greys over each furred regular's own painted colours.
- * THE OWL IS PLAIN, AND STAYS SO UNTIL HE HAS SEEN STILLS. Feathers were tried twice: round-ended ones laid like tiles
+ * THE OWL WEARS SOFT PAINT (below), not feathers. Feathers were tried twice: round-ended ones laid like tiles
  * (a wall of bricks), then dark flecks scattered on a soft ground. Of the flecks, and of fur strokes on the mice and
  * on Grimsqueak, the owner, 2026-11-16: "the mice and birds look way worse than before. same with the rat king, its
  * like you just threw a bunch of shit all over them". Marks scattered over a smooth cartoon character read as DIRT.
  */
 const furMat = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+/** What the owl wears: SOFT PAINT, as the mice and the birds do (the owner's pick, 2026-11-16: render/textures.ts). */
+const softMat = createPs1Material({ lit: true, tex: getTexture('softPaint') });
 const scuteMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('turtleScute') }); // a plate of his shell, its ridges
 const mossyMat = createPs1Material({ lit: true, shine: 0.15, tex: getTexture('turtleScuteMossy') }); // the old one's: moss in from its edges
 const skinKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleSkin') })); // scales
@@ -817,9 +819,89 @@ const OWL = {
   snow: { coat: 0xe9edf2, coatDark: 0xb4bcc8, breast: 0xf7f9fb, bar: 0xb8c0cc, face: 0xfdfdfd, beak: 0x3a3a44, foot: 0x9aa2ae, eye: 0xf2d23a },
 } as const;
 
+/** What the owl is made of: feathers over his body and head, flight feathers down his wings (render/textures.ts). */
+const owlMat = createPs1Material({ lit: true, tex: getTexture('owlFeathers') });
+const owlWingMat = createPs1Material({ lit: true, tex: getTexture('owlWing') });
+/** His body and his head, as outlines to be turned: [how far out, how far up]. (His face and his apron are laid ON these.) */
+const OWL_BODY: Array<[number, number]> = [[0, 0.05], [0.17, 0.07], [0.27, 0.22], [0.292, 0.4], [0.255, 0.58], [0.18, 0.71], [0, 0.76]];
+const OWL_HEAD: Array<[number, number]> = [[0, 0], [0.19, 0.015], [0.275, 0.12], [0.292, 0.24], [0.245, 0.36], [0.13, 0.44], [0, 0.455]];
+const OWL_DEEP = 0.86;
+/** How far out a turned shape is at a height: between its outline's points. */
+function outAt(profile: Array<[number, number]>, y: number): number {
+  for (let i = 0; i + 1 < profile.length; i++) {
+    const [r0, y0] = profile[i];
+    const [r1, y1] = profile[i + 1];
+    if (y >= y0 && y <= y1) return r0 + ((r1 - r0) * (y - y0)) / Math.max(1e-6, y1 - y0);
+  }
+  return 0;
+}
+/**
+ * A patch laid ON a turned shape's front: `rim` is its outline, [across, up], round its middle `mid`; every point of
+ * it is put on the shape's own surface and lifted `lift` off it. So a face or an apron is curved as what it lies on
+ * is curved, and stands off it nowhere. (The owner, 2026-11-16, of the owl's apron, a flat square card stood in front
+ * of her: "square belly".)
+ */
+function laidOn(profile: Array<[number, number]>, deep: number, rim: Array<[number, number]>, mid: [number, number], lift: number, color: number, of: THREE.Material): THREE.Mesh {
+  const at = (x: number, y: number): THREE.Vector3 => {
+    const r = outAt(profile, y);
+    const cx = Math.max(-r * 0.98, Math.min(r * 0.98, x));
+    return new THREE.Vector3(cx, y, deep * Math.sqrt(Math.max(0, r * r - cx * cx)) + lift);
+  };
+  const pos: number[] = [];
+  const uvs: number[] = [];
+  const c = at(mid[0], mid[1]);
+  // (Each spoke of it in three steps, so that it bends with the shape between its middle and its rim.)
+  const STEPS = 3;
+  for (let i = 0; i < rim.length; i++) {
+    const a = rim[i];
+    const b = rim[(i + 1) % rim.length];
+    for (let k = 0; k < STEPS; k++) {
+      const t0 = k / STEPS;
+      const t1 = (k + 1) / STEPS;
+      const q = (p: [number, number], t: number): THREE.Vector3 => at(mid[0] + (p[0] - mid[0]) * t, mid[1] + (p[1] - mid[1]) * t);
+      const quad = [q(a, t0), q(b, t0), q(b, t1), q(a, t1)];
+      const tris = k === 0 ? [[c, quad[2], quad[3]]] : [[quad[0], quad[1], quad[2]], [quad[0], quad[2], quad[3]]];
+      for (const tri of tris) for (const v of tri) {
+        pos.push(v.x, v.y, v.z);
+        uvs.push(v.x * 1.6 + 0.5, v.y * 1.6);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+  geo.computeVertexNormals();
+  // (Wound to face forward whichever way its rim was given.)
+  if (geo.attributes.normal.getZ(0) < 0) {
+    const p2 = geo.attributes.position;
+    for (let i = 0; i < p2.count; i += 3) {
+      const [x, y, z] = [p2.getX(i + 1), p2.getY(i + 1), p2.getZ(i + 1)];
+      p2.setXYZ(i + 1, p2.getX(i + 2), p2.getY(i + 2), p2.getZ(i + 2));
+      p2.setXYZ(i + 2, x, y, z);
+    }
+    geo.computeVertexNormals();
+  }
+  return new THREE.Mesh(paintFaces(geo, color, 0.12), of);
+}
+/** Lays a part's picture `ku` times round it and `kv` times up it. */
+function finer(m: THREE.Mesh, ku: number, kv: number): THREE.Mesh {
+  const uv = m.geometry.attributes.uv as THREE.BufferAttribute;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * ku, uv.getY(i) * kv);
+  return m;
+}
+
+// THE OWL, SECOND MAKING. (The owner, 2026-11-16: "owl has a lot of problems to fix in the model square belly, bad
+// eyes, odd shapes, he could also benefit from a more detailed texture.") What was wrong: a seven-sided egg and a
+// seven-sided flat-topped head (lumps); an apron that was a square card stood in front of her; eyes that were flat
+// seven-sided coins with a squashed black ball on each; wedges for feet; a box for a tail and a box for a bow tie.
+// Now: a plump body and a big round head, twelve-sided so they read as round; a pale heart of a FACE laid on the head,
+// a dark rim round it; great round eyes, each a ring, a coloured iris, a big pupil and a glint, under a stern brow;
+// a hooked beak; long wings folded at his sides, barred; feet with three toes; a fan of a tail. The barkeeper's apron
+// is laid ON her front and curves as she does; the other one's bow tie is a bow. And feathers: `owlFeathers` over
+// body and head, `owlWing` down the wings.
 class Owl implements PatronBody {
   readonly root = new THREE.Group();
-  readonly height = 1.2;
+  readonly height = 1.22;
   private readonly body = new THREE.Group();
   private readonly head = new THREE.Group();
   private readonly beak = new THREE.Group();
@@ -834,78 +916,108 @@ class Owl implements PatronBody {
   constructor(private readonly look: 'tawny' | 'snow') {
     const C = OWL[look];
     this.root.add(this.body);
-    // The body: ONE egg, pale down its breast with darker bars across it.
-    this.body.add(turned(
-      [[0, 0.06], [0.18, 0.09], [0.265, 0.28], [0.25, 0.52], [0.17, 0.72], [0, 0.8]],
-      (nx, ny, nz) => (nz > 0.25 && Math.abs(nx) < 0.7 ? (Math.abs(((ny * 3.2 + 4) % 1) - 0.5) < 0.16 ? C.bar : C.breast) : C.coat), 7, 0.86,
-    ));
-    // A stub of a tail, and his feet: two wedges with their toes forward.
-    const tail = kit.box(0.2, 0.05, 0.2, C.coatDark, 0, 0.16, -0.24);
-    tail.rotation.x = 0.7;
+    // The body: ONE plump egg, pale down its breast.
+    this.body.add(finer(turned(OWL_BODY, (nx, _ny, nz) => (nz > 0.22 && Math.abs(nx) < 0.72 ? C.breast : C.coat), 12, OWL_DEEP, false, owlMat), 4, 2.5));
+    // A fan of a tail, and his feet: three toes forward on each.
+    const tail = turned([[0, 0], [0.11, 0.03], [0.13, 0.17], [0, 0.26]], C.coatDark, 5, 0.22, false, owlWingMat);
+    tail.rotation.x = -2.25;
+    tail.position.set(0, 0.2, -0.2);
     this.body.add(tail);
     for (const side of [-1, 1]) {
-      const foot = kit.box(0.1, 0.06, 0.17, C.foot, side * 0.1, 0.03, 0.06);
+      const foot = new THREE.Group();
+      foot.position.set(side * 0.11, 0.03, 0.06);
+      for (const k of [-1, 0, 1]) {
+        const toe = limb(0.03, 0.01, 0.13, C.foot, 4, softMat);
+        toe.rotation.set(-Math.PI / 2, 0, 0);
+        toe.rotation.order = 'YXZ';
+        toe.rotation.y = k * 0.42;
+        foot.add(toe);
+      }
+      foot.add(kit.blob(0.045, 0.035, 0.045, C.foot, 0, 0.01, 0, 5, 4, 0.1));
       this.body.add(foot);
       this.feet.push(foot);
     }
-    // Wings: each ONE flat blade hanging from the shoulder. They are his arms.
+    // Wings: each ONE long leaf folded down his side from the shoulder, barred. They are his arms.
     for (const side of [-1, 1]) {
       const wing = new THREE.Group();
-      wing.position.set(side * 0.235, 0.6, 0);
+      wing.position.set(side * 0.262, 0.6, -0.01);
       wing.userData.side = side;
-      const blade = turned([[0, 0], [0.11, 0.05], [0.12, 0.25], [0.05, 0.46], [0, 0.5]], (_x, ny) => (ny > 0.3 ? C.coatDark : C.coat), 5, 0.35);
+      const blade = turned([[0, 0], [0.105, 0.04], [0.14, 0.2], [0.115, 0.38], [0.045, 0.52], [0, 0.56]], (_x, ny) => (ny > 0.45 ? C.coatDark : C.coat), 6, 0.3, false, owlWingMat);
       blade.rotation.x = Math.PI; // it hangs down from the shoulder
       wing.add(blade);
       if (side > 0) {
-        this.mugHand.position.set(0, -0.43, 0.08);
+        this.mugHand.position.set(0, -0.46, 0.08);
         this.mugHand.add(mug());
         wing.add(this.mugHand);
       } else {
         // A rag, for the one who keeps the bar.
-        this.rag.position.set(0, -0.44, 0.07);
+        this.rag.position.set(0, -0.47, 0.07);
         this.rag.add(kit.box(0.12, 0.09, 0.03, 0xdcd3bb, 0, 0, 0));
         wing.add(this.rag);
       }
       this.body.add(wing);
       this.wings.push(wing);
     }
-    // The head: wide and flat-topped, a pale face, two great eyes, a small hooked beak; tufts on the tawny one.
-    this.head.position.set(0, 0.74, 0.02);
+    // The head: big and round, no neck to speak of.
+    this.head.position.set(0, 0.68, 0.015);
     this.body.add(this.head);
-    this.head.add(turned([[0, 0], [0.19, 0.03], [0.245, 0.16], [0.215, 0.3], [0.1, 0.37], [0, 0.375]], (_x, ny, nz) => (nz > 0.35 && ny < 0.75 ? C.face : C.coat), 7, 0.82));
+    this.head.add(finer(turned(OWL_HEAD, C.coat, 12, OWL_DEEP, false, owlMat), 4, 1.6));
+    // His face: a pale heart laid on the front of his head, a dark rim showing round it.
+    const heart: Array<[number, number]> = [[0, 0.075], [0.105, 0.095], [0.195, 0.16], [0.232, 0.255], [0.2, 0.345], [0.11, 0.378], [0.035, 0.345], [0, 0.305], [-0.035, 0.345], [-0.11, 0.378], [-0.2, 0.345], [-0.232, 0.255], [-0.195, 0.16], [-0.105, 0.095]];
+    const grow = (k: number): Array<[number, number]> => heart.map(([x, y]) => [x * k, 0.235 + (y - 0.235) * k]);
+    this.head.add(laidOn(OWL_HEAD, OWL_DEEP, grow(1.1), [0, 0.235], 0.008, C.coatDark, softMat));
+    this.head.add(laidOn(OWL_HEAD, OWL_DEEP, heart, [0, 0.235], 0.016, C.face, softMat));
+    const faceZ = (x: number, y: number): number => OWL_DEEP * Math.sqrt(Math.max(0, outAt(OWL_HEAD, y) ** 2 - x * x)) + 0.016;
+    // Eyes: great and round. A dark ring, a coloured iris, a big pupil, a glint. (They shut, for a blink, as one.)
     const eyes: THREE.Object3D[] = [];
+    const IRIS = new THREE.MeshBasicMaterial({ color: C.eye });
     for (const side of [-1, 1]) {
-      const ring = new THREE.Mesh(paintFaces(faceted(new THREE.CylinderGeometry(0.085, 0.085, 0.02, 7, 1).rotateX(Math.PI / 2)), C.eye, 0), mat);
-      ring.position.set(side * 0.095, 0.2, 0.175);
-      ring.rotation.y = side * 0.25;
-      this.head.add(ring);
-      const pupil = bead(0.046, BLACK, side * 0.099, 0.2, 0.19);
-      pupil.scale.z = 0.35;
-      pupil.rotation.y = side * 0.25;
-      this.head.add(pupil);
-      eyes.push(pupil);
+      const e = new THREE.Group();
+      e.position.set(side * 0.1, 0.262, faceZ(0.1, 0.262) + 0.004);
+      e.rotation.y = side * 0.3;
+      const disc = (r: number, m: THREE.Material, z: number): THREE.Mesh => new THREE.Mesh(new THREE.CircleGeometry(r, 12), m).translateZ(z);
+      e.add(disc(0.083, BLACK, 0), disc(0.07, IRIS, 0.004), disc(0.042, BLACK, 0.008), disc(0.014, WHITE, 0.012).translateX(-0.018).translateY(0.02));
+      this.head.add(e);
+      eyes.push(e);
+      // His brow: a dark bar over each eye, down toward his beak. An owl always looks as if it disapproves.
+      const brow = kit.box(0.15, 0.03, 0.03, C.coatDark, side * 0.098, 0.358, faceZ(0.098, 0.358) + 0.012);
+      brow.rotation.set(0.25, side * 0.3, side * -0.36);
+      this.head.add(brow);
     }
-    this.beak.position.set(0, 0.15, 0.2);
-    const hook = limb(0.035, 0.006, 0.09, C.beak, 4);
-    hook.rotation.x = 0.5;
+    // The beak: small, hooked, between and below his eyes.
+    this.beak.position.set(0, 0.2, faceZ(0, 0.2) + 0.004);
+    const hook = limb(0.04, 0.006, 0.105, C.beak, 4, softMat);
+    hook.rotation.x = 0.42;
     this.beak.add(hook);
     this.head.add(this.beak);
     if (look === 'tawny') {
+      // Ear tufts: a feather up and out from the end of each brow.
       for (const side of [-1, 1]) {
-        const tuft = limb(0.045, 0.004, 0.14, C.coatDark, 3);
-        tuft.rotation.set(Math.PI, 0, side * 0.5);
-        tuft.position.set(side * 0.16, 0.32, 0);
+        const tuft = turned([[0, 0], [0.05, 0.03], [0.04, 0.12], [0, 0.2]], C.coatDark, 4, 0.4, false, owlWingMat);
+        tuft.rotation.set(-0.15, 0, side * -0.55);
+        tuft.position.set(side * 0.17, 0.37, 0.05);
         this.head.add(tuft);
       }
-      // An apron, tied at the back: she keeps the bar.
-      this.body.add(kit.box(0.3, 0.3, 0.02, 0xe6e0cf, 0, 0.36, 0.215));
+      // An apron, laid on her front and tied behind: she keeps the bar. Its bottom corners rounded.
+      const apron: Array<[number, number]> = [[-0.17, 0.5], [0.17, 0.5], [0.185, 0.3], [0.15, 0.19], [0.07, 0.15], [-0.07, 0.15], [-0.15, 0.19], [-0.185, 0.3]];
+      this.body.add(laidOn(OWL_BODY, OWL_DEEP, apron, [0, 0.34], 0.014, 0xe9e2d0, softMat));
+      // (Its strings, round her middle.)
+      this.body.add(turned([[0.286, 0], [0.298, 0.014], [0.286, 0.028]], 0xcfc6ae, 12, OWL_DEEP, false, softMat).translateY(0.47));
     } else {
-      // A monocle on a cord, and a bow tie.
-      const glass = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.01, 4, 10), new THREE.MeshBasicMaterial({ color: 0xd9b24a }));
-      glass.position.set(0.095, 0.2, 0.19);
-      glass.rotation.y = 0.25;
+      // A monocle, and a bow tie: two wings of it and a knot.
+      const glass = new THREE.Mesh(new THREE.TorusGeometry(0.092, 0.009, 4, 12), new THREE.MeshBasicMaterial({ color: 0xd9b24a }));
+      glass.position.set(0.1, 0.262, faceZ(0.1, 0.262) + 0.018);
+      glass.rotation.y = 0.3;
       this.head.add(glass);
-      this.body.add(kit.box(0.2, 0.07, 0.03, 0x8a2a3a, 0, 0.72, 0.17));
+      const z = OWL_DEEP * outAt(OWL_BODY, 0.685) + 0.03;
+      for (const side of [-1, 1]) {
+        const half = kit.cone(0.055, 0.11, 0x8a2a3a, 4);
+        half.rotation.z = side * Math.PI / 2;
+        half.scale.z = 0.5;
+        half.position.set(side * 0.115, 0.685, z);
+        this.body.add(half);
+      }
+      this.body.add(kit.blob(0.028, 0.03, 0.022, 0x6e2030, 0, 0.685, z + 0.005, 5, 4, 0));
     }
     this.common = new Common(eyes, 1);
   }

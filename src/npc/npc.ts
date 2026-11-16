@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
@@ -139,7 +140,32 @@ export class Npc {
   near = false;
 
   constructor(readonly spec: NpcSpec) {
-    const mat = createPs1Material({ lit: true });
+    // The friendly characters built here (the mice, the birds, Dave) wear SOFT PAINT: slow clouds of a little lighter
+    // and a little darker over their painted colours, as if brushed on, and nothing else. (The owner, 2026-11-16, shown
+    // them plain, soft and deeper side by side after fur strokes and feather flecks were taken off them: "deeper soft
+    // paint i like best". See render/textures.ts `softPaint`.)
+    const mat = createPs1Material({ lit: true, tex: getTexture('softPaint') });
+    /** A box with its corners and edges rounded off by `r`. */
+    const rounded = (w: number, h: number, d: number, r: number, color: number | ((nx: number, ny: number, nz: number) => number), x: number, y: number, z: number): THREE.Mesh => {
+      const geo = new THREE.BoxGeometry(w, h, d, 4, 4, 4);
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      const inner = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        // (Drawn in to a box `r` smaller all round, and pushed back out from there by `r`: its faces stay flat and
+        // its edges and corners turn.)
+        inner.set(Math.max(-w / 2 + r, Math.min(w / 2 - r, v.x)), Math.max(-h / 2 + r, Math.min(h / 2 - r, v.y)), Math.max(-d / 2 + r, Math.min(d / 2 - r, v.z)));
+        v.sub(inner);
+        if (v.lengthSq() > 1e-12) v.setLength(r);
+        pos.setXYZ(i, inner.x + v.x, inner.y + v.y, inner.z + v.z);
+      }
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(paint(geo, color, 0.2), mat);
+      m.position.set(x, y, z);
+      return m;
+    };
+    const strapMat = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('softPaint') });
     const blob = (sx: number, sy: number, sz: number, color: number, x: number, y: number, z: number, w = 7, h = 5): THREE.Mesh => {
       const geo = new THREE.SphereGeometry(1, w, h);
       geo.scale(sx, sy, sz);
@@ -384,12 +410,72 @@ export class Npc {
       const STRAP = 0x4a3020;
       const GOLD = 0xe0b040;
       this.root.add(this.body);
+      /** His body's shape (the peddler's): how far it reaches each way from its middle, and how high that is. */
+      const BODY = { x: 0.3, y: 0.36, z: 0.28, at: 0.42 };
+      const strapOn = (s: number): THREE.Mesh => {
+        const on = (x: number, y: number, z: number): THREE.Vector3 => new THREE.Vector3(x, y, z);
+        const at: THREE.Vector3[] = [];
+        // Over the shoulder: an arc in a plane a little to one side of his middle, from his back to low on his front.
+        const sx = s * 0.15;
+        const k = Math.sqrt(1 - (sx / BODY.x) ** 2);
+        for (const deg of [-78, -50, -20, 10, 40, 70, 96]) {
+          const a = (deg * Math.PI) / 180;
+          at.push(on(sx, BODY.at + BODY.y * k * Math.cos(a), BODY.z * k * Math.sin(a)));
+        }
+        // Under the arm: round his side at the height of his waist and back to the pack.
+        const y = BODY.at - 0.07;
+        const f = Math.sqrt(1 - ((y - BODY.at) / BODY.y) ** 2);
+        for (const deg of [48, 78, 108, 136]) {
+          const a = (deg * Math.PI) / 180;
+          at.push(on(s * BODY.x * f * Math.sin(a), y, BODY.z * f * Math.cos(a)));
+        }
+        const curve = new THREE.CatmullRomCurve3(at);
+        const N = 26;
+        const HALF = 0.026;
+        const pos: number[] = [];
+        const col: number[] = [];
+        const uvs: number[] = [];
+        const dark = new THREE.Color(STRAP);
+        const edge = new THREE.Color(STRAP).multiplyScalar(1.5);
+        const ring: Array<[THREE.Vector3, THREE.Vector3]> = [];
+        for (let i = 0; i <= N; i++) {
+          const p = curve.getPoint(i / N);
+          const t = curve.getTangent(i / N);
+          // (Which way is out of him, here.)
+          const out = new THREE.Vector3(p.x / BODY.x ** 2, (p.y - BODY.at) / BODY.y ** 2, p.z / BODY.z ** 2).normalize();
+          const across = new THREE.Vector3().crossVectors(t, out).normalize().multiplyScalar(HALF);
+          const mid = p.clone().addScaledVector(out, 0.014);
+          ring.push([mid.clone().sub(across), mid.clone().add(across)]);
+        }
+        for (let i = 0; i < N; i++) {
+          const [a0, a1] = ring[i];
+          const [b0, b1] = ring[i + 1];
+          for (const [v, c, u] of [[a0, edge, 0], [a1, dark, 1], [b0, edge, 0], [a1, dark, 1], [b1, dark, 1], [b0, edge, 0]] as Array<[THREE.Vector3, THREE.Color, number]>) {
+            pos.push(v.x, v.y, v.z);
+            col.push(c.r, c.g, c.b);
+            uvs.push(u, i / N);
+          }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+        geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+        geo.computeVertexNormals();
+        const m = new THREE.Mesh(geo, strapMat);
+        m.name = 'strap';
+        return m;
+      };
       // Body: the cloak, open down the front over a cream belly, with a paler hem.
       this.body.add(mort
         ? kit.blob(0.34, 0.36, 0.31, (_nx, ny) => (ny < -0.72 ? 0x566430 : ny > -0.1 && ny < 0.2 ? TRIM : CLOAK), 0, 0.42, 0, 10, 9, 0.3)
         : kit.blob(0.3, 0.36, 0.28, (nx, ny, nz) => (nz > 0.35 && Math.abs(nx) < 0.55 && ny < 0.6 ? FUR_LIGHT : ny < -0.72 ? TRIM : CLOAK), 0, 0.42, 0, 10, 8, 0.3));
       for (const s of [-1, 1]) {
-        const foot = kit.blob(mort ? 0.12 : 0.1, mort ? 0.075 : 0.055, 0.16, mort ? 0x4a9a9a : PINK, s * 0.14, 0.05, 0.08, 6, 4, 0.2);
+        // Mort is in slippers. Pip is in SHOES: stout brown ones with a dark sole. (He had bare pink feet with three
+        // toes each stuck on in front of them: the owner, 2026-11-16: "mouse toes are kind of weird, need fixed, maybe
+        // just shoes?")
+        const foot = mort
+          ? kit.blob(0.12, 0.075, 0.16, 0x4a9a9a, s * 0.14, 0.05, 0.08, 6, 4, 0.2)
+          : kit.blob(0.105, 0.07, 0.17, (_nx, ny, nz) => (ny < -0.45 ? 0x33200f : nz > 0.55 && ny < 0.3 ? 0x5e3a1c : 0x7a4e2a), s * 0.14, 0.062, 0.085, 7, 5, 0.25);
         foot.rotation.y = s * 0.25;
         this.body.add(foot);
         if (mort) {
@@ -397,11 +483,11 @@ export class Npc {
           this.body.add(kit.blob(0.085, 0.045, 0.07, 0xe8e0d0, s * 0.13, 0.11, 0.02, 6, 4, 0.1));
           continue;
         }
-        for (let k = -1; k <= 1; k++) this.body.add(kit.blob(0.028, 0.025, 0.04, 0xf0c0b8, s * 0.14 + k * 0.05 + s * 0.03, 0.04, 0.23, 4, 3, 0));
-        // The pack's straps, over his shoulders and down his front.
-        const strap = box(0.05, 0.42, 0.03, STRAP, s * 0.17, 0.56, 0.2);
-        strap.rotation.set(0.22, 0, -s * 0.12);
-        this.body.add(strap);
+        // The pack's straps. (The owner, 2026-11-16: "backpack straps are pretty messed up on mouse". They were two
+        // stiff boxes stood off his front, ending in the air and never meeting the pack.) Each is a band LAID ON HIM:
+        // from the top of the pack up over his shoulder, down his front, round under his arm and back to the pack's
+        // lower corner. Every point of it is found on his body's own shape and lifted a hair off it.
+        this.body.add(strapOn(s));
       }
       if (mort) {
         // The jumper's thick rolled neck.
@@ -416,12 +502,15 @@ export class Npc {
         // and a rolled map poking out.
         const pack = new THREE.Group();
         pack.position.set(0, 0.62, -0.36);
-        pack.add(kit.box(0.62, 0.6, 0.4, (_nx, ny) => (ny < -0.6 ? 0x6e4626 : LEATHER), 0, 0, 0));
-        pack.add(kit.box(0.66, 0.2, 0.44, 0xa06c3c, 0, 0.22, 0)); // the flap
+        // (Its corners are ROUNDED: a soft leather bag, not a crate. The owner, 2026-11-16: "corners of backpack
+        // could be rounded more as well.")
+        pack.add(rounded(0.62, 0.6, 0.4, 0.11, (_nx, ny) => (ny < -0.6 ? 0x6e4626 : LEATHER), 0, 0, 0));
+        pack.add(rounded(0.66, 0.2, 0.44, 0.07, 0xa06c3c, 0, 0.22, 0)); // the flap
         for (const s of [-1, 1]) {
-          pack.add(box(0.06, 0.34, 0.02, STRAP, s * 0.16, 0.0, 0.215));
-          pack.add(box(0.08, 0.06, 0.03, GOLD, s * 0.16, 0.1, 0.225));
-          pack.add(kit.box(0.2, 0.22, 0.1, 0x7a4e2a, s * 0.36, -0.12, 0)); // side pockets
+          // (The flap's two straps and buckles, on the OUTSIDE of the pack: they were on the side against his back.)
+          pack.add(box(0.06, 0.34, 0.02, STRAP, s * 0.16, 0.0, -0.215));
+          pack.add(box(0.08, 0.06, 0.03, GOLD, s * 0.16, 0.1, -0.225));
+          pack.add(rounded(0.2, 0.22, 0.1, 0.04, 0x7a4e2a, s * 0.36, -0.12, 0)); // side pockets
         }
         const roll = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.16, 0.16, 0.76, 8, 10), (_nx, ny) => (Math.abs(ny) > 0.95 ? 0xe8d8b0 : Math.abs(ny) > 0.5 && Math.abs(ny) < 0.7 ? STRAP : 0xb84a3a)), mat);
         roll.rotation.z = Math.PI / 2;

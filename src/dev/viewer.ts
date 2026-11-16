@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { getTexture } from '../render/textures';
 import { makePuppet, PUPPET_FOES } from '../cutscene/stage';
 import { Npc } from '../npc/npc';
+import { GrimsqueakModel, type GrimSpell } from '../npc/grimsqueakModel';
 import { BatModel } from '../enemies/batModel';
 import { HornetModel } from '../enemies/hornetModel';
 import { BroodModel } from '../enemies/broodModel';
@@ -184,6 +185,15 @@ export function runViewer(canvas: HTMLCanvasElement): void {
       scene.add(m.root);
       if (type === 'hornet') m.root.position.y = 0.9;
     }
+  } else if (who === 'grim') {
+    // Lord Grimsqueak casting: #view&who=grim&spell=fireball&st=0.8 (st: how many seconds into the spell)
+    const g = new GrimsqueakModel();
+    scene.add(g.root);
+    const kind = (q.get('spell') ?? 'fireball') as GrimSpell;
+    const st = num('st', 0.8);
+    const inp = { low: 0, float: 0.55, bow: 0, still: false, talking: false, mouth: 0, gesture: 'rest', reach: 0 } as const;
+    for (let i = 0; i < 40; i++) g.update(dt, inp);
+    for (let time = 0; time <= st + 1e-6; time += dt) g.update(dt, { ...inp, spell: q.has('spell') ? { kind, t: time } : undefined });
   } else if (who === 'npc') {
     // A talking character: #view&who=npc&kind=mouse&name=Pip&t=2
     const n = new Npc({ name: q.get('name') ?? 'Pip', kind: (q.get('kind') ?? 'mouse') as never, x: 0, y: 0, z: 0, facing: 0, lines: ['.'] });
@@ -254,10 +264,10 @@ export function runViewer(canvas: HTMLCanvasElement): void {
   camera.position.x += lx;
   camera.position.z += lz;
   camera.lookAt(lx, h, lz);
-  // &soft=1 (or 2, twice as deep): A TRY-OUT. Everything of it that is lit wears `softPaint` (soft painted shading and nothing else),
-  // to be looked at beside itself plain. Nothing in the game wears it.
+  // &soft=1: A TRY-OUT. Everything of it that is lit wears `softPaint` (soft painted shading and nothing else), to be
+  // looked at beside itself plain before it wears it in the game.
   if (q.has('soft')) {
-    const soft = getTexture(q.get('soft') === '2' ? 'softPaintStrong' : 'softPaint');
+    const soft = getTexture('softPaint');
     scene.traverse((o) => {
       const mat = (o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).material as THREE.ShaderMaterial) : null;
       if (mat?.uniforms?.tex) mat.uniforms.tex.value = soft;

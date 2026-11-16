@@ -2550,21 +2550,89 @@ function paintMembrane(p: Px, rand: Rand): void {
 }
 
 /**
- * SOFT PAINT: A TRY-OUT, WORN BY NOBODY IN THE GAME (the model viewer shows it with `&soft=1`). The owner, 2026-11-16,
- * after fur strokes and feather flecks on the mice and birds were taken off ("like you just threw a bunch of shit all
+ * THE OWL'S FEATHERS (the owner, 2026-11-16, of the owl in soft paint only: "he could also benefit from a more
+ * detailed texture"). Third try at feathers, and what the first two taught: small round-ended ones with a dark line
+ * round each were a wall of bricks; dark flecks were dirt. So these are LARGE and SOFT: each feather a quarter of the
+ * picture wide, shaded like a shallow dish (pale toward its tip, a breath darker where it goes under the one above),
+ * only a thin soft shadow under its tip, a faint shaft. Rows lie over rows, half a feather along. Painted, not inked.
+ */
+function paintOwlFeathers(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 2);
+  const W = 16;
+  const H = 8;
+  const R = 10.5;
+  const soft = [0x8f949a, 0xa6aaaf, 0xbcc0c4, 0xd2d5d8, 0xe6e8ea, 0xf4f5f6, 0xffffff];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      let v = 0.5;
+      // (The feather of the highest row that reaches down this far is the one on top here.)
+      for (let up = 2; up >= 0; up--) {
+        const row = Math.floor(y / H) - up;
+        const dy = y - row * H;
+        let dx = (((x - (((row % 2) + 2) % 2) * (W / 2)) % W) + W) % W;
+        if (dx > W / 2) dx -= W;
+        // (Longer than it is wide: a feather, not a coin.)
+        const d = Math.hypot(dx * 1.25, dy * 0.62);
+        if (d > R) continue;
+        const k = d / R;
+        v = 0.62 + 0.36 * k * k + (f[y * S + x] - 0.5) * 0.08;
+        if (k > 0.9) v -= 0.3 * ((k - 0.9) / 0.1);
+        else if (Math.abs(dx) < 0.6 && dy > 2) v -= 0.05;
+        break;
+      }
+      p.set(x, y, ramp(v, soft, x, y, 0.07));
+    }
+  }
+}
+
+/**
+ * The owl's wing: long flight feathers side by side down the picture, each with its own rounded end (no two ending
+ * level), a soft shaft, and broad pale-edged bars across it, as an owl's are barred.
+ */
+function paintOwlWing(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 2);
+  const W = 8;
+  const soft = [0x7e848a, 0x969ba0, 0xaeb2b6, 0xc6c9cc, 0xdddfe1, 0xf0f1f2, 0xffffff];
+  const ends = Array.from({ length: S / W }, (_, i) => S * 0.68 + ((i * 7) % 5) * 3.2 + rand() * 2);
+  const shift = Array.from({ length: S / W }, () => Math.floor(rand() * 6));
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = Math.floor(x / W);
+      const dx = (x % W) - (W - 1) / 2;
+      // Past this feather's end the next one down shows: darker, as if under it.
+      const end = ends[i] - (dx * dx) * 0.28;
+      let v = 0.8 - Math.abs(dx) * 0.035 + (f[y * S + x] - 0.5) * 0.08;
+      if (y > end) v = 0.52 + (f[y * S + x] - 0.5) * 0.06;
+      else {
+        // Bars across it, every so often, soft-edged.
+        const bar = (y + shift[i]) % 14;
+        if (bar < 4) v -= 0.2 - Math.abs(bar - 1.5) * 0.05;
+        if (Math.abs(dx) < 0.6) v -= 0.07;
+        if (Math.abs(dx) > W / 2 - 0.9) v -= 0.14;
+        if (y > end - 1.5) v -= 0.12;
+      }
+      p.set(x, y, ramp(v, soft, x, y, 0.07));
+    }
+  }
+}
+
+/**
+ * SOFT PAINT: what the friendly characters wear (the mice, the birds, Dave, the owl, Lord Grimsqueak). The owner,
+ * 2026-11-16, after fur strokes and feather flecks on them were taken off ("like you just threw a bunch of shit all
  * over them"), with pictures of old games' characters: "Their texture doesn't have to be intense remember we're going
  * for an old school game". What those characters have is not marks but PAINTED SHADING: big soft clouds of a little
- * lighter and a little darker, as if brushed on, and nothing else. So: slow clouds, five near-white greys, no dots.
+ * lighter and a little darker, as if brushed on, and nothing else. Shown him plain, soft, and deeper side by side:
+ * "deeper soft paint i like best". This is the deeper. Slow clouds, five greys, no dots.
+ * (The model viewer puts it on anything with `&soft=1`, to try it on someone before he wears it.)
  */
-function paintSoftPaintAs(strong: boolean): Painter {
-  return (p, rand) => {
-    const S = p.size;
-    const a = fbm(S, rand, 2, 2);
-    const b = fbm(S, rand, 4, 2);
-    // (`strong`: the same clouds, twice as deep. Two strengths, for him to choose between or refuse both.)
-    const soft = strong ? [0xa8adb2, 0xbfc3c7, 0xd5d8da, 0xebecee, 0xffffff] : [0xcfd2d4, 0xdcdee0, 0xe9eaeb, 0xf5f5f6, 0xffffff];
-    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.2 + a[y * S + x] * 0.6 + (b[y * S + x] - 0.5) * 0.3, soft, x, y, 0.1));
-  };
+function paintSoftPaint(p: Px, rand: Rand): void {
+  const S = p.size;
+  const a = fbm(S, rand, 2, 2);
+  const b = fbm(S, rand, 4, 2);
+  const soft = [0xa8adb2, 0xbfc3c7, 0xd5d8da, 0xebecee, 0xffffff];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.2 + a[y * S + x] * 0.6 + (b[y * S + x] - 0.5) * 0.3, soft, x, y, 0.1));
 }
 
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
@@ -2778,9 +2846,10 @@ const DEFS = {
   wartSkin: { size: 64, seed: 862, paint: paintWartSkin },
   leafChitin: { size: 32, seed: 863, paint: paintLeafChitin },
   membrane: { size: 32, seed: 864, paint: paintMembrane },
-  // A try-out, worn by nobody: soft painted shading for the friendly characters (viewer: &soft=1).
-  softPaint: { size: 64, seed: 871, paint: paintSoftPaintAs(false) },
-  softPaintStrong: { size: 64, seed: 871, paint: paintSoftPaintAs(true) },
+  owlFeathers: { size: 64, seed: 872, paint: paintOwlFeathers },
+  owlWing: { size: 64, seed: 873, paint: paintOwlWing },
+  // Soft painted shading: what the friendly characters wear.
+  softPaint: { size: 64, seed: 871, paint: paintSoftPaint },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 
 /**
@@ -41,7 +42,32 @@ export type GrimGesture =
   /** A paw held out, palm up (the ending). */
   | 'offer';
 
+/**
+ * HIS SPELLS: five pieces of casting, each a short show with a beginning, a blow and an end. (The owner, 2026-11-16:
+ * "give him some magic casting animations (casting one hand fireball, summoning minions from the underworld, lightning
+ * hands, healing himself, casting aoe attack)".) A spell is played by handing the model `spell: { kind, t }` each
+ * frame, `t` the seconds since it began: it takes over his stance while it runs and shows its own light.
+ *   fireball: a flame gathered in one cupped claw by his shoulder, drawn back, and thrown.
+ *   summon: bowed over the ground with both claws low, he drags something up out of it: a ring opens under him and
+ *     pale hands of light rise from it as his arms rise.
+ *   lightning: both claws clenched at his chest, then thrust out with the fingers spread, forks of light from each.
+ *   heal: both claws folded over the shard in his chest, head bowed; a ring of light climbs him and motes rise.
+ *   blast: hunched and gathered in, then flung open: a ring bursts out over the ground all round him.
+ * THE FIGHT DOES NOT USE THEM YET (enemies/grimsqueak.ts has its own attacks and gestures): they are here to be used.
+ */
+export type GrimSpell = 'fireball' | 'summon' | 'lightning' | 'heal' | 'blast';
+/** How long each lasts, and the moment its blow lands (the flame leaves his claw, the forks start, the ring bursts). */
+export const GRIM_SPELLS: Record<GrimSpell, { length: number; strike: number; name: string }> = {
+  fireball: { length: 1.6, strike: 0.8, name: 'Fireball' },
+  summon: { length: 2.8, strike: 1.9, name: 'Summon from below' },
+  lightning: { length: 2.0, strike: 0.55, name: 'Lightning hands' },
+  heal: { length: 2.4, strike: 0.5, name: 'Heal' },
+  blast: { length: 2.0, strike: 0.8, name: 'Blast' },
+};
+
 export interface GrimInput {
+  /** A spell he is casting, and how far into it he is (seconds). Leave out when he is not. */
+  spell?: { kind: GrimSpell; t: number };
   /** 0 floating .. 1 down on the ground. */
   low: number;
   /** How high he hangs above the ground when he floats. */
@@ -122,6 +148,74 @@ const STANCES: Record<GrimGesture, Stance> = {
   offer: { left: A(-0.05, 0, 0.1, -0.25, 0.3), right: A(-1.05, 0, 0.12, -0.5, 0.85, [-1.5, 0, 0]), spine: 0.2, head: 0.12, jaw: 0, heat: 0.15, shake: 0, ears: -0.3 },
 };
 
+/** A spell's stances, each at its moment (seconds in): he moves from one to the next. */
+const SPELL_KEYS: Record<GrimSpell, Array<[number, Stance]>> = {
+  fireball: [
+    [0, STANCES.rest],
+    // The flame gathered: his right claw cupped, palm up, by his shoulder; he leans back from it.
+    [0.3, { left: ON_SHARD, right: A(-0.75, 0, 0.85, -2.0, 0.55, [-0.9, 0, 0]), spine: -0.1, head: -0.05, jaw: 0.1, heat: 0.7, shake: 0.3, ears: 0.3 }],
+    // Drawn back to throw.
+    [0.68, { left: ON_SHARD, right: A(-2.35, 0, 0.75, -1.5, 0.8, [-0.6, 0, 0]), spine: -0.24, head: -0.16, jaw: 0.25, heat: 1, shake: 0.5, ears: 0.7 }],
+    // Thrown: the arm straight out, his whole body after it.
+    [0.84, { left: ON_SHARD, right: A(-1.45, 0, 0.02, -0.04, 1, [0.5, 0, 0]), spine: 0.36, head: 0.12, jaw: 0.6, heat: 1, shake: 0, ears: 1 }],
+    [1.2, { left: ON_SHARD, right: A(-1.35, 0, 0.05, -0.2, 0.9), spine: 0.24, head: 0.06, jaw: 0.2, heat: 0.7, shake: 0, ears: 0.6 }],
+    [1.6, STANCES.rest],
+  ],
+  summon: [
+    [0, STANCES.rest],
+    // Bowed over the ground, both claws low and open over it.
+    [0.5, { left: A(-0.55, 0, 0.75, -0.3, 1, [0.9, 0, 0]), right: A(-0.55, 0, 0.75, -0.3, 1, [0.9, 0, 0]), spine: 0.5, head: 0.4, jaw: 0.15, heat: 0.6, shake: 0.4, ears: 0.4 }],
+    // Dragging it up: the claws turn palm up and rise, shaking with the weight of it.
+    [1.5, { left: A(-1.0, 0, 0.95, -1.0, 0.75, [-1.0, 0, 0]), right: A(-1.0, 0, 0.95, -1.0, 0.75, [-1.0, 0, 0]), spine: 0.12, head: 0.1, jaw: 0.45, heat: 1, shake: 1, ears: 0.8 }],
+    // Up: flung high, head back.
+    [1.95, { left: A(-2.6, 0, 0.65, -0.35, 1), right: A(-2.6, 0, 0.65, -0.35, 1), spine: -0.22, head: -0.4, jaw: 0.9, heat: 1, shake: 0.5, ears: 1 }],
+    [2.4, { left: A(-2.3, 0, 0.75, -0.5, 1), right: A(-2.3, 0, 0.75, -0.5, 1), spine: -0.14, head: -0.25, jaw: 0.4, heat: 0.9, shake: 0.2, ears: 0.8 }],
+    [2.8, STANCES.rest],
+  ],
+  lightning: [
+    [0, STANCES.rest],
+    // Clenched at his chest, trembling.
+    [0.36, { left: A(-0.95, 0.35, 0.3, -2.2, 0.05), right: A(-0.95, 0.35, 0.3, -2.2, 0.05), spine: -0.08, head: 0.12, jaw: 0, heat: 1, shake: 1, ears: 0.6 }],
+    // Out: both arms straight, fingers as wide as they go.
+    [0.56, { left: A(-1.52, 0, 0.26, -0.1, 1, [0.35, 0, 0]), right: A(-1.52, 0, 0.26, -0.1, 1, [0.35, 0, 0]), spine: 0.26, head: 0.08, jaw: 0.75, heat: 1, shake: 1, ears: 1 }],
+    [1.55, { left: A(-1.5, 0, 0.3, -0.12, 1, [0.35, 0, 0]), right: A(-1.5, 0, 0.3, -0.12, 1, [0.35, 0, 0]), spine: 0.3, head: 0.1, jaw: 0.8, heat: 1, shake: 1, ears: 1 }],
+    [2.0, STANCES.rest],
+  ],
+  heal: [
+    [0, STANCES.rest],
+    // Both claws folded over the shard, head down over them, quite still.
+    [0.45, { left: ON_SHARD, right: A(-0.2, 0.95, 0.05, -2.0, 0.3, [0.2, 0, 0]), spine: 0.3, head: 0.5, jaw: 0, heat: 0.1, shake: 0, ears: -0.3 }],
+    [1.6, { left: ON_SHARD, right: A(-0.2, 0.95, 0.05, -2.0, 0.3, [0.2, 0, 0]), spine: 0.22, head: 0.42, jaw: 0, heat: 0.1, shake: 0, ears: -0.3 }],
+    // Opened: the claws part and turn out, his head comes up.
+    [2.0, { left: A(-0.6, 0, 0.6, -1.1, 0.8, [-0.6, 0, 0]), right: A(-0.6, 0, 0.6, -1.1, 0.8, [-0.6, 0, 0]), spine: -0.06, head: -0.12, jaw: 0.1, heat: 0.5, shake: 0, ears: 0 }],
+    [2.4, STANCES.rest],
+  ],
+  blast: [
+    [0, STANCES.rest],
+    // Gathered in: hunched, arms crossed tight over his chest.
+    [0.6, { left: A(-0.75, 0.75, 0.05, -2.3, 0.1), right: A(-0.75, 0.75, 0.05, -2.3, 0.1), spine: 0.55, head: 0.45, jaw: 0, heat: 1, shake: 1, ears: 0.8 }],
+    // Flung open: arms wide and high, head thrown back.
+    // (Up and out in a V, claws to the roof: straight out sideways he looked like a scarecrow.)
+    [0.84, { left: A(-2.05, 0, 0.95, -0.2, 1), right: A(-2.05, 0, 0.95, -0.2, 1), spine: -0.32, head: -0.5, jaw: 1, heat: 1, shake: 0.4, ears: 1 }],
+    [1.5, { left: A(-1.85, 0, 1.05, -0.35, 1), right: A(-1.85, 0, 1.05, -0.35, 1), spine: -0.24, head: -0.36, jaw: 0.6, heat: 1, shake: 0.2, ears: 1 }],
+    [2.0, STANCES.rest],
+  ],
+};
+/** His stance at a moment of a spell: between the two stances either side of it, eased. */
+export function spellStance(kind: GrimSpell, t: number): Stance {
+  const keys = SPELL_KEYS[kind];
+  const at = Math.max(0, Math.min(keys[keys.length - 1][0], t));
+  let i = 0;
+  while (i + 2 < keys.length && keys[i + 1][0] <= at) i++;
+  const [t0, a] = keys[i];
+  const [t1, b] = keys[i + 1];
+  const u = Math.max(0, Math.min(1, (at - t0) / Math.max(1e-6, t1 - t0)));
+  const k = u * u * (3 - 2 * u);
+  const n = (x: number, y: number): number => x + (y - x) * k;
+  const arm = (x: ArmPose, y: ArmPose): ArmPose => ({ arm: [n(x.arm[0], y.arm[0]), n(x.arm[1], y.arm[1]), n(x.arm[2], y.arm[2])], elbow: n(x.elbow, y.elbow), wrist: [n(x.wrist[0], y.wrist[0]), n(x.wrist[1], y.wrist[1]), n(x.wrist[2], y.wrist[2])], spread: n(x.spread, y.spread) });
+  return { left: arm(a.left, b.left), right: arm(a.right, b.right), spine: n(a.spine, b.spine), head: n(a.head, b.head), jaw: n(a.jaw, b.jaw), heat: n(a.heat, b.heat), shake: n(a.shake, b.shake), ears: n(a.ears, b.ears) };
+}
+
 /** How each joint of his tail after the first bends when it lies on the ground. */
 const TAIL_LAID = [0.3, 0.25, 0.2, 0.06, 0.03, 0.03, 0.1, 0.2];
 const UPPER = 0.4; // shoulder to elbow
@@ -133,6 +227,21 @@ export const GRIM_FIGHT_FLOAT = 1.15;
 export const GRIM_HEIGHT = 2.4;
 /** The whole figure is built a little larger than that and brought down to it (so he stays in the fight's camera). */
 const SCALE = 0.94;
+
+/** A thing made of light: unlit, see-through, brightening what is behind it. */
+function glowOf(color: number): THREE.MeshBasicMaterial {
+  return new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+}
+/** How many points a fork of lightning has. */
+const BOLT_POINTS = 8;
+/** A number from 0 to 1 that is always the same for the same `n`. */
+function hash(n: number): number {
+  const v = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return v - Math.floor(v);
+}
+const S_INV = new THREE.Matrix4();
+const S_P = new THREE.Vector3();
+const S_Q = new THREE.Vector3();
 
 function ease(current: number, target: number, dt: number, rate: number): number {
   return current + (target - current) * (1 - Math.exp(-rate * dt));
@@ -149,8 +258,9 @@ interface Arm {
 
 export class GrimsqueakModel {
   readonly root = new THREE.Group();
-  private readonly mat = createPs1Material({ lit: true });
-  private readonly both = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (He wears SOFT PAINT, as the friendly characters do: soft painted shading and nothing else. render/textures.ts.)
+  private readonly mat = createPs1Material({ lit: true, tex: getTexture('softPaint') });
+  private readonly both = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('softPaint') });
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
   private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0xffb040 });
   private readonly lightMat = new THREE.MeshBasicMaterial({ color: C.light });
@@ -183,6 +293,183 @@ export class GrimsqueakModel {
   /** The ball of light in his raised claw, 0 none .. 1 full. */
   private orbAmount = 0;
   private orb: THREE.Mesh | null = null;
+  /** The spells' own light: everything of it is made once, in his own space (his feet at its zero), and shown as wanted. */
+  private readonly fx = new THREE.Group();
+  private readonly fire = new THREE.Group();
+  private readonly bolts: THREE.Mesh[] = [];
+  private readonly gate = new THREE.Group();
+  private readonly risen: THREE.Mesh[] = [];
+  private readonly halo = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.035, 5, 18), glowOf(0x9dffb0));
+  private readonly motes: THREE.Mesh[] = [];
+  private readonly burst = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 28), lyingOn(glowOf(0xbff6ff), 2));
+  private readonly dome = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), glowOf(0x7fe8f4));
+  private readonly fireFrom = new THREE.Vector3();
+  private fireLoose = false;
+
+  private buildSpells(): void {
+    this.root.add(this.fx);
+    // The fireball: a hot heart in a flame.
+    // (Its flame is plain orange, not light added to light: over its pale heart that came out white.)
+    this.fire.add(new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xff6a1a, transparent: true, opacity: 0.82, depthWrite: false })), new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({ color: 0xffe07a })));
+    this.fire.children[1].renderOrder = 2;
+    this.fx.add(this.fire);
+    // The forks: three from each claw. Each a jagged ribbon, remade many times a second.
+    for (let i = 0; i < 6; i++) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(BOLT_POINTS * 4 * 3), 3));
+      const idx: number[] = [];
+      for (let k = 0; k + 1 < BOLT_POINTS; k++) for (const o of [0, 2]) idx.push(k * 4 + o, k * 4 + o + 1, k * 4 + 4 + o, k * 4 + o + 1, k * 4 + 5 + o, k * 4 + 4 + o);
+      geo.setIndex(idx);
+      const bolt = new THREE.Mesh(geo, glowOf(i % 3 === 0 ? 0xffffff : 0x9fe8ff));
+      bolt.frustumCulled = false;
+      this.fx.add(bolt);
+      this.bolts.push(bolt);
+    }
+    // The gate under him: two rings on the ground turning against each other, and five pale hands that rise out of it.
+    for (const [r0, r1, c] of [[0.86, 1, 0x9a5cff], [0.5, 0.58, 0x5cffb0]] as const) {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 9), lyingOn(glowOf(c), 2));
+      ring.rotation.x = -Math.PI / 2;
+      this.gate.add(ring);
+    }
+    this.fx.add(this.gate);
+    for (let i = 0; i < 5; i++) {
+      // (An arm of light with three fingers: a long spike and two short ones splayed from its end.)
+      const hand = new THREE.Mesh(new THREE.ConeGeometry(0.06, 1, 4).translate(0, 0.5, 0), glowOf(0x8dffc8));
+      for (const sgn of [-1, 1]) hand.add(new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.3, 3).translate(0, 0.15, 0), hand.material).translateY(0.72).rotateZ(sgn * 0.6));
+      this.fx.add(hand);
+      this.risen.push(hand);
+    }
+    // The healing: a ring that climbs him, and motes that rise round him.
+    this.halo.rotation.x = Math.PI / 2;
+    this.fx.add(this.halo);
+    for (let i = 0; i < 10; i++) {
+      const mote = new THREE.Mesh(new THREE.OctahedronGeometry(0.035), glowOf(i % 2 ? 0xfff2a0 : 0x9dffb0));
+      this.fx.add(mote);
+      this.motes.push(mote);
+    }
+    // The blast: a ring over the ground and a shell of light that swells and is gone.
+    this.burst.rotation.x = -Math.PI / 2;
+    this.fx.add(this.burst, this.dome);
+    for (const o of this.fx.children) o.visible = false;
+  }
+
+  /** Shows a spell's light at its moment (or puts all of it out). */
+  private lightSpells(spell: GrimInput['spell']): void {
+    for (const o of this.fx.children) o.visible = false;
+    if (!spell) {
+      this.fireLoose = false;
+      return;
+    }
+    const { kind, t } = spell;
+    const def = GRIM_SPELLS[kind];
+    const right = this.arms.find((a) => a.side > 0)!;
+    const left = this.arms.find((a) => a.side < 0)!;
+    this.root.updateWorldMatrix(true, false);
+    const inv = S_INV.copy(this.root.matrixWorld).invert();
+    /** Where a claw's palm is, in his own space. */
+    const palm = (arm: Arm, out: THREE.Vector3): THREE.Vector3 => {
+      arm.hand.updateWorldMatrix(true, false);
+      return out.set(0, -0.12, 0.03).applyMatrix4(arm.hand.matrixWorld).applyMatrix4(inv);
+    };
+    const flick = 0.88 + 0.12 * Math.sin(this.clock * 31) * Math.sin(this.clock * 13);
+    const opacity = (o: THREE.Object3D, k: number): void => {
+      ((o as THREE.Mesh).material as THREE.MeshBasicMaterial).opacity = Math.max(0, Math.min(1, k));
+    };
+    if (kind === 'fireball') {
+      // It grows in his claw, goes back with it, and leaves it when the arm comes forward: straight out ahead of him.
+      if (t < def.strike) {
+        this.fireLoose = false;
+        palm(right, this.fire.position);
+        this.fire.scale.setScalar(Math.min(1, t / 0.5) * 0.17 * flick);
+        this.fire.visible = t > 0.06;
+      } else {
+        if (!this.fireLoose) {
+          this.fireLoose = true;
+          palm(right, this.fireFrom);
+        }
+        const flown = (t - def.strike) * 11;
+        this.fire.position.copy(this.fireFrom).add(S_P.set(0, -0.04 * flown, flown));
+        this.fire.scale.setScalar((0.2 + 0.02 * flown) * flick);
+        this.fire.visible = t < def.length - 0.08;
+      }
+      this.fire.rotation.set(this.clock * 9, this.clock * 7, 0);
+    } else if (kind === 'lightning') {
+      const on = t >= def.strike && t < 1.6;
+      // (Remade twenty-four times a second: a fork is never the same twice.)
+      const seed = Math.floor(this.clock * 24);
+      this.bolts.forEach((bolt, i) => {
+        bolt.visible = on;
+        if (!on) return;
+        const from = palm(i < 3 ? left : right, S_P);
+        const far = S_Q.set((i < 3 ? -1 : 1) * 0.5 + ((i % 3) - 1) * 0.9, from.y - 0.35 + ((i % 3) - 1) * 0.3, from.z + 4.2);
+        const pos = bolt.geometry.attributes.position as THREE.BufferAttribute;
+        for (let k = 0; k < BOLT_POINTS; k++) {
+          const u = k / (BOLT_POINTS - 1);
+          const jag = k === 0 ? 0 : 0.26 * Math.sin(u * Math.PI) + 0.06;
+          const rx = (hash(seed * 7 + i * 31 + k * 3) - 0.5) * 2 * jag;
+          const ry = (hash(seed * 11 + i * 17 + k * 5 + 1) - 0.5) * 2 * jag;
+          const x = from.x + (far.x - from.x) * u + rx;
+          const y = from.y + (far.y - from.y) * u + ry;
+          const z = from.z + (far.z - from.z) * u;
+          const w = 0.035 * (1 - u * 0.6);
+          pos.setXYZ(k * 4, x - w, y, z);
+          pos.setXYZ(k * 4 + 1, x + w, y, z);
+          pos.setXYZ(k * 4 + 2, x, y - w, z);
+          pos.setXYZ(k * 4 + 3, x, y + w, z);
+        }
+        pos.needsUpdate = true;
+        opacity(bolt, 0.75 + 0.25 * hash(seed + i));
+      });
+    } else if (kind === 'summon') {
+      // The gate opens as he bows over it; the hands come up out of it as his own rise; all of it goes as he ends.
+      const open = Math.max(0, Math.min(1, (t - 0.25) / 0.6));
+      const gone = Math.max(0, Math.min(1, (def.length - t) / 0.4));
+      this.gate.visible = open > 0;
+      this.gate.position.set(0, 0.03, 0.9);
+      this.gate.scale.setScalar(1.25 * open * (0.4 + 0.6 * gone));
+      this.gate.children.forEach((ring, i) => {
+        ring.rotation.z = this.clock * (i ? -1.9 : 1.1);
+        opacity(ring, 0.85 * gone * flick);
+      });
+      const up = Math.max(0, Math.min(1, (t - 0.9) / (def.strike - 0.9)));
+      this.risen.forEach((hand, i) => {
+        const a = (i / this.risen.length) * Math.PI * 2 + 0.4;
+        hand.visible = up > 0 && gone > 0;
+        const reach = up * up * (3 - 2 * up) * (0.75 + 0.25 * Math.sin(i * 2.4));
+        hand.position.set(Math.cos(a) * 0.85, 0.03, 0.9 + Math.sin(a) * 0.85);
+        hand.scale.set(1, Math.max(0.01, reach * 1.25), 1);
+        hand.rotation.set(0.12 * Math.sin(this.clock * 3 + i), 0, 0.14 * Math.sin(this.clock * 2.3 + i * 1.7));
+        opacity(hand, 0.8 * gone);
+      });
+    } else if (kind === 'heal') {
+      const k = Math.max(0, Math.min(1, (t - def.strike) / 1.3));
+      this.halo.visible = t > def.strike && k < 1;
+      this.halo.position.set(0, this.body.position.y + 0.15 + k * 2.1, 0);
+      this.halo.scale.setScalar(1 - 0.25 * k);
+      opacity(this.halo, Math.sin(k * Math.PI) * 0.95);
+      this.motes.forEach((mote, i) => {
+        const life = ((t - 0.35) * 0.75 + i / this.motes.length) % 1;
+        mote.visible = t > 0.35 && t < def.length - 0.2;
+        const a = i * 2.4 + this.clock * 1.2;
+        mote.position.set(Math.cos(a) * (0.5 + 0.1 * Math.sin(i)), this.body.position.y + 0.2 + life * 2.0, Math.sin(a) * (0.5 + 0.1 * Math.cos(i)));
+        mote.rotation.y = this.clock * 5;
+        opacity(mote, Math.sin(life * Math.PI));
+      });
+    } else {
+      // The blast: from the moment he flings his arms open.
+      const k = Math.max(0, Math.min(1, (t - def.strike) / 0.75));
+      this.burst.visible = t >= def.strike && k < 1;
+      this.burst.position.set(0, 0.04, 0);
+      this.burst.scale.setScalar(0.5 + 6.5 * (1 - (1 - k) * (1 - k)));
+      opacity(this.burst, (1 - k) * 0.95);
+      const d = Math.max(0, Math.min(1, (t - def.strike) / 0.32));
+      this.dome.visible = t >= def.strike && d < 1;
+      this.dome.position.set(0, this.body.position.y + 1.2, 0);
+      this.dome.scale.setScalar(0.6 + 2.6 * d);
+      opacity(this.dome, (1 - d) * 0.5);
+      this.dome.rotation.y = this.clock * 3;
+    }
+  }
   /** What drags his whiskers, cloak and tail behind him: how fast he is turning and moving. */
   private lastYaw = 0;
   private readonly lastPos = new THREE.Vector3();
@@ -435,8 +722,23 @@ export class GrimsqueakModel {
     snout.rotation.x = 0.16;
     this.head.add(snout);
     this.head.add(blob(0.042, 0.036, 0.04, C.nose, 0, -0.125, 0.6, 5, 4, 0));
-    // Two long yellowed front teeth.
-    for (const s of [-1, 1]) this.head.add(box(0.032, 0.075, 0.02, (_nx, ny) => (ny > 0.3 ? 0xc8b890 : C.tooth), s * 0.02, -0.205, 0.49));
+    // Two long yellowed front teeth. (The owner, 2026-11-16: "grimsqueak needs his teeth fixed". They were two flat
+    // square cards hung in the air a finger's width UNDER his snout, touching nothing: from the side, a tag on a
+    // string.) Each is a rat's incisor now: long, narrow, tapering to a chisel end, ROOTED in the underside of his
+    // snout near its tip and leaning back a little as a rat's do. They are parts of the snout, so they go where its
+    // hook goes.
+    for (const s of [-1, 1]) {
+      const geo = new THREE.CylinderGeometry(0.019, 0.011, 0.1, 4, 1);
+      geo.rotateY(Math.PI / 4);
+      geo.scale(1, 1, 0.62);
+      geo.translate(0, -0.05, 0);
+      const tooth = new THREE.Mesh(paint(geo, (_nx, ny) => (ny > 0.35 ? 0xc8b890 : C.tooth), 0.1), mat);
+      // (Where the snout's underside is, a quarter of its length back from its tip, it is three hundredths below
+      // its middle line: the root is inside it.)
+      tooth.position.set(s * 0.019, -0.012, 0.105);
+      tooth.rotation.set(0.2, 0, s * -0.07);
+      snout.add(tooth);
+    }
     // The jaw: thin, hinged far back, with a pale tuft of beard under the chin. It drops when he speaks.
     this.jaw.position.set(0, -0.15, 0.08);
     this.head.add(this.jaw);
@@ -552,6 +854,7 @@ export class GrimsqueakModel {
     jewel.scale.set(0.8, 1.2, 0.5);
     this.crown.add(jewel);
     this.head.add(this.crown);
+    this.buildSpells();
   }
 
   /** Flashes him white for a moment (the sword has landed). */
@@ -583,10 +886,11 @@ export class GrimsqueakModel {
     this.lastPos.copy(pos);
 
     // ---- The stance he is easing into. ----
-    const want = STANCES[inp.gesture];
+    // (A spell takes over his stance while it runs, and he follows it closely: its timing is its own.)
+    const want = inp.spell ? spellStance(inp.spell.kind, inp.spell.t) : STANCES[inp.gesture];
     const offer = STANCES.offer;
-    const r = inp.reach;
-    const rate = inp.gesture === 'slump' ? 5 : 11;
+    const r = inp.spell ? 0 : inp.reach;
+    const rate = inp.spell ? 26 : inp.gesture === 'slump' ? 5 : 11;
     const s = this.stance;
     const mixN = (a: number, b: number): number => a + (b - a) * r;
     for (const key of ['spine', 'head', 'jaw', 'heat', 'shake', 'ears'] as const) s[key] = ease(s[key], mixN(want[key], offer[key]), dt, rate);
@@ -692,6 +996,7 @@ export class GrimsqueakModel {
       this.orb.scale.setScalar(this.orbAmount * (0.9 + 0.1 * Math.sin(this.clock * 23)));
       this.orb.rotation.set(this.clock * 3, this.clock * 4.3, 0);
     }
+    this.lightSpells(inp.spell);
     this.flashAmount = Math.max(0, this.flashAmount - dt * 6);
     const f = this.flashAmount * 0.7;
     (this.mat.uniforms.flash.value as THREE.Color).setRGB(f, f, f);

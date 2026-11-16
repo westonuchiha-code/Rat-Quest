@@ -1311,3 +1311,13 @@ things are:
   `shortFur` is back at its first strength. The ten creatures keep theirs.
 - The rule and the way of working are in START-HERE.md ("HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES").
 
+## Soft paint, Pip, the owl, Grimsqueak's teeth and spells (2026-11-16; test `tests/grimspells.ts`)
+
+- `render/textures.ts`: `softPaint` (one strength, the deeper), `owlFeathers`, `owlWing`.
+- `npc/npc.ts`: `mat` has `softPaint`; `rounded(w,h,d,r,color,x,y,z)`; `strapOn(side)` with `BODY`; Pip's shoes.
+- `npc/patrons.ts`: `OWL_BODY`, `OWL_HEAD`, `OWL_DEEP`, `outAt(profile, y)`, `laidOn(profile, deep, rim, mid, lift,
+  color, material)`, `finer(mesh, ku, kv)`, `owlMat`, `owlWingMat`, `softMat`; `class Owl` rewritten (same fields).
+- `npc/grimsqueakModel.ts`: `GrimSpell`, `GRIM_SPELLS`, `GrimInput.spell`, `SPELL_KEYS`, `spellStance`,
+  `buildSpells`, `lightSpells`; the teeth are children of the snout mesh; materials wear `softPaint`.
+- `dev/viewer.ts`: `who=grim&spell=&st=`; `&soft=1` puts `softPaint` on anything.
+

@@ -426,13 +426,40 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
-## NOTED FOR LATER, NOT YET LOOKED INTO (the owner, 2026-11-16)
+## SOFT PAINT CHOSEN; PIP, THE OWL AND GRIMSQUEAK WORKED OVER; GRIMSQUEAK'S SPELLS (2026-11-16). Tests `tests/grimspells.ts`
 
- - PIP'S BACKPACK STRAPS: "backpack straps are pretty messed up on mouse make note for future correction." They are
-   two thin boxes laid over his round front (`npc/npc.ts`, "The pack's straps, over his shoulders and down his
-   front"): in the stills they stand off his body, end in the air below his chest, and do not meet the pack. To do:
-   straps that lie ON him from the pack's top corners over each shoulder and down to its bottom corners, drawn
-   where they are (his rule: what hangs, hangs from something). Look at him from all sides before it goes in.
+His words, in the order they came, and what was done:
+ - "deeper soft paint i like best." `softPaint` (the deeper of the two shown) is what the friendly characters wear
+   now: the mice, the birds, Dave (`npc/npc.ts`: the one material every part of them is made of), and Lord
+   Grimsqueak (both his materials). Slow soft clouds of lighter and darker over their painted colours; no marks.
+ - "backpack straps are pretty messed up on mouse": Pip's straps were two stiff boxes stood off his front, ending in
+   the air. Each is a band LAID ON HIM now (`strapOn` in `npc/npc.ts`): from the pack up over his shoulder, down his
+   front, round under his arm and back to the pack; every point of it found on his body's own shape. And the flap's
+   two straps and buckles were on the side of the pack that is against his back: they are on its outside.
+ - "corners of backpack could be rounded more as well": the pack, its flap and its side pockets are `rounded` boxes.
+ - "mouse toes are kind of weird, need fixed, maybe just shoes?": Pip is in stout brown shoes with a dark sole. (He
+   had bare pink feet with three toe-balls stuck on in front.) Mort keeps his slippers.
+ - "owl has a lot of problems to fix in the model square belly, bad eyes, odd shapes, he could also benefit from a
+   more detailed texture": THE OWL IS MADE AGAIN (`class Owl` in `npc/patrons.ts`). A plump twelve-sided body and a
+   big round head; a pale heart of a FACE laid on the head with a dark rim; great round eyes (a ring, an iris, a
+   pupil, a glint) under a stern brow; a hooked beak; long barred wings; three-toed feet; a fan of a tail. The
+   barkeeper's apron is LAID ON her front and curves as she does (`laidOn`: it was a square card stood in front of
+   her); the other one's bow tie is a bow. His pictures: `owlFeathers` (large soft feathers, painted not inked: the
+   third try at feathers and the first that is neither bricks nor dirt) and `owlWing` (barred flight feathers).
+ - "grimsqueak needs his teeth fixed. and model in general looked over": his two front teeth were flat square cards
+   hung in the air under his snout, touching nothing. They are a rat's incisors now, long and tapered, ROOTED in the
+   underside of his snout (children of the snout, so they go where it goes). Looked over from all sides: nothing
+   else found broken. (His whiskers are as long and heavy as they were made to be; say if they should be lighter.)
+ - "give him some magic casting animations (casting one hand fireball, summoning minions from the underworld,
+   lightning hands, healing himself, casting aoe attack)": FIVE SPELLS (`GRIM_SPELLS`, `spellStance`, `lightSpells`
+   in `npc/grimsqueakModel.ts`). Each is a run of stances at set moments, with its own light: `fireball` (a flame
+   gathered in one claw, drawn back, thrown), `summon` (a gate opens on the ground before him and pale hands rise
+   from it as his arms rise), `lightning` (forks from both claws, remade many times a second), `heal` (claws
+   folded over his shard, a ring climbing him, motes rising), `blast` (gathered in, flung open, a ring bursting out
+   over the ground). Played by handing the model `spell: { kind, t }`.
+   THE FIGHT DOES NOT USE THEM YET: `enemies/grimsqueak.ts` has its own attacks and gestures, and which attack gets
+   which spell (and what each does to the knight) is a design to settle with him. The summoning shows hands of light
+   and a gate; no minions are made by it. Viewer: `#view&who=grim&spell=summon&st=1.4`.
 
 ## HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES (2026-11-16): TAKEN OFF. READ THIS BEFORE TEXTURING ANYONE FRIENDLY
 
