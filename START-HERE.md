@@ -325,6 +325,34 @@ lines and portraits are untested by eye. The Conker research's first pass (below
 opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
 their own evening.
 
+## A little cutscene system (the owner, 2026-11-16: ON THE LIST, NOT STARTED)
+His words: "I want us to try to build a little cutscene system that works with all of our characters where we can
+sort of marionette them around maybe find some common poses online they can nod their head and move around a little
+bit to you know sort of look like they're talking we don't have to actually like animate their mouths or anything.
+And I just want to see how far we can get with like just making a little couple of little cutscenes you know two of
+them talking at a table or at the bar maybe one of them ordering the other one a drink or sliding a glass down the
+bar, you know the soldier and drinking by himself maybe like you can pan around the table like a cool movie scene or
+something just try to build something where we can make scenes like this frame by frame so we can sort of tell a
+better story when we get around to actually telling one."
+**What he asked for, plainly:**
+- One system that works with EVERY character (the knight, the Club's regulars and patrons, the enemies).
+- Characters moved like marionettes: walk to a place, turn, take a pose, nod, gesture, lean in. No mouths.
+- Scenes made "frame by frame": something to author a scene with, not a one-off animation in code.
+- A few first scenes to see how far it gets: two talking at a table or at the bar; one ordering the other a drink;
+  a glass slid down the bar; "the soldier" drinking by himself with the view panning round his table.
+- It is a TOOL for telling the story later. It is not the story (the story stays parked: do not offer to un-park it).
+**Notes for whoever builds it (these are Claude's reading, not his words):**
+- "The soldier" is most likely the off-duty ant in the Club (the one who drinks there). Ask if it matters.
+- The rule that the view never turns by itself is about PLAY. A cutscene's pan is the thing he asked for here.
+- What is already there to build on: every patron takes `doing` poses (stand, drink, chat, lean, cards, tend) and
+  can sit; the ant has `sip` and `look`; the viewer (`#view&who=patron...&t=`) shows any of them at a set time;
+  the Club has tables, a bar, mugs and stools as real things.
+- A likely shape: a scene is DATA (who is in it, and for each a list of keys in time: place, facing, pose, a nod or
+  a gesture; keys for props such as a mug; keys for the view), played by one player that every character model
+  answers to, with a way to step through it a frame at a time in the dev suite.
+- "Find some common poses online": this session can reach only two sites, so poses would have to come from what is
+  known already or from a computer session where more sites can be allowed.
+
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
 **TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not
 be allowed from his phone: "if you can't do the research that's fine we can save it for later". So: one researcher a
