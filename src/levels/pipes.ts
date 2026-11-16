@@ -36,15 +36,15 @@ export const pipeRim = (s: PipeShape): number => facetsOf(s)[s.facets - 1].h1;
 
 /**
  * A length of pipe down the line x = `x`, from z0 (north) to z1: its floor is `top` up at z0 and `bottom` at z1 (the
- * same, for a level length). Everything is solid down to the ground (y = 0). `shoulder`: either side, level with the
+ * same, for a level length). Everything is solid down to `base` (the ground, y = 0, unless given). `shoulder`: either side, level with the
  * rim, a shelf out to that far from the middle line, falling as the pipe does: somewhere to land for one who comes
  * out of the trough.
  */
-export function pipeRun(kind: Kind, s: PipeShape, x: number, z0: number, z1: number, top: number, bottom: number, shoulder = 0): Box[] {
+export function pipeRun(kind: Kind, s: PipeShape, x: number, z0: number, z1: number, top: number, bottom: number, shoulder = 0, base = 0): Box[] {
   const out: Box[] = [];
   const fall = top - bottom;
   const level = Math.abs(fall) < 1e-9;
-  out.push(level ? extent(kind, x - s.flat, x + s.flat, 0, top, z0, z1) : rampBox(kind, x - s.flat, x + s.flat, z0, z1, bottom, top, 'n', 0));
+  out.push(level ? extent(kind, x - s.flat, x + s.flat, base, top, z0, z1) : rampBox(kind, x - s.flat, x + s.flat, z0, z1, bottom, top, 'n', base));
   for (const side of [-1, 1] as const) {
     for (const f of facetsOf(s)) {
       const a = x + side * (s.flat + f.d0);
@@ -52,13 +52,13 @@ export function pipeRun(kind: Kind, s: PipeShape, x: number, z0: number, z1: num
       const x0 = Math.min(a, b);
       const x1 = Math.max(a, b);
       // (Level: a plain ramp climbing away from the middle. Falling: the same, tipped down the pipe as well.)
-      out.push(level ? rampBox(kind, x0, x1, z0, z1, top + f.h0, top + f.h1, side > 0 ? 'e' : 'w', 0) : rampBox(kind, x0, x1, z0, z1, bottom + f.h0, top + f.h0, 'n', 0, side * (f.h1 - f.h0)));
+      out.push(level ? rampBox(kind, x0, x1, z0, z1, top + f.h0, top + f.h1, side > 0 ? 'e' : 'w', base) : rampBox(kind, x0, x1, z0, z1, bottom + f.h0, top + f.h0, 'n', base, side * (f.h1 - f.h0)));
     }
     if (shoulder > pipeHalf(s)) {
       const a = x + side * pipeHalf(s);
       const b = x + side * shoulder;
       const rim = pipeRim(s);
-      out.push(level ? extent(kind, Math.min(a, b), Math.max(a, b), 0, top + rim, z0, z1) : rampBox(kind, Math.min(a, b), Math.max(a, b), z0, z1, bottom + rim, top + rim, 'n', 0));
+      out.push(level ? extent(kind, Math.min(a, b), Math.max(a, b), base, top + rim, z0, z1) : rampBox(kind, Math.min(a, b), Math.max(a, b), z0, z1, bottom + rim, top + rim, 'n', base));
     }
   }
   return out;
@@ -66,3 +66,11 @@ export function pipeRun(kind: Kind, s: PipeShape, x: number, z0: number, z1: num
 
 /** How high a pipe's floor is at z, on a length from (z0, top) to (z1, bottom). */
 export const floorAlong = (z: number, z0: number, z1: number, top: number, bottom: number): number => top + ((bottom - top) * (z - z0)) / (z1 - z0);
+
+/** How high a pipe's wall stands over its floor, that far out from its middle line (its rim's height, beyond its walls). */
+export function wallAt(s: PipeShape, out: number): number {
+  const d = Math.abs(out) - s.flat;
+  if (d <= 0) return 0;
+  for (const f of facetsOf(s)) if (d <= f.d1) return f.h0 + ((f.h1 - f.h0) * (d - f.d0)) / (f.d1 - f.d0);
+  return pipeRim(s);
+}

@@ -982,19 +982,31 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - A pipe's fall must be at least `ride.minSlope` (0.4) if the air attack is to work over its flat middle; the
   garden's is 5 in 12.
 
-## The Long Drop (2026-11-16: the downhill level, a first version)
-- `src/levels/longdrop.ts` (`LONGDROP`, `dropFloor(z)`, `WEED`, `KICKER_ARC`) and `src/levels/pipes.ts` (`pipeRun`,
-  `SEWER_PIPE`, `pipeHalf`, `pipeRim`, `floorAlong`). A test room: `#level=longdrop&nostory`, or the door in the
-  garden's west wall. Add `&riding` to start on the shield, `&slow=0.2` to watch.
-- New decor kinds (layout.ts, drawn in chamber.ts): `runnel` (the slime), `sleepers`, `weed`.
-- A level made of ramps needs a floor under the whole of it: the station had none at first and he fell out of the
-  world there. `longDrop()` puts one `extent('floor', ...)` under everything.
+## The Long Drop (2026-11-16: the downhill level; the giant ramp and the dark arena)
+- `src/levels/longdrop.ts`: `COURSE` (the list of sections: edit this to change the level), `longDropPlan()` (where
+  everything lies: `placed`, `launches`, `rails`, `weeds`, `lineCrumbs`, `lip`, `arena`, `well`), `dropFloor(z)`,
+  `dropLine(z)`, `sectionAt(z)`, `flight(up, seconds)`. `src/levels/pipes.ts`: `pipeRun`, `wallAt`, `SEWER_PIPE`.
+- Try it: `#level=longdrop&nostory`; add `&at=x,y,z,3.1416` to stand anywhere (heights: print `longDropPlan().placed`),
+  `&riding` to start on the shield, `&slow=0.2` to watch. The arena's middle is at z 1422.4, y 0.
+- Decor kinds (layout.ts, drawn in chamber.ts): `runnel`, `sleepers`, `weed`, `arena`, `eyes`.
+- `LevelDef.well` / `Well` / `keepInWell` (collision.ts): a round room he cannot leave. `main.ts` hands it to the
+  knight (`player.well`) when a level loads; tests must set `p.well = def.well` themselves. ENEMIES DO NOT KNOW OF IT.
+- The level is built ONCE (`longDropPlan()` caches) and `longDrop()` copies it: do not change what the plan holds.
+- Each section is solid only 8 deep (`DEEP`), not down to the ground: the course hangs over the dark, and nothing
+  of it is lower than the well's top. A ledge must drop less than that or its face would have a hole under it.
 - An obstacle on a falling floor must be TALL at its uphill face (see `WEED.high`): the step-up allowance on a ramp
   grows with the slope, so a low solid is ridden up onto, not hit.
+- He cannot steer in the air, and he is in the air after every ledge and every cut-down trough mouth: put nothing
+  he must steer round in the first 20 or so of the section after.
+- In the air his speed along the ground does not change, and his fall is the game's (18 up, 22.5 down, 30 at most):
+  that is all `flight()` is. If the jump numbers ever change, the crumbs in the air move with them (and the test
+  rides them all to be sure).
+- Riding UP costs speed fast (15 times the slope, a second): a ramp that climbs 5 leaves him under 10. A throw is
+  his speed times the lip's slope, so a SHORT STEEP lip throws furthest.
 - The pipe's two outer facets are under 0.6 wide and its last is under 0.5 (a "rail" by width). It is not ground
   as one because the shoulder beside it is higher (`grindHeight` ends the line); without a shoulder, check again.
 - `RAIL_DROP` 0.2 (grind.ts): how far a rail must stand over the ground either side. Any thin solid (under 0.5
   wide, over 0.5 long) that stands 0.2 proud is now a grind line: mind that when placing kerbs and trims.
-- Braking from top speed (16) takes about twelve units; the station gives a grinder who hops off at its start
-  about thirty.
-
+- One mesh is made for each solid (363 here) and the camera sees 200 far: most of the level is culled, which is why
+  so long a level costs no more to draw than a room. A wall the whole length of it would always be drawn: its
+  walls are a pair for each section.

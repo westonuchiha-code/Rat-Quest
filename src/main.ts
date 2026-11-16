@@ -1364,6 +1364,7 @@ function startGame(): void {
     chamber = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, pipes: def.pipes, gates: def.gates, movers: def.movers, lava: def.lava, fire: def.fire });
     scene.add(chamber.group);
     player.water = chamber.water;
+    player.well = def.well ?? null;
     collectVisuals = new CollectibleVisuals({ id: def.id, name: def.name, items: def.collectibles }, tracker, { floorAt });
     collectVisuals.hidden = (d) => d.crate !== undefined && !revealedCrates.has(d.crate);
     scene.add(collectVisuals.group);

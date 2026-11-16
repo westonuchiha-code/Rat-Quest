@@ -7,6 +7,7 @@ import type { NpcSpec } from '../npc/npc';
 import type { CollectibleDef, CollectibleKind } from '../world/collectibles';
 import type { PickupDef } from '../data/equipment';
 import type { DoorSpec } from '../world/rooms';
+import type { Well } from '../world/collision';
 
 /** One thing he must do. A level opens its exit when every main goal is done. */
 export type GoalDef =
@@ -102,6 +103,12 @@ export interface LevelDef {
   lava?: LavaVolume[];
   /** Falling into the dark costs a heart and puts him back on the last ground he stood on (instead of back at the start). */
   fallBack?: boolean;
+  /**
+   * A round room in the dark that he cannot leave: below `top`, he is kept within `r` of (x, z) at its floor (`y`),
+   * and high above it `flare` further out for each unit up (a funnel: one who falls in from anywhere above comes
+   * down inside). Nothing is drawn of it: it is the edge of the light.
+   */
+  well?: Well;
   /** Platforms that glide back and forth and carry the rat. */
   movers?: MoverSpec[];
   /** Floor plates: stepping on one presses it for good; gates can wait for them. */

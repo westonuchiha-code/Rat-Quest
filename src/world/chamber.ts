@@ -465,6 +465,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const flames: Array<{ mesh: THREE.Mesh; base: number; phase: number }> = [];
   /** Things that sway (banners, roots): a pivot that rocks about its own axis. */
   const swayers: Array<{ obj: THREE.Object3D; axis: 'x' | 'z'; amount: number; speed: number; phase: number }> = [];
+  /** Eyes in the dark: each pair is shut for a while of its `period`, and blinks once while open. */
+  const blinkers: Array<{ obj: THREE.Object3D; period: number; phase: number }> = [];
   /** Gauge needles: they sit at a reading and tremble. */
   const needles: Array<{ obj: THREE.Object3D; base: number; phase: number }> = [];
   /** Story machinery that moves: each is called every frame with the time. */
@@ -1085,6 +1087,52 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       weed.add(top);
       group.add(weed);
       swayers.push({ obj: weed, axis: 'z', amount: 0.07, speed: 1.3, phase: d.x * 1.7 + d.z * 0.9 });
+    } else if (d.kind === 'arena') {
+      // The floor of a round room in the dark: cobbles, lit in the middle, fading to nothing at the edge.
+      const rings: Array<[number, number]> = [[0, 1.12], [0.35, 1], [0.62, 0.72], [0.82, 0.3], [1, 0]];
+      const parts: THREE.BufferGeometry[] = [];
+      for (let i = 0; i + 1 < rings.length; i++) {
+        const ring = new THREE.RingGeometry(Math.max(1e-3, rings[i][0] * d.r), rings[i + 1][0] * d.r, 40, 1);
+        ring.rotateX(-Math.PI / 2);
+        parts.push(ring);
+      }
+      const geo = mergeAll(parts);
+      applyWorldUvs(geo, 2);
+      const pos = geo.attributes.position;
+      const col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const f = Math.min(1, Math.hypot(pos.getX(i), pos.getZ(i)) / d.r);
+        let k = 0;
+        while (k + 2 < rings.length && f > rings[k + 1][0]) k++;
+        const [f0, b0] = rings[k];
+        const [f1, b1] = rings[k + 1];
+        const b = b0 + ((b1 - b0) * (f - f0)) / (f1 - f0);
+        col.set([b, b * 0.95, b * 0.82], i * 3);
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      addMesh(geo, floorMat, d.x, d.y + 0.01, d.z);
+    } else if (d.kind === 'eyes') {
+      // Eyes out in the dark, in pairs, looking in: white, unlit, and no fog dims them. Each blinks in its own time.
+      const eyeMat = new THREE.MeshBasicMaterial({ color: 0xf4f6ff, side: THREE.DoubleSide });
+      const rnd = (n: number): number => {
+        const v = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      for (let i = 0; i < d.count; i++) {
+        const a = ((i + rnd(i) * 0.8) / d.count) * Math.PI * 2;
+        const r = d.r0 + (d.r1 - d.r0) * rnd(i + 50);
+        const size = 0.1 + 0.12 * rnd(i + 100);
+        const pair = new THREE.Group();
+        for (const side of [-1, 1]) {
+          const eye = new THREE.Mesh(new THREE.PlaneGeometry(size, size * 0.7), eyeMat);
+          eye.position.x = side * size * 1.25;
+          pair.add(eye);
+        }
+        pair.position.set(d.x + Math.sin(a) * r, d.y + 0.3 + d.high * rnd(i + 150) * rnd(i + 200), d.z + Math.cos(a) * r);
+        pair.lookAt(d.x, d.y + 1, d.z);
+        group.add(pair);
+        blinkers.push({ obj: pair, period: 2.4 + 4.5 * rnd(i + 250), phase: 9 * rnd(i + 300) });
+      }
     } else if (d.kind === 'fall') {
       buildFall(d);
     } else if (d.kind === 'chain') {
@@ -1463,6 +1511,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       for (const c of cones) c.mesh.scale.set(1 + c.dz * thump * 0.12, 1 + c.dz * thump, 1 + c.dz * thump * 0.12);
     }
     for (const a of animators) a(time);
+    for (const b of blinkers) {
+      const u = ((time + b.phase) % b.period) / b.period;
+      b.obj.visible = u > 0.22;
+      b.obj.scale.y = u > 0.6 && u < 0.6 + 0.1 / b.period ? 0.15 : 1;
+    }
     for (const s of swayers) s.obj.rotation[s.axis] = Math.sin(time * s.speed + s.phase) * s.amount + Math.sin(time * s.speed * 2.3 + s.phase * 1.7) * s.amount * 0.3;
     for (const n of needles) n.obj.rotation.z = n.base + Math.sin(time * 23 + n.phase) * 0.03 + Math.sin(time * 1.3 + n.phase) * 0.12;
     for (const f of flames) {

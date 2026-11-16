@@ -1,172 +1,421 @@
 /**
- * The Long Drop: a level that is all downhill, on the shield the whole way. A FIRST VERSION, to try the idea.
+ * The Long Drop: a minute and a half downhill on the shield, a giant ramp at the end of it, and a fall into the dark.
  *
  * The owner, 2026-11-15: "a level that's just like a really long steep decline that's like a sewer pipe going down
- * through some tunnels ... you could even have it break off into like an underground Railway and you can grind along
- * the railroad tracks or just like slide down alongside them ... totally downhill and you're just on the board the
- * whole time"; "there should be like a little bit of liquid in the bottom to give a sense that it's not in use
- * anymore but it still carries some like slimy water and they'll be natural obstacles like maybe little plants
- * growing out of cracks in the pipe".
+ * through some tunnels ... break off into like an underground Railway and you can grind along the railroad tracks
+ * ... totally downhill and you're just on the board the whole time"; slime in the bottom, weeds out of cracks.
+ * And 2026-11-16, after riding the first version: "a minute and a half of like flying down through the sewer surfing
+ * on your Shield jumping on ramps collecting collectibles in the air ... then at the end of the tunnel there's this
+ * giant ramp that you fly off of and you catch this huge amount of air but then you fall like into the darkness and
+ * you land in a room ... the floor is lit for a certain amount of radius but then it's like total darkness beyond
+ * that and the Darkness is filled with like little twinkling white eyes but you can't actually go beyond the lit up
+ * part of the floor". (The boss he wants in that room, a giant spider, is not built: see START-HERE.md.)
  *
- * It runs STRAIGHT south (the view may not turn by itself, and a bend would ask it to), 178 long and 45 down:
- *   the HEAD, a platform to drop in from;
- *   the FIRST PIPE, 36 long, falling 15: slime down its middle, weeds to steer round;
- *   the LEVEL LENGTH, 12 long: the same trough run level, a breath, with a kicker on each shoulder;
- *   the SECOND PIPE, 36 long and steeper, falling 18;
- *   the RAILWAY, 48 long, falling 12: an old track bed, two rails to grind, sleepers under them;
- *   the STATION: flat, and long enough to stop in from full speed; buffers at the end of the line, a platform
- *   with the way out.
- * Either side of the pipes is a SHOULDER, level with their rims: one who comes out of the trough lands there and can
- * ride on, or steer back in. Tall walls shut the whole of it in. It is a test room: reached by a door in the Move
- * Garden, and its own door leads back there.
+ * It runs STRAIGHT south (the view may not turn by itself, and a bend would ask it to). It is a list of SECTIONS,
+ * `COURSE` below, laid end to end, each lower than the last:
+ *   a PIPE: a trough with slime down its middle and a shoulder either side, falling;
+ *   a FLAT: the same trough run level, a breath, with a kicker on each shoulder;
+ *   a BED: the whole width one slope, with rails to grind, kickers to jump from, or weeds;
+ *   a LEDGE: the floor steps down, and he flies off it.
+ * Where a bed meets a trough the trough is cut DOWN into it (its shoulders carry on level with the bed): nothing ever
+ * stands across his way but a weed. Every falling section is steep enough for the air attack to be the shield, so
+ * one thrown off can get back on wherever he is. The last bed is the in-run of the GIANT RAMP; past its lip there is
+ * nothing, and far below it the ARENA: a round floor in the dark that he cannot leave (`LevelDef.well`).
+ * It is a test room: reached by a door in the Move Garden, and its way out (in the arena) leads back there.
  */
 import type { LevelDef } from './types';
 import type { CollectibleDef } from '../world/collectibles';
+import type { Well } from '../world/collision';
 import { extent, rampBox, type Box, type Decor } from '../world/layout';
-import { SEWER_PIPE, floorAlong, pipeHalf, pipeRim, pipeRun } from './pipes';
+import { TUNING } from '../data/tuning';
+import { SEWER_PIPE, pipeHalf, pipeRim, pipeRun, wallAt } from './pipes';
 
-/** How wide the whole course is, from its middle to each wall; and how high the walls stand over the top of it. */
+const S = SEWER_PIPE;
+const RIM = pipeRim(S);
+/** How wide the course is, from its middle to each wall; how high the walls stand over it; how deep it is built. */
 const HALF = 8;
-const WALL = 9;
-export const LONGDROP = {
-  half: HALF,
-  /** Where each part starts and ends (z, going south) and how high its floor is at each end. */
-  head: { z0: -10, z1: 0, y: 45 },
-  pipeA: { z0: 0, z1: 36, top: 45, bottom: 30 },
-  level: { z0: 36, z1: 48, y: 30 },
-  pipeB: { z0: 48, z1: 84, top: 30, bottom: 12 },
-  rail: { z0: 84, z1: 132, top: 12, bottom: 0 },
-  station: { z0: 132, z1: 168, y: 0 },
-  /** The rails: how far each is from the middle, how wide and how high over the bed. Low enough to ride over. */
-  rails: { x: 1.4, wide: 0.24, high: 0.3 },
-  /** The kickers on the level length's shoulders: little ramps to jump from. */
-  kicker: { x0: 4, x1: 7, z0: 42, z1: 45, high: 1 },
-  /** The buffers at the end of the line, and the platform with the way out. */
-  buffers: { z0: 164, z1: 165, high: 1.2, half: 2.6 },
-  platform: { x0: 3, x1: HALF, z0: 154, z1: 168, y: 1, rampFrom: 150 },
-  /** Weeds growing out of cracks: where each is (x, z), each a small solid to steer round. */
-  weeds: [[1.7, 9], [-1.9, 16], [2.2, 24], [-0.2, 29], [-2.1, 56], [1.6, 64], [0.3, 71], [-1.8, 78]] as Array<[number, number]>,
-} as const;
+const WALL_UP = 9;
+const DEEP = 8;
 
-/** How high the course's own floor is at z, down its middle line. */
-export function dropFloor(z: number): number {
-  const L = LONGDROP;
-  if (z < L.pipeA.z0) return L.head.y;
-  if (z < L.pipeA.z1) return floorAlong(z, L.pipeA.z0, L.pipeA.z1, L.pipeA.top, L.pipeA.bottom);
-  if (z < L.pipeB.z0) return L.level.y;
-  if (z < L.pipeB.z1) return floorAlong(z, L.pipeB.z0, L.pipeB.z1, L.pipeB.top, L.pipeB.bottom);
-  if (z < L.rail.z1) return floorAlong(z, L.rail.z0, L.rail.z1, L.rail.top, L.rail.bottom);
-  return L.station.y;
-}
+/** The line worth riding through a section: one x, or points [how far in, x] joined by straight lines. */
+export type Lane = number | Array<[number, number]>;
+type Weeds = Array<[number, number]>; // [x, how far in]
+type Section =
+  | { kind: 'pipe'; len: number; fall: number; weeds?: Weeds; lane?: Lane; crumbs?: [number, number] }
+  | { kind: 'flat'; len: number }
+  | {
+      kind: 'bed';
+      len: number;
+      fall: number;
+      /** Rails: [x, from, to] (how far in). */
+      rails?: Array<[number, number, number]>;
+      /** Kickers: [x0, x1, how far in its foot is]. */
+      kickers?: Array<[number, number, number]>;
+      weeds?: Weeds;
+      lane?: Lane;
+      crumbs?: [number, number];
+    }
+  | { kind: 'ledge'; drop: number };
 
 /** What is solid of a weed: this far out from its stem each way, and this high above where it grows. */
 export const WEED = { half: 0.22, high: 1.1 } as const;
+/** A kicker on a shoulder (on a flat) and one on a bed: how long, and how much higher its lip is than its foot. */
+export const SHOULDER_KICKER = { x0: 4, x1: 7, len: 3, rise: 1, back: 7 } as const;
+export const BED_KICKER = { len: 3, rise: 0.5 } as const;
+export const RAIL = { x: 1.4, wide: 0.24, high: 0.3 } as const;
+/**
+ * The giant ramp is a ski jump: a long steep in-run, a short level table at its foot, and a lip that turns up in two
+ * pieces, the second steeper. (Climbing costs him speed, and his speed has a top: a lip that climbed far would
+ * throw him less. What is giant is the in-run, and the fall.) `over`: how far the table is above the arena's floor.
+ */
+export const LIP = { table: 3, len1: 3, rise1: 1.05, len2: 2.4, rise2: 1.8, over: 46, speed: 12.6 } as const;
+/** The arena: how wide its light is, how far past the lip its middle is, and how high he would have to be to be over its edge. */
+export const ARENA = { r: 13, ahead: 36, clear: 6 } as const;
 
-/** The crumbs over each kicker: how far past its lip each is, and how high over the shoulder there. */
-export const KICKER_ARC: Array<[number, number]> = [[1.5, 1.8], [5, 3.0], [8.5, 3.8], [12, 3.1]];
+// Weeds to steer round. A and B leave the line x = -1 clear; the slalom has gates to weave through.
+const WEEDS_A: Weeds = [[1.7, 9], [-1.9, 16], [2.2, 24], [-0.2, 29], [1.2, 37]];
+const WEEDS_B: Weeds = [[-2.1, 8], [1.6, 16], [0.3, 23], [-1.8, 30], [0.9, 38]];
+const gate = (at: number, side: 1 | -1): Weeds => (side > 0 ? [[-1.6, at], [-0.8, at], [0, at]] : [[0.2, at], [1, at], [1.8, at]]);
+// (Its first gate is well in: he may come into the pipe through the air, off a ledge, and cannot steer till he lands.)
+const SLALOM: Weeds = [...gate(26, 1), ...gate(40, -1), ...gate(54, 1), ...gate(68, -1)];
+const SLALOM_LANE: Lane = [[0, -1], [14, -1], [23, 1], [28, 1], [38, -0.9], [42, -0.9], [52, 1], [56, 1], [66, -0.9], [74, -1]];
+const FIELD: Weeds = [[-1.2, 26], [-0.4, 26], [0.4, 26], [1.2, 26], [1.8, 40], [2.6, 40], [3.4, 40], [4.2, 40]];
+const FIELD_LANE: Lane = [[0, 0], [14, 0], [23, 2.4], [28, 2.4], [36, 0.4], [42, 0.4], [50, 0]];
+const BOTH_RAILS = (from: number, to: number): Array<[number, number, number]> => [[-RAIL.x, from, to], [RAIL.x, from, to]];
+/** A bed that ends in a kicker down its middle, over a ledge: the steps. */
+const STEP: Section = { kind: 'bed', len: 36, fall: 15, kickers: [[-1.5, 1.5, 33]] };
+const SIDE_KICKERS: Array<[number, number, number]> = [[-6, -3, 26], [3, 6, 26]];
 
-export function longDrop(): LevelDef {
-  const L = LONGDROP;
-  const S = SEWER_PIPE;
+/** The course, top to bottom. */
+const COURSE: Section[] = [
+  // The mains: learning it.
+  { kind: 'pipe', len: 48, fall: 20, crumbs: [8, 8] },
+  { kind: 'pipe', len: 48, fall: 24, weeds: WEEDS_A, crumbs: [4, 6] },
+  { kind: 'flat', len: 14 },
+  { kind: 'pipe', len: 44, fall: 20, weeds: WEEDS_B, crumbs: [6, 6] },
+  // The first railway: rails to grind, then a ledge and kickers.
+  { kind: 'bed', len: 64, fall: 27, rails: BOTH_RAILS(4, 64) },
+  { kind: 'ledge', drop: 4 },
+  { kind: 'bed', len: 48, fall: 20, kickers: SIDE_KICKERS, crumbs: [16, 4] },
+  { kind: 'ledge', drop: 5 },
+  // Down the old main: a slalom.
+  { kind: 'pipe', len: 78, fall: 38, weeds: SLALOM, lane: SLALOM_LANE, crumbs: [20, 13] },
+  { kind: 'flat', len: 14 },
+  { kind: 'pipe', len: 48, fall: 22, weeds: WEEDS_A, crumbs: [4, 6] },
+  { kind: 'pipe', len: 48, fall: 24, weeds: WEEDS_B, crumbs: [6, 6] },
+  // The steps: three flights.
+  STEP,
+  { kind: 'ledge', drop: 6 },
+  STEP,
+  { kind: 'ledge', drop: 6 },
+  STEP,
+  { kind: 'ledge', drop: 6 },
+  // A long track, its rail first on one side and then on the other.
+  // (He comes onto it through the air, off the last step: its rails start where he has landed.)
+  { kind: 'bed', len: 84, fall: 36, rails: [[-RAIL.x, 26, 52], [RAIL.x, 56, 82]] },
+  { kind: 'pipe', len: 64, fall: 32, weeds: [...WEEDS_A, [-2, 46], [1.5, 52], [0.2, 58]], crumbs: [42, 5] },
+  { kind: 'flat', len: 14 },
+  { kind: 'pipe', len: 48, fall: 24, weeds: WEEDS_B, crumbs: [6, 6] },
+  { kind: 'bed', len: 60, fall: 25, rails: BOTH_RAILS(4, 60), kickers: [[-6, -3, 30], [3, 6, 30]] },
+  { kind: 'ledge', drop: 5 },
+  { kind: 'bed', len: 54, fall: 23, weeds: FIELD, lane: FIELD_LANE, crumbs: [14, 9] },
+  // The deep main: the longest slalom.
+  { kind: 'pipe', len: 78, fall: 39, weeds: SLALOM, lane: SLALOM_LANE, crumbs: [20, 13] },
+  { kind: 'flat', len: 14 },
+  { kind: 'pipe', len: 48, fall: 22, weeds: WEEDS_A, crumbs: [4, 6] },
+  STEP,
+  { kind: 'ledge', drop: 6 },
+  STEP,
+  { kind: 'ledge', drop: 6 },
+  { kind: 'bed', len: 96, fall: 41, rails: [[RAIL.x, 26, 46], [-RAIL.x, 50, 70], [RAIL.x, 74, 94]] },
+  { kind: 'pipe', len: 64, fall: 32, weeds: [...WEEDS_B, [-0.3, 46], [1.9, 52], [-1.9, 58]], crumbs: [42, 5] },
+  { kind: 'pipe', len: 56, fall: 26, weeds: WEEDS_A, crumbs: [42, 3] },
+  // The in-run of the giant ramp: nothing in the way, long, and the steepest of all.
+  { kind: 'bed', len: 64, fall: 36, crumbs: [10, 12] },
+];
+
+/** A section as it lies: where it starts and ends, how high its floor is at each end, and whether it is a trough. */
+export interface Placed {
+  kind: 'head' | 'pipe' | 'flat' | 'bed' | 'table' | 'lip';
+  z0: number;
+  z1: number;
+  y0: number;
+  y1: number;
+  trough: boolean;
+  lane: Lane;
+  spec: Section | null;
+}
+/** Somewhere he is thrown from: where (the lip's middle), how fast he is going there, and how fast up it throws him. */
+export interface Launch {
+  kind: 'shoulder' | 'bed' | 'giant';
+  x: number;
+  x0: number;
+  x1: number;
+  /** Its foot and its lip, along the course; and the height of its lip. */
+  z0: number;
+  z: number;
+  y: number;
+  speed: number;
+  up: number;
+  crumbs: string[];
+}
+export interface RailRun {
+  x: number;
+  z0: number;
+  z1: number;
+  crumbs: string[];
+}
+
+/** How far up (or down) of where he left the ground he is after `seconds` in the air, thrown up at `up`. */
+export function flight(up: number, seconds: number): number {
+  const P = TUNING.physics;
+  let vy = up;
+  let y = 0;
+  for (let i = 0; i < Math.round(seconds * 60); i++) {
+    vy = Math.max(-P.maxFall, vy - (vy < 0 ? P.gravity * P.fallGravityMultiplier : P.gravity) / 60);
+    y += vy / 60;
+  }
+  return y;
+}
+const laneAt = (lane: Lane, d: number): number => {
+  if (typeof lane === 'number') return lane;
+  if (d <= lane[0][0]) return lane[0][1];
+  for (let i = 0; i + 1 < lane.length; i++) if (d <= lane[i + 1][0]) return lane[i][1] + ((lane[i + 1][1] - lane[i][1]) * (d - lane[i][0])) / (lane[i + 1][0] - lane[i][0]);
+  return lane[lane.length - 1][1];
+};
+
+interface Built {
+  placed: Placed[];
+  solids: Box[];
+  decor: Decor[];
+  collectibles: CollectibleDef[];
+  launches: Launch[];
+  rails: RailRun[];
+  /** The crumbs along the line worth riding. */
+  lineCrumbs: string[];
+  /** Every weed: where its stem is. */
+  weeds: Array<[number, number, number]>;
+  head: { z0: number; z1: number; y: number };
+  lip: { z: number; y: number };
+  arena: { x: number; z: number; r: number };
+  well: Well;
+}
+let built: Built | null = null;
+
+function build(): Built {
+  // First where everything is, measured down from the head; then all of it lifted so the arena's floor is at 0.
+  let fallen = RIM; // (the first pipe is cut down into the head)
+  for (const s of COURSE) fallen += s.kind === 'ledge' ? s.drop : s.kind === 'flat' ? 0 : s.fall;
+  COURSE.forEach((s, i) => {
+    // (A trough after a bed, or after a ledge that followed one, is cut down into it.)
+    const before = COURSE.slice(0, i).reverse().find((p) => p.kind !== 'ledge');
+    if (i > 0 && (s.kind === 'pipe' || s.kind === 'flat') && before?.kind === 'bed') fallen += RIM;
+  });
+  const headY = LIP.over + fallen;
+
+  const placed: Placed[] = [];
   const solids: Box[] = [];
   const decor: Decor[] = [];
-  const top = L.head.y + 9;
-  const north = L.head.z0;
-  const south = L.station.z1;
-
-  // The ground under all of it (the station stands on it), the walls that shut it in, and its two ends.
-  solids.push(extent('floor', -WALL, WALL, -1, 0, north - 1, south + 1));
-  solids.push(extent('wall', -WALL, -HALF, 0, top, north - 1, south + 1), extent('wall', HALF, WALL, 0, top, north - 1, south + 1));
-  solids.push(extent('wall', -HALF, HALF, 0, top, north - 1, north), extent('wall', -HALF, HALF, 0, top, south, south + 1));
-
-  // The head: a platform across the whole width, the pipe's mouth in its south edge.
-  solids.push(extent('stone', -HALF, HALF, 0, L.head.y, L.head.z0, L.head.z1));
-  // The pipes, and the level length between them: one trough from top to bottom, with a shoulder either side.
-  solids.push(...pipeRun('stone', S, 0, L.pipeA.z0, L.pipeA.z1, L.pipeA.top, L.pipeA.bottom, HALF));
-  solids.push(...pipeRun('stone', S, 0, L.level.z0, L.level.z1, L.level.y, L.level.y, HALF));
-  solids.push(...pipeRun('stone', S, 0, L.pipeB.z0, L.pipeB.z1, L.pipeB.top, L.pipeB.bottom, HALF));
-  // A kicker on each shoulder of the level length, climbing south.
-  const rim = pipeRim(S);
-  for (const side of [-1, 1]) {
-    const a = side * L.kicker.x0;
-    const b = side * L.kicker.x1;
-    solids.push(rampBox('stone', Math.min(a, b), Math.max(a, b), L.kicker.z0, L.kicker.z1, L.level.y + rim, L.level.y + rim + L.kicker.high, 's'));
-  }
-  // The railway: a bed across the whole width, falling; two rails on it, falling with it.
-  solids.push(rampBox('stone', -HALF, HALF, L.rail.z0, L.rail.z1, L.rail.bottom, L.rail.top, 'n', 0));
-  for (const side of [-1, 1]) {
-    const x = side * L.rails.x;
-    solids.push({ ...rampBox('stone', x - L.rails.wide / 2, x + L.rails.wide / 2, L.rail.z0 + 2, L.rail.z1, L.rail.bottom + L.rails.high, floorAlong(L.rail.z0 + 2, L.rail.z0, L.rail.z1, L.rail.top, L.rail.bottom) + L.rails.high, 'n', 0), skin: 'rustPlate' });
-    // ...and on into the station, level, as far as the buffers.
-    solids.push({ ...extent('stone', x - L.rails.wide / 2, x + L.rails.wide / 2, 0, L.rails.high, L.station.z0, L.buffers.z0), skin: 'rustPlate' });
-  }
-  decor.push({ kind: 'sleepers', x: 0, z0: L.rail.z0 + 2, z1: L.rail.z1, y0: floorAlong(L.rail.z0 + 2, L.rail.z0, L.rail.z1, L.rail.top, L.rail.bottom), y1: L.rail.bottom, w: 4.2, gap: 1.5 });
-  decor.push({ kind: 'sleepers', x: 0, z0: L.station.z0, z1: L.buffers.z0, y0: 0, y1: 0, w: 4.2, gap: 1.5 });
-  // The station: buffers across the end of the line; a platform down the east side with a ramp up to it.
-  solids.push(extent('plank', -L.buffers.half, L.buffers.half, 0, L.buffers.high, L.buffers.z0, L.buffers.z1));
-  const P = L.platform;
-  solids.push(extent('stone', P.x0, P.x1, 0, P.y, P.z0, P.z1));
-  solids.push(rampBox('stone', P.x0, P.x1, P.rampFrom, P.z0, 0, P.y, 's'));
-
-  // Slimy water down the middle of each pipe, and across the level length: it is not in use, but it still runs.
-  for (const [z0, z1, y0, y1] of [[L.pipeA.z0, L.pipeA.z1, L.pipeA.top, L.pipeA.bottom], [L.level.z0, L.level.z1, L.level.y, L.level.y], [L.pipeB.z0, L.pipeB.z1, L.pipeB.top, L.pipeB.bottom]]) {
-    decor.push({ kind: 'runnel', x: 0, z0, z1, y0, y1, w: S.flat * 1.5 });
-  }
-  // Weeds out of the cracks: each a clump to steer round (solid: riding into one at speed throws him off).
-  for (const [x, z] of L.weeds) {
-    // (Its foot is on the pipe's wall there: the floor's height, and what the curve adds that far out.)
-    const out = Math.max(0, Math.abs(x) - S.flat);
-    const h = S.radius - Math.sqrt(Math.max(0, S.radius * S.radius - out * out));
-    const y = dropFloor(z) + h;
+  const collectibles: CollectibleDef[] = [];
+  const launches: Launch[] = [];
+  const rails: RailRun[] = [];
+  const lineCrumbs: string[] = [];
+  const weeds: Array<[number, number, number]> = [];
+  const crumb = (x: number, y: number, z: number): string => {
+    const id = `drop-crumb-${collectibles.length}`;
+    collectibles.push({ id, kind: 'crumb', x, y, z });
+    return id;
+  };
+  /** Crumbs along the way a throw sends him: at his middle, at these times after he leaves the lip. */
+  const arc = (x: number, z: number, y: number, speed: number, up: number, times: number[]): string[] => times.map((t) => crumb(x, y + flight(up, t) + 0.55, z + speed * t));
+  const walls = (z0: number, z1: number, base: number, top: number): void => {
+    solids.push(extent('wall', -HALF - 1, -HALF, base, top, z0, z1), extent('wall', HALF, HALF + 1, base, top, z0, z1));
+  };
+  const weed = (x: number, y: number, z: number): void => {
     // (Tall enough to be a wall to him wherever he meets it. At half that, with the floor falling away under it,
     // its uphill side was a step he could take: he rode up onto the weed and off its top into the air.)
     solids.push({ ...extent('stone', x - WEED.half, x + WEED.half, y - 0.6, y + WEED.high, z - WEED.half, z + WEED.half), hidden: true });
     decor.push({ kind: 'weed', x, y: y - 0.1, z, size: 0.95 });
-  }
-  // Light: torches down both walls, a little above the course as it falls; crystals where the tunnels open out.
-  for (let z = -6; z < south; z += 12) {
-    const y = Math.max(dropFloor(z), dropFloor(z + 4)) + 5.2;
-    decor.push({ kind: 'torch', x: -HALF + 0.02, y, z, yaw: Math.PI / 2 }, { kind: 'torch', x: HALF - 0.02, y, z: z + 6, yaw: -Math.PI / 2 });
-  }
-  decor.push({ kind: 'crystal', x: -6.4, y: L.level.y + rim, z: 39, size: 1.4, color: 0x5fd0c0 }, { kind: 'crystal', x: 6.6, y: L.level.y + rim, z: 46.6, size: 1.1, color: 0x8a7fe0 });
-  decor.push({ kind: 'crystal', x: -6.6, y: 0, z: 158, size: 1.5, color: 0x5fd0c0 });
-  // Boards: what to do at the top; what the rails are for; where the way out is.
-  decor.push({ kind: 'sign', x: -4.6, y: L.head.y + 1.5, z: -2.2, yaw: Math.PI, w: 2.8, h: 1.4, lines: ['THE LONG DROP', 'JUMP, ATTACK'], post: 0 });
-  decor.push({ kind: 'sign', x: -HALF + 0.02, y: floorAlong(90, L.rail.z0, L.rail.z1, L.rail.top, L.rail.bottom) + 3, z: 90, yaw: Math.PI / 2, w: 2.8, h: 1.4, lines: ['THE RAILS', 'RIDE NEAR, STOW'] });
-  decor.push({ kind: 'sign', x: P.x0 + 0.6, y: P.y + 1.5, z: P.z0 + 0.6, yaw: Math.PI, w: 2.2, h: 1.2, lines: ['WAY OUT'], post: 0 });
+    weeds.push([x, y, z]);
+  };
+  const torches = (z0: number, z1: number, at: (z: number) => number): void => {
+    for (let z = Math.ceil(z0 / 16) * 16; z < z1; z += 16) {
+      const side = (z / 16) % 2 === 0 ? -1 : 1;
+      decor.push({ kind: 'torch', x: side * (HALF - 0.02), y: at(z) + 5.4, z, yaw: (-side * Math.PI) / 2 });
+    }
+  };
 
-  // Crumbs along the lines worth taking: down the slime, over each kicker, and above each rail.
-  const collectibles: CollectibleDef[] = [];
-  const crumb = (x: number, y: number, z: number): void => void collectibles.push({ id: `drop-crumb-${collectibles.length}`, kind: 'crumb', x, y, z });
-  for (let z = 4; z < L.pipeB.z1; z += 4) if (!L.weeds.some(([wx, wz]) => Math.abs(wx) < 1 && Math.abs(wz - z) < 2.5)) crumb(0, dropFloor(z) + 0.6, z);
-  for (const side of [-1, 1]) {
-    const x = side * (L.kicker.x0 + L.kicker.x1) / 2;
-    // (Along the arc the kicker throws him in at full speed: up over the second pipe's shoulder as it falls away.)
-    for (const [dz, up] of KICKER_ARC) crumb(x, dropFloor(L.kicker.z1 + dz) + rim + up, L.kicker.z1 + dz);
-    for (let z = L.rail.z0 + 6; z < L.rail.z1; z += 5) crumb(side * L.rails.x, floorAlong(z, L.rail.z0, L.rail.z1, L.rail.top, L.rail.bottom) + L.rails.high + 0.7, z);
+  // The head: a platform across the whole width, to drop in from.
+  const head = { z0: -10, z1: 0, y: headY };
+  solids.push(extent('stone', -HALF, HALF, headY - DEEP, headY, head.z0, head.z1));
+  solids.push(extent('wall', -HALF, HALF, headY - DEEP, headY + WALL_UP + 2, head.z0 - 1, head.z0));
+  walls(head.z0 - 1, head.z1, headY - DEEP, headY + WALL_UP + 2);
+  placed.push({ kind: 'head', z0: head.z0, z1: head.z1, y0: headY, y1: headY, trough: false, lane: 0, spec: null });
+
+  let z = 0;
+  let y = headY;
+  let trough = false;
+  for (const s of COURSE) {
+    if (s.kind === 'ledge') {
+      y -= s.drop;
+      continue;
+    }
+    const z0 = z;
+    const z1 = z + s.len;
+    const isTrough = s.kind !== 'bed';
+    if (isTrough && !trough) y -= RIM;
+    const y0 = y;
+    const y1 = s.kind === 'flat' ? y : y - s.fall;
+    const base = y1 - DEEP;
+    const floor = (zz: number): number => y0 + ((y1 - y0) * (zz - z0)) / (z1 - z0);
+    const lane: Lane = s.kind === 'flat' ? -1 : (s.lane ?? (s.kind === 'pipe' ? -1 : 0));
+    placed.push({ kind: s.kind, z0, z1, y0, y1, trough: isTrough, lane, spec: s });
+    walls(z0, z1, base, y0 + (isTrough ? RIM : 0) + WALL_UP);
+    torches(z0, z1, (zz) => floor(zz) + (isTrough ? RIM : 0));
+
+    if (s.kind === 'pipe' || s.kind === 'flat') {
+      solids.push(...pipeRun('stone', S, 0, z0, z1, y0, y1, HALF, base));
+      // Slimy water down its middle: it is not in use, but it still runs.
+      decor.push({ kind: 'runnel', x: 0, z0, z1, y0, y1, w: S.flat * 1.5 });
+    } else {
+      solids.push(rampBox('stone', -HALF, HALF, z0, z1, y1, y0, 'n', base));
+    }
+    if (s.kind === 'flat') {
+      // A kicker on each shoulder, climbing south; crumbs along the way it throws him.
+      const K = SHOULDER_KICKER;
+      const zk = z1 - K.back;
+      for (const side of [-1, 1]) {
+        const a = Math.min(side * K.x0, side * K.x1);
+        const speed = TUNING.ride.max - 0.7; // (the flat has slowed him a little by here)
+        const up = (speed * K.rise) / K.len;
+        solids.push(rampBox('stone', a, a + (K.x1 - K.x0), zk, zk + K.len, y + RIM, y + RIM + K.rise, 's'));
+        const x = a + (K.x1 - K.x0) / 2;
+        launches.push({ kind: 'shoulder', x, x0: a, x1: a + (K.x1 - K.x0), z0: zk, z: zk + K.len, y: y + RIM + K.rise, speed, up, crumbs: arc(x, zk + K.len, y + RIM + K.rise, speed, up, [0.15, 0.4, 0.65, 0.9]) });
+      }
+    }
+    if (s.kind === 'bed') {
+      for (const [x, from, to] of s.rails ?? []) {
+        const top = (zz: number): number => floor(zz) + RAIL.high;
+        solids.push({ ...rampBox('stone', x - RAIL.wide / 2, x + RAIL.wide / 2, z0 + from, z0 + to, top(z0 + to), top(z0 + from), 'n', floor(z0 + to) - 0.2), skin: 'rustPlate' });
+        const ids: string[] = [];
+        for (let d = from + 5; d < to - 1; d += 6) ids.push(crumb(x, top(z0 + d) + 0.55, z0 + d));
+        rails.push({ x, z0: z0 + from, z1: z0 + to, crumbs: ids });
+      }
+      if (s.rails?.length) {
+        const from = Math.min(...s.rails.map((r) => r[1]));
+        const to = Math.max(...s.rails.map((r) => r[2]));
+        decor.push({ kind: 'sleepers', x: 0, z0: z0 + from, z1: z0 + to, y0: floor(z0 + from), y1: floor(z0 + to), w: 4.2, gap: 1.5 });
+      }
+      for (const [x0, x1, at] of s.kickers ?? []) {
+        const K = BED_KICKER;
+        const zk = z0 + at;
+        const foot = floor(zk);
+        const speed = TUNING.ride.max;
+        const up = (speed * K.rise) / K.len;
+        solids.push(rampBox('stone', x0, x1, zk, zk + K.len, foot, foot + K.rise, 's', floor(Math.min(z1, zk + K.len)) - 0.3));
+        const x = (x0 + x1) / 2;
+        launches.push({ kind: 'bed', x, x0, x1, z0: zk, z: zk + K.len, y: foot + K.rise, speed, up, crumbs: arc(x, zk + K.len, foot + K.rise, speed, up, [0.2, 0.45, 0.7, 0.95]) });
+      }
+    }
+    if (s.kind !== 'flat') {
+      // Weeds out of the cracks (in a pipe, each stands on its wall where it grows).
+      for (const [x, d] of s.weeds ?? []) weed(x, floor(z0 + d) + (isTrough ? wallAt(S, x) : 0), z0 + d);
+      // Crumbs along the line worth riding.
+      const [from, count] = s.crumbs ?? [0, 0];
+      for (let i = 0; i < count; i++) {
+        const d = from + i * 4;
+        const x = laneAt(lane, d);
+        lineCrumbs.push(crumb(x, floor(z0 + d) + (isTrough ? wallAt(S, x) : 0) + 0.55, z0 + d));
+      }
+    }
+    z = z1;
+    y = y1;
+    trough = isTrough;
   }
 
+  // The giant ramp: a level table at the foot of the in-run, then the lip. Past it there is nothing.
+  const tableY = y;
+  const base = tableY - DEEP;
+  solids.push(extent('stone', -HALF, HALF, base, tableY, z, z + LIP.table));
+  placed.push({ kind: 'table', z0: z, z1: z + LIP.table, y0: tableY, y1: tableY, trough: false, lane: 0, spec: null });
+  const lz0 = z + LIP.table;
+  const lzm = lz0 + LIP.len1;
+  const lz1 = lzm + LIP.len2;
+  const lipY = tableY + LIP.rise1 + LIP.rise2;
+  solids.push(rampBox('stone', -HALF, HALF, lz0, lzm, tableY, tableY + LIP.rise1, 's', base));
+  solids.push(rampBox('stone', -HALF, HALF, lzm, lz1, tableY + LIP.rise1, lipY, 's', base));
+  placed.push({ kind: 'lip', z0: lz0, z1: lz1, y0: tableY, y1: lipY, trough: false, lane: 0, spec: null });
+  walls(z, lz1, base, lipY + WALL_UP);
+  decor.push({ kind: 'torch', x: -HALF + 0.02, y: lipY + 3, z: lz1 - 0.6, yaw: Math.PI / 2 }, { kind: 'torch', x: HALF - 0.02, y: lipY + 3, z: lz1 - 0.6, yaw: -Math.PI / 2 });
+  const lip = { z: lz1, y: lipY };
+  {
+    const speed = LIP.speed; // (the table and the climb have slowed him to this)
+    const up = (speed * LIP.rise2) / LIP.len2;
+    launches.push({ kind: 'giant', x: 0, x0: -HALF, x1: HALF, z0: lz0, z: lz1, y: lip.y, speed, up, crumbs: arc(0, lz1, lip.y, speed, up, [0.2, 0.45, 0.7, 0.95, 1.2, 1.45]) });
+  }
+
+  // The arena, far below: a round floor in the dark. Its floor is solid well past its edge, but he cannot go there.
+  const arena = { x: 0, z: lip.z + ARENA.ahead, r: ARENA.r };
+  solids.push({ ...extent('floor', arena.x - arena.r - 4, arena.x + arena.r + 4, -1, 0, arena.z - arena.r - 4, arena.z + arena.r + 4), hidden: true });
+  decor.push({ kind: 'arena', x: arena.x, y: 0, z: arena.z, r: arena.r });
+  decor.push({ kind: 'eyes', x: arena.x, y: 0, z: arena.z, r0: arena.r + 4, r1: arena.r + 17, high: 8, count: 52 });
+  // (A funnel: at the height of the ramp's underside it is wide enough to take one who only walks off the lip.)
+  const top = base - 1;
+  const well: Well = { x: arena.x, z: arena.z, y: 0, r: arena.r, clear: ARENA.clear, top, flare: (ARENA.ahead + 1.5 - arena.r) / (top - ARENA.clear) };
+
+  // Boards: what to do at the top, and what the rails are for.
+  decor.push({ kind: 'sign', x: -4.6, y: headY + 1.5, z: -2.2, yaw: Math.PI, w: 2.8, h: 1.4, lines: ['THE LONG DROP', 'JUMP, ATTACK'], post: 0 });
+  const firstRails = placed.find((p) => p.spec?.kind === 'bed' && p.spec.rails?.length);
+  if (firstRails) decor.push({ kind: 'sign', x: -HALF + 0.02, y: firstRails.y0 + 2.2, z: firstRails.z0 + 4, yaw: Math.PI / 2, w: 2.8, h: 1.4, lines: ['THE RAILS', 'RIDE NEAR, STOW'] });
+
+  return { placed, solids, decor, collectibles, launches, rails, lineCrumbs, weeds, head, lip, arena, well };
+}
+
+/** Everything about how the course lies (built once). */
+export function longDropPlan(): Built {
+  return (built ??= build());
+}
+/** The section at z (the last one, past the lip). */
+export function sectionAt(z: number): Placed {
+  const P = longDropPlan().placed;
+  return P.find((p) => z < p.z1) ?? P[P.length - 1];
+}
+/** How high the course's own floor is at z, down its middle line. */
+export function dropFloor(z: number): number {
+  const p = sectionAt(z);
+  const t = Math.max(0, Math.min(1, (z - p.z0) / (p.z1 - p.z0)));
+  return p.y0 + (p.y1 - p.y0) * t;
+}
+/** The line worth riding at z: it misses every weed, and every kicker and rail too. */
+export function dropLine(z: number): number {
+  const p = sectionAt(z);
+  return laneAt(p.lane, z - p.z0);
+}
+export const LONGDROP = { half: HALF, rim: RIM, troughHalf: pipeHalf(S) } as const;
+
+export function longDrop(): LevelDef {
+  const B = longDropPlan();
   return {
     id: 'longdrop',
     name: 'The Long Drop',
-    blurb: 'All downhill, on the shield the whole way: two lengths of old pipe and a railway to grind.',
+    blurb: 'A minute and a half downhill on the shield: pipes, rails and ramps, and a long fall into the dark at the end.',
     theme: 'sewer',
+    music: 'pump',
     fogRange: [30, 110],
-    solids,
+    solids: B.solids.map((b) => ({ ...b })),
     pit: null,
     water: [],
-    decor,
-    spawn: { x: 0, y: L.head.y, z: -6, facing: 0 },
-    collectibles,
+    decor: B.decor.map((d) => ({ ...d })),
+    spawn: { x: 0, y: B.head.y, z: -6, facing: 0 },
+    collectibles: B.collectibles.map((c) => ({ ...c })),
     crateContents: [],
     enemies: [],
     waves: [],
     gear: [],
     goals: [],
-    // Its way out is on the platform at the bottom, and leads back to the Move Garden.
-    exit: { x: (P.x0 + P.x1) / 2, z: south - 0.08, yaw: Math.PI, width: 2.6, height: 3.8, y: P.y },
+    well: { ...B.well },
+    // Its way out stands at the far edge of the arena's light, and leads back to the Move Garden.
+    exit: { x: B.arena.x, z: B.arena.z + B.arena.r - 0.35, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
     returnTo: 'garden',
   };
 }
-/** How far from the middle the trough's walls end (for the tests). */
-export const dropTroughHalf = (): number => pipeHalf(SEWER_PIPE);

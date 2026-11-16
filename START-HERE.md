@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,828 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,839 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -643,40 +643,80 @@ fall, and turns are still to be worked out (a pipe that bends needs lengths at a
 only, so a bend is a corner piece, or the pipe turns in right angles through a chamber). Not tried yet: two
 lengths joined at different falls, a kicker or a rail inside a pipe, and the water in its bottom.
 
-### The Long Drop: the downhill level, a FIRST VERSION (2026-11-16)
-The level the owner asked for on 2026-11-15 (his words are under "What the owner asked for after riding it") now
-exists to try: `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM (in `TEST_ROOMS` with the garden; in none of the
-game's lists). **Way in:** a door in the Move Garden's west wall (z -15.6), or `#level=longdrop&nostory`. Its own way
-out, on the station platform, leads back to the garden.
-**What it is,** going south, 178 long and 45 down: a HEAD to drop in from (a hop, then ATTACK); the FIRST PIPE (36
-long, falling 15: just over `ride.minSlope`); a LEVEL LENGTH of the same trough (12 long) with a kicker on each
-shoulder; the SECOND PIPE (36 long, falling 18: steeper); the RAILWAY (48 long, falling 12: a bed across the whole
-width, two rails to grind, sleepers); the STATION (flat, 36 long, buffers across the end of the line, a platform with
-the way out). Tall walls shut it all in. A steered run takes about eleven seconds at the shield's top speed.
-- **Built from `src/levels/pipes.ts`:** `pipeRun(kind, shape, x, z0, z1, top, bottom, shoulder)` makes one length
-  (a floor and four facets a side, level or falling), with an optional SHOULDER either side level with the rim.
-  `SEWER_PIPE` is its shape. Lengths with different falls join with no step (tested: 0.008 at most).
-- **Shoulders:** the head is level with the pipe's floor, so the shoulders stand over it; he gets onto one by
-  carving up the trough's wall and out over its rim (it works at speed), and can ride on there. The kickers are on
-  the shoulders; crumbs hang along the arc one throws him in (`KICKER_ARC`, measured from a real jump at full speed).
-- **Slime:** decor `runnel`, a strip down the trough's middle. It is only drawn: it does nothing to him yet.
-- **Weeds:** decor `weed` plus a hidden solid (`WEED`: 0.44 square, 1.1 high). A weed is a WALL to a rider: riding
-  into one throws him off (a bail). The first version of them was half that high and he rode up onto each and off
-  its top like a kicker: with the floor falling away, the uphill side of a low solid is a step he can take. Keep
-  obstacles well over a step high at their uphill face. One weed is nearly on the middle line on purpose: a rider
-  who holds nothing is thrown off at it.
-- **Rails:** thin ramps (0.24 wide, 0.3 high: low enough to ride over) then level into the station. A rail that
-  low was not a grind line before: `RAIL_DROP` (grind.ts) now lets a RAIL stand only 0.2 over the ground (a ledge
-  still needs `grind.drop`). Riding beside one, STOW puts him on it; he keeps full speed to the station; a hop
-  takes him off with room to stop; left on it, the buffers throw him off.
-- **Why it is STRAIGHT:** the view may not turn by itself, and a bend would ask it to. Turns are not worked out.
-- `tests/longdrop.ts` rides it every way with the real controller (down the middle into the weed; steered top to
-  bottom and on foot to the way out; out onto a shoulder and over its kicker; onto a rail, off it, and into the
-  buffers; walked down and back up).
-- **NOT done:** turns; one-hit enemies to swing at while riding (the owner's back-burner idea); the slime doing
-  anything (a splash, a slowing); sounds of its own; branches (the railway does not "break off": it is the same
-  line); it is not in the level editor's pieces; and nobody has PLAYED it by hand: it was ridden by tests and
-  looked at in still pictures of the running game.
+### The Long Drop: a minute and a half downhill, a giant ramp, and a fall into a dark arena (2026-11-16)
+The level the owner asked for on 2026-11-15 (his words are under "What the owner asked for after riding it"), and
+then, the next day, after riding its first version (178 long, eleven seconds):
+"I'm loving this tunnel kind of it's almost like a Sonic the Hedgehog type of level ... I want to see a level built
+like this that's like a minute and a half of like flying down through the sewer surfing on your Shield jumping on
+ramps collecting collectibles in the air and you're like flying down doing kickflips and s*** and then at the end of
+the tunnel there's this giant ramp that you fly off of and you catch this huge amount of air but then you fall like
+into the darkness and you land in a room it's like a boss room where like the floor is lit for a certain amount of
+radius but then it's like total darkness beyond that and the Darkness is filled with like little twinkling white
+eyes but you can't actually go beyond the lit up part of the floor and there's a boss that comes out".
+**All of that is built EXCEPT THE BOSS (the next section).** `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM
+(in `TEST_ROOMS` with the garden; in none of the game's lists). **Way in:** the door in the Move Garden's west wall
+(z -15.6), or `#level=longdrop&nostory`. Its way out stands at the far edge of the arena's light and leads back.
+**What it is:** 1,386 long, 656 down, dead straight south. The line worth riding takes 91 seconds, all of it on the
+shield, about 14 of them in the air. It is a LIST OF SECTIONS (`COURSE` in longdrop.ts), laid end to end:
+- a PIPE: a trough (slime down its middle, weeds on its walls) with a shoulder either side, falling;
+- a FLAT: the same trough run level for 14, a kicker on each shoulder;
+- a BED: the whole width one slope: rails to grind (`rails`), kickers (`kickers`), or a field of weeds;
+- a LEDGE: the floor steps down 4 to 6 and he flies off it. Three beds with a kicker at the end of each and a
+  ledge after are "the steps": jump, land, jump.
+To change the level, edit `COURSE`: everything else (heights, walls, torches, crumbs, the arena's place) follows.
+**Rules the builder keeps (each is tested):**
+- Every falling section is at least `ride.minSlope` steep, so one thrown off can hop and ATTACK back onto the
+  shield wherever he stands.
+- Nothing ever stands across his way but a weed. Where a bed meets a trough, the trough is cut DOWN into the bed
+  (its shoulders carry on level with the bed); where a trough meets a bed, the bed is at the trough's floor.
+- After a ledge he is in the air and cannot steer: the first weeds, rails and line crumbs of the next section are
+  well in (see the slalom's and the field's first gate, and the rails after the steps).
+- Each section has a `lane`: the line that misses every weed (`dropLine(z)`). Crumbs on the ground are hung along
+  it, so in a slalom the crumbs show the way through.
+- Crumbs in the air are hung along the way each kicker really throws him: `flight()` in longdrop.ts repeats the
+  game's own fall, frame for frame, and the test rides every kicker and takes every crumb. 235 crumbs: 108 on the
+  line, 74 in the air, 53 over rails. None is anywhere he does not ride.
+**The giant ramp** (`LIP`) is a ski jump: the last bed is its in-run (64 long, the steepest), then a short table
+and a lip that turns up in two pieces. He leaves it at 12.7 going up at 9.5, rises 2.4, and falls 49 into the dark:
+2.9 seconds in the air. WHY IT IS NOT A BIG CLIMBING RAMP: climbing costs him speed and his speed has a top (16), so
+a lip that climbs far throws him LESS. A pop (jump) on the lip throws him much higher.
+**The arena** (`ARENA`, `LevelDef.well`): a round floor 13 across its radius, 36 past the lip, at y 0. Decor `arena`
+draws its floor (lit in the middle, fading to nothing at the edge) and decor `eyes` the pairs of white eyes out in
+the dark, which blink. **He cannot leave the light:** `well` (collision.ts `keepInWell`, applied by the knight) keeps
+him within its radius; there is nothing drawn there and nothing solid, by the owner's own asking. High above the
+floor the well is a FUNNEL (wider the higher he is), so however he leaves the lip, even walking off it, he is brought
+down inside the light. On the floor, jumping does not get him past the edge (`clear`).
+**Built from `src/levels/pipes.ts`:** `pipeRun(kind, shape, x, z0, z1, top, bottom, shoulder, base)`, `wallAt`.
+**Weeds** are a hidden solid 0.44 square and 1.1 high (`WEED`): a WALL to a rider. (Half that high, on a falling
+floor, he rode up onto them like kickers.) **Rails** are thin ramps 0.3 high; `RAIL_DROP` in grind.ts lets a rail
+that low be ground.
+- `tests/longdrop.ts` (34 checks) rides it every way: the whole line from the head to the arena, every kicker,
+  every rail, the giant ramp three ways, getting back on in every section, and the arena's edge.
+- **NOT done:** the BOSS; turns (the view may not turn by itself); one-hit enemies to swing at while riding (his
+  back-burner idea); the slime doing anything; sounds of its own (it plays the 'pump' music); branches or more
+  than one route; a second look to the tunnel (it is one sewer theme for the whole length). The in-run does not
+  yet LOOK like a giant ramp from above: it is a steep plain bed. And nobody has PLAYED it by hand: it was ridden
+  by tests and looked at in still pictures of the running game.
+
+### The boss for the Long Drop's arena: a giant spider (the owner, 2026-11-16: THE NEXT JOB, NOT STARTED)
+His words: "there's a boss that comes out he's in the room he's in the darkness he comes out and he's like a I don't
+like a giant spider or something that you got to fight. It could be one of those fights too or like it's actually so
+big that he doesn't even really fit in the arena it's just like a giant spider's head connected to a body that goes
+into the darkness and then you have to deal with like his front four legs and his like I don't know just spiders
+have a mandibles he has mandibles and his front four legs and he'll like slam down one side of the field and sweep
+across and then slam down the other side of the field and sweep across or he'll like bite down on certain parts of
+the field and you have to like Dodge all his attacks."
+**What he asked for, plainly:** a boss too big for the room: only its HEAD, its MANDIBLES and its FRONT FOUR LEGS
+come into the light; the body goes back into the dark. Attacks: a leg slams down on one side of the floor and
+SWEEPS across; then the other side; and it BITES DOWN on parts of the floor. He dodges all of it.
+**Notes for whoever builds it (Claude's reading, not his words):**
+- The arena is ready for it: radius 13, he lands near its middle off the giant ramp, the way out is at its south
+  edge (move it, or shut it till the boss is beaten, with a 'defeat' goal).
+- There are two bosses to follow for how a boss is made, told and tested: the Broodmother (`enemies/brood.ts`) and
+  the Sump Wyrm (`enemies/wyrm.ts`); HANDOFF.md has a section on each.
+- His rules for creatures hold: a few shaped, flat-faced pieces, not many round ones; looked at from all sides
+  before it goes in; every attack has a tell; and DO NOT MAKE IT EASY.
+- The eyes in the dark (decor `eyes`) are small and many; the boss's own eyes should be told apart from them.
 
 ### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
 His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the

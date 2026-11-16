@@ -201,6 +201,10 @@ export type Decor =
   | { kind: 'sleepers'; x: number; z0: number; z1: number; y0: number; y1: number; w: number; gap: number }
   /** A weed growing out of a crack at (x, y, z), `size` tall. (What is solid of it is a box of its own.) */
   | { kind: 'weed'; x: number; y: number; z: number; size: number }
+  /** The floor of a round room in the dark: lit in its middle, fading to nothing at its edge (r). Drawn only. */
+  | { kind: 'arena'; x: number; y: number; z: number; r: number }
+  /** Pairs of white eyes out in the dark round a place, between r0 and r1 from it and up to `high` over it: they blink. */
+  | { kind: 'eyes'; x: number; y: number; z: number; r0: number; r1: number; high: number; count: number }
   /** A wall grate pouring sludge: the opening is at (x, y, z) facing `yaw`, `width` wide, falling down to `bottom`. */
   | { kind: 'fall'; x: number; y: number; z: number; yaw: number; width: number; bottom: number }
   /** A chain hanging from (x, top, z) down to `bottom`. */

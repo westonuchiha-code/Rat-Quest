@@ -124,3 +124,41 @@ export function segmentAabbT(p0: THREE.Vector3, p1: THREE.Vector3, b: Aabb): num
   }
   return tmin;
 }
+
+/**
+ * A round room he cannot leave (see LevelDef.well): `r` wide from its floor `y` up to `clear` over it (higher than he
+ * can jump: on its floor its edge is its edge, however he leaps at it), and above that a funnel, `flare` wider for
+ * each unit up, to `top`.
+ */
+export interface Well {
+  x: number;
+  z: number;
+  y: number;
+  r: number;
+  clear: number;
+  flare: number;
+  top: number;
+}
+
+/**
+ * Keeps a body of `radius` at `pos` inside a well: put back at its edge, and what of `vel` was carrying it out taken
+ * away. True if it was at the edge.
+ */
+export function keepInWell(w: Well, pos: { x: number; y: number; z: number }, vel: { x: number; z: number }, radius: number): boolean {
+  if (pos.y >= w.top) return false;
+  const lim = w.r + w.flare * Math.max(0, pos.y - w.y - w.clear) - radius;
+  const dx = pos.x - w.x;
+  const dz = pos.z - w.z;
+  const d = Math.hypot(dx, dz);
+  if (d <= lim) return false;
+  const nx = dx / d;
+  const nz = dz / d;
+  pos.x = w.x + nx * lim;
+  pos.z = w.z + nz * lim;
+  const out = vel.x * nx + vel.z * nz;
+  if (out > 0) {
+    vel.x -= nx * out;
+    vel.z -= nz * out;
+  }
+  return true;
+}

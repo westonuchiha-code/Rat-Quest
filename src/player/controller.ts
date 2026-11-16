@@ -2,7 +2,7 @@ import { MAX_WALK_SLOPE } from '../world/layout';
 import { findGrind, grindHeight, type GrindLine } from '../world/grind';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
-import { Aabb, topAt, slopeOf, slopeXZ } from '../world/collision';
+import { Aabb, topAt, slopeOf, slopeXZ, keepInWell, type Well } from '../world/collision';
 import type { WaterVolume } from '../world/layout';
 import { NO_GEAR, type GearMods } from '../data/equipment';
 import { ATTACK_CLIPS } from './animations';
@@ -209,6 +209,8 @@ export class PlayerController {
   // Open-course moves.
   /** What he just did this step (long jump, wall kick, grab, climb), for sounds. */
   moveEvent: MoveEvent = null;
+  /** A round room in the dark he cannot leave (LevelDef.well), or none. Whoever loads the level sets it. */
+  well: Well | null = null;
   /** Whether he can catch ledges in this level. */
   allowGrab = true;
   /** Whether the long jump works in this level. */
@@ -957,6 +959,9 @@ export class PlayerController {
     }
     this.wasGrounded = this.grounded;
     this.landTimer = justLanded ? T.landTime : Math.max(0, this.landTimer - dt);
+
+    // The edge of the light in a round room: he goes no further out (and one falling in is brought inside it).
+    if (this.well) keepInWell(this.well, this.position, this.velocity, T.rat.radius);
 
     // Fell out of the chamber: respawn.
     if (this.position.y < T.pit.respawnY) this.respawn();
