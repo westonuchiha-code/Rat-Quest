@@ -31,6 +31,8 @@ export const MOTES: Record<string, MoteStyle | null> = {
   cave: { count: 100, color: 0x8ae8d0, size: 0.18, rise: 0.08, drift: 0.25, flicker: 0.35, bright: 0.95, low: -1, high: 7 },
   // (Not a theme of its own: a level asks for it by `motes`. Fine snow, sifting down.)
   ice: { count: 150, color: 0xeaf6ff, size: 0.11, rise: -0.55, drift: 0.3, flicker: 0.15, bright: 0.8, low: -1, high: 9 },
+  // (Asked for by `motes`: the dream's road in the sky. Stars round him, hardly moving, twinkling.)
+  stars: { count: 170, color: 0xfff4c8, size: 0.2, rise: 0.02, drift: 0.05, flicker: 0.95, bright: 1, low: -8, high: 12 },
   keep: { count: 110, color: 0xc9b8e0, size: 0.13, rise: -0.22, drift: 0.12, flicker: 0.1, bright: 0.45, low: -1, high: 9 },
   sewer: { count: 60, color: 0xbfe6c0, size: 0.13, rise: 0.05, drift: 0.18, flicker: 0.2, bright: 0.3, low: -1, high: 5 },
   mine: null,

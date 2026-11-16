@@ -267,6 +267,11 @@ export type Decor =
   | { kind: 'gauge'; x: number; y: number; z: number; yaw: number; r: number }
   /** A cluster of glowing crystals growing from the floor at y, `size` tall, in a colour; it lights what is near. */
   | { kind: 'crystal'; x: number; y: number; z: number; size: number; color: number }
+  /**
+   * A planet hanging in the sky (the dream): a ball `r` across its middle, in bands of its two colours, lit of itself.
+   * `ring`: a flat ring round it, this many times its radius out, in this colour; `tilt`: how far it leans.
+   */
+  | { kind: 'planet'; x: number; y: number; z: number; r: number; color: number; band: number; ring?: { out: number; color: number }; tilt?: number }
   /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
   /** `cap`: its cap's radius, `stem`: its stem's radius at the ground (each by its height if not given: see MUSHROOM). */
   | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number; cap?: number; stem?: number }

@@ -1,4 +1,3 @@
-import * as THREE from "three";
 var POOL_Y$1 = -.85;
 /** Ring of rising platforms. Each one is one step higher than the last, so every jump is reachable. */
 var RING = {
@@ -1343,6 +1342,304 @@ function glimmerDeep() {
 		wedges: GLIMMER_WEDGES,
 		goals: goalsOf$3(GLIMMER_WEDGES),
 		exit: doorOn("south", G.halfX, 0, G.halfZ, 7)
+	};
+}
+// src/levels/milkyway.ts
+/** The road: how wide (its picture is laid one rainbow to this width: `TILE.rainbowRoad` in chamber.ts), how thick, how steep. */
+var ROAD = {
+	wide: 7,
+	deep: 1.2,
+	slope: .42
+};
+/**
+* The lengths of road, top to bottom: how long, and how far to one side of the middle line its own middle is.
+* After each but the last, a gap: how wide, and how far the next length starts BELOW where this one's line would
+* have been there. (At the road's speed he falls two below that line in crossing six; the next length starts over
+* three below it, so a ride at speed lands on it without a jump, and a slower one needs the jump off the board.)
+*/
+var LENGTHS = [
+	{
+		len: 56,
+		x: 0,
+		gap: {
+			wide: 6,
+			under: 3.2
+		}
+	},
+	{
+		len: 48,
+		x: 2.5,
+		gap: {
+			wide: 6,
+			under: 3.2
+		}
+	},
+	{
+		len: 40,
+		x: -2.5,
+		gap: {
+			wide: 7,
+			under: 3.8
+		}
+	},
+	{
+		len: 60,
+		x: 0
+	}
+];
+/** The pad at the top, the easing-out at the bottom, and the Moon: the landing. */
+var HEAD = {
+	half: 6,
+	long: 10
+};
+var RUNOUT = {
+	len: 18,
+	fall: 2.2
+};
+var MOON = {
+	half: 11,
+	long: 26,
+	kerb: 2.6
+};
+var WAY_PRIZES = [
+	"way-cap-1",
+	"way-cap-2",
+	"way-cap-3"
+];
+/** How far over a gap's lip its bottle cap hangs: his middle, at the middle of the gap, when he has jumped off the board at the lip (measured: his feet are 0.8 over the lip there; rolled off without a jump they are 1.6 under it). */
+var CAP_UP = 1.35;
+var plan = null;
+function build$1() {
+	let fall = 0;
+	for (const s of LENGTHS) fall += s.len * ROAD.slope + (s.gap ? s.gap.wide * ROAD.slope + s.gap.under : 0);
+	const headY = fall + RUNOUT.fall;
+	const solids = [];
+	const decor = [];
+	const collectibles = [];
+	const lengths = [];
+	const road = (b) => ({
+		...b,
+		skin: "rainbowRoad"
+	});
+	const tiles = (b) => ({
+		...b,
+		skin: "pomoTiles"
+	});
+	const half = ROAD.wide / 2;
+	solids.push(tiles(extent("stone", -HEAD.half, HEAD.half, headY - ROAD.deep, headY, -HEAD.long, 0)));
+	decor.push({
+		kind: "sign",
+		x: -3.6,
+		y: headY + 1.5,
+		z: -2.4,
+		yaw: Math.PI,
+		w: 2.8,
+		h: 1.4,
+		lines: ["THE MILKY WAY", "JUMP, ATTACK"],
+		post: 0
+	});
+	let z = 0;
+	let y = headY;
+	LENGTHS.forEach((s, i) => {
+		const y1 = y - s.len * ROAD.slope;
+		solids.push(road(rampBox("stone", s.x - half, s.x + half, z, z + s.len, y1, y, "n", y1 - ROAD.deep)));
+		lengths.push({
+			z0: z,
+			z1: z + s.len,
+			y0: y,
+			y1,
+			x: s.x
+		});
+		z += s.len;
+		y = y1;
+		if (s.gap) {
+			const next = LENGTHS[i + 1];
+			collectibles.push({
+				id: WAY_PRIZES[i],
+				kind: "cap",
+				x: (s.x + next.x) / 2,
+				y: y + CAP_UP,
+				z: z + s.gap.wide / 2
+			});
+			z += s.gap.wide;
+			y -= s.gap.wide * ROAD.slope + s.gap.under;
+		}
+	});
+	solids.push(road(rampBox("stone", -half, half, z, z + RUNOUT.len, 0, y, "n", -ROAD.deep)));
+	lengths.push({
+		z0: z,
+		z1: z + RUNOUT.len,
+		y0: y,
+		y1: 0,
+		x: 0
+	});
+	z += RUNOUT.len;
+	const moon = {
+		z0: z,
+		z1: z + MOON.long
+	};
+	solids.push(tiles(extent("stone", -MOON.half, MOON.half, -ROAD.deep, 0, moon.z0, moon.z1)));
+	for (const [x0, x1, z0, z1] of [
+		[
+			-MOON.half,
+			MOON.half,
+			moon.z1,
+			moon.z1 + 1
+		],
+		[
+			-MOON.half - 1,
+			-MOON.half,
+			moon.z0 + MOON.long * .45,
+			moon.z1 + 1
+		],
+		[
+			MOON.half,
+			MOON.half + 1,
+			moon.z0 + MOON.long * .45,
+			moon.z1 + 1
+		]
+	]) solids.push(road(extent("stone", x0, x1, -ROAD.deep, MOON.kerb, z0, z1)));
+	const at = (zz) => {
+		const l = lengths.find((q) => zz <= q.z1) ?? lengths[lengths.length - 1];
+		return l.y0 + (l.y1 - l.y0) * Math.max(0, Math.min(1, (zz - l.z0) / (l.z1 - l.z0)));
+	};
+	const planets = [
+		[
+			-46,
+			6,
+			40,
+			13,
+			16734900,
+			16771146,
+			[1.9, 4122816],
+			.45
+		],
+		[
+			38,
+			-14,
+			86,
+			8,
+			4122816,
+			8019199,
+			null,
+			.2
+		],
+		[
+			-30,
+			-22,
+			150,
+			6,
+			16771146,
+			16747038,
+			null,
+			-.3
+		],
+		[
+			52,
+			10,
+			170,
+			17,
+			8019199,
+			2808063,
+			[2.1, 16734900],
+			-.5
+		],
+		[
+			-58,
+			-6,
+			236,
+			10,
+			2808063,
+			16734900,
+			[1.7, 16771146],
+			.7
+		],
+		[
+			24,
+			26,
+			12,
+			4,
+			16747038,
+			16722538,
+			null,
+			.1
+		],
+		[
+			0,
+			-34,
+			moon.z1 + 46,
+			20,
+			16722538,
+			16771146,
+			[1.8, 8019199],
+			.25
+		]
+	];
+	for (const [x, up, zz, r, color, band, ring, tilt] of planets) decor.push({
+		kind: "planet",
+		x,
+		y: at(Math.min(zz, moon.z0)) + up,
+		z: zz,
+		r,
+		color,
+		band,
+		ring: ring ? {
+			out: ring[0],
+			color: ring[1]
+		} : void 0,
+		tilt
+	});
+	return {
+		solids,
+		decor,
+		collectibles,
+		lengths,
+		headY,
+		moon
+	};
+}
+function milkyWayPlan() {
+	return plan ??= build$1();
+}
+function milkyWay() {
+	const P = milkyWayPlan();
+	return {
+		id: "milkyway",
+		name: "The Milky Way",
+		blurb: "A try-out of the dream: a rainbow road downhill through the stars, on the shield.",
+		theme: "cave",
+		motes: "stars",
+		music: "groove",
+		sky: "space",
+		look: "dream",
+		fog: 1707066,
+		fogRange: [70, 195],
+		fallDepth: 28,
+		solids: P.solids.map((b) => ({ ...b })),
+		pit: null,
+		water: [],
+		decor: P.decor.map((d) => ({ ...d })),
+		spawn: {
+			x: 0,
+			y: P.headY,
+			z: -6,
+			facing: 0
+		},
+		collectibles: P.collectibles.map((c) => ({ ...c })),
+		crateContents: [],
+		enemies: [],
+		waves: [],
+		gear: [],
+		goals: [],
+		exit: {
+			x: 0,
+			z: P.moon.z1 - .5,
+			yaw: Math.PI,
+			width: 2.6,
+			height: 3.8,
+			y: 0
+		},
+		returnTo: "garden"
 	};
 }
 // src/world/collectibleLayout.ts
@@ -8743,6 +9040,12 @@ function garden() {
 				name: "The Cold Main",
 				need: 0,
 				door: doorOn("south", GARDEN.halfX, 10.5, GARDEN.halfZ, 0)
+			},
+			{
+				to: "milkyway",
+				name: "The Milky Way",
+				need: 0,
+				door: doorOn("north", GARDEN.halfX, -7, GARDEN.halfZ, 0)
 			}
 		]
 	};
@@ -8938,7 +9241,7 @@ var BOTH_RAILS = (from, to) => [[
 	to
 ]];
 /** A bed that ends in a kicker down its middle, over a ledge: the steps. */
-var STEP$1 = {
+var STEP = {
 	kind: "bed",
 	len: 36,
 	fall: 15,
@@ -9029,17 +9332,17 @@ var COURSE = [
 		weeds: WEEDS_B,
 		crumbs: [6, 6]
 	},
-	STEP$1,
+	STEP,
 	{
 		kind: "ledge",
 		drop: 6
 	},
-	STEP$1,
+	STEP,
 	{
 		kind: "ledge",
 		drop: 6
 	},
-	STEP$1,
+	STEP,
 	{
 		kind: "ledge",
 		drop: 6
@@ -9127,12 +9430,12 @@ var COURSE = [
 		weeds: WEEDS_A,
 		crumbs: [4, 6]
 	},
-	STEP$1,
+	STEP,
 	{
 		kind: "ledge",
 		drop: 6
 	},
-	STEP$1,
+	STEP,
 	{
 		kind: "ledge",
 		drop: 6
@@ -11318,505 +11621,20 @@ var TEST_ROOMS = [
 	garden(),
 	longDrop(),
 	glowCave(),
-	coldMain()
+	coldMain(),
+	milkyWay()
 ];
 var extra = () => [];
 function levelById(id) {
 	return LEVELS.find((l) => l.id === id) ?? extra().find((l) => l.id === id) ?? ARCHIVE.find((l) => l.id === id) ?? TEST_ROOMS.find((l) => l.id === id);
 }
-// src/world/collision.ts
-/** How far along a ramp a point is, from its low end (0) to its high end (1); points beyond either end count as that end. */
-function along(b, r, x, z) {
-	const lo = r.axis === "x" ? b.min.x : b.min.z;
-	const hi = r.axis === "x" ? b.max.x : b.max.z;
-	const t = Math.min(1, Math.max(0, ((r.axis === "x" ? x : z) - lo) / (hi - lo)));
-	return r.up > 0 ? t : 1 - t;
-}
-/** ...and how far ACROSS it, from its low side (0) to its high side (1), for one that is tilted across too. */
-function across(b, r, x, z) {
-	const lo = r.axis === "x" ? b.min.z : b.min.x;
-	const hi = r.axis === "x" ? b.max.z : b.max.x;
-	const t = Math.min(1, Math.max(0, ((r.axis === "x" ? z : x) - lo) / (hi - lo)));
-	return (r.cross ?? 0) > 0 ? t : 1 - t;
-}
-/**
-* The height of a solid's top at a place: a box's top is the same everywhere; a ramp's is its slope there. A place
-* beside the solid (not over it) is given the height of its nearest edge.
-*/
-function topAt(b, x, z) {
-	const r = b.ramp;
-	if (!r) return b.max.y;
-	const c = Math.abs(r.cross ?? 0);
-	return r.low + (b.max.y - c - r.low) * along(b, r, x, z) + (c > 0 ? c * across(b, r, x, z) : 0);
-}
-/** The collider for a level's box (a ramp's slope goes with it). */
-function aabbOf(b) {
-	const a = makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0);
-	if (b.ramp) a.ramp = b.ramp;
-	if (b.slick) a.slick = true;
-	return a;
-}
-/** Builds an AABB from a center point and full size. */
-function makeAabb(cx, cy, cz, w, h, d) {
-	return {
-		min: new THREE.Vector3(cx - w / 2, cy - h / 2, cz - d / 2),
-		max: new THREE.Vector3(cx + w / 2, cy + h / 2, cz + d / 2)
-	};
-}
-// src/levels/reach.ts
-/**
-* The jump checker: works out where the rat can get to from the start, using the real jump numbers (TUNING, so the
-* Tweaks panel is included). It walks, steps up small rises, drops down, swims, rides moving platforms, and jumps
-* (with the double jump) to any surface in reach. It is a careful estimate, not a full simulation:
-* gates are taken as open, and nothing in the air blocks a jump. (The trap search, `{ traps: true }`, is stricter about
-* jumps: there a wall too tall to clear stops one.)
-*
-* The level is sampled on a half-unit grid. Each point can have several surfaces (floor, a slab above it...).
-*/
-var STEP = .5;
-var HEADROOM = .9;
-var SWIM_HEADROOM = .6;
-/** Horizontal reach of a running jump that lands `dh` higher (negative: lower). 0 when it cannot be reached. */
-function jumpReach(dh, long = true) {
-	const g = TUNING.physics.gravity;
-	const gf = g * TUNING.physics.fallGravityMultiplier;
-	const v = TUNING.jump.velocity;
-	const v2 = TUNING.jump.doubleVelocity;
-	const run = TUNING.move.run;
-	const h1 = v * v / (2 * g);
-	let t = -1;
-	if (dh <= h1) t = v / g + Math.sqrt(2 * (h1 - dh) / gf);
-	if (TUNING.jump.airJumps > 0) {
-		const h2 = h1 + v2 * v2 / (2 * g);
-		if (dh <= h2) t = Math.max(t, v / g + v2 / g + Math.sqrt(2 * (h2 - dh) / gf));
-	}
-	const lv = TUNING.moves.longJumpUp;
-	const lh = lv * lv / (2 * g);
-	const longReach = long && dh <= lh ? TUNING.moves.longJumpSpeed * (lv / g + Math.sqrt(2 * (lh - dh) / gf)) : 0;
-	if (t < 0 && longReach <= 0) return 0;
-	return Math.max(t < 0 ? 0 : run * (t + TUNING.jump.coyoteTime), longReach) * .92;
-}
-/** The highest ledge he can get onto from flat ground: the top of his jump, plus his reach when he grabs the edge. */
-function maxClimb(grab = true) {
-	const g = TUNING.physics.gravity;
-	const v = TUNING.jump.velocity;
-	const v2 = TUNING.jump.doubleVelocity;
-	return v * v / (2 * g) + (TUNING.jump.airJumps > 0 ? v2 * v2 / (2 * g) : 0) + (grab ? 1.05 : -.15);
-}
-/**
-* How far apart two facing walls can be and still be kicked up between. A kick throws him up and across; he gains
-* height on every kick for as long as he reaches the far wall higher than he left the near one. Worked out from the
-* kick's numbers, and a little short of the limit (it asks for half a unit gained each kick), so that "climbable"
-* means a climb a player could make, not one frame-perfect kick after another.
-*
-* It is wide: about eight units. (Until 2026-11-15 this was a fixed 4.5, taken from the chimneys the levels had; the
-* knight himself was always able to climb between walls far wider apart than that, as the Move Garden's six-wide
-* chimney showed, so the checker could not see every way up.)
-*
-* `gain` is how much each kick must gain him. The default (half a unit) is for finding ways up that should not be
-* there: anything a determined player could do counts. The trap search asks for two units a kick (about six and a
-* half wide): a way OUT of somewhere has to be one an ordinary player can take, or the place is a trap.
-*/
-function maxChimney(gain = .5) {
-	const g = TUNING.physics.gravity;
-	const up = TUNING.moves.wallKickUp;
-	const peak = up * up / (2 * g);
-	const spare = Math.max(0, peak - gain);
-	const time = up / g + Math.sqrt(2 * spare / (g * TUNING.physics.fallGravityMultiplier));
-	return TUNING.moves.wallKickPush * time + TUNING.rat.radius * 2;
-}
-function computeReach(def, opts = {}) {
-	const solids = [...def.solids];
-	if (opts.gatesShut) for (const g of def.gates ?? []) {
-		const y = g.y ?? 0;
-		const w = g.alongZ ? .6 : g.width, d = g.alongZ ? g.width : .6;
-		solids.push({
-			kind: "wall",
-			hidden: true,
-			x0: g.x - w / 2,
-			x1: g.x + w / 2,
-			y0: y,
-			y1: y + g.height,
-			z0: g.z - d / 2,
-			z1: g.z + d / 2
-		});
-	}
-	/** Which moving platform a sampled box belongs to: its own other positions never get in its way. */
-	const moverOf = /* @__PURE__ */ new Map();
-	(def.movers ?? []).forEach((m, mi) => {
-		const th = m.thick ?? .4;
-		for (let k = 0; k <= 4; k++) {
-			const f = k / 4;
-			const cx = m.x + m.to[0] * f;
-			const cy = m.y + m.to[1] * f;
-			const cz = m.z + m.to[2] * f;
-			const b = {
-				kind: "platform",
-				hidden: true,
-				x0: cx - m.w / 2,
-				x1: cx + m.w / 2,
-				y0: cy - th,
-				y1: cy,
-				z0: cz - m.d / 2,
-				z1: cz + m.d / 2
-			};
-			moverOf.set(b, mi);
-			solids.push(b);
-		}
-	});
-	let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-	for (const b of solids) {
-		x0 = Math.min(x0, b.x0);
-		x1 = Math.max(x1, b.x1);
-		z0 = Math.min(z0, b.z0);
-		z1 = Math.max(z1, b.z1);
-	}
-	x0 = Math.max(x0, -80);
-	x1 = Math.min(x1, 80);
-	z0 = Math.max(z0, -80);
-	z1 = Math.min(z1, 80);
-	const ni = Math.max(1, Math.ceil((x1 - x0) / STEP));
-	const nj = Math.max(1, Math.ceil((z1 - z0) / STEP));
-	const px = (i) => x0 + (i + .5) * STEP;
-	const pz = (j) => z0 + (j + .5) * STEP;
-	/** The column-wide pieces ramps are cut into (below), and whether a ramp is too steep to walk. */
-	const rampSlices = /* @__PURE__ */ new Set();
-	const cols = Array.from({ length: ni * nj }, () => []);
-	for (const b of solids) {
-		const ia = Math.max(0, Math.floor((b.x0 - x0) / STEP)), ib = Math.min(ni - 1, Math.floor((b.x1 - x0 - 1e-6) / STEP));
-		const ja = Math.max(0, Math.floor((b.z0 - z0) / STEP)), jb = Math.min(nj - 1, Math.floor((b.z1 - z0 - 1e-6) / STEP));
-		for (let i = ia; i <= ib; i++) for (let j = ja; j <= jb; j++) {
-			const x = px(i), z = pz(j);
-			if (!(x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1)) continue;
-			if (!b.ramp) {
-				cols[i * nj + j].push(b);
-				continue;
-			}
-			const slice = {
-				...b,
-				ramp: void 0,
-				y1: topAt(aabbOf(b), x, z)
-			};
-			rampSlices.add(slice);
-			cols[i * nj + j].push(slice);
-		}
-	}
-	const surfAt = Array.from({ length: ni * nj }, () => []);
-	const blocked = (c, lo, hi, self) => {
-		const own = self ? moverOf.get(self) : void 0;
-		return c.some((b) => b.y1 > lo + .001 && b.y0 < hi - .001 && (own === void 0 || moverOf.get(b) !== own));
-	};
-	for (let i = 0; i < ni; i++) for (let j = 0; j < nj; j++) {
-		const c = cols[i * nj + j];
-		const x = px(i), z = pz(j);
-		const lava = (def.lava ?? []).find((l) => x > l.x0 && x < l.x1 && z > l.z0 && z < l.z1);
-		const water = def.water.find((w) => x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1);
-		const list = surfAt[i * nj + j];
-		for (const b of c) {
-			const h = b.y1;
-			if (blocked(c, h, h + HEADROOM, b)) continue;
-			if (lava && h < lava.y + .05) continue;
-			if (water && h < water.y) continue;
-			list.push(rampSlices.has(b) ? {
-				i,
-				j,
-				h,
-				swim: false,
-				ramp: true
-			} : {
-				i,
-				j,
-				h,
-				swim: false
-			});
-		}
-		if (water && !blocked(c, water.y, water.y + SWIM_HEADROOM)) list.push({
-			i,
-			j,
-			h: water.y,
-			swim: true
-		});
-	}
-	const key = (n) => `${n.i},${n.j},${n.h.toFixed(2)}`;
-	const seen = /* @__PURE__ */ new Set();
-	const queue = [];
-	const ids = /* @__PURE__ */ new Map();
-	const nodes = [];
-	let from = 0;
-	let edgeFrom = new Int32Array(opts.traps ? 65536 : 0);
-	let edgeTo = new Int32Array(opts.traps ? 65536 : 0);
-	let edgeCount = 0;
-	const idOf = (n) => {
-		const k = key(n);
-		let id = ids.get(k);
-		if (id === void 0) {
-			id = nodes.length;
-			ids.set(k, id);
-			nodes.push(n);
-		}
-		return id;
-	};
-	const add = (n) => {
-		if (opts.traps) {
-			if (edgeCount === edgeFrom.length) {
-				const a = new Int32Array(edgeFrom.length * 2);
-				a.set(edgeFrom);
-				edgeFrom = a;
-				const b = new Int32Array(edgeTo.length * 2);
-				b.set(edgeTo);
-				edgeTo = b;
-			}
-			edgeFrom[edgeCount] = from;
-			edgeTo[edgeCount] = idOf(n);
-			edgeCount++;
-		}
-		const k = key(n);
-		if (seen.has(k)) return;
-		seen.add(k);
-		queue.push(n);
-	};
-	const si = Math.floor((def.spawn.x - x0) / STEP), sj = Math.floor((def.spawn.z - z0) / STEP);
-	if (si >= 0 && si < ni && sj >= 0 && sj < nj) {
-		const under = surfAt[si * nj + sj].filter((n) => n.h <= def.spawn.y + .6).sort((a, b) => b.h - a.h)[0];
-		if (under) add(under);
-	}
-	const climb = maxClimb(!def.noGrab);
-	const canLong = !def.noLongJump;
-	const grabOk = !def.noGrab;
-	const far = Math.ceil(jumpReach(-20, canLong) / STEP) + 1;
-	const isEdge = (n) => {
-		for (const [di, dj] of [
-			[0, 0],
-			[1, 0],
-			[-1, 0],
-			[0, 1],
-			[0, -1]
-		]) {
-			const i = n.i + di, j = n.j + dj;
-			if (i < 0 || j < 0 || i >= ni || j >= nj) return true;
-			const l = surfAt[i * nj + j];
-			if ((di || dj) && !l.some((m) => Math.abs(m.h - n.h) <= .4)) return true;
-			if (l.some((m) => m.h > n.h + .4 && m.h <= n.h + climb)) return true;
-		}
-		return false;
-	};
-	const edges = [];
-	for (const l of surfAt) for (const n of l) if (isEdge(n)) edges.push(n);
-	const edgeAt = /* @__PURE__ */ new Map();
-	for (const n of edges) {
-		const k = n.i * nj + n.j;
-		const a = edgeAt.get(k);
-		if (a) a.push(n);
-		else edgeAt.set(k, [n]);
-	}
-	const wallTopAt = (i, j, h) => {
-		if (i < 0 || j < 0 || i >= ni || j >= nj) return 0;
-		const c = cols[i * nj + j];
-		let top = 0;
-		let lo = h + .3;
-		let found = true;
-		while (found) {
-			found = false;
-			for (const b of c) if (b.y0 <= lo + .05 && b.y1 > lo + .05 && b.y1 > top) {
-				top = b.y1;
-				lo = b.y1;
-				found = true;
-			}
-		}
-		return top > h + 1.5 ? top : 0;
-	};
-	const chimney = opts.chimney ?? maxChimney(opts.traps ? 2 : .5);
-	const chimneyCells = Math.ceil(chimney / STEP);
-	const kickTop = (n) => {
-		let best = 0;
-		for (const [di, dj] of [[1, 0], [0, 1]]) {
-			let a = 0;
-			let b = 0;
-			let ka = 0;
-			let kb = 0;
-			for (let k = 1; k <= chimneyCells && !a; k++) if (a = wallTopAt(n.i + di * k, n.j + dj * k, n.h)) ka = k;
-			for (let k = 1; k <= chimneyCells && !b; k++) if (b = wallTopAt(n.i - di * k, n.j - dj * k, n.h)) kb = k;
-			if (a && b && (ka + kb - 1) * STEP <= chimney + 1e-6) best = Math.max(best, Math.min(a, b));
-		}
-		if (best) {
-			for (const b of cols[n.i * nj + n.j]) if (b.y0 >= n.h + 1 && b.y0 < best - .05) return 0;
-		}
-		return best;
-	};
-	const apex = maxClimb(false) + .15;
-	const clearFlight = (n, m, kick) => {
-		const ax = px(n.i), az = pz(n.j), bx = px(m.i), bz = pz(m.j);
-		const steps = Math.ceil(Math.hypot(bx - ax, bz - az) / (STEP * .5));
-		const top = Math.max(n.h + apex, m.h, kick);
-		const low = Math.max(n.h, m.h) + HEADROOM;
-		for (let s = 1; s < steps; s++) {
-			const f = s / steps;
-			const i = Math.floor((ax + (bx - ax) * f - x0) / STEP), j = Math.floor((az + (bz - az) * f - z0) / STEP);
-			if (i === n.i && j === n.j || i === m.i && j === m.j || i < 0 || j < 0 || i >= ni || j >= nj) continue;
-			for (const b of cols[i * nj + j]) if (b.y1 > top + .05 && b.y0 < low && !moverOf.has(b)) return false;
-		}
-		return true;
-	};
-	while (queue.length) {
-		const n = queue.pop();
-		if (opts.traps) from = idOf(n);
-		for (const [di, dj] of [
-			[1, 0],
-			[-1, 0],
-			[0, 1],
-			[0, -1],
-			[1, 1],
-			[1, -1],
-			[-1, 1],
-			[-1, -1]
-		]) {
-			const i = n.i + di, j = n.j + dj;
-			if (i < 0 || j < 0 || i >= ni || j >= nj) continue;
-			const c = cols[i * nj + j];
-			for (const m of surfAt[i * nj + j]) {
-				if (m.h > n.h + (n.swim ? .5 : m.ramp && (n.ramp || m.h - n.h <= .4) ? 1 * STEP + .06 : .4)) continue;
-				if (m.h >= n.h - .4 || !blocked(c, m.h, n.h + HEADROOM)) add(m);
-			}
-		}
-		const kick = kickTop(n);
-		if (!isEdge(n) && !kick) continue;
-		const reachUp = kick ? Math.max(climb, kick - n.h + climb) : climb;
-		for (let i = n.i - far; i <= n.i + far; i++) {
-			if (i < 0 || i >= ni) continue;
-			for (let j = n.j - far; j <= n.j + far; j++) {
-				if (j < 0 || j >= nj) continue;
-				const list = edgeAt.get(i * nj + j);
-				if (!list) continue;
-				const dist = Math.hypot((i - n.i) * STEP, (j - n.j) * STEP);
-				for (const m of list) {
-					const dh = m.h - n.h;
-					if (dh > reachUp) continue;
-					const lift = kick && dh > climb ? kick - n.h : 0;
-					const need = grabOk ? Math.max(-20, dh - lift - 1.05) : dh - lift;
-					if (dist <= Math.max(jumpReach(need, canLong), jumpReach(dh - lift, canLong)) + STEP && (!opts.traps || clearFlight(n, m, kick))) add(m);
-				}
-			}
-		}
-	}
-	const points = [];
-	let total = 0;
-	for (const l of surfAt) for (const n of l) {
-		total++;
-		if (seen.has(key(n))) points.push([
-			px(n.i),
-			pz(n.j),
-			n.h
-		]);
-	}
-	const byCell = /* @__PURE__ */ new Map();
-	for (const [x, z, h] of points) {
-		const k = Math.floor((x - x0) / STEP) * nj + Math.floor((z - z0) / STEP);
-		const a = byCell.get(k);
-		if (a) a.push(h);
-		else byCell.set(k, [h]);
-	}
-	let traps;
-	if (opts.traps) {
-		const n = nodes.length;
-		const count = new Int32Array(n + 1);
-		for (let e = 0; e < edgeCount; e++) count[edgeTo[e] + 1]++;
-		for (let v = 0; v < n; v++) count[v + 1] += count[v];
-		const into = new Int32Array(edgeCount);
-		const fill = count.slice();
-		for (let e = 0; e < edgeCount; e++) into[fill[edgeTo[e]]++] = edgeFrom[e];
-		const out = new Uint8Array(n);
-		const stack = [];
-		const mark = (v) => {
-			if (out[v]) return;
-			out[v] = 1;
-			stack.push(v);
-		};
-		const e = def.exit;
-		const fx = def.hub ? def.spawn.x : e.x + Math.sin(e.yaw) * 1.2;
-		const fz = def.hub ? def.spawn.z : e.z + Math.cos(e.yaw) * 1.2;
-		const fy = def.hub ? def.spawn.y : e.y ?? 0;
-		const voidEscapes = !def.fallBack;
-		const inLava = (i, j) => (def.lava ?? []).some((l) => px(i) > l.x0 && px(i) < l.x1 && pz(j) > l.z0 && pz(j) < l.z1);
-		const fallsOut = (v) => {
-			for (const [di, dj] of [
-				[1, 0],
-				[-1, 0],
-				[0, 1],
-				[0, -1],
-				[1, 1],
-				[1, -1],
-				[-1, 1],
-				[-1, -1]
-			]) {
-				const i = v.i + di, j = v.j + dj;
-				if (i < 0 || j < 0 || i >= ni || j >= nj) return true;
-				if (inLava(i, j)) continue;
-				if (!surfAt[i * nj + j].some((m) => m.h <= v.h + .4) && !cols[i * nj + j].some((b) => b.y0 < v.h + .4)) return true;
-			}
-			return false;
-		};
-		for (let v = 0; v < n; v++) {
-			const nd = nodes[v];
-			if (!seen.has(key(nd))) continue;
-			if (Math.hypot(px(nd.i) - fx, pz(nd.j) - fz) <= 1.3 && Math.abs(nd.h - fy) <= .7 || voidEscapes && fallsOut(nd)) mark(v);
-		}
-		while (stack.length) {
-			const v = stack.pop();
-			for (let k = count[v]; k < count[v + 1]; k++) mark(into[k]);
-		}
-		traps = [];
-		for (let v = 0; v < n; v++) {
-			const nd = nodes[v];
-			if (seen.has(key(nd)) && !out[v]) traps.push([
-				px(nd.i),
-				pz(nd.j),
-				nd.h
-			]);
-		}
-	}
-	return {
-		traps,
-		points,
-		total,
-		reached: points.length,
-		near(x, y, z, r = .9, below = 2.4, above = .6) {
-			const ia = Math.floor((x - r - x0) / STEP), ib = Math.floor((x + r - x0) / STEP);
-			const ja = Math.floor((z - r - z0) / STEP), jb = Math.floor((z + r - z0) / STEP);
-			for (let i = ia; i <= ib; i++) for (let j = ja; j <= jb; j++) {
-				const hs = byCell.get(i * nj + j);
-				if (hs && hs.some((h) => h >= y - below && h <= y + above)) return true;
-			}
-			return false;
-		}
-	};
-}
-// ../../../tmp/claude-0/-home-user-Rat-Quest/2ffa7237-6e6a-5bd6-842d-59a41ab9b731/scratchpad/doordbg.ts
+// ../../../tmp/claude-0/-home-user-Rat-Quest/2ffa7237-6e6a-5bd6-842d-59a41ab9b731/scratchpad/neardoor.ts
 var L = levelById("hollows");
-for (const z of [
-	23,
-	24,
-	26,
-	28
-]) {
-	const near = L.solids.filter((b) => b.x1 > 42 && b.x0 < 48 && b.z1 > z - 3 && b.z0 < z + 3 && b.y1 > -1 && b.y0 < 4).map((b) => `${b.kind}[${b.x0},${b.x1} y ${b.y0},${b.y1} z ${b.z0},${b.z1}]`);
-	const r = computeReach({
-		...L,
-		spawn: {
-			...L.spawn,
-			x: 44.7,
-			y: .05,
-			z
-		}
-	}, { traps: true });
-	console.log("z", z, "reached", r.reached, "traps", (r.traps ?? []).length, near.join(" "));
+var d = L.courseDoors.find((c) => c.to === "faith").door;
+console.log("door", JSON.stringify(d));
+for (const q of L.decor) {
+	const x = q.x ?? q.x0, z = q.z ?? q.z0;
+	if (x !== void 0 && Math.hypot(x - d.x, z - d.z) < 4) console.log(JSON.stringify(q).slice(0, 200));
 }
-console.log(JSON.stringify(L.courseDoors.map((d) => [
-	d.to,
-	d.door.x,
-	d.door.z,
-	d.door.y,
-	d.door.yaw
-])));
-var water = (L.water ?? []).filter((w) => w.x1 > 40);
-console.log("water", JSON.stringify(water), "lava", JSON.stringify(L.lava ?? []));
+for (const b of L.solids) if (b.x1 > d.x - 4 && b.z0 < d.z + 3.5 && b.z1 > d.z - 3.5 && b.y1 > 3 && b.y0 < 9) console.log("solid", JSON.stringify(b).slice(0, 160));
 export {};

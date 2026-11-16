@@ -1,0 +1,154 @@
+/**
+ * THE MILKY WAY: the dream, as a TRY-OUT ROOM. A rainbow road downhill through space, ridden on the shield.
+ *
+ * The owner, 2026-11-16: "A dream level: he's like surfing on the Milky Way in outer space like some kind of downhill
+ * like rainbow road ... slide down on his shield ... a full sliding level ... everything could be like crazy colors
+ * ... stars and planets ... he could be like neon pink and green ... a wacky Pomo palette kind of version of himself
+ * and maybe his scarf is like crazy exaggerated like [Viewtiful] Joe ... a Trippy psychedelic dream level."
+ * (And his rule for themes: shown IN THE RUNNING GAME, in a room to try, not on a sheet of swatches. This is that.)
+ *
+ * WHAT IT IS: a pad at the top, then four lengths of road one after another down through the sky, each as steep as
+ * the Long Drop's beds, with a GAP between each and the next length set a little to one side: he rides off the end
+ * of one, through the air, onto the next. A landing at the bottom (the Moon) with the way out. No walls anywhere:
+ * off the side of the road is a long fall, and he is put back on the road where he last was, a heart the poorer.
+ * Three bottle caps, one in the air over each gap, up where a jump off the board at the lip carries him.
+ * The sky is a dome of stars (`sky: 'space'`), planets hang about the road (decor `planet`), and he wears the dream's
+ * colours and a scarf three times as long (`look: 'dream'`). All of that is only looks: the ride is the ride.
+ */
+import type { LevelDef } from './types';
+import { extent, rampBox, type Box, type Decor } from '../world/layout';
+import type { CollectibleDef } from '../world/collectibles';
+
+/** The road: how wide (its picture is laid one rainbow to this width: `TILE.rainbowRoad` in chamber.ts), how thick, how steep. */
+export const ROAD = { wide: 7, deep: 1.2, slope: 0.42 } as const;
+/**
+ * The lengths of road, top to bottom: how long, and how far to one side of the middle line its own middle is.
+ * After each but the last, a gap: how wide, and how far the next length starts BELOW where this one's line would
+ * have been there. (At the road's speed he falls two below that line in crossing six; the next length starts over
+ * three below it, so a ride at speed lands on it without a jump, and a slower one needs the jump off the board.)
+ */
+export const LENGTHS: ReadonlyArray<{ len: number; x: number; gap?: { wide: number; under: number } }> = [
+  { len: 56, x: 0, gap: { wide: 6, under: 3.2 } },
+  { len: 48, x: 2.5, gap: { wide: 6, under: 3.2 } },
+  { len: 40, x: -2.5, gap: { wide: 7, under: 3.8 } },
+  { len: 60, x: 0 },
+];
+/** The pad at the top, the easing-out at the bottom, and the Moon: the landing. */
+export const HEAD = { half: 6, long: 10 } as const;
+export const RUNOUT = { len: 18, fall: 2.2 } as const;
+export const MOON = { half: 11, long: 26, kerb: 2.6 } as const;
+/** Fallen this far below the last ground he stood on, he is put back on it. */
+export const FALL_DEPTH = 28;
+export const WAY_PRIZES = ['way-cap-1', 'way-cap-2', 'way-cap-3'] as const;
+/** How far over a gap's lip its bottle cap hangs: his middle, at the middle of the gap, when he has jumped off the board at the lip (measured: his feet are 0.8 over the lip there; rolled off without a jump they are 1.6 under it). */
+export const CAP_UP = 1.35;
+
+export interface WayLength { z0: number; z1: number; y0: number; y1: number; x: number }
+interface Plan { solids: Box[]; decor: Decor[]; collectibles: CollectibleDef[]; lengths: WayLength[]; headY: number; moon: { z0: number; z1: number } }
+let plan: Plan | null = null;
+
+function build(): Plan {
+  // First down from the top, measured from 0; then all of it lifted so the Moon is at 0.
+  let fall = 0;
+  for (const s of LENGTHS) fall += s.len * ROAD.slope + (s.gap ? s.gap.wide * ROAD.slope + s.gap.under : 0);
+  const headY = fall + RUNOUT.fall;
+  const solids: Box[] = [];
+  const decor: Decor[] = [];
+  const collectibles: CollectibleDef[] = [];
+  const lengths: WayLength[] = [];
+  const road = (b: Box): Box => ({ ...b, skin: 'rainbowRoad' });
+  const tiles = (b: Box): Box => ({ ...b, skin: 'pomoTiles' });
+  const half = ROAD.wide / 2;
+
+  solids.push(tiles(extent('stone', -HEAD.half, HEAD.half, headY - ROAD.deep, headY, -HEAD.long, 0)));
+  decor.push({ kind: 'sign', x: -3.6, y: headY + 1.5, z: -2.4, yaw: Math.PI, w: 2.8, h: 1.4, lines: ['THE MILKY WAY', 'JUMP, ATTACK'], post: 0 });
+
+  let z = 0;
+  let y = headY;
+  LENGTHS.forEach((s, i) => {
+    const y1 = y - s.len * ROAD.slope;
+    // (A ramp that climbs north: high at its -z end. Its underside follows it down: it is a slab, not a wedge to the ground.)
+    solids.push(road(rampBox('stone', s.x - half, s.x + half, z, z + s.len, y1, y, 'n', y1 - ROAD.deep)));
+    lengths.push({ z0: z, z1: z + s.len, y0: y, y1, x: s.x });
+    z += s.len;
+    y = y1;
+    if (s.gap) {
+      const next = LENGTHS[i + 1];
+      // The bottle cap: in the air over the middle of the gap, on the line down the middle of what this length and
+      // the next have in common (the next is set to one side: that strip is where a rider goes from one to the
+      // other), and up where a JUMP OFF THE BOARD at the lip carries him (`CAP_UP` over the lip: a ride that only
+      // rolls off the end passes well under it). Earned by the jump, and by having lined up for the crossing.
+      collectibles.push({ id: WAY_PRIZES[i], kind: 'cap', x: (s.x + next.x) / 2, y: y + CAP_UP, z: z + s.gap.wide / 2 });
+      z += s.gap.wide;
+      y -= s.gap.wide * ROAD.slope + s.gap.under;
+    }
+  });
+  // The easing-out, and the Moon: a wide landing with a kerb round its far end to stop him.
+  solids.push(road(rampBox('stone', -half, half, z, z + RUNOUT.len, 0, y, 'n', -ROAD.deep)));
+  lengths.push({ z0: z, z1: z + RUNOUT.len, y0: y, y1: 0, x: 0 });
+  z += RUNOUT.len;
+  const moon = { z0: z, z1: z + MOON.long };
+  solids.push(tiles(extent('stone', -MOON.half, MOON.half, -ROAD.deep, 0, moon.z0, moon.z1)));
+  for (const [x0, x1, z0, z1] of [[-MOON.half, MOON.half, moon.z1, moon.z1 + 1], [-MOON.half - 1, -MOON.half, moon.z0 + MOON.long * 0.45, moon.z1 + 1], [MOON.half, MOON.half + 1, moon.z0 + MOON.long * 0.45, moon.z1 + 1]]) {
+    solids.push(road(extent('stone', x0, x1, -ROAD.deep, MOON.kerb, z0, z1)));
+  }
+
+  // Planets, hanging about the road: none nearer than he can ever get, each its own two colours. [x, y above the road there, z, r, colour, band, ring]
+  const at = (zz: number): number => {
+    const l = lengths.find((q) => zz <= q.z1) ?? lengths[lengths.length - 1];
+    return l.y0 + ((l.y1 - l.y0) * Math.max(0, Math.min(1, (zz - l.z0) / (l.z1 - l.z0))));
+  };
+  const planets: Array<[number, number, number, number, number, number, [number, number] | null, number]> = [
+    [-46, 6, 40, 13, 0xff5ab4, 0xffe84a, [1.9, 0x3ee8c0], 0.45],
+    [38, -14, 86, 8, 0x3ee8c0, 0x7a5cff, null, 0.2],
+    [-30, -22, 150, 6, 0xffe84a, 0xff8a1e, null, -0.3],
+    [52, 10, 170, 17, 0x7a5cff, 0x2ad8ff, [2.1, 0xff5ab4], -0.5],
+    [-58, -6, 236, 10, 0x2ad8ff, 0xff5ab4, [1.7, 0xffe84a], 0.7],
+    [24, 26, 12, 4, 0xff8a1e, 0xff2a6a, null, 0.1],
+    [0, -34, moon.z1 + 46, 20, 0xff2a6a, 0xffe84a, [1.8, 0x7a5cff], 0.25],
+  ];
+  for (const [x, up, zz, r, color, band, ring, tilt] of planets) decor.push({ kind: 'planet', x, y: at(Math.min(zz, moon.z0)) + up, z: zz, r, color, band, ring: ring ? { out: ring[0], color: ring[1] } : undefined, tilt });
+
+  return { solids, decor, collectibles, lengths, headY, moon };
+}
+export function milkyWayPlan(): Plan {
+  return (plan ??= build());
+}
+/** How high the road is at z, and where its middle is across (the length he is over, or the one he is coming to). */
+export function wayAt(z: number): { y: number; x: number } {
+  const P = milkyWayPlan();
+  const l = P.lengths.find((q) => z <= q.z1) ?? P.lengths[P.lengths.length - 1];
+  const t = Math.max(0, Math.min(1, (z - l.z0) / (l.z1 - l.z0)));
+  return { y: l.y0 + (l.y1 - l.y0) * t, x: l.x };
+}
+
+export function milkyWay(): LevelDef {
+  const P = milkyWayPlan();
+  return {
+    id: 'milkyway',
+    name: 'The Milky Way',
+    blurb: 'A try-out of the dream: a rainbow road downhill through the stars, on the shield.',
+    theme: 'cave',
+    motes: 'stars',
+    music: 'groove',
+    sky: 'space',
+    look: 'dream',
+    fog: 0x1a0c3a,
+    fogRange: [70, 195],
+    fallDepth: FALL_DEPTH,
+    solids: P.solids.map((b) => ({ ...b })),
+    pit: null,
+    water: [],
+    decor: P.decor.map((d) => ({ ...d })),
+    spawn: { x: 0, y: P.headY, z: -6, facing: 0 },
+    collectibles: P.collectibles.map((c) => ({ ...c })),
+    crateContents: [],
+    enemies: [],
+    waves: [],
+    gear: [],
+    goals: [],
+    // The way out stands at the far end of the Moon, before the kerb, and leads back to the Move Garden.
+    exit: { x: 0, z: P.moon.z1 - 0.5, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
+    returnTo: 'garden',
+  };
+}

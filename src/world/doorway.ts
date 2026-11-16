@@ -24,10 +24,12 @@ interface Look {
   bright: number;
 }
 
-const LOOKS: Record<Theme, Look> = {
+export const DOOR_LOOKS: Record<Theme, Look> = {
   sewer: { frame: 'concreteSlab', key: 'archTrim', leaf: 'ironDoor', bands: false, bright: 1.7 },
   mine: { frame: 'rubbleWall', key: 'beamSide', leaf: 'planks', bands: true, bright: 1.6 },
-  cave: { frame: 'sandstone', key: 'wetRock', leaf: 'planks', bands: true, bright: 1.5 },
+  // (Its keystone is the arch's own stone. It was wet rock, the dark stone of the cave's walls: over a pale arch it
+  // read as a block of wall stuck on the top of the door. The owner, 2026-11-16.)
+  cave: { frame: 'sandstone', key: 'sandstone', leaf: 'planks', bands: true, bright: 1.5 },
   dungeon: { frame: 'stone', key: 'brick', leaf: 'ironDoor', bands: false, bright: 1.5 },
   foundry: { frame: 'rustPlate', key: 'hazardTrim', leaf: 'ironDoor', bands: false, bright: 1.6 },
   keep: { frame: 'keepStone', key: 'archTrim', leaf: 'ironDoor', bands: false, bright: 1.6 },
@@ -103,7 +105,7 @@ export class Doorway {
 
   constructor(readonly spec: DoorSpec, theme: Theme = 'sewer') {
     const { width: w, height: h } = spec;
-    const look = LOOKS[theme];
+    const look = DOOR_LOOKS[theme];
     const r = w / 2;
     const straight = h - r; // height where the arch begins
     const t = DOOR_FRAME.jamb; // how thick the stone frame is, either side of the opening

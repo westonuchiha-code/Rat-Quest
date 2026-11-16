@@ -94,9 +94,13 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
 // no texture??") It covers everything inside the outer walls, sits on the walls or higher, and is clear of his head
 // wherever he can stand.
 {
-  const all = [...LEVELS, ...TEST_ROOMS];
+  // (But for a place under the open sky: the dream's road through space has a dome of stars, `sky`, and no walls
+  // to carry a roof.)
+  const everyone = [...LEVELS, ...TEST_ROOMS];
+  const open = everyone.filter((l) => l.sky);
+  const all = everyone.filter((l) => !l.sky);
   const none = all.filter((l) => !ceilingOf(l.solids));
-  check(`all ${all.length} levels have a ceiling`, none.length === 0, none.map((l) => l.id).join(', '));
+  check(`all ${all.length} levels with a roof over them have a ceiling; the one place under the open sky (the Milky Way) has none, and no walls to carry one`, none.length === 0 && open.length === 1 && open[0].id === 'milkyway' && !ceilingOf(open[0].solids) && !open[0].solids.some((b) => b.kind === 'wall'), none.map((l) => l.id).join(', '));
   const wrong = all.filter((l) => {
     const c = ceilingOf(l.solids);
     if (!c) return false;

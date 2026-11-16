@@ -1232,3 +1232,21 @@ things are:
   of), glowcave (the Glimmer Deep is the one level of the game that turns the plain light down).
 - Sticker `foe:scorpion` in data/stickers.ts; icon `scorpion` in ui/icons.ts.
 
+## The Milky Way, and three fixes from his play (2026-11-16; tests `tests/milkyway.ts`, `tests/falls.ts`)
+- `src/levels/milkyway.ts`: `ROAD`, `LENGTHS` (len, x, gap {wide, under}), `HEAD`, `RUNOUT`, `MOON`, `FALL_DEPTH`,
+  `WAY_PRIZES`, `CAP_UP`, `milkyWayPlan()`, `wayAt(z)`, `milkyWay()`. In `TEST_ROOMS`; door in garden.ts (north).
+- types.ts: `LevelDef.sky`, `fallDepth`, `look`; motes `'stars'`. layout.ts decor `planet`. chamber.ts builds it
+  (`skyMat`, `spinners`), `TILE.rainbowRoad` 7, `TILE.pomoTiles` 4.
+- `src/world/sky.ts`: `paintSpace(canvas)`, `SkyDome` (`show(sky)`, `follow(eye)`; radius 150, no depth test, drawn
+  first). main.ts: `sky`, `dreamRat`, `dreaming`, `wearDream()`; `applyGear` takes the dream's paint off, paints
+  gear, puts it back on; the fall-back test is `(fallBack && y < -3) || (fallDepth !== undefined && y < lastSafe.y
+  - fallDepth)`; the dev `at=` address sets `lastSafe` too.
+- ratModel.ts: `DREAM_LOOK`, `wearColours(other | null)` (pairs meshes by their path from the root; keeps his own
+  paint by geometry), `setScarfLong(k)` (and the scarf's wave uses it).
+- tests/milkyway.ts `ride({ jump, brakeTo, frames, steer })` rides from the head pad; `WAY_TRACE=1` prints where
+  the ride is at the middle of each gap.
+- `src/player/standing.ts`: `drawnHeight(was, want, loose, frameDt)`, `safeToReturnTo(colliders, x, y, z)`.
+  main.ts uses both (`loose` = not grounded, or riding, or sliding).
+- courseDoors.ts: `roomOverDoor(solids, door)`, `signFit(room)` → `{ scale, foot, out, fits }`, `SIGN_HANG`;
+  `CourseDoors(defs, states, theme, rooms)`. doorway.ts: `DOOR_LOOKS` (exported); cave key is `sandstone`.
+

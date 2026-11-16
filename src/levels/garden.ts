@@ -336,6 +336,8 @@ export function garden(): LevelDef {
       { to: 'glowcave', name: 'The Glow Cave', need: 0, door: doorOn('south', GARDEN.halfX, -6, GARDEN.halfZ, 0) },
       // (And a fourth, east of the way out, between the low stone and the foot of the slope: the Cold Main.)
       { to: 'coldmain', name: 'The Cold Main', need: 0, door: doorOn('south', GARDEN.halfX, 10.5, GARDEN.halfZ, 0) },
+      // (And a fifth, in the NORTH wall, on clear floor west of the middle: the Milky Way, the dream's try-out.)
+      { to: 'milkyway', name: 'The Milky Way', need: 0, door: doorOn('north', GARDEN.halfX, -7, GARDEN.halfZ, 0) },
     ],
   };
 }

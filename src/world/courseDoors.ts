@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { Doorway } from './doorway';
 import type { CourseDoorDef } from '../levels/types';
+import { ceilingOf, type Box } from './layout';
+import { DOOR_FRAME, type DoorSpec } from './rooms';
 import { GLYPH_H, drawText, textWidth, wrapText } from '../render/pixelFont';
 
 export interface DoorState {
@@ -87,11 +89,53 @@ function signTexture(def: CourseDoorDef, st: DoorState): THREE.DataTexture {
   return t;
 }
 
+/**
+ * How much room there is over a door for its sign: from the top of its arch up to the lowest thing that is over the
+ * board's place (a roof, a ledge, the room's own ceiling).
+ * (The owner, 2026-11-16, of the door to Leap of Faith under the grotto's low roof: its sign showed only the wedge
+ * count; the line with its name was up inside the roof, and stuck out of the floor above.)
+ */
+export function roomOverDoor(solids: readonly Box[], door: DoorSpec): number {
+  const top = (door.y ?? 0) + door.height;
+  const fx = Math.sin(door.yaw);
+  const fz = Math.cos(door.yaw);
+  const half = SIGN.w / SIGN.dots / 2;
+  // The board's place: along the wall either side of the door's middle, from the wall a little way out.
+  const cx = door.x + fx * 0.3;
+  const cz = door.z + fz * 0.3;
+  const x0 = cx - Math.abs(fz) * half - Math.abs(fx) * 0.3;
+  const x1 = cx + Math.abs(fz) * half + Math.abs(fx) * 0.3;
+  const z0 = cz - Math.abs(fx) * half - Math.abs(fz) * 0.3;
+  const z1 = cz + Math.abs(fx) * half + Math.abs(fz) * 0.3;
+  let clear = ceilingOf(solids)?.y ?? Infinity;
+  for (const b of solids) {
+    if (b.kind === 'wall' || b.x1 <= x0 || b.x0 >= x1 || b.z1 <= z0 || b.z0 >= z1) continue;
+    if (b.y0 >= top - 0.01) clear = Math.min(clear, b.y0);
+  }
+  return clear - top;
+}
+
+/** A sign at its full size: this far over the arch, with this much left clear above it. */
+/** (`low`, `out`: under a low roof it hangs just over the OPENING, out in front of the arch's stones, which its foot would otherwise be behind.) */
+export const SIGN_HANG = { foot: 1.0, low: 0.06, out: 0.24 + (DOOR_FRAME.depth + 0.18) / 2 + 0.1, clear: 0.15, least: 0.5 } as const;
+/**
+ * Where a door's sign hangs and how big it is, for the room there is over the door: at its full size a unit over the
+ * arch where there is room for that; under a low roof, just over the door's opening (out in front of the arch's top
+ * stones) and as much smaller as it must be for ALL of it to be under the roof (never under half size: `fits` says whether even that is enough).
+ */
+export function signFit(room: number): { scale: number; foot: number; out: number; fits: boolean } {
+  const high = SIGN.h / SIGN.dots;
+  if (room >= SIGN_HANG.foot + high + SIGN_HANG.clear) return { scale: 1, foot: SIGN_HANG.foot, out: 0.12, fits: true };
+  const scale = Math.max(SIGN_HANG.least, Math.min(1, (room - SIGN_HANG.low - SIGN_HANG.clear) / high));
+  return { scale, foot: SIGN_HANG.low, out: SIGN_HANG.out, fits: SIGN_HANG.low + high * scale + SIGN_HANG.clear <= room + 1e-9 };
+}
+
 export class CourseDoors {
   readonly group = new THREE.Group();
   private readonly doors: Doorway[] = [];
 
-  constructor(defs: CourseDoorDef[], states: DoorState[], theme: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep') {
+  /** `rooms`: how much room there is over each door for its sign (`roomOverDoor`); without it, each hangs at its full size. */
+  constructor(defs: CourseDoorDef[], states: DoorState[], theme: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep', rooms: number[] = []) {
     const ironMat = new THREE.MeshBasicMaterial({ color: 0x2b2a2e });
     defs.forEach((def, i) => {
       const st = states[i];
@@ -103,8 +147,10 @@ export class CourseDoors {
       local.position.set(def.door.x, def.door.y ?? 0, def.door.z);
       local.rotation.y = def.door.yaw;
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(SIGN.w / SIGN.dots, SIGN.h / SIGN.dots), new THREE.MeshBasicMaterial({ map: signTexture(def, st) }));
-      // (Its foot a unit over the door's arch.)
-      sign.position.set(0, def.door.height + 1.0 + SIGN.h / SIGN.dots / 2, 0.12);
+      // (Its foot a unit over the door's arch; under a low roof, nearer the arch and smaller: see `signFit`.)
+      const fit = signFit(rooms[i] ?? Infinity);
+      sign.scale.setScalar(fit.scale);
+      sign.position.set(0, def.door.height + fit.foot + (SIGN.h / SIGN.dots / 2) * fit.scale, fit.out);
       local.add(sign);
       if (!d.lit) {
         // Iron bars across a shut door.

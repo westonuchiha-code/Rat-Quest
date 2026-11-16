@@ -9,7 +9,7 @@ import { Chamber, buildChamber, storyPower } from './world/chamber';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
-import { RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND } from './player/ratModel';
+import { DREAM_LOOK, RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND } from './player/ratModel';
 import { ATTACK_CLIPS } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
@@ -54,6 +54,8 @@ import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts'
 import { shadowSpokes } from './world/shadow';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
+import { SkyDome } from './world/sky';
+import { drawnHeight, safeToReturnTo } from './player/standing';
 import { compileCutscene, sampleCutscene, CUT_FPS, type Cutscene, type CutsceneDef } from './cutscene/cutscene';
 import { CutStage } from './cutscene/stage';
 import { CUTSCENES, cutsceneById } from './cutscene/scenes';
@@ -104,7 +106,7 @@ import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
 import { Sparks } from './world/itemModels';
-import { CourseDoors } from './world/courseDoors';
+import { CourseDoors, roomOverDoor } from './world/courseDoors';
 import { atDoor, doorCamera, doorFrameBoxes, type DoorSpec } from './world/rooms';
 import { Fader } from './ui/fader';
 import { Inventory } from './player/inventory';
@@ -241,6 +243,11 @@ function startGame(): void {
 
   const player = new PlayerController(new THREE.Vector3(TUNING.spawn.x, TUNING.spawn.y, TUNING.spawn.z));
   const rat = new RatModel();
+  /** The dream's knight: another rat in loud colours, never shown: the knight borrows its paint (`wearColours`). */
+  let dreamRat: RatModel | null = null;
+  let dreaming = false;
+  const sky = new SkyDome();
+  scene.add(sky.mesh);
   scene.add(rat.root);
 
   // Soft round shadow under the rat. It makes jumps much easier to judge.
@@ -1011,8 +1018,23 @@ function startGame(): void {
     ps1Uniforms.fogNear.value = (cur?.fogRange?.[0] ?? 18) * k;
     ps1Uniforms.fogFar.value = (cur?.fogRange?.[1] ?? 90) * k;
   }
+  /**
+   * The dream's look: the dream's rat is given the same parts in the same order as his own (a helmet put on anew is a
+   * new part: so both are dressed alike first), in the dream's colours, and he takes its paint.
+   */
+  const wearDream = (): void => {
+    dreamRat ??= new RatModel(DREAM_LOOK);
+    dreamRat.setHelmet({ dome: 0xff8a2a, rim: 0x7a3cff, spike: 0xffffff });
+    dreamRat.setScarf({ cloth: 0xffe53a, trim: 0xff4fb0 });
+    dreamRat.setSword({ blade: 0xbffcff, hilt: 0xffe53a });
+    dreamRat.setShield({ face: 0xff3a6a, trim: 0x39e6ff });
+    rat.wearColours(dreamRat);
+    rat.setScarfLong(3.2);
+  };
   /** Shows what he wears on the model. */
   const applyGear = (): void => {
+    // (His own paint back first: what he wears is painted onto it. Then, in the dream, the dream's over that.)
+    if (dreaming) rat.wearColours(null);
     const helm = ITEMS[equipment.equipped('helmet')];
     rat.setHelmet({ dome: helm.colors.dome, rim: helm.colors.rim, spike: helm.colors.spike });
     preview.setHelmet({ dome: helm.colors.dome, rim: helm.colors.rim, spike: helm.colors.spike });
@@ -1025,6 +1047,7 @@ function startGame(): void {
     const sh = ITEMS[equipment.equipped('shield')].colors;
     rat.setShield({ face: sh.face, trim: sh.trim });
     preview.setShield({ face: sh.face, trim: sh.trim });
+    if (dreaming) wearDream();
   };
   /** What his gear does: his moves (in the controller), how far beasts notice him, his hearts, how far he sees. */
   const applyGearFx = (): void => {
@@ -1490,6 +1513,16 @@ function startGame(): void {
     audio.playTrack(def.music ?? 'drift');
     braziers = def.decor.filter((d) => d.kind === 'brazier').map((d) => ({ x: d.x, y: d.y + 0.8, z: d.z }));
     motes.setTheme(def.motes ?? def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
+    sky.show(def.sky);
+    // (The dream: he wears its colours and a scarf three times as long. Only looks.)
+    if ((def.look === 'dream') !== dreaming) {
+      dreaming = def.look === 'dream';
+      if (dreaming) wearDream();
+      else {
+        rat.wearColours(null);
+        rat.setScarfLong(1);
+      }
+    }
     enemies.length = 0;
     antList.length = 0;
     enemyModels.length = 0;
@@ -1550,7 +1583,7 @@ function startGame(): void {
         const got = areas.reduce((n, a) => n + (a.wedges ?? []).filter((w) => discoveries.has(`wedge:${a.id}:${w.id}`)).length, 0);
         const of = areas.reduce((n, a) => n + (a.wedges?.length ?? 0), 0);
         return { open: doorOpen(cd), got, of };
-      }), def.theme ?? 'sewer');
+      }), def.theme ?? 'sewer', doors.map((cd) => roomOverDoor(def.solids, cd.door)));
       scene.add(courseVis.group);
       // Their stone frames are solid, as drawn (he used to walk into the jambs).
       for (const cd of doors) addDoorFrame(cd.door);
@@ -1899,7 +1932,7 @@ function startGame(): void {
     const well = cur.well;
     if (well && player.grounded && p.y < well.y + 0.5 && player.spawn.y > well.top) player.spawn.set(well.x, well.y, well.z - well.r * 0.5);
     // A level with a drop into the dark: a heart, and back to the last ground he stood on.
-    if (cur.fallBack && p.y < -3) {
+    if ((cur.fallBack && p.y < -3) || (cur.fallDepth !== undefined && p.y < lastSafe.y - cur.fallDepth)) {
       p.copy(lastSafe);
       player.prevPosition.copy(lastSafe);
       const result = player.gear.fireproof ? 'dodged' : player.takeFall(1);
@@ -1954,7 +1987,8 @@ function startGame(): void {
       audio.play('splash', { vol: 0.8, priority: 7 });
     } else if (player.grounded && !near && !player.swimming && !fireAt(cur.fire, p.x, p.y, p.z) && !inBrazierFire(cur.decor, p.x, p.y, p.z)) {
       const onMover = chamber.movers.some((m) => p.x > m.aabb.min.x && p.x < m.aabb.max.x && p.z > m.aabb.min.z && p.z < m.aabb.max.z && Math.abs(p.y - m.aabb.max.y) < 0.2);
-      if (!onMover) lastSafe.copy(p);
+      // (Only a place with ground under his middle and round it: not one where he stands with his middle past an edge.)
+      if (!onMover && safeToReturnTo(chamber.colliders, p.x, p.y, p.z)) lastSafe.copy(p);
     }
   }
 
@@ -3225,6 +3259,7 @@ function startGame(): void {
     const [x, y, z, yaw] = atMatch[1].split(',').map(Number);
     player.position.set(x, y, z);
     player.prevPosition.copy(player.position);
+    lastSafe.copy(player.position);
     follow.yaw = yaw || 0;
     // (`&tilt=-0.3`: and the view tilted so, as his right stick would: under 0.1 it is looking up.)
     const tilt = /[#&]tilt=(-?[\d.]+)/.exec(location.hash);
@@ -3590,9 +3625,8 @@ function startGame(): void {
     {
       const under = player.state === 'swim' || player.state === 'hang' || player.state === 'climb' || player.grinding || player.velocity.y > 0.01 ? null : feetGround(renderPos.x, renderPos.y, renderPos.z);
       const want = under !== null && renderPos.y - under <= TUNING.physics.stepHeight + 0.05 ? under : renderPos.y;
-      // (More than a step away it is a jump, a fall or a new place: no easing.)
-      if (Math.abs(want - drawnY) > 0.6) drawnY = want;
-      else if (frameDt > 0) drawnY += (want - drawnY) * Math.min(1, frameDt * 22);
+      // (More than a step away it is a new place: no easing. Nor in the air, nor riding or sliding: see player/standing.ts.)
+      drawnY = drawnHeight(drawnY, want, !player.grounded || player.riding || player.sliding, frameDt);
       drawnPos.set(renderPos.x, drawnY, renderPos.z);
     }
     rat.setTransform(drawnPos, player.facing + (photo.open ? photo.turn : 0));
@@ -3811,6 +3845,7 @@ function startGame(): void {
     }
     fly.applyCamera();
     photo.applyCamera();
+    sky.follow(camera.position);
     renderer.render(scene, camera);
     // A picture is read from the canvas straight after it is drawn (before the browser clears it).
     if (photo.wantShot) photo.capture();

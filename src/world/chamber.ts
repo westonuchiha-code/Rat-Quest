@@ -96,6 +96,8 @@ const TILE: Partial<Record<TextureName, number>> = {
   wetCobbles: 2, sewerBrick: 2.5, concreteSlab: 3, mossStone: 2, planks: 1.5, ceramicTiles: 1.5, drainGrate: 1.2,
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
   caveRock: 4, caveFloor: 4, iceBrick: 2.5, iceSheet: 5,
+  // (The dream's road: one rainbow across its whole width. `ROAD.wide` in levels/milkyway.ts is this.)
+  rainbowRoad: 7, pomoTiles: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
 };
 const MOSS = 0xc8f0a8; // tops of platforms pick up a green tint
@@ -229,6 +231,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** The coals in a fire bowl: their picture, unlit, so the fire between the lumps glows in the dark. */
   const coalMat = (): THREE.ShaderMaterial => (coalMaterial ??= createPs1Material({ tex: getTexture('coals'), lit: false }));
   const darkMat = createPs1Material({});
+  /** For things in the sky (a planet): their own colours, unlit, and not faded by the room's fog. */
+  const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false });
+  const skyMatBoth = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide });
+  /** Things that turn slowly on their own (radians a second). */
+  const spinners: Array<{ o: THREE.Object3D; rate: number }> = [];
   /** Cloth seen from both sides (banners). */
   const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
   // Falling and gushing sludge scroll their own texture, fast.
@@ -1015,6 +1022,35 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       bakeVertexColor(stub, 0x6a6a72);
       g.add(new THREE.Mesh(stub, plainMat));
       needles.push({ obj: needleG, base: 0.9 - ((d.x * 7 + d.z * 3) % 1.4), phase: d.x + d.z * 2 });
+    } else if (d.kind === 'planet') {
+      // A ball in bands of two colours, a few flat faces a band, lit of itself; and its ring, if it has one. It
+      // turns slowly (see `update`).
+      const a = new THREE.Color(d.color);
+      const b2 = new THREE.Color(d.band);
+      const ball = new THREE.SphereGeometry(d.r, 10, 7).toNonIndexed();
+      const pos = ball.attributes.position;
+      const col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i += 3) {
+        // (Each face one colour, by how high its middle is: bands; darker toward the far side from the "sun".)
+        const my = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3 / d.r;
+        const mx = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3 / d.r;
+        const c = (Math.floor((my + 1) * 3.5) % 2 === 0 ? a : b2).clone().multiplyScalar(0.72 + 0.28 * mx);
+        for (let k = 0; k < 3; k++) col.set([c.r, c.g, c.b], (i + k) * 3);
+      }
+      ball.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const globe = new THREE.Group();
+      globe.position.set(d.x, d.y, d.z);
+      globe.rotation.z = d.tilt ?? 0.3;
+      const body = new THREE.Mesh(ball, skyMat);
+      globe.add(body);
+      if (d.ring) {
+        const ring = new THREE.RingGeometry(d.r * 1.25, d.r * d.ring.out, 20, 1);
+        ring.rotateX(-Math.PI / 2);
+        bakeVertexColor(ring, d.ring.color, false);
+        globe.add(new THREE.Mesh(ring, skyMatBoth));
+      }
+      group.add(globe);
+      spinners.push({ o: body, rate: 0.05 + 0.03 * ((d.x * 7 + d.z * 3) % 5) / 5 });
     } else if (d.kind === 'crystal') {
       // A few long four-sided crystals leaning out from one root, glowing in their colour.
       const c = new THREE.Color(d.color);
@@ -1788,6 +1824,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   let lastTime = -1;
 
   const update = (time: number): void => {
+    for (const sp of spinners) sp.o.rotation.y = time * sp.rate;
     const dt = lastTime < 0 ? 0 : Math.min(0.1, Math.max(0, time - lastTime));
     lastTime = time;
     stepFalling(dt);

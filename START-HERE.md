@@ -426,6 +426,51 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## What he found playing, sent while other work was going on (2026-11-16, second lot): FIXED; `tests/falls.ts`
+- **"if it's a long fall it's a jittery ... towards the end of the Fall".** He is DRAWN eased toward where he stands
+  (that easing is what walks him up stairs instead of popping). It was applied in the air too: in a fast fall he was
+  drawn lagging a third of a unit behind, then snapped down whenever the lag passed the limit, dozens of times in
+  one long fall. **In the air, riding or sliding he is now drawn exactly where he is** (`drawnHeight` in
+  `src/player/standing.ts`). The rules of the fall itself were always smooth. **RULE: an ease that is for one thing
+  (stairs) must say when it applies; "always" will find a case it was never meant for.**
+- **"When coming back up from falling down you can sometimes be standing Off the ledge".** He counts as standing
+  with his middle past an edge (his round foot overlaps it), and that was taken as "the last ground he stood on".
+  A place is now only taken as safe with ground under his middle and for 0.45 round it (`safeToReturnTo`).
+- **The sign over the door to Leap of Faith** (two pictures: "fixing this [sign's] stuff inside of it [overlapping]
+  above this door"). Under the grotto's low roof the sign's name line was up inside the roof (and stuck out of the
+  floor above). **A door's sign now fits the room over the door** (`roomOverDoor`, `signFit` in courseDoors.ts):
+  full size a unit over the arch where there is room; under a low roof, just over the opening, out in front of the
+  arch's top stones, and as much smaller as it must be (never under half). A test holds EVERY door in every level
+  to it (two were short: this one and the Coal Cellars'). And the dark block on top of that arch was the cave
+  doorways' keystone, made of the cave's dark wall stone: it is the arch's own stone now.
+
+## The Milky Way: the dream, as a try-out room (the owner's list, 2026-11-16. BUILT; `tests/milkyway.ts`)
+His words are under "A look-over of old things, and new themes" (the dream level). Built as a TRY-OUT, his rule for
+themes. **He has not seen it. All of it is his to accept, change or throw out.** `src/levels/milkyway.ts`.
+- **How he gets there:** a door in the Move Garden's NORTH wall (`ratquest-garden.html`). `#level=milkyway&nostory`.
+- **What it is:** a pad at the top; four lengths of rainbow road down through the sky, each as steep as the Long
+  Drop's beds, with a GAP after each and the next length set to one side; a landing at the bottom (the Moon) with
+  the way out. A hop off the pad and ATTACK, and he rides. About eighteen seconds top to bottom.
+  - Ridden at the road's speed he crosses each gap without jumping. A SLOW rider falls short unless he jumps.
+  - **Three bottle caps, one over each gap, up where a JUMP OFF THE BOARD at the lip carries him**, over the strip
+    the two lengths share. Rolled off the end he passes under them.
+  - No walls. Off the side is a fall: `LevelDef.fallDepth` (28) puts him back on the last ground he stood on, a
+    heart the poorer. (`fallBack` is the same thing for a level whose floor is at zero.)
+- **The sky:** `LevelDef.sky: 'space'` is a dome of stars round the view (`src/world/sky.ts`, painted once on a
+  canvas: clouds of colour, the Milky Way as a band, four colours of star). `motes: 'stars'`. Decor `planet` (a
+  banded ball, some with a ring, turning slowly). The view reaches 200: nothing further off is drawn.
+- **The road's picture** (`rainbowRoad`, repainted at 64): ONE rainbow across the road, the same either side of its
+  middle (the tile is as wide as the road, `TILE.rainbowRoad` 7, and its seam is the road's middle line). The pads
+  wear `pomoTiles` (repainted: dots, squiggles, triangles, a grid, in four loud colours).
+- **THE DREAM KNIGHT:** `LevelDef.look: 'dream'`. He wears the paint of a second rat built in loud colours
+  (`DREAM_LOOK`, `RatModel.wearColours`): pink fur, green tunic, a yellow belly, blue-green ears and tail, an orange
+  helmet; and his scarf is 3.2 times as long and held out behind him (`setScarfLong`). ONLY LOOKS: nothing else
+  about him changes, and it comes off when he leaves. (A helmet put on anew is a new part of the model: both rats
+  are dressed alike before the paint is taken, or parts stop pairing up. One ear stayed brown until that was done.)
+- NOT DONE: it is short, and has nothing on it but the road (no rails, no kickers, no creatures, no music of its
+  own: it plays `groove`). No stars to collect along the road. The planets cannot be reached. Nobody has ridden it
+  by hand; the gaps were sized by the test's ride. Whether falling off should cost a heart here is his call.
+
 ## The Glimmer Deep: the glowing cave as a real level (the owner's list, 2026-11-16. BUILT; `tests/glimmer.ts`)
 His list said "a real level for the glowing cave (it is only a try-out room)". **He had not yet said what he thinks
 of the try-out room or of the Lamp Scorpion when this was built on them: its look and its fights are still his to
@@ -670,7 +715,8 @@ tool: `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests
 `/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
 comes, is done in a try-out room.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
-crate and barrel); the furnace refresh (the `jet` is ready for its steam); the dream theme and the dream knight.
+crate and barrel); the furnace refresh (the `jet` is ready for its steam). (The dream theme and the dream knight:
+BUILT as a try-out, 2026-11-16: see "The Milky Way".)
 
 ## Research the owner has asked for (2026-11-15: ALL FIVE HAVE REPORTS in `reports/`, notes in `research_notes/`)
 **CONKER AND RAYMAN 2: REPORTS WRITTEN 2026-11-16, FROM WHAT COULD BE REACHED.** He put the research back on his list

@@ -2053,38 +2053,76 @@ function paintStarfield(p: Px, rand: Rand): void {
   }
 }
 
-/** Dream: the road. Bands of every colour running down it, bright edges, and sparks. */
+/**
+ * Dream: the road. ONE rainbow across its whole width, the same either side of its middle line (a tile is as wide as
+ * the road, and the road's middle is the tile's seam: so the picture is laid out from the seam outward). Red at its
+ * edges inside a white kerb, through to violet down the middle; arrowheads down it every tile, the way to go; and a
+ * glitter in each band.
+ */
 function paintRainbowRoad(p: Px, rand: Rand): void {
   const S = p.size;
-  const bands = [0xff2a6a, 0xff8a1e, 0xffe62a, 0x3aff7a, 0x2ad8ff, 0x6a5aff, 0xe03aff];
+  // From the middle out: violet, blue, cyan, green, yellow, orange, red.
+  const bands = [0x9a4aff, 0x4a6aff, 0x2ad8ff, 0x3aff7a, 0xffe62a, 0xff8a1e, 0xff2a6a];
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
+      // How far from the middle line, 0 at the seam to 1 at the road's edge.
       const u = (x + 0.5) / S;
-      const i = Math.min(6, Math.floor(u * 7));
-      const within = u * 7 - i;
-      let c = shade(bands[i], 0.8 + 0.3 * Math.sin(within * Math.PI));
-      // (Chevrons pointing down it: the way to go.)
-      if ((y + Math.abs(x - S / 2)) % 16 < 2) c = mix(c, 0xffffff, 0.55);
+      const out = Math.min(u, 1 - u) * 2;
+      const kerb = out > 0.94;
+      const f = Math.min(6.999, (out / 0.94) * 7);
+      const i = Math.floor(f);
+      const within = f - i;
+      // Each band is rounded: bright down its middle, darker at its seams.
+      let c = shade(bands[i], 0.78 + 0.3 * Math.sin(within * Math.PI));
+      if (within < 0.08 && i > 0) c = shade(c, 0.7);
+      // Arrowheads pointing down the road, once a tile: a V whose point is on the middle line.
+      const v = (y + out * S * 0.5) % S;
+      if (v < 3) c = mix(c, 0xffffff, v < 1.5 ? 0.75 : 0.4);
+      if (kerb) c = (Math.floor(y / 8) % 2 ? 0xffffff : 0xffd8f0);
       p.set(x, y, c);
     }
-    p.set(0, y, 0xffffff);
-    p.set(S - 1, y, 0xffffff);
   }
-  for (let k = 0; k < 14; k++) p.set(rand() * S, rand() * S, 0xffffff);
+  for (let k = 0; k < 46; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.blend(x, y, 0xffffff, 0.85);
+    if (k % 4 === 0) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) p.blend(x + dx, y + dy, 0xffffff, 0.4);
+  }
 }
 
-/** Dream: a wall of the dream. Loud shapes on loud colours, as on a shirt from another age. */
+/**
+ * Dream: the floor of a landing. Loud shapes on loud colours, as on a shirt from another age: squiggles, triangles,
+ * dots and a grid, each in its own quarter, none lined up with the next.
+ */
 function paintPomoTiles(p: Px, rand: Rand): void {
   const S = p.size;
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, (Math.floor(x / 16) + Math.floor(y / 16)) % 2 ? 0xff5ab4 : 0x3ee8c0);
-  for (let k = 0; k < 20; k++) p.set(4 + (k % 5) * 6, 3 + Math.floor(k / 5) * 8 + ((k % 5) % 2), 0x1a1030);
-  for (let x = 0; x < 14; x++) {
-    p.set(17 + x, 6 + Math.round(Math.sin(x * 1.1) * 2), 0x1a1030);
-    p.set(1 + x, 24 + Math.round(Math.sin(x * 1.1) * 2), 0xfff04a);
+  const H = S / 2;
+  const ground = [0xff5ab4, 0x3ee8c0, 0xffe84a, 0x7a5cff];
+  const ink = 0x1a1030;
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ground[(x < H ? 0 : 1) + (y < H ? 0 : 2)]);
+  // Top left (pink): a field of dots, every other row set over.
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+    const x = 4 + c * 6 + (r % 2) * 3;
+    const y = 4 + r * 6;
+    if (x < H - 1) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) p.set(x + dx, y + dy, ink);
   }
-  for (let r = 0; r < 6; r++) for (let dx = -r; dx <= r; dx++) p.set(24 + dx, 20 + r, 0xfff04a);
-  for (let r = 0; r < 5; r++) for (let dx = 0; dx <= r; dx++) p.set(4 + dx, 8 + r, 0x6a5aff);
-  for (let k = 0; k < 6; k++) p.set(rand() * S, rand() * S, 0xffffff);
+  // Top right (mint): squiggles.
+  for (let k = 0; k < 3; k++) for (let x = 0; x < 22; x++) {
+    const y = 6 + k * 9 + Math.round(Math.sin(x * 0.9 + k) * 2.4);
+    p.set(H + 5 + x, y, ink);
+    p.set(H + 5 + x, y + 1, 0xff5ab4);
+  }
+  // Bottom left (yellow): triangles, pointing every which way.
+  for (const [cx, cy, up, c] of [[8, H + 9, 1, 0x7a5cff], [21, H + 7, -1, 0xff5ab4], [13, H + 22, -1, 0x3ee8c0], [25, H + 23, 1, ink]] as Array<[number, number, number, number]>) {
+    for (let r = 0; r < 6; r++) for (let dx = -r; dx <= r; dx++) p.set(cx + dx, cy + up * (r - 3), c);
+  }
+  // Bottom right (violet): a grid, with one square of it filled.
+  for (let k = 0; k < H; k += 8) for (let t = 0; t < H; t++) {
+    p.set(H + k, H + t, 0xffe84a);
+    p.set(H + t, H + k, 0xffe84a);
+  }
+  for (let y = 1; y < 8; y++) for (let x = 1; x < 8; x++) p.set(H + 8 + x, H + 16 + y, 0x3ee8c0);
+  for (let k = 0; k < 10; k++) p.blend(rand() * S, rand() * S, 0xffffff, 0.8);
 }
 
 /** Furnace, refreshed: soot-black brick with the heat showing in its joints. */
@@ -2182,8 +2220,8 @@ const DEFS = {
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
   glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
-  rainbowRoad: { size: 32, seed: 822, paint: paintRainbowRoad },
-  pomoTiles: { size: 32, seed: 823, paint: paintPomoTiles },
+  rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
+  pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },
   emberBrick: { size: 32, seed: 831, paint: paintEmberBrick },
   steamVent: { size: 32, seed: 832, paint: paintSteamVent },
   // The Widow (enemies/widowModel.ts): her shell, and the horn of her claws and fangs. Both run ALONG a limb (v).

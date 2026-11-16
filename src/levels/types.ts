@@ -93,7 +93,16 @@ export interface LevelDef {
   /** Where the fog starts and where it is total (default 18 and 90). Big open levels push it back so their landmarks show. */
   fogRange?: [number, number];
   /** What drifts in its air, if not its theme's own: 'ice' is fine snow sifting down. (See world/motes.ts.) */
-  motes?: 'ice' | 'foundry' | 'cave' | 'keep' | 'sewer';
+  motes?: 'ice' | 'foundry' | 'cave' | 'keep' | 'sewer' | 'stars';
+  /** Open sky instead of a roof: 'space' is a dome of stars all round, however far he looks. (The dream.) */
+  sky?: 'space';
+  /**
+   * A place with no floor under it (a road in the sky): fallen this far below the last ground he stood on, he is put
+   * back on that ground, a heart the poorer. (As `fallBack` does for a level whose floor is at zero.)
+   */
+  fallDepth?: number;
+  /** He wears another look here: 'dream' is the knight in loud colours with a scarf three times as long. Only looks. */
+  look?: 'dream';
   /**
    * How much plain light there is in the place, 0 to 1 (default 1). A dark place (the Glow Cave: 0.4) is lit by its
    * coloured lights and by what glows in it.

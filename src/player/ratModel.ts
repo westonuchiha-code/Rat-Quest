@@ -104,6 +104,27 @@ function mesh(geo: THREE.BufferGeometry, color: number | ColorFn, x = 0, y = 0, 
   return m;
 }
 
+/**
+ * The knight as he is in the dream (the owner, 2026-11-16: "he could be like neon pink and green ... a wacky Pomo
+ * palette kind of version of himself"): the same rat in loud colours. Worn with `wearColours`.
+ */
+export const DREAM_LOOK: Partial<typeof C> = {
+  fur: 0xff4fb0, furDark: 0xd62a8c, cream: 0xfff06a, pink: 0x39e6ff, pinkDark: 0x1fb6d6,
+  tunic: 0x4dff6a, tunicDark: 0x1fcf52, leather: 0x7a3cff, scarf: 0xffe53a,
+  metal: 0xff8a2a, metalDark: 0xe0601a, blade: 0xbffcff, gold: 0xffffff, wood: 0x7a3cff, shieldRed: 0xff3a6a,
+};
+
+/** Every mesh under a root, by its path from the root (which child of which child): the same in two models built the same way. */
+function meshPaths(root: THREE.Object3D): Map<string, THREE.Mesh> {
+  const out = new Map<string, THREE.Mesh>();
+  const walk = (o: THREE.Object3D, path: string): void => {
+    if ((o as THREE.Mesh).isMesh) out.set(path, o as THREE.Mesh);
+    o.children.forEach((c, i) => walk(c, `${path}/${i}`));
+  };
+  walk(root, '');
+  return out;
+}
+
 /** A scarf lying as a floating pickup: a rolled loop with a hanging tail. Centred on the origin. */
 export function buildScarfPickup(colors: ScarfColors): THREE.Group {
   const g = new THREE.Group();
@@ -758,6 +779,37 @@ export class RatModel {
     remap(this.shieldPivot, [[C.shieldRed, colors.face], [C.metal, colors.trim]]);
   }
 
+  /** His own paint, kept while he wears another's: by geometry (two of his parts can be one shape). */
+  private ownPaint: Map<THREE.BufferGeometry, THREE.BufferAttribute | THREE.InterleavedBufferAttribute> | null = null;
+  private scarfLong = 1;
+  /**
+   * Wears another rat's colours: every part of him takes the paint of the same part of `other` (a rat built the same
+   * way in another palette). `null` puts his own back. Only looks: nothing else about him changes.
+   */
+  wearColours(other: RatModel | null): void {
+    if (this.ownPaint) {
+      for (const [geo, paintWas] of this.ownPaint) geo.setAttribute('color', paintWas);
+      this.ownPaint = null;
+    }
+    if (!other) return;
+    this.ownPaint = new Map();
+    const theirs = meshPaths(other.root);
+    for (const [path, m] of meshPaths(this.root)) {
+      const t = theirs.get(path);
+      const mine = m.geometry.attributes.color;
+      const their = t?.geometry.attributes.color;
+      if (!mine || !their || their.count !== mine.count || this.ownPaint.has(m.geometry)) continue;
+      this.ownPaint.set(m.geometry, mine);
+      m.geometry.setAttribute('color', their.clone());
+    }
+  }
+
+  /** How many times its own length his scarf's tail is (1: as it is). In the dream it streams out behind him three times as long. */
+  setScarfLong(k: number): void {
+    this.scarfLong = k;
+    this.scarfSegments[0].scale.set(1 + (k - 1) * 0.22, k, 1);
+  }
+
   /** Recolours the scarf: the collar and tails take the cloth colour, and the end of the tail the trim. */
   setScarf(colors: ScarfColors): void {
     for (const { mesh: m, hem } of this.scarfParts) paint(m.geometry, hem ? (_x, y) => (y < -0.085 ? colors.trim : colors.cloth) : colors.cloth);
@@ -1337,8 +1389,11 @@ export class RatModel {
     // Scarf: hangs at rest and streams out behind him at speed.
     const stream = Math.min(1, planarSpeed / 6);
     const rate = 5 + stream * 9;
-    this.scarfSegments[0].rotation.x = 0.35 + stream * 0.9 + Math.sin(this.time * rate) * (0.08 + stream * 0.12);
-    this.scarfSegments[1].rotation.x = 0.1 + stream * 0.25 + Math.sin(this.time * rate - 1.2) * (0.12 + stream * 0.15);
+    // (A long one never hangs: it is held out behind him as by a wind of its own, and waves wider. Hanging, it went
+    // down through the floor.)
+    const long = this.scarfLong - 1;
+    this.scarfSegments[0].rotation.x = 0.35 + long * 0.32 + stream * (0.9 - long * 0.18) + Math.sin(this.time * rate) * (0.08 + stream * 0.12) * (1 + long * 0.3);
+    this.scarfSegments[1].rotation.x = 0.1 + stream * 0.25 + Math.sin(this.time * rate - 1.2) * (0.12 + stream * 0.15) * (1 + long * 0.5);
   }
 
   /**
