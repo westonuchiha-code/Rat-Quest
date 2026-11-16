@@ -6,24 +6,23 @@ import { WIDOW, type Widow, type WidowState } from './widow';
  * How the Widow looks. She is drawn in the world's own places, exactly where the rules have her: her head where the
  * sword meets it, a leg along the floor where it strikes. Nothing of her is moved about as one thing.
  *
- * Her legs are a spider's legs and stay near her; what crosses the room is the poison they fling, drawn where it
- * strikes: a slash along the line of a slam, a crescent wave running out over the floor, a gob lobbed onto a ring.
+ * Her legs are a spider's legs, and what she does she does with them, seen: a leg is pulled up and forward and comes
+ * down on a marked ring; it is laid out flat and swept along the floor; she steps round the rim on all four.
  *
  * She is a few big flat-faced pieces: a head (one faceted lump, a brow over it), two jaws with a fang each, eight red
  * eyes, a neck of body running back into the dark, and four legs of two long bones each. The light in her room is a
  * pool on the floor, so each piece is only as bright as the place it is in: out past the edge of the floor, or high
  * over it, she is black, and all that shows of her there is her eyes.
  */
-export type WidowView = Pick<Widow, 'state' | 'stateTime' | 'windTime' | 'side' | 'angle' | 'spot' | 'x' | 'z' | 'px' | 'pz' | 'facing' | 'floorY' | 'field' | 'raging' | 'home' | 'wave' | 'far' | 'foot'> & {
+export type WidowView = Pick<Widow, 'state' | 'stateTime' | 'windTime' | 'side' | 'angle' | 'spot' | 'x' | 'z' | 'px' | 'pz' | 'facing' | 'floorY' | 'field' | 'raging' | 'home' | 'crawling' | 'tip'> & {
   hip(side: 1 | -1, inner?: boolean): { x: number; z: number };
   dirOf(angle: number): [number, number];
 };
 
-/** One bone of a leg is this long: two of them reach a little further than a leg is ever asked to. */
-export const BONE = WIDOW.legReach / 2 + 0.3;
-const HIP_Y = 3.4;
-/** Her poison: unlit, so it shows in the dark. */
-const POISON = 0x9cff3c;
+/** One bone of a leg is this long: two of them, laid straight, reach just as far as a leg does. */
+export const BONE = WIDOW.legReach / 2 + 0.02;
+const HIP_Y = WIDOW.hipHigh;
+const LOW_HIP_Y = 1.0;
 /** Her head is built 1.5 across its half-width and drawn this many times that: as wide as the rules have it. */
 const HEAD_SCALE = WIDOW.radius / 1.5;
 /** How high her head is carried while it waits, and how high its middle is when it lies on the floor. */
@@ -83,6 +82,7 @@ interface Leg {
   upper: THREE.Mesh;
   lower: THREE.Mesh;
   claw: THREE.Mesh;
+  knob: THREE.Mesh;
   mats: THREE.ShaderMaterial[];
   hip: THREE.Vector3;
   knee: THREE.Vector3;
@@ -103,13 +103,6 @@ export class WidowModel {
   private readonly strip: THREE.Mesh;
   private readonly ring: THREE.Mesh;
   private readonly markMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false });
-  private readonly slash: THREE.Mesh;
-  private readonly slashMat = new THREE.MeshBasicMaterial({ color: POISON, transparent: true, opacity: 1, side: THREE.DoubleSide, depthWrite: false });
-  private readonly waveArc = new THREE.Group();
-  private readonly waveMat = new THREE.MeshBasicMaterial({ color: POISON, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false });
-  private readonly gob: THREE.Mesh;
-  private readonly splash: THREE.Mesh;
-  private readonly splashMat = new THREE.MeshBasicMaterial({ color: POISON, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false });
   private headY = HEAD_UP;
   private pitch = 0;
   private open = 0.15;
@@ -175,8 +168,10 @@ export class WidowModel {
       const upper = new THREE.Mesh(shadeAlong(bar(thick, thick * 0.8, 5), CHITIN, 0.55, 1), upperMat);
       const lower = new THREE.Mesh(shadeAlong(bar(thick * 0.86, thick * 0.34, 5), CHITIN_PALE, 0.75, 1.1), lowerMat);
       const claw = new THREE.Mesh(paintAll(flat(new THREE.ConeGeometry(thick * 0.42, 1.1, 4)), BONE_WHITE), lowerMat);
-      this.root.add(upper, lower, claw);
-      this.legs.push({ side, inner, upper, lower, claw, mats: [upperMat, lowerMat], hip: new THREE.Vector3(), knee: new THREE.Vector3(), foot: new THREE.Vector3(), hipY: NaN, placed: false });
+      // (A knuckle at the knee, so that a leg reads as jointed however it lies.)
+      const knob = new THREE.Mesh(paintAll(flat(new THREE.OctahedronGeometry(thick * 1.25, 0)), CHITIN_PALE), upperMat);
+      this.root.add(upper, lower, claw, knob);
+      this.legs.push({ side, inner, upper, lower, claw, knob, mats: [upperMat, lowerMat], hip: new THREE.Vector3(), knee: new THREE.Vector3(), foot: new THREE.Vector3(), hipY: NaN, placed: false });
     }
 
     // ---- What she marks on the floor before a blow: the line a slam comes down on; the place of a bite or a stab. ----
@@ -190,32 +185,6 @@ export class WidowModel {
     this.strip.visible = this.ring.visible = false;
     this.root.add(this.strip, this.ring);
 
-    // ---- Her poison ----
-    // The slash along a slam's line: the same strip, in poison.
-    this.slash = new THREE.Mesh(stripGeo, this.slashMat);
-    // The wave a swipe flings: a crescent one unit out from her (it is scaled out as it runs), a band on the floor
-    // and a low wall of spray standing on it.
-    const N = 36;
-    const SPAN = 1.5;
-    const pts: number[] = [];
-    const quad = (a: number[], b: number[], c: number[], d: number[]): void => void pts.push(...a, ...b, ...c, ...a, ...c, ...d);
-    for (let i = 0; i < N; i++) {
-      const a0 = -SPAN + (2 * SPAN * i) / N;
-      const a1 = -SPAN + (2 * SPAN * (i + 1)) / N;
-      const at = (a: number, r: number, y: number): number[] => [Math.sin(a) * r, y, Math.cos(a) * r];
-      quad(at(a0, 0.955, 0.06), at(a1, 0.955, 0.06), at(a1, 1, 0.06), at(a0, 1, 0.06));
-      quad(at(a0, 1, 0.06), at(a1, 1, 0.06), at(a1, 1, 0.85), at(a0, 1, 0.85));
-    }
-    const waveGeo = new THREE.BufferGeometry();
-    waveGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pts), 3));
-    this.waveArc.add(new THREE.Mesh(waveGeo, this.waveMat));
-    // A gob of it in the air, and the splash where one lands.
-    this.gob = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), this.slashMat);
-    const splashGeo = new THREE.CircleGeometry(1, 20);
-    splashGeo.rotateX(-Math.PI / 2);
-    this.splash = new THREE.Mesh(splashGeo, this.splashMat);
-    this.slash.visible = this.waveArc.visible = this.gob.visible = this.splash.visible = false;
-    this.root.add(this.slash, this.waveArc, this.gob, this.splash);
   }
 
   /** The sword found her: a flash. */
@@ -255,11 +224,6 @@ export class WidowModel {
       wantY = HEAD_UP + 2.6 * ease(t / w.windTime);
       wantPitch = -0.3 * ease(t / w.windTime);
       wantOpen = 0.2 + 0.7 * ease(t / (w.windTime * 0.7));
-    } else if ((s === 'bite' || s === 'biteStuck') && w.far) {
-      // (Spitting from afar: her head stays up, and snaps forward a little.)
-      wantY = HEAD_UP + 1.2;
-      wantPitch = 0.25;
-      wantOpen = 0.8;
     } else if (s === 'bite' || s === 'biteStuck') {
       wantY = HEAD_DOWN;
       wantPitch = 0.15;
@@ -316,15 +280,12 @@ export class WidowModel {
         target.lerpVectors(from, target, k);
         target.y = floor + 4 * Math.sin(k * Math.PI);
         snap = true;
-      } else if (!leg.inner && mine && (s === 'slamWind' || s === 'slam' || s === 'slamStuck' || s === 'sweepWind' || s === 'sweep')) {
-        const [dx, dz] = w.dirOf(w.angle);
-        const up = new THREE.Vector3(h.x + dx * 5.5, floor + 9, h.z + dz * 5.5);
-        const down = new THREE.Vector3(w.foot.x, floor, w.foot.z);
-        const [ox, oz] = w.dirOf(leg.side * 1.25);
-        const drawn = new THREE.Vector3(h.x + ox * 7.5, floor + 0.7, h.z + oz * 7.5);
+      } else if (!leg.inner && mine && (s === 'slamWind' || s === 'slam' || s === 'slamStuck' || s === 'sweepWind' || s === 'sweep' || s === 'sweepEnd')) {
+        const up = new THREE.Vector3(h.x + (w.spot.x - h.x) * 0.55, floor + 9.5, h.z + (w.spot.z - h.z) * 0.55);
+        const down = new THREE.Vector3(w.spot.x, floor, w.spot.z);
         if (s === 'slamWind') {
-          // Up it goes, high over the line its poison will run along.
-          const k = ease(t / (w.windTime * 0.55));
+          // Pulled up and forward, high over the ring it will come down on.
+          const k = ease(t / (w.windTime * 0.6));
           target.lerp(up, k);
           snap = k >= 1;
         } else if (s === 'slam') {
@@ -335,29 +296,15 @@ export class WidowModel {
         } else if (s === 'slamStuck') {
           target.copy(down);
           snap = true;
-        } else if (s === 'sweepWind') {
-          // Pulled free, and drawn back out to its own side, low.
-          target.copy(leg.foot).lerp(drawn, 1 - Math.exp(-dt * 14));
-          snap = true;
-        } else if (t < 0.3) {
-          // The swipe: across her front, fast, flinging the wave off its end.
-          const a = leg.side * (1.25 - 2.1 * ease(t / 0.3));
-          const [sx, sz] = w.dirOf(a);
-          target.set(h.x + sx * 8.2, floor + 0.7, h.z + sz * 8.2);
+        } else {
+          // Laid out flat along the floor at its full reach (pushed out to it as the sweep winds up), and swept.
+          const flatAt = new THREE.Vector3(w.tip.x, floor + 0.35, w.tip.z);
+          const k = s === 'sweepWind' ? ease(t / (w.windTime * 0.8)) : 1;
+          target.copy(down).lerp(flatAt, k);
+          hipY = HIP_Y + (LOW_HIP_Y - HIP_Y) * k;
           snap = true;
         }
-      } else if (leg.inner && mine && w.far && (s === 'stabWind' || s === 'stab')) {
-        // Too far to stab: it rears back, and flicks its poison at the place.
-        const toX = w.spot.x - h.x;
-        const toZ = w.spot.z - h.z;
-        const d = Math.hypot(toX, toZ) || 1;
-        const reared = new THREE.Vector3(h.x + (toX / d) * 3, floor + 8, h.z + (toZ / d) * 3);
-        const flung = new THREE.Vector3(h.x + (toX / d) * 8, floor + 2.5, h.z + (toZ / d) * 8);
-        const k = s === 'stab' ? 1 : t / w.windTime;
-        if (k < 0.5) target.lerp(reared, ease(k / 0.4));
-        else target.copy(reared).lerp(flung, ease((k - 0.5) / 0.2));
-        snap = k > 0.4;
-      } else if (leg.inner && mine && !w.far && (s === 'stabWind' || s === 'stab' || s === 'stabStuck')) {
+      } else if (leg.inner && mine && (s === 'stabWind' || s === 'stab' || s === 'stabStuck')) {
         if (s === 'stabWind') {
           const k = ease(t / (w.windTime * 0.6));
           target.lerp(new THREE.Vector3(w.spot.x, floor + 7.5, w.spot.z), k);
@@ -370,6 +317,13 @@ export class WidowModel {
           target.set(w.spot.x, floor, w.spot.z);
           snap = true;
         }
+      } else if (w.crawling !== 0) {
+        // Going round the rim: each foot is set down a little ahead of where it would rest, in turn.
+        const i = this.legs.indexOf(leg);
+        const [ax, az] = w.dirOf(restA - w.crawling * 0.35);
+        target.set(h.x + ax * restD, floor, h.z + az * restD);
+        const beat = (this.age * 2.6 + i * 0.5) % 2;
+        if (beat < 1) target.y = floor + 2.2 * Math.sin(beat * Math.PI);
       }
       if (dead) hipY = HIP_Y - 1.7 * this.fallen;
       if (!leg.placed || snap) leg.foot.copy(target);
@@ -401,77 +355,23 @@ export class WidowModel {
       leg.claw.position.copy(leg.foot);
       leg.claw.quaternion.copy(leg.lower.quaternion);
       leg.claw.rotateX(Math.PI / 2); // the cone's point along the bone
+      leg.knob.position.copy(leg.knee);
+      leg.knob.rotation.set(this.age * 0.2, leg.side, 0);
       leg.mats[0].uniforms.tint.value.setScalar(this.lightAt(w, leg.hip.clone().lerp(leg.knee, 0.6)));
       leg.mats[1].uniforms.tint.value.setScalar(this.lightAt(w, leg.knee.clone().lerp(leg.foot, 0.7)));
     }
 
     // ---- The marks on the floor ----
     const beat = 0.5 + 0.5 * Math.sin(this.age * 22);
-    this.strip.visible = s === 'slamWind' || s === 'slam';
-    if (this.strip.visible || s === 'slamStuck') {
-      const h = w.hip(w.side);
-      const [dx, dz] = w.dirOf(w.angle);
-      // (Only as far as the floor goes: from where the line comes into the light to where it leaves it.)
-      const ox = h.x - w.field.x;
-      const oz = h.z - w.field.z;
-      const b = ox * dx + oz * dz;
-      const disc = b * b - (ox * ox + oz * oz - w.field.r * w.field.r);
-      const far = disc > 0 ? Math.min(W.legLen, -b + Math.sqrt(disc)) : 0;
-      const near = disc > 0 ? Math.max(0, -b - Math.sqrt(disc)) : 0;
-      this.strip.position.set(h.x + dx * near, floor + 0.05, h.z + dz * near);
-      this.strip.rotation.y = Math.atan2(dx, dz);
-      this.strip.scale.set(W.legHalf * 2, 1, Math.max(0.01, far - near));
-      const committed = s === 'slam' || t > w.windTime * W.slamTrack;
-      this.markMat.opacity = committed ? 0.45 + 0.3 * beat : 0.22;
-    }
-    this.ring.visible = s === 'biteWind' || s === 'stabWind';
+    this.strip.visible = false;
+    this.ring.visible = s === 'biteWind' || s === 'stabWind' || s === 'slamWind';
     if (this.ring.visible) {
-      const r = s === 'biteWind' ? W.biteR : W.stabR;
+      const r = s === 'biteWind' ? W.biteR : s === 'slamWind' ? W.slamR : W.stabR;
       this.ring.position.set(w.spot.x, floor + 0.05, w.spot.z);
       this.ring.scale.set(r, 1, r);
-      const committed = t > w.windTime * (s === 'biteWind' ? W.biteTrack : W.stabTrack);
+      const committed = t > w.windTime * (s === 'biteWind' ? W.biteTrack : s === 'slamWind' ? W.slamTrack : W.stabTrack);
       this.markMat.opacity = committed ? 0.5 + 0.35 * beat : 0.28;
     }
-
-    // ---- Her poison, where it strikes ----
-    // The slash along a slam's line: there the instant the foot comes down, and gone a moment after.
-    const slashFor = s === 'slam' ? 1 : s === 'slamStuck' ? 1 - t / 0.3 : 0;
-    this.slash.visible = slashFor > 0;
-    if (this.slash.visible) {
-      this.slash.position.copy(this.strip.position);
-      this.slash.rotation.y = this.strip.rotation.y;
-      this.slash.scale.copy(this.strip.scale);
-      this.slash.position.y = floor + 0.07;
-    }
-    // The wave: a crescent as far out from her as the rules have it.
-    this.waveArc.visible = s === 'sweep';
-    if (this.waveArc.visible) {
-      this.waveArc.position.set(w.px, floor, w.pz);
-      this.waveArc.rotation.y = w.facing;
-      this.waveArc.scale.set(w.wave, 1, w.wave);
-      this.waveMat.opacity = 0.85 * Math.min(1, (W.legLen + 1 - w.wave) / 4);
-    }
-    // A gob flung at a far place: off the leg's end (or out of her mouth), over, and down onto the ring as the blow lands.
-    const stabFar = w.far && (s === 'stabWind' || s === 'stab');
-    const spitFar = w.far && (s === 'biteWind' || s === 'bite');
-    const lands = s === 'stab' || s === 'bite' ? 1 : (t / w.windTime - 0.55) / 0.45;
-    this.gob.visible = (stabFar || spitFar) && lands > 0 && lands < 1;
-    if (this.gob.visible) {
-      const from = spitFar ? this.head.position : this.legs.find((l) => l.inner && l.side === w.side)!.foot;
-      this.gob.position.set(from.x + (w.spot.x - from.x) * lands, from.y + (floor + 0.4 - from.y) * lands + 7 * lands * (1 - lands), from.z + (w.spot.z - from.z) * lands);
-      this.gob.scale.setScalar(spitFar ? 1.3 : 0.8);
-      this.gob.rotation.set(this.age * 9, this.age * 7, 0);
-    }
-    // ...and the splash where it lands, the size of the blow, fading.
-    const splashed = w.far && (s === 'stab' || s === 'bite' || ((s === 'stabStuck' || s === 'biteStuck') && t < 0.3));
-    this.splash.visible = splashed;
-    if (splashed) {
-      const r = s === 'bite' || s === 'biteStuck' ? W.biteR : W.stabR;
-      this.splash.position.set(w.spot.x, floor + 0.06, w.spot.z);
-      this.splash.scale.set(r, 1, r);
-      this.splashMat.opacity = s === 'stab' || s === 'bite' ? 0.9 : 0.9 * (1 - t / 0.3);
-    }
-    this.slashMat.opacity = this.slash.visible ? slashFor : 1;
 
     // ---- Struck: a flash over all of her ----
     this.flashLeft = Math.max(0, this.flashLeft - dt);
@@ -486,11 +386,8 @@ export class WidowModel {
   get headPosition(): THREE.Vector3 {
     return this.head.position;
   }
-  /** For the tests: how far out the wave is drawn (0 when there is none), and whether the slash of poison is showing. */
-  get waveRadius(): number {
-    return this.waveArc.visible ? this.waveArc.scale.x : 0;
-  }
-  get slashShown(): boolean {
-    return this.slash.visible;
+  /** For the tests: whether the ring on the floor is showing, and where. */
+  get ringAt(): THREE.Vector3 | null {
+    return this.ring.visible ? this.ring.position : null;
   }
 }

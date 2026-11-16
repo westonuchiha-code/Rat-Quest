@@ -611,43 +611,35 @@ function startGame(): void {
         else if (ev === 'crit') audio.play('wyrmCry', { vol: v * 0.7, rate: 1.4, priority: 6 });
         else if (ev === 'hurt') audio.play('plateKnock', { vol: v * 0.7, priority: 4 });
       } else if (e instanceof Widow) {
-        // The Widow, in sounds of her own: her scream when she wakes and when she turns angry; the creak of a leg
-        // going up (as long as its wind-up), the crack of its foot into the floor and the hiss of her poison along
-        // the line; a quick creak as it draws back, and the rush of the wave it flings; a long creak as her head
-        // rears, and her jaws shutting on the floor; a gob of poison spat or flicked, and the splash where it lands;
-        // a cry when she is thrown down, a yelp when struck, a sharper one for her head.
+        // The Widow, in sounds of her own: her scream when she wakes and when she turns angry; the tap of her feet
+        // as she goes round the rim; the creak of a leg pulled up (as long as its wind-up) and the crack of it into
+        // the floor; a quick creak as it is laid out, and the rush of it sweeping; a long creak as her head rears,
+        // and her jaws shutting on the floor; a cry when she is thrown down, a yelp when struck, a sharper one for
+        // her head.
         const loud = Math.max(0.6, v);
         if (ev === 'wake' || ev === 'rage') {
           audio.play('widowScream', { vol: loud, rate: ev === 'rage' ? 0.85 : 1, priority: 9 });
           audio.play('rumble', { vol: loud * 0.7, rate: 1.1, priority: 6 });
           shake = Math.max(shake, 0.16);
-        } else if (ev === 'slamWind') audio.play('widowRear', { vol: loud * 0.9, rate: 0.8 / Math.max(0.4, e.windTime), priority: 7 });
+        } else if (ev === 'step') audio.play('chitinTap', { vol: loud * 0.5, rate: roll(0.55, 0.75), priority: 2 });
+        else if (ev === 'slamWind') audio.play('widowRear', { vol: loud * 0.9, rate: 0.8 / Math.max(0.4, e.windTime), priority: 7 });
         else if (ev === 'slam') {
+          audio.play('shock', { vol: loud, rate: 0.7, priority: 9 });
           audio.play('spikeHit', { vol: loud * 0.8, rate: 0.6, priority: 8 });
-          audio.play('poisonSlash', { vol: loud, priority: 9 });
-          shake = Math.max(shake, 0.22);
+          shake = Math.max(shake, 0.3);
           rumble.shock();
         } else if (ev === 'sweepWind') audio.play('widowRear', { vol: loud * 0.8, rate: 0.8 / Math.max(0.2, e.windTime), priority: 8 });
-        else if (ev === 'sweep') {
-          audio.play('whoosh', { vol: loud * 0.7, rate: 0.6, priority: 7 });
-          audio.play('poisonWave', { vol: loud, rate: e.raging ? 1.2 : 1, priority: 9 });
-        } else if (ev === 'biteWind') audio.play('widowRear', { vol: loud, rate: 0.8 / Math.max(0.4, e.windTime), priority: 8 });
+        else if (ev === 'sweep') audio.play('whoosh', { vol: loud, rate: 0.55, priority: 8 });
+        else if (ev === 'biteWind') audio.play('widowRear', { vol: loud, rate: 0.8 / Math.max(0.4, e.windTime), priority: 8 });
         else if (ev === 'bite') {
-          if (e.far) audio.play('poisonSplash', { vol: loud, rate: 0.8, priority: 9 });
-          else {
-            audio.play('widowBite', { vol: loud, priority: 9 });
-            shake = Math.max(shake, 0.24);
-            rumble.shock();
-          }
+          audio.play('widowBite', { vol: loud, priority: 9 });
+          shake = Math.max(shake, 0.24);
+          rumble.shock();
         } else if (ev === 'stabWind') audio.play('widowRear', { vol: loud * 0.7, rate: 0.8 / Math.max(0.3, e.windTime), priority: 7 });
-        else if (ev === 'spit') audio.play('poisonSpit', { vol: loud, rate: e.state === 'biteWind' ? 0.75 : 1.1, priority: 8 });
         else if (ev === 'stab') {
-          if (e.far) audio.play('poisonSplash', { vol: loud * 0.9, rate: 1.25, priority: 8 });
-          else {
-            audio.play('whoosh', { vol: loud * 0.7, rate: 1.5, priority: 6 });
-            audio.play('spikeHit', { vol: loud * 0.9, priority: 7 });
-            shake = Math.max(shake, 0.08);
-          }
+          audio.play('whoosh', { vol: loud * 0.7, rate: 1.5, priority: 6 });
+          audio.play('spikeHit', { vol: loud * 0.9, priority: 7 });
+          shake = Math.max(shake, 0.08);
         } else if (ev === 'reel') audio.play('widowHurt', { vol: loud, rate: 0.6, priority: 8 });
         else if (ev === 'crit') audio.play('widowHurt', { vol: loud * 0.8, rate: 1.25, priority: 6 });
         else if (ev === 'hurt') audio.play('widowHurt', { vol: loud * 0.5, priority: 4 });

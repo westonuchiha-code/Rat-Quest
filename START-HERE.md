@@ -707,43 +707,50 @@ into the darkness and then you have to deal with like his front four legs and hi
 have a mandibles he has mandibles and his front four legs and he'll like slam down one side of the field and sweep
 across and then slam down the other side of the field and sweep across or he'll like bite down on certain parts of
 the field and you have to like Dodge all his attacks."
-**What was built** (`src/enemies/widow.ts` the rules, `src/enemies/widowModel.ts` the look, kind `widow`):
-She sits in the dark just past the SOUTH edge of the light, facing him as he lands, and NEVER comes into it: only her
-head, her jaws and her four front legs do. She wakes when he stands on the floor (a scream, 1.9 s, the legs come out
-of the dark and are set down). Then, in a round that repeats: slams, stabs, a bite, slams, a bite, stabs.
-**HER LEGS ARE A SPIDER'S LEGS; WHAT CROSSES THE ROOM IS THE POISON THEY FLING.** The first version's legs reached
-right across the floor, and the owner said the same day: "the spider leg sweeping across and stuff doesn't really make
-sense it's like a big pillar that comes out but it doesn't really look like one of the legs ... you kind of have to
-see the leg move, if it's not physically long enough ... then like make it have like a poison on it or something and
-then have that fling out so you can cover the whole area with like a slash of poison or ... an air slash ... players
-will get it that they have to dodge that area you don't have to like make the spiders leg gigantic". So:
-- **The slam and the sweep.** An outer leg goes up on the side he is on; a red LINE on the floor shows where its
-  poison will run, follows him, then holds (it beats brighter once it has stopped following). The leg comes down on
-  the floor in front of her and a SLASH OF POISON (green) runs right across the room along the line: 2 hearts, no
-  shield stops it, a jump does not get him out of it: STEP OFF THE LINE. The foot is stuck in the floor 0.8 s (hit
-  it: it is near her). Then the leg draws back and SWIPES across her front, flinging a crescent WAVE of poison that
-  runs out from her over the whole floor: 1 heart, no shield: JUMP IT as it reaches him. (It strikes only where it
-  is: behind it he is safe.) Then the other leg does the same from the other side.
-- **The stab.** A small RING is marked on him. Near her (within an inner leg's reach) the leg spikes down on it: 1
-  heart; a shield stops it; the foot is stuck a moment (but strike at it while another stab is coming and that one
-  catches him). Further off, the leg FLICKS A GOB OF POISON onto the ring instead: the same heart, a shield stops
-  it, and nothing of her is left there to hit. Two, one from each side.
-- **The bite.** Her head rears and a big RING marks the place. Within her head's reach (about the near half of the
-  room) she comes out of the dark and bites down on it: 2 hearts, no shield; her head then LIES IN THE LIGHT 1.6 s:
-  the great opening. Further off she SPITS on the ring instead: the same 2 hearts, and no opening. So to hurt her he
-  must fight near her.
+**What was built** (`src/enemies/widow.ts` the rules, `src/enemies/widowModel.ts` the look, kind `widow`).
+THIS IS THE THIRD VERSION, AND THE RULE FOR HER IS: **EVERYTHING SHE DOES IS DONE WITH A LEG OR HER HEAD, AND IS SEEN
+TO BE. NO RAYS, NO BEAMS, NO POISON FLUNG ACROSS THE ROOM. AND THERE IS NO BACK OF THE ROOM TO SIT IN.**
+- Version one: her legs reached right across the floor. The owner: "it's like a big pillar that comes out but it
+  doesn't really look like one of the legs ... you kind of have to see the leg move ... you don't have to like make
+  the spiders leg gigantic". (He also said: if a leg is not long enough, poison or an "energy slash" could cover
+  the area. That was tried next, and he hated it.)
+- Version two: short legs that flung poison (a green slash along a line, a crescent wave to jump, gobs). The owner:
+  "Do you just have her shooting rays of light no I don't want that's ugly that's horrible no I was asking you to
+  make animations with the legs like just pull the leg forward and slam it down on the ground like you're going to
+  have to move it around a little bit ... it's a stationary boss but you can still slam its legs down and move it
+  around and stuff you can't just like sit in the back and have the main character jump over a raise of light
+  that's not fun at all".
+- **Version three (now):** her legs are a spider's legs (two bones, a knuckle at the knee, a claw; reach 11.5), and
+  SHE MOVES. She stays out past the edge of the light, but CRAWLS ROUND THE RIM in the dark to whichever side he is
+  on (0.7 radians a second: faster than he can run round the edge), and LEANS IN over the edge (up to 3.6) to reach
+  him. Wherever he stands and waits, the middle and the far edge included, she is beside him in a few seconds and a
+  leg comes down on him (tested at eight places).
+She wakes when he stands on the floor (a scream, 1.9 s, the legs come out of the dark and are set down). Then, in a
+round that repeats: slams, stabs, a bite, slams, a bite, stabs.
+- **The slam and the sweep.** An outer leg is pulled up and forward; a red RING on the floor marks where it will
+  come down, follows him, then holds (it beats brighter once it has stopped following). The leg comes down on it: 2
+  hearts, no shield stops it, a jump does not get him out of it: GET OUT OF THE RING. The foot is stuck 0.8 s (hit
+  it). Then the leg is LAID OUT FLAT along the floor (it is solid: it cannot be laid on him) and SWEEPS across her
+  front: 1 heart, no shield: JUMP IT, or be out of its reach. It lies where it stops for a moment (hit it). Then the
+  other leg does the same from the other side.
+- **The stab.** An inner leg spikes down on a small RING marked on him: 1 heart; a shield stops it; or step away.
+  Two of them, one from each side. The foot is stuck a moment (but strike at it while another stab is coming and
+  that one catches him).
+- **The bite**, only when he is within 10 of her place: her head rears, a big RING marks the place, and she comes
+  out of the dark and bites down on it: 2 hearts, no shield. Her head then LIES IN THE LIGHT for 1.6 s: the great
+  opening. One who keeps to the middle of the room is never bitten: it is her legs for him.
 - **A perfect guard** against anything throws her down: her head falls into the light near him and lies 2.4 s.
-- **Harm to her:** a blow on a foot counts HALF, on her head DOUBLE. 30 health. Angry below half: leg wind-ups are a
-  fifth shorter, each leg swipes TWICE (two waves to jump), four stabs, three bites, shorter rests.
-- A rat who keeps to the rules perfectly beats her in about two minutes, unhurt; one who stands still dies in 9 s.
+- **Harm to her:** a blow on a leg counts HALF, on her head DOUBLE. 30 health. Angry below half: she crawls faster,
+  leg wind-ups are a fifth shorter, each sweep comes BACK as well (two jumps), four stabs, three bites, less rest.
+- A rat who keeps to the rules and strikes what lies in the light beats her in 65 to 75 seconds and loses a heart or
+  two doing it (greedy blows at a lying leg are punished by the next slam); one who stands still dies in 17 s.
 **How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
-each, eight red eyes, a broad body tapering back into the dark, four legs of two bones and a claw, which stay near
-her. Her poison is unlit bright green (it shows in the dark) and is drawn exactly where it strikes: the slash along the
-line, the wave as far out as the rules have it, a gob in the air and its splash on the ring. The light in
+each, eight red eyes, a broad body tapering back into the dark, four legs of two bones with a knuckle at the knee
+and a claw. As she goes round the rim she lifts and sets down her feet in turn. The light in
 the room is a pool on the floor, so each piece is only as bright as the place it is in: past the edge or high over
 the floor she is black, and only her eyes show. She is drawn in the world's own places exactly where the rules have
-her (tested: a stuck foot is where the rules have it, the wave is as far out as it strikes, her head is where the
-sword meets it).
+her (tested: a stuck foot is where the rules have it, a sweeping leg lies on the line it strikes along from hip to
+tip, the ring on the floor is where each blow will land, her head is where the sword meets it).
 **In the game:** her name and health show along the bottom; the level's goal is "Beat the Widow"; the WAY OUT is at
 the EAST edge of the light and is not there until she is beaten (then the game's own door scene shows it). Once he
 has stood on the arena's floor, that is where he comes back to if he dies: he is not sent up to ride the whole way
@@ -763,17 +770,16 @@ down again. She keeps the health she had.
   the picture or off it. What he must read is on the floor (the line, the rings, the legs and head when down), and
   that is all in view. A view that pulls back in this room would show her better; the owner's rule is that the
   view does not TURN by itself, so that is his to ask for.
-- Her legs are plain bars with a claw: they could do with joints, hair or markings. The poison is flat colour.
+- Her legs are plain bars with a knuckle and a claw: they could do with hair or markings.
 - Not in the level editor. No story scene.
-**Her sounds and her sliders (2026-11-16).** Nine sounds in `src/audio/synth.ts`, played from `beastSounds` in
-main.ts by what she does: `widowScream` (waking; played a little slower when she turns angry), `widowRear` (a leg going up, or her head rearing: stretched to the length of the wind-up),
-`widowBite`, `widowHurt` (struck; slowed when she is thrown down, quicker for her head), `widowDie`; and her poison:
-`poisonSlash` (along the line), `poisonWave` (the wave leaving her), `poisonSpit` (a gob leaving her: the rules send
-a `spit` event for it) and `poisonSplash` (where it lands). She still borrows `spikeHit`, `whoosh` and `rumble`.
-Her numbers are on 21 sliders in the tweaks panel under Bosses, "The Widow" (health, what a blow on a foot or her
-head counts, every warning time, how long each piece of her stays stuck, how far her legs and head reach before
-she uses poison instead, the wave's speed, each blow's hearts). Health takes effect from the next time the level
-is loaded; the rest at once.
+**Her sounds and her sliders (2026-11-16).** Five sounds of her own in `src/audio/synth.ts`, played from
+`beastSounds` in main.ts by what she does: `widowScream` (waking; played a little slower when she turns angry),
+`widowRear` (a leg pulled up, a leg laid out, or her head rearing: stretched to the length of the wind-up),
+`widowBite`, `widowHurt` (struck; slowed when she is thrown down, quicker for her head), `widowDie`. Her feet tap as
+she goes round the rim (`chitinTap`, low). She borrows `shock`, `spikeHit`, `whoosh` and `rumble`. (Four `poison*`
+sounds from version two are still in synth.ts and are played by nothing: they may do for the slime.) Her numbers are
+on 22 sliders in the tweaks panel under Bosses, "The Widow". Health takes effect from the next time the level is
+loaded; the rest at once.
 
 See her: `#view&who=widow&t=<seconds>&yaw=..&pitch=..&dist=46&h=3&lz=9` (`&rage=1`, `&die=<seconds>`, `&px=&pz=` for
 where the rat stands). In the game: `#level=longdrop&nostory&at=2,0.5,1419,3.1416`.

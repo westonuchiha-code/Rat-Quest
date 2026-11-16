@@ -1011,38 +1011,44 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   so long a level costs no more to draw than a room. A wall the whole length of it would always be drawn: its
   walls are a pair for each section.
 
-## Boss: the Widow (2026-11-16: the Long Drop's arena)
-- Rules `src/enemies/widow.ts` (`WIDOW` table, `Widow`), look `src/enemies/widowModel.ts`, tests `tests/widow.ts` (56 checks).
-  START-HERE.md has what she does; this is what to know before changing her.
-- **She does not move.** `px, pz` is the edge of the light in front of her; each leg turns about its own `hip(side,
-  inner)`; angles are counted from the way she faces, + to her LEFT. She faces north in the level (facing pi), so
-  her left is WEST. `x, z` (what the game takes her to be, and what the sword meets) is her HEAD, which is back in
-  the dark except in a bite, when thrown down, and dead.
-- **One blow's shape at a time** goes to combat through `bite`: the slash of poison along a slam's line is a thin
-  wedge from the leg's hip (`at` = the hip, `arc` = as wide as the slash where HE is: it asks his distance); the
-  WAVE is the whole disc out to its edge from her place, and `attackActive` is only true while he is IN its edge
-  (so it strikes where it is, and one who jumped it is safe behind it); a bite, a stab, a flung gob or a spit is a
-  circle at `spot` (`at`), with `from` = her place so that his shield must face HER. `far` says the stab or bite is
-  poison flung from afar (no piece of her is left there: no `parts`, not `open`). `Foe.bite.from` is new (combat.ts uses it
-  for the shield and the knock-back only).
+## Boss: the Widow (2026-11-16: the Long Drop's arena; third version)
+- Rules `src/enemies/widow.ts` (`WIDOW` table, `Widow`), look `src/enemies/widowModel.ts`, tests `tests/widow.ts`.
+  START-HERE.md has what she does and the owner's words on the two versions he threw out. THE RULE: everything is a
+  leg or her head, seen to move; no rays or flung poison; no back of the room. Do not bring back long legs or beams.
+- **Where she is:** `theta`, a bearing round the lit floor (`field`). `px, pz` (getters) is the edge of the light
+  there, less her `lean`; she faces the floor's middle; each leg turns about its own `hip(side, inner)`; a leg's
+  angle is counted from the way she faces, + to her LEFT. `x, z` (what the game takes her to be, and what the sword
+  meets) is her HEAD, which is back in the dark except in a bite, when thrown down, and dead.
+- **She crawls only while idle** (toward his bearing, `crawl` radians a second), and strikes when within `near` of
+  it, or after `patience` if he will not stand still. She leans in during a leg's wind-up (`aimLeg` sets `spot` and
+  `leanGoal`), and is exactly at `leanGoal` when the blow falls.
+- **A leg's reach is worked out, not guessed** (`aimLeg`): along the floor it is what `legReach` allows from a hip
+  `hipHigh` up and `hip` to the side, plus her lean; the spot is pulled in if it is still further than the leg from
+  where the hip will be. With the numbers as they are the ring just covers the floor's middle from the rim. Change
+  `legReach`, `lean`, `hip`, `hipHigh` or the arena's size and run "THERE IS NO BACK OF THE ROOM".
+- **One blow's shape at a time** goes to combat through `bite`: a slam, a stab or a bite is a circle at `spot`
+  (`at`), with `from` = her place so that his shield must face HER (`Foe.bite.from`, used by combat.ts for the
+  shield and the knock-back only); the sweep is a thin wedge from the leg's hip to its tip (`arc` = as wide as the
+  leg where HE is: it asks his distance), `ground`.
 - **A blow from above** (slam, bite, stab): her `y` is set to his height while it is active, so a jump is no way out
   (combat only settles blows between things on the same level). The sweep is `ground`: a jump is the way out.
-- `parts` are only there while a piece of her is stuck in the floor (a foot after a slam, `foot`; a foot after a
-  near stab). She is `immovable`: those pieces push him out of them.
+- `parts`: a stuck foot (after a slam or a stab), and the leg lying on the floor (laid out before a sweep, and
+  where it stops after). She is `immovable`, so those push him out of them: the leg cannot be laid ON him (it was,
+  at first, and struck him the instant the sweep began).
 - `ready` MUST exist or `director.ts` never lets her attack. `events` are emptied by the game (`beastSounds`), not
   by her `update`: a blow's result (`reel`, `hurt`) is added during combat, after `update`.
 - Fairness is arithmetic, and tests hold it: from a standstill he covers 0.96 in 0.25 s, 1.27 in 0.30, 1.89 in 0.40,
-  2.51 in 0.50. Each mark stops following him at `*Track` of its wind-up; what is left of the wind-up must take him
-  out of the blow (its radius and his own 0.3). That is why bites and follow-up stabs are NOT hurried when angry.
+  2.51 in 0.50. Each ring stops following him at `*Track` of its wind-up; what is left of the wind-up must take him
+  out of the blow (its radius and his own 0.3). That is why the slam's ring is 1.2 and why bites and follow-up stabs
+  are NOT hurried when angry.
 - The model: every piece is tinted each frame by `lightAt` (how far out from the floor's middle, how high). Legs are
-  two bones of `BONE` solved in the world (`lay(mesh, a, b)` stretches a unit bar from a to b). Her legs reach
-  `legReach` (10.5); `legLen` (27.5) is how far her POISON runs. Do not make the legs long again: the owner asked.
+  two bones of `BONE` solved in the world (`lay(mesh, a, b)` stretches a unit bar from a to b); a leg that lies on
+  the floor is at full reach with its hip lowered, so it is flat. `w.crawling` makes her step.
 - `LevelDef.well` keeps HIM in the light; nothing keeps her out of it but her own rules (tested through whole fights).
 - The checkpoint is in `main.ts` `lavaStep`: standing on a well's floor moves `player.spawn` there.
 - `main.ts`: a level with `returnTo` is marked cleared on loading ONLY IF it has no goals.
-- Her sounds: `widow*` and `poison*` in synth.ts (seeds 225 to 233), played in `beastSounds`. `widowRear` is played
-  at `0.8 / windTime` so the creak lasts as long as the wind-up it warns of. The `spit` event is sent by her rules
-  a little past half-way through a far stab's or spit's wind-up (when the gob is drawn leaving her).
-- Her sliders: group 'The Widow' in tweaks.ts (root `widow` = the `WIDOW` table). A new number in `WIDOW` is on no
-  slider until a line is added there.
-
+- Her sounds: `widow*` in synth.ts (seeds 225, 226, 231 to 233), played in `beastSounds`. `widowRear` is played at
+  `0.8 / windTime` so the creak lasts as long as the wind-up it warns of. (`poison*`, seeds 227 to 230: unused.)
+- Her sliders: group 'The Widow' in tweaks.ts (root `widow` = the `WIDOW` table). A slider's default must be on its
+  own step grid (min + n * step) or the panel's "reset" test fails. A new number in `WIDOW` is on no slider until a
+  line is added there.
