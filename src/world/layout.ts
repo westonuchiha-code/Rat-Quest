@@ -290,10 +290,12 @@ export type Decor =
   /**
    * A jet of gas or steam: puffs leaving (x, y, z) one after another along `dir` (a direction, any length), growing
    * and thinning as they go, `length` far. `color` (default a cold white). `width`: how wide a puff is where the
-   * jet ends (default a third of its length). `every` and `on`: it comes in bursts, one every `every` seconds,
-   * each `on` seconds long (default: it never stops). Only drawn.
+   * jet ends (default a bit over half its length). `every` and `on`: it comes in bursts, one every `every` seconds,
+   * each `on` seconds long (default: it never stops); `delay`: its first burst begins this long after the clock's
+   * nought (so one jet can take up where another ends). `push`: it is a GUST: whoever is in its gas is carried
+   * along with it, up to this speed (world/gusts.ts). Without `push` it is only drawn.
    */
-  | { kind: 'jet'; x: number; y: number; z: number; dir: [number, number, number]; length: number; color?: number; width?: number; every?: number; on?: number }
+  | { kind: 'jet'; x: number; y: number; z: number; dir: [number, number, number]; length: number; color?: number; width?: number; every?: number; on?: number; delay?: number; push?: number }
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }
   /** The curved underside of an archway (the solid parts are boxes): spans x0..x1 along the wall (or z if `alongZ`). */

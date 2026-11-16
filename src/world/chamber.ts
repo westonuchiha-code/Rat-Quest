@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS } from '../render/ps1Material';
 import { getTexture, TextureName } from '../render/textures';
+import { JET_SPEED, gasAt, gasWidth } from './gusts';
 import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
@@ -491,8 +492,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     return haloTex;
   };
   /** A jet's puffs, and what each needs to be put in its place as time goes: see the `jet` decor. */
-  const jets: Array<{ puffs: THREE.Sprite[]; from: THREE.Vector3; dir: THREE.Vector3; length: number; width: number; color: THREE.Color; every: number; on: number }> = [];
-  const JET_SPEED = 3.4;
+  const jets: Array<{ puffs: THREE.Sprite[]; from: THREE.Vector3; dir: THREE.Vector3; length: number; width: number; color: THREE.Color; every: number; on: number; delay: number }> = [];
   let iceMat: THREE.ShaderMaterial | null = null;
   /** A puff of gas: white, soft, thinning to nothing at its rim. */
   let puffTex: THREE.DataTexture | null = null;
@@ -1166,7 +1166,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         group.add(sp);
         puffs.push(sp);
       }
-      jets.push({ puffs, from: new THREE.Vector3(d.x, d.y, d.z), dir, length: d.length, width: d.width ?? d.length * 0.55, color: new THREE.Color(d.color ?? 0xdcefff), every: d.every ?? 0, on: d.on ?? 0 });
+      jets.push({ puffs, from: new THREE.Vector3(d.x, d.y, d.z), dir, length: d.length, width: d.width ?? d.length * 0.55, color: new THREE.Color(d.color ?? 0xdcefff), every: d.every ?? 0, on: d.on ?? 0, delay: d.delay ?? 0 });
     } else if (d.kind === 'stalactite') {
       // A spike of rock hanging from the roof: five-sided, thick at its root and spreading into the rock there, then
       // narrowing by stages to a point, with a slight crook in it. Lit like the rock, so the lights of the place catch it.
@@ -1756,18 +1756,19 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const run = j.length / JET_SPEED;
       j.puffs.forEach((sp, i) => {
         const t = (((time / run + i / j.puffs.length) % 1) + 1) % 1;
+        // (Whether there is gas here now is asked of the same rule that says whether it pushes him: world/gusts.ts.)
+        const on = gasAt(j, time, j.length * t);
         const left = time - t * run;
-        const on = j.every <= 0 || ((left % j.every) + j.every) % j.every < j.on;
         // (Thick for most of its way, thinning quickly at its end.)
         const k = on ? Math.min(1, t / 0.05) * (1 - t * t * t) * 0.8 : 0;
         sp.visible = k > 0.004;
         // (It billows: each puff strays a little from the line as it goes, its own way.)
         const stray = j.width * 0.16 * t;
-        sp.position.copy(j.from).addScaledVector(j.dir, j.length * t ** 0.8);
+        sp.position.copy(j.from).addScaledVector(j.dir, j.length * t);
         sp.position.x += Math.sin(i * 2.4 + left * 1.7) * stray;
         sp.position.y += Math.cos(i * 1.9 + left * 2.3) * stray;
         sp.position.z += Math.sin(i * 3.1 + left * 1.3) * stray;
-        const w = j.width * (0.14 + 0.86 * t);
+        const w = gasWidth(j, j.length * t);
         sp.scale.set(w, w, 1);
         (sp.material as THREE.SpriteMaterial).opacity = k;
       });

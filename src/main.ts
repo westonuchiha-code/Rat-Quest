@@ -50,6 +50,7 @@ import { FIREFLY, Firefly } from './enemies/firefly';
 import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
+import { blow, gustsOf, type Gust } from './world/gusts';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -933,6 +934,9 @@ function startGame(): void {
     }
     return emberFloor;
   };
+  /** The level's gusts (jets of gas that push), and the clock they and their drawing both go by. */
+  let gusts: Gust[] = [];
+  let worldClock = 0;
   const lanterns = new WeakMap<Firefly, FxLight>();
   const stingLamps = new WeakMap<Scorpion, FxLight>();
   const globGeo = new THREE.SphereGeometry(0.2, 6, 5);
@@ -1432,6 +1436,7 @@ function startGame(): void {
     cur = def;
     ps1Uniforms.fogColor.value.set(def.fog ?? 0x0b1410);
     ps1Uniforms.ambient.value = def.ambient ?? 1;
+    gusts = gustsOf(def.decor);
     applySight();
     renderer.setClearColor(ps1Uniforms.fogColor.value);
     if (!keep) tracker.reset(def.id);
@@ -1973,6 +1978,8 @@ function startGame(): void {
     if (lockTarget) lockTarget = keepTarget(player.position, follow.yaw, lockTarget, enemies);
     player.attackAim = lockTarget ? facingToward(player.position, lockTarget) : pickAim(player, enemies, m.x, m.z);
     const vyBefore = player.velocity.y;
+    // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
+    if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
     // Locked on, the rat keeps facing the foe while he walks, so he circles him.
     if (lockTarget && player.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(player.state)) player.facing = facingToward(player.position, lockTarget);
@@ -3210,6 +3217,7 @@ function startGame(): void {
     const rawDt = Math.min((now - lastFrame) / 1000, 0.1);
     lastFrame = now;
     const time = now / 1000;
+    worldClock = time;
 
     pollGamepad();
     // Button prompts follow what he last touched: redraw the screens that show them when that changes.

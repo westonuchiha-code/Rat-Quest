@@ -9,7 +9,9 @@
  * (`iceSheet`, `slick`): on it he keeps his momentum, gliding on for a couple of seconds with the stick let go, and
  * turning wide (TUNING.ice).
  * Nothing that should be in one place only is painted into a tile. Put ON them, each in its own place: steel pipes
- * along the walls (`pipe` decor), BURST in places, each burst a jet of gas coming in gusts (decor `jet`); icicles under the pipes and from the roof (decor `icicle`); spikes of ice standing up from the floor
+ * along the walls (`pipe` decor), BURST in places, each burst a jet of gas coming in gusts (decor `jet`) that falls
+ * to the foot of the bank and then blows low across the ice: and there it PUSHES (a jet with `push`: world/gusts.ts),
+ * carrying whoever is on the ice across with it; icicles under the pipes and from the roof (decor `icicle`); spikes of ice standing up from the floor
  * (decor `iceSpike`: solid); lamps, cold; and fine snow sifting down (`motes: 'ice'`).
  * To do in it: two bottle caps out on the ice, each in a pocket of spikes he must slide into and stop in; and a
  * relic on the last of four blocks of ice standing in the channel, each higher than the one before, their tops ice
@@ -20,6 +22,7 @@ import type { LevelDef } from './types';
 import { extent, iceSpikeSolids, type Box, type Decor } from '../world/layout';
 import type { CollectibleDef } from '../world/collectibles';
 import { doorOn } from '../world/rooms';
+import { JET_SPEED } from '../world/gusts';
 
 export const COLDMAIN = { halfX: 15, halfZ: 11, wall: 8, channel: 4 } as const;
 /**
@@ -42,6 +45,16 @@ export const ICE_SPIKES: ReadonlyArray<readonly [number, number, number]> = [
   // Along the banks.
   [-12.6, -8.6, 2.6], [-11.2, -9.6, 1.5], [12.4, 8.8, 2.4], [11, 9.7, 1.4], [-13, 6.2, 1.8], [13.2, -6.6, 2.0], [0.8, -9.8, 1.6], [-2.2, 9.6, 1.3],
 ];
+/**
+ * Where the pipes have burst: [x, a gust every so many seconds, each so long]. From each a jet of gas comes down to the
+ * foot of its bank and then runs low across the ice to the far bank: that low run is a GUST (world/gusts.ts), and
+ * carries him across with it. None crosses a block of ice (gas does not go through one), and no two keep the same time.
+ */
+export const NORTH_BURSTS: ReadonlyArray<readonly [number, number, number]> = [[-6.2, 5.2, 1.9], [6.5, 6.6, 2.3]];
+export const SOUTH_BURSTS: ReadonlyArray<readonly [number, number, number]> = [[-12.6, 5.9, 2.1], [-0.5, 4.7, 1.7]];
+/** The fall of gas from a pipe to the floor, and the gust across the ice: how long, how wide at its end, how high off the ice, how fast it carries him. */
+export const FALL = { length: 7.4 } as const;
+export const GUST = { length: 8.6, width: 2.8, y: 0.9, push: 4.6 } as const;
 export const ICE_PRIZES = { south: 'cold-cap-south', north: 'cold-cap-north', top: 'cold-relic-top' } as const;
 const COLD = 0xcfe8ff;
 
@@ -74,8 +87,12 @@ export function coldMain(): LevelDef {
   for (const side of [-1, 1]) {
     const z = side * (G.halfZ - 0.45);
     decor.push({ kind: 'pipe', a: [-G.halfX, PIPE_Y, z], b: [G.halfX, PIPE_Y, z], r: PIPE_R, color: 0x7e8c96 });
-    for (const [x, every, on] of side < 0 ? [[-7.5, 3.4, 1.8], [6.5, 4.6, 2.2]] : [[-10, 4.1, 2], [3.5, 3.1, 1.5]]) {
-      decor.push({ kind: 'jet', x, y: PIPE_Y - 0.2, z: z - side * 0.3, dir: [0, -0.85, -side], length: 7.4, width: 3.6, color: COLD, every, on });
+    for (const [x, every, on] of side < 0 ? NORTH_BURSTS : SOUTH_BURSTS) {
+      // (Out and down from the pipe to the foot of the bank: only drawn, it is over his head.)
+      decor.push({ kind: 'jet', x, y: PIPE_Y - 0.2, z: z - side * 0.3, dir: [0, -0.85, -side], length: FALL.length, width: 3.2, color: COLD, every, on });
+      // (And on, low, across the ice to the far bank: THIS is the gust. It takes up where the first leaves off, the
+      // time the first takes to come down; and whoever is on the ice in it is carried across.)
+      decor.push({ kind: 'jet', x, y: GUST.y, z: side * (G.channel + 0.4), dir: [0, 0, -side], length: GUST.length, width: GUST.width, color: COLD, every, on, delay: FALL.length / JET_SPEED, push: GUST.push });
     }
     // Icicles under the pipe, in runs, long and short.
     for (let x = -G.halfX + 1; x < G.halfX - 0.5; x += 0.62) {

@@ -9,7 +9,8 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { aabbOf } from '../src/world/collision';
 import { ceilingOf, CEILING_CLEAR, ICE_SPIKE, iceSpikeSolids } from '../src/world/layout';
-import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES } from '../src/levels/coldmain';
+import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
+import { blow, gasAt, gasWidth, gustOn, gustsOf, JET_SPEED } from '../src/world/gusts';
 import { garden, GARDEN } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
@@ -260,8 +261,88 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   check('icicles hang from the roof over the banks, each with its point above a double jump from the highest thing within six of it', roof.length >= 8 && roof.every((d) => c.y - d.length >= near(d.x, d.z) + CEILING_CLEAR), `the nearest ${Math.min(...roof.map((d) => c.y - d.length - near(d.x, d.z) - CEILING_CLEAR)).toFixed(2)} clear`);
   const jets = def.decor.filter((d) => d.kind === 'jet');
   const pipes = def.decor.filter((d) => d.kind === 'pipe');
-  check('two pipes run the length of the room, one on each long wall, and each has burst in two places: a jet of gas at each, coming in gusts, blowing out and down from the pipe', pipes.length === 2 && jets.length === 4 && jets.every((j) => (j.every ?? 0) > (j.on ?? 0) && (j.on ?? 0) > 0.5 && j.dir[1] < 0 && Math.sign(j.dir[2]) === -Math.sign(j.z) && pipes.some((p) => Math.abs(p.a[1] - j.y) < 0.5 && Math.abs(p.a[2] - j.z) < 0.5)));
-  check('no two jets gust in step: each has its own beat', new Set(jets.map((j) => j.every)).size === jets.length);
+  const falls = jets.filter((j) => !j.push);
+  const low = jets.filter((j) => !!j.push);
+  check('two pipes run the length of the room, one on each long wall, and each has burst in two places: at each a jet of gas falls out and down from the pipe, in gusts', pipes.length === 2 && falls.length === 4 && falls.every((j) => (j.every ?? 0) > (j.on ?? 0) && (j.on ?? 0) > 0.5 && j.dir[1] < 0 && Math.sign(j.dir[2]) === -Math.sign(j.z) && pipes.some((p) => Math.abs(p.a[1] - j.y) < 0.5 && Math.abs(p.a[2] - j.z) < 0.5)));
+  check('no two bursts gust in step: each has its own beat', new Set(falls.map((j) => j.every)).size === falls.length && NORTH_BURSTS.length + SOUTH_BURSTS.length === 4);
+  check('...and from the foot of each fall the gas runs on low across the ice to the far bank, on the same beat, taking up as the fall arrives', low.length === 4 && low.every((j) => {
+    const f = falls.find((q) => q.x === j.x && Math.sign(q.z) === Math.sign(j.z));
+    return !!f && f.every === j.every && f.on === j.on && Math.abs((j.delay ?? 0) - f.length / JET_SPEED) < 1e-9 && j.dir[1] === 0 && j.y < 1.2 && Math.abs(Math.abs(j.z) - (G.channel + 0.4)) < 1e-9 && j.length >= G.channel * 2 && Math.abs(f.z + (f.dir[2] / Math.hypot(...f.dir)) * f.length - j.z) < 1.2;
+  }));
+}
+
+// ---- The gusts push ----
+{
+  const gusts = gustsOf(def.decor);
+  check('the four low runs are gusts, and only they: a fall of gas overhead pushes nobody', gusts.length === 4 && gusts.every((g) => g.push === GUST.push && g.dy === 0) && FALL.length > 5);
+  check('no gust crosses a block of ice (gas does not go through one), at its widest', gusts.every((g) => !ICE_BLOCKS.some(([x]) => Math.abs(g.x - x) < ICE_BLOCK / 2 + g.width / 2)));
+  const g = gusts.find((q) => q.x === -0.5)!;
+  // (The moment its gas first reaches the middle of the channel, and a moment when there is none there.)
+  const reach = (along: number): number => g.delay + along / JET_SPEED;
+  const mid = G.channel + 0.4;
+  check('the gas is at a place along a gust from when it gets there until the gust has passed, and not between gusts', gasAt(g, reach(mid) + 0.05, mid) && gasAt(g, reach(mid) + g.on - 0.05, mid) && !gasAt(g, reach(mid) - 0.05, mid) && !gasAt(g, reach(mid) + g.on + 0.05, mid) && gasAt(g, reach(mid) + g.every + 0.05, mid));
+  /** He stands (or does `act`) at (x, z) from `t0` for `secs`, the gusts blowing: where he ends, and whether one had him. */
+  const stand = (x: number, z: number, t0: number, secs: number, act: Partial<PlayerInput> = {}): { p: PlayerController; had: boolean } => {
+    const p = new PlayerController(new THREE.Vector3(x, 0, z));
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    let had = false;
+    for (let i = 0; i < Math.round(secs / DT); i++) {
+      if (blow(gusts, t0 + i * DT, p.position, p.velocity, DT, R.radius, R.height)) had = true;
+      p.update(DT, inp(act), cs);
+    }
+    return { p, had };
+  };
+  // On the ice in its path as it comes: carried across, the way it blows (this one blows north, from the south bank).
+  const carried = stand(g.x, 1.5, reach(G.channel + 0.4 - 1.5) - 0.2, g.on + 1.5);
+  check('a rat standing on the ice in a gust\'s path is carried across with it, the way it blows: several units, and not faster than it blows', carried.had && carried.p.position.z < 1.5 - 3 && Math.abs(carried.p.position.x - g.x) < 0.5, `carried ${(1.5 - carried.p.position.z).toFixed(2)}`);
+  let fastest = 0;
+  {
+    const p = new PlayerController(new THREE.Vector3(g.x, 0, 1.5));
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    const t0 = reach(G.channel + 0.4 - 1.5) - 0.2;
+    for (let i = 0; i < 200; i++) {
+      blow(gusts, t0 + i * DT, p.position, p.velocity, DT, R.radius, R.height);
+      p.update(DT, inp({}), cs);
+      fastest = Math.max(fastest, Math.hypot(p.velocity.x, p.velocity.z));
+    }
+  }
+  check('...it brings him to the speed it blows at, and no more', fastest > GUST.push * 0.8 && fastest <= GUST.push + 1e-6, `${fastest.toFixed(2)} of ${GUST.push}`);
+  // Between gusts he is left alone; beside it he is left alone.
+  const quiet = stand(g.x, 1.5, reach(G.channel + 0.4 - 1.5) + g.on + 0.3, g.every - g.on - 0.6);
+  check('between gusts nothing moves him', !quiet.had && Math.abs(quiet.p.position.z - 1.5) < 1e-6);
+  const beside = stand(g.x + gasWidth(g, g.length) / 2 + R.radius + 0.3, 1.5, 0, g.every * 2);
+  check('beside a gust, clear of its gas at its widest, nothing moves him', !beside.had && Math.abs(beside.p.position.z - 1.5) < 1e-6);
+  // On the cobbles where a gust begins, he stands against it.
+  const bank = stand(g.x, G.channel + 0.25, 0, g.every * 2);
+  check('on the cobbles at the foot of the bank, in the gas, he stands against it: he has his grip there', bank.had && Math.abs(bank.p.position.z - (G.channel + 0.25)) < 0.02, `moved ${Math.abs(bank.p.position.z - (G.channel + 0.25)).toFixed(3)}`);
+  // On the ice he can fight it, and loses ground slowly; with it at his back he goes faster than he runs.
+  const against = stand(g.x, -2, reach(G.channel + 0.4 + 2) - 0.1, g.on, { move: new THREE.Vector3(0, 0, 1) });
+  const free = stand(g.x + 5, -2, reach(G.channel + 0.4 + 2) - 0.1, g.on, { move: new THREE.Vector3(0, 0, 1) });
+  check('running into a gust on the ice he makes far less way than he would beside it', against.had && !free.had && against.p.position.z - -2 < (free.p.position.z - -2) * 0.6, `${(against.p.position.z + 2).toFixed(2)} against ${(free.p.position.z + 2).toFixed(2)}`);
+  // What is drawn is what pushes: wherever a puff of a gust is drawn, there is gas by the rule; and the gust has a body there.
+  const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
+  let drawn = 0;
+  let wrong = 0;
+  for (let k = 0; k < 40; k++) {
+    const time = 3 + k * 0.37;
+    ch.update(time);
+    ch.group.traverse((o) => {
+      const sp = o as THREE.Sprite;
+      if (!sp.isSprite || !sp.visible) return;
+      const own = gusts.find((q) => Math.abs(sp.position.y - q.y) < 0.8 && Math.abs(sp.position.x - q.x) < 1.2 && (sp.position.z - q.z) * q.dz >= -0.01 && (sp.position.z - q.z) * q.dz <= q.length + 0.01);
+      if (!own) return;
+      drawn++;
+      const along = (sp.position.z - own.z) * own.dz;
+      // (Not at its very mouth: the last puffs of the fall of gas above come down there too, and are not the gust's.)
+      if (along < 1) return;
+      // (Nor a wisp too thin to see, at the very end of its run.)
+      if ((sp.material as THREE.SpriteMaterial).opacity < 0.1) return;
+      // (A puff strays a little from the line as it billows: so the rule is asked a hand either side of where it is drawn.)
+      const near = [along - 0.5, along, along + 0.5].filter((a) => a >= 0 && a <= own.length);
+      if (!near.some((a) => gasAt(own, time, a) && gustOn(gusts, time, own.x, own.y, own.z + own.dz * a, R.radius) === own)) wrong++;
+    });
+  }
+  check('what is drawn is what pushes: at every moment looked at, wherever a puff of a gust is drawn the rule has gas there and a body there is in the gust', drawn > 150 && wrong === 0, `${drawn} puffs looked at, ${wrong} wrong`);
 }
 
 // ---- The tiles ----

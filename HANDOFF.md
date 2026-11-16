@@ -1119,4 +1119,10 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   (tile 5), iceBlock 64, frostPipe 32 (not yet worn by anything: the `pipe` decor is plain colour), iceClear 32.
 - `LevelDef.motes` picks what drifts in the air apart from the theme; 'ice' is snow (world/motes.ts).
 - tests/coldmain.ts has `hop(from, to, jumpFrame, secondJumpAfter, brakeWithin, runUp)` for hops onto slick tops.
+- Gusts: `src/world/gusts.ts` (`JET_SPEED`, `GUST_ACCEL`, `gustsOf(decor)`, `gasAt`, `gasWidth`, `gustOn`, `blow`).
+  main.ts keeps `gusts` (set on level load) and `worldClock` (the frame's time, the same the chamber draws the puffs
+  by) and calls `blow(...)` on his velocity just before `player.update`. Because his own stopping (26 a second
+  squared on stone, a tenth of that on ice) is taken off in that update, a push of 12 is nothing on stone and a
+  shove on ice. In the level: `NORTH_BURSTS`, `SOUTH_BURSTS`, `FALL`, `GUST` in coldmain.ts; each burst is two jets,
+  the fall (drawn only) and the gust (with `push`, and `delay` = the fall's travel time).
 
