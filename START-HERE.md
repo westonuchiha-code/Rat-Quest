@@ -725,6 +725,30 @@ TO BE. NO RAYS, NO BEAMS, NO POISON FLUNG ACROSS THE ROOM. AND THERE IS NO BACK 
   on (0.7 radians a second: faster than he can run round the edge), and LEANS IN over the edge (up to 3.6) to reach
   him. Wherever he stands and waits, the middle and the far edge included, she is beside him in a few seconds and a
   leg comes down on him (tested at eight places).
+**VERSION THREE WAS THROWN OUT TOO (the owner, 2026-11-16, with a screenshot of the leg laid flat and swept).**
+His words: "this looks goofy as hell ... I'm telling you to use the ... models arms to attack and you're like
+inventing [things]. ... what is that coming out ... I guess it's supposed to be his leg cuz it's the same color but
+it looks totally detached from him and if this was attached to him in some way what is he a freaking Scorpion or a
+snake or something like he's supposed to be a spider the legs that are standing right there in front are the legs
+that should be attacking you know the imaginary back legs that are in the shadows or whatever ... we can use our
+imagination that those are holding up the spider and the legs that are in the light where you can see are the ones
+being used to attack ... Don't invent imaginary limbs that don't make any sense and stick them out into the middle
+of the Arena that's not an attack ... please think about what you're doing think about it don't just jump into
+developing something".
+**What that means (Claude's reading; a plan was put to him, NOT YET BUILT, and what is in the game is still version
+three):**
+- The same mistake three times: trying to make her blows reach the whole room, and inventing something to cross the
+  distance each time (legs as long as the room; rays; a limb laid flat at full stretch from a hip dropped to the
+  floor out in the dark, which is what his screenshot shows and why it looks like a tail with nothing joining it).
+- What he asked for from the start: THE FOUR LEGS THAT STAND IN THE LIGHT IN FRONT OF HER ARE THE ONES THAT ATTACK,
+  from where they stand, as a spider's legs move: lifted with the knee up and still joined to her, brought down on a
+  place; raked sideways across the floor still arched. Nothing lies flat, nothing reaches past what that leg could.
+- For that to read, the JOIN must be seen: her head and the roots of those legs lit at the edge of the light, not
+  black. (In every version her body was black and only loose limbs showed.)
+- She reaches only what her legs reach, so either the arena is made smaller (she fills one side; recommended), or
+  the far side is simply out of her reach. Her crawling round the rim was also an invention he did not ask for.
+- Show him still pictures of the poses for a yes or no BEFORE rebuilding the fight.
+
 She wakes when he stands on the floor (a scream, 1.9 s, the legs come out of the dark and are set down). Then, in a
 round that repeats: slams, stabs, a bite, slams, a bite, stabs.
 - **The slam and the sweep.** An outer leg is pulled up and forward; a red RING on the floor marks where it will
