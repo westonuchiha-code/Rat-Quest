@@ -19,11 +19,15 @@ import type { BodyPart, CanStand, HitHow } from './foe';
  * that's not fun at all." So: no rays, no poison. Her legs are a spider's legs, and SHE MOVES: she crawls round the
  * edge of the light to whichever side he is on, and leans in, so that there is no back of the room to sit in.
  *
- *   - She CRAWLS round the rim, in the dark, to face him. Wherever he stands she is soon beside him.
+ *   - (Version three had her crawl round the rim and lay a leg flat to sweep it. He threw that out too: "the legs that
+ *     are standing right there in front are the legs that should be attacking ... Don't invent imaginary limbs"; and,
+ *     asked about a smaller room: "you can make the spider bigger it never had to be that size". So she is VERY big,
+ *     she stays where she is with her face and her legs' roots in the light, and it is the four legs she stands on
+ *     that strike, from where they stand, still arched and joined to her. They reach to about the middle of the room.)
  *   - The SLAM and the SWEEP: an outer leg is pulled up and forward and comes down on where he stands (a ring marks
- *     it; two hearts, no shield stops it: get out of the ring). The foot is stuck a moment (hit it). Then the leg is
- *     laid out flat and SWEEPS across her front along the floor (one heart, no shield: jump it, or be out of its
- *     reach). Then the other leg, from the other side. Angry, each sweep comes back as well.
+ *     it; two hearts, no shield stops it: get out of the ring). The foot is stuck a moment (hit it). Then that foot
+ *     RAKES the floor round across her front, the leg still arched over it (one heart, no shield: jump the foot, or
+ *     be out of its way). Then the other leg, from the other side. Angry, each sweep comes back as well.
  *   - The STAB: an inner leg spikes down on where he stands (one heart; a shield stops it). The foot is stuck a
  *     moment. Two of them, one from each side; angry, four.
  *   - The BITE, when he is near her: her head rears, a ring marks the place, and she comes out of the dark and bites
@@ -43,54 +47,54 @@ export type WidowState =
   | 'reel' | 'dead';
 
 export const WIDOW = {
-  hp: 30,
-  radius: 2.4, // her head
+  hp: 54,
+  radius: 4.5, // her head
   rageAt: 0.5,
   rise: 1.9, // she wakes: this long before the first blow can start
   wait: [0.7, 1.2] as [number, number],
   waitRage: [0.35, 0.6] as [number, number],
   hurry: 0.8, // angry, a leg's wind-up is this much of its length (her bites and the stabs after the first are not hurried: there are more of them)
   out: 0.8, // how far past the edge of the light her place is
-  back: 5.5, // how far behind that her head waits
-  hipHigh: 3.4, // how high over the floor her hips are
-  hip: 3.0, // how far to each side of her middle an outer leg's hip is; an inner leg's is half that
+  back: 2.2, // how far behind that the middle of her head is: her face is in the light, where it is seen
+  hipHigh: 6.5, // how high over the floor her hips are
+  hip: 5.7, // how far to each side of her middle an outer leg's hip is; an inner leg's is half that
   // Getting to him.
-  crawl: 0.7, // how fast she goes round the rim (radians a second)
-  crawlRage: 1.0,
-  near: 0.3, // within this of his bearing she is beside him, and strikes
+  crawl: 0, // how fast she goes round the rim (radians a second): she does NOT (the owner: do not invent; she stays, and is big enough)
+  crawlRage: 0,
+  near: 4, // within this of his bearing she strikes: anywhere
   patience: 5, // ...and after this long (he will not stand still) she strikes from where she is
-  legReach: 11.5, // how far from its hip a leg reaches
-  lean: 3.6, // how far in over the edge she can lean to reach him
+  legReach: 21, // how far from its hip a leg reaches: they are the legs she stands on, and she is very big
+  lean: 0, // how far in over the edge she can lean to reach him: she does not
   // The slam.
-  slamR: 1.2,
-  slamWind: 0.95,
-  slamTrack: 0.55, // the ring follows him for this much of a wind-up, then holds
+  slamR: 1.6,
+  slamWind: 1.05,
+  slamTrack: 0.5, // the ring follows him for this much of a wind-up, then holds
   slamTime: 0.14,
   slamDamage: 2,
   slamStuck: 0.8,
   // The sweep.
-  legHalf: 0.75, // half the width of a leg lying on the floor
+  rakeR: 1.6, // the foot that rakes the floor: this far round it strikes
   sweepWind: 0.45,
-  sweepRate: 2.2, // radians a second
-  sweepRateRage: 2.7,
+  sweepRate: 1.4, // radians a second
+  sweepRateRage: 1.8,
   sweepTo: 1.05, // it sweeps to this angle on the far side (and lies there, still on the lit floor)
   sweepDamage: 1,
   sweepEnd: 0.5,
   // The bite.
-  biteReach: 10, // how far from her place her head can come: further off, it is her legs
-  biteR: 2.4, // (as wide as her head)
-  biteWind: 1.0,
-  biteTrack: 0.42,
+  biteReach: 12, // how far from her place her head can come: further off, it is her legs
+  biteR: 4.0, // (nearly as wide as her head)
+  biteWind: 1.4,
+  biteTrack: 0.4,
   biteTime: 0.14,
   biteDamage: 2,
   biteStuck: 1.6,
   withdraw: 0.6,
   bitesRage: 3,
   // The stab.
-  stabR: 0.9,
+  stabR: 1.0,
   stabWind: 0.62,
-  stabGap: 0.5, // the wind-up of each stab after the first
-  stabTrack: 0.5,
+  stabGap: 0.6, // the wind-up of each stab after the first
+  stabTrack: 0.4,
   stabTime: 0.12,
   stabDamage: 1,
   stabStuck: 0.9,
@@ -98,8 +102,8 @@ export const WIDOW = {
   stabsRage: 4,
   // Thrown down by a perfect guard.
   reel: 2.4,
-  reelReach: 11, // her head falls toward him, as far into the light as this...
-  reelShort: 3.6, // ...and this far short of him
+  reelReach: 12, // her head falls toward him, as far into the light as this...
+  reelShort: 5.8, // ...and this far short of him
   headDouble: 2, // her head takes this many times a blow's harm...
   legPart: 0.5, // ...and a leg this much of it: they are armoured, and there is a lot of her
 };
@@ -138,8 +142,9 @@ export class Widow {
   lean = 0;
   /** Which side the leg that is striking is on: +1 her left, -1 her right. */
   side: 1 | -1 = 1;
-  /** The angle of the striking leg along the floor (from the way she faces), while it lies there and sweeps. */
+  /** The angle (from the way she faces) and the distance from its hip of the striking leg's FOOT, while it rakes the floor. */
   angle = 0;
+  rho = 8;
   /** How long the wind-up she is in lasts. */
   windTime: number = WIDOW.slamWind;
   /** Where the slam, the stab or the bite comes down. */
@@ -159,7 +164,6 @@ export class Widow {
   private leanGoal = 0;
   private stepIn = 0;
   private headFrom = { x: 0, z: 0 };
-  private playerD = 5;
   private playerX = 0;
   private playerY = 0;
   private playerZ = 0;
@@ -205,11 +209,15 @@ export class Widow {
   dirOf(angle: number): [number, number] {
     return [Math.sin(this.facing + angle), Math.cos(this.facing + angle)];
   }
-  /** Where the tip of the leg that lies on the floor is: at its full reach along its angle. */
+  /** Where the foot that rakes the floor is. */
   get tip(): { x: number; z: number } {
     const h = this.hip(this.side);
     const [dx, dz] = this.dirOf(this.angle);
-    return { x: h.x + dx * WIDOW.legReach, z: h.z + dz * WIDOW.legReach };
+    return { x: h.x + dx * this.rho, z: h.z + dz * this.rho };
+  }
+  /** Her face is armoured: while her head is up, a sword only glances off it. It is when it lies on the floor that it can be hurt. */
+  deflects(_fromX: number, _fromZ: number, _how?: HitHow, part = -1): boolean {
+    return part < 0 && !this.headDown && this.alive;
   }
 
   get alive(): boolean {
@@ -249,7 +257,8 @@ export class Widow {
     if (this.state === 'slam') return this.stateTime >= 0.04;
     if (this.state === 'bite') return this.stateTime >= 0.05;
     if (this.state === 'stab') return this.stateTime >= 0.04;
-    return this.state === 'sweep';
+    // (The rake strikes once the foot is moving: not in the instant it starts, on one standing right by it.)
+    return this.state === 'sweep' && this.stateTime >= 0.12;
   }
   /** The shape of the blow she is giving, or winding up to (so a test view can draw what is coming). */
   get bite(): { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; at: BodyPart; from?: { x: number; z: number } } {
@@ -261,30 +270,20 @@ export class Widow {
     if (s === 'biteWind' || s === 'bite' || s === 'biteStuck') return { reach: 0, arc: Math.PI, damage: W.biteDamage, heavy: true, at: on(W.biteR), from };
     if (s === 'stabWind' || s === 'stab' || s === 'stabStuck') return { reach: 0, arc: Math.PI, damage: W.stabDamage, at: on(W.stabR), from };
     if (s === 'slamWind' || s === 'slam' || s === 'slamStuck') return { reach: 0, arc: Math.PI, damage: W.slamDamage, heavy: true, at: on(W.slamR), from };
-    // The leg along the floor: a strip from its hip to its tip, as wide as the leg wherever he stands along it.
-    const h = this.hip(this.side);
-    return { reach: W.legReach, arc: Math.atan2(W.legHalf, Math.max(0.8, this.playerD)), damage: W.sweepDamage, heavy: true, ground: true, at: { x: h.x, z: h.z, r: 0 } };
+    // The raking foot: round where it is on the floor, and nowhere else (the leg over it is arched, off the floor).
+    const f = this.tip;
+    return { reach: 0, arc: Math.PI, damage: W.sweepDamage, heavy: true, ground: true, at: { x: f.x, z: f.z, r: W.rakeR }, from };
   }
   get biteDir(): number {
     return this.facing + this.angle;
   }
-  /** The pieces of her in the light besides her head: a foot stuck in the floor, or a leg lying along it. */
+  /** The pieces of her on the floor besides her head: a foot stuck in it, or resting on it where it stopped. */
   get parts(): BodyPart[] {
-    const W = WIDOW;
     const s = this.state;
-    if (s === 'slamStuck') return [{ x: this.spot.x, z: this.spot.z, r: 0.9 }];
-    if (s === 'stabStuck') return [{ x: this.spot.x, z: this.spot.z, r: 0.8 }];
-    // (Laid out before a sweep it is solid too: it cannot be laid ON him. He is put to one side of it.)
-    if (s !== 'sweepEnd' && s !== 'sweepWind') return [];
-    const h = this.hip(this.side);
-    const [dx, dz] = this.dirOf(this.angle);
-    const out: BodyPart[] = [];
-    for (let d = 1.5; d <= W.legReach; d += 1.1) {
-      const x = h.x + dx * d;
-      const z = h.z + dz * d;
-      if (Math.hypot(x - this.field.x, z - this.field.z) <= this.field.r + 0.5) out.push({ x, z, r: W.legHalf });
-    }
-    return out;
+    if (s === 'slamStuck' || s === 'sweepWind') return [{ x: this.spot.x, z: this.spot.z, r: 1.2 }];
+    if (s === 'stabStuck') return [{ x: this.spot.x, z: this.spot.z, r: 1 }];
+    if (s === 'sweepEnd') return [{ x: this.tip.x, z: this.tip.z, r: 1.2 }];
+    return [];
   }
 
   private enter(state: WidowState): void {
@@ -496,9 +495,10 @@ export class Widow {
         break;
       case 'slamStuck':
         if (t >= W.slamStuck) {
-          // It is laid out flat along the floor, the way it points, and will sweep across her front from there.
+          // Its foot will rake the floor from where it stuck, round its hip, across her front.
           const h = this.hip(this.side);
           this.angle = wrap(Math.atan2(this.spot.x - h.x, this.spot.z - h.z) - this.facing);
+          this.rho = Math.hypot(this.spot.x - h.x, this.spot.z - h.z);
           // (Across to the far side; or, if it came down across there already, back to its own side, less far: it
           // must end lying on the lit floor.)
           this.sweepGoal = this.angle * this.side > -0.2 ? -this.side * W.sweepTo : this.side * W.sweepTo * 0.5;
@@ -614,8 +614,6 @@ export class Widow {
         break;
       }
     }
-    const h = this.hip(this.side);
-    this.playerD = Math.hypot(px - h.x, pz - h.z);
     // A blow from above finds him at whatever height he is: jumping is the answer to the sweep, not to these.
     this.y = this.fromAbove && this.alive ? Math.max(this.floorY, Math.min(this.playerY, this.floorY + 6)) : this.floorY;
   }

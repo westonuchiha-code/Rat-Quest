@@ -56,7 +56,7 @@ function step(w: Widow, p: PlayerController, seen: Seen, inp: Partial<PlayerInpu
   const ev = events();
   resolveCombat(p, [w], ev);
   seen.sounds.push(...w.events.splice(0));
-  if (ev.playerResult === 'hit' || ev.playerResult === 'killed') seen.hitBy.push(`${w.state}@${w.stateTime.toFixed(2)}`);
+  if (ev.playerResult === 'hit' || ev.playerResult === 'killed') seen.hitBy.push(`${w.state}@${w.stateTime.toFixed(2)}[d${Math.hypot(p.position.x - w.spot.x, p.position.z - w.spot.z).toFixed(1)} mid${Math.hypot(p.position.x - A.x, p.position.z - A.z).toFixed(1)} head${(Math.hypot(p.position.x - w.x, p.position.z - w.z) - w.radius).toFixed(1)} ${inp.move ? 'mv' : inp.attackPressed ? 'atk' : inp.jumpHeld ? 'jmp' : '-'} ${w.raging ? 'R' : ''}]`);
   if (ev.playerResult) seen.results.push(ev.playerResult);
   if (p.hp < hp) seen.hits += hp - p.hp;
   if (ev.enemyHit) seen.struck++;
@@ -87,7 +87,8 @@ let fleeFrom = '';
 const fleeDir = new THREE.Vector3();
 const sweepGap = (w: Widow, p: PlayerController): number => {
   const h = w.hip(w.side);
-  if (Math.hypot(p.position.x - h.x, p.position.z - h.z) > W.legReach + 1) return Infinity;
+  // (Only the foot strikes: he need only mind it if he is about as far from its hip as it is.)
+  if (Math.abs(Math.hypot(p.position.x - h.x, p.position.z - h.z) - w.rho) > W.rakeR + 1) return Infinity;
   const mine = Math.atan2(p.position.x - h.x, p.position.z - h.z) - w.facing;
   return Math.abs(Math.atan2(Math.sin(mine - w.angle), Math.cos(mine - w.angle)));
 };
@@ -103,7 +104,9 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     fleeDir.set(p.position.x - w.spot.x, 0, p.position.z - w.spot.z);
     // (Standing on its very middle, or with the edge of the light behind him: toward the middle of the room.)
     const ahead = (): number => Math.hypot(p.position.x + fleeDir.x * 3.6 - A.x, p.position.z + fleeDir.z * 3.6 - A.z);
-    if (fleeDir.length() < 0.25 || (fleeDir.normalize(), ahead() > A.r - 0.6)) fleeDir.set(A.x - p.position.x, 0, A.z - p.position.z);
+    // (...or her head in the way: it is as solid as a wall.)
+    const intoHer = (): boolean => Math.hypot(p.position.x + fleeDir.x * 3.6 - w.x, p.position.z + fleeDir.z * 3.6 - w.z) < w.radius + 1.5;
+    if (fleeDir.length() < 0.25 || (fleeDir.normalize(), ahead() > A.r - 0.6) || intoHer()) fleeDir.set(A.x - p.position.x, 0, A.z - p.position.z);
     if (fleeDir.length() < 1) fleeDir.set(1, 0, 0);
     fleeDir.normalize();
   }
@@ -134,7 +137,16 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   const w = widow();
   check('the Widow starts just past the south edge of the light in the Long Drop\'s arena, facing its middle', Math.abs(w.theta) < 1e-9 && Math.abs(w.px - A.x) < 1e-9 && Math.abs(w.pz - (A.z + A.r + W.out)) < 1e-9 && Math.abs(Math.abs(w.facing) - Math.PI) < 1e-9 && w.field.r === A.r && WIDOW_OUT === W.out);
   check('the level asks for her to be beaten, and its way out is at the side of the light', def.goals.length === 1 && def.goals[0].type === 'defeat' && Math.abs(def.exit.z - A.z) < 1 && def.exit.x > A.x + A.r - 1);
-  check('she waits with her head back in the dark, further out than his sword can reach from the edge of the light', fromMiddle(w.x, w.z) - w.radius - (A.r - R) > 3, `${(fromMiddle(w.x, w.z) - w.radius - (A.r - R)).toFixed(1)} beyond where he can stand`);
+  {
+    // Her face is in the light, where it is seen; while it is up a sword only glances off it.
+    const q = ratAt(0, -(A.r - 3.2));
+    const o = woken(q);
+    face(q, o.w.x, o.w.z);
+    const hp = o.w.hp;
+    let glanced = false;
+    for (let i = 0; i < 40; i++) glanced ||= step(o.w, q, o.seen, { attackPressed: i % 6 === 0 }).glanced === o.w;
+    check('her face is in the light at the edge of the floor, where it is seen; while it is up a sword only glances off it, and does her no harm', fromMiddle(o.w.x, o.w.z) - o.w.radius < A.r && glanced && o.w.hp === hp, `${(A.r - (fromMiddle(o.w.x, o.w.z) - o.w.radius)).toFixed(1)} of her head over the floor`);
+  }
   const seen = fresh();
   for (let i = 0; i < 60; i++) w.update(DT, A.x, 20, A.z, true);
   check('she sleeps while he is still falling', w.state === 'lurk' && !w.awake);
@@ -161,44 +173,39 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   check('under the game\'s own turn-taking she takes her turns: her first blow comes within a few seconds of her waking', struck && o.w.ready !== undefined);
 }
 
-// ---- There is no back of the room ----
+// ---- How far she reaches ----
 {
-  // Wherever he stands and waits, she crawls round the rim to that side, leans in, and a leg comes down on him.
-  const safe: string[] = [];
-  let furthest = 0;
-  let stepped = false;
-  let inLight = Infinity;
-  for (const [x, north] of [[0, 11], [9, 6], [-10, 2], [0, 0], [-6, -9], [7, -7], [0.5, 12.2], [-12, 0]]) {
+  // She stays where she is: it is the legs she stands on that strike, and they are long enough for the near two
+  // thirds of the room.
+  const hit: string[] = [];
+  for (const [x, north] of [[0, 0], [6, -4], [-8, -2], [0, -8], [4, 3], [-5, 2.5]]) {
     const p = ratAt(x, north);
-    const w = widow();
-    const seen = fresh();
+    const { w, seen } = woken(p);
     const hp = p.hp;
-    for (let i = 0; i < 60 * 14 && p.hp === hp; i++) {
-      step(w, p, seen);
-      inLight = Math.min(inLight, fromMiddle(w.x, w.z) - w.radius - A.r);
-    }
-    if (hp - p.hp !== W.slamDamage || seen.hitBy[0]?.slice(0, 4) !== 'slam') safe.push(`${x},${north}: ${seen.hitBy.join()}, ${hp - p.hp}`);
-    furthest = Math.max(furthest, Math.hypot(p.position.x - w.px, p.position.z - w.pz));
-    stepped ||= seen.sounds.includes('step');
+    until(w, p, 'slamStuck', seen);
+    if (hp - p.hp !== W.slamDamage || Math.hypot(w.spot.x - w.hip(w.side).x, w.spot.z - w.hip(w.side).z) > W.legReach) hit.push(`${x},${north}: ${hp - p.hp}`);
   }
-  check('THERE IS NO BACK OF THE ROOM: wherever he stands and waits (the far side from where she starts, either side, the middle, the very edge), she comes round the rim to him and her leg comes down on him', safe.length === 0, safe.join('; '));
-  check('...she is seen and heard to go round (her feet), and she is beside him when she strikes: never more than a leg and a lean away', stepped && furthest <= W.legReach + W.lean + 1, `at most ${furthest.toFixed(1)} from her place`);
-  check('...her head stays out in the dark all the while', inLight > 0.5, `${inLight.toFixed(1)} past the edge at the nearest`);
-  // She keeps to the rim: her place is never further into the light than her lean.
-  const p = ratAt(0, 11);
+  check('the legs she stands on reach the near two thirds of the room: wherever he stands still there (under her, the middle, either side), one comes down on him', hit.length === 0, hit.join('; '));
+  const far: string[] = [];
+  for (const [x, north] of [[0, 11], [6, 9.5], [-7, 9]]) {
+    const p = ratAt(x, north);
+    const { w, seen } = woken(p);
+    const hp = p.hp;
+    until(w, p, 'slamStuck', seen);
+    if (hp !== p.hp || Math.hypot(w.spot.x - p.position.x, w.spot.z - p.position.z) < W.slamR + R) far.push(`${x},${north}`);
+  }
+  check('the far third is out of their reach: the leg comes down as far out as it can, short of him (what comes for him there is her young: not built yet)', far.length === 0, far.join('; '));
+  const p = ratAt(0, 6);
   const w = widow();
   const seen = fresh();
-  let deepest = Infinity;
-  let turned = 0;
-  let last = w.theta;
+  const at = w.theta;
+  let moved = 0;
   for (let i = 0; i < 60 * 20; i++) {
     step(w, p, seen, i % 600 < 300 ? { move: new THREE.Vector3(1, 0, 0), run: true } : { move: new THREE.Vector3(-1, 0, 0.3), run: true });
-    deepest = Math.min(deepest, fromMiddle(w.px, w.pz) - A.r);
-    turned = Math.max(turned, Math.abs(Math.atan2(Math.sin(w.theta - last), Math.cos(w.theta - last))) / DT);
-    last = w.theta;
+    moved = Math.max(moved, Math.abs(w.theta - at), Math.abs(w.lean));
     if (p.dead) p.respawn();
   }
-  check('...she keeps to the rim (her place is never further in than her lean), and goes round it no faster than a crawl', deepest >= W.out - W.lean - 1e-6 && turned <= W.crawl + 1e-6, `deepest ${deepest.toFixed(2)}; fastest ${turned.toFixed(2)} rad/s`);
+  check('she does not move from her place, whatever he does: no crawling, no leaning in', moved === 0);
 }
 
 // ---- The slam ----
@@ -236,24 +243,34 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   check('the foot stuck in the floor can be struck, and it hurts her: half of what the blow would do', hit.blows >= 1 && hit.took > 0 && hit.took <= hit.blows * 1.5, `${hit.blows} blows, ${hit.took} off her`);
 }
 
-// ---- The sweep ----
+// ---- The rake ----
 {
-  const upTo = (state: WidowState, act: 'stand' | 'jump' | 'shield', place?: [number, number]): { w: Widow; p: PlayerController; seen: Seen; lost: number } => {
+  /** Where the foot is about to be: `ahead` radians on along its sweep, `nearer` that much nearer its hip. */
+  const onPath = (w: Widow, ahead: number, nearer = 0): [number, number] => {
+    const dir = w.angle * w.side > -0.2 ? -w.side : w.side;
+    const h = w.hip(w.side);
+    const [dx, dz] = w.dirOf(w.angle + dir * ahead);
+    return [h.x + dx * (w.rho - nearer), h.z + dz * (w.rho - nearer)];
+  };
+  const upTo = (act: 'stand' | 'jump' | 'shield', nearer = 0): { w: Widow; p: PlayerController; seen: Seen; lost: number } => {
     const p = ratAt(4, -5);
     const { w, seen } = woken(p);
-    until(w, p, 'slamStuck', seen, () => keepRules(w, p) ?? {});
-    if (place) put(p, place[0], place[1]);
-    face(p, w.hip(w.side).x, w.hip(w.side).z);
+    until(w, p, 'sweepWind', seen, () => keepRules(w, p) ?? {});
+    const [x, z] = onPath(w, 0.35, nearer);
+    p.position.set(x, 0, z);
+    p.prevPosition.copy(p.position);
+    p.velocity.set(0, 0, 0);
+    face(p, w.px, w.pz);
     const before = p.hp;
-    until(w, p, state, seen, () => (act === 'jump' ? keepRules(w, p) ?? {} : act === 'shield' ? { guardHeld: w.state === 'sweep' || (w.state === 'sweepWind' && w.stateTime > 0.1) } : {}));
+    until(w, p, 'sweepEnd', seen, () => (act === 'jump' ? keepRules(w, p) ?? {} : act === 'shield' ? { guardHeld: true } : {}));
     return { w, p, seen, lost: before - p.hp };
   };
-  const stood = upTo('sweepEnd', 'stand');
-  check('THE SWEEP: the leg is laid out flat from where it struck and swept along the floor across her front: one heart to one who only stands in its way', stood.lost === W.sweepDamage && stood.seen.sounds.includes('sweepWind') && stood.seen.sounds.includes('sweep'), `${stood.lost}`);
-  check('...a jump as it comes clears it', upTo('sweepEnd', 'jump').lost === 0);
-  check('...a shield held up does not stop it', upTo('sweepEnd', 'shield').lost === W.sweepDamage);
-  check('...and it is only as long as her leg: one who is out of its reach is not touched', upTo('sweepEnd', 'stand', [-8, 9]).lost === 0);
-  check('...lying where it stopped, the leg is a row of pieces of her to strike, from its hip to its tip', stood.w.state === 'sweepEnd' && stood.w.parts.length >= 5 && stood.w.open && stood.w.parts.every((q) => Math.hypot(q.x - stood.w.hip(stood.w.side).x, q.z - stood.w.hip(stood.w.side).z) <= W.legReach + 1e-6), `${stood.w.state}; ${stood.w.parts.length} pieces; angle ${stood.w.angle.toFixed(2)}`);
+  const stood = upTo('stand');
+  check('THE RAKE: the foot that stuck is pulled free and rakes the floor round across her front, the leg still arched over it: one heart to one who only stands in its way', stood.lost === W.sweepDamage && stood.seen.sounds.includes('sweepWind') && stood.seen.sounds.includes('sweep'), `${stood.lost}`);
+  check('...a jump as it comes clears it', upTo('jump').lost === 0);
+  check('...a shield held up does not stop it', upTo('shield').lost === W.sweepDamage);
+  check('...it is the foot that strikes, not the whole leg: under the arch of it, nearer her, he is not touched', upTo('stand', 6).lost === 0);
+  check('...where it stops, the foot rests on the floor: a piece of her to strike', stood.w.state === 'sweepEnd' && stood.w.parts.length === 1 && Math.hypot(stood.w.parts[0].x - stood.w.tip.x, stood.w.parts[0].z - stood.w.tip.z) < 1e-9 && stood.w.open && Math.abs(Math.hypot(stood.w.tip.x - stood.w.hip(stood.w.side).x, stood.w.tip.z - stood.w.hip(stood.w.side).z) - stood.w.rho) < 1e-6);
   const first = stood.w.side;
   stood.seen.states.length = 0;
   until(stood.w, stood.p, 'idle', stood.seen, () => keepRules(stood.w, stood.p) ?? {}, 1500);
@@ -323,7 +340,7 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   check('...he has time to run back to her head and strike it more than once, and each blow counts double', hit.blows >= 2 && hit.took >= hit.blows * W.headDouble, `${hit.blows} blows, ${hit.took} off her`);
   until(away.w, away.p, 'idle', away.seen);
   for (let i = 0; i < 40; i++) step(away.w, away.p, away.seen);
-  check('...then her head goes back into the dark, out of reach', fromMiddle(away.w.x, away.w.z) - away.w.radius > A.r + 0.5 || away.w.state !== 'idle');
+  check('...then her head goes back up to its place at the edge', away.w.state !== 'idle' || Math.hypot(away.w.x - away.w.home.x, away.w.z - away.w.home.z) < 0.6);
   const far = bitten(0, 0, () => ({}));
   check('her head only comes so far: to one who keeps to the middle of the room it is her legs, never her jaws', !far.bit && far.seen.states.filter((s) => s === 'slamWind').length >= 3 && !far.seen.states.includes('biteWind'));
 }
@@ -378,9 +395,12 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
         if (near) {
           face(p, near.x, near.z);
           const toward = new THREE.Vector3(near.x - p.position.x, 0, near.z - p.position.z);
-          inp = toward.length() > near.r + 1.2 ? { move: toward.normalize(), run: true } : { attackPressed: i % 5 === 0 };
+          // (He is not greedy: he stops swinging a little before she moves again, so that he is free to get away.)
+          const lasts = { slamStuck: W.slamStuck, sweepEnd: W.sweepEnd, stabStuck: W.stabStuck, biteStuck: W.biteStuck, reel: W.reel }[w.state as 'slamStuck'] ?? 1;
+          const greedy = lasts - w.stateTime < 0.35;
+          inp = toward.length() > near.r + 1.2 ? { move: toward.normalize(), run: true } : greedy ? {} : { attackPressed: i % 5 === 0 };
         }
-      } else if (fights && (w.state === 'idle' || w.state === 'withdraw')) {
+      } else if (w.state === 'idle' || w.state === 'withdraw') {
         // Between blows he goes to stand in front of her, within reach of her head.
         const home = new THREE.Vector3(w.px + Math.sin(w.facing) * 6.5 - p.position.x, 0, w.pz + Math.cos(w.facing) * 6.5 - p.position.z);
         if (home.length() > 1) inp = { move: home.normalize(), run: true };
@@ -396,7 +416,7 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   check('...it is a real fight: over a minute of it, and not a long siege', runs.every((r) => r.seconds > 60 && r.seconds < 240), runs.map((r) => r.seconds.toFixed(0)).join());
   check('...he is never outside her light, and her head is never in it but to bite or when she is thrown down', runs.every((r) => r.out <= A.r - R + 1e-6 && r.headIn === 0), runs.map((r) => `${r.out.toFixed(2)}, ${r.headIn}`).join('; '));
   const idle = fight(0.5, false);
-  check('one who only stands there is killed, and quickly: she is not to be waited out', idle.died && !idle.won && idle.seconds < 40, `${idle.seconds.toFixed(0)} s`);
+  check('one who stays within her reach and does nothing about her blows (he only walks back to his place after each) is killed, and quickly', idle.died && !idle.won && idle.seconds < 45, `${idle.seconds.toFixed(0)} s`);
   const p = ratAt(0, 2);
   const w = widow();
   const seen = fresh();
@@ -429,7 +449,6 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   let under = 0;
   let bad = 0;
   let stretched = 0;
-  let lifted = 0;
   const count: Record<string, number> = {};
   for (let i = 0; i < 60 * 90; i++) {
     const a = i / 400;
@@ -445,7 +464,6 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
         if (q.y < -1e-6) under++;
       }
       stretched = Math.max(stretched, leg.hip.distanceTo(leg.knee) - BONE, leg.knee.distanceTo(leg.foot) - BONE);
-      if (w.crawling !== 0 && leg.foot.y > 0.6) lifted++;
     }
     const s = w.state;
     const outer = legs.find((l) => !l.inner && l.side === w.side)!;
@@ -453,9 +471,8 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
     if (s === 'slamStuck') footOff = Math.max(footOff, Math.hypot(outer.foot.x - w.spot.x, outer.foot.z - w.spot.z) + Math.abs(outer.foot.y));
     if (s === 'sweep' || s === 'sweepEnd') {
       const h = w.hip(w.side);
-      const [dx, dz] = w.dirOf(w.angle);
-      // (Foot at its tip, hip at its hip, and its knee low and on the line between: the leg LIES where it strikes.)
-      flatOff = Math.max(flatOff, Math.hypot(outer.foot.x - w.tip.x, outer.foot.z - w.tip.z), Math.hypot(outer.hip.x - h.x, outer.hip.z - h.z), Math.abs((outer.knee.x - h.x) * dz - (outer.knee.z - h.z) * dx), outer.knee.y - 1.6);
+      // (Its foot where the rules have it striking, on the floor; its hip at her shoulder, high; its knee higher than its foot: still a leg.)
+      flatOff = Math.max(flatOff, Math.hypot(outer.foot.x - w.tip.x, outer.foot.z - w.tip.z), Math.hypot(outer.hip.x - h.x, outer.hip.z - h.z), outer.foot.y - 0.3, W.hipHigh - 0.5 - outer.hip.y, 1 - outer.knee.y);
     }
     if (s === 'stabStuck') stabOff = Math.max(stabOff, Math.hypot(inner.foot.x - w.spot.x, inner.foot.z - w.spot.z) + Math.abs(inner.foot.y));
     if (s === 'slamWind' || s === 'stabWind' || s === 'biteWind') ringOff = Math.max(ringOff, m.ringAt ? Math.hypot(m.ringAt.x - w.spot.x, m.ringAt.z - w.spot.z) : 99);
@@ -464,10 +481,10 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
     if (w.headDown && w.stateTime > 0.3 && m.headPosition.y > w.radius) headOff = 99;
   }
   check('her model, through ninety seconds of her fighting one who keeps moving round her room: a slamming leg\'s foot is drawn stuck in the floor where the rules have it', (count.slamStuck ?? 0) > 20 && footOff < 1e-6, `${footOff.toFixed(4)}`);
-  check('...a sweeping leg is drawn lying along the floor on the line it strikes along, from its hip to its tip', (count.sweep ?? 0) > 20 && flatOff < 1e-6, `${flatOff.toFixed(4)}`);
+  check('...a raking leg is drawn with its foot on the floor where the rules have it striking, and the leg arched up from it to her shoulder: joined to her, never laid flat', (count.sweep ?? 0) > 20 && flatOff < 1e-6, `${flatOff.toFixed(4)}`);
   check('...a stabbing foot is drawn stuck where it struck, and the ring on the floor is where each blow will land and nowhere else', (count.stabStuck ?? 0) > 20 && stabOff < 1e-6 && ringOff < 1e-6, `${stabOff.toFixed(4)}; ring ${ringOff.toFixed(4)}`);
   check('...her head is drawn where the sword meets it, and is down on the floor when the rules say it is down', headOff < 1e-6, `${headOff.toFixed(4)}`);
-  check('...no leg is ever stretched past its bones, under the floor, or nowhere; and she lifts her feet as she goes round', stretched < 0.02 && under === 0 && bad === 0 && lifted > 30, `stretched ${stretched.toFixed(3)}; ${under} under the floor; ${bad} bad numbers; ${lifted} lifted`);
+  check('...no leg is ever stretched past its bones, under the floor, or nowhere', stretched < 0.02 && under === 0 && bad === 0, `stretched ${stretched.toFixed(3)}; ${under} under the floor; ${bad} bad numbers`);
   check('...and all of what she does was seen in that time', ['slamWind', 'slam', 'slamStuck', 'sweep', 'sweepEnd', 'stabWind', 'stabStuck', 'idle'].every((s) => (count[s] ?? 0) > 0), Object.keys(count).join());
 }
 

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,910 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,909 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -761,36 +761,39 @@ Ocarina of Time. But: "My imagination for this battle though was how I was descr
 **So the direction is: THE SAME ARENA, A MUCH BIGGER SPIDER** whose own standing front legs are big enough to reach
 well into it, her front LIT so the legs are seen to join her, and (next) baby spiders from the far side to keep him
 moving and bring him toward her; perhaps a second spider on the other side.
-**Where it stands:** a TRY-OUT only, shown to him as still pictures for a yes or no before the fight is rebuilt:
-`#view&who=widowmock&pose=rest|raise|slam|rake|bite&big=1.9` draws the present model 1.9 times its size beside the
-same floor, held in a pose (viewer.ts). For it the model was given: light that reaches well past the floor's edge
-(`lightAt`), so her head and leg roots show; `lay()` that works whatever she is drawn inside; and an optional `rake`
-foot place. THE GAME'S FIGHT IS STILL VERSION THREE (crawling, the leg laid flat): not yet replaced.
-
-She wakes when he stands on the floor (a scream, 1.9 s, the legs come out of the dark and are set down). Then, in a
-round that repeats: slams, stabs, a bite, slams, a bite, stabs.
-- **The slam and the sweep.** An outer leg is pulled up and forward; a red RING on the floor marks where it will
-  come down, follows him, then holds (it beats brighter once it has stopped following). The leg comes down on it: 2
-  hearts, no shield stops it, a jump does not get him out of it: GET OUT OF THE RING. The foot is stuck 0.8 s (hit
-  it). Then the leg is LAID OUT FLAT along the floor (it is solid: it cannot be laid on him) and SWEEPS across her
-  front: 1 heart, no shield: JUMP IT, or be out of its reach. It lies where it stops for a moment (hit it). Then the
-  other leg does the same from the other side.
+**VERSION FOUR IS BUILT (2026-11-16). He was shown stills of the bigger spider and said "Good continue".**
+THE RULE NOW: she is VERY big (her head 4.5 in radius, her legs reaching 21), she STAYS WHERE SHE IS at the south
+edge with her face and the roots of her legs IN THE LIGHT, and IT IS THE FOUR LEGS SHE STANDS ON THAT STRIKE, from
+where they stand, still arched and joined to her. Nothing lies flat, nothing is flung, she does not crawl or lean
+(`crawl` and `lean` are 0; the code for them is still there and does nothing). Do not shrink the arena.
+She wakes when he stands on the floor (a scream, 1.9 s). Then, in a round that repeats: slams, stabs, a bite,
+slams, a bite, stabs.
+- **The slam.** An outer leg lifts from where it stands; a red RING on the floor marks where it will come down,
+  follows him, then holds (brighter once it has stopped following). The leg comes down on it: 2 hearts, no shield
+  stops it, a jump does not get him out of it: GET OUT OF THE RING. Its foot is stuck 0.8 s (hit it).
+- **The rake.** That foot is pulled free and RAKES the floor round its hip across her front, the leg still arched
+  over it: 1 heart, no shield: JUMP THE FOOT, or be out of its way (under the arch of the leg, nearer her, he is
+  not touched: only the foot strikes; and it cannot strike in the instant it starts). Where it stops, the foot
+  rests a moment (hit it). Then the other leg does the same from the other side.
 - **The stab.** An inner leg spikes down on a small RING marked on him: 1 heart; a shield stops it; or step away.
-  Two of them, one from each side. The foot is stuck a moment (but strike at it while another stab is coming and
-  that one catches him).
-- **The bite**, only when he is within 10 of her place: her head rears, a big RING marks the place, and she comes
-  out of the dark and bites down on it: 2 hearts, no shield. Her head then LIES IN THE LIGHT for 1.6 s: the great
-  opening. One who keeps to the middle of the room is never bitten: it is her legs for him.
-- **A perfect guard** against anything throws her down: her head falls into the light near him and lies 2.4 s.
-- **Harm to her:** a blow on a leg counts HALF, on her head DOUBLE. 30 health. Angry below half: she crawls faster,
-  leg wind-ups are a fifth shorter, each sweep comes BACK as well (two jumps), four stabs, three bites, less rest.
-- A rat who keeps to the rules and strikes what lies in the light beats her in 65 to 75 seconds and loses a heart or
-  two doing it (greedy blows at a lying leg are punished by the next slam); one who stands still dies in 17 s.
+  Two, one from each side (but strike at a stuck foot while another stab is coming and that one catches him).
+- **The bite**, when he is within 12 of her place: her head rears, a big RING marks the place, and it comes down on
+  it: 2 hearts, no shield. Her head then LIES ON THE FLOOR for 1.6 s: the great opening.
+- **Her face is armoured:** while her head is up, a sword only glances off it (`deflects`). It can be hurt only
+  when it lies on the floor (after a bite, or thrown down by a perfect guard: 2.4 s).
+- **Harm to her:** a blow on a foot counts HALF, on her head DOUBLE. 54 health. Angry below half: leg wind-ups a
+  fifth shorter, each rake comes BACK as well, four stabs, three bites, less rest.
+- **How far she reaches:** her legs cover the near two thirds of the room (tested at six places); THE FAR THIRD IS
+  OUT OF HER REACH. That is on purpose for now: the owner's answer is HER YOUNG (baby spiders coming out of the dark
+  at the far side to keep him moving and bring him to her), or a second spider on the other side. NOT BUILT YET:
+  until then one who stays at the far edge is safe (and cannot hurt her from there).
+- A rat who keeps to the rules, strikes what is on the floor and is not greedy beats her in about two minutes,
+  unhurt; one who stays in her reach and does nothing about her blows dies in 12 s.
 **How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
 each, eight red eyes, a broad body tapering back into the dark, four legs of two bones with a knuckle at the knee
-and a claw. As she goes round the rim she lifts and sets down her feet in turn. The light in
-the room is a pool on the floor, so each piece is only as bright as the place it is in: past the edge or high over
-the floor she is black, and only her eyes show. She is drawn in the world's own places exactly where the rules have
+and a claw. Everything goes by one number (`SIZE`, from `legReach`). The light in
+the room is a pool on the floor, but it reaches well past the floor's edge and up (`lightAt`): her face and where
+her legs join her are SEEN, and she fades back into the dark behind. She is drawn in the world's own places exactly where the rules have
 her (tested: a stuck foot is where the rules have it, a sweeping leg lies on the line it strikes along from hip to
 tip, the ring on the floor is where each blow will land, her head is where the sword meets it).
 **In the game:** her name and health show along the bottom; the level's goal is "Beat the Widow"; the WAY OUT is at
@@ -808,8 +811,8 @@ down again. She keeps the health she had.
   scene is the same one every level uses, but it has not been watched here).
 - Her sounds are her own now (below), but NOBODY HAS HEARD THEM: they are drawn by sums and checked for loudness,
   pitch and length, not by ear. Tell me which are wrong.
-- The game's view looks down at him, so most of her (her head high in the dark, her knees) is at the top edge of
-  the picture or off it. What he must read is on the floor (the line, the rings, the legs and head when down), and
+- The game's view looks down at him, so what shows of her in play is her legs coming down from the top of the
+  picture; her head and body are mostly above it (she is far bigger now, so this matters more). What he must read is on the floor (the line, the rings, the legs and head when down), and
   that is all in view. A view that pulls back in this room would show her better; the owner's rule is that the
   view does not TURN by itself, so that is his to ask for.
 - Her legs are plain bars with a knuckle and a claw: they could do with hair or markings.

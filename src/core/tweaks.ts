@@ -170,7 +170,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The Widow', path: 'widow.legPart', label: 'A blow on a foot counts this much', min: 0, max: 2, step: 0.05 },
   { group: 'The Widow', path: 'widow.headDouble', label: 'A blow on her head counts this many times', min: 0.5, max: 5, step: 0.5 },
   { group: 'The Widow', path: 'widow.crawl', label: 'How fast she goes round the rim', min: 0, max: 3, step: 0.05 },
-  { group: 'The Widow', path: 'widow.legReach', label: 'How far a leg reaches', min: 4, max: 20, step: 0.5 },
+  { group: 'The Widow', path: 'widow.legReach', label: 'How far a leg reaches', min: 4, max: 30, step: 0.5 },
   { group: 'The Widow', path: 'widow.slamWind', label: 'Warning before the slam (the ring)', min: 0.3, max: 2.5, step: 0.05 },
   { group: 'The Widow', path: 'widow.slamTrack', label: 'How much of that the ring follows him', min: 0, max: 0.95, step: 0.05 },
   { group: 'The Widow', path: 'widow.slamDamage', label: 'Slam damage (hearts)', min: 0, max: 5, step: 1 },
