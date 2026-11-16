@@ -1,7 +1,7 @@
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildCouch } from './couchModel';
-import { buildKeg, buildMugRow, buildStool, buildTable } from './tavernModels';
+import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1018,6 +1018,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       piece.traverse((o) => {
         if (o.userData.flame) swayers.push({ obj: o, axis: 'z', amount: 0.22, speed: 7, phase: d.x + d.z });
       });
+    } else if (d.kind === 'rug' || d.kind === 'dancefloor' || d.kind === 'bulbs' || d.kind === 'bottles' || d.kind === 'dartboard') {
+      // More of the Club's dressing (tavernModels.ts): all of it only drawn.
+      const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat };
+      const piece = d.kind === 'rug' ? buildRug(mats, { r: d.r, w: d.w, d: d.d, colors: d.colors })
+        : d.kind === 'dancefloor' ? buildDanceFloor(d.nx, d.nz, d.tile, d.colors)
+        : d.kind === 'bulbs' ? buildBulbs(d.x1 - d.x, d.z1 - d.z, d.sag, d.count)
+        : d.kind === 'bottles' ? buildBottles(mats, d.width) : buildDartboard(mats);
+      piece.position.set(d.x, d.y, d.z);
+      if (d.kind === 'rug' || d.kind === 'bottles' || d.kind === 'dartboard') piece.rotation.y = d.yaw;
+      group.add(piece);
     } else if (d.kind === 'fall') {
       buildFall(d);
     } else if (d.kind === 'chain') {

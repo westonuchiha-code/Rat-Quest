@@ -4,11 +4,12 @@
 // room that gains people as the world is cleared but is "a full world that gains extras over time".
 import './../src/core/colorSetup';
 import * as THREE from 'three';
-import { BAR, clubBarThings, clubTables, junction } from '../src/levels/junction';
+import { BAR, clubBarThings, clubDressingThings, clubTables, junction, NIB_AFTER } from '../src/levels/junction';
+import { LevelProgress } from '../src/core/levelProgress';
 import { levelById } from '../src/levels/levels';
 import { STOOL, TABLE } from '../src/world/layout';
 import { makePatron, patronLook, SEAT, type Doing, type PatronKind } from '../src/npc/patrons';
-import { Npc } from '../src/npc/npc';
+import { Npc, isHere } from '../src/npc/npc';
 import { VOICES } from '../src/audio/speech';
 import { buildStool, buildTable } from '../src/world/tavernModels';
 
@@ -46,7 +47,7 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
   const here = t.npcs.filter((n) => !n.when);
   const later = t.npcs.filter((n) => n.when);
   check('the room is full from the first minute: four regulars at two tables, whatever has or has not been done', here.length === 4 && here.filter((n) => n.kind === 'turtle').length === 2 && here.filter((n) => n.kind === 'fox').length === 2);
-  check('...and it gains an extra: an ant off duty, once the Hollows are cleared', later.length === 1 && later[0].kind === 'ant' && later[0].when?.cleared === 'hollows');
+  check('...and it gains an extra: an ant off duty, once he has beaten enough ants', later.length === 1 && later[0].kind === 'ant' && later[0].when?.beaten?.[0] === 'ant' && later[0].when.beaten[1] === NIB_AFTER);
   check('everyone at a table is doing something, and has something to say', t.npcs.every((n) => !!n.doing && n.doing !== 'stand' && n.lines.length >= 2));
   check('two of one kind are two different people', patronLook('turtle', 'Mossback Mo') !== patronLook('turtle', 'Pebble') && patronLook('fox', 'Vix') !== patronLook('fox', 'Ash'));
   check('each sits on a stool that is there, facing the table, and the one he talks to is across it', here.every((n) => {
@@ -102,10 +103,12 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
   const speaking = headY(true);
   check('a turtle pushes his neck out when he has something to say', speaking > quiet + 0.03, `${quiet.toFixed(2)} quiet, ${speaking.toFixed(2)} talking`);
   // Through the game's own character class: they build, they update, and one who is busy does not swing round.
-  for (const spec of [...t.npcs, ...clubBarThings().npcs]) {
+  for (const spec of [...t.npcs, ...clubBarThings().npcs, ...clubDressingThings().npcs]) {
     const n = new Npc({ ...spec });
     for (let i = 0; i < 120; i++) n.update(1 / 60, spec.x + 2, 0, spec.z + 2, i > 60);
-    check(`${spec.name} (${spec.kind}) is built by the game's own character class, stays facing his table when spoken to, and has a marker over his head`, Math.abs(Math.atan2(Math.sin(n.root.rotation.y - spec.facing), Math.cos(n.root.rotation.y - spec.facing))) < 1e-6 && n.inRange(spec.x + 1, 0, spec.z + 1));
+    const turned = Math.abs(Math.atan2(Math.sin(n.root.rotation.y - spec.facing), Math.cos(n.root.rotation.y - spec.facing)));
+    const busy = !!spec.doing && spec.doing !== 'stand';
+    check(`${spec.name} (${spec.kind}) is built by the game's own character class, ${busy ? 'stays facing his table when spoken to' : 'turns to whoever speaks to him'}, and can be spoken to`, (busy ? turned < 1e-6 : turned > 0.2) && n.inRange(spec.x + 1, spec.y ?? 0, spec.z + 1));
   }
 }
 
@@ -121,13 +124,50 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
   check('...standing in nothing that was there already', hits.length === 0, `${hits.length} in the way`);
   const keeper = bar.npcs.find((n) => n.doing === 'tend');
   check('someone keeps it: behind the counter, up on the step, facing the room, near enough over it to be spoken to', !!keeper && keeper.kind === 'owl' && !keeper.when && keeper.y === BAR.step && keeper.x > BAR.x1 && keeper.x - (BAR.x0 - 0.3) < 2.2 && Math.abs(keeper.facing + Math.PI / 2) < 1e-6, keeper ? `${(keeper.x - (BAR.x0 - 0.3)).toFixed(2)} from one stood at the counter` : '');
-  const always = [...t.npcs, ...bar.npcs].filter((n) => !n.when);
-  const later = [...t.npcs, ...bar.npcs].filter((n) => n.when);
+  const everyone = [...t.npcs, ...bar.npcs, ...clubDressingThings().npcs];
+  const always = everyone.filter((n) => !n.when);
+  const later = everyone.filter((n) => n.when);
   check('with nothing done there are six regulars about (and the six friends who were there before): a full room', always.length === 6 && new Set(always.map((n) => n.kind)).size === 4, always.map((n) => n.name).join(', '));
-  check('three more turn up, one for each of three worlds cleared, and each of those is a real place', later.length === 3 && new Set(later.map((n) => n.when!.cleared)).size === 3 && later.every((n) => !!levelById(n.when!.cleared)), later.map((n) => `${n.name} after ${n.when!.cleared}`).join(', '));
+  const byWorld = later.filter((n) => n.when!.cleared);
+  const byFights = later.filter((n) => n.when!.beaten);
+  check('four more turn up: two for worlds cleared (real places), two for creatures beaten (an enemy kind, a count)', later.length === 4 && byWorld.length === 2 && byWorld.every((n) => !!levelById(n.when!.cleared!)) && byFights.length === 2 && byFights.every((n) => n.when!.beaten![1] >= 1), later.map((n) => `${n.name}: ${n.when!.cleared ?? n.when!.beaten!.join(' x')}`).join(', '));
+  check('...the ones who come for the fighting are the creatures he fought: an ant after enough ants, a Stag Knight after one', byFights.every((n) => n.kind === n.when!.beaten![0]) && byFights.some((n) => n.kind === 'stag' && n.when!.beaten![1] === 1));
   check('one of them leans on a wall, his back to it, out of everyone\'s way', later.some((n) => n.doing === 'lean' && Math.abs(n.x) > 23 && Math.abs(n.facing - Math.PI / 2) < 1e-6));
-  check('all nine are in the room\'s own list', [...always, ...later].every((n) => (def.npcs ?? []).some((m) => m.name === n.name)));
+  check('all ten are in the room\'s own list', [...always, ...later].length === 10 && [...always, ...later].every((n) => (def.npcs ?? []).some((m) => m.name === n.name)));
 }
 
+// ---- The tally of creatures beaten, and who it brings ----
+{
+  const store = new Map<string, string>();
+  const storage = { getItem: (k: string) => store.get(k) ?? null, setItem: (k: string, v: string) => void store.set(k, v), removeItem: (k: string) => void store.delete(k) };
+  const p = new LevelProgress(storage as never);
+  check('a new save has beaten nothing', p.beaten('ant') === 0 && p.beaten('stag') === 0);
+  for (let i = 0; i < NIB_AFTER - 1; i++) p.noteBeaten('ant');
+  const nib = t.npcs.find((n) => n.kind === 'ant')!;
+  const hob = clubDressingThings().npcs.find((n) => n.kind === 'stag')!;
+  check('one short of enough ants, the ant is not there yet', p.beaten('ant') === NIB_AFTER - 1 && !isHere(nib.when, p));
+  p.noteBeaten('ant');
+  check('...the next one brings him', isHere(nib.when, p) && !isHere(hob.when, p));
+  p.noteBeaten('stag');
+  check('one Stag Knight beaten, and one minds the door', isHere(hob.when, p));
+  const again = new LevelProgress(storage as never);
+  check('the tally is on the save: read back, it is the same', again.beaten('ant') === NIB_AFTER && again.beaten('stag') === 1 && again.beaten('toad') === 0);
+  p.markCleared('cistern');
+  const biscuit = clubBarThings().npcs.find((n) => n.name === 'Biscuit')!;
+  check('...beside the worlds cleared, which it does not disturb', new LevelProgress(storage as never).cleared('cistern') && isHere(biscuit.when, p) && new LevelProgress(storage as never).beaten('ant') === NIB_AFTER);
+  check('a regular with nothing asked of him is always here', isHere(undefined, new LevelProgress(null)));
+  p.reset();
+  check('a save wiped has beaten nothing again', p.beaten('ant') === 0 && !isHere(nib.when, p));
+}
+
+// ---- The dressing: drawn, never in his way ----
+{
+  const dress = clubDressingThings().decor;
+  const kinds = new Set(dress.map((d) => d.kind));
+  check('the room has rugs, a dance floor, strings of lights, bottles behind the bar and a dartboard', ['rug', 'dancefloor', 'bulbs', 'bottles', 'dartboard'].every((k) => kinds.has(k as never)), [...kinds].join(', '));
+  check('there is a rug under every table', tables.every((d) => dress.some((r) => r.kind === 'rug' && r.x === d.x && r.z === d.z)));
+  check('all of it is in the room, and none of it is solid: the dressing adds nothing he can walk into', dress.every((d) => def.decor.some((e) => e.kind === d.kind && e.x === d.x && e.z === d.z)) && !('solids' in clubDressingThings()));
+  check('the lights hang over his head but low enough for the view to show them, and the bottles are on the wall behind the bar', dress.filter((d) => d.kind === 'bulbs').every((d) => d.y - (d as { sag: number }).sag > 3.6 && d.y < 5.5) && dress.filter((d) => d.kind === 'bottles').every((d) => d.x > BAR.x1 && d.z > BAR.z0 && d.z < BAR.z1 && d.y > BAR.top));
+}
 console.log(failures === 0 ? 'club: all passed' : `club: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

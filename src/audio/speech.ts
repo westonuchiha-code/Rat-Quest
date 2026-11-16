@@ -38,6 +38,7 @@ export const VOICES: Record<NpcKind, VoiceDef> = {
   turtle: { bank: 'pigeon', pitch: 0.72, wobble: 0.03, vol: 0.65, standIn: 120 },
   fox: { bank: 'wren', pitch: 0.92, wobble: 0.14, vol: 0.6, standIn: 200 },
   ant: { bank: 'villain', pitch: 1.3, wobble: 0.05, vol: 0.5, standIn: 150 },
+  stag: { bank: 'villain', pitch: 0.62, wobble: 0.03, vol: 0.7, standIn: 70 },
   ferret: { bank: 'mort', pitch: 1.65, wobble: 0.18, vol: 0.5, standIn: 240 },
   owl: { bank: 'pigeon', pitch: 0.86, wobble: 0.02, vol: 0.65, standIn: 140 },
 };

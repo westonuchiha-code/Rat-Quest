@@ -101,7 +101,7 @@ import { DropField } from './world/drops';
 import { CONSUMABLES, rollCrateDrop } from './data/consumables';
 import { CollectHud } from './ui/collectHud';
 import { runViewer } from './dev/viewer';
-import { Npc } from './npc/npc';
+import { Npc, isHere } from './npc/npc';
 import { Dialog } from './ui/dialog';
 import { Builder } from './ui/builder';
 import { Tweaks } from './core/tweaks';
@@ -1407,7 +1407,7 @@ function startGame(): void {
       // A copy, because a story scene may move him about.
       const n = new Npc({ ...spec });
       // One of the Club's later regulars: not here until what brings him has been done. (`#unlockall` shows them all.)
-      if (spec.when && !levelProgress.cleared(spec.when.cleared) && !unlockAll) n.gone = true;
+      if (!isHere(spec.when, levelProgress) && !unlockAll) n.gone = true;
       npcs.push(n);
       scene.add(n.root);
       // He is solid, so the rat cannot walk through him. (Not while he is out of the room.)
@@ -2004,6 +2004,8 @@ function startGame(): void {
       // Only the tiniest freeze on a normal hit (a hint of that old Zelda feel); a kill adds a short slow-motion beat.
       hitStop = events.enemyKilled ? 0.05 : 0.025;
       if (events.enemyKilled) {
+        // (Counted, on his save: the Club's regulars turn up on how many of a kind he has beaten.)
+        levelProgress.noteBeaten(events.enemyHit.kind);
         slowT = TUNING.feel.killSlowSeconds;
         rumble.kill();
       } else rumble.hit();

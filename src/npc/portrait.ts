@@ -15,7 +15,7 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillStyle = c;
     g.fillRect(x, y, w, h);
   };
-  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : '#2a3448');
+  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : '#2a3448');
   if (kind === 'turtle') {
     const old = patronLook('turtle', name) === 'mo';
     const skin = old ? '#7c8f4e' : '#9fbf5a';
@@ -109,6 +109,21 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
       px(8, 19, 8, 3, '#8a2a3a'); // bow tie
     } else px(6, 19, 12, 5, '#e6e0cf'); // apron
     px(2, 22, 20, 2, coat);
+  } else if (kind === 'stag') {
+    px(2, 1, 3, 8, '#2a1e16'); // the great jaws, up either side
+    px(19, 1, 3, 8, '#2a1e16');
+    px(4, 1, 3, 2, '#2a1e16');
+    px(17, 1, 3, 2, '#2a1e16');
+    px(4, 7, 3, 3, '#2a1e16');
+    px(17, 7, 3, 3, '#2a1e16');
+    px(6, 6, 12, 11, '#4a2e1e'); // head
+    px(7, 9, 3, 3, '#e8a020'); // eyes
+    px(14, 9, 3, 3, '#e8a020');
+    px(8, 10, 1, 1, '#14100c');
+    px(15, 10, 1, 1, '#14100c');
+    px(9, 14, 6, 2, '#2a1e16');
+    px(3, 18, 18, 6, '#6a6a74'); // armour at his shoulders
+    px(3, 18, 18, 1, '#9a9aa4');
   } else if (kind === 'ant') {
     px(6, 7, 12, 11, '#7a3b24'); // head
     px(7, 6, 10, 2, '#7a3b24');

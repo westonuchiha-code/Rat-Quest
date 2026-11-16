@@ -182,6 +182,16 @@ export type Decor =
   | { kind: 'mugs'; x: number; y: number; z: number; yaw: number; count: number; gap: number }
   /** A keg (a tin can on its side, tapped), its tap facing `yaw`. */
   | { kind: 'keg'; x: number; y: number; z: number; yaw: number }
+  /** A rug on the floor (drawn only): round (`r`), or a runner `w` by `d`. `colors`: its edge, its middle, its marks. */
+  | { kind: 'rug'; x: number; y: number; z: number; yaw: number; r?: number; w?: number; d?: number; colors: [number, number, number] }
+  /** A dance floor of lit tiles (drawn only), `nx` by `nz` of them, each `tile` across. */
+  | { kind: 'dancefloor'; x: number; y: number; z: number; nx: number; nz: number; tile: number; colors: [number, number] }
+  /** A string of little lights from (x, y, z) to (x1, y, z1), sagging `sag` in the middle. */
+  | { kind: 'bulbs'; x: number; y: number; z: number; x1: number; z1: number; sag: number; count: number }
+  /** A shelf of bottles on a wall, facing `yaw`, `width` long, its plank at y. */
+  | { kind: 'bottles'; x: number; y: number; z: number; yaw: number; width: number }
+  /** A dartboard on a wall, facing `yaw`, its middle at y. */
+  | { kind: 'dartboard'; x: number; y: number; z: number; yaw: number }
   /** A wall grate pouring sludge: the opening is at (x, y, z) facing `yaw`, `width` wide, falling down to `bottom`. */
   | { kind: 'fall'; x: number; y: number; z: number; yaw: number; width: number; bottom: number }
   /** A chain hanging from (x, top, z) down to `bottom`. */

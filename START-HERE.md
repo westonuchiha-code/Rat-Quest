@@ -301,10 +301,26 @@ These are OUR characters in that spirit: not the cantina's or that bar's own peo
 - **Someone leaning**: Biscuit, his back to the wall by the Cistern door, arms folded.
 - **It grows, three ways now**: Biscuit once the CISTERN is cleared, Professor Snow (on the far bar stool) once the
   FOUNDRY is, Corporal Nib once the HOLLOWS are. With nothing done there are six regulars and the six old friends.
-**Not done yet:** more props (rugs, shelves of bottles behind the bar, a dartboard, hanging lights: the middle of
-the room is still open floor); mini bosses as regulars, or "enough ants beaten" (the save does not count creatures
-beaten yet); voices of their own; the ant only stands (it does not drink from its thimble or turn its head); the
-tables and the bar are not in the level editor. Nobody has spoken to any of them in the running game: their
+**The third part (2026-11-16):**
+- **Dressing, all of it only drawn** (`clubDressing()` in junction.ts; builders in tavernModels.ts; decor kinds
+  `rug`, `dancefloor`, `bulbs`, `bottles`, `dartboard`): a round rug under each table and a runner in from the door;
+  a dance floor of lit tiles before Dave's stage; four strings of little coloured lights (hung at about five up,
+  LOW on purpose: the view looks down on him, and anything much higher is off the top of the picture); two shelves
+  of bottles on the wall behind the bar; a dartboard on the east wall by the card table.
+- **The save counts creatures beaten**, by kind (`LevelProgress.beaten(kind)`, `noteBeaten(kind)`, in the same
+  saved record as the levels cleared, so it goes with the save file; main.ts counts on every kill). A regular's
+  `when` can ask for a count (`beaten: [kind, count]`) as well as, or in place of, a level cleared; `isHere(when,
+  progress)` in npc.ts is the one place that decides.
+- **Two regulars come for the fighting**: Corporal Nib the ant now arrives after EIGHT Ant Pikemen beaten
+  (`NIB_AFTER`; it was "the Hollows cleared"), and **Sir Hobnail, a Stag Knight, minds the south door** once one
+  Stag Knight has been beaten (the same model as the enemy, standing easy with his hammer: `kind: 'stag'`).
+  So the later regulars are four: Biscuit (Cistern cleared), Professor Snow (Foundry cleared), Nib, Sir Hobnail.
+- **The ant drinks**: its thimble comes up to its jaws every seven seconds or so and its head goes back
+  (`AntAnimInput.sip`), and its head turns to whoever is near (`look`).
+**Not done yet:** voices of their own; the tables, the bar and the dressing are not in the level editor; the dance
+floor's tiles do not flash to the beat; nobody dances on it; Sir Hobnail does not turn his head (he turns his
+whole body, as the old friends do); no rule yet for the bosses (the Broodmother or the Wyrm would not fit through
+the door). The ant's sip and the stag as a doorman were seen in still pictures only. Nobody has spoken to any of them in the running game: their
 lines and portraits are untested by eye. The Conker research's first pass (below) found that game's bar is its
 opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
 their own evening.

@@ -160,6 +160,8 @@ export const HUB_GUEST_DOORS: Record<'west' | 'east', CourseDoorDef> = {
  * A table is at (x, z); a seat is a stool beside it, `out` from its middle at an angle (0 is south of it, +z).
  */
 const SEAT_OUT = 1.25;
+/** How many Ant Pikemen he must have beaten before one of them takes to drinking here. */
+export const NIB_AFTER = 8;
 interface TableSet {
   x: number;
   z: number;
@@ -203,8 +205,9 @@ const TABLES: TableSet[] = [
   {
     x: -11, z: 6, top: { mugs: [[0.3, 0.55]], candle: true },
     seats: [
-      // An Ant Pikeman, off duty: here once the Hollows are cleared, where the ants hold the line.
-      { at: 0, who: { name: 'Corporal Nib', kind: 'ant', doing: 'drink', when: { cleared: 'hollows' }, lines: [
+      // An Ant Pikeman, off duty: here once he has beaten enough of them. (The owner: "once you've beaten enough
+      // ants like some of them just start hanging around".)
+      { at: 0, who: { name: 'Corporal Nib', kind: 'ant', doing: 'drink', when: { beaten: ['ant', NIB_AFTER] }, lines: [
         'Stand easy, knight. I am OFF the line. The pike is in the rack. This is my thimble.',
         'No hard feelings about the Hollows. You came through the wall of us fair and square. Mostly square.',
         'The lads say you fight like a rat who has read the manual. From an ant, that is high praise.',
@@ -264,6 +267,39 @@ function clubBar(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[
   return { decor, solids, npcs };
 }
 
+/**
+ * The rest of the room's dressing, all of it only drawn: a rug under each table and a runner in from the door, a
+ * dance floor before Dave's stage, strings of little lights overhead, bottles on the wall behind the bar, a
+ * dartboard by the card table. And the doorman.
+ */
+function clubDressing(): { decor: Decor[]; npcs: NpcSpec[] } {
+  const rugs: Array<[number, number, number]> = [[0x7a2a2a, 0x9a4a3a, 0xd8b060], [0x2a4a6a, 0x3a6a8a, 0xd8ccac], [0x3a5a3a, 0x5a7a4a, 0xd8b060]];
+  const decor: Decor[] = TABLES.map((t, i): Decor => ({ kind: 'rug', x: t.x, y: 0, z: t.z, yaw: i * 0.4, r: 2.3, colors: rugs[i % rugs.length] }));
+  decor.push({ kind: 'rug', x: 0, y: 0, z: 12.6, yaw: 0, w: 2.4, d: 8.4, colors: [0x6a2a3a, 0x8a3a4a, 0xd8b060] });
+  decor.push({ kind: 'dancefloor', x: 0, y: 0, z: -8.6, nx: 8, nz: 3, tile: 1.4, colors: [0x7a2a6a, 0x1f6a72] });
+  const midBar = (BAR.z0 + BAR.z1) / 2;
+  decor.push(
+    // (Low enough to be seen: the view looks down on him, and anything much over five up is off the top of it.)
+    { kind: 'bulbs', x: -10, y: 5.2, z: -6, x1: 10, z1: -6, sag: 1.2, count: 12 },
+    { kind: 'bulbs', x: -10, y: 5.2, z: 8, x1: 10, z1: 8, sag: 1.2, count: 12 },
+    { kind: 'bulbs', x: 10, y: 5.2, z: 8, x1: 23.6, z1: midBar, sag: 0.9, count: 8 },
+    { kind: 'bulbs', x: -10, y: 5.2, z: 8, x1: -23.6, z1: 0, sag: 0.9, count: 8 },
+    { kind: 'bottles', x: HX - 0.02, y: 1.9, z: midBar, yaw: WEST, width: 4.6 },
+    { kind: 'bottles', x: HX - 0.02, y: 2.8, z: midBar, yaw: WEST, width: 4.6 },
+    { kind: 'dartboard', x: HX - 0.02, y: 2.4, z: 3.2, yaw: WEST },
+  );
+  const npcs: NpcSpec[] = [
+    // A Stag Knight who has been beaten once, and now minds the door. (The owner: "maybe some of the little mini
+    // bosses will come hang out there".)
+    { name: 'Sir Hobnail', kind: 'stag', x: 4.4, z: 20.2, y: 0, facing: Math.atan2(-0.5, -1), doing: 'stand', when: { beaten: ['stag', 1] }, lines: [
+      'HALT. Oh. It is you. In you go. You are on the list. You ARE the list.',
+      'You put me on my back in front of my own gate, little knight. I have thought about it a great deal.',
+      'I mind the door now. Nobody swings a hammer at a door. It is restful.',
+    ] },
+  ];
+  return { decor, npcs };
+}
+
 /** Everything the tables add to the room: what is drawn, what is solid, and who is sitting there. */
 export function clubTables(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[] } {
   const decor: Decor[] = [];
@@ -292,12 +328,14 @@ export function clubTables(): { decor: Decor[]; solids: LevelDef['solids']; npcs
 }
 /** The bar and the leaner, the same way. */
 export const clubBarThings = clubBar;
+export const clubDressingThings = clubDressing;
 
 export function junction(): LevelDef {
   const base = compileCustom(club, 'hub');
   const t = clubTables();
   const bar = clubBar();
-  const tables = { decor: [...t.decor, ...bar.decor], solids: [...t.solids, ...bar.solids], npcs: [...t.npcs, ...bar.npcs] };
+  const dress = clubDressing();
+  const tables = { decor: [...dress.decor, ...t.decor, ...bar.decor], solids: [...t.solids, ...bar.solids], npcs: [...t.npcs, ...bar.npcs, ...dress.npcs] };
   return {
     ...base,
     decor: [...base.decor, ...tables.decor],

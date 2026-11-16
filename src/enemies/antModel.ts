@@ -120,6 +120,9 @@ function flatten(p: Pose, out: Float32Array): void {
 }
 
 export interface AntAnimInput {
+  /** Off duty only (see `offDuty`): how far its thimble is raised to its jaws, 0..1, and which way its head is turned. */
+  sip?: number;
+  look?: number;
   state: AntState;
   stateTime: number;
   /** How fast it is walking. */
@@ -433,6 +436,7 @@ export class AntModel {
    * of be a chill dude drinking at dizzy Dave's Bar".) No pike: a thimble of something in the claw that held it.
    */
   offDuty(): void {
+    this.off = true;
     for (const c of this.pike.children) c.visible = false;
     const cup = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.085, 0.066, 0.17, 7, 1).rotateZ(-Math.PI / 2), 0xa9a79c), this.metal);
     cup.position.x = 0.02;
@@ -441,10 +445,21 @@ export class AntModel {
     this.pike.add(cup, drink);
   }
 
+  private off = false;
+
   update(dt: number, ctx: AntAnimInput): void {
     this.time += dt;
     const state = ctx.state;
     flatten(this.poseFor(ctx), this.springs.target);
+    // Off duty: its thimble comes up to its jaws and tips, its head goes back for it; else its head turns to whoever.
+    if (this.off) {
+      const s = Math.min(1, Math.max(0, ctx.sip ?? 0));
+      const t = this.springs.target;
+      t.set([-0.38 + 0.2 * s, 0.98 + 0.07 * s, 0.3 + 0.16 * s], I.hold);
+      t.set([0.85 * s, 1 - 0.3 * s, -0.15 * s], I.dir);
+      t.set([-0.32 * s, (ctx.look ?? 0) * (1 - s) - 0.3 * s, 0], I.head);
+      t[I.jaws] = 0.55 * s;
+    }
     // (Dying, its pike goes out sideways before it falls, clear of its legs.)
     if (state === 'dead' && ctx.stateTime < 0.16) {
       this.springs.target.set(FLUNG.hold, I.hold);

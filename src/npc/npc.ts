@@ -4,6 +4,7 @@ import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
 import { AntModel } from '../enemies/antModel';
+import { StagModel } from '../enemies/stagModel';
 
 /** A friendly character standing in a level. Plain data. */
 export interface NpcSpec {
@@ -35,12 +36,21 @@ export interface NpcSpec {
   turn?: number;
   /**
    * He is only here once this is so (the Club gains regulars as the world is cleared). Nobody the room NEEDS has
-   * one of these: it is full without them. `cleared`: a level's id.
+   * one of these: it is full without them. `cleared`: a level's id. `beaten`: a kind of creature, and how many of
+   * them he must have beaten in all. With both, both must be so.
    */
-  when?: { cleared: string };
+  when?: { cleared?: string; beaten?: [string, number] };
 }
 
-export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon' | PatronKind | 'ant';
+/** Whether one of the Club's later regulars is here yet, by what the save says has been done. */
+export function isHere(when: NpcSpec['when'], done: { cleared(id: string): boolean; beaten(kind: string): number }): boolean {
+  if (!when) return true;
+  if (when.cleared && !done.cleared(when.cleared)) return false;
+  if (when.beaten && done.beaten(when.beaten[0]) < when.beaten[1]) return false;
+  return true;
+}
+
+export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon' | PatronKind | 'ant' | 'stag';
 
 /**
  * Who he is, within his kind: two mice and two birds share a build but not a look. It goes by name, so every level
@@ -177,6 +187,11 @@ export class Npc {
       // One of the Club's regulars: his body is its own thing (patrons.ts).
       this.patron = makePatron(patronKind, patronLook(patronKind, spec.name));
       this.body.add(this.patron.root);
+      this.root.add(this.body);
+    } else if (spec.kind === 'stag') {
+      // A Stag Knight who has been beaten, and has taken a quieter job: the same creature, standing easy.
+      this.stag = new StagModel();
+      this.body.add(this.stag.root);
       this.root.add(this.body);
     } else if (spec.kind === 'ant') {
       // An Ant Pikeman, off duty: the same creature he fights elsewhere, with a mug where its pike was.
@@ -568,11 +583,12 @@ export class Npc {
   /** One of the Club's regulars (a turtle or a fox), or an ant off duty. */
   private patron: PatronBody | null = null;
   private ant: AntModel | null = null;
+  private stag: StagModel | null = null;
   private headYaw = 0;
   /** How high the marker hangs over him. */
   private markerY(): number {
     if (this.patron) return this.patron.height + 0.4 - (this.spec.seated ? 0.12 : 0);
-    return this.ant ? 1.95 : 1.75;
+    return this.stag ? 2.75 : this.ant ? 1.95 : 1.75;
   }
 
   /** The villain only: a white flash (the sword has landed). */
@@ -685,7 +701,17 @@ export class Npc {
     }
     if (this.ant) {
       // Standing easy, as it stands at its post, feelers going; its head comes round to whoever speaks to it.
-      this.ant.update(dt, { state: 'idle', stateTime: this.time, walking: 0, tip: ANT_NO_TIP, level: false, windupTime: 1 });
+      // (And it drinks: the thimble comes up to its jaws every so often, unless it is being spoken to.)
+      const u = this.time % 7.5;
+      const sip = !talking && this.spec.doing === 'drink' && u < 2.4 ? Math.sin((u / 2.4) * Math.PI) ** 2 : 0;
+      this.ant.update(dt, { state: 'idle', stateTime: this.time, walking: 0, tip: ANT_NO_TIP, level: false, windupTime: 1, sip, look: this.headYaw });
+      this.marker.visible = this.near && !talking;
+      this.marker.position.y = this.markerY() + 0.08 * Math.sin(this.time * 4);
+      this.marker.rotation.y = this.time * 2.5;
+      return;
+    }
+    if (this.stag) {
+      this.stag.update(dt, { state: 'idle', stateTime: this.time, walking: 0 });
       this.marker.visible = this.near && !talking;
       this.marker.position.y = this.markerY() + 0.08 * Math.sin(this.time * 4);
       this.marker.rotation.y = this.time * 2.5;

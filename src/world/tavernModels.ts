@@ -156,3 +156,142 @@ export function buildKeg(mats: TavernMats): THREE.Group {
   return g;
 }
 
+/** A flat shape lying just over the floor, one colour. */
+function flat(geo: THREE.BufferGeometry, color: number, mat: THREE.Material, y: number): THREE.Mesh {
+  geo.rotateX(-Math.PI / 2);
+  bakeVertexColor(geo, color, false);
+  const m = new THREE.Mesh(geo, mat);
+  m.position.y = y;
+  return m;
+}
+
+/**
+ * A rug, lying on the floor (only drawn: nothing trips on it). Round, `r` across its middle: rings of colour and a
+ * pale fringe. Or, with `w` and `d`, a runner: a border, a middle, and a row of diamonds down it.
+ */
+export function buildRug(mats: TavernMats, look: { r?: number; w?: number; d?: number; colors: [number, number, number] }): THREE.Group {
+  const g = new THREE.Group();
+  const [edge, field, mark] = look.colors;
+  if (look.r) {
+    const R = look.r;
+    g.add(flat(new THREE.RingGeometry(R * 0.94, R, 18), 0xd8ccac, mats.plain, 0.016));
+    g.add(flat(new THREE.RingGeometry(R * 0.7, R * 0.94, 18), edge, mats.plain, 0.018));
+    g.add(flat(new THREE.RingGeometry(R * 0.62, R * 0.7, 18), mark, mats.plain, 0.018));
+    g.add(flat(new THREE.CircleGeometry(R * 0.62, 18), field, mats.plain, 0.018));
+    g.add(flat(new THREE.RingGeometry(R * 0.2, R * 0.27, 12), mark, mats.plain, 0.02));
+  } else {
+    const w = look.w ?? 2;
+    const d = look.d ?? 4;
+    g.add(flat(new THREE.PlaneGeometry(w, d + 0.3), 0xd8ccac, mats.plain, 0.016));
+    g.add(flat(new THREE.PlaneGeometry(w, d), edge, mats.plain, 0.018));
+    g.add(flat(new THREE.PlaneGeometry(w - 0.5, d - 0.5), field, mats.plain, 0.02));
+    const n = Math.max(1, Math.floor((d - 1) / 1.6));
+    for (let i = 0; i < n; i++) {
+      const dia = flat(new THREE.CircleGeometry(Math.min(0.42, w * 0.2), 4), mark, mats.plain, 0.022);
+      dia.position.z = (i - (n - 1) / 2) * 1.6;
+      g.add(dia);
+    }
+  }
+  return g;
+}
+
+/** A dance floor: `nx` by `nz` square tiles, each `tile` across, lit from under in two colours turn about. */
+export function buildDanceFloor(nx: number, nz: number, tile: number, colors: [number, number]): THREE.Group {
+  const g = new THREE.Group();
+  const mats = colors.map((c) => new THREE.MeshBasicMaterial({ color: c }));
+  const dark = new THREE.MeshBasicMaterial({ color: 0x15131c });
+  const base = new THREE.Mesh(new THREE.PlaneGeometry(nx * tile + 0.2, nz * tile + 0.2).rotateX(-Math.PI / 2), dark);
+  base.position.y = 0.014;
+  g.add(base);
+  for (let i = 0; i < nx; i++) {
+    for (let k = 0; k < nz; k++) {
+      const t = new THREE.Mesh(new THREE.PlaneGeometry(tile * 0.9, tile * 0.9).rotateX(-Math.PI / 2), mats[(i + k) % 2]);
+      t.position.set((i - (nx - 1) / 2) * tile, 0.02, (k - (nz - 1) / 2) * tile);
+      t.userData.tile = (i + k) % 2;
+      g.add(t);
+    }
+  }
+  return g;
+}
+
+/**
+ * A string of little lights from the origin to (dx, 0, dz), sagging `sag` in the middle: a wire and `count` bulbs,
+ * each one of a few colours, unlit so that they glow.
+ */
+export function buildBulbs(dx: number, dz: number, sag: number, count: number): THREE.Group {
+  const g = new THREE.Group();
+  const colors = [0xffd36a, 0xff6a5a, 0x6ad0ff, 0x8aff8a, 0xff8af0];
+  const mats = colors.map((c) => new THREE.MeshBasicMaterial({ color: c }));
+  const wire = new THREE.MeshBasicMaterial({ color: 0x1c1a20 });
+  const at = (u: number): THREE.Vector3 => new THREE.Vector3(dx * u, -sag * 4 * u * (1 - u), dz * u);
+  const steps = 10;
+  for (let i = 0; i < steps; i++) {
+    const a = at(i / steps);
+    const b = at((i + 1) / steps);
+    const len = a.distanceTo(b);
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, len, 3, 1), wire);
+    seg.position.copy(a).add(b).multiplyScalar(0.5);
+    seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+    g.add(seg);
+  }
+  for (let i = 0; i < count; i++) {
+    const p = at((i + 0.5) / count);
+    const bulb = new THREE.Mesh(new THREE.OctahedronGeometry(0.07), mats[i % mats.length]);
+    bulb.position.set(p.x, p.y - 0.09, p.z);
+    g.add(bulb);
+  }
+  return g;
+}
+
+/**
+ * A shelf on a wall, facing +z, `width` long: a plank on two brackets and a row of bottles and jars on it, each a
+ * different shape and colour (some with a cork, one fallen over).
+ */
+export function buildBottles(mats: TavernMats, width: number): THREE.Group {
+  const g = new THREE.Group();
+  g.add(colored(new THREE.BoxGeometry(width, 0.06, 0.34), 0x7a5a38, mats.plain, 0, -0.03, 0.17));
+  for (const x of [-width / 2 + 0.25, width / 2 - 0.25]) g.add(colored(new THREE.BoxGeometry(0.06, 0.26, 0.26), 0x5a4028, mats.plain, x, -0.18, 0.13));
+  const glass = [0x3f7f5a, 0x7a4a2a, 0x3a5f8f, 0x8f3a3a, 0xb8a04a, 0x5a3a7a];
+  const n = Math.max(2, Math.floor(width / 0.36));
+  for (let i = 0; i < n; i++) {
+    const x = (i - (n - 1) / 2) * (width - 0.4) / Math.max(1, n - 1);
+    const tall = 0.28 + ((i * 7) % 5) * 0.05;
+    const fat = 0.075 + ((i * 3) % 4) * 0.012;
+    const c = glass[(i * 5) % glass.length];
+    if (i % 7 === 4) {
+      // (One lying on its side.)
+      const lying = colored(new THREE.CylinderGeometry(fat, fat, tall, 6, 1).rotateZ(Math.PI / 2), c, mats.plain, x, fat, 0.19);
+      g.add(lying);
+      continue;
+    }
+    g.add(colored(new THREE.CylinderGeometry(fat, fat * 1.05, tall * 0.62, 6, 1), c, mats.plain, x, tall * 0.31, 0.17));
+    g.add(colored(new THREE.CylinderGeometry(fat * 0.38, fat, tall * 0.2, 6, 1), c, mats.plain, x, tall * 0.72, 0.17));
+    g.add(colored(new THREE.CylinderGeometry(fat * 0.36, fat * 0.38, tall * 0.18, 6, 1), c, mats.plain, x, tall * 0.91, 0.17));
+    if (i % 2 === 0) g.add(colored(new THREE.CylinderGeometry(fat * 0.3, fat * 0.34, 0.05, 5, 1), 0xb98d5a, mats.plain, x, tall + 0.02, 0.17));
+    g.add(colored(new THREE.BoxGeometry(fat * 1.5, tall * 0.2, 0.01), 0xe9e2cf, mats.plain, x, tall * 0.3, 0.17 + fat * 0.98));
+  }
+  return g;
+}
+
+/** A dartboard on a wall, facing +z: a slice of cork ringed in colours, and three pins stuck in it for darts. */
+export function buildDartboard(mats: TavernMats): THREE.Group {
+  const g = new THREE.Group();
+  const disc = (r: number, color: number, z: number): THREE.Mesh => colored(new THREE.CylinderGeometry(r, r, 0.03, 12, 1).rotateX(Math.PI / 2), color, mats.plain, 0, 0, z);
+  g.add(disc(0.5, 0x8f6a40, 0.03));
+  g.add(disc(0.44, 0x2a2a30, 0.04));
+  g.add(disc(0.34, 0xe2d8bc, 0.045));
+  g.add(disc(0.22, 0x8f2a2a, 0.05));
+  g.add(disc(0.1, 0xe2d8bc, 0.055));
+  g.add(disc(0.04, 0x8f2a2a, 0.06));
+  for (const [x, y, lean] of [[0.07, 0.03, 0.2], [-0.2, 0.17, -0.3], [0.26, -0.31, 0.45]]) {
+    const pin = new THREE.Group();
+    pin.add(colored(new THREE.CylinderGeometry(0.008, 0.008, 0.28, 4, 1).rotateX(Math.PI / 2), 0xc9c6b6, mats.plain, 0, 0, 0.14));
+    pin.add(colored(new THREE.BoxGeometry(0.09, 0.09, 0.012), 0x3a8f6a, mats.plain, 0, 0, 0.27));
+    pin.add(colored(new THREE.BoxGeometry(0.012, 0.09, 0.09), 0x3a8f6a, mats.plain, 0, 0, 0.24));
+    pin.position.set(x, y, 0.06);
+    pin.rotation.set(-lean * 0.5, lean, 0);
+    g.add(pin);
+  }
+  return g;
+}
+
