@@ -14,7 +14,7 @@ import { buildChamber } from '../src/world/chamber';
 import { milkyWay, milkyWayPlan, wayAt, ROAD, LENGTHS, MOON, FALL_DEPTH, WAY_PRIZES, CAP_UP } from '../src/levels/milkyway';
 import { garden, GARDEN } from '../src/levels/garden';
 import { LEVELS, ARCHIVE, TEST_ROOMS, levelById } from '../src/levels/levels';
-import { RatModel, DREAM_LOOK } from '../src/player/ratModel';
+import { STREAMER, RatModel, DREAM_LOOK } from '../src/player/ratModel';
 import { MOTES } from '../src/world/motes';
 import { getTexturePixels } from '../src/render/textures';
 import { TUNING } from '../src/data/tuning';
@@ -231,19 +231,41 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   const after = paintOf(rat);
   check('a helmet put on anew is a new part of him: with the dream\'s rat dressed the same way first, every part still takes its paint (one ear stayed brown when it was not)', after.join() === paintOf(dream).join() && after.filter((c, i) => c !== before[i]).length / after.length > 0.6);
   rat.wearColours(null);
-  // The scarf.
-  const tail = (r: RatModel): number => {
-    r.root.updateMatrixWorld(true);
-    const segs = (r as unknown as { scarfSegments: THREE.Object3D[] }).scarfSegments;
-    const a = new THREE.Vector3().setFromMatrixPosition(segs[0].matrixWorld);
-    const b = new THREE.Vector3().setFromMatrixPosition(segs[1].matrixWorld);
-    return a.distanceTo(b);
-  };
-  const short = tail(rat);
+  // The scarf: in the dream it is THE STREAMER, a ribbon that flies. (The owner, of the short scarf stretched and
+  // held out stiff: "it just sort of looks like he's got a second tail coming out of his neck".)
+  const ribbon = (rat as unknown as { streamer: THREE.Mesh }).streamer;
+  const idle = { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: false, stowProgress: -1, plungeStage: 0 } as never;
+  rat.setTransform(new THREE.Vector3(0, 0, 0), 0);
+  rat.update(1 / 60, idle);
+  const offBefore = ribbon.visible;
   rat.setScarfLong(3.2);
-  const long = tail(rat);
+  const shapes: string[] = [];
+  let stretched = 0;
+  let low = Infinity;
+  let behind = -Infinity;
+  for (let i = 0; i < 180; i++) {
+    rat.update(1 / 60, idle);
+    const pts = rat.streamerPoints();
+    for (let q = 1; q < pts.length; q++) stretched = Math.max(stretched, Math.abs(pts[q].distanceTo(pts[q - 1]) - STREAMER.length / (STREAMER.points - 1)));
+    low = Math.min(low, ...pts.map((q) => q.y));
+    if (i >= 60) behind = Math.max(behind, pts[pts.length - 1].z - pts[0].z);
+    if (i % 12 === 0) shapes.push(pts.map((q) => q.y.toFixed(2)).join());
+  }
+  const end = rat.streamerPoints()[STREAMER.points - 1].clone();
+  const start = rat.streamerPoints()[0].clone();
+  const onInDream = ribbon.visible;
+  // He turns round on the spot: its end is left where it was for a moment, and then comes round behind him again.
+  rat.setTransform(new THREE.Vector3(0, 0, 0), Math.PI);
+  rat.update(1 / 60, idle);
+  const lag = rat.streamerPoints()[STREAMER.points - 1].distanceTo(end);
+  for (let i = 0; i < 120; i++) rat.update(1 / 60, idle);
+  const round = rat.streamerPoints()[STREAMER.points - 1].z - rat.streamerPoints()[0].z;
   rat.setScarfLong(1);
-  check('his scarf in the dream is over three times as long, and goes back to its own length after', Math.abs(long / short - 3.2) < 0.01 && Math.abs(tail(rat) - short) < 1e-9, `${short.toFixed(3)} to ${long.toFixed(3)}`);
+  rat.update(1 / 60, idle);
+  check('his scarf in the dream is a STREAMER: a ribbon out behind him longer than he is tall, there in the dream and put away again after', !offBefore && onInDream && !ribbon.visible && STREAMER.length > 1.2 && start.distanceTo(end) > STREAMER.length * 0.6, `${STREAMER.length} long; its end ${start.distanceTo(end).toFixed(2)} from his neck`);
+  check('it flies BEHIND him and never hangs: its end is behind his neck, and no point of it comes down near the floor', behind < -0.5 && low > 0.45, `end ${(-behind).toFixed(2)} behind; lowest point ${low.toFixed(2)} up`);
+  check('it flutters: no two looks at it a fifth of a second apart find it the same shape; and it is cloth, not elastic (no length of it stretches)', new Set(shapes).size === shapes.length && stretched < 1e-6, `${shapes.length} looks, ${new Set(shapes).size} shapes`);
+  check('when he turns it is left behind for a moment (it is in the room, not stuck to his back) and then streams out behind him the new way', lag < 0.6 && round > 0.5, `moved ${lag.toFixed(2)} in the first frame of the turn; then ${round.toFixed(2)} behind him the other way`);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

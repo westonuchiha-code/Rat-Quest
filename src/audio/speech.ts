@@ -41,6 +41,7 @@ export const VOICES: Record<NpcKind, VoiceDef> = {
   stag: { bank: 'villain', pitch: 0.62, wobble: 0.03, vol: 0.7, standIn: 70 },
   ferret: { bank: 'mort', pitch: 1.65, wobble: 0.18, vol: 0.5, standIn: 240 },
   owl: { bank: 'pigeon', pitch: 0.86, wobble: 0.02, vol: 0.65, standIn: 140 },
+  rat: { bank: 'wren', pitch: 1.08, wobble: 0.06, vol: 0.6, standIn: 230 },
 };
 
 const LETTER: Record<string, Syllable> = {

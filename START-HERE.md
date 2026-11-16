@@ -426,6 +426,49 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## What he said of the last lot, and Jinx (2026-11-16, later the same day). Tests `tests/glimmer.ts`, `tests/milkyway.ts`, `tests/club.ts`
+
+ - "Dude see that Beetle looks so much more ... cool now! We've got to think about all the models in the game that
+   don't have textures we need to do this with them!" THE TEXTURE PASS IS WANTED FOR EVERY MODEL. The way of it is
+   settled (a surface picture in greys over the model's own painted colours). Done so far: the stag, the turtles, the
+   fox and the ferret (`shortFur`), Jinx. STILL PLAIN: the owl (feathers tried at 32 dots came out as a wall of bricks
+   and were taken off: they want a bigger picture or one laid several times round him), the mouse, the birds, Dave,
+   Grimsqueak, the knight himself; and of the creatures the roach, toad, firefly, ironback, guard, mantis, ant, bat,
+   hornet, broodmother, wyrm. In `npc/patrons.ts` `turned` and `limb` take a material, and make their shapes of `ink`
+   when not told (a constructor sets `ink` to its coat and back).
+ - THE TURTLE, AGAIN. "you use like a brick texture for his skin ... the skin shouldn't look like bricks": his skin
+   is pebbled leather now (scales of no two sizes, in no rows: `paintTurtleSkin`). "the turtle shell looks okay but
+   not as good as the other things": a plate is repainted as a low hill of horn, its growth ridges STEPS with a lit
+   side and a shaded side, dark rays out from a pale boss (`paintTurtleScuteAs`). "one of the turtles seems to still
+   have the remnants of like the bubbles": those were three balls of moss stuck on Mo's shell; gone, and his moss is
+   in his shell's picture (`turtleScuteMossy`). RULE HE KEEPS COMING BACK TO: NOTHING ORGANIC IN ROWS OF OBLONGS.
+ - THE CAVE'S STEPS, AGAIN. Pale cut stone "may have been over correcting ... now they feel out of place". He gave
+   two ways and both are used. The Glow Cave's two steps wear the FLOOR's rock, glowing lichen on the corners of their
+   tops. The Glimmer Deep's way out of the Rift is SHELF MUSHROOMS growing out of its walls (decor `bracket`,
+   `bracketSolids` in `world/layout.ts`; `SHELVES_HOME` amber to the door, `SHELVES_BANK` pink to the Far Bank): each
+   glows, each is one jump above the last. The picture `caveStep` is gone.
+ - THE MILKY WAY FELT LIKE A SOFT LOCK: "I can't really figure out what to do ... I walked off every ledge I just fall
+   down ... there's no door to go back". From its start pad the road could not be seen (it falls away below the lip)
+   and nearly half the lip had nothing under it. Now the road's rainbow runs back across the pad under his feet, a
+   kerb stands round every edge but the road's width, a gate stands over the lip, and the board says JUMP, THEN
+   ATTACK / TO RIDE THE SHIELD. AND IN EVERY PLACE BUT THE CLUB the pause menu has LEAVE: BACK TO (the place he came
+   from): `host.leave` in main.ts, a row on the SAVE screen. He keeps what he has found.
+ - HIS SCARF IN THE DREAM: "it just sort of looks like he's got a second tail coming out of his neck ... some sort of
+   like fake wind that makes it constantly flowing behind him". It is THE STREAMER now (`STREAMER`, `flowStreamer` in
+   `player/ratModel.ts`): a flat forked ribbon, a chain of points kept in the room and blown out behind him, up and
+   a little to one side (the game looks at him from behind and above: flying level it would be hidden by his body),
+   a wave running down it. `setScarfLong(k > 1)` turns it on.
+ - JINX, a new character: "a girl rat ... a more feminine version of the main character but also sort of punk rock
+   ... a notch cut out of one of her ears ... emo hair ... dresses really feminine but ... Punk goth rocker style
+   and her tail is longer and usually up or curling around and she wears a skirt. She also just hangs out in Dave's
+   area for now." Built as a Club regular of a new kind, `rat` (`class Jinx` in `npc/patrons.ts`), on Dave's stage
+   (`levels/junction.ts`), with three lines, a voice and a talk-box portrait. Dark fur, a notched ear with two gold
+   rings, a fringe over one eye dyed black to hot pink, a studded collar, a knit top, striped arm warmers and
+   stockings, a tartan skirt, heavy boots, a long ringed tail that stands up and curls, a bow on it. She nods and
+   taps a boot to the beat. Her pictures: `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`.
+   Viewer: `#view&who=patron&kind=rat&name=Jinx`. HIS TO ACCEPT, CHANGE OR THROW OUT: her name and her lines are
+   mine, and the pictures he sent were for the mood only.
+
 ## The dream world's next pass: what the owner wants in it (2026-11-16. NOT BUILT: his notes, kept here)
 
 He sent two pictures (of another game, as a mood only: nothing of it is to be copied) "for when you're working on the

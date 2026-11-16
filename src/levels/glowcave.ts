@@ -69,8 +69,10 @@ export function glowCave(): LevelDef {
   }
   // Ledges of rock: a low shelf along the west wall, and steps up to a high one in the north-east corner.
   // (None higher than 2.4: the stalactites are hung by how high he can get from each.)
-  // (The two steps are in pale cut stone, `caveStep`, not the wall's rock. The owner, 2026-11-16, of the Glimmer Deep:
-  // "I genuinely couldn't see these stairs because they use the same texture as the wall".)
+  // (The two STEPS wear the floor's rock, not the wall's, and glowing lichen lies on the corners of their tops to
+  // show their shape in the dark. The owner, 2026-11-16, of steps in the wall's rock: "I genuinely couldn't see these
+  // stairs"; and of pale cut stone tried next: "now they feel out of place in the environment. Why don't you just use
+  // the floor texture ... put some glowing Moss or something on parts of it to sort of highlight the corners".)
   const ledges: Array<[number, number, number, number, number, boolean?]> = [
     [-G.halfX, -9.5, -G.halfZ, 2, 1.1],
     [-9.5, -6.5, -G.halfZ, -7.5, 1.1],
@@ -78,7 +80,16 @@ export function glowCave(): LevelDef {
     [8.5, G.halfX, -G.halfZ, -5, 2.4],
     [10.5, G.halfX, -5, -1, 1.2, true],
   ];
-  for (const [x0, x1, z0, z1, top, step] of ledges) solids.push(skinned(extent('stone', x0, x1, 0, top, z0, z1), step ? 'caveStep' : 'caveRock'));
+  for (const [x0, x1, z0, z1, top, step] of ledges) {
+    solids.push(skinned(extent('stone', x0, x1, 0, top, z0, z1), step ? 'caveFloor' : 'caveRock'));
+    if (!step) continue;
+    // (Its corners that stand out into the room: those not against a wall or a higher ledge.)
+    for (const cx of [x0, x1]) for (const cz of [z0, z1]) {
+      if (Math.abs(cx) >= G.halfX - 0.01 || Math.abs(cz) >= G.halfZ - 0.01) continue;
+      if (ledges.some(([a0, a1, b0, b1, t]) => t > top && cx >= a0 - 0.01 && cx <= a1 + 0.01 && cz >= b0 - 0.01 && cz <= b1 + 0.01)) continue;
+      decor.push({ kind: 'moss', x: cx + (cx === x0 ? 0.45 : -0.45), y: top, z: cz + (cz === z0 ? 0.45 : -0.45), yaw: cx * 1.7 + cz, size: 0.62, color: MOSS, flat: true });
+    }
+  }
 
   // Mushrooms, in stands: a tall one or two with small ones gathered round. [x, z, floor, height, colour]
   const stands: Array<[number, number, number, number, number]> = [

@@ -7,7 +7,7 @@
  * and maybe his scarf is like crazy exaggerated like [Viewtiful] Joe ... a Trippy psychedelic dream level."
  * (And his rule for themes: shown IN THE RUNNING GAME, in a room to try, not on a sheet of swatches. This is that.)
  *
- * WHAT IT IS: a pad at the top, then four lengths of road one after another down through the sky, each as steep as
+ * WHAT IT IS: a pad at the top (the road runs across it to a gate at its lip; a kerb round the rest), then four lengths of road one after another down through the sky, each as steep as
  * the Long Drop's beds, with a GAP between each and the next length set a little to one side: he rides off the end
  * of one, through the air, onto the next. A landing at the bottom (the Moon) with the way out. No walls anywhere:
  * off the side of the road is a long fall, and he is put back on the road where he last was, a heart the poorer.
@@ -35,6 +35,8 @@ export const LENGTHS: ReadonlyArray<{ len: number; x: number; gap?: { wide: numb
 ];
 /** The pad at the top, the easing-out at the bottom, and the Moon: the landing. */
 export const HEAD = { half: 6, long: 10 } as const;
+/** The gate over the lip of the pad: how thick its posts are, how high the beam's underside is, how deep the beam. */
+export const GATE = { post: 1, tall: 5.2, beam: 1 } as const;
 export const RUNOUT = { len: 18, fall: 2.2 } as const;
 export const MOON = { half: 11, long: 26, kerb: 2.6 } as const;
 /** Fallen this far below the last ground he stood on, he is put back on it. */
@@ -60,8 +62,24 @@ function build(): Plan {
   const tiles = (b: Box): Box => ({ ...b, skin: 'pomoTiles' });
   const half = ROAD.wide / 2;
 
-  solids.push(tiles(extent('stone', -HEAD.half, HEAD.half, headY - ROAD.deep, headY, -HEAD.long, 0)));
-  decor.push({ kind: 'sign', x: -3.6, y: headY + 1.5, z: -2.4, yaw: Math.PI, w: 2.8, h: 1.4, lines: ['THE MILKY WAY', 'JUMP, ATTACK'], post: 0 });
+  // THE HEAD. (The owner, 2026-11-16, of the first one, a bare pad twice as wide as the road: "I can't really figure out
+  // what to do ... I walked off every ledge I just fall down I've tried to do jumps of leaps of faith in different
+  // directions which just kills me and there's no door to go back so it feels like a soft lock". From the pad the
+  // road could not be seen at all: it falls away below its lip. And nearly half of that lip had nothing under it.)
+  // So: the ROAD ITSELF runs back across the pad to where he comes in, a rainbow under his feet that leads to the lip;
+  // a kerb stands round every edge of the pad but the road's own width; and a gate stands over the lip, to go through.
+  solids.push(road(extent('stone', -half, half, headY - ROAD.deep, headY, -HEAD.long, 0)));
+  for (const s of [-1, 1]) solids.push(tiles(extent('stone', s < 0 ? -HEAD.half : half, s < 0 ? -half : HEAD.half, headY - ROAD.deep, headY, -HEAD.long, 0)));
+  const kerbs: Array<[number, number, number, number]> = [
+    [-HEAD.half - 1, HEAD.half + 1, -HEAD.long - 1, -HEAD.long],
+    [-HEAD.half - 1, -HEAD.half, -HEAD.long, 0], [HEAD.half, HEAD.half + 1, -HEAD.long, 0],
+    [-HEAD.half - 1, -half - GATE.post, 0, 1], [half + GATE.post, HEAD.half + 1, 0, 1],
+  ];
+  for (const [x0, x1, z0, z1] of kerbs) solids.push(road(extent('stone', x0, x1, headY - ROAD.deep, headY + MOON.kerb, z0, z1)));
+  // The gate: a post either side of the road at the lip and a beam across their tops, all in the road's rainbow.
+  for (const s of [-1, 1]) solids.push(road(extent('stone', s < 0 ? -half - GATE.post : half, s < 0 ? -half : half + GATE.post, headY - ROAD.deep, headY + GATE.tall, 0, 1)));
+  solids.push(road(extent('stone', -half - GATE.post, half + GATE.post, headY + GATE.tall, headY + GATE.tall + GATE.beam, 0, 1)));
+  decor.push({ kind: 'sign', x: -half - 0.6, y: headY + 1.7, z: -2.4, yaw: Math.PI, w: 3.6, h: 2, lines: ['THE MILKY WAY', 'JUMP, THEN ATTACK', 'TO RIDE THE SHIELD'], post: 0 });
 
   let z = 0;
   let y = headY;

@@ -169,6 +169,19 @@ export function iceSpikeSolids(x: number, y: number, z: number, size: number): B
   const s = size * ICE_SPIKE.solid;
   return [{ ...extent('stone', x - s, x + s, y, y + size * ICE_SPIKE.tall, z - s, z + s), hidden: true }];
 }
+/**
+ * A shelf mushroom (decor `bracket`): how thick it is where it joins the wall (of its depth), how much of its outer
+ * corners is cut off (of its width and depth: it is drawn eight-cornered, and is solid to the square of that, so the
+ * most he can stand on air is a sliver at two corners), and how far under its top its solid goes (of its thickness).
+ */
+export const BRACKET = { thick: 0.42, cut: 0.18, solid: 0.75 } as const;
+export function bracketSolids(x: number, y: number, z: number, yaw: number, wide: number, deep: number): Box[] {
+  const ox = Math.round(Math.sin(yaw));
+  const oz = Math.round(Math.cos(yaw));
+  const under = y - deep * BRACKET.thick * BRACKET.solid;
+  const b = ox !== 0 ? extent('stone', Math.min(x, x + ox * deep), Math.max(x, x + ox * deep), under, y, z - wide, z + wide) : extent('stone', x - wide, x + wide, under, y, Math.min(z, z + oz * deep), Math.max(z, z + oz * deep));
+  return [{ ...b, hidden: true }];
+}
 export function mushroomSolids(x: number, y: number, z: number, size: number, cap?: number, stem?: number): Box[] {
   if (size < MUSHROOM.solid) return [];
   const s = mushroomStem(size, stem) * MUSHROOM.stemSolid;
@@ -275,6 +288,12 @@ export type Decor =
   /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
   /** `cap`: its cap's radius, `stem`: its stem's radius at the ground (each by its height if not given: see MUSHROOM). */
   | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number; cap?: number; stem?: number }
+  /**
+   * A shelf mushroom growing out of a wall, to stand on: (x, z) the middle of where it joins the wall's face, `y` its
+   * TOP, `yaw` the way it grows out (a quarter turn each way only: it is solid, a box). `wide` each way along the
+   * wall, `deep` out from it. It glows. Its solid is `bracketSolids`.
+   */
+  | { kind: 'bracket'; x: number; y: number; z: number; yaw: number; wide: number; deep: number; color: number }
   /**
    * A clump of glowing moss: on a wall, facing `yaw` (0 faces +z, a quarter turn faces +x), or lying on the ground
    * (`flat`). `size`: about half its width. `threads`: how many glowing threads hang from it. `light`: it lights the

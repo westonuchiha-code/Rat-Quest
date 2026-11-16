@@ -1276,3 +1276,20 @@ things are:
   pseudo-element of `#frame` (outside the green filter, which is on `#gameWrap`).
 - The dream world's next pass (blinking digital textures, butterflies, flowers, dozing dream versions of the scary
   creatures) is the owner's note in START-HERE.md: not built.
+
+## Second lot of 2026-11-16: turtle, steps, Milky Way head, LEAVE, streamer, Jinx
+
+- `render/textures.ts`: `paintTurtleScuteAs(mossy)`, `paintTurtleSkin` (a wrapped Voronoi), `turtleScuteMossy`;
+  `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`. `caveStep` removed.
+- `world/layout.ts`: decor `bracket` {x, y (its TOP), z, yaw, wide, deep, color}, `BRACKET`, `bracketSolids`. Drawn in
+  `world/chamber.ts` (the mushrooms' glowing material, a halo, a light).
+- `levels/glimmer.ts`: `SHELF`, `SHELVES_HOME`, `SHELVES_BANK` replace `RIFT_STEPS`; the scorpions' den starts at
+  x = -12.2. `levels/glowcave.ts`: steps in `caveFloor` with flat moss on their free corners.
+- `levels/milkyway.ts`: `GATE`; the head is a strip of road, two strips of tiles, five kerbs, a gate of three boxes.
+- `ui/menu.ts` `host.leave?(): { to, go } | null`; row id `leave` on the SAVE screen. main.ts gives it.
+- `player/ratModel.ts`: `STREAMER`, `buildStreamer`, `paintStreamer`, `flowStreamer(dt)`, `streamerPoints()`. The
+  streamer is the LAST child of `root` (the dream rat has one at the same place, so `wearColours` paints it).
+- `npc/patrons.ts`: kind `rat`, look `jinx`; `ratEar(r, notch, fur, inside)`, `lock(path, wide, out, color)`,
+  `class Jinx`; `ink`; `furMat`. `audio/speech.ts` `VOICES.rat`; `npc/portrait.ts` a `rat` portrait;
+  `cutscene/stage.ts` `PUPPET_NPCS` has `rat`.
+

@@ -13,7 +13,7 @@ import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
-import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, mushroomCap, mushroomStem } from './layout';
+import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, BRACKET, mushroomCap, mushroomStem } from './layout';
 import { TUNING } from '../data/tuning';
 
 /** A portcullis in the room. `open()` lifts it; once it is up its collider is gone. */
@@ -95,7 +95,7 @@ const PALETTE: Record<Kind, number> = {
 const TILE: Partial<Record<TextureName, number>> = {
   wetCobbles: 2, sewerBrick: 2.5, concreteSlab: 3, mossStone: 2, planks: 1.5, ceramicTiles: 1.5, drainGrate: 1.2,
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
-  caveRock: 4, caveFloor: 4, caveStep: 2, iceBrick: 2.5, iceSheet: 5,
+  caveRock: 4, caveFloor: 4, iceBrick: 2.5, iceSheet: 5,
   // (The dream's road: one rainbow across its whole width. `ROAD.wide` in levels/milkyway.ts is this.)
   rainbowRoad: 7, pomoTiles: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
@@ -1131,6 +1131,53 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // Only the nearest few lights are drawn, so not every mushroom is one.)
       // (A very tall one lights no further than a tall one: its light is up at its cap.)
       if (h >= 1.5) lightDefs.push({ x: d.x, y: d.y + h - r * 0.4, z: d.z, r: 4.5 + Math.min(h, 3) * 1.5, color: c, power: 0.85, flash: 0, flicker: 0.05, phase: d.x * 1.3 + d.z * 0.7 });
+    } else if (d.kind === 'bracket') {
+      // A shelf mushroom out of a wall: flat on top (it is stood on), eight-cornered, a thick turned-down lip, dark
+      // gills under it running back to the wall. Bright in its middle, deep in its colour at its lip. It glows.
+      // (Built growing out along +z from the origin, then turned.)
+      const c = new THREE.Color(d.color);
+      const w = d.wide;
+      const dp = d.deep;
+      const t = dp * BRACKET.thick;
+      const k = BRACKET.cut;
+      const rim: Array<[number, number]> = [[-w, 0], [-w, dp * (1 - k)], [-w * (1 - k), dp], [w * (1 - k), dp], [w, dp * (1 - k)], [w, 0]];
+      const pos: number[] = [];
+      const col: number[] = [];
+      const uvs: number[] = [];
+      const crown = c.clone().lerp(new THREE.Color(0xffffff), 0.45).multiplyScalar(1.15);
+      const edge = c.clone().multiplyScalar(0.85);
+      const under = c.clone().multiplyScalar(0.5);
+      const dark = c.clone().multiplyScalar(0.3);
+      // (Its picture is the mushrooms' own, `mushroomCap`: down it from crown to rim to gills.)
+      const put = (x: number, y: number, z: number, cc: THREE.Color, v: number): void => {
+        pos.push(x, y, z);
+        col.push(cc.r, cc.g, cc.b);
+        uvs.push((x / (2 * w) + 0.5) * 2, v);
+      };
+      for (let i = 0; i + 1 < rim.length; i++) {
+        const [ax, az] = rim[i];
+        const [bx, bz] = rim[i + 1];
+        // Its top.
+        put(0, 0, dp * 0.4, crown, 0); put(ax, 0, az, edge, 0.6); put(bx, 0, bz, edge, 0.6);
+        // Its lip, turned down.
+        put(ax, 0, az, edge, 0.6); put(ax * 0.96, -t * 0.4, az * 0.96, under, 0.75); put(bx * 0.96, -t * 0.4, bz * 0.96, under, 0.75);
+        put(ax, 0, az, edge, 0.6); put(bx * 0.96, -t * 0.4, bz * 0.96, under, 0.75); put(bx, 0, bz, edge, 0.6);
+        // Its gills: in and down to the wall.
+        put(ax * 0.96, -t * 0.4, az * 0.96, under, 0.8); put(0, -t, 0, dark, 1); put(bx * 0.96, -t * 0.4, bz * 0.96, under, 0.8);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+      geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+      geo.computeVertexNormals();
+      const shelf = new THREE.Mesh(geo, (mushroomGlow ??= new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, map: getTexture('mushroomCap') })));
+      shelf.position.set(d.x, d.y, d.z);
+      shelf.rotation.y = d.yaw;
+      group.add(shelf);
+      const ox = Math.sin(d.yaw);
+      const oz = Math.cos(d.yaw);
+      halo(d.x + ox * dp * 0.5, d.y - t * 0.3, d.z + oz * dp * 0.5, Math.max(w, dp) * 3.4, c, 0.3);
+      lightDefs.push({ x: d.x + ox * dp * 0.7, y: d.y + 0.5, z: d.z + oz * dp * 0.7, r: 5, color: c, power: 0.8, flash: 0, flicker: 0.05, phase: d.x * 1.3 + d.z * 0.7 + d.y });
     } else if (d.kind === 'moss') {
       // A clump of glowing moss: two or three ragged lobes of it lying on the rock, each bright at its heart and dying
       // away to its edge; from a clump on a wall, threads hanging, a bead of light at the end of each.

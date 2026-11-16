@@ -94,6 +94,11 @@ export interface MenuHost {
   rumble?: { level(): RumbleLevel; set(l: RumbleLevel): void };
   /** The save file being played, for the SAVE screen's card. */
   fileInfo?(): { file: number; where: string; wedges: number; total: number; played: string };
+  /**
+   * The way out of wherever he is, from the pause menu: where it leads (a place's name) and the going. Null in a place
+   * there is no leaving from this way (the Club itself). So that no place can hold him: he keeps what he has found.
+   */
+  leave?(): { to: string; go(): void } | null;
   /** Saves and goes back to the title screen (to change save files). */
   toTitle?(): void;
   /** False while the menu is open over the title screen (OPTIONS): no game is chosen yet, so nothing to save or load. */
@@ -649,6 +654,11 @@ export class Menu {
       else if (id === 'load') {
         if (this.host.load()) return this.close();
         this.message = 'No saved game yet.';
+      } else if (id === 'leave') {
+        const way = this.host.leave?.();
+        this.close();
+        way?.go();
+        return;
       } else if (id === 'title') {
         this.close();
         this.host.toTitle?.();
@@ -954,6 +964,7 @@ export class Menu {
       { id: 'settings', label: 'SETTINGS' },
       ...(tools.length ? [{ id: 'tools', label: 'TOOLS' }] : []),
       ...(game && this.host.openPhoto ? [{ id: 'photo', label: 'PHOTO MODE' }] : []),
+      ...(game && this.host.leave?.() ? [{ id: 'leave', label: `LEAVE: BACK TO ${this.host.leave()!.to.toUpperCase()}` }] : []),
       ...(game && this.host.toTitle ? [{ id: 'title', label: 'SAVE AND QUIT TO TITLE' }] : []),
       ...(this.host.quit ? [{ id: 'quit', label: this.confirmQuit ? 'SELECT AGAIN TO QUIT' : 'QUIT GAME', warn: true }] : []),
     ];

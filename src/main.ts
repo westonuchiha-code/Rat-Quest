@@ -2467,6 +2467,22 @@ function startGame(): void {
     },
     inGame: () => !optionsFromTitle,
     fileInfo: () => ({ file: files.file, where: cur.name, wedges: wedgeTotal(), total: allWedges(), played: formatPlayed(played) }),
+    // The way out of any place but the Club, from the pause menu: a side area's leads back to its world, any other
+    // to the Club; he arrives in front of the door that led here. (The owner, 2026-11-16, at the top of the Milky Way:
+    // "there's no door to go back so it feels like a soft lock".)
+    leave: () => {
+      if (cur.hub || cur.id === 'custom' || trans.active || cutscene.active || story.scene || player.dead) return null;
+      const parent = (cur.returnTo ? levelById(cur.returnTo) : null) ?? hubLevel;
+      if (!parent || parent === cur) return null;
+      return {
+        to: parent.name,
+        go: () => {
+          const cd = [...doorsOf(parent), ...(parent === hubLevel ? hubDoors() : [])].find((d) => d.to === cur.id);
+          startTransition(parent);
+          if (cd) trans.arrive = { x: cd.door.x, z: cd.door.z, y: cd.door.y ?? 0, yaw: cd.door.yaw };
+        },
+      };
+    },
     toTitle: () => {
       if (cur.id !== 'custom') writeSave(storage, snapshot(), 'auto');
       flushPlayed();

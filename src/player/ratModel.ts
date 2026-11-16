@@ -53,6 +53,15 @@ const C = {
 
 const material = createPs1Material({ lit: true });
 const materialTwoSided = createPs1Material({ lit: true, side: THREE.DoubleSide });
+const S_A = new THREE.Vector3();
+const S_B = new THREE.Vector3();
+const S_C = new THREE.Vector3();
+const S_D = new THREE.Vector3();
+const S_E = new THREE.Vector3();
+const S_F = new THREE.Vector3();
+const S_G = new THREE.Vector3();
+const S_M = new THREE.Matrix4();
+const UP_Y = new THREE.Vector3(0, 1, 0);
 
 type ColorFn = (x: number, y: number, z: number) => number;
 
@@ -113,6 +122,17 @@ export const DREAM_LOOK: Partial<typeof C> = {
   tunic: 0x4dff6a, tunicDark: 0x1fcf52, leather: 0x7a3cff, scarf: 0xffe53a,
   metal: 0xff8a2a, metalDark: 0xe0601a, blade: 0xbffcff, gold: 0xffffff, wood: 0x7a3cff, shieldRed: 0xff3a6a,
 };
+
+/**
+ * THE STREAMER: his scarf in the dream. (The owner, 2026-11-16, of the first long scarf, the short one stretched and
+ * held out stiff: "it just sort of looks like he's got a second tail coming out of his neck ... maybe we could do some
+ * sort of like fake wind that makes it constantly flowing behind him in this world".) A flat ribbon, not a tube: a
+ * hand wide, forked at its end, banded in its trim colour so that its turning shows. It is a chain of points out from
+ * the back of his neck, kept IN THE ROOM, not on him: a wind of its own blows each one out behind him and a little
+ * up (and a little to one side, so that it is seen past him), each follows the one before a moment late, and a wave runs down it that is wider the further out it goes. So it
+ * streams when he stands, swings wide when he turns, and trails when he runs or falls.
+ */
+export const STREAMER = { points: 14, length: 1.5, wide: 0.12, lift: 0.62, drift: 0.34 } as const;
 
 /** Every mesh under a root, by its path from the root (which child of which child): the same in two models built the same way. */
 function meshPaths(root: THREE.Object3D): Map<string, THREE.Mesh> {
@@ -734,10 +754,124 @@ export class RatModel {
     flatten(STANCE, this.value);
     flatten(STANCE, this.target);
     this.apply(0);
+    this.scarfColors = { cloth: C.scarf, trim: C.scarf };
+    this.buildStreamer();
     Object.assign(C, standard);
   }
 
   private readonly dress = { scarf: true, helmet: true, gear: true };
+  private streamer!: THREE.Mesh;
+  /** The streamer's points, in the room, from his neck outward; and whether they have been laid out yet. */
+  private readonly chain: THREE.Vector3[] = Array.from({ length: STREAMER.points }, () => new THREE.Vector3());
+  private chainLaid = false;
+  private scarfColors: ScarfColors = { cloth: C.scarf, trim: C.scarf };
+
+  private buildStreamer(): void {
+    const N = STREAMER.points;
+    const geo = new THREE.BufferGeometry();
+    // (Two points to each place along it, left and right, and one more in the notch of its forked end.)
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((N * 2 + 1) * 3), 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array((N * 2 + 1) * 3), 3));
+    geo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array((N * 2 + 1) * 3), 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array((N * 2 + 1) * 2), 2));
+    const idx: number[] = [];
+    for (let i = 0; i < N - 2; i++) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    const a = (N - 2) * 2;
+    idx.push(a, N * 2, a + 2, N * 2, a + 1, a + 3);
+    geo.setIndex(idx);
+    this.streamer = new THREE.Mesh(geo, this.matTwo);
+    this.streamer.frustumCulled = false;
+    this.streamer.visible = false;
+    this.root.add(this.streamer);
+    this.paintStreamer();
+  }
+
+  /** The streamer's colours: the scarf's cloth, a band of its trim every so often, and its forked end all trim. */
+  private paintStreamer(): void {
+    const N = STREAMER.points;
+    const col = this.streamer.geometry.attributes.color as THREE.BufferAttribute;
+    const c = new THREE.Color();
+    for (let i = 0; i < N; i++) {
+      c.set(i >= N - 3 || i % 4 === 2 ? this.scarfColors.trim : this.scarfColors.cloth);
+      col.setXYZ(i * 2, c.r, c.g, c.b);
+      col.setXYZ(i * 2 + 1, c.r, c.g, c.b);
+    }
+    c.set(this.scarfColors.trim);
+    col.setXYZ(N * 2, c.r, c.g, c.b);
+    col.needsUpdate = true;
+  }
+
+  /** Blows the streamer out behind him. `dt` 0 (a held frame): it stays as it is. */
+  private flowStreamer(dt: number): void {
+    if (!this.streamer) return; // (he is still being put together)
+    const on = this.scarfLong > 1 && this.dress.scarf;
+    this.streamer.visible = on;
+    // (The short tail is put away while the streamer flies; the collar stays.)
+    for (const { mesh: m } of this.scarfParts) if (this.scarfSegments.includes(m.parent as THREE.Group)) m.visible = this.dress.scarf && !on;
+    if (!on) {
+      this.chainLaid = false;
+      return;
+    }
+    const N = STREAMER.points;
+    const L = STREAMER.length / (N - 1);
+    const neck = this.scarfSegments[0];
+    neck.updateWorldMatrix(true, false);
+    this.root.updateWorldMatrix(true, false);
+    const anchor = neck.getWorldPosition(S_A);
+    // Behind him, and to his side, in the room.
+    const back = S_B.set(0, 0, -1).transformDirection(this.root.matrixWorld);
+    const side = S_C.set(1, 0, 0).transformDirection(this.root.matrixWorld);
+    this.chain[0].copy(anchor);
+    const t = this.time;
+    for (let i = 1; i < N; i++) {
+      const u = i / (N - 1);
+      // Where the wind would hold this point: out from the one before, with the wave that runs down it.
+      // (Up as well as back, and a little to one side: the game looks at him from behind and above, and a ribbon
+      // flying level and straight back would be hidden by his own body and seem to hang.)
+      const rise = STREAMER.lift * (1 - u * 0.55) + Math.cos(t * 9.5 - i * 0.8) * (0.1 + 0.5 * u);
+      const sway = STREAMER.drift + Math.cos(t * 6.1 - i * 0.62 + 1.3) * (0.1 + 0.5 * u);
+      S_D.copy(back).addScaledVector(UP_Y, rise).addScaledVector(side, sway).normalize();
+      const ideal = S_E.copy(this.chain[i - 1]).addScaledVector(S_D, L);
+      const p = this.chain[i];
+      if (!this.chainLaid) p.copy(ideal);
+      else if (dt > 0) p.lerp(ideal, 1 - Math.exp(-dt * (30 - 18 * u)));
+      // (Cloth does not stretch: each point its own length from the one before.)
+      S_D.copy(p).sub(this.chain[i - 1]);
+      if (S_D.lengthSq() < 1e-8) S_D.copy(back);
+      p.copy(this.chain[i - 1]).addScaledVector(S_D.normalize(), L);
+    }
+    this.chainLaid = true;
+    // The ribbon round the chain, in his own space (it is a part of him, drawn where the room has it).
+    const inv = S_M.copy(this.root.matrixWorld).invert();
+    const pos = this.streamer.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      const along = S_D.copy(this.chain[Math.min(N - 1, i + 1)]).sub(this.chain[Math.max(0, i - 1)]).normalize();
+      const across = S_E.crossVectors(along, UP_Y);
+      if (across.lengthSq() < 1e-6) across.copy(side);
+      across.normalize();
+      // (It turns over as it flies: more toward its end.)
+      const twist = Math.sin(t * 5.3 - i * 0.55) * 0.9 * u;
+      const up = S_F.crossVectors(across, along);
+      across.multiplyScalar(Math.cos(twist)).addScaledVector(up, Math.sin(twist));
+      const half = (STREAMER.wide / 2) * (0.5 + 0.5 * Math.min(1, u * 5)) * (i === N - 1 ? 1.5 : 1);
+      S_G.copy(this.chain[i]).addScaledVector(across, -half).applyMatrix4(inv);
+      pos.setXYZ(i * 2, S_G.x, S_G.y, S_G.z);
+      S_G.copy(this.chain[i]).addScaledVector(across, half).applyMatrix4(inv);
+      pos.setXYZ(i * 2 + 1, S_G.x, S_G.y, S_G.z);
+    }
+    // The notch of the fork: the middle of it, one place short of the end.
+    S_G.copy(this.chain[N - 2]).applyMatrix4(inv);
+    pos.setXYZ(N * 2, S_G.x, S_G.y, S_G.z);
+    pos.needsUpdate = true;
+    this.streamer.geometry.computeVertexNormals();
+  }
+
+  /** The streamer's points in the room, from his neck outward (for tests). */
+  streamerPoints(): readonly THREE.Vector3[] {
+    return this.chain;
+  }
+
   private held: THREE.Object3D | null = null;
 
   /** What he has on: the scarf, the helmet, and his sword and shield (drawn or on his back). */
@@ -807,12 +941,14 @@ export class RatModel {
   /** How many times its own length his scarf's tail is (1: as it is). In the dream it streams out behind him three times as long. */
   setScarfLong(k: number): void {
     this.scarfLong = k;
-    this.scarfSegments[0].scale.set(1 + (k - 1) * 0.22, k, 1);
+    // (Longer than its own length it is the STREAMER, a ribbon that flies; the short tail is put away.)
   }
 
   /** Recolours the scarf: the collar and tails take the cloth colour, and the end of the tail the trim. */
   setScarf(colors: ScarfColors): void {
     for (const { mesh: m, hem } of this.scarfParts) paint(m.geometry, hem ? (_x, y) => (y < -0.085 ? colors.trim : colors.cloth) : colors.cloth);
+    this.scarfColors = { ...colors };
+    this.paintStreamer();
   }
 
   /** Places the rat in the world. */
@@ -874,8 +1010,11 @@ export class RatModel {
     this.boardScale = k;
   }
 
+  private lastDt = 0;
+
   update(dt: number, ctx: RatAnimInput): void {
     this.time += dt;
+    this.lastDt = dt;
     const state = ctx.state;
     const grounded = state !== 'jump' && state !== 'fall' && state !== 'longjump' && state !== 'hang' && state !== 'climb';
     const moving = (state === 'walk' || state === 'run' || state === 'guard') && ctx.planarSpeed > 0.3;
@@ -1394,6 +1533,7 @@ export class RatModel {
     const long = this.scarfLong - 1;
     this.scarfSegments[0].rotation.x = 0.35 + long * 0.32 + stream * (0.9 - long * 0.18) + Math.sin(this.time * rate) * (0.08 + stream * 0.12) * (1 + long * 0.3);
     this.scarfSegments[1].rotation.x = 0.1 + stream * 0.25 + Math.sin(this.time * rate - 1.2) * (0.12 + stream * 0.15) * (1 + long * 0.5);
+    this.flowStreamer(this.lastDt);
   }
 
   /**

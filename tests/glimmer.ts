@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
 import { mushroomTop } from '../src/world/layout';
-import { glimmerDeep, GLIMMER, LANDING, RIFT, FAR_BANK, HIGH_SHELF, CAPS, CAP_WIDE, RIFT_STEPS, SPIRE, GLIMMER_PRIZES, GLIMMER_WEDGES } from '../src/levels/glimmer';
+import { glimmerDeep, GLIMMER, LANDING, RIFT, FAR_BANK, HIGH_SHELF, CAPS, CAP_WIDE, SHELF, SHELVES_HOME, SHELVES_BANK, SPIRE, GLIMMER_PRIZES, GLIMMER_WEDGES } from '../src/levels/glimmer';
 import { LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { standsOn } from '../src/enemies/footing';
@@ -130,20 +130,34 @@ const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT
 // ---------------------------------------------------------------- the Rift
 {
   check('the Rift splits the cave from wall to wall: ten across, seven deep, and its floor is not below where the game sends a faller back from (six under zero: the first lay-out had it at seven under, and he could not stand on it); the Far Bank beyond it is a little higher than the Landing', RIFT.z1 - RIFT.z0 === 10 && LANDING - RIFT.floor === 7 && FAR_BANK - LANDING > 2 && FAR_BANK - LANDING < 3 && RIFT.floor >= 0 && standsOn(cs, 0, RIFT.floor, 7, 0.4) && standsOn(cs, 0, FAR_BANK, -6, 0.4) && !standsOn(cs, 0, LANDING, 7, 0.4));
-  // Out of it: up the three steps and onto each bank, with the real controller.
-  const steps: Stop[] = RIFT_STEPS.map(([z0, z1, top]) => ({ x: -GLIMMER.halfX + 2, z: (z0 + z1) / 2, top, r: 2.4 }));
-  const floor: Stop = { x: -GLIMMER.halfX + 6.5, z: steps[0].z, top: RIFT.floor, r: 2 };
-  const up = [floor, ...steps];
-  const climbs = up.slice(0, -1).map((s, i) => ways(s, up[i + 1], 1.2));
-  check('HE CAN GET OUT OF IT: three steps of rock at its west end, each two up, each a jump from the last', steps.length === 3 && steps.every((s, i) => s.top - (i ? steps[i - 1].top : RIFT.floor) === 2) && climbs.every((c) => c.one + c.two >= 3), climbs.map((c) => `${c.one}+${c.two}`).join('; '));
-  const toLanding = reachUp(steps[0].x, steps[0].top, steps[0].z + 1, [steps[0].x, RIFT.z1 + 2]);
-  const toBank = reachUp(steps[2].x, steps[2].top, steps[2].z - 0.8, [steps[2].x, RIFT.z0 - 2]);
-  check('...and from the steps both banks are a climb he can make: the Landing from the first step (five up, by the second jump and a caught edge), the Far Bank from the last (three and a half)', toLanding > LANDING - 0.05 && toBank > FAR_BANK - 0.05, `to ${toLanding.toFixed(2)} and ${toBank.toFixed(2)}`);
+  // Out of it: up the shelf mushrooms and onto each bank, with the real controller. (A shelf, as a place to land:
+  // its middle, half its depth out from the wall.)
+  const stopOf = ([x, z, yaw, top]: readonly [number, number, number, number]): Stop => ({ x: x + Math.sin(yaw) * SHELF.deep * 0.5, z: z + Math.cos(yaw) * SHELF.deep * 0.5, top, r: 1.7 });
+  const home = SHELVES_HOME.map(stopOf);
+  const bank = SHELVES_BANK.map(stopOf);
+  const from: Stop = { x: -15, z: (RIFT.z0 + RIFT.z1) / 2, top: RIFT.floor, r: 2 };
+  const onLanding: Stop = { x: home[2].x, z: RIFT.z1 + 1.2, top: LANDING, r: 1.6 };
+  const onBank: Stop = { x: bank[3].x + 0.4, z: RIFT.z0 - 1.2, top: FAR_BANK, r: 1.8 };
+  const homeWay = [from, ...home, onLanding];
+  const bankWay = [from, ...bank, onBank];
+  const hops = (way: Stop[]): Array<{ one: number; two: number }> => way.slice(0, -1).map((s2, i) => ways(s2, way[i + 1], 0.5));
+  const homeHops = hops(homeWay);
+  const bankHops = hops(bankWay);
+  check('HE CAN GET OUT OF IT, TO THE DOOR: three shelf mushrooms up the Landing\'s face at the Rift\'s west end and the Landing above the last, each a jump from the one before, and ONE jump does every one', home.length === 3 && homeHops.every((c) => c.one >= 3), homeHops.map((c) => `${c.one}+${c.two}`).join('; '));
+  check('...and to the Far Bank: four more up its face and round onto the west wall, the same', bank.length === 4 && bankHops.every((c) => c.one >= 3), bankHops.map((c) => `${c.one}+${c.two}`).join('; '));
+  const rises = [...homeWay, ...bankWay].map((s2) => s2.top);
+  check('no step of either ladder is more than one jump high (two and four tenths): under two, every one', homeWay.slice(1).every((s2, i) => s2.top - homeWay[i].top <= 1.95 && s2.top > homeWay[i].top) && bankWay.slice(1).every((s2, i) => s2.top - bankWay[i].top <= 1.95 && s2.top > bankWay[i].top), rises.join(' '));
+  const shelves = def.decor.filter((d) => d.kind === 'bracket') as Array<Extract<(typeof def.decor)[number], { kind: 'bracket' }>>;
+  const solidOf = (d: (typeof shelves)[number]): boolean => def.solids.some((b) => b.hidden && Math.abs(b.y1 - d.y) < 1e-9 && Math.abs((b.x1 - b.x0) * (b.z1 - b.z0) - SHELF.wide * 2 * SHELF.deep) < 1e-6 && d.x >= b.x0 - 1e-6 && d.x <= b.x1 + 1e-6 && d.z >= b.z0 - 1e-6 && d.z <= b.z1 + 1e-6);
+  check('each shelf is drawn where it is solid, grows from a wall of the Rift (its back is ON a wall\'s face), and glows: amber to the door, another colour to the Far Bank', shelves.length === 7 && shelves.every(solidOf) && shelves.every((d) => Math.abs(d.z - RIFT.z1) < 1e-9 || Math.abs(d.z - RIFT.z0) < 1e-9 || Math.abs(d.x + GLIMMER.halfX) < 1e-9) && new Set(shelves.slice(0, 3).map((d) => d.color)).size === 1 && new Set(shelves.slice(3).map((d) => d.color)).size === 1 && shelves[0].color !== shelves[3].color);
+  // Nothing stands in a shelf or over one where his head would be.
+  const crowd = shelves.filter((d) => def.solids.some((b) => !(b.hidden && Math.abs(b.y1 - d.y) < 1e-9) && b.y1 > d.y - 0.5 && b.y0 < d.y + 3.7 && b.kind !== 'wall' && b.kind !== 'floor' && b.x0 < d.x + Math.sin(d.yaw) * SHELF.deep * 0.5 + 0.8 && b.x1 > d.x + Math.sin(d.yaw) * SHELF.deep * 0.5 - 0.8 && b.z0 < d.z + Math.cos(d.yaw) * SHELF.deep * 0.5 + 0.8 && b.z1 > d.z + Math.cos(d.yaw) * SHELF.deep * 0.5 - 0.8));
+  check('nothing else stands in a shelf, or over one where his head goes when he jumps from it', crowd.length === 0, crowd.map((d) => `${d.x},${d.y},${d.z}`).join('; '));
   const straight = reachUp(0, RIFT.floor, RIFT.z1 - 0.6, [0, RIFT.z1 + 2]);
   check('...but not straight up its sides: seven is more than he can climb', straight < LANDING - 0.5, `gets to ${straight.toFixed(2)}`);
   const scorps = def.enemies.filter((e) => e.type === 'scorpion');
   const bugs = def.enemies.filter((e) => e.type === 'firefly');
-  check('two Lamp Scorpions keep its floor (one its own blue-green, one amber): each made on that floor, kept to it and clear of the steps, the Caps\' stems not in its way at the start', scorps.length === 2 && scorps.every((s) => s.y === RIFT.floor && standsOn(cs, s.x, RIFT.floor, s.z, 0.6) && s.arena!.x0 > -GLIMMER.halfX + 4 && s.arena!.z0 > RIFT.z0 && s.arena!.z1 < RIFT.z1 && s.arena!.x1 < HIGH_SHELF.x0) && scorps[0].color === undefined && scorps[1].color !== undefined);
+  check('two Lamp Scorpions keep its floor (one its own blue-green, one amber): each made on that floor, kept to it and clear of the corner where the shelves are, the Caps\' stems not in its way at the start', scorps.length === 2 && scorps.every((s) => s.y === RIFT.floor && standsOn(cs, s.x, RIFT.floor, s.z, 0.6) && s.arena!.x0 > SHELVES_HOME[0][0] + SHELF.wide && s.arena!.z0 > RIFT.z0 && s.arena!.z1 < RIFT.z1 && s.arena!.x1 < HIGH_SHELF.x0) && scorps[0].color === undefined && scorps[1].color !== undefined);
   const lamps = GLIMMER_WEDGES.find((x) => x.id === 'lamps')!;
   check('the second wedge, Lamps Out, asks for those two and no more: they are the only creatures that count, and they do not come back', lamps.appears?.type === 'defeat' && def.enemies.filter((e) => !e.uncounted).length === 2 && def.enemies.filter((e) => !e.uncounted).every((e) => e.type === 'scorpion' && e.respawn === false) && lamps.y === RIFT.floor && standsOn(cs, lamps.x, lamps.y, lamps.z, 0.4));
   check('three glow bugs fly over the Far Bank, each its own colour, there to be fought and counting toward nothing; their air is in from the walls, short of the Rift and of the Shelf', bugs.length === 3 && new Set(bugs.map((b) => b.color)).size === 3 && bugs.every((b) => b.uncounted && b.y === FAR_BANK && b.arena!.z1 < RIFT.z0 && b.arena!.x1 < HIGH_SHELF.x0 && b.arena!.x0 > -GLIMMER.halfX && b.arena!.z0 > -GLIMMER.halfZ));

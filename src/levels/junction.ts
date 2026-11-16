@@ -50,6 +50,12 @@ const club: CustomLevel = {
       'Out there it is all drips and beasts. In here it is one beat, forever. Boom, tss, boom boom tss!',
       'Sit by the fire a while, man. You look like you have been wall-kicking.',
     ] } }),
+    // Jinx: a girl rat, and a punk. She hangs about Dave's stage for now (the owner, 2026-11-16).
+    at('npc', 5.2, -15.4, 0.8, { props: { name: 'Jinx', kind: 'rat', lines: [
+      'Hey. Nice scarf. Did someone knit you that, or did you win it off somebody smaller?',
+      'I am Jinx. I am with the band. The band is Dave. Dave is the whole band.',
+      'The notch in my ear? A mantis did that. It is still down there, and it is still cross. Say hi from me.',
+    ] } }),
 
     // ---- West: Pip's counter ----
     // A low counter, and a step behind it so Pip can see over.

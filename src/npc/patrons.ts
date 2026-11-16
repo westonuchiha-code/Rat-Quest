@@ -16,11 +16,11 @@ import * as THREE from 'three';
 import { getTexture } from '../render/textures';
 import { createPs1Material } from '../render/ps1Material';
 import { buildMug } from '../world/tavernModels';
-import { bead, modelKit, type ColorAt } from '../render/modelKit';
+import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
 
-export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl';
-export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl'];
-export type PatronLook = 'mo' | 'pebble' | 'vix' | 'ash' | 'slink' | 'biscuit' | 'tawny' | 'snow';
+export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl' | 'rat';
+export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl', 'rat'];
+export type PatronLook = 'mo' | 'pebble' | 'vix' | 'ash' | 'slink' | 'biscuit' | 'tawny' | 'snow' | 'jinx';
 /** `tend`: keeping the bar (a mug in one hand and a rag going round it in the other). */
 export type Doing = 'stand' | 'drink' | 'chat' | 'lean' | 'cards' | 'tend';
 
@@ -30,6 +30,7 @@ export function patronLook(kind: PatronKind, name: string): PatronLook {
   if (kind === 'turtle') return n.includes('PEBBLE') ? 'pebble' : 'mo';
   if (kind === 'ferret') return n.includes('BISCUIT') ? 'biscuit' : 'slink';
   if (kind === 'owl') return n.includes('SNOW') ? 'snow' : 'tawny';
+  if (kind === 'rat') return 'jinx';
   return n.includes('ASH') ? 'ash' : 'vix';
 }
 
@@ -65,7 +66,13 @@ const kit = modelKit(mat);
 // What a turtle is made of. Each has a picture of its SURFACE, in greys (render/textures.ts): his colours are his own,
 // painted on him part by part, and the picture is laid over them. (The owner, 2026-11-16: "The turtles are also
 // fairly texturless".)
-const scuteMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('turtleScute') }); // a plate of his shell, its rings
+/**
+ * A coat of fur: a surface picture in greys over each furred regular's own painted colours. (The owl is still
+ * plain: feathers tried at this size came out as a wall of bricks, and were taken off again. 2026-11-16.)
+ */
+const furMat = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+const scuteMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('turtleScute') }); // a plate of his shell, its ridges
+const mossyMat = createPs1Material({ lit: true, shine: 0.15, tex: getTexture('turtleScuteMossy') }); // the old one's: moss in from its edges
 const skinKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleSkin') })); // scales
 const bellyKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleBelly') })); // the shield of his front
 const WHITE = new THREE.MeshBasicMaterial({ color: 0xf4f0e4 });
@@ -243,14 +250,12 @@ class Turtle implements PatronBody {
     // like bumps"). One octagonal plate in the middle of his back, eight round it, eight more below those, and a pale
     // rim: each a flat face with a dark seam round it. And the flat pale shield of his front.
     this.shell.position.set(0, 0.5, -0.06);
-    this.shell.add(new THREE.Mesh(shellGeometry(C.shell, C.scute, C.rim), scuteMat));
+    this.shell.add(new THREE.Mesh(shellGeometry(C.shell, C.scute, C.rim), look === 'mo' ? mossyMat : scuteMat));
     // (Its seams are in its picture, `turtleBelly`: one down the middle and those across.)
     this.shell.add(bellyKit.blob(0.3, 0.34, 0.13, C.belly, 0, -0.01, 0.11, 8, 6, 0.18));
     this.body.add(this.shell);
-    if (look === 'mo') {
-      // Moss on the old one's shell, where it has been damp longest.
-      for (const [x, y, z, r] of [[-0.12, 0.3, -0.19, 0.09], [0.12, 0.33, -0.15, 0.07], [0.27, 0.0, -0.2, 0.06]]) this.shell.add(kit.blob(r, r * 0.6, r * 0.5, 0x8aa84c, x, y, z, 6, 4, 0.1));
-    }
+    // (The old one's moss is in his shell's picture, `turtleScuteMossy`. It was three balls stuck on his shell: the
+    // owner, 2026-11-16: "one of the turtles seems to still have the remnants of like the bubbles he had".)
     // Legs: short and thick, flat-footed.
     for (const side of [-1, 1]) {
       const leg = new THREE.Group();
@@ -420,18 +425,24 @@ function faceted(geo: THREE.BufferGeometry): THREE.BufferGeometry {
  * A turned shape: `profile` is its outline, [how far out, how far up], from its bottom to its top; `sides` flat faces
  * round it; `deep` squeezes it front to back. `lie`: laid over so that its length runs along +z (a head, a muzzle).
  */
-function turned(profile: Array<[number, number]>, color: ColorAt, sides = 6, deep = 1, lie = false): THREE.Mesh {
+/**
+ * What `turned` and `limb` make their shapes of when they are not told: plain, or (while a furred or feathered
+ * regular is being put together) his coat's picture. (The owner, 2026-11-16, of the stag: "We've got to think about
+ * all the models in the game that don't have textures we need to do this with them".)
+ */
+let ink: THREE.Material = mat;
+function turned(profile: Array<[number, number]>, color: ColorAt, sides = 6, deep = 1, lie = false, of: THREE.Material = ink): THREE.Mesh {
   const geo = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), sides);
   geo.rotateY(Math.PI / sides);
   geo.scale(1, 1, deep);
   if (lie) geo.rotateX(Math.PI / 2);
-  return new THREE.Mesh(paintFaces(faceted(geo), color, 0.2), mat);
+  return new THREE.Mesh(paintFaces(faceted(geo), color, 0.2), of);
 }
 /** A tapered limb hanging from the origin: `r0` across at the top, `r1` at the bottom, `length` long. */
-function limb(r0: number, r1: number, length: number, color: ColorAt, sides = 5): THREE.Mesh {
+function limb(r0: number, r1: number, length: number, color: ColorAt, sides = 5, of: THREE.Material = ink): THREE.Mesh {
   const geo = new THREE.CylinderGeometry(r0, r1, length, sides, 1);
   geo.translate(0, -length / 2, 0);
-  return new THREE.Mesh(paintFaces(faceted(geo), color, 0.15), mat);
+  return new THREE.Mesh(paintFaces(faceted(geo), color, 0.15), of);
 }
 
 class Fox implements PatronBody {
@@ -452,6 +463,7 @@ class Fox implements PatronBody {
 
   constructor(private readonly look: 'vix' | 'ash') {
     const C = FOX[look];
+    ink = furMat;
     this.root.add(this.body);
     this.body.position.y = LEG;
     // The body: ONE piece from his hips to the root of his neck, narrow at the waist, a pale bib down the front.
@@ -508,8 +520,8 @@ class Fox implements PatronBody {
     this.tail.add(turned([[0, 0], [0.05, 0.04], [0.13, 0.26], [0.15, 0.42], [0.1, 0.6], [0, 0.78]], (_x, ny) => (ny > 0.36 ? C.cream : C.coat), 6));
     this.body.add(this.tail);
     // A neckerchief: a collar and one point of it hanging in front.
-    this.chest.add(turned([[0.075, 0], [0.135, 0.02], [0.12, 0.075], [0.07, 0.085]], C.cloth, 6, 0.85).translateY(0.57));
-    const point = limb(0.06, 0.008, 0.16, C.clothDark, 3);
+    this.chest.add(turned([[0.075, 0], [0.135, 0.02], [0.12, 0.075], [0.07, 0.085]], C.cloth, 6, 0.85, false, mat).translateY(0.57));
+    const point = limb(0.06, 0.008, 0.16, C.clothDark, 3, mat);
     point.position.set(-0.03, 0.6, 0.1);
     point.rotation.x = -0.35;
     this.chest.add(point);
@@ -559,6 +571,7 @@ class Fox implements PatronBody {
       eyes.push(e);
     }
     if (look === 'vix') this.head.add(bead(0.024, new THREE.MeshBasicMaterial({ color: 0xe8b83a }), 0.165, 0.27, -0.04));
+    ink = mat;
     this.common = new Common(eyes, 0.72);
   }
 
@@ -663,6 +676,7 @@ class Ferret implements PatronBody {
 
   constructor(private readonly look: 'slink' | 'biscuit') {
     const C = FERRET[look];
+    ink = furMat;
     this.root.add(this.body);
     this.body.position.y = F_LEG;
     this.body.add(this.chest);
@@ -731,6 +745,7 @@ class Ferret implements PatronBody {
       this.head.add(e);
       eyes.push(e);
     }
+    ink = mat;
     this.common = new Common(eyes, 1);
   }
 
@@ -931,9 +946,358 @@ class Owl implements PatronBody {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// JINX: a girl rat, and a punk. (The owner, 2026-11-16: "I want to make a girl rat character, like a more feminine
+// version of the main character but also sort of punk rock type maybe she's got like a notch cut out of one of her
+// ears and she's got some like emo hair going on ... she dresses really feminine but she's got like this like Punk
+// goth rocker style and her tail is longer and usually up or curling around and she wears a skirt. She also just hangs
+// out in Dave's area for now". The pictures he sent with it were for the mood: she is nobody's character but his.)
+//
+// A rat as the knight is a rat (round ears, a pointed face) but slighter and longer in the leg. Dark fur, pale at the
+// muzzle and paws. ONE ear has a notch out of its rim, and two gold rings in it. Her hair is one long fringe swept
+// across her face and down over her left eye, dyed from black at its root to hot pink at its ends, and a cap of the same
+// black over the back of her head, ragged at the nape. A studded collar, a black knit top, striped warmers on her
+// arms; a short pleated tartan skirt; striped stockings and heavy boots. Her tail is half as long again as she is
+// tall and never lies down: it stands up behind her and curls over at its end, and the curl comes and goes.
+// A few shaped pieces, flat-faced, and every one of them has its picture (render/textures.ts).
+// ---------------------------------------------------------------------------------------------------------------
+
+const JINX = {
+  fur: 0x5a5262, furDark: 0x3e3846, pale: 0xeadcd6, earIn: 0xe58fb0, nose: 0xf07a9c, tail: 0xd9a6b4,
+  hair: 0x2a1c3a, dye: 0xff3e9a, top: 0x34303e, stud: 0xd8d8e4, gold: 0xf2c832, boot: 0x2a2630, sole: 0xcfc8d8, lid: 0x7a3cff,
+} as const;
+/** How long her thigh and her shin are (she is longer in the leg than the knight), and so how high her hips stand. */
+const J_THIGH = 0.2;
+const J_SHIN = 0.24;
+const J_LEG = J_THIGH + J_SHIN + 0.035;
+/** Her tail: how many lengths, and how long each. */
+const J_TAIL = { parts: 10, each: 0.13 } as const;
+
+/** What she is made of. */
+const jinxFur = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+const jinxHair = createPs1Material({ lit: true, shine: 0.35, tex: getTexture('hairStrands'), side: THREE.DoubleSide });
+const jinxKnit = createPs1Material({ lit: true, tex: getTexture('knit') });
+const jinxTartan = createPs1Material({ lit: true, tex: getTexture('tartan') });
+const jinxSock = createPs1Material({ lit: true, tex: getTexture('stripeSock') });
+const jinxTail = createPs1Material({ lit: true, tex: getTexture('ratTail') });
+const GOLD = new THREE.MeshBasicMaterial({ color: JINX.gold });
+const STUD = new THREE.MeshBasicMaterial({ color: JINX.stud });
+
+/**
+ * A rat's ear: a round flat leaf standing in the x-y plane, its root at the origin, facing +z. Pink inside (its
+ * front), fur behind. `notch`: a bite out of its rim, up and to the outside.
+ */
+export function ratEar(r: number, notch: boolean, fur: number, inside: number): THREE.BufferGeometry {
+  const N = 10;
+  const T = 0.012;
+  const rim: THREE.Vector2[] = [];
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 - Math.PI / 2;
+    // (The bite: one point of its rim drawn most of the way in.)
+    const k = notch && i === 4 ? 0.42 : 1;
+    rim.push(new THREE.Vector2(Math.cos(a) * r * k, r + Math.sin(a) * r * k));
+  }
+  const pos: number[] = [];
+  const col: number[] = [];
+  const uvs: number[] = [];
+  const F = new THREE.Color(fur);
+  const I = new THREE.Color(inside);
+  const put = (x: number, y: number, z: number, c: THREE.Color): void => {
+    pos.push(x, y, z);
+    col.push(c.r, c.g, c.b);
+    uvs.push(x / (2 * r) + 0.5, y / (2 * r));
+  };
+  for (let i = 0; i < N; i++) {
+    const a = rim[i];
+    const b = rim[(i + 1) % N];
+    // Its front: the inside of the ear, a rim of fur round it.
+    put(0, r, T, I); put(a.x * 0.8, r + (a.y - r) * 0.8, T, I); put(b.x * 0.8, r + (b.y - r) * 0.8, T, I);
+    put(a.x * 0.8, r + (a.y - r) * 0.8, T, F); put(a.x, a.y, 0, F); put(b.x, b.y, 0, F);
+    put(a.x * 0.8, r + (a.y - r) * 0.8, T, F); put(b.x, b.y, 0, F); put(b.x * 0.8, r + (b.y - r) * 0.8, T, F);
+    // Its back.
+    put(0, r, -T, F); put(b.x, b.y, 0, F); put(a.x, a.y, 0, F);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * A lock of hair: a blade along a path, `path` its middle line and `wide` how wide it is at each point (0 at a
+ * point: it ends in one). Flat-faced: a ridge down its middle, a face either side. `color(k)`: its colour, root (0)
+ * to end (1).
+ */
+function lock(path: Array<[number, number, number]>, wide: number[], out: [number, number, number], color: (k: number) => number): THREE.Mesh {
+  const P = path.map((q) => new THREE.Vector3(...q));
+  const O = new THREE.Vector3(...out).normalize();
+  const pos: number[] = [];
+  const col: number[] = [];
+  const uvs: number[] = [];
+  const c = new THREE.Color();
+  const ring = (i: number): [THREE.Vector3, THREE.Vector3, THREE.Vector3] => {
+    const along = P[Math.min(P.length - 1, i + 1)].clone().sub(P[Math.max(0, i - 1)]).normalize();
+    const across = new THREE.Vector3().crossVectors(along, O).normalize().multiplyScalar(wide[i] / 2);
+    return [P[i].clone().sub(across), P[i].clone().addScaledVector(O, wide[i] * 0.28), P[i].clone().add(across)];
+  };
+  const put = (v: THREE.Vector3, k: number, u: number): void => {
+    pos.push(v.x, v.y, v.z);
+    c.set(color(k));
+    col.push(c.r, c.g, c.b);
+    uvs.push(u, 1 - k);
+  };
+  for (let i = 0; i + 1 < P.length; i++) {
+    const a = ring(i);
+    const b = ring(i + 1);
+    const ka = i / (P.length - 1);
+    const kb = (i + 1) / (P.length - 1);
+    for (const [l, r, ul, ur] of [[0, 1, 0, 0.5], [1, 2, 0.5, 1]] as const) {
+      put(a[l], ka, ul); put(b[l], kb, ul); put(a[r], ka, ur);
+      put(a[r], ka, ur); put(b[l], kb, ul); put(b[r], kb, ur);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uvs), 2));
+  geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, jinxHair);
+  return m;
+}
+
+class Jinx implements PatronBody {
+  readonly root = new THREE.Group();
+  readonly height = 1.42;
+  private readonly body = new THREE.Group();
+  private readonly chest = new THREE.Group();
+  private readonly head = new THREE.Group();
+  private readonly jaw = new THREE.Group();
+  private readonly fringe = new THREE.Group();
+  private readonly ears: THREE.Group[] = [];
+  private readonly arms: Array<{ upper: THREE.Group; fore: THREE.Group; side: number }> = [];
+  private readonly legs: Array<{ thigh: THREE.Group; shin: THREE.Group; side: number }> = [];
+  private readonly tail: THREE.Group[] = [];
+  private readonly mugHand = new THREE.Group();
+  private readonly common: Common;
+  private sip = 0;
+
+  constructor() {
+    const C = JINX;
+    this.root.add(this.body);
+    this.body.position.y = J_LEG;
+    // Her skirt: short, flared, pleated (its picture is the tartan, and the pleats are in it). It hangs from her waist.
+    this.body.add(turned([[0, -0.1], [0.2, -0.17], [0.235, -0.165], [0.19, -0.07], [0.105, 0.035], [0, 0.04]], 0xffffff, 10, 0.92, false, jinxTartan));
+    // Her body: ONE piece from her waist to the root of her neck, narrow at the waist: a black knit top.
+    this.body.add(this.chest);
+    this.chest.position.y = 0.02;
+    this.chest.add(turned([[0, 0], [0.098, 0.01], [0.088, 0.1], [0.118, 0.24], [0.112, 0.31], [0.058, 0.365], [0, 0.37]], C.top, 6, 0.8, false, jinxKnit));
+    // A collar with studs round it.
+    this.chest.add(turned([[0.05, 0], [0.071, 0.008], [0.071, 0.04], [0.05, 0.048]], 0x1a1620, 8, 0.9).translateY(0.352));
+    for (let i = 0; i < 5; i++) {
+      const a = (i - 2) * 0.55;
+      this.chest.add(new THREE.Mesh(new THREE.OctahedronGeometry(0.014), STUD).translateX(Math.sin(a) * 0.072).translateY(0.376).translateZ(Math.cos(a) * 0.066));
+    }
+    // Legs: striped stockings to the thigh, and heavy boots with pale soles.
+    for (const side of [-1, 1]) {
+      const thigh = new THREE.Group();
+      thigh.position.set(side * 0.062, 0.0, 0);
+      thigh.add(limb(0.058, 0.046, J_THIGH, 0xffffff, 6, jinxSock));
+      const shin = new THREE.Group();
+      shin.position.set(0, -J_THIGH, 0);
+      shin.add(limb(0.046, 0.038, J_SHIN, 0xffffff, 6, jinxSock));
+      shin.add(kit.box(0.1, 0.13, 0.13, C.boot, 0, -J_SHIN + 0.04, 0.005));
+      shin.add(kit.box(0.1, 0.075, 0.11, C.boot, 0, -J_SHIN + 0.012, 0.115));
+      shin.add(kit.box(0.108, 0.03, 0.245, C.sole, 0, -J_SHIN - 0.02, 0.055));
+      thigh.add(shin);
+      this.body.add(thigh);
+      this.legs.push({ thigh, shin, side });
+    }
+    // Arms: slight; a striped warmer from elbow to wrist, a pale paw.
+    for (const side of [-1, 1]) {
+      const upper = new THREE.Group();
+      upper.position.set(side * 0.118, 0.3, 0);
+      upper.add(limb(0.04, 0.034, 0.19, C.fur, 5, jinxFur));
+      const fore = new THREE.Group();
+      fore.position.set(0, -0.19, 0);
+      fore.add(limb(0.04, 0.03, 0.17, 0xffffff, 5, jinxSock));
+      fore.add(kit.box(0.05, 0.058, 0.046, C.pale, 0, -0.195, 0.006));
+      upper.add(fore);
+      if (side > 0) {
+        this.mugHand.position.set(0, -0.21, 0.07);
+        this.mugHand.add(mug());
+        fore.add(this.mugHand);
+      }
+      this.chest.add(upper);
+      this.arms.push({ upper, fore, side });
+    }
+    // The head: ONE wedge, wide at the cheeks and running out to a pink nose, pale underneath and round the muzzle.
+    this.head.position.set(0, 0.43, 0.0);
+    this.chest.add(this.head);
+    this.head.add(turned(
+      [[0, -0.14], [0.115, -0.11], [0.17, -0.02], [0.152, 0.06], [0.07, 0.18], [0.036, 0.255], [0, 0.265]],
+      (_nx, ny, nz) => (ny < -0.35 || nz > 0.42 ? C.pale : C.fur), 7, 0.86, true, jinxFur,
+    ).translateY(0.1));
+    this.head.add(kit.blob(0.03, 0.026, 0.026, C.nose, 0, 0.102, 0.266, 5, 4, 0));
+    this.jaw.position.set(0, 0.045, 0.09);
+    this.jaw.add(turned([[0, 0], [0.042, 0.02], [0.02, 0.15], [0, 0.16]], C.pale, 4, 0.5, true, jinxFur));
+    this.head.add(this.jaw);
+    // Ears: big and round, set wide. Her right one (the one her hair leaves showing) has the notch, and two gold rings.
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Group();
+      ear.position.set(side * 0.125, 0.19, -0.035);
+      ear.userData.side = side;
+      const leaf = new THREE.Mesh(ratEar(0.125, side < 0, C.furDark, C.earIn), jinxFur);
+      // (The notch is cut up and to the OUTSIDE of the ear that has it: its leaf is turned over.)
+      if (side < 0) leaf.scale.x = -1;
+      ear.add(leaf);
+      if (side < 0) for (const [x, y] of [[-0.118, 0.1], [-0.105, 0.055]]) ear.add(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.006, 3, 6), GOLD).translateX(x).translateY(y).rotateY(Math.PI / 2));
+      ear.rotation.set(-0.12, side * -0.5, side * -0.42);
+      this.head.add(ear);
+      this.ears.push(ear);
+    }
+    // Eyes: large, a heavy violet lid over each and a flick of black at its corner.
+    const eyes: THREE.Object3D[] = [];
+    for (const side of [-1, 1]) {
+      const e = eye(0.05, 0.03);
+      e.position.set(side * 0.086, 0.128, 0.104);
+      e.rotation.y = side * 0.5;
+      this.head.add(e);
+      eyes.push(e);
+      const lid = kit.box(0.1, 0.014, 0.03, C.lid, side * 0.09, 0.181, 0.1);
+      lid.rotation.set(0, side * 0.5, side * 0.12);
+      this.head.add(lid);
+      const flick = kit.box(0.05, 0.012, 0.012, 0x14100c, side * 0.137, 0.152, 0.07);
+      flick.rotation.set(0, side * 0.9, side * 0.55);
+      this.head.add(flick);
+    }
+    // Her hair. A cap of it over the back of her head, ragged at the nape; and the fringe, ONE long lock from her
+    // crown forward and down across her face, over her left eye, to a point by her cheek. Black to hot pink.
+    const dip = (k: number): number => (k < 0.38 ? C.hair : mix(C.hair, C.dye, Math.min(1, (k - 0.38) / 0.3)));
+    this.head.add(turned([[0.165, -0.035], [0.178, 0.03], [0.15, 0.1], [0.085, 0.158], [0, 0.175]], C.hair, 7, 0.84, false, jinxHair).translateY(0.1).translateZ(-0.068));
+    for (const [x, a] of [[-0.085, 0.3], [0, 0], [0.085, -0.3]] as const) {
+      this.head.add(lock([[x, 0.12, -0.19], [x * 1.15, 0.03, -0.215], [x * 1.25, -0.07, -0.19]], [0.12, 0.1, 0], [Math.sin(-a), 0.1, -1], dip));
+    }
+    this.fringe.position.set(0.0, 0.262, -0.02);
+    this.fringe.add(lock(
+      [[0, 0, 0], [0.045, 0.012, 0.085], [0.1, -0.05, 0.16], [0.128, -0.15, 0.172], [0.118, -0.25, 0.15]],
+      [0.17, 0.2, 0.18, 0.12, 0], [0.25, 0.5, 1], dip,
+    ));
+    // (And a short lock the other way, off her brow, so the parting shows.)
+    this.fringe.add(lock([[-0.01, 0, 0.01], [-0.07, -0.01, 0.075], [-0.125, -0.07, 0.085]], [0.1, 0.1, 0], [-0.3, 0.6, 1], dip));
+    this.head.add(this.fringe);
+    // Her tail: long, bare, ringed. A chain of short lengths, each hinged on the last, from the back of her skirt.
+    let on: THREE.Object3D = this.body;
+    for (let i = 0; i < J_TAIL.parts; i++) {
+      const part = new THREE.Group();
+      part.position.set(0, i === 0 ? -0.02 : J_TAIL.each, i === 0 ? -0.1 : 0);
+      const r0 = 0.034 * (1 - i / J_TAIL.parts) + 0.008;
+      const r1 = 0.034 * (1 - (i + 1) / J_TAIL.parts) + 0.008;
+      // (Open-ended: each length's ends are inside the next and the last.)
+      const geo = new THREE.CylinderGeometry(r1, r0, J_TAIL.each * 1.06, 5, 1, i < J_TAIL.parts - 1);
+      geo.translate(0, J_TAIL.each / 2, 0);
+      part.add(new THREE.Mesh(paintFaces(faceted(geo), C.tail, 0.1), jinxTail));
+      on.add(part);
+      this.tail.push(part);
+      on = part;
+    }
+    // (A black bow tied near its end.)
+    for (const s of [-1, 1]) {
+      const wing = kit.cone(0.035, 0.07, 0x1a1620, 4);
+      wing.rotation.z = s * Math.PI / 2;
+      wing.position.set(s * 0.07, J_TAIL.each * 0.5, 0);
+      this.tail[J_TAIL.parts - 3].add(wing);
+    }
+    this.common = new Common(eyes, 0.78);
+  }
+
+  update(dt: number, ctx: PatronCtx): void {
+    const t = ctx.time;
+    this.common.step(dt, ctx);
+    const lean = ctx.doing === 'lean' && !ctx.seated;
+    const speaking = ctx.talking || this.common.mouth > 0.05;
+    // She keeps time with the room: a nod of her head and a tap of one boot, on the beat. (Not while she talks.)
+    const beat = Math.max(0, Math.sin(t * 5.2)) ** 3;
+    const groove = speaking ? 0 : 1;
+    // Standing with her weight on one hip, sitting, or leaning back on something with one boot up against it.
+    this.body.position.y = ctx.seated ? SEAT + 0.07 : J_LEG - (lean ? 0.015 : 0) - 0.008 * beat * groove;
+    this.body.position.z = lean ? -0.06 : 0;
+    this.body.rotation.set(lean ? -0.16 : ctx.seated ? 0.04 : 0, 0, ctx.seated || lean ? 0 : 0.06);
+    this.chest.rotation.set((lean ? 0.1 : 0) + 0.02 * Math.sin(t * 1.6), 0, ctx.seated || lean ? 0 : -0.1);
+    for (const leg of this.legs) {
+      if (ctx.seated) {
+        // (One leg over the other.)
+        leg.thigh.rotation.set(-1.5, 0, leg.side > 0 ? -0.22 : 0.06);
+        leg.shin.rotation.set(leg.side > 0 ? 1.15 + 0.12 * Math.sin(t * 2.6) : 1.5, 0, 0);
+      } else if (lean) {
+        leg.thigh.rotation.set(leg.side > 0 ? -0.75 : 0.18, 0, 0);
+        leg.shin.rotation.set(leg.side > 0 ? 1.7 : 0, 0, 0);
+      } else {
+        // Weight on her left leg; the right one out a little, its toe tapping.
+        leg.thigh.rotation.set(leg.side > 0 ? -0.16 - 0.1 * beat * groove : 0.02, 0, leg.side > 0 ? 0.14 : -0.06);
+        leg.shin.rotation.set(leg.side > 0 ? 0.2 + 0.16 * beat * groove : 0, 0, 0);
+      }
+    }
+    // The tail: up behind her and curled over at its end; the curl winds and unwinds, and the whole of it sways.
+    // (Sitting, it comes out behind the stool first and then goes up.)
+    const wind = 0.5 + 0.5 * Math.sin(t * 0.7);
+    this.tail.forEach((part, i) => {
+      const u = i / (J_TAIL.parts - 1);
+      // (Out behind her first, clear of her back and her head, and then up.)
+      const base = i === 0 ? (ctx.seated ? -1.9 : lean ? -1.5 : -1.45) : i < 4 ? (ctx.seated ? 0.45 : 0.3) : 0;
+      const curl = u > 0.4 ? (0.4 + 0.6 * wind) * ((u - 0.4) / 0.6) ** 0.7 : 0;
+      part.rotation.x = base + curl + 0.05 * Math.sin(t * 2.1 - i * 0.7);
+      part.rotation.z = (0.07 + 0.05 * u) * Math.sin(t * (speaking ? 2.4 : 1.2) - i * 0.5);
+    });
+    // Ears: the notched one flicks.
+    this.ears.forEach((ear, i) => {
+      const side = ear.userData.side as number;
+      const flick = now(t, 3.7 + i * 2.1, 0.26, i * 1.6);
+      ear.rotation.set(-0.12 - 0.12 * flick, side * -0.5, side * (-0.42 - 0.3 * flick) + (Common.listening(ctx) ? side * -0.06 : 0));
+    });
+    // The head: turned to whoever it is, cocked to one side; nodding to the beat; a toss of the fringe now and then.
+    const toss = now(t, 9.5, 0.7, 4);
+    this.head.rotation.y = ctx.headYaw + 0.25 * toss;
+    this.head.rotation.x = (lean ? 0.12 : 0.02) + 0.07 * beat * groove + (ctx.talking ? 0.05 * Math.sin(t * 8.5) : 0) - 0.5 * this.sip - 0.12 * toss + (ctx.nod ?? 0);
+    this.head.rotation.z = -0.1 + 0.05 * Math.sin(t * 0.6) + 0.14 * toss;
+    this.fringe.rotation.set(0.05 * beat * groove - 0.2 * toss, 0, 0.03 * Math.sin(t * 2.3) + 0.1 * toss);
+    this.jaw.rotation.x = 0.5 * this.common.mouth;
+    // Arms: one paw on her hip and the other hanging, standing; folded when she leans; a mug when she has one; a
+    // turn of the wrist when she talks.
+    const drinking = ctx.doing === 'drink' && !ctx.talking;
+    this.sip = drinking ? now(t, 6.8, 2.2, 1.2) : ease(this.sip, 0, dt, 8);
+    this.mugHand.visible = ctx.doing === 'drink';
+    for (const arm of this.arms) {
+      const s = arm.side;
+      if (lean) {
+        arm.upper.rotation.set(-0.5, 0, s * 0.22);
+        arm.fore.rotation.set(-1.2, 0, s * -1.3 + (s > 0 ? 0.12 : 0));
+      } else if (s > 0 && this.mugHand.visible) {
+        arm.upper.rotation.set(-0.55 - 0.85 * this.sip, 0, s * 0.12);
+        arm.fore.rotation.set(-1.0 - 0.75 * this.sip, 0, s * -0.25);
+        this.mugHand.rotation.x = 1.5 + 0.5 * this.sip;
+      } else if (ctx.seated) {
+        arm.upper.rotation.set(-0.5, 0, s * 0.12);
+        arm.fore.rotation.set(-0.8, 0, s * -0.5);
+      } else if (s < 0) {
+        // One paw on her hip, elbow out.
+        const wave = speaking ? 0.3 * Math.max(0, Math.sin(t * 4.2)) : 0;
+        arm.upper.rotation.set(0.25 - 0.5 * wave, 0, s * (0.75 - 0.3 * wave));
+        arm.fore.rotation.set(-0.5 - 0.9 * wave, 0, s * (-1.7 + 0.9 * wave));
+      } else {
+        const wave = speaking ? 0.5 + 0.45 * Math.sin(t * 5 + 1.3) : 0;
+        arm.upper.rotation.set(-0.05 - 0.5 * wave, 0, s * (0.14 + 0.2 * wave));
+        arm.fore.rotation.set(-0.12 - 0.9 * wave, 0, 0);
+      }
+    }
+  }
+}
+
 export function makePatron(kind: PatronKind, look: PatronLook): PatronBody {
   if (kind === 'turtle') return new Turtle(look === 'pebble' ? 'pebble' : 'mo');
   if (kind === 'ferret') return new Ferret(look === 'biscuit' ? 'biscuit' : 'slink');
   if (kind === 'owl') return new Owl(look === 'snow' ? 'snow' : 'tawny');
+  if (kind === 'rat') return new Jinx();
   return new Fox(look === 'ash' ? 'ash' : 'vix');
 }

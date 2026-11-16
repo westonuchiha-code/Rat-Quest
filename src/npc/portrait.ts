@@ -15,7 +15,7 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillStyle = c;
     g.fillRect(x, y, w, h);
   };
-  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : '#2a3448');
+  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : kind === 'rat' ? '#2a1a30' : '#2a3448');
   if (kind === 'turtle') {
     const old = patronLook('turtle', name) === 'mo';
     const skin = old ? '#7c8f4e' : '#9fbf5a';
@@ -68,6 +68,28 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
       px(20, 5, 2, 2, '#e8b83a'); // earring
     }
     px(4, 20, 16, 4, ash ? '#6a3f8f' : '#2f8f8a'); // neckerchief
+  } else if (kind === 'rat') {
+    // Jinx: dark fur, big ears (a notch out of one, two gold rings in it), a fringe over one eye, black to pink.
+    px(2, 2, 7, 7, '#3e3846');
+    px(15, 2, 7, 7, '#3e3846');
+    px(3, 3, 5, 5, '#e58fb0');
+    px(16, 3, 5, 5, '#e58fb0');
+    px(2, 2, 3, 3, '#2a1a30'); // the notch
+    px(1, 6, 1, 1, '#f2c832');
+    px(1, 8, 1, 1, '#f2c832');
+    px(5, 6, 14, 12, '#5a5262'); // head
+    px(8, 13, 8, 5, '#eadcd6'); // muzzle
+    px(11, 14, 2, 2, '#f07a9c');
+    px(6, 9, 5, 1, '#7a3cff'); // a violet lid
+    px(6, 10, 4, 3, '#f4f0e4');
+    px(8, 10, 2, 3, '#14100c');
+    px(8, 4, 12, 4, '#2a1c3a'); // the fringe
+    px(13, 8, 8, 3, '#2a1c3a');
+    px(13, 11, 7, 3, '#b02c78');
+    px(15, 14, 4, 2, '#ff3e9a');
+    px(6, 19, 12, 2, '#1a1620'); // a studded collar
+    for (const x of [7, 10, 13, 16]) px(x, 19, 1, 1, '#d8d8e4');
+    px(4, 21, 16, 3, '#34303e');
   } else if (kind === 'ferret') {
     const pale = patronLook('ferret', name) === 'biscuit';
     const coat = pale ? '#ead9b6' : '#7a5236';

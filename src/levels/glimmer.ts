@@ -11,14 +11,15 @@
  *   - Out of the Rift grow four great yellow mushrooms, the CAPS, each a running jump from the last and higher: the
  *     way up to the High Shelf, and the only one. (A wedge: The High Shelf.)
  *   - Down in the Rift, where the Caps have their feet, live two Lamp Scorpions. (A wedge: Lamps Out.) He can drop in
- *     from either bank; three steps of rock at its west end are the way out.
+ *     from either bank; shelf mushrooms growing out of its walls at its west end are the way out (`SHELVES_HOME`,
+ *     `SHELVES_BANK`): they glow, so the way out is the plainest thing down there.
  *   - Over the Far Bank fly three glow bugs, each its own colour. They are there to be fought and count toward nothing.
  * Three things to find, each got by moving well: a bottle cap in the air between the third Cap and the fourth; a
  * bottle cap at the bottom of the Rift, in the pocket behind the last Cap's foot; a relic on the tall pink mushroom
  * of the Far Bank, a climb of five and a half.
  */
 import type { LevelDef, WedgeDef, GoalDef } from './types';
-import { ceilingOf, extent, mushroomSolids, mushroomTop, type Box, type Decor } from '../world/layout';
+import { bracketSolids, ceilingOf, extent, mushroomSolids, mushroomTop, type Box, type Decor } from '../world/layout';
 import type { CollectibleDef } from '../world/collectibles';
 import { doorOn } from '../world/rooms';
 
@@ -46,14 +47,27 @@ export const CAPS: ReadonlyArray<readonly [number, number, number]> = [
 ];
 export const CAP_WIDE = 1.5;
 export const CAP_STEM = 0.4;
-/** The steps out of the Rift, at its west end: [z0, z1, top], against the west wall. */
-export const RIFT_STEPS: ReadonlyArray<readonly [number, number, number]> = [
-  [8.6, RIFT.z1, 2],
-  [5.2, 8.6, 4],
-  [RIFT.z0, 5.2, 6],
+/**
+ * THE WAY OUT OF THE RIFT: shelf mushrooms growing out of its walls at its west end, each a jump above the last.
+ * (The owner, 2026-11-16. Of three steps of rock in the wall's own picture: "I genuinely couldn't see these stairs".
+ * Of the same in pale cut stone: "now they feel out of place in the environment ... those steps could also just be
+ * like mushrooms growing out of the wall that you jump up to get up top, Which would also really fit the aesthetic".)
+ * They GLOW, so they are the plainest thing down there. Two ladders: amber up the Landing's face, to the door he came
+ * in by; pink up the Far Bank's face and round onto the west wall, to the Far Bank. [x, z, the way it grows out, top]
+ */
+export const SHELF = { wide: 1.5, deep: 2 } as const;
+export type Shelf = readonly [x: number, z: number, yaw: number, top: number];
+export const SHELVES_HOME: readonly Shelf[] = [
+  [-14, RIFT.z1, Math.PI, 1.75],
+  [-17.2, RIFT.z1, Math.PI, 3.5],
+  [-20.4, RIFT.z1, Math.PI, 5.25],
 ];
-/** How tall the small mushroom at the back of each step is: a lamp, too small to stand on or to be in the way. */
-export const STEP_LAMP = 0.6;
+export const SHELVES_BANK: readonly Shelf[] = [
+  [-14, RIFT.z0, 0, 1.9],
+  [-17.2, RIFT.z0, 0, 3.8],
+  [-20.4, RIFT.z0, 0, 5.7],
+  [-GLIMMER.halfX, RIFT.z0 + SHELF.wide, Math.PI / 2, 7.6],
+];
 /** The tall pink mushroom of the Far Bank: where it stands and how tall it is. */
 export const SPIRE = { x: -17, z: -11, tall: 5.5 } as const;
 export const GLIMMER_PRIZES = { air: 'glimmer-cap-air', deep: 'glimmer-cap-deep', spire: 'glimmer-relic-spire' } as const;
@@ -69,7 +83,7 @@ const AMBER = 0xffb03a;
 
 export const GLIMMER_WEDGES: WedgeDef[] = [
   { id: 'shelf', name: 'The High Shelf', hint: 'Four great caps grow up out of the Rift. Each is a running jump from the last, and the last is a jump from the shelf.', x: 20, y: HIGH_SHELF.y, z: -8, appears: null },
-  { id: 'lamps', name: 'Lamps Out', hint: 'Two Lamp Scorpions keep the bottom of the Rift. Put out both. The steps at its west end are the way back up.', x: 2, y: RIFT.floor, z: 9.6, appears: { type: 'defeat', label: 'Put out both lamps' } },
+  { id: 'lamps', name: 'Lamps Out', hint: 'Two Lamp Scorpions keep the bottom of the Rift. Put out both. The glowing shelves at its west end are the way back up: amber to the door, pink to the far bank.', x: 2, y: RIFT.floor, z: 9.6, appears: { type: 'defeat', label: 'Put out both lamps' } },
 ];
 const goalsOf = (ws: WedgeDef[]): GoalDef[] => ws.map((w) => w.appears ?? { type: 'reach', x: w.x, y: w.y, z: w.z, radius: 1.5, label: w.name });
 
@@ -89,12 +103,12 @@ export function glimmerDeep(): LevelDef {
   for (const [x0, x1, z0, z1] of [[-G.halfX - 1, -G.halfX, -G.halfZ - 1, G.halfZ + 1], [G.halfX, G.halfX + 1, -G.halfZ - 1, G.halfZ + 1], [-G.halfX, G.halfX, -G.halfZ - 1, -G.halfZ], [-G.halfX, G.halfX, G.halfZ, G.halfZ + 1]]) {
     solids.push(rock(extent('wall', x0, x1, BELOW, G.wall, z0, z1)));
   }
-  // The steps out of the Rift: in pale cut stone, not the wall's rock, and a small amber mushroom at the back of each
-  // to light it. (The owner, 2026-11-16: "I genuinely couldn't see these stairs because they use the same texture as
-  // the wall".)
-  for (const [z0, z1, top] of RIFT_STEPS) {
-    solids.push({ ...extent('stone', -G.halfX, -G.halfX + 4, RIFT.floor, top, z0, z1), skin: 'caveStep' });
-    decor.push({ kind: 'mushroom', x: -G.halfX + 0.7, y: top, z: (z0 + z1) / 2 + 0.8, size: STEP_LAMP, color: AMBER });
+  // The way out of the Rift: the shelf mushrooms, each solid as it is drawn.
+  for (const [list, color] of [[SHELVES_HOME, AMBER], [SHELVES_BANK, PINK]] as const) {
+    for (const [x, z, yaw, top] of list) {
+      decor.push({ kind: 'bracket', x, y: top, z, yaw, wide: SHELF.wide, deep: SHELF.deep, color });
+      solids.push(...bracketSolids(x, top, z, yaw, SHELF.wide, SHELF.deep));
+    }
   }
   // A low shelf of rock on the Landing and two on the Far Bank, to break the floors up. (None near the High Shelf,
   // and no mushroom tall enough to stand on near it either: the first lay-out had a ledge five and a half from its
@@ -128,7 +142,7 @@ export function glimmerDeep(): LevelDef {
     [-20.5, 15.2, L, 2.3, PINK], [-21.6, 16.8, L, 1.2, PINK], [-19.4, 17, L, 0.7, ORANGE],
     [12.6, 17.2, L + 1.2, 1.5, ORANGE], [14, 18.6, L + 1.2, 0.8, BLUE],
     // The Rift's floor: blue, down in the dark.
-    [-15, 4.2, R, 2.4, BLUE], [-13.6, 5.4, R, 1.1, BLUE], [-16.2, 5.8, R, 0.7, GREEN],
+    [-16, 7.2, R, 2.4, BLUE], [-14.6, 8.2, R, 1.1, BLUE], [-17.4, 6.2, R, 0.7, GREEN],
     [-0.8, 10.4, R, 1.3, BLUE], [0.6, 11, R, 0.7, BLUE],
     [6.6, 3.4, R, 1.8, GREEN], [7.8, 4.2, R, 0.8, BLUE],
     [13.6, 10.6, R, 1.2, BLUE],
@@ -157,7 +171,7 @@ export function glimmerDeep(): LevelDef {
     [-10.5, 4.2, G.halfZ, So, 1.5, 6, true], [9.5, 5.6, G.halfZ, So, 1.2, 5, false], [-G.halfX, 4.4, 16, E, 1.3, 5, false],
     // The Rift's own walls: the Landing's face (it looks north), the Far Bank's (south), and both ends.
     [-12, -3.2, RIFT.z1, N, 1.4, 5, true], [4, -2.6, RIFT.z1, N, 1.1, 4, false], [11.5, -4.4, RIFT.z1, N, 0.9, 3, false],
-    [-6.5, -2.2, RIFT.z0, So, 1.3, 6, false], [7.5, -1.4, RIFT.z0, So, 1.5, 6, true], [-17, -3.6, RIFT.z0, So, 0.9, 3, false],
+    [-6.5, -2.2, RIFT.z0, So, 1.3, 6, false], [7.5, -1.4, RIFT.z0, So, 1.5, 6, true], [-9.5, -3.6, RIFT.z0, So, 0.9, 3, false],
     [HIGH_SHELF.x0, -2.6, 7, W, 1.6, 7, true], [HIGH_SHELF.x0, 3.8, 4.4, W, 1.1, 4, false],
     // The Far Bank's walls.
     [-G.halfX, 6.2, -6, E, 1.6, 6, true], [-G.halfX, 8.6, -13.5, E, 1.0, 4, false], [-9, 6.4, -G.halfZ, N, 1.7, 7, true], [1.5, 8.8, -G.halfZ, N, 1.1, 4, false], [12.5, 5.4, -G.halfZ, N, 1.2, 5, false],
@@ -198,8 +212,8 @@ export function glimmerDeep(): LevelDef {
     { id: GLIMMER_PRIZES.spire, kind: 'relic', x: SPIRE.x, y: mushroomTop(SPIRE.x, FAR_BANK, SPIRE.z, SPIRE.tall, 1.3) + 0.8, z: SPIRE.z },
   ];
 
-  /** The Rift's floor, for the scorpions: in from its walls and from the steps. */
-  const den = { x0: -G.halfX + 4.6, x1: HIGH_SHELF.x0 - 0.6, z0: RIFT.z0 + 0.6, z1: RIFT.z1 - 0.6 };
+  /** The Rift's floor, for the scorpions: in from its walls, and short of the corner where the shelf mushrooms are. */
+  const den = { x0: -G.halfX + 11.8, x1: HIGH_SHELF.x0 - 0.6, z0: RIFT.z0 + 0.6, z1: RIFT.z1 - 0.6 };
   /** The air over the Far Bank, for the glow bugs: in from its walls, short of the Shelf and of the Rift. */
   const air = { x0: -G.halfX + 2.5, x1: HIGH_SHELF.x0 - 3, z0: -G.halfZ + 2.5, z1: RIFT.z0 - 2 };
 
