@@ -6,6 +6,7 @@ import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS, lyingOn } from '../render/ps1Material';
+import { asDecal } from '../render/layering';
 import { getTexture, TextureName } from '../render/textures';
 import { JET_SPEED, gasAt, gasWidth } from './gusts';
 import { Aabb, makeAabb, topAt } from './collision';
@@ -569,7 +570,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       bakeVertexColor(parts[0], d.color ?? 0x8a5a3c);
       // Bands every few units, like the joints of a real pipe.
       for (let t = 2; t < len; t += 5) {
-        const band = new THREE.CylinderGeometry(d.r * 1.25, d.r * 1.25, 0.25, 8, 1);
+        // (Proud of the pipe by more than a hair, however thin the pipe: a band a hair proud flickers through it.)
+        const br = Math.max(d.r * 1.25, d.r + 0.04);
+        const band = new THREE.CylinderGeometry(br, br, 0.25, 8, 1);
         band.translate(0, t - len / 2, 0);
         bakeVertexColor(band, 0x4a3a30);
         parts.push(band);
@@ -1150,8 +1153,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
       geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-      mossGlow ??= new THREE.MeshBasicMaterial({ map: getTexture('glowMoss'), vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      // (Its lobes lie on one another and on the rock. It writes no depth and is drawn after the room: so its faces
+      // go down in the order they were made, lobe on lobe, thread on lobe, and none can flicker through another.)
+      mossGlow ??= lyingOn(new THREE.MeshBasicMaterial({ map: getTexture('glowMoss'), vertexColors: true, depthWrite: false }), 1);
       const patch = new THREE.Mesh(geo, mossGlow);
+      asDecal(patch, 1);
       const nx = d.flat ? 0 : Math.sin(d.yaw);
       const nz = d.flat ? 0 : Math.cos(d.yaw);
       patch.position.set(d.x + nx * 0.02, d.y + (d.flat ? 0.02 : 0), d.z + nz * 0.02);
@@ -1346,7 +1352,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         const uv = geo.attributes.uv;
         for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (d.w / 2), uv.getY(i) * (len / 2));
         bakeVertexColor(geo, 0xb8e0a0, false);
-        lie.add(new THREE.Mesh(geo, mat('sludge')));
+        const strip = new THREE.Mesh(geo, mat('sludge'));
+        asDecal(strip, 1); // (it LIES ON the floor: painted on after it. See render/layering.ts)
+        lie.add(strip);
       } else {
         const parts: THREE.BufferGeometry[] = [];
         for (let u = d.gap / 2; u < len; u += d.gap) {

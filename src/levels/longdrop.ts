@@ -299,7 +299,7 @@ function build(): Built {
     if (s.kind === 'bed') {
       for (const [x, from, to] of s.rails ?? []) {
         const top = (zz: number): number => floor(zz) + RAIL.high;
-        solids.push({ ...rampBox('stone', x - RAIL.wide / 2, x + RAIL.wide / 2, z0 + from, z0 + to, top(z0 + to), top(z0 + from), 'n', floor(z0 + to) - 0.2), skin: 'rustPlate' });
+        solids.push({ ...rampBox('stone', x - RAIL.wide / 2, x + RAIL.wide / 2, z0 + from, z0 + to, top(z0 + to), top(z0 + from), 'n', floor(z0 + to)), skin: 'rustPlate' }); // (its foot ON the bed at its low end, not sunk in it: sunk, its end lay in the plane of the bed's own end and flickered there)
         const ids: string[] = [];
         for (let d = from + 5; d < to - 1; d += 6) ids.push(crumb(x, top(z0 + d) + 0.55, z0 + d));
         rails.push({ x, z0: z0 + from, z1: z0 + to, crumbs: ids });

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { Probe, Springs, aim, ease, twoBone } from '../render/bugRig';
 import type { FireflyState } from './firefly';
@@ -263,7 +263,7 @@ export class FireflyModel {
     }
 
     // Its shadow on the floor (so he can see what it is over).
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.root.add(this.shadow);
 

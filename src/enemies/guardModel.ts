@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { paint } from '../render/modelKit';
 import { RatModel, type RatAnimInput } from '../player/ratModel';
 import type { Pose } from '../player/animations';
@@ -121,7 +121,7 @@ export class GuardModel {
       tip.add(g);
       this.glints.push(g);
     }
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;
     this.root.add(this.shadow);

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import type { BatState } from './bat';
 import { BAT } from './bat';
 
@@ -209,7 +209,7 @@ export class BatModel {
       }
     }
 
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.35, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.35, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.scale.set(1.8, 0.8, 1);
     this.flier.add(this.shadow);

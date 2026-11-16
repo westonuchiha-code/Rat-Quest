@@ -1146,3 +1146,36 @@ START-HERE has the owner's words and the rules. Where things are:
 - Scratch tools used: frames from a video with `ffmpeg -vf fps=N`; `shot.mjs <out> <w> <h> <hash>` for a screenshot
   at a chosen window size (the others are fixed at 1100 by 620).
 
+## The clipping sweep (2026-11-16; test `tests/clipsweep.ts`)
+START-HERE has what it is, the rule, and why things are PAINTED ON AFTERWARDS instead of pulled in depth. Where
+things are:
+- `src/render/layering.ts`: `sweep(root, where, buried?, every?)` → `Finding[]`; `decalOf(material, pull)` (a copy
+  that writes no depth and SHARES a shader material's uniforms; one copy a material a pull; `userData.layerOf`,
+  `userData.decal`); `asDecal(mesh, level, pull)` (material → its decal copy, `renderOrder` and `userData.layer` =
+  level); `autoLayer(root, buried?)` → `{ layeredMeshes, skins, skipped }`; `LAYER_BUDGET` 90,000 faces;
+  `LAYER_MOST` 12; `GAP` 0.03; `AREA` 0.0015.
+- `autoLayer`: (1) every hand-made FLAT mesh in a depth-writing `lyingOn` material becomes a decal on that layer
+  (done for the Long Drop too: it is cheap); (2) if over budget, stop; (3) sweep with `every`, give each front a
+  level one over its back until nothing changes; (4) in order of level: a flat or already no-depth front →
+  `asDecal`; a solid front → a child mesh with the same geometry, `userData.skin`, a decal copy of its material,
+  `renderOrder` = level. A front's pull is one more than whatever WROTE depth under it (a decal under it wrote
+  none, so a stack of flat things is all one hair over the floor).
+- A mesh's layer for the sweep is `userData.layer`, else its material's pull. A thing and its own skin are one
+  thing. Two things are "of one material" if their materials are copies of one (`userData.layerOf`).
+- A pair is passed over if: the two are on different layers; they are of one material and one painted colour; either
+  looks straight into a solid (`buried`: main.ts gives it the room's colliders, ramps left out); they are in one mesh
+  and in one plane, or one is the back of a two-sided face, or the mesh writes no depth.
+- Of two things the same size, the one made later is on top (so the answer is the same every run).
+- It is written with plain numbers and one scratch table, and asks "how much do they overlap" and "is it buried"
+  last: the first version took 0.8 s on the Keep, this one 0.1 s. Keep it that way if it is changed.
+- main.ts: `autoLayer(chamber.group, ...)` right after `buildChamber` in the level load.
+- chamber.ts: pipe bands `max(r * 1.25, r + 0.04)`; moss material `depthWrite: false` + `lyingOn`, mesh
+  `asDecal(patch, 1)`; runnel `asDecal(strip, 1)`.
+- longdrop.ts: a rail's box foot is `floor(z0 + to)` (was 0.2 lower).
+- `lyingOn(...)` wraps every shadow material in the enemy models, npc.ts and itemModels.ts, and the warning
+  rings/marks in emberFx.ts, scorpionModel, widowModel, broodModel, wyrmModel, stagModel (ring a layer over its
+  fill). These are see-through and write no depth already; they are not in the room's group and are not touched by
+  `autoLayer`.
+- npc.ts: no shadow of its own for a character built on `AntModel` or `StagModel`.
+- `tests/clubfixes.ts` still builds the Club's props on their own (not through `autoLayer`) and checks their
+  hand-made layers; in the game those hand-made flat layers are then made painted-on as the room loads.

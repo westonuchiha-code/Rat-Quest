@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 
 type V3 = [number, number, number];
 type Paint = number | ((x: number, y: number, z: number, n: THREE.Vector3) => number);
@@ -293,7 +293,7 @@ export function shadowGeometry(): THREE.BufferGeometry {
 }
 
 export function shadowMaterial(): THREE.MeshBasicMaterial {
-  return new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false });
+  return lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false }));
 }
 
 export function glowMaterial(color: number, opacity = 1): THREE.MeshBasicMaterial {

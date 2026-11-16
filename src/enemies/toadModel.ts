@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import type { ToadState } from './toad';
 
@@ -160,7 +160,7 @@ export class ToadModel {
     }
     this.shadow = new THREE.Mesh(
       new THREE.CircleGeometry(0.6, 10),
-      new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false }),
+      lyingOn(new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false })),
     );
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;

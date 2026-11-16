@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, modelKit } from '../render/modelKit';
 import type { ScuttlerState } from './scuttler';
 
@@ -212,7 +212,7 @@ export class ScuttlerModel {
     // Blob shadow.
     this.shadow = new THREE.Mesh(
       new THREE.CircleGeometry(0.55, 10),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }),
+      lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })),
     );
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;

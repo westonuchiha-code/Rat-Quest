@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
@@ -563,10 +563,13 @@ export class Npc {
       }
     }
     // A soft shadow (a floating head casts a wider, fainter one).
-    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false }));
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.02;
-    this.root.add(shadow);
+    // (Not one who is a creature from elsewhere: an ant or a stag brings its own, and two lay one on the other, twice as dark.)
+    if (!this.ant && !this.stag) {
+      const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.5, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.35, depthWrite: false })));
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.02;
+      this.root.add(shadow);
+    }
     // The marker over his head: a small gold diamond, shown when the rat is near.
     this.marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13), new THREE.MeshBasicMaterial({ color: 0xffe27a }));
     this.marker.position.set(0, spec.kind === 'villain' ? VILLAIN_FLOAT + GRIM_HEIGHT + 0.35 : this.markerY(), 0);

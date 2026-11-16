@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
 import { Probe, Springs, Walker, aim, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
@@ -391,7 +391,7 @@ export class AntModel {
       this.glints.push(g);
     }
 
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.52, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.52, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;
     this.root.add(this.shadow);

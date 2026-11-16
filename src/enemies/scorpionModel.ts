@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import { SCORPION, type ScorpionState } from './scorpion';
 import { flat, horn, loft } from './widowModel';
@@ -291,14 +291,14 @@ export class ScorpionModel {
 
     // ---- The ring on the floor where the sting will land ----
     const paint = this.lit.clone().multiplyScalar(0.85);
-    this.markMat = new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.95, depthWrite: false });
-    this.fillMat = new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.4, depthWrite: false });
+    this.markMat = lyingOn(new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.95, depthWrite: false }), 2);
+    this.fillMat = lyingOn(new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.4, depthWrite: false }), 1);
     this.fill = new THREE.Mesh(new THREE.CircleGeometry(1, 20).rotateX(-Math.PI / 2), this.fillMat);
     this.mark.add(new THREE.Mesh(new THREE.RingGeometry(0.88, 1, 20).rotateX(-Math.PI / 2), this.markMat), this.fill);
     this.mark.visible = false;
     this.root.add(this.mark);
 
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;
     this.root.add(this.shadow);

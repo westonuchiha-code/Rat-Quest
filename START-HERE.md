@@ -400,6 +400,53 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## The clipping sweep (the owner, 2026-11-16: "do the clipping sweep". DONE; held by `tests/clipsweep.ts`)
+After his five clipping finds in the Club, the whole game was gone over for the same fault, by a tool, not by eye.
+- **What the fault is:** two flat faces that are parallel, face the same way, lie within three hundredths of each
+  other and overlap. At a distance the depth buffer cannot tell them apart and they flicker through each other.
+- **The tool: `src/render/layering.ts`.** `sweep(root)` finds every such pair in a built thing. `autoLayer(root)`
+  cures each one. **THE RULE IT GOES BY: THE SMALLER THING LIES ON THE BIGGER** (a patch on a cushion, a cap on a
+  post, a rug on a floor), and is a layer up from it.
+- **THE CURE: WHAT LIES ON SOMETHING IS PAINTED ON AFTERWARDS.** It is drawn after the room, writes nothing to the
+  depth buffer, and is pulled a hair toward the eye so it passes over what it lies on; what lies on THAT is drawn
+  after it again (`renderOrder` = its layer). The ORDER decides, not a contest of depth.
+  - A FLAT thing (a rug, a patch, a mark on a wall) is drawn that way itself (`asDecal`).
+  - A SOLID thing with one face flush against another's (a cap on a post, a block let into a wall) keeps its own
+    honest depth and is given a SKIN: itself again, painted on afterwards.
+- **WHY NOT a bigger pull for each layer, written to depth** (how the Club's rugs were first cured, and how this
+  sweep was first written): **because then the depth buffer lies about where the floor is.** A rug three layers up
+  stood nearer the eye than the knight's shadow: HIS SHADOW VANISHED ON THE LONG RUGS AND ON THE DANCE FLOOR. That
+  was caught only by looking at the built game; the sweep cannot see it, because a shadow moves. With the cure
+  above the buffer holds the true floor, and a shadow, a warning ring, water, a glow meet it as they always did.
+  **RULE: a flat thing that lies on something NEVER writes depth.** The test holds every room to it. Things made
+  by hand with `lyingOn` materials (a rug's layers, the dance floor) are made over the same way as the room loads.
+- **The game runs `autoLayer` on every room as it loads** (main.ts, straight after `buildChamber`). So a prop added
+  next year that lies on something is covered without anyone thinking of it. 943 pairs were found in the 33 rooms;
+  about 750 things are cured as rooms load (some 530 of them by a skin); nothing is left.
+- **It was made cheap on purpose** (it runs on a phone at every door): about a tenth of a second for the biggest
+  room on this machine. A room over `LAYER_BUDGET` faces (only the Long Drop, 360 thousand) is NOT swept as it loads
+  and must be clean AS BUILT: the test holds it to that.
+- **What layering cannot cure: two faces of ONE mesh** (one mesh is drawn all at once). Those were fixed where they
+  are made: a thin pipe's joint bands now stand well proud of it; the cave's glowing moss (lobes on lobes, threads
+  on lobes, one mesh) is painted on afterwards, so its faces go down in the order they were made; the Long Drop's
+  rails stand ON the bed instead of sunk in it (a sunk rail's end lay in the plane of the bed's end); its runnels
+  of slime are made painted-on by hand.
+- **Characters:** every black shadow disc, warning ring and floor mark is drawn `lyingOn` the floor (they were a
+  fiftieth over it and left to luck). The off-duty ant and the beaten stag in the Club HAD TWO SHADOWS, one on the
+  other (their creature model's and the one every character is given): now one.
+- **What the sweep does NOT judge:** rounded body parts of a creature that pass through one another (a wyrm's
+  rings, a hornet's legs). Those are not this fault and it lets them be. **Nor a MOVING thing against the room (a
+  shadow on a rug): look at those in the running game.**
+- **To run it:** `npx vite build --ssr tests/clipsweep.ts --outDir .testdist --emptyOutDir && node
+  .testdist/clipsweep.js` (`SWEEP_ONLY=<level>` for one room). A failure names the room, where, and the two things.
+  **If it fails on a new prop: it is two faces of one mesh. Build it so they are not in one plane, or split it.**
+- NOT DONE: nobody has LOOKED for flicker with the game moving; stills cannot show it. The tool says there is none
+  left of this kind. If the owner still sees a flicker somewhere, it is a different kind (most likely a moving
+  thing, or two things further apart than three hundredths seen from very far): ask where, and widen `GAP`.
+- Known and left: a skin or a painted-on thing is pulled two dots of the screen toward the eye, so it can show over
+  the bottom dot or two of something standing just in front of it. A painted-on thing that hangs past the edge of
+  what it lies on writes no depth there, so a glow behind that overhang would show through it. Neither has been seen.
+
 ## A look-over of old things, and new themes (the owner, 2026-11-16: TRY-OUTS ONLY SO FAR, NOTHING REPLACED)
 His words, in short: "you've been on a roll with the textures so I'm wondering if you could also just do a texture
 pass especially through stuff that we haven't really touched in a while early characters ... go over [their] models

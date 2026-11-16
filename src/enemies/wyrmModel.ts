@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { Springs, aim, ease, twoBone } from '../render/bugRig';
 import { WYRM, wyrmTaper, type WyrmState } from './wyrm';
@@ -132,9 +132,9 @@ export class WyrmModel {
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0x9aff5a });
   private readonly headShadow: THREE.Mesh;
   private readonly ring: THREE.Mesh;
-  private readonly ringMat = new THREE.MeshBasicMaterial({ color: 0xff5040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  private readonly ringMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xff5040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }), 2);
   private readonly wave: THREE.Mesh;
-  private readonly waveMat = new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  private readonly waveMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }), 1);
   private readonly springs = new Springs(8);
   private readonly headProbe = new Probe();
   private readonly segProbe = new Probe();
@@ -157,7 +157,7 @@ export class WyrmModel {
       geo.rotateZ(-Math.PI / 2);
       return new THREE.Mesh(paint(geo, (nx) => color(nx)), mat);
     };
-    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.36, depthWrite: false });
+    const shadowMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.36, depthWrite: false }));
     const shadow = (r: number): THREE.Mesh => {
       const m = new THREE.Mesh(new THREE.CircleGeometry(r, 10), shadowMat);
       m.rotation.x = -Math.PI / 2;

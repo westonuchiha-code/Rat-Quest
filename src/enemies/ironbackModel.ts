@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import type { IronbackState } from './ironback';
 import { IRONBACK } from './ironback';
 
@@ -219,7 +219,7 @@ export class IronbackModel {
       }
     });
 
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.85, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.85, 12), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;
     this.shadow.scale.set(1, 1.25, 1);

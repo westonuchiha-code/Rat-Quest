@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import { WIDOW, type Widow, type WidowState } from './widow';
 
@@ -195,7 +195,7 @@ export class WidowModel {
   private readonly legs: Leg[] = [];
   private readonly strip: THREE.Mesh;
   private readonly ring: THREE.Mesh;
-  private readonly markMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false });
+  private readonly markMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }), 1);
   private headY = HEAD_UP;
   private pitch = 0;
   private open = 0.15;

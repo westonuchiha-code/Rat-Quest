@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { Springs, Walker, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
 import { BROOD, type BroodState } from './brood';
@@ -165,11 +165,11 @@ export class BroodModel {
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: C.eye });
   private readonly thread: THREE.Mesh;
   private readonly ring: THREE.Mesh;
-  private readonly ringMat = new THREE.MeshBasicMaterial({ color: 0xff5040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  private readonly ringMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xff5040, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }), 2);
   private readonly wave: THREE.Mesh;
-  private readonly waveMat = new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  private readonly waveMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xe8dcc0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }), 1);
   private readonly shadow: THREE.Mesh;
-  private readonly shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false });
+  private readonly shadowMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false }));
   private readonly chestProbes: THREE.Vector3[] = [];
   private readonly bellyProbes: THREE.Vector3[] = [];
   private readonly springs = new Springs(SIZE);

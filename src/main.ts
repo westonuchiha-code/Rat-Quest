@@ -53,6 +53,7 @@ import { ScorpionModel } from './enemies/scorpionModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { PICTURE, pictureSize } from './render/picture';
+import { autoLayer } from './render/layering';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -1458,6 +1459,12 @@ function startGame(): void {
     if (!keep) tracker.reset(def.id);
 
     chamber = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, pipes: def.pipes, gates: def.gates, movers: def.movers, lava: def.lava, fire: def.fire });
+    // Whatever lies on something else in it is painted on after it, so the two never flicker through each other
+    // (render/layering.ts). A place that looks straight into something solid is never seen, and is left alone.
+    {
+      const cs = chamber.colliders;
+      autoLayer(chamber.group, (p) => cs.some((b) => !b.ramp && p.x > b.min.x + 1e-3 && p.x < b.max.x - 1e-3 && p.y > b.min.y + 1e-3 && p.y < b.max.y - 1e-3 && p.z > b.min.z + 1e-3 && p.z < b.max.z - 1e-3));
+    }
     scene.add(chamber.group);
     player.water = chamber.water;
     player.well = def.well ?? null;

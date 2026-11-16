@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, mix, modelKit } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
 import { Springs, Walker, aim, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
@@ -169,7 +169,7 @@ export class StagModel {
   private readonly glints: THREE.Mesh[] = [];
   private readonly glintMat = glowMaterial(0xff5a30);
   private readonly ring: THREE.Mesh;
-  private readonly ringMat = new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  private readonly ringMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }), 1);
   private readonly shadow: THREE.Mesh;
   private readonly springs = new Springs(SIZE);
   private time = 0;
@@ -337,7 +337,7 @@ export class StagModel {
     this.ring.position.y = 0.04;
     this.ring.visible = false;
     this.root.add(this.ring);
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.78, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.78, 12), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.38, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.shadow.position.y = 0.02;
     this.root.add(this.shadow);

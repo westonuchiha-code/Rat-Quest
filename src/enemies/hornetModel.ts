@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { Probe, Springs, aim, ease, twoBone } from '../render/bugRig';
 import { HORNET, type HornetState } from './hornet';
@@ -256,7 +256,7 @@ export class HornetModel {
     this.lance.add(this.pennant);
 
     // Its shadow on the floor (so he can see where it is over).
-    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.4, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false }));
+    this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.4, 10), lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })));
     this.shadow.rotation.x = -Math.PI / 2;
     this.root.add(this.shadow);
 

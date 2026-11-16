@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createPs1Material } from '../render/ps1Material';
+import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { glowMaterial } from './itemModels';
 import { flameHeat, type Ember, type Flame } from './embers';
 
@@ -64,8 +64,8 @@ export class EmberFx {
   // The marks on the floor are plain paint, not light, so they are orange on a pale floor as well as a dark one.)
   private readonly core = new THREE.MeshBasicMaterial({ color: 0xff930b });
   private readonly halo = glowMaterial(0xff8a18, 0.4);
-  private readonly ringMat = new THREE.MeshBasicMaterial({ color: 0xff4303, transparent: true, opacity: 0.95, depthWrite: false });
-  private readonly fillMat = new THREE.MeshBasicMaterial({ color: 0xff4303, transparent: true, opacity: 0.4, depthWrite: false });
+  private readonly ringMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xff4303, transparent: true, opacity: 0.95, depthWrite: false }), 2);
+  private readonly fillMat = lyingOn(new THREE.MeshBasicMaterial({ color: 0xff4303, transparent: true, opacity: 0.4, depthWrite: false }), 1);
   private readonly glowMat = new THREE.MeshBasicMaterial({ color: 0xff5a06, transparent: true, opacity: 0.45, depthWrite: false });
   private readonly flameMat = createPs1Material({});
   /** The same things in another colour, for the fire of a firefly that has a colour of its own: made once a colour. */
@@ -110,8 +110,8 @@ export class EmberFx {
       L = {
         core: new THREE.MeshBasicMaterial({ color: c.clone().lerp(new THREE.Color(0xffffff), 0.3) }),
         halo: glowMaterial(color, 0.4),
-        ringMat: new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.95, depthWrite: false }),
-        fillMat: new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.4, depthWrite: false }),
+        ringMat: lyingOn(new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.95, depthWrite: false }), 2),
+        fillMat: lyingOn(new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.4, depthWrite: false }), 1),
         glowMat: new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.45, depthWrite: false }),
         tongueGeo: geo,
         flameMat: new THREE.MeshBasicMaterial({ vertexColors: true }),
