@@ -50,6 +50,8 @@ import { FIREFLY, Firefly } from './enemies/firefly';
 import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
+import { Roller } from './enemies/roller';
+import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { PICTURE, pictureSize } from './render/picture';
@@ -283,7 +285,7 @@ function startGame(): void {
   }
   const enemies: Foe[] = [];
   /** The kinds that walk on the ground, and so can walk a slope (their models are tipped to it). */
-  const WALKERS = new Set<Foe['kind']>(['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion']);
+  const WALKERS = new Set<Foe['kind']>(['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion', 'roller']);
   const UP_AXIS = new THREE.Vector3(0, 1, 0);
   /** The ant pikemen among them (they are paired up each tick). */
   const antList: Ant[] = [];
@@ -475,6 +477,19 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, vent: e.vent, light: e.light, floor: e.floor, moving: e.moving }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'roller') {
+      // The Frost Roller: a pill bug that bowls across the ice. It is told which floor is ice (off it, it is dragged to a stop).
+      const e = new Roller(spec);
+      const m = new RollerModel();
+      e.onIce = (x, y, z) => chamber.colliders.some((b) => !!b.slick && x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z && Math.abs(topAt(b, x, z) - y) < 0.3);
+      enemies.push(e);
+      enemyModels.push({
+        root: m.root,
+        setTransform: (p, f) => m.setTransform(p, f),
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, curl: e.curl, spin: e.spin, moving: e.moving }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'scorpion') {
       const e = new Scorpion(spec);
       const m = new ScorpionModel(spec.color);
@@ -551,10 +566,21 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Widow | Hornet | Ant | Firefly | Scorpion, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Widow | Hornet | Ant | Firefly | Scorpion | Roller, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
-      if (e instanceof Scorpion) {
+      if (e instanceof Roller) {
+        // The Frost Roller, in sounds the game already has (it has none of its own yet): a click as it sees him;
+        // plates knocking shut as it tucks; a knock at each thing it comes off; a heavier one as it spills.
+        if (ev === 'alert') audio.play('antClick', { vol: v * 0.8, rate: 0.8, priority: 5 });
+        else if (ev === 'tuck') audio.play('plateKnock', { vol: Math.max(0.3, v), rate: 1.5, priority: 7 });
+        else if (ev === 'roll') audio.play('chitinTap', { vol: Math.max(0.3, v), rate: 0.7, priority: 7 });
+        else if (ev === 'bounce') audio.play('plateKnock', { vol: Math.max(0.35, v), rate: 1.05, priority: 7 });
+        else if (ev === 'spill') audio.play('plateKnock', { vol: Math.max(0.4, v), rate: 0.7, priority: 7 });
+        else if (ev === 'right') audio.play('chitinTap', { vol: v * 0.7, rate: 1.2, priority: 4 });
+        else if (ev === 'hurt') audio.play('scorpHurt', { vol: v, rate: 1.3, priority: 6 });
+        else if (ev === 'die') audio.play('antDie', { vol: v, rate: 1.2, priority: 6 });
+      } else if (e instanceof Scorpion) {
         // The Lamp Scorpion, in sounds of its own: its dry rasp when it sees him; its lamp filling as the tail
         // rears, as long as the tell; the whip of the tail and the barb's crack into the floor; its claws shutting
         // (the rasp, quick, is their tell); a scraped squeal when it is struck; its lamp snuffed as it runs, and the
@@ -2141,7 +2167,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Widow || e instanceof Hornet || e instanceof Ant || e instanceof Firefly || e instanceof Scorpion) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Widow || e instanceof Hornet || e instanceof Ant || e instanceof Firefly || e instanceof Scorpion || e instanceof Roller) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);

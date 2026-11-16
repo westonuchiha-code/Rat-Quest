@@ -7,6 +7,8 @@ import { ScuttlerModel } from '../enemies/scuttlerModel';
 import { Firefly } from '../enemies/firefly';
 import { SCORPION, type ScorpionState } from '../enemies/scorpion';
 import { ScorpionModel } from '../enemies/scorpionModel';
+import { ROLLER, type RollerState } from '../enemies/roller';
+import { RollerModel } from '../enemies/rollerModel';
 import { FireflyModel } from '../enemies/fireflyModel';
 import type { ScuttlerState } from '../enemies/scuttler';
 import type { PlayerState } from '../player/controller';
@@ -131,6 +133,14 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     const fm = new FireflyModel(f.color);
     scene.add(fm.root);
     for (let time = 0; time <= t + 1e-6; time += dt) fm.update(dt, { state: 'spent', stateTime: time, x: 0, y: 0.7, z: 0, facing: 0, vent: { x: 0, y: 0.72, z: -0.8 }, light: num('light', 1), floor: 0, moving: 0 });
+  } else if (who === 'roller') {
+    // The Frost Roller in one of its poses: `&state=` walk (default), tuck, roll, spilled, right; `&curl=0..1` sets
+    // how far it is rolled up (default: as that state has it); `&spin=` how far it has rolled, in turns.
+    const rm = new RollerModel();
+    scene.add(rm.root);
+    const state = (q.get('state') ?? 'walk') as RollerState;
+    const curl = num('curl', state === 'roll' || state === 'tuck' ? 1 : state === 'spilled' ? 0.15 : 0);
+    for (let time = 0; time <= Math.max(t, 0.5) + 1e-6; time += dt) rm.update(dt, { state, stateTime: time, curl, spin: num('spin', 0), moving: state === 'walk' ? ROLLER.walk : 0 });
   } else if (who === 'scorpion') {
     // The Lamp Scorpion in one of its poses: `&state=` stalk (default), stingWind, sting, stuck, snapWind, snap, dark,
     // sprawl; `&color=4dffc8`; `&walk=1` has it walking.

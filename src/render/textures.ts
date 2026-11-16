@@ -2033,6 +2033,57 @@ function paintGlowMoss(p: Px, rand: Rand): void {
   for (let k = 0; k < 30; k++) p.set(Math.floor(rand() * S), Math.floor(rand() * S), 0x2c2c2c);
 }
 
+/**
+ * The Frost Roller's shell (enemies/rollerModel.ts): ONE plate of it. Across a plate (u) it is an arch, pale along its
+ * crest and darker down its flanks; along it (v) it is dark where it comes out from under the plate before, paling
+ * to a hind lip rimed white. Old ice: blue-grey chitin under a skin of frost, scratched where it has rolled.
+ */
+function paintRollerShell(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x1c2a3a, 0x2a4058, 0x3c5a78, 0x567c9c, 0x7aa2be, 0xa4c8dc, 0xd2e8f2, 0xf4fbff];
+  const f = fbm(S, rand, 5, 3);
+  const g = fbm(S, rand, 9, 2);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const t = y / S;
+      const crest = Math.sin(u * Math.PI);
+      let v = 0.22 + 0.34 * crest ** 1.4 + (f[y * S + x] - 0.5) * 0.2;
+      // Out from under the plate before: dark. Its hind lip: thick, and rimed.
+      if (t < 0.12) v -= 0.26 * (1 - t / 0.12);
+      v += 0.14 * t;
+      if (t > 0.84) v += 0.16 + 0.3 * ((t - 0.84) / 0.16);
+      // Growth lines across it, faint; and frost caught in them.
+      if (y % 7 === 3 && t < 0.84) v -= 0.07;
+      if (g[y * S + x] > 0.62 && t > 0.3) v += (g[y * S + x] - 0.62) * 1.3;
+      p.set(x, y, ramp(v, pal, x, y, 0.2));
+    }
+  }
+  // Scratches: where it has bowled over grit. Long, thin, along the way it rolls.
+  for (let k = 0; k < 9; k++) {
+    const x = 6 + Math.floor(rand() * (S - 12));
+    const y0 = Math.floor(rand() * S * 0.7);
+    const len = 6 + Math.floor(rand() * 14);
+    for (let i = 0; i < len; i++) p.blend(x + (i % 5 === 4 ? 1 : 0), y0 + i, 0xeaf6ff, 0.5);
+  }
+}
+
+/** The Frost Roller's underside, its legs and its feelers: dark horn the blue of deep ice, pale at the joints. */
+function paintRollerUnder(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x0e1620, 0x16222e, 0x20303e, 0x2e4254, 0x44607a];
+  const f = fbm(S, rand, 4, 2);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      let v = 0.3 + (f[y * S + x] - 0.5) * 0.3 + 0.25 * Math.sin((x / S) * Math.PI);
+      // (Bands across a leg: its joints, paler.)
+      if (y % 8 === 0) v += 0.35;
+      else if (y % 8 === 1) v -= 0.15;
+      p.set(x, y, ramp(v, pal, x, y, 0.2));
+    }
+  }
+}
+
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
 function paintStarfield(p: Px, rand: Rand): void {
   const S = p.size;
@@ -2219,6 +2270,9 @@ const DEFS = {
   caveRock: { size: 64, seed: 811, paint: paintCaveRock },
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
   glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },
+  // The Frost Roller (enemies/rollerModel.ts): one plate of its shell, and its dark underside.
+  rollerShell: { size: 64, seed: 811, paint: paintRollerShell },
+  rollerUnder: { size: 32, seed: 812, paint: paintRollerUnder },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },

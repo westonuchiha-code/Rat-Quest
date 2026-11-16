@@ -17,6 +17,7 @@ import { HornetModel } from '../src/enemies/hornetModel';
 import { AntModel } from '../src/enemies/antModel';
 import { FireflyModel } from '../src/enemies/fireflyModel';
 import { ScorpionModel } from '../src/enemies/scorpionModel';
+import { RollerModel } from '../src/enemies/rollerModel';
 import { BroodModel } from '../src/enemies/broodModel';
 import { WyrmModel } from '../src/enemies/wyrmModel';
 
@@ -68,6 +69,7 @@ add('Enemies', 'Hornet Lancer', 'hornet', () => new HornetModel().root);
 add('Enemies', 'Ant Pikeman', 'ant', () => new AntModel().root);
 add('Enemies', 'Firefly Bomber', 'firefly', () => new FireflyModel().root);
 add('Enemies', 'Lamp Scorpion', 'scorpion', () => new ScorpionModel().root);
+add('Enemies', 'Frost Roller', 'pill bug', () => new RollerModel().root);
 add('Bosses', 'The Broodmother', 'spider', () => new BroodModel().root);
 add('Bosses', 'The Sump Wyrm', 'wyrm', () => new WyrmModel().root);
 add('Bosses', 'Lord Grimsqueak', 'rat king', () => npc('Lord Grimsqueak', 'villain'));

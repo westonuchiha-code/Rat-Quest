@@ -426,6 +426,28 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## The Frost Roller: a cold creature for the Cold Main (the owner's list, 2026-11-16. BUILT; `tests/roller.ts`)
+**He has not seen it. Its look and its fight are Claude's, and his to accept, change or throw out.**
+`src/enemies/roller.ts` (rules, the `ROLLER` table), `src/enemies/rollerModel.ts`. Two live on the Cold Main's ice.
+- **The idea in one line: IT IS A BALL ON THE ICE, AND IT CANNOT STOP EITHER.** (The Cold Main's floor keeps what
+  moves on it moving: this is the creature of that floor.) A great pill bug.
+- **Its turn:** it walks toward him, slowly. It TUCKS (0.6 s, the tell: rocks back and rolls itself up; its line is
+  set for the last part of that). It BOWLS in a straight line at where he was, half as fast again as he runs. It
+  cannot steer or stop: it comes off two things it meets, and the third SPILLS it open on its back for two seconds.
+- **Curled, its shell turns the sword** (the clank, his arm thrown back). **Spilled it is open:** three blows.
+- **What he can do about it:** step aside after its line is set; JUMP it (it runs along the floor); hold his SHIELD
+  up (it stops dead on it and lies open longer: 2.5 s, 3.2 off a perfect guard); DIVE on it (cracks it open at once).
+- **Off the ice it does not roll far:** a stone floor drags it to a stop in under eight units and it spills there
+  (the game tells it which floor is `slick`).
+- **How it is drawn:** six plates, each one arch of four flat faces, set along a strip that is BENT as far as the
+  rules say it is rolled up (nearly straight walking, a ring when a ball: the ball drawn is as big as the body the
+  rules give it); a pair of legs to a plate; a head shield and two feelers. Under 300 faces, all textured
+  (`rollerShell`: one plate, rimed at its hind lip; `rollerUnder`). Seen from all sides: `#view&who=roller&state=
+  walk|tuck|roll|spilled&yaw=`.
+- NOT DONE: sounds of its own (it borrows the ant's click, the plate knock and others); a sticker (none until a
+  real level has one, as with the scorpion); a piece in the level builder; a cutscene puppet. Nobody has fought it
+  by hand. Two of them at once on the ice with the gusts blowing has not been tried.
+
 ## What he found playing, sent while other work was going on (2026-11-16, second lot): FIXED; `tests/falls.ts`
 - **"if it's a long fall it's a jittery ... towards the end of the Fall".** He is DRAWN eased toward where he stands
   (that easing is what walks him up stairs instead of popping). It was applied in the air too: in a fast fall he was

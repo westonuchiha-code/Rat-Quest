@@ -1250,3 +1250,12 @@ things are:
 - courseDoors.ts: `roomOverDoor(solids, door)`, `signFit(room)` → `{ scale, foot, out, fits }`, `SIGN_HANG`;
   `CourseDoors(defs, states, theme, rooms)`. doorway.ts: `DOOR_LOOKS` (exported); cave key is `sandstone`.
 
+## The Frost Roller (2026-11-16; test `tests/roller.ts`)
+- `src/enemies/roller.ts`: `ROLLER`, `Roller` (states idle, walk, tuck, roll, spilled, right, stagger, dead, return;
+  `curl`, `spin`, `moving`, `events`, `onIce`, `deflects`, `bite` with `ground: true`, `biteDir`).
+- `src/enemies/rollerModel.ts`: `RollerModel`, `BALL_R`, `update(dt, { state, stateTime, curl, spin, moving })`.
+- Wired in: foe.ts kind `'roller'`; types.ts `EnemySpec.type`; main.ts (creation with `onIce`, `WALKERS`,
+  `beastSounds`); dev viewer `who=roller`; tests/polycount.ts; coldmain.ts `ROLLERS`, `ROLLER_ICE`.
+- tests/roller.ts `meet(what)` plays it against the real knight through `resolveCombat` (stand, guard, jump, side).
+  `ROLL_TRACE=1` prints the sword-swing case.
+

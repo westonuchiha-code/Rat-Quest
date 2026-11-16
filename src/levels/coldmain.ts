@@ -25,6 +25,9 @@ import { doorOn } from '../world/rooms';
 import { JET_SPEED } from '../world/gusts';
 
 export const COLDMAIN = { halfX: 15, halfZ: 11, wall: 8, channel: 4 } as const;
+/** The Frost Rollers: where each starts on the sheet, and the ice they keep to (in from the banks and the end walls). */
+export const ROLLERS: ReadonlyArray<readonly [number, number]> = [[-12.6, -2.2], [12.6, 2.2]];
+export const ROLLER_ICE = { x0: -14.4, x1: 14.4, z0: -3.9, z1: 3.9 } as const;
 /**
  * The blocks of ice in the channel: [x, z, the height of its top]. Each is `ICE_BLOCK` square. The first is a jump up
  * from the bank; the last is higher than he can get from the floor by any jump.
@@ -133,7 +136,9 @@ export function coldMain(): LevelDef {
     spawn: { x: 0, y: 0, z: 8.4, facing: Math.PI },
     collectibles,
     crateContents: [],
-    enemies: [],
+    // Frost Rollers (enemies/roller.ts), two of them, out on the sheet and kept to it: pill bugs that bowl across
+    // the ice at him and cannot stop either. There to be fought; beating them is not a goal.
+    enemies: ROLLERS.map(([x, z]) => ({ type: 'roller' as const, x, y: 0, z, arena: { ...ROLLER_ICE }, respawn: true, uncounted: true })),
     waves: [],
     gear: [],
     goals: [],

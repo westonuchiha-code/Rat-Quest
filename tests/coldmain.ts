@@ -38,7 +38,7 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const door = g.courseDoors?.find((d) => d.to === 'coldmain');
   const others = [g.exit, ...(g.courseDoors ?? []).filter((d) => d !== door).map((d) => d.door)];
   check('a door in the Move Garden leads to it: open from the start, clear of the other doors and of everything standing by that wall', !!door && door.need === 0 && Math.abs(door.door.z - (GARDEN.halfZ - 0.08)) < 1e-6 && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 4) && !g.solids.some((b) => b.kind !== 'wall' && b.kind !== 'floor' && b.x1 > door.door.x - 1.6 && b.x0 < door.door.x + 1.6 && b.z1 > GARDEN.halfZ - 3));
-  check('nothing in it to fight or to win, and its door leads back to the Move Garden', def.enemies.length === 0 && def.goals.length === 0 && def.returnTo === 'garden');
+  check('nothing in it to win, and its door leads back to the Move Garden; its only creatures are the two Frost Rollers on the ice (put there 2026-11-16; tests/roller.ts), who count toward nothing', def.enemies.length === 2 && def.enemies.every((e) => e.type === 'roller' && e.uncounted) && def.goals.length === 0 && def.returnTo === 'garden');
   let built = true;
   try {
     const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
