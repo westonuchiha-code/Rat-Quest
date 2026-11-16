@@ -1052,3 +1052,15 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - Her sliders: group 'The Widow' in tweaks.ts (root `widow` = the `WIDOW` table). A slider's default must be on its
   own step grid (min + n * step) or the panel's "reset" test fails. A new number in `WIDOW` is on no slider until a
   line is added there.
+
+## The Glow Cave (2026-11-16: a try-out room for a theme; `#level=glowcave&nostory`)
+- Level `src/levels/glowcave.ts` (in `TEST_ROOMS`), tests `tests/glowcave.ts`.
+- `LevelDef.ambient` (default 1; the cave 0.4) sets `ps1Uniforms.ambient` on level load (main.ts, beside the fog):
+  the shader's plain light is `vColor * ambient`, the coloured lights are added on top as before.
+- Pictures: `caveRock`, `caveFloor` (64 px, a tile covers 4: bare rock, no glow in them), `glowMoss` (32 px, greys).
+- Decor in chamber.ts: `moss` (MeshBasic, vertex colours times `glowMoss`; lobes of a ragged fan; threads; optional
+  light and halo), `mushroom` (stem lit like the room, cap MeshBasic; `halo()` is an additive sprite; a light if its
+  size is 1.5 or more), `stalactite` (five-sided, lit like the rock, hangs from `roofOver`).
+- `MUSHROOM`, `mushroomCap`, `mushroomSolids` in layout.ts: the shape drawn and the shape solid come from the same
+  numbers. A level must push `mushroomSolids(...)` for each mushroom it places.
+

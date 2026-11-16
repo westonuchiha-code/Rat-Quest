@@ -11,7 +11,7 @@ import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
-import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset } from './layout';
+import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, mushroomCap } from './layout';
 import { TUNING } from '../data/tuning';
 
 /** A portcullis in the room. `open()` lifts it; once it is up its collider is gone. */
@@ -93,6 +93,7 @@ const PALETTE: Record<Kind, number> = {
 const TILE: Partial<Record<TextureName, number>> = {
   wetCobbles: 2, sewerBrick: 2.5, concreteSlab: 3, mossStone: 2, planks: 1.5, ceramicTiles: 1.5, drainGrate: 1.2,
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
+  caveRock: 4, caveFloor: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
 };
 const MOSS = 0xc8f0a8; // tops of platforms pick up a green tint
@@ -464,6 +465,32 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const bulbs: Array<{ on: THREE.Mesh; off: THREE.Mesh; flash: number; phase: number }> = [];
   const flames: Array<{ mesh: THREE.Mesh; base: number; phase: number }> = [];
   /** Things that sway (banners, roots): a pivot that rocks about its own axis. */
+  /** What a glowing mushroom's cap is made of: its own colours, unlit. */
+  let mushroomGlow: THREE.MeshBasicMaterial | null = null;
+  let mossGlow: THREE.MeshBasicMaterial | null = null;
+  /** A soft round glow, to hang in the air round a thing that shines: brightest at its middle, dying away to nothing at its rim. */
+  let haloTex: THREE.DataTexture | null = null;
+  const halo = (x: number, y: number, z: number, size: number, color: THREE.Color, strength: number): void => {
+    if (!haloTex) {
+      const S = 32;
+      const data = new Uint8Array(S * S * 4);
+      for (let j = 0; j < S; j++) {
+        for (let i = 0; i < S; i++) {
+          const r = Math.hypot(i - S / 2 + 0.5, j - S / 2 + 0.5) / (S / 2);
+          const k = Math.max(0, 1 - r) ** 2.6;
+          data.set([255 * k, 255 * k, 255 * k, 255], (j * S + i) * 4);
+        }
+      }
+      haloTex = new THREE.DataTexture(data, S, S, THREE.RGBAFormat);
+      haloTex.magFilter = THREE.NearestFilter;
+      haloTex.minFilter = THREE.NearestFilter;
+      haloTex.needsUpdate = true;
+    }
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: color.clone().multiplyScalar(strength), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    sprite.position.set(x, y, z);
+    sprite.scale.set(size, size, 1);
+    group.add(sprite);
+  };
   const swayers: Array<{ obj: THREE.Object3D; axis: 'x' | 'z'; amount: number; speed: number; phase: number }> = [];
   /** Eyes in the dark: each pair is shut for a while of its `period`, and blinks once while open. */
   const blinkers: Array<{ obj: THREE.Object3D; period: number; phase: number }> = [];
@@ -949,6 +976,169 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         m.rotation.set(Math.cos(sp.a) * sp.lean, sp.a, Math.sin(sp.a) * sp.lean);
       }
       lightDefs.push({ x: d.x, y: d.y + d.size * 0.6, z: d.z, r: 6 + d.size * 1.5, color: c, power: 0.75, flash: 0, flicker: 0.08, phase: d.x * 1.7 + d.z });
+    } else if (d.kind === 'mushroom') {
+      // A mushroom that glows. A pale stem; a cap that is a low, nearly flat dome with a turned-down rim, bright on its
+      // crown, deep in its colour at the rim, a few pale spots on it; under it, dark gills. Flat-faced.
+      // (A big one is solid, stem and cap: see MUSHROOM. So it stands straight, and its cap is flat enough to stand
+      // on where the solid of it is. A small one, which he brushes through, has a lean to it.)
+      const c = new THREE.Color(d.color);
+      const h = d.size;
+      const r = mushroomCap(d.x, d.z, h);
+      const lean = h >= MUSHROOM.solid ? 0 : 0.12 * Math.sin(d.x * 5.3 + d.z * 2.9);
+      const stem = new THREE.CylinderGeometry(h * 0.07, h * 0.12, h * 0.86, 5, 1);
+      stem.translate(0, h * 0.43, 0);
+      bakeVertexColor(stem, new THREE.Color(0x8a8078).lerp(c, 0.3), false);
+      const stalk = addMesh(stem, plainMat, d.x, d.y, d.z);
+      stalk.rotation.set(lean, d.x * 2.3, lean * 0.6);
+      // (Its cap: a row of rings from its crown down and out to its rim, then in underneath.)
+      const prof: Array<[number, number]> = [[0, 1], [0.5, 0.985], [0.85, 0.945], [1, 0.875], [0.93, 0.835], [0.2, 0.855]];
+      const pts = prof.map(([rr, yy]) => new THREE.Vector2(Math.max(0.001, rr * r), h * yy));
+      let cap: THREE.BufferGeometry = new THREE.LatheGeometry(pts, 7);
+      cap = cap.toNonIndexed();
+      cap.computeVertexNormals();
+      const q = cap.attributes.position;
+      const cols = new Float32Array(q.count * 3);
+      const crown = c.clone().lerp(new THREE.Color(0xffffff), 0.28);
+      const rim = c.clone().multiplyScalar(0.62);
+      const under = c.clone().multiplyScalar(0.18);
+      for (let i = 0; i < q.count; i += 3) {
+        // (Each face one colour, by how high on the cap it is and whether it looks up or down.)
+        const fy = ((q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3 / h - 0.835) / 0.165;
+        const up = cap.attributes.normal.getY(i) > -0.2;
+        const spot = up && fy > 0.5 && fy < 0.95 && (i / 3) % 5 === 1;
+        const col = !up ? under : spot ? c.clone().lerp(new THREE.Color(0xffffff), 0.75) : rim.clone().lerp(crown, Math.max(0, Math.min(1, (fy - 0.3) / 0.7)) ** 1.5);
+        for (let j = 0; j < 3; j++) cols.set([col.r, col.g, col.b], (i + j) * 3);
+      }
+      cap.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      const top = new THREE.Mesh(cap, (mushroomGlow ??= new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+      top.position.set(d.x, d.y, d.z);
+      top.rotation.copy(stalk.rotation);
+      group.add(top);
+      halo(d.x, d.y + h * 0.9, d.z, r * 5, c, 0.34);
+      // (The tall one of a stand lights the place: a pool of its colour on the rock, the small ones round it in it.
+      // Only the nearest few lights are drawn, so not every mushroom is one.)
+      if (h >= 1.5) lightDefs.push({ x: d.x, y: d.y + h * 0.8, z: d.z, r: 4.5 + h * 1.5, color: c, power: 0.85, flash: 0, flicker: 0.05, phase: d.x * 1.3 + d.z * 0.7 });
+    } else if (d.kind === 'moss') {
+      // A clump of glowing moss: two or three ragged lobes of it lying on the rock, each bright at its heart and dying
+      // away to its edge; from a clump on a wall, threads hanging, a bead of light at the end of each.
+      const c = new THREE.Color(d.color);
+      const hash = (n: number): number => {
+        const v = Math.sin(n * 127.1 + d.x * 311.7 + d.y * 19.3 + d.z * 74.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      const heart = c.clone().lerp(new THREE.Color(0xffffff), 0.2);
+      const body = c.clone().multiplyScalar(0.8);
+      const edge = c.clone().multiplyScalar(0.1);
+      const pos: number[] = [];
+      const col: number[] = [];
+      const uv: number[] = [];
+      const put = (x: number, y: number, z: number, k: THREE.Color): void => {
+        pos.push(x, y, z);
+        col.push(k.r, k.g, k.b);
+        uv.push(x / 0.9 + d.x, y / 0.9 + d.y);
+      };
+      const N = 11;
+      for (let l = 0; l < 4; l++) {
+        const la = hash(l * 7 + 1) * Math.PI * 2;
+        const off = l === 0 ? 0 : d.size * (0.55 + 0.35 * hash(l * 7 + 2));
+        const cx = Math.cos(la) * off * 1.15;
+        const cy = Math.sin(la) * off * 0.55;
+        const R = d.size * (l === 0 ? 0.75 : 0.34 + 0.22 * hash(l * 7 + 3));
+        const at = (i: number, k: number): [number, number] => {
+          const a = ((i % N) / N) * Math.PI * 2;
+          const rr = R * k * (0.4 + 0.6 * hash(l * 31 + (i % N)));
+          return [cx + Math.cos(a) * rr * 1.2, cy + Math.sin(a) * rr * 0.8];
+        };
+        for (let i = 0; i < N; i++) {
+          const [mx0, my0] = at(i, 0.48);
+          const [mx1, my1] = at(i + 1, 0.48);
+          const [rx0, ry0] = at(i, 1);
+          const [rx1, ry1] = at(i + 1, 1);
+          const z = 0.002 * l;
+          put(cx, cy, z, heart); put(mx0, my0, z, body); put(mx1, my1, z, body);
+          put(mx0, my0, z, body); put(rx0, ry0, z, edge); put(rx1, ry1, z, edge);
+          put(mx0, my0, z, body); put(rx1, ry1, z, edge); put(mx1, my1, z, body);
+        }
+      }
+      for (let t = 0; t < (d.flat ? 0 : d.threads ?? 0); t++) {
+        const x = (hash(t * 13 + 5) - 0.5) * d.size * 1.7;
+        const y0 = -d.size * 0.15 * hash(t * 13 + 6);
+        const len = d.size * (0.5 + 1.1 * hash(t * 13 + 7));
+        const w = 0.022;
+        const dim = c.clone().multiplyScalar(0.35);
+        put(x - w, y0, 0.03, dim); put(x - w, y0 - len, 0.03, c); put(x + w, y0 - len, 0.03, c);
+        put(x - w, y0, 0.03, dim); put(x + w, y0 - len, 0.03, c); put(x + w, y0, 0.03, dim);
+        const b = 0.065;
+        put(x - b, y0 - len - b, 0.035, heart); put(x, y0 - len - b * 2, 0.035, heart); put(x + b, y0 - len - b, 0.035, heart);
+        put(x - b, y0 - len - b, 0.035, heart); put(x + b, y0 - len - b, 0.035, heart); put(x, y0 - len, 0.035, heart);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      mossGlow ??= new THREE.MeshBasicMaterial({ map: getTexture('glowMoss'), vertexColors: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+      const patch = new THREE.Mesh(geo, mossGlow);
+      const nx = d.flat ? 0 : Math.sin(d.yaw);
+      const nz = d.flat ? 0 : Math.cos(d.yaw);
+      patch.position.set(d.x + nx * 0.02, d.y + (d.flat ? 0.02 : 0), d.z + nz * 0.02);
+      if (d.flat) patch.rotation.set(-Math.PI / 2, 0, d.yaw);
+      else patch.rotation.y = d.yaw;
+      group.add(patch);
+      if (d.light) {
+        const up = d.flat ? 0.5 : 0;
+        halo(d.x + nx * 0.3, d.y + up * 0.4, d.z + nz * 0.3, d.size * 4.5, c, 0.22);
+        lightDefs.push({ x: d.x + nx * 0.8, y: d.y + up, z: d.z + nz * 0.8, r: 3.5 + d.size * 2.2, color: c, power: 0.7, flash: 0, flicker: 0.04, phase: d.x * 0.9 + d.z * 1.7 });
+      }
+    } else if (d.kind === 'stalactite') {
+      // A spike of rock hanging from the roof: five-sided, thick at its root and spreading into the rock there, then
+      // narrowing by stages to a point, with a slight crook in it. Lit like the rock, so the lights of the place catch it.
+      const top = roofOver(d.x, 4, d.z);
+      const hash = (n: number): number => {
+        const v = Math.sin(n * 91.7 + d.x * 311.7 + d.z * 74.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      const rings: Array<[number, number]> = [[0, 1.45], [0.1, 1], [0.42, 0.62], [0.76, 0.27], [1, 0.02]];
+      const SIDES = 5;
+      const turn = hash(1) * Math.PI * 2;
+      const ring = rings.map(([t, k], j) => {
+        const bend = j < 2 ? 0 : d.r * 0.5 * (t - 0.1);
+        const ox = Math.cos(turn) * bend * (0.6 + hash(j + 3) * 0.8);
+        const oz = Math.sin(turn) * bend * (0.6 + hash(j + 9) * 0.8);
+        return Array.from({ length: SIDES }, (_, i) => {
+          const a = (i / SIDES) * Math.PI * 2 + turn;
+          return new THREE.Vector3(ox + Math.cos(a) * d.r * k, -t * d.length, oz + Math.sin(a) * d.r * k);
+        });
+      });
+      const pos: number[] = [];
+      const uv: number[] = [];
+      const tile = TILE[d.skin ?? 'caveRock'] ?? 3;
+      const girth = (Math.PI * 2 * d.r) / tile;
+      for (let j = 0; j + 1 < ring.length; j++) {
+        for (let i = 0; i < SIDES; i++) {
+          const a = ring[j][i];
+          const b = ring[j][(i + 1) % SIDES];
+          const c2 = ring[j + 1][(i + 1) % SIDES];
+          const e = ring[j + 1][i];
+          const u0 = (i / SIDES) * girth;
+          const u1 = ((i + 1) / SIDES) * girth;
+          for (const [v, u] of [[a, u0], [c2, u1], [b, u1], [a, u0], [e, u0], [c2, u1]] as Array<[THREE.Vector3, number]>) {
+            pos.push(v.x, v.y, v.z);
+            uv.push(u, v.y / tile);
+          }
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.computeVertexNormals();
+      bakeVertexColor(geo, 0xeeeeee);
+      // (Each face its own light: darker the more it looks down, and all of it darker toward the point.)
+      const cl = geo.attributes.color;
+      for (let i = 0; i < cl.count; i++) {
+        const k = 1 - 0.3 * Math.min(1, -geo.attributes.position.getY(i) / d.length);
+        cl.setXYZ(i, cl.getX(i) * k, cl.getY(i) * k, cl.getZ(i) * k);
+      }
+      addMesh(geo, mat(d.skin ?? 'caveRock'), d.x, top, d.z);
     } else if (d.kind === 'roots') {
       // Three or four thin, kinked roots hanging from the ceiling; they sway a little.
       const pivot = new THREE.Group();

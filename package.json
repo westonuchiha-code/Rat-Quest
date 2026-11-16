@@ -10,7 +10,7 @@
     "build:test": "tsc --noEmit && vite build --mode testpad && node scripts/make-single.mjs",
     "build:editor": "tsc --noEmit && vite build --mode editor --outDir dist-editor && DIST=dist-editor node scripts/make-single.mjs ratquest-editor.html",
     "preview": "vite preview",
-    "test:sim": "for t in sim combat world collect plunge swim crates equipment drops rooms levels leap menu pads newstuff audio movers speech rumble lockon bindings story footing combat2 saves music stickers wedges mylevels tweaks place3d reach groups moves cistern shop foundry hollows keep halls balance gear photo archive ambience decor secrets softlock prompts slots ironback bat beasts models gearsecrets items guard mantis stag brood wyrm hornet ant firefly camera garden furniture ramps ride grind club longdrop widow fit editops; do vite build --ssr tests/$t.ts --outDir .testdist --emptyOutDir >/dev/null && node .testdist/$t.js || exit 1; done",
+    "test:sim": "for t in sim combat world collect plunge swim crates equipment drops rooms levels leap menu pads newstuff audio movers speech rumble lockon bindings story footing combat2 saves music stickers wedges mylevels tweaks place3d reach groups moves cistern shop foundry hollows keep halls balance gear photo archive ambience decor secrets softlock prompts slots ironback bat beasts models gearsecrets items guard mantis stag brood wyrm hornet ant firefly camera garden furniture ramps ride grind club longdrop widow glowcave fit editops; do vite build --ssr tests/$t.ts --outDir .testdist --emptyOutDir >/dev/null && node .testdist/$t.js || exit 1; done",
     "check:deck": "node scripts/deck-check.mjs dist-single/ratquest-nopad.html",
     "check:files": "node scripts/files-check.mjs dist-single/ratquest-nopad.html"
   },

@@ -85,6 +85,11 @@ export interface LevelDef {
   fog?: number;
   /** Where the fog starts and where it is total (default 18 and 90). Big open levels push it back so their landmarks show. */
   fogRange?: [number, number];
+  /**
+   * How much plain light there is in the place, 0 to 1 (default 1). A dark place (the Glow Cave: 0.4) is lit by its
+   * coloured lights and by what glows in it.
+   */
+  ambient?: number;
   /** Which look the level has (stone, wood and iron of the exit door follow it). Default: the sewer. */
   theme?: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
   solids: Box[];

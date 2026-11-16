@@ -353,7 +353,7 @@ better story when we get around to actually telling one."
 - "Find some common poses online": this session can reach only two sites, so poses would have to come from what is
   known already or from a computer session where more sites can be allowed.
 
-## A look-over of old things, and new themes (the owner, 2026-11-16: MOCK-UPS ONLY SO FAR, NOTHING REPLACED)
+## A look-over of old things, and new themes (the owner, 2026-11-16: TRY-OUTS ONLY SO FAR, NOTHING REPLACED)
 His words, in short: "you've been on a roll with the textures so I'm wondering if you could also just do a texture
 pass especially through stuff that we haven't really touched in a while early characters ... go over [their] models
 go over [their] textures ... Don't go too overboard and don't override anything yet just maybe give me a few
@@ -369,16 +369,38 @@ THEMES for levels ("variety is the spice of life ... right now we have sort of t
   ... slide down on his shield ... a full sliding level ... everything could be like crazy colors ... stars and
   planets ... he could be like neon pink and green ... a wacky Pomo palette kind of version of himself and maybe his
   scarf is like crazy exaggerated like [Viewtiful] Joe ... a Trippy psychedelic dream level."
-**What exists (2026-11-16):** FOURTEEN MOCK-UP TEXTURES in `src/render/textures.ts` under new names, used by NO
-level (grouped under "MOCK-UPS" there): `iceWall`, `frostCobbles`, `frostPipe`, `icicles`; `glowMossBlue`,
-`glowShrooms`, `glowVein`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`; `sewerBrickNew`,
-`wetCobblesNew`. See them: `TEX_FOCUS=name,name node .testdist/textureSheet.js` (after building
-`tests/textureSheet.ts`) writes `/tmp/texture-focus.png`.
-**Claude's own judgement of them (told to him):** the dream and furnace ones are the strongest; the ice and glow
-ones are a fair start; the two sewer "refreshes" are NOT better than the tiles the game has (the old brick with its
-vines and the old cobbles hold up): leave the sewer's as they are unless he says otherwise.
+**HIS VERDICT ON THE FIRST SHEET OF MOCK-UP TILES (2026-11-16):** "I actually don't like your refreshment of the
+cobbles or the brick also a lot of this seems a little low effort compared to your other work". So: THE SEWER'S TILES
+STAY AS THEY ARE (the two "refreshes" are deleted), and A SHEET OF SWATCHES IS NOT HOW TO SHOW HIM A THEME. A theme
+is shown IN THE RUNNING GAME, in a small try-out room he can walk about in, done properly.
+**The Glow Cave, done that way (2026-11-16): `#level=glowcave&nostory`, a TEST ROOM** (`src/levels/glowcave.ts`,
+tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's south wall, just west of the way out**
+(`ratquest-garden.html`, or Test rooms in the pause menu's level list); its own door leads back to the garden. What it took, and the lessons:
+- **A dark place is made with `LevelDef.ambient`** (0.4 there; 1 everywhere else: `ps1Uniforms.ambient`, the plain
+  light, turned down). Its rock is MID-grey, not black: black rock shows no coloured light on it. What is seen is
+  what the coloured lights fall on and what glows of itself.
+- **Nothing that glows is painted into a tile.** The first try had moss in the wall's picture: it came round every
+  few steps, like wallpaper. `caveRock` (walls, ledges) and `caveFloor` are bare rock (a test holds them to it). The
+  glow is PUT ON the rock, each piece in its own place:
+  - decor `moss`: a ragged clump on a wall face (`yaw`: the way it faces) or lying on the ground (`flat`), with
+    `threads` hanging from it, each ending in a bead; `light: true` on a few (only the nearest 8 lights are drawn).
+    Its picture `glowMoss` is in greys; the clump gives the colour.
+  - decor `mushroom` (size, colour): a stem and a nearly flat cap, with a soft halo round it. **One as tall as he
+    is (`MUSHROOM.solid`, 1.0) or taller is SOLID: a level adds `mushroomSolids(x, y, z, size)` for each** (an unseen
+    stem box and cap box), so its stem stops him and ITS CAP IS A THING TO STAND ON. Smaller ones he brushes
+    through. Those of 1.5 and up light the rock round them.
+  - decor `stalactite` (hangs from the roof; only drawn, so its point must be above a double jump from the highest
+    thing within six of it: a test checks).
+- Not in it yet: glow bugs (the Firefly Bomber as it is sets the floor alight and drowned the room: they want
+  colours and a gentler way), any fight, anything to collect, and anything that makes use of the caps as a course.
+**The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `iceWall`, `frostCobbles`,
+`frostPipe`, `icicles`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`. (Sheet tool:
+`TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
+`/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
+comes, is done the Glow Cave's way.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
-crate and barrel); no coloured glow bugs; no steam animation; none of the themes is a level; the dream knight.
+crate and barrel); no coloured glow bugs or other glowing creatures; no steam animation; the ice, furnace and dream
+themes; the dream knight.
 
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
 **TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not

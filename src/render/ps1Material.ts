@@ -44,6 +44,11 @@ export interface Ps1Uniforms {
   lightCol: { value: THREE.Vector3[] };
   /** 0 turns the coloured lights off. */
   lightsOn: { value: number };
+  /**
+   * How much plain light there is in the place: 1 everywhere, unless a level says less (`LevelDef.ambient`). In a dark
+   * place what is seen is what the coloured lights fall on, and what glows of itself.
+   */
+  ambient: { value: number };
 }
 
 export const MAX_LIGHTS = 8;
@@ -57,6 +62,7 @@ export const ps1Uniforms: Ps1Uniforms = {
   lightPos: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector4(0, 0, 0, 0)) },
   lightCol: { value: Array.from({ length: MAX_LIGHTS }, () => new THREE.Vector3(0, 0, 0)) },
   lightsOn: { value: 1 },
+  ambient: { value: 1 },
 };
 
 const vertexShader = /* glsl */ `
@@ -110,6 +116,7 @@ const fragmentShader = /* glsl */ `
   uniform vec4 lightPos[${MAX_LIGHTS}];
   uniform vec3 lightCol[${MAX_LIGHTS}];
   uniform float lightsOn;
+  uniform float ambient;
   varying vec3 vColor;
   varying vec2 vUv;
   varying float vFogDepth;
@@ -124,7 +131,7 @@ const fragmentShader = /* glsl */ `
       glow += lightCol[i] * a * a;
     }
     glow = floor(glow * 6.0 + 0.5) / 6.0 * lightsOn;
-    vec3 base = albedo * tint * (vColor + glow * 0.7) + flash;
+    vec3 base = albedo * tint * (vColor * ambient + glow * 0.7) + flash;
     float fogAmount = clamp((vFogDepth - fogNear) / (fogFar - fogNear), 0.0, 1.0);
     gl_FragColor = vec4(mix(base, fogColor, fogAmount), 1.0);
   }
@@ -145,6 +152,7 @@ export function createPs1Material(options: Ps1Options = {}): THREE.ShaderMateria
       lightPos: ps1Uniforms.lightPos,
       lightCol: ps1Uniforms.lightCol,
       lightsOn: ps1Uniforms.lightsOn,
+      ambient: ps1Uniforms.ambient,
       tint: { value: tint },
       tex: { value: options.tex ?? white() },
       uvOffset: { value: new THREE.Vector2(0, 0) },

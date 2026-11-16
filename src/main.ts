@@ -1399,6 +1399,7 @@ function startGame(): void {
     revealedCrates.clear();
     cur = def;
     ps1Uniforms.fogColor.value.set(def.fog ?? 0x0b1410);
+    ps1Uniforms.ambient.value = def.ambient ?? 1;
     applySight();
     renderer.setClearColor(ps1Uniforms.fogColor.value);
     if (!keep) tracker.reset(def.id);

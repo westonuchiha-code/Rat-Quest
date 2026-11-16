@@ -1558,52 +1558,95 @@ function paintIcicles(p: Px, rand: Rand): void {
   }
 }
 
-/** Glow cave: wet black rock with blue moss that gives its own light. */
-function paintGlowMossBlue(p: Px, rand: Rand): void {
+/**
+ * Cave: bare rock, lying in beds. Blue-grey; the beds run across it and dip a little, a dark seam between one and the
+ * next with a lip of light under it; a few cracks; damp. (Nothing in it glows. What glows in a cave is PUT ON the
+ * rock, in clumps, each in its own place: painted into a tile it came round again every few steps, like wallpaper.)
+ */
+function paintCaveRock(p: Px, rand: Rand): void {
   const S = p.size;
-  const rock = fbm(S, rand, 4, 3);
-  const moss = fbm(S, rand, 3, 3);
+  const a = fbm(S, rand, 3, 4);
+  const b = fbm(S, rand, 8, 2);
+  const rock = [0x141922, 0x1f2733, 0x2c3745, 0x3b4a59, 0x4e6171, 0x667b8b];
+  const band = (x: number, y: number): number => {
+    const xx = ((x % S) + S) % S;
+    const yy = ((y % S) + S) % S;
+    return Math.sin(((yy + a[yy * S + xx] * 20) / S) * Math.PI * 6);
+  };
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
-      const m = moss[y * S + x];
-      if (m > 0.56) p.set(x, y, ramp((m - 0.56) / 0.4 + rand() * 0.2, [0x063048, 0x0a6088, 0x18a8d8, 0x5ee8ff, 0xd8feff], x, y, 0.3));
-      else p.set(x, y, ramp(rock[y * S + x] * 0.8 + (m > 0.5 ? 0.15 : 0), [0x06080c, 0x0e1218, 0x181e28, 0x243040], x, y, 0.2));
+      const i = y * S + x;
+      p.set(x, y, ramp(a[i] * 0.42 + b[i] * 0.22 + band(x, y) * 0.09 + 0.14, rock, x, y, 0.22));
+      // (The seam between two beds: where the wave turns over.)
+      if (band(x, y) > 0 && band(x, y + 1) <= 0) {
+        p.set(x, y, b[i] > 0.62 ? 0x1f2733 : 0x0b0e14);
+        p.blend(x, (y + 1) % S, 0x7f95a4, 0.3);
+      }
     }
+  }
+  // Cracks, running down across the beds.
+  for (let c = 0; c < 4; c++) {
+    let x = Math.floor(rand() * S);
+    let y = Math.floor(rand() * S);
+    for (let k = 0; k < 16; k++) {
+      p.set(((x % S) + S) % S, y % S, 0x0b0e14);
+      p.blend((((x + 1) % S) + S) % S, y % S, 0x7f95a4, 0.22);
+      y += 1;
+      x += rand() < 0.3 ? 1 : rand() < 0.4 ? -1 : 0;
+    }
+  }
+  // Damp: a glint here and there on the high places.
+  for (let k = 0; k < 26; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    if (a[y * S + x] > 0.6) p.blend(x, y, 0xa8c0cc, 0.4);
   }
 }
 
-/** Glow cave: dark earth with mushrooms that glow, pink and orange, and the light they throw on the ground. */
-function paintGlowShrooms(p: Px, rand: Rand): void {
+/**
+ * Cave: its floor. Flat stones of different greys, fitted together, each worn paler toward its middle; dark in the
+ * cracks between them; damp. (Nothing in it glows, for the same reason as the rock of the walls.)
+ */
+function paintCaveFloor(p: Px, rand: Rand): void {
+  const S = p.size;
+  const cells = voronoi(S, 4, rand);
+  const f = fbm(S, rand, 4, 3);
+  const tones = Array.from({ length: 64 }, () => 0.3 + rand() * 0.34);
+  const stone = [0x12161d, 0x1c232d, 0x28323e, 0x364350, 0x475866, 0x5c7080];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const edge = cells[i].d2 - cells[i].d1;
+      if (edge < 1.5) p.set(x, y, ramp(rand() * 0.5, [0x07090d, 0x0c1016, 0x12161d], x, y, 0.3));
+      else p.set(x, y, ramp(tones[cells[i].id % 64] + (f[i] - 0.5) * 0.4 + Math.min(0.12, (edge - 1.5) * 0.02) - (edge < 3 ? 0.1 : 0), stone, x, y, 0.2));
+    }
+  }
+  for (let k = 0; k < 40; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    if (f[y * S + x] > 0.6) p.blend(x, y, 0xa8c0cc, 0.4);
+  }
+}
+
+/**
+ * Glowing moss, for the clumps of it (decor `moss`). In greys and white: the clump gives it its colour. Tufts, each
+ * pale at its top and deep under, dark gaps between; here and there a bright bead.
+ */
+function paintGlowMoss(p: Px, rand: Rand): void {
   const S = p.size;
   const f = fbm(S, rand, 4, 3);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(f[y * S + x] * 0.7, [0x08060c, 0x120e18, 0x1e1826, 0x2a2234], x, y, 0.2));
-  for (let m = 0; m < 7; m++) {
-    const cx = Math.floor(rand() * S);
-    const cy = Math.floor(rand() * S);
-    const r = 2 + Math.floor(rand() * 3);
-    const pink = m % 2 === 0;
-    const glow = pink ? 0xff4aa8 : 0xff8a2a;
-    for (let dy = -r - 3; dy <= r + 5; dy++) for (let dx = -r - 3; dx <= r + 3; dx++) p.blend(cx + dx, cy + dy, glow, Math.max(0, 0.28 - Math.hypot(dx, dy * 0.8) / (r * 4.5)));
-    for (let k = 1; k <= r + 2; k++) p.set(cx, cy + k, 0xe8d8c8);
-    for (let dy = -r; dy <= 0; dy++) {
-      const half = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)) * 1.3);
-      for (let dx = -half; dx <= half; dx++) p.set(cx + dx, cy + dy, dy === -r || Math.abs(dx) === half ? (pink ? 0xffb0de : 0xffd08a) : (dx + dy) % 3 === 0 ? 0xffffff : glow);
-    }
+  const g = fbm(S, rand, 8, 2);
+  const grey = [0x262626, 0x4c4c4c, 0x7c7c7c, 0xb4b4b4, 0xf2f2f2];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(f[y * S + x] * 0.5 + g[y * S + x] * 0.6 - 0.08, grey, x, y, 0.3));
+  for (let k = 0; k < 46; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.set(x, y, 0xffffff);
+    p.blend(x + 1, y, 0xf2f2f2, 0.6);
+    p.blend(x, (y + 1) % S, 0x4a4a4a, 0.7);
+    p.blend(x + 1, (y + 1) % S, 0x4a4a4a, 0.5);
   }
-}
-
-/** Glow cave: black rock with veins of light running through it. */
-function paintGlowVein(p: Px, rand: Rand): void {
-  const S = p.size;
-  const rock = fbm(S, rand, 4, 3);
-  const vein = fbm(S, rand, 3, 2);
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const d = Math.abs(vein[y * S + x] - 0.5);
-      if (d < 0.045) p.set(x, y, ramp(1 - d / 0.045, [0x0a5a50, 0x18c8a8, 0x8cffe0, 0xf0fff8], x, y, 0.3));
-      else p.set(x, y, ramp(rock[y * S + x] * 0.7 + Math.max(0, 0.12 - d) * 1.2, [0x07090c, 0x10151a, 0x1a2228, 0x243436], x, y, 0.2));
-    }
-  }
+  for (let k = 0; k < 30; k++) p.set(Math.floor(rand() * S), Math.floor(rand() * S), 0x2c2c2c);
 }
 
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
@@ -1692,66 +1735,6 @@ function paintSteamVent(p: Px, rand: Rand): void {
   for (const [x, y] of [[2, 2], [S - 3, 2], [2, S - 3], [S - 3, S - 3]]) p.set(x, y, 0xa8b2ba);
 }
 
-/** The sewer's first brick, refreshed: each brick its own tone, lit along its top and left, chipped, moss in its joints. */
-function paintSewerBrickNew(p: Px, rand: Rand): void {
-  const S = p.size;
-  const f = fbm(S, rand, 4, 3);
-  const pal = [0x2a1f1c, 0x40302a, 0x5a4238, 0x74574a, 0x8e6c5a, 0xa8846e];
-  for (let row = 0; row < S / 8; row++) {
-    for (let col = 0; col < S / 16 + 1; col++) {
-      const tone = 0.35 + rand() * 0.35;
-      const chip = rand() < 0.3 ? Math.floor(rand() * 4) : -1;
-      for (let ly = 0; ly < 8; ly++) {
-        for (let lx = 0; lx < 16; lx++) {
-          const x = col * 16 + lx + (row % 2) * 8;
-          const y = row * 8 + ly;
-          if (lx === 0 || ly === 0) continue;
-          let v = tone + (f[(y % S) * S + (x % S)] - 0.5) * 0.3 + (ly === 1 || lx === 1 ? 0.16 : 0) - (ly === 7 || lx === 15 ? 0.16 : 0);
-          if (chip === 0 && lx > 12 && ly < 3) v -= 0.3;
-          if (chip === 1 && lx < 4 && ly > 5) v -= 0.3;
-          p.set(x, y, ramp(v, pal, x, y, 0.2));
-        }
-      }
-    }
-  }
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const lx = (x + (Math.floor(y / 8) % 2) * 8) % 16;
-      if (lx === 0 || y % 8 === 0) p.set(x, y, f[y * S + x] > 0.58 ? ramp(f[y * S + x], [0x1e3a1a, 0x2e5a26, 0x4a8a3a], x, y, 0.3) : ramp(0.3 + rand() * 0.3, [0x14100e, 0x1e1815, 0x2a221e], x, y, 0.2));
-    }
-  }
-  for (let d = 0; d < 3; d++) {
-    const x = Math.floor(rand() * S);
-    for (let k = 0; k < 10; k++) p.blend(x, Math.floor(rand() * 4) + k, 0x12100c, 0.3);
-  }
-}
-
-/** The sewer's first floor, refreshed: rounded stones, wet, each with its glint; slime pooled in the joints. */
-function paintWetCobblesNew(p: Px, rand: Rand): void {
-  const S = p.size;
-  const f = fbm(S, rand, 4, 2);
-  const stone = [0x1a1e1c, 0x2a302c, 0x3e4640, 0x566058, 0x74807a, 0x9aa8a0];
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(f[y * S + x] * 0.5, [0x0a120c, 0x14261a, 0x1e3c24, 0x2e5a30], x, y, 0.25));
-  for (let row = 0; row < 4; row++) {
-    for (let col = 0; col < 4; col++) {
-      const cx = col * 8 + 4 + (row % 2) * 4 + Math.round((rand() - 0.5) * 1.5);
-      const cy = row * 8 + 4 + Math.round((rand() - 0.5) * 1.5);
-      const rx = 3 + rand() * 0.8;
-      const ry = 2.8 + rand() * 0.8;
-      const tone = 0.3 + rand() * 0.25;
-      for (let dy = -4; dy <= 4; dy++) {
-        for (let dx = -4; dx <= 4; dx++) {
-          const d = (dx / rx) ** 2 + (dy / ry) ** 2;
-          if (d > 1) continue;
-          p.set(cx + dx, cy + dy, ramp(tone + (1 - d) * 0.3 - (dx + dy) * 0.045, stone, cx + dx, cy + dy, 0.2));
-        }
-      }
-      p.set(cx - 1, cy - 1, 0xd8e8e0);
-      p.blend(cx, cy - 1, 0xd8e8e0, 0.5);
-    }
-  }
-}
-
 const DEFS = {
   // legacy (mid-grey / murky green, tinted by vertex colour)
   stone: { size: 32, seed: 11, paint: legacyBlocks(4, 2, 150, 70) },
@@ -1802,16 +1785,14 @@ const DEFS = {
   frostCobbles: { size: 32, seed: 802, paint: paintFrostCobbles },
   frostPipe: { size: 32, seed: 803, paint: paintFrostPipe },
   icicles: { size: 32, seed: 804, paint: paintIcicles },
-  glowMossBlue: { size: 32, seed: 811, paint: paintGlowMossBlue },
-  glowShrooms: { size: 32, seed: 812, paint: paintGlowShrooms },
-  glowVein: { size: 32, seed: 813, paint: paintGlowVein },
+  caveRock: { size: 64, seed: 811, paint: paintCaveRock },
+  caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
+  glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 32, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 32, seed: 823, paint: paintPomoTiles },
   emberBrick: { size: 32, seed: 831, paint: paintEmberBrick },
   steamVent: { size: 32, seed: 832, paint: paintSteamVent },
-  sewerBrickNew: { size: 32, seed: 841, paint: paintSewerBrickNew },
-  wetCobblesNew: { size: 32, seed: 842, paint: paintWetCobblesNew },
   // The Widow (enemies/widowModel.ts): her shell, and the horn of her claws and fangs. Both run ALONG a limb (v).
   widowChitin: { size: 32, seed: 701, paint: paintWidowChitin },
   widowHorn: { size: 32, seed: 702, paint: paintWidowHorn },

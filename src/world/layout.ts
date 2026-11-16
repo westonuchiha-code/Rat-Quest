@@ -139,6 +139,27 @@ export function stoolSolids(x: number, y: number, z: number): Box[] {
 }
 
 /**
+ * A glowing mushroom (decor `mushroom`). One as tall as he is or taller is SOLID: its stem stops him, and its cap is a
+ * thing to stand on (a level adds `mushroomSolids` for each). Smaller ones he brushes through, like weeds.
+ * `stem`: half the solid stem's width, as a share of the mushroom's height. `under`, `top`: where the solid cap begins
+ * and ends, the same way. `capSolid`: how much of the drawn cap's radius is solid (a square in a round cap).
+ */
+export const MUSHROOM = { solid: 1, stem: 0.11, under: 0.85, top: 0.985, capSolid: 0.7 } as const;
+/** How wide its cap is: its radius. (By where it stands, so that no two in a stand are quite alike.) */
+export function mushroomCap(x: number, z: number, size: number): number {
+  return size * (0.42 + 0.1 * Math.sin(x * 3.1 + z * 1.7));
+}
+export function mushroomSolids(x: number, y: number, z: number, size: number): Box[] {
+  if (size < MUSHROOM.solid) return [];
+  const s = size * MUSHROOM.stem;
+  const r = mushroomCap(x, z, size) * MUSHROOM.capSolid;
+  return [
+    { ...extent('stone', x - s, x + s, y, y + size * MUSHROOM.under, z - s, z + s), hidden: true },
+    { ...extent('stone', x - r, x + r, y + size * MUSHROOM.under, y + size * MUSHROOM.top, z - r, z + r), hidden: true },
+  ];
+}
+
+/**
  * A couch, as drawn (couchModel.ts) and as solid (custom.ts). It faces +z with its middle on x = 0: `half` its
  * half-width; the back runs from `back` to `seatBack` and stands `backTop` high; the seat, `seat` high, runs from
  * `seatBack` to `front` between the arms; an arm runs from `armIn` to `armOut` either side and is `armTop` high;
@@ -223,6 +244,16 @@ export type Decor =
   | { kind: 'gauge'; x: number; y: number; z: number; yaw: number; r: number }
   /** A cluster of glowing crystals growing from the floor at y, `size` tall, in a colour; it lights what is near. */
   | { kind: 'crystal'; x: number; y: number; z: number; size: number; color: number }
+  /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
+  | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number }
+  /**
+   * A clump of glowing moss: on a wall, facing `yaw` (0 faces +z, a quarter turn faces +x), or lying on the ground
+   * (`flat`). `size`: about half its width. `threads`: how many glowing threads hang from it. `light`: it lights the
+   * place round it (only the nearest few lights are drawn, so not every clump should).
+   */
+  | { kind: 'moss'; x: number; y: number; z: number; yaw: number; size: number; color: number; flat?: boolean; threads?: number; light?: boolean }
+  /** A stalactite: a spike of rock hanging from whatever is over (x, z), `length` long, `r` thick at its root. Keep its point out of his reach: it is only drawn. */
+  | { kind: 'stalactite'; x: number; z: number; length: number; r: number; skin?: Skin }
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }
   /** The curved underside of an archway (the solid parts are boxes): spans x0..x1 along the wall (or z if `alongZ`). */
