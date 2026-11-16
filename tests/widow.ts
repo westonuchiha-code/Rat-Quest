@@ -9,7 +9,7 @@ import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { Widow, WIDOW, type WidowState } from '../src/enemies/widow';
-import { WidowModel } from '../src/enemies/widowModel';
+import { WidowModel, BONE } from '../src/enemies/widowModel';
 import { resolveCombat, type CombatEvents } from '../src/combat/combat';
 import { Director } from '../src/enemies/director';
 import { aabbOf } from '../src/world/collision';
@@ -92,10 +92,9 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     return { move: off, run: true };
   }
   if (s === 'sweep' || s === 'sweepWind') {
-    const h = w.hip(w.side);
-    const mine = Math.atan2(p.position.x - h.x, p.position.z - h.z) - w.facing;
-    const gap = Math.abs(Math.atan2(Math.sin(mine - w.angle), Math.cos(mine - w.angle)));
-    return { jumpPressed: s === 'sweep' && p.grounded && gap < (w.raging ? W.sweepRateRage : W.sweepRate) * 0.2, jumpHeld: true };
+    // (Over the wave as it comes: a fifth of a second before it reaches him.)
+    const gap = Math.hypot(p.position.x - w.px, p.position.z - w.pz) - w.wave;
+    return { jumpPressed: s === 'sweep' && p.grounded && gap > 0 && gap < (w.raging ? W.waveSpeedRage : W.waveSpeed) * 0.2, jumpHeld: true };
   }
   const stab = (s === 'stabWind' && w.stateTime > w.windTime * W.stabTrack) || s === 'stab';
   const bite = (s === 'biteWind' && w.stateTime > w.windTime * W.biteTrack) || s === 'bite';
@@ -173,7 +172,7 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
   const before = p.hp;
   until(w, p, 'slamStuck', seen);
   check('standing still, it comes down on him: two hearts', before - p.hp === W.slamDamage && seen.results.includes('hit'), `${before - p.hp}`);
-  check('the leg lies along the floor across the room: a row of solid pieces of her, all in the light', w.parts.length > 12 && w.parts.every((q) => fromMiddle(q.x, q.z) <= A.r + 0.8) && w.open);  // Wherever he stands still, a slam finds him: in the lane straight in front of her as much as out at the sides.
+  check('the leg\'s foot is stuck in the floor where it came down, near her: a piece of her in the light (her legs do not cross the room: their poison does)', w.parts.length === 1 && Math.hypot(w.parts[0].x - w.foot.x, w.parts[0].z - w.foot.z) < 1e-9 && fromMiddle(w.parts[0].x, w.parts[0].z) <= A.r && Math.hypot(w.foot.x - w.hip(w.side).x, w.foot.z - w.hip(w.side).z) <= W.legReach && w.open);  // Wherever he stands still, a slam finds him: in the lane straight in front of her as much as out at the sides.
   const safe: string[] = [];
   for (const [x, north] of [[0, 0], [0, -8], [3, 6.4], [-3, 6.4], [1.5, 10], [-9, -2], [10, 3], [0, 11.5]]) {
     const q = ratAt(x, north);
@@ -201,8 +200,8 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     });
     check(how === 'shield' ? 'a shield held up does not stop the slam' : 'a jump does not get him out from under the slam: it comes from above', before - p.hp === W.slamDamage, `${before - p.hp}; ${seen.results.join()}`);
   }
-  // Stepping off the line once she has committed to it does.
-  const p = ratAt(5, 2);
+  // Stepping off the line once she has committed to it does. (He is near her here: where the foot comes down.)
+  const p = ratAt(4, -7);
   const { w, seen } = woken(p);
   until(w, p, 'slamWind', seen);
   const before = p.hp;
@@ -218,67 +217,55 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     const ev = step(w, p, seen, toward.length() > 1.3 ? { move: toward.normalize(), run: true } : { attackPressed: i % 6 === 0 });
     struck ||= ev.enemyHit === w;
   }
-  check('the leg lying on the floor can be struck, and it hurts her: half of what the blow would do', struck && hp - w.hp > 0 && hp - w.hp <= 1.5, `${hp - w.hp} off her`);
+  check('the foot stuck in the floor can be struck, and it hurts her: half of what the blow would do', struck && hp - w.hp > 0 && hp - w.hp <= 1.5, `${hp - w.hp} off her`);
 }
 {
-  // The sweep: from where the leg lies, right across the floor to the other side. Wherever he stands, it finds him.
-  // (The leg came down from her right, on the line through where he stood, and sweeps away to her left: these are
-  // all on the side of that line it sweeps over.)
-  const places: Array<[number, number]> = [[-4, 8], [0, 0], [-7, -3], [1, -9], [-2, 11], [-9, 2]];
+  // The sweep: the leg swipes across her front and flings a wave of poison that runs out over the whole floor.
+  const places: Array<[number, number]> = [[-4, 8], [0, 0], [-7, -3], [1, -9], [-2, 11], [-9, 2], [10, 1], [6, -8]];
   const missed: string[] = [];
   const caught: string[] = [];
+  let reached = 0;
   for (const [x, north] of places) {
     for (const jump of [false, true]) {
       const p = ratAt(5, 2);
       const { w, seen } = woken(p);
-      // (Out from under the slam, then to his place to wait for the sweep.)
-      until(w, p, 'slamStuck', seen, () => (w.state === 'slamWind' && w.stateTime > w.windTime * W.slamTrack ? { move: new THREE.Vector3(1, 0, 0), run: true } : {}));
+      // (Out from under the slam, then to his place to wait for the wave.)
+      until(w, p, 'slamStuck', seen, () => keepRules(w, p) ?? {});
       p.position.set(A.x + x, 0, A.z - north);
       p.prevPosition.copy(p.position);
       p.velocity.set(0, 0, 0);
       const before = p.hp;
-      let jumped = false;
-      until(w, p, 'sweepEnd', seen, () => {
-        if (!jump || w.state !== 'sweep') return {};
-        // (He jumps as it comes: when it is a fifth of a second off him.)
-        const h = w.hip(w.side);
-        const mine = Math.atan2(p.position.x - h.x, p.position.z - h.z) - w.facing;
-        const gap = Math.abs(Math.atan2(Math.sin(mine - w.angle), Math.cos(mine - w.angle)));
-        const go = !jumped && gap < W.sweepRate * 0.2;
-        if (go) jumped = true;
-        return { jumpPressed: go, jumpHeld: jumped };
-      });
+      until(w, p, 'sweepEnd', seen, () => (jump ? keepRules(w, p) ?? {} : {}));
+      reached = Math.max(reached, w.wave);
       const hurt = before - p.hp;
       if (!jump && hurt !== W.sweepDamage) missed.push(`${x},${north}: ${hurt}`);
       if (jump && hurt !== 0) caught.push(`${x},${north}: ${hurt}`);
     }
   }
-  check('THE SWEEP crosses the whole floor: wherever he stands still (near her, in the middle, at the far edge, either side), it takes a heart', missed.length === 0, missed.join('; '));
+  check('THE SWEEP flings a wave of poison over the whole floor: wherever he stands still (near her, in the middle, at the far edge, either side), it takes a heart', missed.length === 0 && reached >= W.legLen, missed.join('; '));
   check('...and a jump as it comes clears it, wherever he is', caught.length === 0, caught.join('; '));
+  // It strikes where it IS: one who has jumped it and come down behind it is not struck by it after.
+  {
+    const q = ratAt(0, -6);
+    const o = woken(q);
+    until(o.w, q, 'slamStuck', o.seen, () => keepRules(o.w, q) ?? {});
+    const hp0 = q.hp;
+    let behind = 0;
+    until(o.w, q, 'sweepEnd', o.seen, () => {
+      if (o.w.state === 'sweep' && q.grounded && o.w.wave > Math.hypot(q.position.x - o.w.px, q.position.z - o.w.pz) + 1) behind++;
+      return keepRules(o.w, q) ?? {};
+    });
+    check('...it strikes only where it is: he stands behind it, on the ground, for the rest of its run and is not touched', behind > 15 && q.hp === hp0, `${behind} frames behind it`);
+  }
   // A shield does not stop it either.
   const p = ratAt(5, 2);
   const { w, seen } = woken(p);
-  until(w, p, 'slamStuck', seen, () => (w.state === 'slamWind' && w.stateTime > w.windTime * W.slamTrack ? { move: new THREE.Vector3(1, 0, 0), run: true } : {}));
+  until(w, p, 'slamStuck', seen, () => keepRules(w, p) ?? {});
   p.position.set(A.x - 3, 0, A.z);
-  face(p, w.hip(w.side).x, w.hip(w.side).z);
+  face(p, w.px, w.pz);
   const before = p.hp;
   until(w, p, 'sweepEnd', seen, () => ({ guardHeld: w.state === 'sweep' }));
   check('...a shield held up does not stop it', before - p.hp === W.sweepDamage);
-  {
-    // Behind the leg (on its own side of the line it came down on) its sweep does not come: the other leg's does.
-    const q = ratAt(5, 2);
-    const o = woken(q);
-    until(o.w, q, 'slamStuck', o.seen, () => (o.w.state === 'slamWind' && o.w.stateTime > o.w.windTime * W.slamTrack ? { move: new THREE.Vector3(1, 0, 0), run: true } : {}));
-    q.position.set(A.x + 11, 0, A.z);
-    q.prevPosition.copy(q.position);
-    const hp0 = q.hp;
-    until(o.w, q, 'sweepEnd', o.seen);
-    const afterFirst = hp0 - q.hp;
-    until(o.w, q, 'slamWind', o.seen);
-    // (So far out to the side the other leg cannot come down on him; its sweep comes all the way.)
-    until(o.w, q, 'sweepEnd', o.seen);
-    check('one who gets behind the leg, far out to the side, is out of its sweep: the other leg, from the other side, sweeps him up', afterFirst === 0 && hp0 - q.hp === W.sweepDamage, `${afterFirst} from the first, ${hp0 - q.hp} in all`);
-  }
   // ...and then the other leg, from the other side: slam, and sweep back.
   const first = w.side;
   seen.states.length = 0;
@@ -288,15 +275,16 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
 
 // ---- The stab ----
 {
-  const stabbed = (act: (w: Widow, p: PlayerController) => Partial<PlayerInput>): { w: Widow; p: PlayerController; seen: Seen; lost: number } => {
-    const p = ratAt(2, 3);
+  const stabbed = (act: (w: Widow, p: PlayerController) => Partial<PlayerInput>, north = -7): { w: Widow; p: PlayerController; seen: Seen; lost: number } => {
+    const p = ratAt(2, north);
     const w = widow();
     const seen = fresh();
     // (Her round is slam, stab, bite: he keeps out of the slams, and waits for the stab.)
     until(w, p, 'stabWind', seen, () => {
-      if (w.state === 'slamWind' && w.stateTime > w.windTime * W.slamTrack) return { move: new THREE.Vector3(w.side, 0, 0), run: true };
-      if (w.state === 'sweep' || w.state === 'sweepWind') return { jumpPressed: p.grounded, jumpHeld: true };
-      return {};
+      if (w.state === 'slamWind' || w.state === 'sweep' || w.state === 'sweepWind') return keepRules(w, p) ?? {};
+      // (Between her blows he goes back to his place.)
+      const home = new THREE.Vector3(A.x + 2 - p.position.x, 0, A.z - north - p.position.z);
+      return w.state === 'idle' && home.length() > 0.3 ? { move: home.normalize(), run: true } : {};
     }, 4000);
     seen.hits = 0;
     seen.results.length = 0;
@@ -306,12 +294,17 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     return { w, p, seen, lost: before - p.hp };
   };
   const still = stabbed(() => ({}));
-  check('THE STAB: an inner leg comes down on where he stands: one heart if he only stands there', still.lost === W.stabDamage && still.seen.sounds.includes('stab'), `${still.lost}`);
+  check('THE STAB: near her, an inner leg comes down on where he stands: one heart if he only stands there', still.lost === W.stabDamage && still.seen.sounds.includes('stab') && !still.w.far, `${still.lost}`);
   check('...the foot is stuck in the floor where it came down: a piece of her in the light', still.w.parts.length === 1 && Math.hypot(still.w.parts[0].x - still.w.spot.x, still.w.parts[0].z - still.w.spot.z) < 1e-9);
   const guarded = stabbed((w) => ({ guardHeld: w.state === 'stab' || w.stateTime > 0.2 }));
   check('...a shield held toward her stops it', guarded.lost === 0 && guarded.seen.results.includes('blocked'), guarded.seen.results.join());
   const aside = stabbed((w) => (w.stateTime > w.windTime * W.stabTrack ? { move: new THREE.Vector3(0, 0, -1), run: true } : {}));
   check('...and so does stepping away once it has stopped following him', aside.lost === 0 && aside.seen.results.length === 0);
+  // Further off than the leg can reach, it flicks poison at the place instead.
+  const farStill = stabbed(() => ({}), 6);
+  check('further off than her leg can reach, it flicks a gob of poison onto the place instead: the same heart, and no foot left in the floor to strike', farStill.w.far && farStill.lost === W.stabDamage && farStill.w.parts.length === 0 && !farStill.w.open, `${farStill.lost}; far ${farStill.w.far}`);
+  const farGuard = stabbed((w) => ({ guardHeld: w.state === 'stab' || w.stateTime > 0.2 }), 6);
+  check('...a shield held toward her stops that too', farGuard.w.far && farGuard.lost === 0 && farGuard.seen.results.includes('blocked'), farGuard.seen.results.join());
   const parried = stabbed((w) => ({ guardHeld: w.state === 'stab' || (w.state === 'stabWind' && w.stateTime > w.windTime - 0.05) }));
   check('...a perfect guard throws her down: her head falls into the light and lies there', parried.lost === 0 && parried.seen.results.includes('parried') && parried.w.state === 'reel' && parried.seen.sounds.includes('reel'), `${parried.seen.results.join()}; ${parried.w.state}`);
   {
@@ -340,11 +333,12 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     let bit = true;
     // (He keeps out of everything till her head rears.)
     until(w, p, 'biteWind', seen, () => {
-      if (w.state === 'slamWind' && w.stateTime > w.windTime * W.slamTrack) return { move: new THREE.Vector3(w.side, 0, 0), run: true };
-      if ((w.state === 'stabWind' && w.stateTime > w.windTime * W.stabTrack) || w.state === 'stab') return { move: new THREE.Vector3(-Math.sign(p.position.x - A.x) || 1, 0, 0), run: true };
-      if (w.state === 'sweep' || w.state === 'sweepWind') return { jumpPressed: p.grounded, jumpHeld: true };
-      return {};
-    }, 2400);
+      const must = keepRules(w, p);
+      if (must) return must;
+      // (Between her blows he goes back to his place.)
+      const home = new THREE.Vector3(A.x + x - p.position.x, 0, A.z - north - p.position.z);
+      return (w.state === 'idle' || w.state === 'stabStuck') && home.length() > 0.3 ? { move: home.normalize(), run: true } : {};
+    }, 3000);
     if (w.state !== 'biteWind') bit = false;
     seen.hits = 0;
     seen.results.length = 0;
@@ -352,15 +346,15 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     if (bit) until(w, p, 'biteStuck', seen, () => act(w, p));
     return { w, p, seen, lost: before - p.hp, bit };
   };
-  const still = bitten(1, -4, () => ({}));
-  check('THE BITE: her head rears, the place is marked on him, and she comes out of the dark and bites down on it: two hearts if he stands there', still.bit && still.lost === W.biteDamage && still.seen.sounds.includes('biteWind') && still.seen.sounds.includes('bite'), `${still.lost}`);
+  const still = bitten(1, -6, () => ({}));
+  check('THE BITE: her head rears, the place is marked on him, and she comes out of the dark and bites down on it: two hearts if he stands there', still.bit && !still.w.far && still.lost === W.biteDamage && still.seen.sounds.includes('biteWind') && still.seen.sounds.includes('bite'), `${still.lost}`);
   check('...her head lies where it bit, in the light', still.w.headDown && Math.hypot(still.w.x - still.w.spot.x, still.w.z - still.w.spot.z) < 1e-9 && fromMiddle(still.w.x, still.w.z) < A.r);
-  const guarded = bitten(1, -4, (w, p) => {
+  const guarded = bitten(1, -6, (w, p) => {
     face(p, w.px, w.pz);
     return { guardHeld: w.state === 'bite' || w.stateTime > 0.3 };
   });
   check('...a shield held up does not stop it', guarded.lost === W.biteDamage);
-  const away = bitten(1, -4, (w) => (w.stateTime > w.windTime * W.biteTrack || w.state === 'bite' ? { move: new THREE.Vector3(0, 0, -1), run: true } : {}));
+  const away = bitten(1, -6, (w) => (w.stateTime > w.windTime * W.biteTrack || w.state === 'bite' ? { move: new THREE.Vector3(0, 0, -1), run: true } : {}));
   check('...running out of the ring once it has stopped following him does', away.lost === 0 && away.seen.results.length === 0);
   {
     // Her head, lying there, is the great opening.
@@ -378,9 +372,12 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     for (let i = 0; i < 30; i++) step(w, p, seen, {});
     check('...then her head goes back into the dark, out of reach', fromMiddle(w.x, w.z) - w.radius - (A.r - R) > 2.5 || w.state !== 'idle', `${(fromMiddle(w.x, w.z) - w.radius - (A.r - R)).toFixed(1)}`);
   }
-  // Her head cannot reach the far side of the room.
-  const far = bitten(0, 11, () => ({}));
-  check('her head cannot reach the far side of the room: one who stays there is never bitten (her legs can reach him)', !far.bit && far.seen.states.filter((s) => s === 'stabWind').length >= 2 && !far.seen.states.includes('biteWind'), far.seen.states.slice(0, 30).join());
+  // Further off than her head can come, she spits on the place instead.
+  const far = bitten(0, 9, () => ({}));
+  check('further off than her head can come, she spits on the marked place instead: the same two hearts if he stands there', far.bit && far.w.far && far.lost === W.biteDamage, `${far.lost}; far ${far.w.far}`);
+  check('...and her head stays out of the light: there is no opening in it', !far.w.headDown && !far.w.open && fromMiddle(far.w.x, far.w.z) > A.r, `${fromMiddle(far.w.x, far.w.z).toFixed(1)} from the middle`);
+  const farAway = bitten(0, 9, (w) => (w.stateTime > w.windTime * W.biteTrack || w.state === 'bite' ? { move: new THREE.Vector3(1, 0, 0), run: true } : {}));
+  check('...running out of the ring avoids it, as it does her bite', farAway.w.far && farAway.lost === 0);
 }
 
 // ---- Angry ----
@@ -476,7 +473,7 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
 // ---- Drawn where she is solid ----
 {
   // Her model, through a fight: every frame, what is drawn of a leg that strikes is where the rules have it striking.
-  const p = ratAt(4, 1);
+  const p = ratAt(3, -6);
   const w = widow();
   const m = new WidowModel();
   const seen = fresh();
@@ -493,7 +490,7 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
     step(w, p, seen, w.state === 'sweep' || w.state === 'sweepWind' ? { jumpPressed: p.grounded && w.state === 'sweep', jumpHeld: true } : {});
     if (p.dead) {
       p.respawn();
-      p.position.set(A.x + 4, 0, A.z - 1);
+      p.position.set(A.x + 3, 0, A.z + 6);
     }
     m.update(DT, w);
     frames++;
@@ -504,25 +501,26 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
         if (!Number.isFinite(q.x + q.y + q.z)) bad++;
         if (q.y < -1e-6) under++;
       }
-      stretched = Math.max(stretched, leg.hip.distanceTo(leg.knee) - (W.legLen / 2 + 0.01), leg.knee.distanceTo(leg.foot) - (W.legLen / 2 + 0.01));
+      stretched = Math.max(stretched, leg.hip.distanceTo(leg.knee) - BONE, leg.knee.distanceTo(leg.foot) - BONE);
     }
     const s = w.state;
-    if (s === 'slamStuck' || s === 'sweepWind' || s === 'sweep' || s === 'sweepEnd') {
+    if (s === 'slamStuck') {
       const leg = legs.find((l) => !l.inner && l.side === w.side)!;
       const h = w.hip(w.side);
-      const [dx, dz] = w.dirOf(w.angle);
-      slamOff = Math.max(slamOff, Math.hypot(leg.foot.x - (h.x + dx * W.legLen), leg.foot.z - (h.z + dz * W.legLen)), Math.hypot(leg.hip.x - h.x, leg.hip.z - h.z));
-      // (Its knee is on the line too, and low: the leg LIES there.)
-      kneeUp = Math.max(kneeUp, leg.knee.y, Math.abs((leg.knee.x - h.x) * dz - (leg.knee.z - h.z) * dx));
+      slamOff = Math.max(slamOff, Math.hypot(leg.foot.x - w.foot.x, leg.foot.z - w.foot.z) + Math.abs(leg.foot.y), Math.hypot(leg.hip.x - h.x, leg.hip.z - h.z));
     }
-    if (s === 'stabStuck') {
+    // (Her poison is drawn where it strikes: the slash while the slam is live, the wave as far out as the rules have it.)
+    if (s === 'slam' && w.stateTime >= 0.04 && !m.slashShown) kneeUp = 99;
+    if (s === 'sweep') kneeUp = Math.max(kneeUp, Math.abs(m.waveRadius - w.wave));
+    if (s !== 'sweep' && m.waveRadius !== 0) kneeUp = 99;
+    if (s === 'stabStuck' && !w.far) {
       const leg = legs.find((l) => l.inner && l.side === w.side)!;
       stabOff = Math.max(stabOff, Math.hypot(leg.foot.x - w.spot.x, leg.foot.z - w.spot.z) + Math.abs(leg.foot.y));
     }
     headOff = Math.max(headOff, Math.hypot(m.headPosition.x - w.x, m.headPosition.z - w.z));
     if (w.headDown && w.stateTime > 0.3 && m.headPosition.y > w.radius) headOff = 99;
   }
-  check('her model, through seventy seconds of her fighting: a leg that lies on the floor is drawn on the line it strikes along, from its hip to its far end, and lies low', slamOff < 1e-6 && kneeUp < 1.4, `off its line ${slamOff.toFixed(4)}; knee at most ${kneeUp.toFixed(2)} up or aside`);
+  check('her model, through seventy seconds of her fighting: a slamming leg\'s foot is drawn stuck in the floor where the rules have it; the slash of poison shows while it strikes; the wave is drawn as far out as it is', slamOff < 1e-6 && kneeUp < 1e-6, `foot off by ${slamOff.toFixed(4)}; poison off by ${kneeUp.toFixed(4)}`);
   check('...a stabbing foot is drawn stuck where it struck', (count.stabStuck ?? 0) > 20 && stabOff < 1e-6, `${stabOff.toFixed(4)}`);
   check('...her head is drawn where the sword meets it, and is down on the floor when the rules say it is down', headOff < 1e-6 && (count.biteStuck ?? 0) > 20, `${headOff.toFixed(4)}`);
   check('...no leg is ever stretched past its bones, under the floor, or nowhere', stretched < 0.02 && under === 0 && bad === 0, `stretched ${stretched.toFixed(3)}; ${under} under the floor; ${bad} bad numbers; ${frames} frames`);
