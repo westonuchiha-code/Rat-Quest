@@ -426,6 +426,14 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## NOTED FOR LATER, NOT YET LOOKED INTO (the owner, 2026-11-16)
+
+ - PIP'S BACKPACK STRAPS: "backpack straps are pretty messed up on mouse make note for future correction." They are
+   two thin boxes laid over his round front (`npc/npc.ts`, "The pack's straps, over his shoulders and down his
+   front"): in the stills they stand off his body, end in the air below his chest, and do not meet the pack. To do:
+   straps that lie ON him from the pack's top corners over each shoulder and down to its bottom corners, drawn
+   where they are (his rule: what hangs, hangs from something). Look at him from all sides before it goes in.
+
 ## HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES (2026-11-16): TAKEN OFF. READ THIS BEFORE TEXTURING ANYONE FRIENDLY
 
 "okay so the mice an birds look wayaaaaaayyyyyy worse than before. same with the rat king, its like you just threw a
