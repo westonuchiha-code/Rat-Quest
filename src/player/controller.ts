@@ -143,6 +143,14 @@ export class PlayerController {
   get onIce(): boolean {
     return this.grounded && !!this.groundBox?.slick;
   }
+  private stickHeld = false;
+  /**
+   * He is gliding: on ice, moving, the stick let go, and doing nothing else. His feet are not driving him, so he is
+   * drawn braced and still, not running on the spot.
+   */
+  get gliding(): boolean {
+    return this.onIce && !this.stickHeld && (this.state === 'run' || this.state === 'walk') && Math.hypot(this.velocity.x, this.velocity.z) > 0.6;
+  }
   /**
    * Riding his shield (see `rideStep` and TUNING.ride). While he is: `rideSteer` is how hard he is steering, from -1
    * to 1 (for his lean and his tail), and `rideFlipProgress` how far through a kickflip he is (0..1, -1 when not).
@@ -514,6 +522,7 @@ export class PlayerController {
     const helpless = this.deadTimer >= 0 || this.hurtTimer > 0;
     const input = helpless ? NO_INPUT : rawInput;
     const move = input.move;
+    this.stickHeld = move.lengthSq() > 0.01;
     this.moveEvent = null;
     this.wallTimer = Math.max(0, this.wallTimer - dt);
     this.kickLock = Math.max(0, this.kickLock - dt);

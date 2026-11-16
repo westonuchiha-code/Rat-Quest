@@ -1109,7 +1109,8 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - Level `src/levels/coldmain.ts` (`COLDMAIN`, `ICE_BLOCKS`, `ICE_BLOCK`, `ICE_SPIKES`, `ICE_PRIZES`), tests
   `tests/coldmain.ts`. START-HERE has the owner's words and his two corrections.
 - Slick ice: `Box.slick` -> `Aabb.slick` (chamber.ts and `aabbOf`) -> controller `onIce` (grounded on a slick box) ->
-  the ground accel and decel are multiplied by `TUNING.ice`. Only the ordinary walk and run: dodge, lunge, the
+  the ground accel and decel are multiplied by `TUNING.ice`. `gliding` (on ice, moving, stick let go, state run or
+  walk) goes to the rat's model as `glide`, which holds the LAND pose. Only the ordinary walk and run: dodge, lunge, the
   shield ride and the body slide are as on any ground.
 - Decor in chamber.ts: `icicle` and `iceSpike` (four-sided cones in `iceMat`, lit with a glint, picture
   `iceClear`); `jet` (nine sprites with `puffTexture()`, white with alpha; moved in `update(time)`; `every`/`on`

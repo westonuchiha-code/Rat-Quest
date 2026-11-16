@@ -3476,6 +3476,7 @@ function startGame(): void {
       kickProgress: player.kickProgress,
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
+      glide: player.gliding,
       ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });

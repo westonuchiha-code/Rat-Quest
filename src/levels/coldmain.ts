@@ -6,7 +6,8 @@
  *
  * A length of the sewer, frozen. Its walls are the sewer's own brick under frost (`iceBrick`); its banks the sewer's
  * cobbles, rimed (`frostCobbles`: he can stand on them); and down its middle, where the water was, a sheet of ICE
- * (`iceSheet`, `slick`): he cannot grip it, so he is slow to get going on it, turns wide and slides a long way.
+ * (`iceSheet`, `slick`): on it he keeps his momentum, gliding on for a couple of seconds with the stick let go, and
+ * turning wide (TUNING.ice).
  * Nothing that should be in one place only is painted into a tile. Put ON them, each in its own place: steel pipes
  * along the walls (`pipe` decor), BURST in places, each burst a jet of gas coming in gusts (decor `jet`); icicles under the pipes and from the roof (decor `icicle`); spikes of ice standing up from the floor
  * (decor `iceSpike`: solid); lamps, cold; and fine snow sifting down (`motes: 'ice'`).

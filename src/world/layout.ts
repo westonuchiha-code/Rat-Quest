@@ -22,7 +22,7 @@ export interface Box {
   hidden?: boolean;
   /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
   tough?: boolean;
-  /** Ice: he cannot grip its top. He is slow to get going on it, slow to turn, and slides a long way before he stops (TUNING.ice). */
+  /** Ice: on its top he keeps his momentum. He glides on a couple of seconds with the stick let go, and turns wide (TUNING.ice). */
   slick?: boolean;
   /**
    * A ramp: its top runs up from `low` at one end to y1 at the other, along x or z, climbing toward the + end of that

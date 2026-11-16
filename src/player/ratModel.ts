@@ -242,6 +242,8 @@ export interface RatAnimInput {
    * he was trying to climb; otherwise feet first on his seat. `along`, `across`: how the ground lies (see `ride`).
    */
   slide?: { back: boolean; air: boolean; along?: number; across?: number } | null;
+  /** Gliding on ice with the stick let go: braced, his feet still (see PlayerController.gliding). */
+  glide?: boolean;
   /**
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
@@ -1024,6 +1026,11 @@ export class RatModel {
       pose = LAND;
       stiffness = 34;
       damping = 0.75;
+    } else if (ctx.glide) {
+      // (Gliding on ice: knees bent and arms out, as after a landing, held for as long as he glides.)
+      pose = LAND;
+      stiffness = 14;
+      damping = 0.85;
     } else if (moving) {
       pose = locomotionPose(this.phase, this.run);
       stiffness = 30;

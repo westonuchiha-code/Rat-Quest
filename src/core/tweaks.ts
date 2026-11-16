@@ -66,6 +66,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Moves', path: 'moves.climbTime', label: 'Ledge climb time', min: 0.1, max: 1, step: 0.02 },
 
   { group: 'Riding', path: 'ride.minSlope', label: 'Air attack is the shield over slopes this steep or more (rise over run)', min: 0.05, max: 2, step: 0.05 },
+  { group: 'Ice', path: 'ice.decel', label: 'How much of his usual stopping he has on ice (less: he glides further)', min: 0.02, max: 1, step: 0.02 },
+  { group: 'Ice', path: 'ice.accel', label: 'How much of his usual push he has on ice (less: slower to start, wider turns)', min: 0.05, max: 1, step: 0.05 },
   { group: 'Riding', path: 'slide.grip', label: 'Too steep: seconds he scrabbles up before he slips', min: 0, max: 1.5, step: 0.05 },
   { group: 'Riding', path: 'slide.gravity', label: 'Sliding on his hide: how hard a slope pulls him', min: 2, max: 30, step: 0.5 },
   { group: 'Riding', path: 'slide.max', label: 'Sliding on his hide: top speed', min: 3, max: 20, step: 0.5 },
@@ -318,7 +320,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Riding', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Riding', 'Ice', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

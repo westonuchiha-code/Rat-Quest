@@ -451,8 +451,17 @@ east of the way out, between the low stone and the foot of the slope.** His ask:
 like some bursted CO2 pipes on the walls and there's [icicles] coming off the ceiling and coming out of the ground".
 - A length of the sewer, frozen: walls `iceBrick` (the sewer's own brick, painted over its picture, gone cold),
   banks `frostCobbles`, and down the middle a sheet of ICE (`iceSheet`).
-- **ICE IS SLICK: `Box.slick` (it goes to the collider), `TUNING.ice { accel 0.2, decel 0.12 }`, `player.onIce`.**
-  He is slow to get going on it, turns wide, and slides about six units from a run. His jump is his own.
+- **ON ICE HE KEEPS HIS MOMENTUM: `Box.slick` (it goes to the collider), `TUNING.ice { accel 0.35, decel 0.1 }`,
+  `player.onIce`, `player.gliding`.** HIS WORDS FOR IT (2026-11-16, said before he had been told it was in): "floor
+  texture patterns could also add another mechanic of sliding on the ice. Not necessarily sliding the same way you
+  do on a steep slope but like a slower loss of momentum than you would normally have so you might maintain a
+  little bit of your momentum for a few seconds longer while you're on ice." So: the stick let go at a run, he
+  glides on for about two and a half seconds (seven units); he turns wide; he is always on his feet and steering
+  (it is NOT the slide down a steep slope). The first tuning had him slow to get going as well (accel 0.2): that
+  was more than he asked, and is now a third of his push, not a fifth. Gliding with the stick let go he is drawn
+  braced, knees bent (the landing pose, held), not running on the spot. Two sliders, group 'Ice', in Tweaks.
+  AND THE WIDER IDEA IN HIS WORDS: A FLOOR'S PICTURE CAN STAND FOR A MECHANIC. Ice is the first; a floor that
+  looks different should be allowed to play different.
 - Put on the tiles as things: steel pipes along the long walls, BURST in two places each, with a JET of gas in
   gusts (decor `jet`: soft white puffs running out along a direction; made to be used again as STEAM, which he
   also asked for: give it a warm colour and point it up); icicles under the pipes and from the roof (decor

@@ -143,11 +143,15 @@ export const TUNING = {
     again: 0.4, // after stepping off, this long before SNEAK starts another
   },
   /**
-   * Ice (a box that is `slick`): he cannot grip it. `accel`: how much of his usual pick-up he has on it; `decel`: how
-   * much of his usual stopping. So from a run he slides about six units before he stands still, takes a second to
-   * get up to a run, and turns wide. His jump, and what he does in the air, are as ever.
+   * Ice (a box that is `slick`): he keeps his momentum on it. (The owner, 2026-11-16: "not necessarily sliding the
+   * same way you do on a steep slope but like a slower loss of momentum than you would normally have so you might
+   * maintain a little bit of your momentum for a few seconds longer while you're on ice".)
+   * `decel`: how much of his usual stopping he has, the stick let go: a tenth, so from a run he glides on for about
+   * two and a half seconds, seven units or so. `accel`: how much of his usual push he has with the stick held (to
+   * get going, and to turn or brake against the way he is sliding): a third, so he turns wide but is not helpless.
+   * He is always on his feet and steering: it is not the slide down a steep slope. His jump, and the air, are as ever.
    */
-  ice: { accel: 0.2, decel: 0.12 },
+  ice: { accel: 0.35, decel: 0.1 },
   /**
    * Sliding on his own hide down ground too steep to stand on (the owner, 2026-11-15: "he would basically be like
    * tripping and sliding down ... probably a little slower and you have less control"). Compare `ride`.

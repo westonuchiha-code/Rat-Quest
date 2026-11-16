@@ -1,7 +1,7 @@
 // The Cold Main: a try-out room for the ice theme (src/levels/coldmain.ts).
 //
-// A length of the sewer, frozen. What is checked: that it is a test room; that ICE IS SLICK (slow to get going on,
-// a long slide to stop, the jump unchanged) and the frosted cobbles are not; that every spike of ice is solid; that
+// A length of the sewer, frozen. What is checked: that it is a test room; that ON ICE HE KEEPS HIS MOMENTUM (a long
+// glide to stop, wide turns, the jump unchanged) and the frosted cobbles are not; that every spike of ice is solid; that
 // the two bottle caps in their pockets and the relic on the last block of ice can be had, and the relic not from
 // the floor; that nothing hanging is where a jump from the floor puts his head; and that the jets come in gusts.
 import './../src/core/colorSetup';
@@ -70,8 +70,27 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const ice = run(-2.6, 0.5);
   const iceLong = run(-2.6, 2.5);
   check('on the cobbles he is at a run in half a second and stops in a stride', !stone.ice && stone.speed > TUNING.move.run * 0.95 && stone.slide < 1.2, `${stone.speed.toFixed(1)} a second, ${stone.slide.toFixed(2)} to stop`);
-  check('on the ice, half a second gets him less than half that speed: he is slow to get going', ice.ice && ice.speed < stone.speed * 0.5, `${ice.speed.toFixed(1)} a second`);
-  check('...and from a run on it he slides four units and more before he stands still, but not the length of the room', iceLong.speed > TUNING.move.run * 0.9 && iceLong.slide > 4 && iceLong.slide < 9, `${iceLong.slide.toFixed(2)} to stop from ${iceLong.speed.toFixed(1)}`);
+  check('on the ice he is a little slower to get going, but not helpless: half a second gets him most of the way to a run', ice.ice && ice.speed < stone.speed * 0.95 && ice.speed > stone.speed * 0.6, `${ice.speed.toFixed(1)} a second`);
+  // (His words: "a slower loss of momentum than you would normally have ... a little bit of your momentum for a few seconds longer".)
+  const glide = (() => {
+    const p = new PlayerController(new THREE.Vector3(-12, 0, -2.6));
+    for (let i = 0; i < 170; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    let secs = 0;
+    for (let i = 0; i < 600 && Math.hypot(p.velocity.x, p.velocity.z) > 0.02; i++) {
+      p.update(DT, inp({}), cs);
+      secs += DT;
+    }
+    return secs;
+  })();
+  check('the stick let go at a run, he keeps his momentum for two seconds and more (on the cobbles he has stopped in a quarter of one), and glides six units and more: but not the length of the room', iceLong.speed > TUNING.move.run * 0.9 && glide > 2 && glide < 4 && iceLong.slide > 6 && iceLong.slide < 10, `${glide.toFixed(2)} s and ${iceLong.slide.toFixed(2)} units to stop from ${iceLong.speed.toFixed(1)}`);
+  check('...losing it steadily all the while: half way through the glide he still has about half his speed', (() => {
+    const p = new PlayerController(new THREE.Vector3(-12, 0, -2.6));
+    for (let i = 0; i < 170; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    const v0 = Math.hypot(p.velocity.x, p.velocity.z);
+    for (let i = 0; i < Math.round((glide / 2) / DT); i++) p.update(DT, inp({}), cs);
+    const v = Math.hypot(p.velocity.x, p.velocity.z);
+    return p.state !== 'slide' && !p.sliding && v > v0 * 0.35 && v < v0 * 0.65;
+  })());
   // He turns wide: running east, the stick thrown north, how far east he still goes.
   const turn = (z: number): number => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, z));
@@ -80,7 +99,23 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     for (let i = 0; i < 40; i++) p.update(DT, inp({ move: new THREE.Vector3(0, 0, z > 0 ? 1 : -1) }), cs);
     return p.position.x - x0;
   };
-  check('...and he turns wide on it: thrown the other way, he is carried on several times as far as on the cobbles', turn(-3.2) > turn(7.5) * 3, `${turn(-3.2).toFixed(2)} on ice, ${turn(7.5).toFixed(2)} on cobbles`);
+  // Gliding: he is braced, not running on the spot; and it ends when the stick is held again or he has stopped.
+  {
+    const p = new PlayerController(new THREE.Vector3(-12, 0, -2.6));
+    for (let i = 0; i < 170; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    const driving = p.gliding;
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    const letGo = p.gliding;
+    p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    const again = p.gliding;
+    for (let i = 0; i < 400; i++) p.update(DT, inp({}), cs);
+    const stopped = p.gliding;
+    const q = new PlayerController(new THREE.Vector3(-12, 0, 7.5));
+    for (let i = 0; i < 60; i++) q.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    q.update(DT, inp({}), cs);
+    check('gliding on ice with the stick let go, he is known to be gliding (and is drawn braced, his feet still): not while he drives himself, not once he has stopped, and never on the cobbles', !driving && letGo && !again && !stopped && !q.gliding);
+  }
+  check('...and he turns wide on it: thrown the other way, he is carried on twice as far as on the cobbles, and more', turn(-3.2) > turn(7.5) * 2, `${turn(-3.2).toFixed(2)} on ice, ${turn(7.5).toFixed(2)} on cobbles`);
   // His jump is his own.
   const apex = (z: number): number => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, z));
