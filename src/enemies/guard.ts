@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
 import type { CanStand, HitHow } from './foe';
 
 /**
@@ -75,6 +75,9 @@ export class Guard {
   /** Set by the director: whether he may start an attack now. */
   mayAttack = true;
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
 
   readonly home: { x: number; z: number };
   readonly hunt: boolean;
@@ -102,6 +105,7 @@ export class Guard {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
     this.homeFacing = spec.facing ?? 0;
     this.facing = this.homeFacing;
     this.fromX = this.x;
@@ -248,7 +252,7 @@ export class Guard {
     const A = this.arena;
     const margin = 1.5;
     const inArena = playerX > A.x0 - margin && playerX < A.x1 + margin && playerZ > A.z0 - margin && playerZ < A.z1 + margin;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
 
     let speed = 0;
     let moveX = 0;
@@ -363,6 +367,7 @@ export class Guard {
         if (this.respawns && this.stateTime >= G.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.facing = this.homeFacing;
           this.hp = G.hp;
           this.velX = 0;

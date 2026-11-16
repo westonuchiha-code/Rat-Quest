@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
 import type { CanStand } from './foe';
 import { TUNING } from '../data/tuning';
 
@@ -85,7 +85,9 @@ export class Scuttler {
     this.respawns = spec?.respawn ?? true;
     this.x = this.home.x;
     this.z = this.home.z;
+    this.y = this.homeY;
     this.y = spec?.y ?? 0;
+    this.homeY = this.y;
   }
 
   get alive(): boolean {
@@ -148,6 +150,9 @@ export class Scuttler {
 
   /** How it tells floor from wall; the game sets this. */
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
   /** Where it stood before this move, to go back to if the move ends inside something. */
   private fromX = 0;
   private fromZ = 0;
@@ -175,7 +180,7 @@ export class Scuttler {
     const A = this.arena;
     const margin = 1.5;
     const inArena = playerX > A.x0 - margin && playerX < A.x1 + margin && playerZ > A.z0 - margin && playerZ < A.z1 + margin;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
     const newThreat = threat && !this.sawThreat;
     this.sawThreat = threat;
 
@@ -293,6 +298,7 @@ export class Scuttler {
         if (this.respawns && this.stateTime >= S.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.hp = S.hp;
           this.velX = 0;
           this.velZ = 0;

@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type CanStand, type HitHow, type WallAt } from './foe';
+import { SENSES, keepOnFloor, type CanStand, type HitHow, type WallAt, type FloorUnder, sameGround } from './foe';
 
 /**
  * The Orchid Mantis: a duellist. Tall, pale, two scythes for arms, and no armour at all: what keeps it alive is that
@@ -97,6 +97,9 @@ export class Mantis {
   /** Set by the director: whether it may start an attack now. */
   mayAttack = true;
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
   /** Set by the game: what is solid, so it does not leap through a wall. */
   wallAt: WallAt | null = null;
 
@@ -130,6 +133,9 @@ export class Mantis {
   private sawThreat = false;
   private homeFacing: number;
   private fromX = 0;
+  /** The heights its leap goes from and to (it may leap up or down a slope). */
+  private leapFromY = 0;
+  private leapToY = 0;
   private fromZ = 0;
   private leapFrom = { x: 0, z: 0 };
   private leapTo = { x: 0, z: 0 };
@@ -143,6 +149,7 @@ export class Mantis {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
     this.homeFacing = spec.facing ?? 0;
     this.facing = this.homeFacing;
     this.fromX = this.x;
@@ -251,10 +258,10 @@ export class Mantis {
   }
 
   /** Whether it could stand at (x, z). */
-  private floorAt(x: number, z: number): boolean {
+  private floorAt(x: number, z: number, y = this.y): boolean {
     const A = this.arena;
     if (x < A.x0 + this.radius || x > A.x1 - this.radius || z < A.z0 + this.radius || z > A.z1 - this.radius) return false;
-    return !this.canStand || this.canStand(x, this.y, z, this.radius);
+    return !this.canStand || this.canStand(x, y, z, this.radius);
   }
 
   /** `threat`: the rat is swinging his sword this tick. */
@@ -277,7 +284,7 @@ export class Mantis {
     const A = this.arena;
     const margin = 1.5;
     const inArena = playerX > A.x0 - margin && playerX < A.x1 + margin && playerZ > A.z0 - margin && playerZ < A.z1 + margin;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
 
     let speed = 0;
     let moveX = 0;
@@ -418,17 +425,30 @@ export class Mantis {
           const go = Math.min(M.leapRange[1], Math.max(0.6, dist - M.leapShort));
           const sx = Math.sin(this.facing);
           const sz = Math.cos(this.facing);
-          // As far as it can go that way with nothing solid in the air between, and floor to come down on.
+          // As far as it can go that way with nothing solid in the air between, and floor to come down on. (The
+          // ground may climb or fall on the way, a slope: `ground` is its height at each pace of the way, so that
+          // it leaps UP a slope onto the slope, and is not stopped by the hill it is leaping up.)
           let clear = go;
-          if (this.wallAt) for (let d = 0.4; d <= go; d += 0.4) {
-            if (this.wallAt(this.x + sx * d, this.y, this.z + sz * d, this.radius)) {
+          const ground: number[] = [];
+          let gy = this.y;
+          for (let d = 0.4; d <= go + 1e-6; d += 0.4) {
+            const g = this.floorUnder?.(this.x + sx * d, gy, this.z + sz * d);
+            if (g !== null && g !== undefined) gy = g;
+            if (this.wallAt?.(this.x + sx * d, gy, this.z + sz * d, this.radius)) {
               clear = Math.max(0, d - 0.5);
               break;
             }
+            ground.push(gy);
           }
+          const groundAt = (d: number): number => {
+            const near = ground[Math.min(ground.length - 1, Math.floor(d / 0.4 + 1e-6) - 1)] ?? this.y;
+            return this.floorUnder?.(this.x + sx * d, near, this.z + sz * d) ?? near;
+          };
           let far = clear;
-          while (far > 0.3 && !this.floorAt(this.x + sx * far, this.z + sz * far)) far -= 0.25;
+          while (far > 0.3 && !this.floorAt(this.x + sx * far, this.z + sz * far, groundAt(far))) far -= 0.25;
           if (far <= 0.3) far = 0;
+          this.leapFromY = this.y;
+          this.leapToY = far > 0 ? groundAt(far) : this.y;
           this.leapFrom = { x: this.x, z: this.z };
           this.leapTo = { x: this.x + sx * far, z: this.z + sz * far };
           this.spent = false;
@@ -443,6 +463,7 @@ export class Mantis {
         this.air = u;
         this.x = this.leapFrom.x + (this.leapTo.x - this.leapFrom.x) * u;
         this.z = this.leapFrom.z + (this.leapTo.z - this.leapFrom.z) * u;
+        this.y = this.leapFromY + (this.leapToY - this.leapFromY) * u;
         if (u >= 1) {
           this.air = 0;
           this.stuckFor = this.leapHit ? M.stuckHit : M.stuck;
@@ -504,6 +525,7 @@ export class Mantis {
         if (this.respawns && this.stateTime >= M.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.facing = this.homeFacing;
           this.hp = M.hp;
           this.velX = 0;

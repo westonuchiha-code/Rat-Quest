@@ -1179,3 +1179,18 @@ things are:
 - npc.ts: no shadow of its own for a character built on `AntModel` or `StagModel`.
 - `tests/clubfixes.ts` still builds the Club's props on their own (not through `autoLayer`) and checks their
   hand-made layers; in the game those hand-made flat layers are then made painted-on as the room loads.
+
+## Creatures on slopes (2026-11-16; test `tests/foeramps.ts`)
+- `src/enemies/footing.ts`: `standsOn(colliders, x, y, z, r)`, `floorUnder(colliders, x, y, z, r?)`,
+  `slopeUnder(colliders, x, y, z)` → [rise per +x, rise per +z], `wallOver(...)`, `FOOT_STEP` 0.25. On a slope a
+  creature's step is `FOOT_STEP + slope * r` (its uphill edge is over higher ground than its middle; without that
+  it could not walk off the top of a steep ramp onto the landing). `floorUnder` allows the same step.
+- foe.ts: `FloorUnder` type; `Foe.floorUnder`; `keepOnFloor` sets `y` after resolving x and z; `sameGround(e, px,
+  py, pz)` replaces `Math.abs(playerY - this.y) < 0.9` in scuttler, guard, ironback, stag, mantis, ant, scorpion.
+- Each of those and the toad: `floorUnder` field, `homeY`, `this.y = this.homeY` on a respawn.
+- mantis.ts: the crouch walks the leap's line by the floor (`ground[]`, `groundAt(d)`), `leapFromY`/`leapToY`, and
+  `y` goes from one to the other over the leap.
+- main.ts: `canStand` → `standsOn`, `foeFloor` → `floorUnder`, `wallAt` → `wallOver`; `WALKERS`; `foeTilt` (a
+  WeakMap of eased slopes) and a quaternion premultiplied on the model's root after `setTransform` (the root's
+  rotation is put back to zero first on a frame after a tipped one, since `setTransform` only sets its yaw).
+

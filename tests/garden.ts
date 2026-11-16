@@ -32,7 +32,7 @@ const NORTH = new THREE.Vector3(0, 0, -1);
 // ---- It is a test room, and no part of the game ----
 {
   check('the garden is a test room: found by its name, and in none of the game\'s lists or counts', levelById('garden')?.id === 'garden' && TEST_ROOMS.some((l) => l.id === 'garden') && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'garden'));
-  check('there is nothing in it to pick up, fight or win, and its door leads back to the Club', def.collectibles.length === 0 && def.enemies.length === 0 && def.goals.length === 0 && !def.wedges && def.returnTo === 'hub' && !!levelById('hub')?.hub);
+  check('there is nothing in it to pick up or win, and its door leads back to the Club; its only creatures are the two by the ramps (put there 2026-11-16 to see creatures walk slopes), who count toward nothing and keep to the ramps', def.collectibles.length === 0 && def.enemies.length === 2 && def.enemies.every((e) => e.uncounted && e.arena && e.arena.x0 >= 27 && e.arena.z1 < def.spawn.z) && def.goals.length === 0 && !def.wedges && def.returnTo === 'hub' && !!levelById('hub')?.hub);
   let built = true;
   try {
     buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);

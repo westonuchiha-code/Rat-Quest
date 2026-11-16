@@ -16,7 +16,7 @@
 import { extent, rampBox, type Box, type Decor } from '../world/layout';
 import { doorOn } from '../world/rooms';
 import { room } from './builders';
-import type { LevelDef } from './types';
+import type { EnemySpec, LevelDef } from './types';
 
 /** Half the room, east to west and north to south; and how high its walls are. North is -z. */
 export const GARDEN = { halfX: 36, halfZ: 24, wall: 16 } as const;
@@ -79,6 +79,12 @@ export const RAMPS: readonly GardenRamp[] = [
   { x0: 27, x1: 30, length: 12, lines: ['1 UP IN 4', 'A GENTLE SLOPE'] },
   { x0: 30, x1: 33, length: 6, lines: ['1 UP IN 2', 'A HILL'] },
   { x0: 33, x1: GARDEN.halfX, length: 3, lines: ['1 UP IN 1', 'THE STEEPEST'] },
+];
+/** The creatures by the ramps, and the patch they keep to: the ramps, the landing, and a few steps of floor before them. */
+export const RAMP_PATCH = { x0: RAMP_LANDING.x0, x1: GARDEN.halfX, z0: RAMP_LANDING.z0, z1: RAMP_LANDING.z1 + 15 } as const;
+export const RAMP_FOES: EnemySpec[] = [
+  { type: 'scuttler', x: 28.5, y: RAMP_LANDING.top, z: -4, arena: { ...RAMP_PATCH }, respawn: true, uncounted: true },
+  { type: 'guard', x: 31.5, y: 0, z: 11.5, facing: 0, arena: { ...RAMP_PATCH }, respawn: true, uncounted: true },
 ];
 
 /**
@@ -311,7 +317,10 @@ export function garden(): LevelDef {
     spawn: { x: 0, y: 0, z: 16, facing: Math.PI },
     collectibles: [],
     crateContents: [],
-    enemies: [],
+    // (By the three ramps, 2026-11-16: creatures walk slopes now. A roach whose home is the landing, and a guard at
+    // the foot of the hill; their patch is the ramps and the landing, and no more of the garden than a few steps
+    // before them. See enemies/footing.ts.)
+    enemies: RAMP_FOES,
     waves: [],
     gear: [],
     goals: [],

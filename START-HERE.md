@@ -400,6 +400,28 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## Creatures on slopes (the owner's list, 2026-11-16: "enemies walking on ramps". DONE; `tests/foeramps.ts`)
+- **A slope the knight can walk is GROUND to a creature now** (`src/enemies/footing.ts`): solid only UNDER its
+  surface, floor ON it, a wall from the side where it is higher than a step. Steeper than he can walk
+  (`MAX_WALK_SLOPE`): still a wall.
+- **A creature's height follows the floor.** Until now each kept the `y` it was made at for good. After every step
+  `keepOnFloor` (foe.ts) sets its feet to the floor under it. So each walker has a `homeY` and goes back to it
+  when it comes back after being beaten. The game gives each creature `floorUnder` beside `canStand` (main.ts).
+- **"Can I reach him" goes by the ground, not by height** (`sameGround` in foe.ts): it walks the straight line to
+  him a pace at a time with its feet on the floor. By height alone (within 0.9) it lost him two steps up any slope.
+- **Its body is tipped to the slope** it stands on, eased, and its shadow with it (main.ts, where models are placed).
+- **The mantis leaps up and down slopes** (its leap was planned at one height). The ironback's ram and the leap ask
+  `wallOver`, which knows a slope from its foot is not a wall.
+- **Who walks slopes:** roach, guard, ironback, stag, mantis, ant, scorpion. **Who does not: the toad** (it HOPS, and
+  plans each hop at one height: it stays on the level it is on and spits from there). Fliers never cared. The
+  bosses (Grimsqueak, broodmother, wyrm, Widow) are not taught: their rooms are flat.
+- **They still never fall:** at an edge higher than a step a creature stops, as it always has.
+- **To see it: the Move Garden's three ramps** have a roach whose home is the landing and a guard at the foot of the
+  hill (`RAMP_FOES`, `RAMP_PATCH` in garden.ts; they count toward nothing and keep to the ramps).
+- NOT DONE: no real level has a creature on a slope yet (the Long Drop's one-hit creatures are the place for it).
+  Nobody has fought one on a slope by hand: a sword swing up or down a hill at a creature has not been looked at.
+  The toad could be taught (plan the hop's landing by the floor there) if it is wanted on slopes.
+
 ## The clipping sweep (the owner, 2026-11-16: "do the clipping sweep". DONE; held by `tests/clipsweep.ts`)
 After his five clipping finds in the Club, the whole game was gone over for the same fault, by a tool, not by eye.
 - **What the fault is:** two flat faces that are parallel, face the same way, lie within three hundredths of each
@@ -759,8 +781,8 @@ level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the heigh
 - Shadows and where he is drawn (`groundBelow`, `feetGround`, `floorAt` in main.ts), falling embers (`groundFrom`),
   the camera's line of sight (`sight`: a ramp is its wedge, so standing on one he is not "inside" it), how it is
   drawn (chamber.ts: the box pressed down under its slope), the jump checker (reach.ts takes it a column at a time).
-- **NOT yet: enemies.** To every creature a ramp is still its whole box: an obstacle they will not walk onto. None
-  may be placed on one until they are taught (their footing is `canStand` in main.ts and each one's own `y`).
+- **Enemies: DONE 2026-11-16, see "Creatures on slopes" below.** (Until then a ramp was its whole box to every
+  creature: an obstacle they would not walk onto.)
 - The Move Garden has three in its south-east corner (one up in 4, in 2 and in 1) to a landing three up.
 - `tests/ramps.ts` plays all of it with the real controller. Nobody has walked one by hand yet.
 
@@ -801,7 +823,7 @@ tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRi
   he is at the foot of a slope too steep to see down (he is at the bottom edge of the picture, or under it, for a
   few frames; then it catches up). The same is true of running off any high ledge. The camera may not turn by itself
   (the owner's rule), so the cure, if he wants one, is in how fast it comes forward and down, not in swinging round.
-- Enemies still know nothing of ramps or of a rider. Nothing hurts or is hurt by a rider differently.
+- Enemies walk ramps now (see "Creatures on slopes") but still know nothing of a rider. Nothing hurts or is hurt by a rider differently.
 - A roll-out from top speed is about sixty units on the flat (`dragFlat` 1.6): longer than the garden. He can brake.
 - No level but the garden has a slope in it yet. **Next, step three: the cave.**
 
@@ -872,7 +894,7 @@ makes one (`high` there is still the first slope's top on its low side). Without
 - The camera's `sight`, the jump checker (reach.ts), drawing (chamber.ts), shadows and grinding already went
   through `topAt`, and needed nothing or one line.
 - NOT taught: the level editor's ramp piece (it makes ramps with no cross), and the ledge grab (a ramp tipped
-  across has no edge to catch). Enemies still know nothing of any ramp.
+  across has no edge to catch). (Enemies: see "Creatures on slopes"; none are on the two-way ramps.)
 **The downhill pipe** in the Move Garden (`DROP`, `dropFacets`, `dropHalf` in garden.ts), by the north wall east of
 the strip: twelve long, falling five (0.42 in one: just over `ride.minSlope`, so the air attack is the shield
 anywhere over it), a platform at its top with a ramp up to it from the west. Nine planes side by side: a floor

@@ -8,7 +8,7 @@
  * belly first, onto where you stand (step out from under it, or take it on the shield) and lies winded where it lands.
  * So chasing a toad is never a long run round the room: the second time you close in, it comes to you.
  */
-import { SENSES, keepOnFloor } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder } from './foe';
 import type { CanStand } from './foe';
 
 export type ToadState = 'idle' | 'watch' | 'windup' | 'recover' | 'hop' | 'crouch' | 'pounce' | 'stagger' | 'dead' | 'return';
@@ -118,6 +118,7 @@ export class Toad {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
   }
 
   get alive(): boolean {
@@ -164,6 +165,9 @@ export class Toad {
 
   /** How it tells floor from wall; the game sets this. */
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
   /** Where it stood before this move, to go back to if the move ends inside something. */
   private fromX = 0;
   private fromZ = 0;
@@ -339,6 +343,7 @@ export class Toad {
         if (this.respawns && this.stateTime >= this.T.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.hp = this.T.hp;
           this.age = 0;
           this.lastSwing = -1;

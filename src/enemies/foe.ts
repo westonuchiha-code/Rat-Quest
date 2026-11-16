@@ -3,6 +3,8 @@
  * there is floor under it, and no wall, pillar, crate or step in the way. The game supplies it; without one, anywhere will do.
  */
 export type CanStand = (x: number, y: number, z: number, r: number) => boolean;
+/** The height of the floor under (x, z) for a creature whose feet are at about y: null over a drop or in a wall. The game supplies it. */
+export type FloorUnder = (x: number, y: number, z: number, r?: number) => number | null;
 /** Whether a wall (anything solid at body height) is at (x, z) for a creature standing at y: the ironback bonks into one. */
 export type WallAt = (x: number, y: number, z: number, r: number) => boolean;
 /** Whether a flier of radius r can be at (x, y, z), its body from y up: nothing solid there. */
@@ -16,16 +18,44 @@ export type HitHow = 'sword' | 'plunge' | 'shock';
  * alone so it can walk out.) Enemies used to be held only by the rectangle of their patch, so they could hop or be
  * knocked into a wall or a raised block, where they could still spit at the rat but could not be hit.
  */
-export function keepOnFloor(e: { x: number; y: number; z: number; radius: number; canStand?: CanStand | null }, fromX: number, fromZ: number): void {
+export function keepOnFloor(e: { x: number; y: number; z: number; radius: number; canStand?: CanStand | null; floorUnder?: FloorUnder | null }, fromX: number, fromZ: number): void {
   const ok = e.canStand;
   if (!ok || Math.hypot(e.x - fromX, e.z - fromZ) > 2) return; // nothing to ask, or it was put somewhere new (a respawn)
-  if (ok(e.x, e.y, e.z, e.radius) || !ok(fromX, e.y, fromZ, e.radius)) return;
-  if (ok(e.x, e.y, fromZ, e.radius)) e.z = fromZ;
-  else if (ok(fromX, e.y, e.z, e.radius)) e.x = fromX;
-  else {
-    e.x = fromX;
-    e.z = fromZ;
+  if (!ok(e.x, e.y, e.z, e.radius) && ok(fromX, e.y, fromZ, e.radius)) {
+    if (ok(e.x, e.y, fromZ, e.radius)) e.z = fromZ;
+    else if (ok(fromX, e.y, e.z, e.radius)) e.x = fromX;
+    else {
+      e.x = fromX;
+      e.z = fromZ;
+    }
   }
+  // (Its feet go with the floor: up a slope, down one, onto a kerb. Until 2026-11-16 a creature kept the height it
+  // was made at for good, and a ramp was a block in its way. See footing.ts.)
+  const floor = e.floorUnder?.(e.x, e.y, e.z, e.radius);
+  if (floor !== null && floor !== undefined) e.y = floor;
+}
+
+/**
+ * Whether the rat is on ground a creature can WALK to in a straight line: at about its own height, or up or down a
+ * slope from it. (Until creatures could walk slopes it was only "within 0.9 of my height": on a slope that lost him
+ * as soon as he was two steps further up it.) It walks the line a pace at a time, its feet following the floor; a
+ * drop, a wall or a ledge on the way and he is not reachable that way.
+ */
+export function sameGround(e: { x: number; y: number; z: number; floorUnder?: FloorUnder | null }, px: number, py: number, pz: number): boolean {
+  if (Math.abs(py - e.y) < 0.9) return true;
+  const floor = e.floorUnder;
+  if (!floor || Math.abs(py - e.y) > 8) return false;
+  const dx = px - e.x;
+  const dz = pz - e.z;
+  const steps = Math.ceil(Math.hypot(dx, dz) / 0.4);
+  if (steps > 80) return false;
+  let y = e.y;
+  for (let i = 1; i <= steps; i++) {
+    const g = floor(e.x + (dx * i) / steps, y, e.z + (dz * i) / steps);
+    if (g === null) return false;
+    y = g;
+  }
+  return Math.abs(py - y) < 0.9;
 }
 
 /** One round piece of a body, on the floor. */
@@ -46,6 +76,8 @@ export interface Foe {
   readonly alive: boolean;
   /** How it tells floor from wall. Set by the game when it is put in a level. */
   canStand?: CanStand | null;
+  /** How its feet follow the floor up and down a slope. Set by the game with `canStand`. */
+  floorUnder?: FloorUnder | null;
   state: string;
   stateTime: number;
   lastSwing: number;

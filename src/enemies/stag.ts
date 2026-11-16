@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type CanStand, type HitHow } from './foe';
+import { SENSES, keepOnFloor, type CanStand, type HitHow, type FloorUnder, sameGround } from './foe';
 
 /**
  * The Stag Knight: a great beetle on its hind legs with a forge hammer. Slow, and it does not care that it is being
@@ -92,6 +92,9 @@ export class Stag {
   /** Set by the director: whether it may start an attack now. */
   mayAttack = true;
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
 
   readonly home: { x: number; z: number };
   readonly hunt: boolean;
@@ -116,6 +119,7 @@ export class Stag {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
     this.homeFacing = spec.facing ?? 0;
     this.facing = this.homeFacing;
     this.fromX = this.x;
@@ -223,7 +227,7 @@ export class Stag {
     const A = this.arena;
     const margin = 1.5;
     const inArena = playerX > A.x0 - margin && playerX < A.x1 + margin && playerZ > A.z0 - margin && playerZ < A.z1 + margin;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
 
     let speed = 0;
     this.moving = false;
@@ -361,6 +365,7 @@ export class Stag {
         if (this.respawns && this.stateTime >= S.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.facing = this.homeFacing;
           this.hp = S.hp;
           this.poise = S.poise;

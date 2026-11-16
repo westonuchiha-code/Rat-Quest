@@ -123,6 +123,7 @@ import { nachoIcon } from './ui/icons';
 import { compileCustom, CustomLevel } from './levels/custom';
 import { platform } from './platform/platform';
 import { makeAabb, topAt } from './world/collision';
+import { floorUnder, slopeUnder, standsOn, wallOver } from './enemies/footing';
 import { AudioEngine, nearness } from './audio/audio';
 import { SFX_NAMES, loudness, sfx, type SfxName } from './audio/synth';
 import { TRACK_NAMES, type TrackName } from './audio/music';
@@ -271,22 +272,23 @@ function startGame(): void {
     glance?(fromAngle: number): void;
   }
   const enemies: Foe[] = [];
+  /** The kinds that walk on the ground, and so can walk a slope (their models are tipped to it). */
+  const WALKERS = new Set<Foe['kind']>(['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion']);
+  const UP_AXIS = new THREE.Vector3(0, 1, 0);
   /** The ant pikemen among them (they are paired up each tick). */
   const antList: Ant[] = [];
   const enemyModels: FoeView[] = [];
   const counted = new WeakSet<Foe>();
   /** Those that are no part of what a 'defeat' goal asks for (see EnemySpec.uncounted). */
   const uncounted = new WeakSet<Foe>();
-  /** Whether an enemy can stand here: floor under its middle at its own height, and nothing solid at body height. */
-  const canStand = (x: number, y: number, z: number, r: number): boolean => {
-    let floor = false;
-    for (const b of chamber.colliders) {
-      if (x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) continue;
-      if (b.max.y > y + 0.25 && b.min.y < y + 0.7) return false;
-      if (Math.abs(b.max.y - y) <= 0.25 && x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z) floor = true;
-    }
-    return floor;
-  };
+  /** Whether an enemy can stand here: floor under its middle at its own height (a slope's, on a slope), and nothing solid at body height. See enemies/footing.ts. */
+  const canStand = (x: number, y: number, z: number, r: number): boolean => standsOn(chamber.colliders, x, y, z, r);
+  /** The floor under an enemy's feet, so that they follow a slope. */
+  const foeFloor = (x: number, y: number, z: number, r?: number): number | null => floorUnder(chamber.colliders, x, y, z, r);
+  /** How far each creature's model is tipped to the ground it stands on (eased, so that it does not snap at a slope's foot). */
+  const foeTilt = new WeakMap<Foe, { x: number; z: number; on: boolean }>();
+  const tiltQ = new THREE.Quaternion();
+  const tiltN = new THREE.Vector3();
   /**
    * The height of the floor under a point: the highest solid top below it, within three units. Null if there is none,
    * or if it is a moving platform, or if water or lava lies between (a shadow would sit on the bed, under the surface).
@@ -306,9 +308,8 @@ function startGame(): void {
     const wet = [...chamber.water, ...chamber.lava].some((w) => x > w.x0 && x < w.x1 && z > w.z0 && z < w.z1 && w.y > floor && w.y < y + 0.5);
     return wet ? null : floor;
   };
-  /** Something solid at body height (the ironback's ram bonks into it). */
-  const wallAt = (x: number, y: number, z: number, r: number): boolean =>
-    chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.25 && b.min.y < y + 0.7);
+  /** Something solid at body height (the ironback's ram bonks into it): a slope it can walk is not, from its foot. */
+  const wallAt = (x: number, y: number, z: number, r: number): boolean => wallOver(chamber.colliders, x, y, z, r);
   /** Room for a flier: nothing solid where its body is, from y up half a unit. */
   const canFly = (x: number, y: number, z: number, r: number): boolean =>
     !chamber.colliders.some((b) => !(x + r <= b.min.x || x - r >= b.max.x || z + r <= b.min.z || z - r >= b.max.z) && b.max.y > y + 0.02 && b.min.y < y + 0.5);
@@ -523,6 +524,7 @@ function startGame(): void {
       scene.add(m.root);
     }
     enemies[enemies.length - 1].canStand = canStand;
+    enemies[enemies.length - 1].floorUnder = foeFloor;
     if (spec.uncounted) uncounted.add(enemies[enemies.length - 1]);
   }
   const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
@@ -3554,7 +3556,18 @@ function startGame(): void {
 
     enemies.forEach((e, i) => {
       enemyPos.set(e.x, e.y, e.z);
+      // (On a slope its body lies along the slope, and its shadow with it.)
+      const tip = foeTilt.get(e) ?? { x: 0, z: 0, on: false };
+      const [gx, gz] = e.floorUnder && e.alive && WALKERS.has(e.kind) ? slopeUnder(chamber.colliders, e.x, e.y, e.z) : [0, 0];
+      const ease = Math.min(1, animDt * 10);
+      tip.x += (gx - tip.x) * ease;
+      tip.z += (gz - tip.z) * ease;
+      const root = enemyModels[i].root;
+      if (tip.on) root.rotation.set(0, 0, 0);
       enemyModels[i].setTransform(enemyPos, e.facing);
+      tip.on = Math.abs(tip.x) + Math.abs(tip.z) > 0.004;
+      if (tip.on) root.quaternion.premultiply(tiltQ.setFromUnitVectors(UP_AXIS, tiltN.set(-tip.x, 1, -tip.z).normalize()));
+      foeTilt.set(e, tip);
       enemyModels[i].tick(animDt, e);
     });
     for (const n of npcs) n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);

@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
 import type { CanStand, HitHow, WallAt } from './foe';
 
 /**
@@ -87,6 +87,9 @@ export class Ironback {
   mayAttack = true;
   /** How it tells floor from wall, and whether a wall is in the way (to bonk into); the game sets these. */
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
   wallAt: WallAt | null = null;
 
   readonly home: { x: number; z: number };
@@ -114,6 +117,7 @@ export class Ironback {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
     this.fromX = this.x;
     this.fromZ = this.z;
   }
@@ -253,7 +257,7 @@ export class Ironback {
     const A = this.arena;
     const m = 1.5;
     const inArena = playerX > A.x0 - m && playerX < A.x1 + m && playerZ > A.z0 - m && playerZ < A.z1 + m;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
     const turn = (this.boost > 0 ? I.boostTurn : I.turnRate) * dt;
     let speed = 0;
 
@@ -384,6 +388,7 @@ export class Ironback {
         if (this.respawns && this.stateTime >= I.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.hp = I.hp;
           this.age = 0;
           this.lastSwing = -1;

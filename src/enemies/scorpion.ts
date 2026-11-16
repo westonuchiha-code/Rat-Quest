@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
 import type { BodyPart, CanStand } from './foe';
 
 /**
@@ -100,6 +100,9 @@ export class Scorpion {
   rng: () => number = Math.random;
   mayAttack = true;
   canStand: CanStand | null = null;
+  floorUnder: FloorUnder | null = null;
+  /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
+  private homeY = 0;
   /** For sounds: 'alert', 'stingWind', 'sting', 'stuck', 'snapWind', 'snap', 'hurt', 'douse', 'relight', 'flip'. The game empties it. */
   readonly events: string[] = [];
 
@@ -146,6 +149,7 @@ export class Scorpion {
     this.x = spec.x;
     this.z = spec.z;
     this.y = spec.y ?? 0;
+    this.homeY = this.y;
     this.facing = this.home.facing;
   }
 
@@ -292,7 +296,7 @@ export class Scorpion {
     const A = this.arena;
     const margin = 1.5;
     const inArena = playerX > A.x0 - margin && playerX < A.x1 + margin && playerZ > A.z0 - margin && playerZ < A.z1 + margin;
-    const reachable = playerAlive && inArena && Math.abs(playerY - this.y) < 0.9;
+    const reachable = playerAlive && inArena && sameGround(this, playerX, playerY, playerZ);
 
     let speed = 0;
     let moveX = 0;
@@ -484,6 +488,7 @@ export class Scorpion {
         if (this.respawns && this.stateTime >= S.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
+          this.y = this.homeY;
           this.facing = this.home.facing;
           this.hp = S.hp;
           this.velX = 0;
