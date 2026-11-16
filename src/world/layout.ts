@@ -178,6 +178,10 @@ export type Decor =
   | { kind: 'table'; x: number; y: number; z: number; yaw: number; mugs?: Array<[number, number]>; candle?: boolean; cards?: boolean }
   /** A stool: a cork with a bottle cap on it. */
   | { kind: 'stool'; x: number; y: number; z: number }
+  /** A row of thimble mugs standing on something at y, `count` of them along the row, which runs toward `yaw` + a quarter turn. */
+  | { kind: 'mugs'; x: number; y: number; z: number; yaw: number; count: number; gap: number }
+  /** A keg (a tin can on its side, tapped), its tap facing `yaw`. */
+  | { kind: 'keg'; x: number; y: number; z: number; yaw: number }
   /** A wall grate pouring sludge: the opening is at (x, y, z) facing `yaw`, `width` wide, falling down to `bottom`. */
   | { kind: 'fall'; x: number; y: number; z: number; yaw: number; width: number; bottom: number }
   /** A chain hanging from (x, top, z) down to `bottom`. */

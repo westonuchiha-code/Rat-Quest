@@ -14,7 +14,7 @@ import { compileCustom, CustomLevel, Piece } from './custom';
 import { doorOn } from '../world/rooms';
 import type { CourseDoorDef, LevelDef } from './types';
 import type { NpcSpec } from '../npc/npc';
-import { stoolSolids, tableSolids, type Decor } from '../world/layout';
+import { extent, stoolSolids, tableSolids, type Decor } from '../world/layout';
 import { BALANCE } from '../data/balance';
 
 const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top, ...extra });
@@ -215,6 +215,55 @@ const TABLES: TableSet[] = [
   },
 ];
 
+/**
+ * The bar, in the south-east corner against the east wall: a plank counter, a step behind it for whoever keeps it,
+ * a keg and a row of thimbles on it, three stools in front. And the wall by the Cistern door, to lean on.
+ */
+export const BAR = { x0: 20, x1: 21, z0: 10.6, z1: 16.6, top: 1.0, step: 0.45, back: 24, stoolX: 19.2 } as const;
+const EAST = Math.PI / 2;
+const WEST = -Math.PI / 2;
+function clubBar(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[] } {
+  const midZ = (BAR.z0 + BAR.z1) / 2;
+  const keeper: [number, number] = [BAR.x1 + 0.7, midZ];
+  const solids: LevelDef['solids'] = [
+    extent('plank', BAR.x0, BAR.x1, 0, BAR.top, BAR.z0, BAR.z1),
+    extent('platform', BAR.x1, BAR.back, 0, BAR.step, BAR.z0, BAR.z1),
+  ];
+  const decor: Decor[] = [
+    { kind: 'mugs', x: (BAR.x0 + BAR.x1) / 2, y: BAR.top, z: midZ - 1.2, yaw: EAST, count: 5, gap: 0.42 },
+    { kind: 'keg', x: (BAR.x0 + BAR.x1) / 2, y: BAR.top, z: BAR.z1 - 0.7, yaw: WEST },
+  ];
+  const seats = [BAR.z0 + 1.1, midZ, BAR.z1 - 1.1];
+  for (const z of seats) {
+    decor.push({ kind: 'stool', x: BAR.stoolX, y: 0, z });
+    solids.push(...stoolSolids(BAR.stoolX, 0, z));
+  }
+  const npcs: NpcSpec[] = [
+    // She keeps the bar: a mug in one wing and a rag going round it in the other.
+    { name: 'Madam Tawny', kind: 'owl', x: keeper[0], z: keeper[1], y: BAR.step, facing: WEST, doing: 'tend', lines: [
+      'Whoo is it now? Ah. The knight. Wipe your feet, you are dripping Cistern on my floor.',
+      'I have kept this bar since before Dave found his speaker. It was quieter. I will not say it was better.',
+      'They all come back here in the end, dear. Even the ones you have had words with. A thimble mends most things.',
+    ] },
+    // A ferret at the bar, who cannot keep still even sitting down.
+    { name: 'Slink', kind: 'ferret', x: BAR.stoolX, z: seats[0], y: 0, facing: EAST, seated: true, doing: 'drink', partner: keeper, lines: [
+      'Psst. Knight. You did not see me here. I am in the Foundry, working. Officially.',
+      'There is a way through every wall if you are thin enough. You are not thin enough. No offence.',
+    ] },
+    // An owl of learning, who turns up once the Foundry is cleared and takes the far stool.
+    { name: 'Professor Snow', kind: 'owl', x: BAR.stoolX, z: seats[2], y: 0, facing: EAST, seated: true, doing: 'drink', partner: keeper, when: { cleared: 'foundry' }, lines: [
+      'Remarkable. You went INTO the Foundry and came out again. I have a paper on why that cannot be done.',
+      'I shall have to revise the paper. Madam Tawny, another thimble. For science.',
+    ] },
+    // And one with his back to the wall by the Cistern door, arms folded: here once the Cistern is cleared.
+    { name: 'Biscuit', kind: 'ferret', x: -HX + 0.55, z: 7.5, y: 0, facing: EAST, doing: 'lean', when: { cleared: 'cistern' }, lines: [
+      'You drained the moat? YOU drained the moat. I lived in that moat. Well. Next to it.',
+      'It is all right. It is warmer in here, and nobody is spitting at me. I am leaning now. This is my wall.',
+    ] },
+  ];
+  return { decor, solids, npcs };
+}
+
 /** Everything the tables add to the room: what is drawn, what is solid, and who is sitting there. */
 export function clubTables(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[] } {
   const decor: Decor[] = [];
@@ -241,10 +290,14 @@ export function clubTables(): { decor: Decor[]; solids: LevelDef['solids']; npcs
   }
   return { decor, solids, npcs };
 }
+/** The bar and the leaner, the same way. */
+export const clubBarThings = clubBar;
 
 export function junction(): LevelDef {
   const base = compileCustom(club, 'hub');
-  const tables = clubTables();
+  const t = clubTables();
+  const bar = clubBar();
+  const tables = { decor: [...t.decor, ...bar.decor], solids: [...t.solids, ...bar.solids], npcs: [...t.npcs, ...bar.npcs] };
   return {
     ...base,
     decor: [...base.decor, ...tables.decor],

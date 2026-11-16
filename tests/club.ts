@@ -4,7 +4,8 @@
 // room that gains people as the world is cleared but is "a full world that gains extras over time".
 import './../src/core/colorSetup';
 import * as THREE from 'three';
-import { clubTables, junction } from '../src/levels/junction';
+import { BAR, clubBarThings, clubTables, junction } from '../src/levels/junction';
+import { levelById } from '../src/levels/levels';
 import { STOOL, TABLE } from '../src/world/layout';
 import { makePatron, patronLook, SEAT, type Doing, type PatronKind } from '../src/npc/patrons';
 import { Npc } from '../src/npc/npc';
@@ -67,12 +68,13 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
 
 // ---- Their bodies ----
 {
-  const kinds: PatronKind[] = ['turtle', 'fox'];
-  const doings: Doing[] = ['stand', 'drink', 'chat', 'lean', 'cards'];
+  const kinds: PatronKind[] = ['turtle', 'fox', 'ferret', 'owl'];
+  const doings: Doing[] = ['stand', 'drink', 'chat', 'lean', 'cards', 'tend'];
+  const names: Record<PatronKind, [string, string]> = { turtle: ['Mossback Mo', 'Pebble'], fox: ['Vix', 'Ash'], ferret: ['Slink', 'Biscuit'], owl: ['Madam Tawny', 'Professor Snow'] };
   let built = 0;
   let bad = '';
   for (const kind of kinds) {
-    for (const name of kind === 'turtle' ? ['Mossback Mo', 'Pebble'] : ['Vix', 'Ash']) {
+    for (const name of names[kind]) {
       for (const doing of doings) {
         for (const seated of [false, true]) {
           const body = makePatron(kind, patronLook(kind, name));
@@ -87,7 +89,8 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
       }
     }
   }
-  check('both builds, both looks, at every thing they do, standing and seated: feet on the floor, nothing under it, a sensible size', bad === '', bad || `${built} looked at`);
+  check('all four builds, both looks of each, at every thing they do, standing and seated: feet on the floor, nothing under it, a sensible size', bad === '', bad || `${built} looked at`);
+  check('two of one kind are two different people, for every kind', kinds.every((k) => patronLook(k, names[k][0]) !== patronLook(k, names[k][1])));
   // A turtle's neck comes out when he talks; a fox's ears and tail move.
   const mo = makePatron('turtle', 'mo');
   const headY = (talking: boolean): number => {
@@ -99,11 +102,31 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
   const speaking = headY(true);
   check('a turtle pushes his neck out when he has something to say', speaking > quiet + 0.03, `${quiet.toFixed(2)} quiet, ${speaking.toFixed(2)} talking`);
   // Through the game's own character class: they build, they update, and one who is busy does not swing round.
-  for (const spec of t.npcs) {
+  for (const spec of [...t.npcs, ...clubBarThings().npcs]) {
     const n = new Npc({ ...spec });
     for (let i = 0; i < 120; i++) n.update(1 / 60, spec.x + 2, 0, spec.z + 2, i > 60);
     check(`${spec.name} (${spec.kind}) is built by the game's own character class, stays facing his table when spoken to, and has a marker over his head`, Math.abs(Math.atan2(Math.sin(n.root.rotation.y - spec.facing), Math.cos(n.root.rotation.y - spec.facing))) < 1e-6 && n.inRange(spec.x + 1, 0, spec.z + 1));
   }
+}
+
+// ---- The bar, and who turns up later ----
+{
+  const bar = clubBarThings();
+  const counter = bar.solids.find((b) => b.y1 === BAR.top);
+  const step = bar.solids.find((b) => b.y1 === BAR.step);
+  check('the bar is a counter with a step behind it, both drawn as they are solid, against the east wall', !!counter && !!step && !counter.hidden && !step.hidden && counter.x1 === step.x0 && step.x1 === 24);
+  check('...with a keg and a row of thimbles standing ON it, and three stools in front', bar.decor.filter((d) => d.kind === 'keg' || d.kind === 'mugs').every((d) => d.y === BAR.top && d.x > BAR.x0 && d.x < BAR.x1 && d.z > BAR.z0 && d.z < BAR.z1) && bar.decor.filter((d) => d.kind === 'stool').length === 3);
+  const others = def.solids.filter((b) => !bar.solids.includes(b) && !bar.solids.some((s) => s.x0 === b.x0 && s.z0 === b.z0 && s.y1 === b.y1) && b.y1 > 0.05 && b.y0 < 1.0);
+  const hits = bar.solids.filter((s) => others.some((b) => s.x0 < b.x1 && s.x1 > b.x0 && s.z0 < b.z1 && s.z1 > b.z0));
+  check('...standing in nothing that was there already', hits.length === 0, `${hits.length} in the way`);
+  const keeper = bar.npcs.find((n) => n.doing === 'tend');
+  check('someone keeps it: behind the counter, up on the step, facing the room, near enough over it to be spoken to', !!keeper && keeper.kind === 'owl' && !keeper.when && keeper.y === BAR.step && keeper.x > BAR.x1 && keeper.x - (BAR.x0 - 0.3) < 2.2 && Math.abs(keeper.facing + Math.PI / 2) < 1e-6, keeper ? `${(keeper.x - (BAR.x0 - 0.3)).toFixed(2)} from one stood at the counter` : '');
+  const always = [...t.npcs, ...bar.npcs].filter((n) => !n.when);
+  const later = [...t.npcs, ...bar.npcs].filter((n) => n.when);
+  check('with nothing done there are six regulars about (and the six friends who were there before): a full room', always.length === 6 && new Set(always.map((n) => n.kind)).size === 4, always.map((n) => n.name).join(', '));
+  check('three more turn up, one for each of three worlds cleared, and each of those is a real place', later.length === 3 && new Set(later.map((n) => n.when!.cleared)).size === 3 && later.every((n) => !!levelById(n.when!.cleared)), later.map((n) => `${n.name} after ${n.when!.cleared}`).join(', '));
+  check('one of them leans on a wall, his back to it, out of everyone\'s way', later.some((n) => n.doing === 'lean' && Math.abs(n.x) > 23 && Math.abs(n.facing - Math.PI / 2) < 1e-6));
+  check('all nine are in the room\'s own list', [...always, ...later].every((n) => (def.npcs ?? []).some((m) => m.name === n.name)));
 }
 
 console.log(failures === 0 ? 'club: all passed' : `club: ${failures} FAILED`);

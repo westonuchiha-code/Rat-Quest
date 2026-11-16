@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
-import { makePatron, patronLook, type Doing, type PatronBody } from './patrons';
+import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
 import { AntModel } from '../enemies/antModel';
 
 /** A friendly character standing in a level. Plain data. */
@@ -40,7 +40,7 @@ export interface NpcSpec {
   when?: { cleared: string };
 }
 
-export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon' | 'turtle' | 'fox' | 'ant';
+export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon' | PatronKind | 'ant';
 
 /**
  * Who he is, within his kind: two mice and two birds share a build but not a look. It goes by name, so every level
@@ -172,9 +172,10 @@ export class Npc {
     const kit = modelKit(mat);
     const look = lookOf(spec.kind, spec.name);
     this.who = look;
-    if (spec.kind === 'turtle' || spec.kind === 'fox') {
+    const patronKind = PATRON_KINDS.find((k) => k === spec.kind);
+    if (patronKind) {
       // One of the Club's regulars: his body is its own thing (patrons.ts).
-      this.patron = makePatron(spec.kind, patronLook(spec.kind, spec.name));
+      this.patron = makePatron(patronKind, patronLook(patronKind, spec.name));
       this.body.add(this.patron.root);
       this.root.add(this.body);
     } else if (spec.kind === 'ant') {

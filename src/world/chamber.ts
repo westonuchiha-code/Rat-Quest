@@ -1,7 +1,7 @@
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildCouch } from './couchModel';
-import { buildStool, buildTable } from './tavernModels';
+import { buildKeg, buildMugRow, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1007,12 +1007,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         couch.rotation.y = d.yaw;
         group.add(couch);
       }
-    } else if (d.kind === 'table' || d.kind === 'stool') {
-      // The Club's tables and stools (tavernModels.ts).
+    } else if (d.kind === 'table' || d.kind === 'stool' || d.kind === 'mugs' || d.kind === 'keg') {
+      // The Club's tables, stools and bar things (tavernModels.ts).
       const mats = { wood: mat('planks'), plain: plainMat, glow: new THREE.MeshBasicMaterial({ color: 0xffd36a }) };
-      const piece = d.kind === 'table' ? buildTable(mats, { mugs: d.mugs, candle: d.candle, cards: d.cards }) : buildStool(mats);
+      const piece = d.kind === 'table' ? buildTable(mats, { mugs: d.mugs, candle: d.candle, cards: d.cards }) : d.kind === 'stool' ? buildStool(mats) : d.kind === 'mugs' ? buildMugRow(mats, d.count, d.gap) : buildKeg(mats);
       piece.position.set(d.x, d.y, d.z);
-      if (d.kind === 'table') piece.rotation.y = d.yaw;
+      if (d.kind !== 'stool') piece.rotation.y = d.yaw;
       group.add(piece);
       // (A candle's flame shivers.)
       piece.traverse((o) => {

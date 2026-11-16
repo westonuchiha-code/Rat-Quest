@@ -15,7 +15,7 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillStyle = c;
     g.fillRect(x, y, w, h);
   };
-  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ant' ? '#2a2420' : '#2a3448');
+  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : '#2a3448');
   if (kind === 'turtle') {
     const old = patronLook('turtle', name) === 'mo';
     const skin = old ? '#7c8f4e' : '#9fbf5a';
@@ -68,6 +68,47 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
       px(20, 5, 2, 2, '#e8b83a'); // earring
     }
     px(4, 20, 16, 4, ash ? '#6a3f8f' : '#2f8f8a'); // neckerchief
+  } else if (kind === 'ferret') {
+    const pale = patronLook('ferret', name) === 'biscuit';
+    const coat = pale ? '#ead9b6' : '#7a5236';
+    px(5, 4, 4, 4, coat); // small round ears
+    px(15, 4, 4, 4, coat);
+    px(6, 5, 2, 2, '#fbf3df');
+    px(16, 5, 2, 2, '#fbf3df');
+    px(6, 6, 12, 10, coat); // head
+    px(5, 9, 14, 4, pale ? '#c9a878' : '#2e2018'); // the mask
+    px(7, 10, 3, 2, '#f4f0e4');
+    px(14, 10, 3, 2, '#f4f0e4');
+    px(8, 10, 1, 2, '#14100c');
+    px(15, 10, 1, 2, '#14100c');
+    px(9, 13, 6, 5, '#fbf3df'); // muzzle
+    px(11, 14, 2, 2, pale ? '#e08a8a' : '#2a1a14'); // nose
+    px(7, 18, 10, 2, coat); // a long neck
+    px(4, 20, 16, 4, pale ? '#a83a32' : '#b8862a'); // waistcoat
+    px(10, 20, 4, 4, '#fbf3df');
+  } else if (kind === 'owl') {
+    const snow = patronLook('owl', name) === 'snow';
+    const coat = snow ? '#e9edf2' : '#7a5a3a';
+    const face = snow ? '#fdfdfd' : '#e6d6b4';
+    if (!snow) {
+      px(4, 1, 3, 5, '#4e3824'); // tufts
+      px(17, 1, 3, 5, '#4e3824');
+    }
+    px(3, 4, 18, 14, coat); // a wide head
+    px(5, 6, 14, 11, face);
+    px(5, 7, 6, 6, snow ? '#f2d23a' : '#e8a020'); // two great eyes
+    px(13, 7, 6, 6, snow ? '#f2d23a' : '#e8a020');
+    px(7, 9, 2, 2, '#14100c');
+    px(15, 9, 2, 2, '#14100c');
+    px(11, 12, 2, 4, snow ? '#3a3a44' : '#d9a83a'); // beak
+    if (snow) {
+      px(12, 6, 8, 1, '#d9b24a'); // a monocle
+      px(12, 13, 8, 1, '#d9b24a');
+      px(12, 6, 1, 8, '#d9b24a');
+      px(19, 6, 1, 8, '#d9b24a');
+      px(8, 19, 8, 3, '#8a2a3a'); // bow tie
+    } else px(6, 19, 12, 5, '#e6e0cf'); // apron
+    px(2, 22, 20, 2, coat);
   } else if (kind === 'ant') {
     px(6, 7, 12, 11, '#7a3b24'); // head
     px(7, 6, 10, 2, '#7a3b24');

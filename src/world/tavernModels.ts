@@ -120,3 +120,39 @@ export function buildStool(mats: TavernMats): THREE.Group {
   g.add(colored(new THREE.CylinderGeometry(STOOL.r * 0.8, STOOL.r * 0.8, 0.012, 10, 1), 0xc8584a, mats.plain, 0, STOOL.h + 0.002, 0));
   return g;
 }
+
+/** A row of thimbles along x, `count` of them `gap` apart, one or two lying on their sides. */
+export function buildMugRow(mats: TavernMats, count: number, gap: number): THREE.Group {
+  const g = new THREE.Group();
+  for (let i = 0; i < count; i++) {
+    const mug = buildMug(mats, i % 3 !== 1);
+    mug.position.set((i - (count - 1) / 2) * gap, 0, (i % 2 ? 0.05 : -0.04));
+    if (i % 4 === 3) {
+      mug.rotation.z = Math.PI / 2;
+      mug.position.y = 0.08;
+    }
+    g.add(mug);
+  }
+  return g;
+}
+
+/** A keg: a tin can on its side in a cradle of two chocks, a tap in its end and a drip under it. Its tap faces +z. */
+export function buildKeg(mats: TavernMats): THREE.Group {
+  const g = new THREE.Group();
+  const can = new THREE.CylinderGeometry(0.3, 0.3, 0.62, 10, 1);
+  can.rotateX(Math.PI / 2);
+  g.add(colored(can, 0x8f8a78, mats.plain, 0, 0.36, 0));
+  for (const z of [-0.26, 0, 0.26]) {
+    const hoop = new THREE.CylinderGeometry(0.31, 0.31, 0.03, 10, 1, true);
+    hoop.rotateX(Math.PI / 2);
+    g.add(colored(hoop, 0x5a5648, mats.plain, 0, 0.36, z));
+  }
+  const label = new THREE.CylinderGeometry(0.305, 0.305, 0.26, 10, 1, true, -0.9, 1.8);
+  label.rotateX(Math.PI / 2);
+  g.add(colored(label, 0xb8452e, mats.plain, 0, 0.36, 0));
+  for (const z of [-0.2, 0.2]) g.add(colored(new THREE.BoxGeometry(0.5, 0.1, 0.1), 0x7a5a38, mats.plain, 0, 0.05, z));
+  g.add(colored(new THREE.CylinderGeometry(0.03, 0.03, 0.12, 5, 1).rotateX(Math.PI / 2), 0xc9a040, mats.plain, 0, 0.2, 0.36));
+  g.add(colored(new THREE.BoxGeometry(0.03, 0.07, 0.03), 0xc9a040, mats.plain, 0, 0.17, 0.42));
+  return g;
+}
+

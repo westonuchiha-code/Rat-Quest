@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,742 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,760 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -288,10 +288,23 @@ These are OUR characters in that spirit: not the cantina's or that bar's own peo
 - `tests/club.ts` checks the furniture is solid as drawn, who is where and doing what, that the room is full
   without the extras, and every body at everything it does. Each build was looked at from four sides in the model
   viewer (`#view&who=patron&kind=fox&name=Ash&doing=cards&seated=1&t=2`) and all three tables in the running game.
-**Not done yet:** the ferret and the owl; anyone leaning on a wall or standing about (the fox CAN lean: nobody is
-placed doing it); a bar; more props (the room is still mostly floor); more who arrive with progress (mini bosses, a
-count of ants beaten: the save does not count creatures beaten yet); voices of their own; the ant only stands (it
-does not drink from its thimble or turn its head). Nobody has spoken to any of them in the running game: their
+**The second part (2026-11-16):**
+- **Two more builds, two looks each**, made the fox's way (a few shaped pieces, flat faces, each face ONE colour:
+  `paintFaces`): FERRETS Slink (sable, a mask, a mustard waistcoat) and Biscuit (cream, a red waistcoat), who
+  cannot keep still (the head darts about, the long back sways, seated the feet swing); OWLS Madam Tawny (brown,
+  tufts, an apron) and Professor Snow (white, a monocle, a bow tie), whose heads turn further than anyone's and tip
+  right over.
+- **A bar** in the south-east corner against the east wall (`BAR`, `clubBar()` in junction.ts): a plank counter, a
+  step behind it, a keg (a tin can on its side, tapped) and a row of thimbles on it (`buildKeg`, `buildMugRow`;
+  decor kinds `keg`, `mugs`), three stools in front. **Madam Tawny keeps it** (`doing: 'tend'`: a mug in one wing, a
+  rag going round it in the other), up on the step so she can be spoken to over the counter. Slink is on a stool.
+- **Someone leaning**: Biscuit, his back to the wall by the Cistern door, arms folded.
+- **It grows, three ways now**: Biscuit once the CISTERN is cleared, Professor Snow (on the far bar stool) once the
+  FOUNDRY is, Corporal Nib once the HOLLOWS are. With nothing done there are six regulars and the six old friends.
+**Not done yet:** more props (rugs, shelves of bottles behind the bar, a dartboard, hanging lights: the middle of
+the room is still open floor); mini bosses as regulars, or "enough ants beaten" (the save does not count creatures
+beaten yet); voices of their own; the ant only stands (it does not drink from its thimble or turn its head); the
+tables and the bar are not in the level editor. Nobody has spoken to any of them in the running game: their
 lines and portraits are untested by eye. The Conker research's first pass (below) found that game's bar is its
 opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
 their own evening.
