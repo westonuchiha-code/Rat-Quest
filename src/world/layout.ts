@@ -122,6 +122,19 @@ export function inBrazierFire(decor: readonly Decor[] | undefined, x: number, y:
   return null;
 }
 
+/** A table, as drawn (tavernModels.ts) and as solid: round, `r` across its middle, `h` high. Its collider is a square
+ * a little inside the circle (`solid` to a side), so he does not catch on corners that are not drawn. */
+export const TABLE = { r: 0.85, h: 0.74, solid: 0.66 } as const;
+/** A stool, the same way. */
+export const STOOL = { r: 0.24, h: 0.44, solid: 0.2 } as const;
+/** The solids of a table at (x, y, z) and of a stool. */
+export function tableSolids(x: number, y: number, z: number): Box[] {
+  return [{ ...extent('plank', x - TABLE.solid, x + TABLE.solid, y, y + TABLE.h, z - TABLE.solid, z + TABLE.solid), hidden: true }];
+}
+export function stoolSolids(x: number, y: number, z: number): Box[] {
+  return [{ ...extent('plank', x - STOOL.solid, x + STOOL.solid, y, y + STOOL.h, z - STOOL.solid, z + STOOL.solid), hidden: true }];
+}
+
 /**
  * A couch, as drawn (couchModel.ts) and as solid (custom.ts). It faces +z with its middle on x = 0: `half` its
  * half-width; the back runs from `back` to `seatBack` and stands `backTop` high; the seat, `seat` high, runs from
@@ -161,6 +174,10 @@ export type Decor =
   | { kind: 'speaker'; x: number; y: number; z: number; yaw: number }
   /** A sagging old couch, facing `yaw`. */
   | { kind: 'couch'; x: number; y: number; z: number; yaw: number }
+  /** A table (a cable drum on its side) with what is on it: see tavernModels.ts. `mugs`: [angle, how far out] each. */
+  | { kind: 'table'; x: number; y: number; z: number; yaw: number; mugs?: Array<[number, number]>; candle?: boolean; cards?: boolean }
+  /** A stool: a cork with a bottle cap on it. */
+  | { kind: 'stool'; x: number; y: number; z: number }
   /** A wall grate pouring sludge: the opening is at (x, y, z) facing `yaw`, `width` wide, falling down to `bottom`. */
   | { kind: 'fall'; x: number; y: number; z: number; yaw: number; width: number; bottom: number }
   /** A chain hanging from (x, top, z) down to `bottom`. */

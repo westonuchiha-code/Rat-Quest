@@ -428,6 +428,19 @@ export class AntModel {
     }
   }
 
+  /**
+   * Off duty: a regular at the Club. (The owner, 2026-11-15: "maybe one of the ants that's an enemy can also just kind
+   * of be a chill dude drinking at dizzy Dave's Bar".) No pike: a thimble of something in the claw that held it.
+   */
+  offDuty(): void {
+    for (const c of this.pike.children) c.visible = false;
+    const cup = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.085, 0.066, 0.17, 7, 1).rotateZ(-Math.PI / 2), 0xa9a79c), this.metal);
+    cup.position.x = 0.02;
+    const drink = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.072, 0.072, 0.012, 7, 1).rotateZ(-Math.PI / 2), 0x5a3418), this.metal);
+    drink.position.x = 0.1;
+    this.pike.add(cup, drink);
+  }
+
   update(dt: number, ctx: AntAnimInput): void {
     this.time += dt;
     const state = ctx.state;

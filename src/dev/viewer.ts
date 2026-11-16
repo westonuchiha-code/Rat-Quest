@@ -5,6 +5,7 @@ import { ScuttlerModel } from '../enemies/scuttlerModel';
 import type { ScuttlerState } from '../enemies/scuttler';
 import type { PlayerState } from '../player/controller';
 import { TUNING } from '../data/tuning';
+import { makePatron, patronLook, type Doing, type PatronKind } from '../npc/patrons';
 
 /**
  * Development pose viewer. Open the page with a hash such as
@@ -44,7 +45,20 @@ export function runViewer(canvas: HTMLCanvasElement): void {
   const dt = 1 / 60;
   const origin = new THREE.Vector3();
 
-  if (who === 'bug') {
+  if (who === 'patron') {
+    // One of the Club's regulars: #view&who=patron&kind=turtle&name=Pebble&doing=drink&seated=1&t=3&head=0.4
+    const kind = (q.get('kind') ?? 'turtle') as PatronKind;
+    const body = makePatron(kind, patronLook(kind, q.get('name') ?? ''));
+    scene.add(body.root);
+    if (q.get('seated') === '1') {
+      const stool = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.44, 8), new THREE.MeshBasicMaterial({ color: 0x8a6a4a }));
+      stool.position.set(0, 0.22, kind === 'fox' ? -0.02 : -0.1);
+      scene.add(stool);
+    }
+    for (let time = 0; time <= t + 1e-6; time += dt) {
+      body.update(dt, { time, talking: q.get('talking') === '1', mouth: q.get('talking') === '1' ? Math.max(0, Math.sin(time * 14)) : 0, headYaw: num('head', 0), doing: (q.get('doing') ?? 'stand') as Doing, seated: q.get('seated') === '1', turn: num('turn', 0) });
+    }
+  } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);
     const state = (q.get('state') ?? 'idle') as ScuttlerState;

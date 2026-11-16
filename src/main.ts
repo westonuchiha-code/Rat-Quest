@@ -1406,6 +1406,8 @@ function startGame(): void {
     for (const spec of def.npcs ?? []) {
       // A copy, because a story scene may move him about.
       const n = new Npc({ ...spec });
+      // One of the Club's later regulars: not here until what brings him has been done. (`#unlockall` shows them all.)
+      if (spec.when && !levelProgress.cleared(spec.when.cleared) && !unlockAll) n.gone = true;
       npcs.push(n);
       scene.add(n.root);
       // He is solid, so the rat cannot walk through him. (Not while he is out of the room.)

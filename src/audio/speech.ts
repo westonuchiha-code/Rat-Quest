@@ -34,6 +34,10 @@ export const VOICES: Record<NpcKind, VoiceDef> = {
   bird: { bank: 'wren', pitch: 1.4, wobble: 0.12, vol: 0.6, standIn: 280 },
   pigeon: { bank: 'pigeon', pitch: 1.0, wobble: 0.04, vol: 0.7, standIn: 220 },
   villain: { bank: 'villain', pitch: 0.8, wobble: 0.1, vol: 0.6, standIn: 85 },
+  // The Club's regulars have no recordings of their own yet: each borrows one of the four, at a pitch of his own.
+  turtle: { bank: 'pigeon', pitch: 0.72, wobble: 0.03, vol: 0.65, standIn: 120 },
+  fox: { bank: 'wren', pitch: 0.92, wobble: 0.14, vol: 0.6, standIn: 200 },
+  ant: { bank: 'villain', pitch: 1.3, wobble: 0.05, vol: 0.5, standIn: 150 },
 };
 
 const LETTER: Record<string, Syllable> = {

@@ -1,4 +1,5 @@
 import { lookOf } from './npc';
+import { patronLook } from './patrons';
 import type { NpcKind } from './npc';
 
 /** Draws a chunky little face for the talk box, in a few big pixels, like the portraits in old games. */
@@ -14,8 +15,75 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillStyle = c;
     g.fillRect(x, y, w, h);
   };
-  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : '#2a3448');
-  if (kind === 'pigeon') {
+  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ant' ? '#2a2420' : '#2a3448');
+  if (kind === 'turtle') {
+    const old = patronLook('turtle', name) === 'mo';
+    const skin = old ? '#7c8f4e' : '#9fbf5a';
+    px(9, 16, 6, 5, old ? '#5c6c3a' : '#7a9a44'); // neck
+    px(6, 6, 12, 10, skin); // head
+    px(7, 5, 10, 2, skin);
+    px(8, 13, 8, 4, old ? '#c9b56a' : '#e0c060'); // beak
+    px(9, 16, 6, 1, '#6a5a30');
+    px(7, 9, 3, old ? 2 : 3, '#f4f0e4'); // eyes
+    px(14, 9, 3, old ? 2 : 3, '#f4f0e4');
+    px(8, 10, 1, 1, '#14100c');
+    px(15, 10, 1, 1, '#14100c');
+    if (old) {
+      px(6, 8, 5, 1, '#14100c'); // glasses
+      px(13, 8, 5, 1, '#14100c');
+      px(6, 11, 5, 1, '#14100c');
+      px(13, 11, 5, 1, '#14100c');
+      px(11, 9, 2, 1, '#14100c');
+      px(10, 17, 4, 5, '#e9e6da'); // beard
+      px(11, 22, 2, 1, '#e9e6da');
+    } else {
+      px(5, 3, 14, 3, '#4a6a8a'); // flat cap
+      px(4, 6, 9, 1, '#3a566f');
+      px(6, 19, 12, 3, '#c0392b'); // kerchief
+    }
+    px(2, 22, 20, 2, old ? '#4f5a32' : '#8a5a30'); // the top of his shell
+  } else if (kind === 'fox') {
+    const ash = patronLook('fox', name) === 'ash';
+    const coat = ash ? '#8a94a8' : '#d8702a';
+    const cream = ash ? '#e6e8ee' : '#f3e3c4';
+    px(4, 1, 5, 7, coat); // ears
+    px(15, 1, 5, ash ? 7 : 7, coat);
+    px(5, 3, 3, 4, '#33241c');
+    px(16, 3, 3, 4, '#33241c');
+    if (ash) px(4, 1, 5, 3, '#2a3448'); // the tip of one ear is gone
+    px(5, 7, 14, 9, coat); // head
+    px(3, 12, 4, 4, cream); // cheek tufts
+    px(17, 12, 4, 4, cream);
+    px(8, 13, 8, 6, cream); // muzzle
+    px(10, 18, 4, 2, cream);
+    px(11, 17, 2, 2, '#14100c'); // nose
+    px(7, 10, 3, 2, '#f4f0e4'); // sly eyes
+    px(8, 10, 1, 2, '#14100c');
+    if (ash) {
+      px(13, 9, 5, 4, '#1c1c22'); // eyepatch
+      px(5, 7, 14, 1, '#1c1c22');
+    } else {
+      px(14, 10, 3, 2, '#f4f0e4');
+      px(15, 10, 1, 2, '#14100c');
+      px(20, 5, 2, 2, '#e8b83a'); // earring
+    }
+    px(4, 20, 16, 4, ash ? '#6a3f8f' : '#2f8f8a'); // neckerchief
+  } else if (kind === 'ant') {
+    px(6, 7, 12, 11, '#7a3b24'); // head
+    px(7, 6, 10, 2, '#7a3b24');
+    px(6, 2, 1, 5, '#3a2018'); // feelers
+    px(17, 2, 1, 5, '#3a2018');
+    px(5, 1, 2, 2, '#3a2018');
+    px(17, 1, 2, 2, '#3a2018');
+    px(7, 9, 4, 4, '#14100c'); // big dark eyes
+    px(13, 9, 4, 4, '#14100c');
+    px(8, 10, 1, 1, '#f4f0e4');
+    px(14, 10, 1, 1, '#f4f0e4');
+    px(8, 16, 3, 4, '#c9b56a'); // jaws
+    px(13, 16, 3, 4, '#c9b56a');
+    px(5, 5, 14, 2, '#8f8a78'); // the rim of its helmet, pushed back
+    px(4, 20, 16, 4, '#5c2c1a');
+  } else if (kind === 'pigeon') {
     px(6, 5, 12, 13, '#8d93a0'); // head
     px(7, 4, 10, 3, '#8d93a0');
     px(6, 14, 12, 4, '#2f8f6a'); // green neck

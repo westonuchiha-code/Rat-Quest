@@ -1,6 +1,7 @@
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildCouch } from './couchModel';
+import { buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
@@ -1006,6 +1007,17 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         couch.rotation.y = d.yaw;
         group.add(couch);
       }
+    } else if (d.kind === 'table' || d.kind === 'stool') {
+      // The Club's tables and stools (tavernModels.ts).
+      const mats = { wood: mat('planks'), plain: plainMat, glow: new THREE.MeshBasicMaterial({ color: 0xffd36a }) };
+      const piece = d.kind === 'table' ? buildTable(mats, { mugs: d.mugs, candle: d.candle, cards: d.cards }) : buildStool(mats);
+      piece.position.set(d.x, d.y, d.z);
+      if (d.kind === 'table') piece.rotation.y = d.yaw;
+      group.add(piece);
+      // (A candle's flame shivers.)
+      piece.traverse((o) => {
+        if (o.userData.flame) swayers.push({ obj: o, axis: 'z', amount: 0.22, speed: 7, phase: d.x + d.z });
+      });
     } else if (d.kind === 'fall') {
       buildFall(d);
     } else if (d.kind === 'chain') {

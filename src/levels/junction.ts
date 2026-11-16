@@ -13,6 +13,8 @@
 import { compileCustom, CustomLevel, Piece } from './custom';
 import { doorOn } from '../world/rooms';
 import type { CourseDoorDef, LevelDef } from './types';
+import type { NpcSpec } from '../npc/npc';
+import { stoolSolids, tableSolids, type Decor } from '../world/layout';
 import { BALANCE } from '../data/balance';
 
 const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top, ...extra });
@@ -149,9 +151,105 @@ export const HUB_GUEST_DOORS: Record<'west' | 'east', CourseDoorDef> = {
   east: { to: null, name: '', need: 0, door: doorOn('south', HX, 12, HZ, 0) },
 };
 
+/**
+ * The Club's tables and the regulars at them. (The owner, 2026-11-15: more props, and characters who are DOING
+ * something, "like have maybe two characters drinking at a table"; "I want it to feel pretty alive regardless ...
+ * a full world that gains extras over time".) Everyone here is here from the first minute, except those marked
+ * `when`, who turn up as the world is cleared: the room is full without them.
+ *
+ * A table is at (x, z); a seat is a stool beside it, `out` from its middle at an angle (0 is south of it, +z).
+ */
+const SEAT_OUT = 1.25;
+interface TableSet {
+  x: number;
+  z: number;
+  top: { mugs?: Array<[number, number]>; candle?: boolean; cards?: boolean };
+  /** The stools round it, each an angle round the table; and who (if anyone) is on each. */
+  seats: Array<{ at: number; who?: Omit<NpcSpec, 'x' | 'z' | 'facing' | 'partner' | 'seated'> }>;
+}
+const TABLES: TableSet[] = [
+  // South-east, by the way in: two turtles over their thimbles, deep in it. A third stool for anyone.
+  {
+    x: 11, z: 14, top: { mugs: [[Math.PI / 2, 0.6], [-Math.PI / 2, 0.6]], candle: true },
+    seats: [
+      { at: Math.PI / 2, who: { name: 'Mossback Mo', kind: 'turtle', doing: 'drink', turn: 0, lines: [
+        'Hmm? Oh. A knight. We had one of those once. Before the drips.',
+        'I was old when this pipe was new, young fellow. Slow down. The cheese is not going anywhere.',
+        'Pebble here thinks the moat in the Cistern is deep. I have seen DEEP. Sit a while and I might tell you.',
+      ] } },
+      { at: -Math.PI / 2, who: { name: 'Pebble', kind: 'turtle', doing: 'chat', turn: 1, lines: [
+        'Do not get him started on the moat. Please. I have heard about the moat since Tuesday.',
+        'I would go adventuring myself, you know. I have the shell for it. I just have not finished my drink.',
+      ] } },
+      { at: 0 },
+    ],
+  },
+  // North-east, near Wren: a card table. Two foxes, and neither trusts the other's deal.
+  {
+    x: 17, z: -1, top: { cards: true, mugs: [[2.4, 0.7]] },
+    seats: [
+      { at: Math.PI / 2, who: { name: 'Vix', kind: 'fox', doing: 'cards', turn: 0, lines: [
+        'Pull up a cork, knight. Crumbs are stakes, caps are trumps, and Ash deals from the bottom.',
+        'You have the look of someone who jumps off walls for a living. I respect a trade.',
+      ] } },
+      { at: -Math.PI / 2, who: { name: 'Ash', kind: 'fox', doing: 'cards', turn: 1, lines: [
+        'I do NOT deal from the bottom. I deal from the middle. There is an art to it.',
+        'Lost the eye to a hornet, since you are staring. Kept the hornet\'s lance. It is over the bar. There is no bar. It is somewhere.',
+      ] } },
+      { at: Math.PI },
+    ],
+  },
+  // South-west, by Finch and the way to the Cistern: a table for whoever comes back from the worlds.
+  {
+    x: -11, z: 6, top: { mugs: [[0.3, 0.55]], candle: true },
+    seats: [
+      // An Ant Pikeman, off duty: here once the Hollows are cleared, where the ants hold the line.
+      { at: 0, who: { name: 'Corporal Nib', kind: 'ant', doing: 'drink', when: { cleared: 'hollows' }, lines: [
+        'Stand easy, knight. I am OFF the line. The pike is in the rack. This is my thimble.',
+        'No hard feelings about the Hollows. You came through the wall of us fair and square. Mostly square.',
+        'The lads say you fight like a rat who has read the manual. From an ant, that is high praise.',
+      ] } },
+      { at: Math.PI * 0.75 },
+      { at: -Math.PI * 0.75 },
+    ],
+  },
+];
+
+/** Everything the tables add to the room: what is drawn, what is solid, and who is sitting there. */
+export function clubTables(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[] } {
+  const decor: Decor[] = [];
+  const solids: LevelDef['solids'] = [];
+  const npcs: NpcSpec[] = [];
+  for (const t of TABLES) {
+    decor.push({ kind: 'table', x: t.x, y: 0, z: t.z, yaw: 0, ...t.top });
+    solids.push(...tableSolids(t.x, 0, t.z));
+    const place = (at: number): [number, number] => [t.x + Math.sin(at) * SEAT_OUT, t.z + Math.cos(at) * SEAT_OUT];
+    const taken = t.seats.filter((s) => s.who);
+    for (const s of t.seats) {
+      const [x, z] = place(s.at);
+      // (An ant does not sit: it stands at its place at the table, on its own six feet.)
+      const sits = s.who?.kind !== 'ant';
+      if (sits) {
+        decor.push({ kind: 'stool', x, y: 0, z });
+        solids.push(...stoolSolids(x, 0, z));
+      }
+      if (!s.who) continue;
+      // He faces the table; across it is whoever else is at it (if anyone), and that is who he talks to.
+      const other = taken.find((o) => o !== s);
+      npcs.push({ ...s.who, x, z, y: 0, facing: s.at + Math.PI, seated: sits, partner: other ? place(other.at) : [t.x, t.z] });
+    }
+  }
+  return { decor, solids, npcs };
+}
+
 export function junction(): LevelDef {
+  const base = compileCustom(club, 'hub');
+  const tables = clubTables();
   return {
-    ...compileCustom(club, 'hub'),
+    ...base,
+    decor: [...base.decor, ...tables.decor],
+    solids: [...base.solids, ...tables.solids],
+    npcs: [...(base.npcs ?? []), ...tables.npcs],
     theme: 'dungeon',
     hub: true,
     courseDoors: HUB_DOORS,

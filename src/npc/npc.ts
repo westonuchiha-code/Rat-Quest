@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
+import { makePatron, patronLook, type Doing, type PatronBody } from './patrons';
+import { AntModel } from '../enemies/antModel';
 
 /** A friendly character standing in a level. Plain data. */
 export interface NpcSpec {
@@ -20,9 +22,25 @@ export interface NpcSpec {
   hidden?: boolean;
   /** Talking to him opens his shop (his first line is his greeting). */
   shop?: boolean;
+  /**
+   * What he is at when the rat walks in (the Club's regulars: see patrons.ts). One who is doing something does not
+   * turn his whole body to the rat: he stays at his table or his wall, and turns his head.
+   */
+  doing?: Doing;
+  /** On a stool (his `y` is still the floor's). */
+  seated?: boolean;
+  /** Whom he is talking to or playing against, when it is not the rat: where they are (x, z). */
+  partner?: [number, number];
+  /** Of the two at a table, which one he is (0 or 1): they take turns to talk. */
+  turn?: number;
+  /**
+   * He is only here once this is so (the Club gains regulars as the world is cleared). Nobody the room NEEDS has
+   * one of these: it is full without them. `cleared`: a level's id.
+   */
+  when?: { cleared: string };
 }
 
-export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon';
+export type NpcKind = 'mouse' | 'bird' | 'villain' | 'pigeon' | 'turtle' | 'fox' | 'ant';
 
 /**
  * Who he is, within his kind: two mice and two birds share a build but not a look. It goes by name, so every level
@@ -38,6 +56,7 @@ export function lookOf(kind: NpcKind | undefined, name: string): NpcLook {
 }
 
 export const TALK_RANGE = 2.2;
+const ANT_NO_TIP = { x: 0, y: 0, z: 0 };
 
 /**
  * Pip the peddler: a small mouse with a pack much too big for him and a lantern on a pole.
@@ -153,7 +172,18 @@ export class Npc {
     const kit = modelKit(mat);
     const look = lookOf(spec.kind, spec.name);
     this.who = look;
-    if (spec.kind === 'bird') {
+    if (spec.kind === 'turtle' || spec.kind === 'fox') {
+      // One of the Club's regulars: his body is its own thing (patrons.ts).
+      this.patron = makePatron(spec.kind, patronLook(spec.kind, spec.name));
+      this.body.add(this.patron.root);
+      this.root.add(this.body);
+    } else if (spec.kind === 'ant') {
+      // An Ant Pikeman, off duty: the same creature he fights elsewhere, with a mug where its pike was.
+      this.ant = new AntModel();
+      this.ant.offDuty();
+      this.body.add(this.ant.root);
+      this.root.add(this.body);
+    } else if (spec.kind === 'bird') {
       // Finch the goldfinch: a round yellow bird with a black cap, black wings barred with yellow, a forked tail,
       // a red neckerchief knotted at the front and a tuft on his head. His beak opens when he talks.
       // Wren is the same build in other feathers: a small brown songbird, paler below, with barred wings, a pale stripe
@@ -523,7 +553,7 @@ export class Npc {
     this.root.add(shadow);
     // The marker over his head: a small gold diamond, shown when the rat is near.
     this.marker = new THREE.Mesh(new THREE.OctahedronGeometry(0.13), new THREE.MeshBasicMaterial({ color: 0xffe27a }));
-    this.marker.position.set(0, spec.kind === 'villain' ? VILLAIN_FLOAT + GRIM_HEIGHT + 0.35 : 1.75, 0);
+    this.marker.position.set(0, spec.kind === 'villain' ? VILLAIN_FLOAT + GRIM_HEIGHT + 0.35 : this.markerY(), 0);
     this.marker.visible = false;
     this.root.add(this.marker);
 
@@ -532,6 +562,16 @@ export class Npc {
     this.root.visible = !this.gone;
     this.root.rotation.y = spec.facing;
     this.look = spec.facing;
+  }
+
+  /** One of the Club's regulars (a turtle or a fox), or an ant off duty. */
+  private patron: PatronBody | null = null;
+  private ant: AntModel | null = null;
+  private headYaw = 0;
+  /** How high the marker hangs over him. */
+  private markerY(): number {
+    if (this.patron) return this.patron.height + 0.4 - (this.spec.seated ? 0.12 : 0);
+    return this.ant ? 1.95 : 1.75;
   }
 
   /** The villain only: a white flash (the sword has landed). */
@@ -607,10 +647,20 @@ export class Npc {
     this.shrug += ((this.act?.shrug ?? 0) - this.shrug) * Math.min(1, dt * 10);
     this.near = this.inRange(px, py, pz);
     const close = talking || Math.hypot(px - this.spec.x, pz - this.spec.z) < 6;
-    const want = this.act?.lookAt ? Math.atan2(this.act.lookAt[0] - this.spec.x, this.act.lookAt[1] - this.spec.z) : close ? Math.atan2(px - this.spec.x, pz - this.spec.z) : this.spec.facing;
+    // One who is busy (at a table, against a wall) keeps his body where it is and turns only his head: to the rat
+    // when he is near or talking, otherwise to whoever is across the table.
+    const busy = !!this.spec.doing && this.spec.doing !== 'stand';
+    const toRat = Math.atan2(px - this.spec.x, pz - this.spec.z);
+    const want = this.act?.lookAt ? Math.atan2(this.act.lookAt[0] - this.spec.x, this.act.lookAt[1] - this.spec.z) : busy ? this.spec.facing : close ? toRat : this.spec.facing;
     const d = Math.atan2(Math.sin(want - this.look), Math.cos(want - this.look));
     this.look += d * Math.min(1, dt * 5);
     this.root.rotation.y = this.look;
+    {
+      const nearRat = talking || Math.hypot(px - this.spec.x, pz - this.spec.z) < 3.2;
+      const at = nearRat ? toRat : this.spec.partner ? Math.atan2(this.spec.partner[0] - this.spec.x, this.spec.partner[1] - this.spec.z) : this.look;
+      const turn = Math.atan2(Math.sin(at - this.look), Math.cos(at - this.look));
+      this.headYaw += (Math.max(-1.25, Math.min(1.25, turn)) - this.headYaw) * Math.min(1, dt * 6);
+    }
     this.talkBob += ((talking ? 1 : 0) - this.talkBob) * Math.min(1, dt * 8);
     this.mouth = Math.max(0, this.mouth - dt * 7);
     if (this.grim) {
@@ -622,6 +672,21 @@ export class Npc {
       });
       this.marker.visible = this.near && !talking;
       this.marker.position.y = this.pose.float * (1 - this.poseNow.low) + GRIM_HEIGHT + 0.35 + 0.08 * Math.sin(this.time * 4);
+      this.marker.rotation.y = this.time * 2.5;
+      return;
+    }
+    if (this.patron) {
+      this.patron.update(dt, { time: this.time, talking, mouth: this.mouth, headYaw: this.headYaw, doing: this.spec.doing ?? 'stand', seated: !!this.spec.seated, turn: this.spec.turn ?? 0 });
+      this.marker.visible = this.near && !talking;
+      this.marker.position.y = this.markerY() + 0.08 * Math.sin(this.time * 4);
+      this.marker.rotation.y = this.time * 2.5;
+      return;
+    }
+    if (this.ant) {
+      // Standing easy, as it stands at its post, feelers going; its head comes round to whoever speaks to it.
+      this.ant.update(dt, { state: 'idle', stateTime: this.time, walking: 0, tip: ANT_NO_TIP, level: false, windupTime: 1 });
+      this.marker.visible = this.near && !talking;
+      this.marker.position.y = this.markerY() + 0.08 * Math.sin(this.time * 4);
       this.marker.rotation.y = this.time * 2.5;
       return;
     }
