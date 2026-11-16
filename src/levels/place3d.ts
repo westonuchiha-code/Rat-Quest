@@ -4,8 +4,8 @@
  */
 import type { Piece, PieceType } from './custom';
 
-const SINGLES = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
-const FACING = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'brood', 'wyrm']);
+const SINGLES = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+const FACING = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 const POOLS = new Set<PieceType>(['water', 'river', 'lava']);
 
 export function isSingle(t: PieceType): boolean {

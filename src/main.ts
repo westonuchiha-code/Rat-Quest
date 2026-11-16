@@ -530,18 +530,18 @@ function startGame(): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
       if (e instanceof Scorpion) {
-        // The Lamp Scorpion (in borrowed sounds, till it has its own): a slow clack when it sees him; its lamp
-        // blinking up as the tail rears, as long as the tell; the rush of the tail and the barb's knock in the floor;
-        // its claws chattering open and their snap; its lamp dying as it runs, and blinking on again.
-        if (ev === 'alert') audio.play('antClick', { vol: v * 0.9, rate: 0.7, priority: 6 });
-        else if (ev === 'stingWind') audio.play('fireflyBlink', { vol: Math.max(0.4, v), rate: Math.max(0.6, Math.min(2.2, 0.7 / SCORPION.stingWind)), priority: 8 });
-        else if (ev === 'sting') audio.play('whoosh', { vol: v, rate: 1.6, priority: 7 });
-        else if (ev === 'stuck') audio.play('chitinTap', { vol: Math.max(0.3, v), rate: 0.7, priority: 6 });
-        else if (ev === 'snapWind') audio.play('antClick', { vol: Math.max(0.3, v), rate: 1.7, priority: 7 });
-        else if (ev === 'snap') audio.play('antSnap', { vol: Math.max(0.35, v), rate: 0.85, priority: 8 });
-        else if (ev === 'hurt') audio.play('antHurt', { vol: v, rate: 1.2, priority: 6 });
-        else if (ev === 'douse') audio.play('fireflyFade', { vol: Math.max(0.3, v), rate: 1.5, priority: 6 });
-        else if (ev === 'relight') audio.play('fireflyBlink', { vol: v * 0.7, rate: 1.7, priority: 5 });
+        // The Lamp Scorpion, in sounds of its own: its dry rasp when it sees him; its lamp filling as the tail
+        // rears, as long as the tell; the whip of the tail and the barb's crack into the floor; its claws shutting
+        // (the rasp, quick, is their tell); a scraped squeal when it is struck; its lamp snuffed as it runs, and the
+        // note of it coming back; and the knock of it thrown down.
+        if (ev === 'alert') audio.play('scorpRasp', { vol: v * 0.9, priority: 6 });
+        else if (ev === 'stingWind') audio.play('scorpCharge', { vol: Math.max(0.4, v), rate: Math.max(0.6, Math.min(2.2, 0.7 / SCORPION.stingWind)), priority: 8 });
+        else if (ev === 'sting') audio.play('scorpSting', { vol: Math.max(0.4, v), priority: 8 });
+        else if (ev === 'snapWind') audio.play('scorpRasp', { vol: Math.max(0.3, v), rate: Math.max(1.2, Math.min(2.4, 0.5 / SCORPION.snapWind)), priority: 7 });
+        else if (ev === 'snap') audio.play('scorpSnap', { vol: Math.max(0.35, v), priority: 8 });
+        else if (ev === 'hurt') audio.play('scorpHurt', { vol: v, priority: 6 });
+        else if (ev === 'douse') audio.play('scorpDouse', { vol: Math.max(0.3, v), priority: 6 });
+        else if (ev === 'relight') audio.play('scorpCharge', { vol: v * 0.5, rate: 2.4, priority: 5 });
         else if (ev === 'flip') audio.play('plateKnock', { vol: v, rate: 1.1, priority: 8 });
         continue;
       }
@@ -1676,7 +1676,7 @@ function startGame(): void {
       } else if (e.kind === 'firefly') {
         if (e.state === 'dead') audio.play('fireflyDie', { vol: v, priority: 6 });
       } else if (e.kind === 'scorpion') {
-        if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 0.75, priority: 6 });
+        if (e.state === 'dead') audio.play('scorpDie', { vol: v, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('mantisDie', { vol: v, priority: 6 });
       } else if (e.kind === 'wyrm') {

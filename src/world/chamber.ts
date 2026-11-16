@@ -467,6 +467,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Things that sway (banners, roots): a pivot that rocks about its own axis. */
   /** What a glowing mushroom's cap is made of: its own colours, unlit. */
   let mushroomGlow: THREE.MeshBasicMaterial | null = null;
+  let mushroomStemMat: THREE.ShaderMaterial | null = null;
   let mossGlow: THREE.MeshBasicMaterial | null = null;
   /** A soft round glow, to hang in the air round a thing that shines: brightest at its middle, dying away to nothing at its rim. */
   let haloTex: THREE.DataTexture | null = null;
@@ -990,8 +991,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const stemTop = h - r * 0.3;
       const stem = new THREE.CylinderGeometry(thick * 0.58, thick, stemTop, 5, Math.max(1, Math.round(stemTop / 2.5)));
       stem.translate(0, stemTop / 2, 0);
-      bakeVertexColor(stem, new THREE.Color(0x8a8078).lerp(c, 0.3), false);
-      const stalk = addMesh(stem, plainMat, d.x, d.y, d.z);
+      // (Its picture runs from its top down to the ground, twice round a thick one.)
+      const suv = stem.attributes.uv;
+      for (let i = 0; i < suv.count; i++) suv.setXY(i, suv.getX(i) * (thick > 0.25 ? 2 : 1), 1 - suv.getY(i));
+      bakeVertexColor(stem, new THREE.Color(0xffffff).lerp(c, 0.35), false);
+      const stalk = addMesh(stem, (mushroomStemMat ??= createPs1Material({ lit: true, tex: getTexture('mushroomStem') })), d.x, d.y, d.z);
       stalk.rotation.set(lean, d.x * 2.3, lean * 0.6);
       // (Its cap: a row of rings from its crown down and out to its rim, then in underneath.)
       const DEEP = 0.351;
@@ -1000,23 +1004,26 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       let cap: THREE.BufferGeometry = new THREE.LatheGeometry(pts, 7);
       cap = cap.toNonIndexed();
       cap.computeVertexNormals();
+      // (Its picture, `mushroomCap`: fibres, warts and gills, in greys; twice round it, so they are fine.)
+      const cuv = cap.attributes.uv;
+      for (let i = 0; i < cuv.count; i++) cuv.setX(i, cuv.getX(i) * 2);
       const q = cap.attributes.position;
       const cols = new Float32Array(q.count * 3);
-      const crown = c.clone().lerp(new THREE.Color(0xffffff), 0.28);
-      const rim = c.clone().multiplyScalar(0.62);
-      const under = c.clone().multiplyScalar(0.18);
+      // (Brighter than they were before the picture went on: the picture takes some of it back.)
+      const crown = c.clone().lerp(new THREE.Color(0xffffff), 0.4).multiplyScalar(1.15);
+      const rim = c.clone().multiplyScalar(0.8);
+      const under = c.clone().multiplyScalar(0.55);
       // (Which way the faces were wound: its first face is on its crown, and that one looks up.)
       const outward = cap.attributes.normal.getY(0) < 0 ? -1 : 1;
       for (let i = 0; i < q.count; i += 3) {
         // (Each face one colour, by how high on the cap it is and whether it looks up or down.)
         const fy = 1 - (h - (q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3) / (DEEP * r);
         const up = cap.attributes.normal.getY(i) * outward > -0.2;
-        const spot = up && fy > 0.5 && fy < 0.95 && (i / 3) % 5 === 1;
-        const col = !up ? under : spot ? c.clone().lerp(new THREE.Color(0xffffff), 0.75) : rim.clone().lerp(crown, Math.max(0, Math.min(1, (fy - 0.3) / 0.7)) ** 1.5);
+        const col = !up ? under : rim.clone().lerp(crown, Math.max(0, Math.min(1, (fy - 0.3) / 0.7)) ** 1.5);
         for (let j = 0; j < 3; j++) cols.set([col.r, col.g, col.b], (i + j) * 3);
       }
       cap.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-      const top = new THREE.Mesh(cap, (mushroomGlow ??= new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+      const top = new THREE.Mesh(cap, (mushroomGlow ??= new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, map: getTexture('mushroomCap') })));
       top.position.set(d.x, d.y, d.z);
       top.rotation.copy(stalk.rotation);
       group.add(top);

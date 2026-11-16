@@ -213,6 +213,10 @@ export const SFX_NAMES = [
   // going up, her jaws shutting on the floor, her cry when struck, and her end. And her poison: the slash of it along
   // the floor, the wave of it running out, a gob of it spat or flicked, and the splash where one lands.
   'widowScream', 'widowRear', 'widowBite', 'widowHurt', 'widowDie', 'poisonSlash', 'poisonWave', 'poisonSpit', 'poisonSplash',
+  // The Lamp Scorpion: the dry rasp it makes when it sees him; its lamp filling as its tail rears (as long as the
+  // tell, rising all the way); the whip of the tail and the barb's crack into the floor; its claws shutting, twice
+  // over; a scraped squeal when it is struck; its lamp snuffed as it runs; and its end.
+  'scorpRasp', 'scorpCharge', 'scorpSting', 'scorpSnap', 'scorpHurt', 'scorpDouse', 'scorpDie',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -817,6 +821,73 @@ const RECIPES: Record<SfxName, () => Sample> = {
     return (t) => hit(t) + c.lp(0, c.r() * 2 - 1, 0.5) * Math.exp(-t * 70) * 0.5;
   }, { bits: 7, gain: 0.8 }),
   // The Widow's scream: a great low groan forced up into a shriek and breaking back down, chopped by a slow chitter.
+  // The Lamp Scorpion's rasp: the teeth of one joint drawn over the edge of another, quickening and dying; dry and
+  // high, a file on a comb.
+  scorpRasp: () => draw(0.5, RATE_HI, 241, (c) => {
+    const comb = rattle(c, RATE_HI, 0.5, 60, 150, 2900, 0.972);
+    return (t) => Math.tanh(comb(t) * bell(t, 0.5) * 3.2) + (c.r() * 2 - 1) * 0.09 * bell(t, 0.5);
+  }, { bits: 7 }),
+  // Its lamp filling before the sting: one clear note climbing all the way, a shiver on it that quickens, swelling
+  // to the end; and under it the tail's joints ticking as it rears.
+  scorpCharge: () => draw(0.7, RATE_HI, 242, (c) => {
+    const ticks = rattle(c, RATE_HI, 0.7, 9, 30, 1700, 0.965);
+    return (t) => {
+      const u = t / 0.7;
+      const hz = 520 + 1180 * u * u;
+      const shiver = 1 - 0.35 * (0.5 + 0.5 * Math.sin(TAU * (9 + 22 * u) * t));
+      const note = (sine(c.osc(0, hz)) * 0.6 + sine(c.osc(1, hz * 2.01)) * 0.22 + sine(c.osc(2, hz * 3.4)) * 0.1) * shiver;
+      return (note * (0.18 + 0.82 * u * u) + ticks(t) * 0.35 * (0.4 + 0.6 * u)) * Math.min(1, t / 0.01) * Math.min(1, (0.7 - t) / 0.015);
+    };
+  }),
+  // The sting: the tail whipping over (a rush of air that falls in pitch), and the barb cracking into the stone.
+  scorpSting: () => draw(0.32, RATE_HI, 243, (c) => {
+    const stone = knock(2100, RATE_HI, 0.975);
+    const low = knock(640, RATE_HI, 0.985);
+    return (t) => {
+      const whip = t < 0.1 ? (c.r() * 2 - 1 - c.lp(0, c.r() * 2 - 1, 0.25 - 1.6 * t)) * Math.sin((Math.PI * t) / 0.1) ** 0.7 * 0.55 : 0;
+      const at = t - 0.085;
+      const x = at >= 0 && at < 0.003 ? c.r() * 2 - 1 : 0;
+      return whip + (stone(x) * 9 + low(x) * 7) * (at >= 0 ? 1 : 0);
+    };
+  }),
+  // Its claws shutting: two hard clacks, one a breath after the other, heavier than an ant's jaws.
+  scorpSnap: () => draw(0.24, RATE_HI, 244, (c) => {
+    const a = knock(1250, RATE_HI, 0.972);
+    const b = knock(520, RATE_HI, 0.982);
+    return (t) => {
+      const hit = (t < 0.0025 ? 1 : 0) + (t > 0.045 && t < 0.0475 ? 0.8 : 0);
+      const x = hit ? (c.r() * 2 - 1) * hit : 0;
+      return Math.tanh((a(x) * 8 + b(x) * 9) * 1.5);
+    };
+  }, { bits: 7 }),
+  // Struck: a thin scraped squeal that falls, with its rasp in it.
+  scorpHurt: () => draw(0.26, RATE_HI, 245, (c) => {
+    const comb = rattle(c, RATE_HI, 0.26, 90, 50, 2400, 0.95);
+    return (t) => {
+      const u = t / 0.26;
+      const hz = 1500 - 700 * u;
+      return (saw(c.osc(0, hz)) * 0.3 + sq(c.osc(1, hz * 1.49), 0.3) * 0.18) * decay(t, 0.22) + comb(t) * 0.5 * (1 - u);
+    };
+  }, { bits: 7 }),
+  // Its lamp snuffed: the note dropping away to nothing, a puff, and its feet skittering off.
+  scorpDouse: () => draw(0.5, RATE_HI, 246, (c) => {
+    const feet = rattle(c, RATE_HI, 0.5, 42, 28, 1300, 0.95);
+    return (t) => {
+      const hz = 1500 * Math.exp(-t * 9) + 150;
+      const note = sine(c.osc(0, hz)) * Math.exp(-t * 11) * 0.8;
+      const puff = c.lp(0, c.r() * 2 - 1, 0.3) * Math.exp(-t * 26) * 0.5;
+      return note + puff + feet(t) * 0.4 * Math.min(1, t / 0.08) * Math.max(0, 1 - t / 0.5);
+    };
+  }),
+  // Its end: the rasp running down joint by joint, and the last of its lamp sinking under it.
+  scorpDie: () => draw(1.0, RATE_HI, 247, (c) => {
+    const comb = rattle(c, RATE_HI, 1.0, 46, 5, 2300, 0.962);
+    return (t) => {
+      const u = t / 1.0;
+      const hz = 900 * Math.exp(-u * 2.6) + 120;
+      return comb(t) * (1 - u) ** 1.2 * 1.2 + sine(c.osc(0, hz)) * 0.35 * (1 - u) ** 2;
+    };
+  }, { bits: 7 }),
   widowScream: () => draw(1.5, RATE_HI, 225, (c) => (t) => {
     const u = t / 1.5;
     const hz = 240 + 260 * Math.min(1, u / 0.2) - 180 * Math.max(0, (u - 0.55) / 0.45) ** 1.5 + 30 * sine(c.osc(3, 17));

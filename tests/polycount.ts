@@ -16,6 +16,7 @@ import { StagModel } from '../src/enemies/stagModel';
 import { HornetModel } from '../src/enemies/hornetModel';
 import { AntModel } from '../src/enemies/antModel';
 import { FireflyModel } from '../src/enemies/fireflyModel';
+import { ScorpionModel } from '../src/enemies/scorpionModel';
 import { BroodModel } from '../src/enemies/broodModel';
 import { WyrmModel } from '../src/enemies/wyrmModel';
 
@@ -66,6 +67,7 @@ add('Enemies', 'Stag Knight', 'stag beetle', () => new StagModel().root);
 add('Enemies', 'Hornet Lancer', 'hornet', () => new HornetModel().root);
 add('Enemies', 'Ant Pikeman', 'ant', () => new AntModel().root);
 add('Enemies', 'Firefly Bomber', 'firefly', () => new FireflyModel().root);
+add('Enemies', 'Lamp Scorpion', 'scorpion', () => new ScorpionModel().root);
 add('Bosses', 'The Broodmother', 'spider', () => new BroodModel().root);
 add('Bosses', 'The Sump Wyrm', 'wyrm', () => new WyrmModel().root);
 add('Bosses', 'Lord Grimsqueak', 'rat king', () => npc('Lord Grimsqueak', 'villain'));

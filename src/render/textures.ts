@@ -1559,6 +1559,262 @@ function paintIcicles(p: Px, rand: Rand): void {
 }
 
 /**
+ * The Lamp Scorpion's shell. Across the picture is round its body, the ridge of its back at the picture's edge
+ * (x = 0), its belly in the middle; down the picture is along it, from the root of its tail to its front.
+ * Seven plates across its back, each with a pale lip at its hind edge and a row of grains before it, then the one
+ * broad shield of its head, with a furrow down its middle and a knob for its eyes. A keel down its back and one along
+ * each flank. Underneath, paler, in soft bands.
+ */
+function paintScorpShell(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x140e1a, 0x21172a, 0x30223c, 0x44324f, 0x5c4766, 0x7a6284, 0x9c86a2];
+  const belly = [0x2a2230, 0x3c3142, 0x524556, 0x6a5c6c, 0x84768a];
+  const f = fbm(S, rand, 6, 3);
+  const HEAD = Math.floor(S * 0.64);
+  const PLATE = HEAD / 7;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const round = 0.5 + 0.5 * Math.cos(u * Math.PI * 2);
+      const n = (f[y * S + x] - 0.5) * 0.22;
+      if (u > 0.34 && u < 0.66) {
+        // Its belly: soft bands, a crease between.
+        const band = (y % 9) / 9;
+        p.set(x, y, band < 0.12 ? 0x1a141e : ramp(0.35 + 0.3 * Math.sin(band * Math.PI) + n, belly, x, y, 0.2));
+        continue;
+      }
+      let v = 0.14 + 0.38 * round ** 1.6 + n;
+      if (y < HEAD) {
+        // A plate: dark where it comes out from under the one before, paling to its hind lip.
+        const t = (y % PLATE) / PLATE;
+        v += -0.16 + 0.26 * t;
+        if (t > 0.86) v += 0.2;
+        if (t < 0.1) v -= 0.3;
+      } else {
+        // The head shield: one piece, paler in its middle, a furrow down it.
+        const t = (y - HEAD) / (S - HEAD);
+        v += 0.06 + 0.1 * Math.sin(t * Math.PI);
+        if (Math.min(u, 1 - u) < 0.02) v -= 0.22;
+      }
+      p.set(x, y, ramp(v, pal, x, y, 0.16));
+    }
+  }
+  // Grains: a row before each plate's lip, and a scatter over the head shield.
+  for (let k = 0; k < 7; k++) {
+    const y = Math.floor((k + 0.72) * PLATE);
+    for (let x = 0; x < S; x += 3) {
+      const u = x / S;
+      if (u > 0.3 && u < 0.7) continue;
+      p.blend(x + (k % 2), y, 0xb4a0b8, 0.75);
+      p.blend(x + (k % 2), y + 1, 0x140e1a, 0.5);
+    }
+  }
+  for (let i = 0; i < 46; i++) {
+    const x = Math.floor(rand() * S);
+    const y = HEAD + 2 + Math.floor(rand() * (S - HEAD - 4));
+    const u = x / S;
+    if (u > 0.3 && u < 0.7) continue;
+    p.blend(x, y, 0xb4a0b8, 0.6);
+    p.blend(x, y + 1, 0x140e1a, 0.45);
+  }
+  // Keels: down its back (on the plates only: the head has its furrow there) and along each flank.
+  for (let y = 0; y < S; y++) {
+    if (y < HEAD) {
+      p.blend(0, y, 0xa890ac, 0.6);
+      p.blend(S - 1, y, 0x5c4766, 0.5);
+    }
+    for (const kx of [Math.round(S * 0.14), Math.round(S * 0.86)]) {
+      p.blend(kx, y, 0x9c86a2, y % 3 === 0 ? 0.7 : 0.4);
+      p.blend(kx + 1, y, 0x140e1a, 0.35);
+    }
+  }
+  // The knob its eyes sit on, at the front of the head shield.
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (dx * dx * 0.5 + dy * dy <= 5) p.blend(dx, S - 9 + dy, dy < 0 ? 0x9c86a2 : 0x21172a, 0.7);
+}
+
+/**
+ * A joint of its tail (and a length of a leg). Across is round it, the top at the picture's edge; down is along it.
+ * Keeled: five ridges run its length, grained like a file, the shell between them dark and smooth; a crease at each
+ * end, and before the far one a pale collar where the next joint begins.
+ */
+function paintScorpTail(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x140e1a, 0x21172a, 0x30223c, 0x44324f, 0x5c4766, 0x7a6284];
+  const streak = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const round = 0.5 + 0.5 * Math.cos(u * Math.PI * 2);
+      // (How near a keel: there are five, one at every fifth of the way round.)
+      const k = Math.abs(((u * 5 + 0.5) % 1) - 0.5) * 2;
+      let v = 0.2 + 0.3 * round ** 2 + (streak[x] - 0.5) * 0.12 + (rand() - 0.5) * 0.06 - 0.12 * k;
+      v += 0.1 * Math.sin((y / S) * Math.PI);
+      p.set(x, y, ramp(v, pal, x, y, 0.16));
+    }
+  }
+  for (let k = 0; k < 5; k++) {
+    const x = Math.round((k / 5) * S);
+    for (let y = 2; y < S - 2; y++) {
+      p.blend(x, y, y % 3 === 0 ? 0xc0aac4 : 0x8c7694, y % 3 === 0 ? 0.85 : 0.55);
+      p.blend(x + 1, y, 0x140e1a, 0.4);
+    }
+  }
+  for (let x = 0; x < S; x++) {
+    p.set(x, 0, 0x0c0810);
+    p.blend(x, 1, 0x140e1a, 0.7);
+    p.blend(x, S - 5, 0xa890ac, 0.55);
+    p.blend(x, S - 4, 0xc0aac4, 0.7);
+    p.blend(x, S - 3, 0x5c4766, 0.6);
+    p.set(x, S - 1, 0x0c0810);
+    p.blend(x, S - 2, 0x140e1a, 0.7);
+  }
+}
+
+/**
+ * Its hand. Across is round it; down is along it, from its wrist to the point of its fixed finger. The swell of the
+ * palm is grained all over, coarse on its top; the finger darkens to a horn-brown point, and along its inner edge
+ * runs the row of teeth it grips with.
+ */
+function paintScorpClaw(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x1a1220, 0x2a1e32, 0x3e2e48, 0x57425e, 0x735a78, 0x937a94];
+  const horn = [0x100a0e, 0x22141a, 0x3a2024, 0x5a3430, 0x80503c];
+  const f = fbm(S, rand, 5, 3);
+  const FINGER = Math.floor(S * 0.58);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      const round = 0.5 + 0.5 * Math.cos(u * Math.PI * 2);
+      const n = (f[y * S + x] - 0.5) * 0.24;
+      if (y >= FINGER) {
+        const t = (y - FINGER) / (S - FINGER);
+        p.set(x, y, ramp(0.62 - 0.5 * t + 0.25 * round + n, horn, x, y, 0.2));
+      } else p.set(x, y, ramp(0.22 + 0.4 * round ** 1.5 + 0.12 * Math.sin((y / FINGER) * Math.PI) + n, pal, x, y, 0.16));
+    }
+  }
+  // Grains over the palm: in rows, bigger on its top.
+  for (let y = 3; y < FINGER - 1; y += 3) {
+    for (let x = (y % 2) * 2; x < S; x += 4) {
+      const top = Math.cos((x / S) * Math.PI * 2) > 0.2;
+      p.blend(x, y, 0xc0aac4, top ? 0.8 : 0.4);
+      if (top) p.blend(x + 1, y, 0xa890ac, 0.5);
+      p.blend(x, y + 1, 0x100a0e, 0.45);
+    }
+  }
+  // Teeth along the finger's inner edge (the middle of the picture), and the crease at the wrist.
+  for (let y = FINGER - 2; y < S - 1; y += 2) {
+    p.set(S / 2, y, 0xe8d8c8);
+    p.blend(S / 2, y + 1, 0x100a0e, 0.6);
+  }
+  for (let x = 0; x < S; x++) {
+    p.set(x, 0, 0x0c0810);
+    p.blend(x, 1, 0x937a94, 0.5);
+    p.blend(x, FINGER - 1, 0x100a0e, 0.45);
+  }
+}
+
+/**
+ * Its lamp, in greys and white (the model gives it its colour and its brightness): a bulb of clear stuff with the
+ * light in its middle, veined, a glint on its top.
+ */
+function paintScorpLamp(p: Px, rand: Rand): void {
+  const S = p.size;
+  const grey = [0x6a6a6a, 0x8e8e8e, 0xb2b2b2, 0xd6d6d6, 0xffffff];
+  const f = fbm(S, rand, 4, 3);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const mid = Math.sin((y / S) * Math.PI);
+      p.set(x, y, ramp(0.25 + 0.6 * mid + (f[y * S + x] - 0.5) * 0.3, grey, x, y, 0.25));
+    }
+  }
+  // Veins, branching round it.
+  for (let v = 0; v < 5; v++) {
+    let x = Math.floor(rand() * S);
+    for (let y = 1; y < S - 1; y++) {
+      p.blend(x, y, 0x3c3c3c, 0.6);
+      if (rand() < 0.45) x += rand() < 0.5 ? 1 : -1;
+      if (rand() < 0.1) p.blend(x + 2, y, 0x505050, 0.5);
+    }
+  }
+  for (let y = 4; y < 9; y++) p.set(1, y, 0xffffff);
+  p.set(2, 5, 0xffffff);
+}
+
+/**
+ * A glowing mushroom's cap, in greys and white (the mushroom gives it its colour). Across is round it; down is from
+ * its crown, over its top to its rim (three fifths of the way down the picture), then under it to its stem.
+ * On top: fibres running from crown to rim, pale warts thick about the crown and thinning outward, and the rim
+ * darker and finely grooved. Underneath: its gills, pale blades with dark between, deepening toward the stem.
+ */
+function paintMushroomCap(p: Px, rand: Rand): void {
+  const S = p.size;
+  const RIM = Math.floor(S * 0.6);
+  const grey = [0x5a5a5a, 0x808080, 0xa6a6a6, 0xcacaca, 0xececec];
+  const f = fbm(S, rand, 5, 3);
+  const fibre = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      if (y < RIM) {
+        const t = y / RIM;
+        let v = 0.84 - 0.26 * t + (fibre[x] - 0.5) * (0.06 + 0.22 * t) + (f[y * S + x] - 0.5) * 0.1;
+        // (The rim: darker, and grooved where the gills show through.)
+        if (t > 0.8) v -= 0.14 + (x % 3 === 0 ? 0.16 : 0);
+        p.set(x, y, ramp(v, grey, x, y, 0.1));
+      } else {
+        const t = (y - RIM) / (S - RIM);
+        const blade = x % 3 === 0;
+        p.set(x, y, blade ? ramp(0.7 - 0.4 * t, grey, x, y, 0.1) : ramp(0.16 - 0.1 * t, [0x1e1e1e, 0x343434, 0x4c4c4c], x, y, 0.1));
+      }
+    }
+  }
+  // Warts: pale, each with a shadow under it; thick about the crown.
+  for (let i = 0; i < 44; i++) {
+    const y = Math.floor(rand() ** 1.7 * RIM * 0.8);
+    const x = Math.floor(rand() * S);
+    const big = rand() < 0.6 && y < RIM * 0.6;
+    p.set(x, y, 0xffffff);
+    if (big) {
+      p.set(x + 1, y, 0xffffff);
+      p.blend(x, y + 1, 0xececec, 0.8);
+      p.blend(x + 1, y + 1, 0x808080, 0.6);
+    } else p.blend(x, y + 1, 0x808080, 0.5);
+  }
+}
+
+/**
+ * A mushroom's stem. Across is round it; down is from its top to the ground. Pale fibres running its length, a
+ * ragged skirt hanging a little under the cap, scuffs lower down, and earth-dark at its foot.
+ */
+function paintMushroomStem(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x6a6258, 0x8a8074, 0xa89e90, 0xc6bcac, 0xe2dacc, 0xf6f0e6];
+  const fibre = Array.from({ length: S }, () => rand());
+  const f = fbm(S, rand, 4, 3);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const down = y / S;
+      let v = 0.62 + (fibre[x] - 0.5) * 0.3 + (f[y * S + x] - 0.5) * 0.18 - 0.1 * down;
+      if (down > 0.82) v -= (down - 0.82) * 2.4;
+      p.set(x, y, ramp(v, pal, x, y, 0.16));
+    }
+  }
+  // The skirt: a pale ragged band, a shadow under it.
+  for (let x = 0; x < S; x++) {
+    const drop = 5 + Math.floor(fibre[x] * 3);
+    for (let y = 4; y < 4 + drop - 3; y++) p.blend(x, y, 0xf6f0e6, 0.75);
+    p.blend(x, 4 + drop - 3, 0x4a443c, 0.6);
+    p.blend(x, 4 + drop - 2, 0x6a6258, 0.35);
+  }
+  // Scuffs and flecks.
+  for (let i = 0; i < 26; i++) {
+    const x = Math.floor(rand() * S);
+    const y = 10 + Math.floor(rand() * (S - 12));
+    const len = 1 + Math.floor(rand() * 3);
+    for (let k = 0; k < len; k++) p.blend(x, y + k, 0x4a443c, 0.5);
+  }
+}
+
+/**
  * Cave: bare rock, lying in beds. Blue-grey; the beds run across it and dip a little, a dark seam between one and the
  * next with a lip of light under it; a few cracks; damp. (Nothing in it glows. What glows in a cave is PUT ON the
  * rock, in clumps, each in its own place: painted into a tile it came round again every few steps, like wallpaper.)
@@ -1785,6 +2041,12 @@ const DEFS = {
   frostCobbles: { size: 32, seed: 802, paint: paintFrostCobbles },
   frostPipe: { size: 32, seed: 803, paint: paintFrostPipe },
   icicles: { size: 32, seed: 804, paint: paintIcicles },
+  scorpShell: { size: 64, seed: 821, paint: paintScorpShell },
+  scorpTail: { size: 32, seed: 822, paint: paintScorpTail },
+  scorpClaw: { size: 32, seed: 823, paint: paintScorpClaw },
+  scorpLamp: { size: 32, seed: 824, paint: paintScorpLamp },
+  mushroomCap: { size: 64, seed: 825, paint: paintMushroomCap },
+  mushroomStem: { size: 32, seed: 826, paint: paintMushroomStem },
   caveRock: { size: 64, seed: 811, paint: paintCaveRock },
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
   glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },

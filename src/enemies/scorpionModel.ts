@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { SCORPION, type ScorpionState } from './scorpion';
 import { flat, horn, loft } from './widowModel';
 
@@ -15,9 +16,9 @@ import { flat, horn, loft } from './widowModel';
  * bent to reach there, its joints all the same angle one to the next (`tailJoints`), and the lamp's light in the room
  * is put at that point by the game. The ring on the floor is where the rules say the sting will land, and as wide.
  */
+/** (Its pictures carry its colour: `scorpShell`, `scorpTail`, `scorpClaw`. What is painted under them only shades it.) */
 const C = {
-  shell: 0x3a2c44, shellDark: 0x241a2c, plate: 0x4a3856, under: 0x18121c, leg: 0x2c2234, legTip: 0x5c4c66,
-  claw: 0x44334e, clawTip: 0x7a6884, eye: 0x100c14,
+  shell: 0xffffff, under: 0xc8c0cc, leg: 0xd0c8d6, legTip: 0xfff4ff, claw: 0xffffff, finger: 0xe8dcd4, tail: 0xffffff, tailUnder: 0xb8b0be,
   // (Its lamp is not shaded by the room: dark, a dull unlit ember of its colour; lit, its colour; hot, nearly white.)
   lit: 0x4dffc8,
 };
@@ -109,15 +110,18 @@ function bar(a: THREE.Vector3, b: THREE.Vector3, r0: number, r1: number, sides: 
   g.translate(a.x, a.y, a.z);
   return g;
 }
-/** Several shapes as one. */
+/** Several shapes as one (their pictures' places with them). */
 function join(...parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const pos: number[] = [];
+  const uv: number[] = [];
   for (const p of parts) {
     const g = p.index ? p.toNonIndexed() : p;
     pos.push(...(g.attributes.position.array as ArrayLike<number> as number[]));
+    uv.push(...(g.attributes.uv.array as ArrayLike<number> as number[]));
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
   geo.computeVertexNormals();
   return geo;
 }
@@ -141,9 +145,14 @@ interface Arm {
 export class ScorpionModel {
   readonly root = new THREE.Group();
   private readonly body = new THREE.Group();
-  private readonly mat = createPs1Material({ lit: true, shine: 0.3 });
+  /** Its shell, its tail and legs, its hands: each lit by the room, each with its picture. */
+  private readonly mat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('scorpShell') });
+  private readonly tailMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('scorpTail') });
+  private readonly clawMat = createPs1Material({ lit: true, shine: 0.35, tex: getTexture('scorpClaw') });
   /** Its lamp: lit from inside, so it is not shaded by the room. Its colour is its light. */
   private readonly lamp = new THREE.MeshBasicMaterial({ color: C.lit });
+  /** (Its bulb: the same light, through its veined glass.) */
+  private readonly bulbMat = new THREE.MeshBasicMaterial({ color: C.lit, map: getTexture('scorpLamp') });
   private readonly haloMat: THREE.SpriteMaterial;
   private readonly markMat: THREE.MeshBasicMaterial;
   private readonly fillMat: THREE.MeshBasicMaterial;
@@ -182,8 +191,8 @@ export class ScorpionModel {
       { z: 0.4, rx: 0.43, ry: 0.18, y: 0.35 },
       { z: 0.64, rx: 0.27, ry: 0.12, y: 0.33 },
     ], 6, 1));
-    // (Plates across its back, each a shade from the next; pale along its rim; dark underneath.)
-    paintBy(shell, (x, y, z) => (y < 0.33 ? C.under : Math.abs(x) > 0.3 ? C.plate : Math.floor((z + 0.7) / 0.27) % 2 === 0 ? C.shell : C.shellDark));
+    // (Its plates, keels and grains are in its picture; under it, it is in shadow.)
+    paintBy(shell, (_x, y) => (y < 0.33 ? C.under : C.shell));
     this.body.add(new THREE.Mesh(shell, this.mat));
     // (Two small eyes on its front, and the lamp's colour caught in them.)
     for (const s of [-1, 1]) {
@@ -194,13 +203,14 @@ export class ScorpionModel {
 
     // ---- Its legs: four a side, each one bent piece ----
     const legGeo = paintBy(join(bar(new THREE.Vector3(), KNEE, 0.06, 0.045, 4), bar(KNEE, FOOT, 0.045, 0.014, 4)), (x) => (x > 0.62 ? C.legTip : C.leg));
+    // (A leg's picture is the tail's, a joint of it to each of its two lengths.)
     for (const side of [-1, 1]) {
       LEGS.forEach(([z, splay], i) => {
         const swing = new THREE.Group();
         swing.position.set(side * 0.3, HIP, z);
         const lift = new THREE.Group();
         swing.add(lift);
-        lift.add(new THREE.Mesh(legGeo, this.mat));
+        lift.add(new THREE.Mesh(legGeo, this.tailMat));
         this.body.add(swing);
         this.legs.push({ swing, lift, side, splay, set: (i + (side > 0 ? 0 : 1)) % 2 });
       });
@@ -211,7 +221,7 @@ export class ScorpionModel {
       const arm = new THREE.Group();
       arm.position.set(side * 0.2, 0.34, 0.5);
       const elbow = new THREE.Vector3(side * 0.4, 0.03, 0.32);
-      arm.add(new THREE.Mesh(paintBy(bar(new THREE.Vector3(), elbow, 0.075, 0.06, 5), () => C.claw), this.mat));
+      arm.add(new THREE.Mesh(paintBy(bar(new THREE.Vector3(), elbow, 0.075, 0.06, 5), () => C.claw), this.tailMat));
       const hand = new THREE.Group();
       hand.position.copy(elbow);
       hand.rotation.y = -side * 0.4;
@@ -223,8 +233,8 @@ export class ScorpionModel {
         { z: 0.5, rx: 0.06, ry: 0.05, y: -0.005 },
         { z: 0.72, rx: 0.014, ry: 0.014, y: -0.01 },
       ], 5, 1));
-      paintBy(palm, (_x, _y, z) => (z > 0.5 ? C.clawTip : C.claw));
-      hand.add(new THREE.Mesh(palm, this.mat));
+      paintBy(palm, () => C.claw);
+      hand.add(new THREE.Mesh(palm, this.clawMat));
       // (The finger: hinged on the outer side of the palm, its point forward, bowed outward.)
       const finger = new THREE.Group();
       finger.position.set(side * 0.12, 0.01, 0.38);
@@ -232,7 +242,10 @@ export class ScorpionModel {
       fg.rotateZ((side * Math.PI) / 2);
       fg.rotateY(Math.PI);
       fg.translate(0, 0, 0.34);
-      finger.add(new THREE.Mesh(paintBy(flat(fg), (_x, _y, z) => (z > 0.16 ? C.clawTip : C.claw)), this.mat));
+      // (Its picture: the finger's end of the hand's, the point of the horn at the picture's dark point.)
+      const fuv = fg.attributes.uv;
+      for (let i = 0; i < fuv.count; i++) fuv.setY(i, 1 - fuv.getY(i) * 0.42);
+      finger.add(new THREE.Mesh(paintBy(flat(fg), () => C.finger), this.clawMat));
       hand.add(finger);
       arm.add(hand);
       this.body.add(arm);
@@ -247,8 +260,8 @@ export class ScorpionModel {
         { z: 0.84, rx: thick * 0.92, ry: thick * 0.85, y: 0 },
         { z: 1, rx: thick * 0.5, ry: thick * 0.46, y: 0 },
       ], 5, 1));
-      paintBy(g, (_x, y, z) => (y < -thick * 0.3 ? C.under : z > 0.8 || z < 0.2 ? C.shellDark : C.shell));
-      const m = new THREE.Mesh(g, this.mat);
+      paintBy(g, (_x, y) => (y < -thick * 0.3 ? C.tailUnder : C.tail));
+      const m = new THREE.Mesh(g, this.tailMat);
       this.joints.push(m);
       this.root.add(m);
     }
@@ -258,7 +271,7 @@ export class ScorpionModel {
       { z: 0.07, rx: 0.15, ry: 0.15, y: 0 },
       { z: 0.19, rx: 0.14, ry: 0.14, y: 0 },
       { z: 0.27, rx: 0.05, ry: 0.05, y: 0 },
-    ], 6, 1)), this.lamp);
+    ], 6, 1)), this.bulbMat);
     this.barb = new THREE.Mesh(flat(horn(0.3, 0.06, 0.09)), this.lamp);
     this.root.add(this.bulb, this.barb);
     // (Its glow in the air round it.)
@@ -364,6 +377,8 @@ export class ScorpionModel {
     const k = Math.max(0, Math.min(1, L));
     this.lamp.color.copy(this.dark).lerp(this.lit, k);
     if (L > 1) this.lamp.color.lerp(new THREE.Color(0xffffff), Math.min(0.85, (L - 1) / 0.7));
+    // (The bulb's picture is darker than plain light: it is drawn half as bright again, so that it glows as the barb does.)
+    this.bulbMat.color.copy(this.lamp.color).multiplyScalar(1.5);
     this.haloMat.color.copy(this.lit).multiplyScalar(Math.min(0.6, 0.3 * L));
     this.halo.visible = L > 0.05;
     this.halo.position.set(0, P[last - 1][1], P[last - 1][0]);
@@ -379,7 +394,7 @@ export class ScorpionModel {
 
     this.flashAmount = Math.max(0, this.flashAmount - dt * 6);
     const f = this.flashAmount * 0.75;
-    (this.mat.uniforms.flash.value as THREE.Color).setRGB(f, f, f);
+    for (const m of [this.mat, this.tailMat, this.clawMat]) (m.uniforms.flash.value as THREE.Color).setRGB(f, f, f);
     this.root.updateMatrixWorld(true);
   }
 

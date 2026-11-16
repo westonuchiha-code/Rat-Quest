@@ -15,7 +15,7 @@ import { glowCave, GLOWCAVE, CAP_WALK, WALK_CAP, WALK_STEM, WALK_PRIZES } from '
 import { garden, GARDEN } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
-import { getTexturePixels } from '../src/render/textures';
+import { getTexture, getTexturePixels } from '../src/render/textures';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -235,6 +235,33 @@ const spikes = def.decor.filter((d) => d.kind === 'stalactite');
   // (Whatever is within the furthest a double jump carries him: fifteen.)
   const tallest = Math.max(...others.filter((b) => Math.hypot(Math.max(b.x0 - walk[4].x, 0, walk[4].x - b.x1), Math.max(b.z0 - walk[4].z, 0, walk[4].z - b.z1)) < 15).map((b) => b.y1));
   check('the last cap is higher than he can get from anything else within a double jump of it: over a double jump and a caught edge from the tallest such thing', walk[4].top > tallest + (CEILING_CLEAR - R.height) + 1.25 + 0.05, `the tallest other thing ${tallest.toFixed(2)}, the last cap ${walk[4].top}`);
+}
+
+// ---- The mushrooms' pictures ----
+{
+  const cap = getTexturePixels('mushroomCap');
+  let grey = true;
+  for (let i = 0; i < cap.size * cap.size; i++) if (cap.data[i * 4] !== cap.data[i * 4 + 1] || cap.data[i * 4] !== cap.data[i * 4 + 2]) grey = false;
+  // (Down the picture: its top to three fifths, then its gills. The gills are blades: light and dark side by side.)
+  const row = (y: number): number[] => Array.from({ length: cap.size }, (_, x) => cap.data[(y * cap.size + x) * 4]);
+  const swing = (r: number[]): number => r.reduce((a, v, i) => a + (i ? Math.abs(v - r[i - 1]) : 0), 0) / r.length;
+  const mean = (r: number[]): number => r.reduce((a, v) => a + v, 0) / r.length;
+  check('a cap\'s picture is in greys (the mushroom gives it its colour): pale on top, paler at the crown than by the rim, and gilled underneath', grey && mean(row(4)) > mean(row(Math.floor(cap.size * 0.55))) && mean(row(4)) > 150 && swing(row(Math.floor(cap.size * 0.8))) > swing(row(8)) * 2, `crown ${mean(row(4)).toFixed(0)}, rim ${mean(row(Math.floor(cap.size * 0.55))).toFixed(0)}`);
+  const stem = getTexturePixels('mushroomStem');
+  const srow = (y: number): number => Array.from({ length: stem.size }, (_, x) => stem.data[(y * stem.size + x) * 4]).reduce((a, v) => a + v, 0) / stem.size;
+  check('a stem\'s picture is pale, with its skirt near the top and earth-dark at its foot', srow(5) > srow(16) && srow(stem.size - 1) < srow(16) * 0.75, `skirt ${srow(5).toFixed(0)}, middle ${srow(16).toFixed(0)}, foot ${srow(stem.size - 1).toFixed(0)}`);
+  // As built: caps and stems wear them.
+  const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
+  let caps = 0;
+  let stems = 0;
+  ch.group.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mat = mesh.material as THREE.MeshBasicMaterial & { uniforms?: { tex?: { value: THREE.Texture } } };
+    if (mat.map === getTexture('mushroomCap')) caps++;
+    if (mat.uniforms?.tex?.value === getTexture('mushroomStem')) stems++;
+  });
+  check('every mushroom in the cave wears them: a cap and a stem each', caps === mushrooms.length && stems === mushrooms.length, `${caps} caps, ${stems} stems, ${mushrooms.length} mushrooms`);
 }
 
 // ---- No stalactite's point is where he can get to ----

@@ -1095,7 +1095,13 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - The model reuses the Widow's shape helpers (`flat`, `loft`, `horn`, now exported from widowModel.ts). `tailJoints`
   solves the tail: equal bend at every link, found by halving, clockwise (up and over forward) ALWAYS, so every pose
   the rules give must have the barb ahead of the root or it would arch through the floor.
-- Sounds are borrowed (main.ts `beastSounds`): antClick, fireflyBlink, whoosh, chitinTap, antSnap, antHurt,
-  fireflyFade, plateKnock, roachDie.
-- Not registered: builder piece (`ENEMY_PIECES`), sticker, polycount list, Tweaks.
+- Its own sounds: scorpRasp (alert; quick, the claws' tell), scorpCharge (the sting's tell, 0.7 s like the tell;
+  played fast and quiet when its lamp relights), scorpSting, scorpSnap, scorpHurt, scorpDouse, scorpDie.
+- Pictures: scorpShell 64, scorpTail 32, scorpClaw 32 (ps1 lit materials `mat`, `tailMat`, `clawMat`), scorpLamp 32
+  (MeshBasic `bulbMat`, in greys, drawn 1.5 times as bright as the barb's plain light). `join()` in the model keeps
+  the pieces' picture places (uv). The finger's uv is turned so the horn's point is at the claw picture's dark end.
+- Builder piece 'scorpion' (custom.ts, builder.ts, place3d.ts): a patch 9 each way, facing as set. In polycount.
+- No sticker on purpose (see START-HERE). No Tweaks sliders.
+- Mushroom pictures (chamber.ts): cap = MeshBasic with `mushroomCap` map times the per-face colours, its uv doubled
+  round; stem = its own lit material with `mushroomStem`, uv flipped so the picture's top is the stem's top.
 

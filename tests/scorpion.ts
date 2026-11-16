@@ -16,6 +16,8 @@ import type { Foe } from '../src/enemies/foe';
 import { makeAabb } from '../src/world/collision';
 import { TUNING } from '../src/data/tuning';
 import { glowCave, GLOWCAVE } from '../src/levels/glowcave';
+import { getTexturePixels } from '../src/render/textures';
+import { ENEMY_PIECES, compileCustom, emptyCustom } from '../src/levels/custom';
 
 const DT = 1 / 60;
 const S = SCORPION;
@@ -425,6 +427,45 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
   check('two of them live in the Glow Cave, each a lamp of its own colour, and neither a colour the glow bugs have', ss.length === 2 && new Set(ss.map((e) => e.color ?? 0x4dffc8)).size === 2 && ss.every((e) => !bugs.some((b) => b.color === e.color)), ss.map((e) => (e.color ?? 0x4dffc8).toString(16)).join());
   check('...each starts on open floor, clear of ledges and stems, with the floor of the room for its patch', ss.every((e) => (e.y ?? 0) === 0 && !inside(e.x, e.z) && !!e.arena && e.arena.x0 >= -GLOWCAVE.halfX && e.arena.x1 <= GLOWCAVE.halfX && e.arena.z0 >= -GLOWCAVE.halfZ && e.arena.z1 <= GLOWCAVE.halfZ));
   check('...they are there to be fought, not a goal, and do not come back', def.goals.length === 0 && ss.every((e) => !e.respawn));
+}
+
+// ---- Its pictures, and its place in the level editor ----
+{
+  const m = new ScorpionModel();
+  const tex = new Set<string>();
+  let plain = 0;
+  m.root.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const mat = mesh.material as THREE.ShaderMaterial & { uniforms?: { tex?: { value: THREE.Texture } } };
+    if (!mat.uniforms?.tex) return;
+    const t = mat.uniforms.tex.value;
+    if (t.image.width <= 1) plain++;
+    else tex.add(`${t.image.width}`);
+    if (!mesh.geometry.attributes.uv) plain++;
+  });
+  check('every piece of it the room lights wears a picture, and has the picture\'s places on it: none is plain colour', plain === 0 && tex.size >= 2, `${plain} plain`);
+  for (const [name, size] of [['scorpShell', 64], ['scorpTail', 32], ['scorpClaw', 32], ['scorpLamp', 32]] as Array<['scorpShell' | 'scorpTail' | 'scorpClaw' | 'scorpLamp', number]>) {
+    const px = getTexturePixels(name);
+    let lo = 255;
+    let hi = 0;
+    for (let i = 0; i < px.size * px.size; i++) {
+      const v = Math.max(px.data[i * 4], px.data[i * 4 + 1], px.data[i * 4 + 2]);
+      lo = Math.min(lo, v);
+      hi = Math.max(hi, v);
+    }
+    check(`${name}: its picture is there, the size it should be, with light and dark in it`, px.size === size && hi - lo > 90, `${lo}..${hi}`);
+  }
+  const lamp = getTexturePixels('scorpLamp');
+  let grey = true;
+  for (let i = 0; i < lamp.size * lamp.size; i++) if (lamp.data[i * 4] !== lamp.data[i * 4 + 1] || lamp.data[i * 4] !== lamp.data[i * 4 + 2]) grey = false;
+  check('its lamp\'s picture is in greys: the lamp gives it its colour', grey);
+  check('it is a piece in the level editor, and what the editor places is one, facing the way it is set, with floor enough to come round him', ENEMY_PIECES.includes('scorpion') && (() => {
+    const lvl = emptyCustom();
+    lvl.pieces.push({ t: 'scorpion', x0: 3, z0: -2, x1: 3, z1: -2, top: 0, dir: 'e' });
+    const e = compileCustom(lvl).enemies.find((q) => q.type === 'scorpion');
+    return !!e && e.x === 3 && e.z === -2 && Math.abs((e.facing ?? 9) - Math.PI / 2) < 1e-6 && e.arena!.x1 - e.arena!.x0 >= 2 * (S.darkRing + 2);
+  })());
 }
 
 console.log(failures === 0 ? '\nscorpion: all passed' : `\nscorpion: ${failures} FAILED`);

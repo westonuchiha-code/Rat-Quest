@@ -428,8 +428,18 @@ tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's sou
     hand and a finger, eight one-piece legs. Its tail is bent to put the barb's POINT where the rules have it
     (`tailJoints`: every link turned the same). Seen from all sides in every pose before it went in:
     `#view&who=scorpion&state=stalk|stingWind|sting|stuck|snapWind|snap|dark|sprawl` (`&color=ffb03a`, `&walk=1`).
-  - NOT DONE for it: sounds of its own (it borrows the ant's and the firefly's), a sticker, a builder piece,
-    Tweaks sliders. Nobody has fought it by hand.
+  - **Textured (2026-11-16, his ask: "do a texture pass also the Scorpion and the more recent models ... I haven't
+    seen this scorpion with a texture yet"):** `scorpShell` (seven plates and the head shield, keels, grains, a
+    banded belly), `scorpTail` (keeled joints with a pale collar; the legs wear it too), `scorpClaw` (a grained palm,
+    horn-brown fingers with a row of teeth), `scorpLamp` (veined glass, in greys). **The same pass gave the
+    mushrooms pictures: `mushroomCap` (fibres, warts, gills underneath; in greys, the mushroom gives the colour) and
+    `mushroomStem` (fibres, a skirt, earth at the foot).** A NEW MODEL IS NOT DONE UNTIL IT IS TEXTURED: he was
+    shown the scorpion in plain colours first and asked for this.
+  - It has sounds of its own now (`scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`,
+    `scorpDie`) and is a piece in the level builder ('scorpion').
+  - NOT DONE for it: a sticker (left out on purpose: it lives only in a test room, and a sticker nobody can earn in
+    the game would leave the book unfinishable; add `foe:scorpion` when a real level has one), Tweaks sliders.
+    Nobody has fought it by hand, and nobody has heard its sounds.
 - **Everything in the cave starts further from the door than it notices him from** (a test): he comes in to a
   quiet cave. With three bombers and two scorpions awake at once the floor is very busy: if he finds it too much
   for looking at one creature at a time, take bugs out before changing any creature's rules.
