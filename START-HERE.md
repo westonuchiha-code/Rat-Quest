@@ -486,8 +486,10 @@ like some bursted CO2 pipes on the walls and there's [icicles] coming off the ce
   whoever is on the ice in its gas is carried across with it, up to the speed it blows. On the cobbles he stands
   against it (his own stopping is stronger than its push); between gusts, and beside one, nothing moves him. What
   is drawn is what pushes: the puffs and the push go by the same rule (`gasAt`) on the same clock. Four gusts,
-  each on its own beat (5 to 7 seconds), none crossing a block of ice. NOT DONE: a sound for a gust; he has not
-  seen or felt it.
+  each on its own beat (5 to 7 seconds), none crossing a block of ice. THEY ARE HEARD: the pipe cracks and rushes
+  as it lets go (`gasBurst`), which is two seconds and more before its gas is on the ice, and gas blowing hisses
+  (`gasHiss`, looped, as loud as the nearest gas is near). Both caps can still be had whenever he sets out (a test):
+  the gusts are a matter for CROSSING the channel, not for the pockets. He has not seen, felt or heard any of it.
 - NOT in it: any creature; the walls have no frost in
   patches or icicle curtains of their own (a patch painted into the brick came round like wallpaper, so it is
   plain); nobody has slid on the ice by hand.

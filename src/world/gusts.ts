@@ -37,11 +37,15 @@ const mod = (a: number, n: number): number => ((a % n) + n) % n;
 
 /** A level's gusts: its jets that push. */
 export function gustsOf(decor: readonly Decor[]): Gust[] {
+  return jetsOf(decor).filter((j) => j.push > 0);
+}
+/** Every jet of a level, pushing or not (those that do not have `push` 0): for what is heard of them. */
+export function jetsOf(decor: readonly Decor[]): Gust[] {
   const out: Gust[] = [];
   for (const d of decor) {
-    if (d.kind !== 'jet' || !d.push) continue;
+    if (d.kind !== 'jet') continue;
     const len = Math.hypot(...d.dir) || 1;
-    out.push({ x: d.x, y: d.y, z: d.z, dx: d.dir[0] / len, dy: d.dir[1] / len, dz: d.dir[2] / len, length: d.length, width: d.width ?? d.length * 0.55, push: d.push, every: d.every ?? 0, on: d.on ?? 0, delay: d.delay ?? 0 });
+    out.push({ x: d.x, y: d.y, z: d.z, dx: d.dir[0] / len, dy: d.dir[1] / len, dz: d.dir[2] / len, length: d.length, width: d.width ?? d.length * 0.55, push: d.push ?? 0, every: d.every ?? 0, on: d.on ?? 0, delay: d.delay ?? 0 });
   }
   return out;
 }
@@ -58,6 +62,19 @@ export function gasAt(j: { every: number; on: number; delay: number }, time: num
 /** How wide a jet's gas is `along` it: narrow at the mouth, `width` at its end. */
 export function gasWidth(j: { width: number; length: number }, along: number): number {
   return j.width * (0.14 + 0.86 * Math.max(0, Math.min(1, along / j.length)));
+}
+
+/**
+ * How far a place is from the nearest of a jet's gas, as it is now: from the line of the jet, wherever along it there
+ * is gas. Infinity if it has none out at the moment.
+ */
+export function gasNear(j: Gust, time: number, x: number, y: number, z: number): number {
+  let best = Infinity;
+  for (let along = 0; along <= j.length + 1e-9; along += 0.5) {
+    if (!gasAt(j, time, along)) continue;
+    best = Math.min(best, Math.hypot(x - (j.x + j.dx * along), y - (j.y + j.dy * along), z - (j.z + j.dz * along)));
+  }
+  return best;
 }
 
 /** The gust that has a body in it now (its middle at x, y, z; `r` round), if any. */

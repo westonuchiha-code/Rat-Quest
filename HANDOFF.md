@@ -1125,4 +1125,6 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   squared on stone, a tenth of that on ice) is taken off in that update, a push of 12 is nothing on stone and a
   shove on ice. In the level: `NORTH_BURSTS`, `SOUTH_BURSTS`, `FALL`, `GUST` in coldmain.ts; each burst is two jets,
   the fall (drawn only) and the gust (with `push`, and `delay` = the fall's travel time).
+- Gas sounds (main.ts `soundWorld`): `jets` = `jetsOf(def.decor)` (all jets); a jet with `delay` 0 plays `gasBurst`
+  when `gasAt(j, worldClock, 0)` turns true; `gasHiss` loops at a volume from `gasNear` (the nearest gas of any jet).
 

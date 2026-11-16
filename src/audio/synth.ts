@@ -217,6 +217,9 @@ export const SFX_NAMES = [
   // tell, rising all the way); the whip of the tail and the barb's crack into the floor; its claws shutting, twice
   // over; a scraped squeal when it is struck; its lamp snuffed as it runs; and its end.
   'scorpRasp', 'scorpCharge', 'scorpSting', 'scorpSnap', 'scorpHurt', 'scorpDouse', 'scorpDie',
+  // Gas from a burst pipe: the crack of the seam and the rush of it letting go (heard as a gust begins: the gas is
+  // then a couple of seconds from the floor), and the hiss of gas blowing (looped, as loud as the gas is near).
+  'gasBurst', 'gasHiss',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -888,6 +891,22 @@ const RECIPES: Record<SfxName, () => Sample> = {
       return comb(t) * (1 - u) ** 1.2 * 1.2 + sine(c.osc(0, hz)) * 0.35 * (1 - u) ** 2;
     };
   }, { bits: 7 }),
+  // A pipe letting go: the crack of its seam, and the gas rushing out, hard at first and thinning as it empties.
+  gasBurst: () => draw(1.6, RATE_HI, 251, (c) => {
+    const seam = knock(880, RATE_HI, 0.972);
+    const ring = knock(2300, RATE_HI, 0.985);
+    return (t) => {
+      const x = t < 0.004 ? c.r() * 2 - 1 : 0;
+      const n = c.r() * 2 - 1;
+      const rush = (n - c.lp(0, n, 0.1 + 0.22 * Math.exp(-t * 3))) * Math.min(1, t / 0.02) * Math.exp(-t * 2.4);
+      return seam(x) * 7 + ring(x) * 3 + rush * 0.9;
+    };
+  }, { bits: 7 }),
+  // Gas blowing: a steady breathy hiss with a slow waver in it. A loop.
+  gasHiss: () => draw(1.2, RATE_HI, 252, (c) => (t) => {
+    const n = c.r() * 2 - 1;
+    return (n - c.lp(0, n, 0.2)) * (0.8 + 0.2 * wob(t, 1.2, 2)) + c.lp(1, n, 0.05) * 0.6 * (0.75 + 0.25 * wob(t, 1.2, 1));
+  }, { bits: 7, loop: true, gain: 0.5 }),
   widowScream: () => draw(1.5, RATE_HI, 225, (c) => (t) => {
     const u = t / 1.5;
     const hz = 240 + 260 * Math.min(1, u / 0.2) - 180 * Math.max(0, (u - 0.55) / 0.45) ** 1.5 + 30 * sine(c.osc(3, 17));

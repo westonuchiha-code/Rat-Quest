@@ -50,7 +50,7 @@ import { FIREFLY, Firefly } from './enemies/firefly';
 import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
-import { blow, gustsOf, type Gust } from './world/gusts';
+import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -936,6 +936,9 @@ function startGame(): void {
   };
   /** The level's gusts (jets of gas that push), and the clock they and their drawing both go by. */
   let gusts: Gust[] = [];
+  /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
+  let jets: Gust[] = [];
+  let jetOpen: boolean[] = [];
   let worldClock = 0;
   const lanterns = new WeakMap<Firefly, FxLight>();
   const stingLamps = new WeakMap<Scorpion, FxLight>();
@@ -1437,6 +1440,8 @@ function startGame(): void {
     ps1Uniforms.fogColor.value.set(def.fog ?? 0x0b1410);
     ps1Uniforms.ambient.value = def.ambient ?? 1;
     gusts = gustsOf(def.decor);
+    jets = jetsOf(def.decor);
+    jetOpen = [];
     applySight();
     renderer.setClearColor(ps1Uniforms.fogColor.value);
     if (!keep) tracker.reset(def.id);
@@ -1781,6 +1786,17 @@ function startGame(): void {
       ffv = Math.max(ffv, nearness(Math.hypot(e.x - player.position.x, e.y - player.position.y, e.z - player.position.z), 15) * (e.low ? 0.6 : e.attacking ? 1 : 0.8));
     }
     audio.loop('fireflyHum', ffv * ffv * 0.5);
+    // Gas: the crack and rush of a pipe letting go (the warning of a gust: its gas is then a couple of seconds from
+    // the floor), and a hiss as loud as the nearest gas is near.
+    let gasV = 0;
+    jets.forEach((j, i) => {
+      const open = gasAt(j, worldClock, 0);
+      // (Where a jet takes up from another, it is the first that is the pipe: only that one cracks.)
+      if (open && jetOpen[i] === false && j.delay === 0) audio.play('gasBurst', { vol: Math.max(0.25, hearAt(j.x, j.z, 26)), rate: roll(0.94, 1.06), priority: 6 });
+      jetOpen[i] = open;
+      gasV = Math.max(gasV, nearness(gasNear(j, worldClock, player.position.x, player.position.y + TUNING.rat.height / 2, player.position.z), 9));
+    });
+    audio.loop('gasHiss', gasV * gasV * 0.4);
     // His shield on the stone, while he rides it on the ground: louder the faster he goes.
     if (rideLandIn > 0 && (rideLandIn -= dt) <= 0 && player.riding) {
       audio.play('ridePop', { vol: 0.7, rate: 0.8, priority: 6 });

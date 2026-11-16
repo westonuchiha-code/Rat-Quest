@@ -10,7 +10,7 @@ import { PlayerController, PlayerInput } from '../src/player/controller';
 import { aabbOf } from '../src/world/collision';
 import { ceilingOf, CEILING_CLEAR, ICE_SPIKE, iceSpikeSolids } from '../src/world/layout';
 import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
-import { blow, gasAt, gasWidth, gustOn, gustsOf, JET_SPEED } from '../src/world/gusts';
+import { blow, gasAt, gasNear, gasWidth, gustOn, gustsOf, jetsOf, JET_SPEED } from '../src/world/gusts';
 import { garden, GARDEN } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
@@ -343,6 +343,48 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     });
   }
   check('what is drawn is what pushes: at every moment looked at, wherever a puff of a gust is drawn the rule has gas there and a body there is in the gust', drawn > 150 && wrong === 0, `${drawn} puffs looked at, ${wrong} wrong`);
+}
+
+// ---- The caps can still be had, the gusts blowing ----
+{
+  const gusts = gustsOf(def.decor);
+  const caps = [def.collectibles.find((c) => c.id === ICE_PRIZES.south)!, def.collectibles.find((c) => c.id === ICE_PRIZES.north)!];
+  /** He goes for a cap from `from`, setting out at `t0`, every gust blowing as it does in the game. How long he took, or -1. */
+  const go = (c: { x: number; y: number; z: number; id: string }, from: [number, number], t0: number): number => {
+    const p = new PlayerController(new THREE.Vector3(from[0], 0, from[1]));
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    const t = tracker();
+    for (let i = 0; i < 900; i++) {
+      blow(gusts, t0 + i * DT, p.position, p.velocity, DT, R.radius, R.height);
+      const dx = c.x - p.position.x;
+      const dz = c.z - p.position.z;
+      const want = new THREE.Vector3(dx - p.velocity.x * 0.6, 0, dz - p.velocity.z * 0.6);
+      p.update(DT, inp({ move: Math.hypot(dx, dz) > 0.1 ? want.normalize() : new THREE.Vector3(), run: false }), cs);
+      if (t.tryCollect('coldmain', p.position, R.radius, R.height).some((q) => q.id === c.id)) return i * DT;
+    }
+    return -1;
+  };
+  // Whenever he sets out, within a gust's whole round: he gets there (it may take him longer when the gas is against him).
+  const tries = (c: { x: number; y: number; z: number; id: string }, from: [number, number], every: number): number[] => Array.from({ length: 12 }, (_, k) => go(c, from, 20 + (k / 12) * every));
+  const south = tries(caps[0], [caps[0].x, -1.5], 5.2);
+  const north = tries(caps[1], [caps[1].x - 3.5, caps[1].z + 0.3], 6.6);
+  check('the south cap can be had with the gusts blowing, whenever in a gust\'s round he sets out (the gust there blows INTO its pocket)', south.every((t) => t >= 0), `seconds taken: ${south.map((t) => t.toFixed(1)).join(' ')}`);
+  check('the north cap can be had with the gusts blowing, whenever he sets out (the gust there blows across its pocket, but he is on the cap before it has carried him off)', north.every((t) => t >= 0), `seconds taken: ${north.map((t) => t.toFixed(1)).join(' ')}`);
+}
+
+// ---- What is heard of the gas ----
+{
+  const all = jetsOf(def.decor);
+  const pipesOpen = all.filter((j) => j.delay === 0);
+  check('every jet of the room is known for its sound, and the four that are the pipes themselves (no other jet takes up from them) are the ones that crack as they let go', all.length === 8 && pipesOpen.length === 4 && pipesOpen.every((j) => j.push === 0 && j.y > 4));
+  // (The game cracks the pipe when its gas first leaves it; the gust is on the ice when the low jet's gas is.)
+  const warn = FALL.length / JET_SPEED;
+  check('the crack comes when the gas leaves the pipe: two seconds and more before any of it is on the ice', warn > 2 && gustsOf(def.decor).every((g) => Math.abs(g.delay - warn) < 1e-9), `${warn.toFixed(2)} s of warning`);
+  const g = gustsOf(def.decor).find((q) => q.x === -0.5)!;
+  const mid = G.channel + 0.4;
+  const there = g.delay + mid / JET_SPEED + 0.3;
+  const gone = g.delay + g.length / JET_SPEED + g.on + 0.3;
+  check('the hiss goes by how near the nearest gas is: in a gust it is at his ear, across the room it is far, and with no gas out there is none', gasNear(g, there, g.x, 0.9, 0) < 0.6 && gasNear(g, there, g.x + 9, 0.9, 0) > 8 && gasNear(g, gone, g.x, 0.9, 0) === Infinity);
 }
 
 // ---- The tiles ----
