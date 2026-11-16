@@ -11,7 +11,7 @@ import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
-import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, mushroomCap } from './layout';
+import { Box, Decor, GateSpec, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, mushroomCap, mushroomStem } from './layout';
 import { TUNING } from '../data/tuning';
 
 /** A portcullis in the room. `open()` lifts it; once it is up its collider is gone. */
@@ -983,16 +983,20 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // on where the solid of it is. A small one, which he brushes through, has a lean to it.)
       const c = new THREE.Color(d.color);
       const h = d.size;
-      const r = mushroomCap(d.x, d.z, h);
+      const r = mushroomCap(d.x, d.z, h, d.cap);
       const lean = h >= MUSHROOM.solid ? 0 : 0.12 * Math.sin(d.x * 5.3 + d.z * 2.9);
-      const stem = new THREE.CylinderGeometry(h * 0.07, h * 0.12, h * 0.86, 5, 1);
-      stem.translate(0, h * 0.43, 0);
+      const thick = mushroomStem(h, d.stem);
+      // (Its stem goes up into the hollow of its cap. Its cap is shaped by its own width: see MUSHROOM.)
+      const stemTop = h - r * 0.3;
+      const stem = new THREE.CylinderGeometry(thick * 0.58, thick, stemTop, 5, Math.max(1, Math.round(stemTop / 2.5)));
+      stem.translate(0, stemTop / 2, 0);
       bakeVertexColor(stem, new THREE.Color(0x8a8078).lerp(c, 0.3), false);
       const stalk = addMesh(stem, plainMat, d.x, d.y, d.z);
       stalk.rotation.set(lean, d.x * 2.3, lean * 0.6);
       // (Its cap: a row of rings from its crown down and out to its rim, then in underneath.)
-      const prof: Array<[number, number]> = [[0, 1], [0.5, 0.985], [0.85, 0.945], [1, 0.875], [0.93, 0.835], [0.2, 0.855]];
-      const pts = prof.map(([rr, yy]) => new THREE.Vector2(Math.max(0.001, rr * r), h * yy));
+      const DEEP = 0.351;
+      const prof: Array<[number, number]> = [[0, 0], [0.5, 0.032], [0.85, 0.117], [1, 0.266], [0.93, DEEP], [0.2, 0.309]];
+      const pts = prof.map(([rr, down]) => new THREE.Vector2(Math.max(0.001, rr * r), h - down * r));
       let cap: THREE.BufferGeometry = new THREE.LatheGeometry(pts, 7);
       cap = cap.toNonIndexed();
       cap.computeVertexNormals();
@@ -1001,10 +1005,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const crown = c.clone().lerp(new THREE.Color(0xffffff), 0.28);
       const rim = c.clone().multiplyScalar(0.62);
       const under = c.clone().multiplyScalar(0.18);
+      // (Which way the faces were wound: its first face is on its crown, and that one looks up.)
+      const outward = cap.attributes.normal.getY(0) < 0 ? -1 : 1;
       for (let i = 0; i < q.count; i += 3) {
         // (Each face one colour, by how high on the cap it is and whether it looks up or down.)
-        const fy = ((q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3 / h - 0.835) / 0.165;
-        const up = cap.attributes.normal.getY(i) > -0.2;
+        const fy = 1 - (h - (q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3) / (DEEP * r);
+        const up = cap.attributes.normal.getY(i) * outward > -0.2;
         const spot = up && fy > 0.5 && fy < 0.95 && (i / 3) % 5 === 1;
         const col = !up ? under : spot ? c.clone().lerp(new THREE.Color(0xffffff), 0.75) : rim.clone().lerp(crown, Math.max(0, Math.min(1, (fy - 0.3) / 0.7)) ** 1.5);
         for (let j = 0; j < 3; j++) cols.set([col.r, col.g, col.b], (i + j) * 3);
@@ -1014,10 +1020,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       top.position.set(d.x, d.y, d.z);
       top.rotation.copy(stalk.rotation);
       group.add(top);
-      halo(d.x, d.y + h * 0.9, d.z, r * 5, c, 0.34);
+      halo(d.x, d.y + h - r * 0.2, d.z, r * 5, c, 0.34);
       // (The tall one of a stand lights the place: a pool of its colour on the rock, the small ones round it in it.
       // Only the nearest few lights are drawn, so not every mushroom is one.)
-      if (h >= 1.5) lightDefs.push({ x: d.x, y: d.y + h * 0.8, z: d.z, r: 4.5 + h * 1.5, color: c, power: 0.85, flash: 0, flicker: 0.05, phase: d.x * 1.3 + d.z * 0.7 });
+      // (A very tall one lights no further than a tall one: its light is up at its cap.)
+      if (h >= 1.5) lightDefs.push({ x: d.x, y: d.y + h - r * 0.4, z: d.z, r: 4.5 + Math.min(h, 3) * 1.5, color: c, power: 0.85, flash: 0, flicker: 0.05, phase: d.x * 1.3 + d.z * 0.7 });
     } else if (d.kind === 'moss') {
       // A clump of glowing moss: two or three ragged lobes of it lying on the rock, each bright at its heart and dying
       // away to its edge; from a clump on a wall, threads hanging, a bead of light at the end of each.

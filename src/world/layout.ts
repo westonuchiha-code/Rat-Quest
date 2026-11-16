@@ -141,21 +141,35 @@ export function stoolSolids(x: number, y: number, z: number): Box[] {
 /**
  * A glowing mushroom (decor `mushroom`). One as tall as he is or taller is SOLID: its stem stops him, and its cap is a
  * thing to stand on (a level adds `mushroomSolids` for each). Smaller ones he brushes through, like weeds.
- * `stem`: half the solid stem's width, as a share of the mushroom's height. `under`, `top`: where the solid cap begins
- * and ends, the same way. `capSolid`: how much of the drawn cap's radius is solid (a square in a round cap).
+ * Its cap is shaped by its own width, not by how tall the mushroom is: `deep` is how far under its crown the solid cap
+ * begins and `top` how far under it the solid cap ends, as shares of the cap's radius; `capSolid` is how much of the
+ * drawn cap's radius is solid (a square in a round cap); `stemSolid` how much of the drawn stem's.
  */
-export const MUSHROOM = { solid: 1, stem: 0.11, under: 0.85, top: 0.985, capSolid: 0.7 } as const;
-/** How wide its cap is: its radius. (By where it stands, so that no two in a stand are quite alike.) */
-export function mushroomCap(x: number, z: number, size: number): number {
-  return size * (0.42 + 0.1 * Math.sin(x * 3.1 + z * 1.7));
+export const MUSHROOM = { solid: 1, deep: 0.32, top: 0.032, capSolid: 0.7, stemSolid: 0.92 } as const;
+/**
+ * How wide its cap is: its radius. Given (`cap`), or by its height and where it stands (so that no two in a stand are
+ * quite alike).
+ */
+export function mushroomCap(x: number, z: number, size: number, cap?: number): number {
+  return cap ?? size * (0.42 + 0.1 * Math.sin(x * 3.1 + z * 1.7));
 }
-export function mushroomSolids(x: number, y: number, z: number, size: number): Box[] {
+/** How thick its stem is at the ground: its radius there. Given (`stem`), or by its height. */
+export function mushroomStem(size: number, stem?: number): number {
+  return stem ?? size * 0.12;
+}
+/** Where he stands on it: the top of its solid cap. */
+export function mushroomTop(x: number, y: number, z: number, size: number, cap?: number): number {
+  return y + size - mushroomCap(x, z, size, cap) * MUSHROOM.top;
+}
+export function mushroomSolids(x: number, y: number, z: number, size: number, cap?: number, stem?: number): Box[] {
   if (size < MUSHROOM.solid) return [];
-  const s = size * MUSHROOM.stem;
-  const r = mushroomCap(x, z, size) * MUSHROOM.capSolid;
+  const s = mushroomStem(size, stem) * MUSHROOM.stemSolid;
+  const full = mushroomCap(x, z, size, cap);
+  const r = full * MUSHROOM.capSolid;
+  const under = y + size - full * MUSHROOM.deep;
   return [
-    { ...extent('stone', x - s, x + s, y, y + size * MUSHROOM.under, z - s, z + s), hidden: true },
-    { ...extent('stone', x - r, x + r, y + size * MUSHROOM.under, y + size * MUSHROOM.top, z - r, z + r), hidden: true },
+    { ...extent('stone', x - s, x + s, y, under, z - s, z + s), hidden: true },
+    { ...extent('stone', x - r, x + r, under, y + size - full * MUSHROOM.top, z - r, z + r), hidden: true },
   ];
 }
 
@@ -245,7 +259,8 @@ export type Decor =
   /** A cluster of glowing crystals growing from the floor at y, `size` tall, in a colour; it lights what is near. */
   | { kind: 'crystal'; x: number; y: number; z: number; size: number; color: number }
   /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
-  | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number }
+  /** `cap`: its cap's radius, `stem`: its stem's radius at the ground (each by its height if not given: see MUSHROOM). */
+  | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number; cap?: number; stem?: number }
   /**
    * A clump of glowing moss: on a wall, facing `yaw` (0 faces +z, a quarter turn faces +x), or lying on the ground
    * (`flat`). `size`: about half its width. `threads`: how many glowing threads hang from it. `light`: it lights the

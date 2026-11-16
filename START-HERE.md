@@ -399,9 +399,19 @@ tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's sou
   own colour and light less of the room than real fire (reach 5 not 7), so a dark place stays dark: plain orange
   fire at full reach is what drowned the first try. They are there to be fought; beating them is not a goal.
   See one: `#view&who=firefly&color=ff4aa8` (`&light=0` puts its lantern out).
+- **The Cap Walk (2026-11-16): `CAP_WALK` in glowcave.ts.** Five tall YELLOW mushrooms, each cap a jump from the
+  last and higher (tops 3.0, 4.9, 6.8, 8.7, 10.1), from the low step by the east wall round the south of the cave
+  to the north-west. Three things on it, and nothing else to find in the cave: a bottle cap on the fourth, a bottle
+  cap in the air over the long gap, a relic on the fifth. What the tests hold it to: the first four hops are each a
+  RUNNING jump (not one from a standstill), the last gap is crossed only by the second jump, and none of the three
+  can be had from the floor or from anything else in the cave.
+  **HE JUMPS FURTHER THAN IT LOOKS (measured for this, cap to cap, middle to middle): one running jump lands 8 off
+  at 2 up (9 on the level); the double jump 13 to 14; from the floor a double jump and a caught edge get him up
+  6.05.** The first lay-out, spaced by eye at 4 apart, was no course at all: every hop landed at any timing.
+  A mushroom's cap (`cap`) and stem (`stem`) can now be sized apart from its height; its cap's shape goes by its
+  own width. (And every cap had been coloured upside down, dark on top, since the first try: fixed.)
 - Not in it yet: other glowing creatures (he named none; ideas given him: scorpions, glow-worm threads, railroad
-  worms, headlight beetles, glowing millipedes), anything to collect, and anything that makes use of the caps as a
-  course.
+  worms, headlight beetles, glowing millipedes).
 **The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `iceWall`, `frostCobbles`,
 `frostPipe`, `icicles`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`. (Sheet tool:
 `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes

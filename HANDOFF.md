@@ -1075,4 +1075,13 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   it at `makeEmber` and `flames.add`). `FireflyModel(color)` lights its lantern and tints its hood. `EmberFx.look(color)`
   makes one set of materials a colour (cached): MeshBasic tongues, reach 5, power 0.75; no colour = the old look,
   untouched. `EmberFx.colours()` is for the tests. Viewer: `#view&who=firefly&color=<hex>&light=<0..1>`.
+- Mushroom shape (layout.ts): `MUSHROOM { solid, deep, top, capSolid, stemSolid }`, `mushroomCap(x, z, size, cap?)`,
+  `mushroomStem(size, stem?)`, `mushroomTop(x, y, z, size, cap?)` (where he stands), `mushroomSolids(x, y, z, size,
+  cap?, stem?)`. The cap's depth is a share of its RADIUS, not of the mushroom's height. In chamber.ts the lathe's
+  faces come out wound inward: `outward` reads the first face's normal to know which faces look up.
+- The Cap Walk: `CAP_WALK`, `WALK_CAP`, `WALK_STEM`, `WALK_PRIZES`, `GAP_PRIZE` in glowcave.ts. The glow bugs' air
+  stops at x 2.5 so the first two caps (at their flying height) are outside it; caps inside it are above 4.6 under
+  the cap or below 4. tests/glowcave.ts has `hop(from, to, jumpFrame, secondJumpAfter, grab)`: use it to lay out
+  any hop course by trying timings, not by eye. The stalactites are given by the height of their POINT; the roof
+  follows the tallest thing (`ceilingOf`), so adding a tall mushroom lengthens them all.
 
