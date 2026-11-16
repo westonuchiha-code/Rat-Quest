@@ -5,6 +5,8 @@ import { ps1Uniforms } from '../render/ps1Material';
 import { RatModel, RatAnimInput } from '../player/ratModel';
 import { ScuttlerModel } from '../enemies/scuttlerModel';
 import { Firefly } from '../enemies/firefly';
+import { SCORPION, type ScorpionState } from '../enemies/scorpion';
+import { ScorpionModel } from '../enemies/scorpionModel';
 import { FireflyModel } from '../enemies/fireflyModel';
 import type { ScuttlerState } from '../enemies/scuttler';
 import type { PlayerState } from '../player/controller';
@@ -129,6 +131,27 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     const fm = new FireflyModel(f.color);
     scene.add(fm.root);
     for (let time = 0; time <= t + 1e-6; time += dt) fm.update(dt, { state: 'spent', stateTime: time, x: 0, y: 0.7, z: 0, facing: 0, vent: { x: 0, y: 0.72, z: -0.8 }, light: num('light', 1), floor: 0, moving: 0 });
+  } else if (who === 'scorpion') {
+    // The Lamp Scorpion in one of its poses: `&state=` stalk (default), stingWind, sting, stuck, snapWind, snap, dark,
+    // sprawl; `&color=4dffc8`; `&walk=1` has it walking.
+    const S = SCORPION;
+    const sm = new ScorpionModel(q.has('color') ? parseInt(q.get('color')!, 16) : undefined);
+    scene.add(sm.root);
+    const state = (q.get('state') ?? 'stalk') as ScorpionState;
+    const aim = num('aim', 2.0);
+    const pose: Record<string, { tail: { ahead: number; up: number }; light: number; claw: number; mark: number | null }> = {
+      stalk: { tail: S.rest, light: 0.6, claw: 0, mark: null },
+      idle: { tail: S.rest, light: 0.35, claw: 0, mark: null },
+      stingWind: { tail: S.rear, light: 1.6, claw: 0, mark: 0.8 },
+      sting: { tail: { ahead: aim, up: 0.06 }, light: 1.6, claw: 0, mark: 1 },
+      stuck: { tail: { ahead: aim, up: 0.06 }, light: 0.45, claw: 0, mark: null },
+      snapWind: { tail: S.rest, light: 0.6, claw: 1, mark: null },
+      snap: { tail: S.rest, light: 0.6, claw: -1, mark: null },
+      dark: { tail: S.tucked, light: 0, claw: 0, mark: null },
+      sprawl: { tail: S.limp, light: 0.25, claw: 1, mark: null },
+    };
+    const P = pose[state] ?? pose.stalk;
+    for (let time = 0; time <= Math.max(t, 0.6) + 1e-6; time += dt) sm.update(dt, { state, stateTime: time, tail: P.tail, light: P.light, claw: P.claw, moving: num('walk', 0) ? 3 : 0, mark: P.mark === null ? null : { ahead: aim, r: S.stingR, fill: P.mark } });
   } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);

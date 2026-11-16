@@ -27,7 +27,7 @@ export type GoalDef =
 
 export interface EnemySpec {
   /** Which enemy. Default: the roach. */
-  type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly' | 'widow';
+  type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly' | 'widow' | 'scorpion';
   /** A guard: which way he faces at his post (radians). Default 0. */
   facing?: number;
   x: number;
@@ -40,6 +40,7 @@ export interface EnemySpec {
   /** Hunts the rat from anywhere in the room instead of keeping to its patch. Used for enemies that arrive in waves. */
   hunt?: boolean;
   /**
+   * A scorpion: the colour of its lamp (and of the ring it marks on the floor). Only looks, as a firefly's is.
    * A firefly: the colour of its light, and of the fire it lets fall (its drops, the marks they make on the floor, the
    * flames and their light). Default: a firefly's yellow-green lantern and orange fire. The colour is only looks: a
    * coloured one flies, bombs and burns as any other does.

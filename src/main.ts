@@ -48,6 +48,8 @@ import { ANT, Ant, pairAnts } from './enemies/ant';
 import { AntModel } from './enemies/antModel';
 import { FIREFLY, Firefly } from './enemies/firefly';
 import { FireflyModel } from './enemies/fireflyModel';
+import { SCORPION, Scorpion } from './enemies/scorpion';
+import { ScorpionModel } from './enemies/scorpionModel';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -449,6 +451,19 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, x: e.x, y: e.y, z: e.z, facing: e.facing, vent: e.vent, light: e.light, floor: e.floor, moving: e.moving }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'scorpion') {
+      const e = new Scorpion(spec);
+      const m = new ScorpionModel(spec.color);
+      enemies.push(e);
+      // (Its lamp lights the room from the barb's point, as bright as its lamp is.)
+      stingLamps.set(e, { x: e.x, y: e.y, z: e.z, r: 5, color: new THREE.Color(spec.color ?? 0x4dffc8), power: 0, flash: 0, flicker: 0, phase: 0 });
+      enemyModels.push({
+        root: m.root,
+        setTransform: (p, f) => m.setTransform(p, f),
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, tail: e.tail, light: e.light, claw: e.claw, moving: e.moving, mark: e.mark ? { ahead: e.aimDist, r: e.mark.r, fill: e.mark.fill } : null }),
+      });
+      scene.add(m.root);
     } else if (spec.type === 'ant') {
       const e = new Ant(spec);
       const m = new AntModel();
@@ -511,9 +526,25 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Widow | Hornet | Ant | Firefly, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Widow | Hornet | Ant | Firefly | Scorpion, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
+      if (e instanceof Scorpion) {
+        // The Lamp Scorpion (in borrowed sounds, till it has its own): a slow clack when it sees him; its lamp
+        // blinking up as the tail rears, as long as the tell; the rush of the tail and the barb's knock in the floor;
+        // its claws chattering open and their snap; its lamp dying as it runs, and blinking on again.
+        if (ev === 'alert') audio.play('antClick', { vol: v * 0.9, rate: 0.7, priority: 6 });
+        else if (ev === 'stingWind') audio.play('fireflyBlink', { vol: Math.max(0.4, v), rate: Math.max(0.6, Math.min(2.2, 0.7 / SCORPION.stingWind)), priority: 8 });
+        else if (ev === 'sting') audio.play('whoosh', { vol: v, rate: 1.6, priority: 7 });
+        else if (ev === 'stuck') audio.play('chitinTap', { vol: Math.max(0.3, v), rate: 0.7, priority: 6 });
+        else if (ev === 'snapWind') audio.play('antClick', { vol: Math.max(0.3, v), rate: 1.7, priority: 7 });
+        else if (ev === 'snap') audio.play('antSnap', { vol: Math.max(0.35, v), rate: 0.85, priority: 8 });
+        else if (ev === 'hurt') audio.play('antHurt', { vol: v, rate: 1.2, priority: 6 });
+        else if (ev === 'douse') audio.play('fireflyFade', { vol: Math.max(0.3, v), rate: 1.5, priority: 6 });
+        else if (ev === 'relight') audio.play('fireflyBlink', { vol: v * 0.7, rate: 1.7, priority: 5 });
+        else if (ev === 'flip') audio.play('plateKnock', { vol: v, rate: 1.1, priority: 8 });
+        continue;
+      }
       if (e instanceof Ant) {
         // The Ant Pikeman, in sounds of its own: its jaws clacking when it sees him; the shaft of its pike sliding
         // back through its claw (as long as the wind-up) and the rush of the thrust with one hard clack; its jaws
@@ -903,6 +934,7 @@ function startGame(): void {
     return emberFloor;
   };
   const lanterns = new WeakMap<Firefly, FxLight>();
+  const stingLamps = new WeakMap<Scorpion, FxLight>();
   const globGeo = new THREE.SphereGeometry(0.2, 6, 5);
   const globMat = new THREE.MeshBasicMaterial({ color: 0x8aff5a });
   /** Grimsqueak throws the cold light of the Engine, not sludge. */
@@ -1643,6 +1675,8 @@ function startGame(): void {
         if (e.state === 'dead') audio.play('antDie', { vol: v, priority: 6 });
       } else if (e.kind === 'firefly') {
         if (e.state === 'dead') audio.play('fireflyDie', { vol: v, priority: 6 });
+      } else if (e.kind === 'scorpion') {
+        if (e.state === 'dead') audio.play('roachDie', { vol: v, rate: 0.75, priority: 6 });
       } else if (e.kind === 'mantis') {
         if (e.state === 'dead') audio.play('mantisDie', { vol: v, priority: 6 });
       } else if (e.kind === 'wyrm') {
@@ -1984,7 +2018,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Widow || e instanceof Hornet || e instanceof Ant || e instanceof Firefly) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Widow || e instanceof Hornet || e instanceof Ant || e instanceof Firefly || e instanceof Scorpion) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);
@@ -3590,6 +3624,16 @@ function startGame(): void {
       L.y = e.vent.y;
       L.z = e.vent.z;
       L.power = 0.55 * Math.min(1.8, e.light);
+      fxLights.push(L);
+    }
+    for (const e of enemies) {
+      const L = e instanceof Scorpion ? stingLamps.get(e) : undefined;
+      if (!L || !(e instanceof Scorpion) || e.light < 0.08) continue;
+      const tip = e.tip;
+      L.x = tip.x;
+      L.y = tip.y + 0.15;
+      L.z = tip.z;
+      L.power = 0.5 * Math.min(1.6, e.light);
       fxLights.push(L);
     }
     chamber.updateLights(time, fly.open ? camera.position : renderPos, fxLights);

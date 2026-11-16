@@ -410,15 +410,38 @@ tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's sou
   6.05.** The first lay-out, spaced by eye at 4 apart, was no course at all: every hop landed at any timing.
   A mushroom's cap (`cap`) and stem (`stem`) can now be sized apart from its height; its cap's shape goes by its
   own width. (And every cap had been coloured upside down, dark on top, since the first try: fixed.)
-- Not in it yet: other glowing creatures (he named none; ideas given him: scorpions, glow-worm threads, railroad
-  worms, headlight beetles, glowing millipedes).
+- **THE LAMP SCORPION (2026-11-16): a new creature, `src/enemies/scorpion.ts` and `scorpionModel.ts`, tests
+  `tests/scorpion.ts`. Two live on the cave's floor (one its own blue-green, one amber). HE HAS NOT SEEN IT YET: it
+  was built on a "Continue" for "another glowing creature ... such as a glowing millipede or scorpion", so its look
+  and its fight are Claude's and are his to accept, change or throw out.** (A millipede was not made: the Sump Wyrm
+  is already a great centipede with a tail lash and a coil.) The idea, in one line: ITS STING IS ITS LAMP, AND THE
+  LIGHT IS THE TELL. It strikes only with its lamp lit.
+  - It stalks him at a little over a sword's length. The sting: its tail rears, the lamp flares, and a ring on the
+    floor (as a firefly's drop marks its landing) shows where the barb will come down: on him, for the first part of
+    the tell, then set. One heart; a shield stops it. Then the barb is stuck in the floor: the opening.
+  - Stand close in front of it and its claws open and snap (one heart, a shield stops it). They are its front
+    only, and it does not turn as they open: beside it or behind it is safe.
+  - Two blows close together and its lamp goes OUT: it darts away and comes round him unlit, doing nothing until
+    its lamp is lit again. (So it is not cut down in one opening: five blows, three stings or so.)
+  - A perfect guard of the sting or the claws throws it down sprawled, helpless, and it does not run from that.
+  - Built by the rule (few shaped flat-faced pieces): one shell, five tail joints and the sting, two arms each a
+    hand and a finger, eight one-piece legs. Its tail is bent to put the barb's POINT where the rules have it
+    (`tailJoints`: every link turned the same). Seen from all sides in every pose before it went in:
+    `#view&who=scorpion&state=stalk|stingWind|sting|stuck|snapWind|snap|dark|sprawl` (`&color=ffb03a`, `&walk=1`).
+  - NOT DONE for it: sounds of its own (it borrows the ant's and the firefly's), a sticker, a builder piece,
+    Tweaks sliders. Nobody has fought it by hand.
+- **Everything in the cave starts further from the door than it notices him from** (a test): he comes in to a
+  quiet cave. With three bombers and two scorpions awake at once the floor is very busy: if he finds it too much
+  for looking at one creature at a time, take bugs out before changing any creature's rules.
+- Not in it yet: any other glowing creature (ideas given him: glow-worm threads, railroad worms, headlight
+  beetles).
 **The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `iceWall`, `frostCobbles`,
 `frostPipe`, `icicles`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`. (Sheet tool:
 `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
 `/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
 comes, is done the Glow Cave's way.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
-crate and barrel); no glowing creatures other than the coloured fireflies; no steam animation; the ice, furnace and dream
+crate and barrel); no steam animation; the ice, furnace and dream
 themes; the dream knight.
 
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)

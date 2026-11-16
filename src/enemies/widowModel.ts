@@ -40,13 +40,13 @@ const SHELL = 0xe4dce6;
 const SHELL_PALE = 0xffe6dc;
 
 /** Flat faces: each one lit as a whole. */
-function flat(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+export function flat(geo: THREE.BufferGeometry): THREE.BufferGeometry {
   const g = geo.index ? geo.toNonIndexed() : geo;
   g.computeVertexNormals();
   return g;
 }
 /** Colours a shape along its length (z from 0 to 1): `a` at its near end, `b` at its far end, each a brightness of `color`. */
-function shadeAlong(geo: THREE.BufferGeometry, color: number, a: number, b: number): THREE.BufferGeometry {
+export function shadeAlong(geo: THREE.BufferGeometry, color: number, a: number, b: number): THREE.BufferGeometry {
   const c = new THREE.Color(color);
   const pos = geo.attributes.position;
   const cols = new Float32Array(pos.count * 3);
@@ -57,7 +57,7 @@ function shadeAlong(geo: THREE.BufferGeometry, color: number, a: number, b: numb
   geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
   return geo;
 }
-function paintAll(geo: THREE.BufferGeometry, color: number): THREE.BufferGeometry {
+export function paintAll(geo: THREE.BufferGeometry, color: number): THREE.BufferGeometry {
   const c = new THREE.Color(color);
   const cols = new Float32Array(geo.attributes.position.count * 3);
   for (let i = 0; i < cols.length; i += 3) cols.set([c.r, c.g, c.b], i);
@@ -69,7 +69,7 @@ function paintAll(geo: THREE.BufferGeometry, color: number): THREE.BufferGeometr
  * ([how far along 0..1, radius]), so it can swell at a joint and taper to a wrist. Its picture runs along it,
  * `repeat` times (the chitin's joint ring comes round once each time: a leg of segments).
  */
-function limb(profile: Array<[number, number]>, sides: number, squash: number, repeat: number): THREE.BufferGeometry {
+export function limb(profile: Array<[number, number]>, sides: number, squash: number, repeat: number): THREE.BufferGeometry {
   return loft(profile.map(([t, r]) => ({ z: t, rx: r, ry: r * squash, y: 0 })), sides, repeat);
 }
 /**
@@ -77,7 +77,7 @@ function limb(profile: Array<[number, number]>, sides: number, squash: number, r
  * lifted by `y`: a limb is one of these, and so is her head. A corner of each section is uppermost (a ridge down
  * its top); its picture runs along it `repeat` times, the picture's edge on that ridge.
  */
-function loft(rings: Array<{ z: number; rx: number; ry: number; y: number }>, sides: number, repeat: number): THREE.BufferGeometry {
+export function loft(rings: Array<{ z: number; rx: number; ry: number; y: number }>, sides: number, repeat: number): THREE.BufferGeometry {
   const z0 = rings[0].z;
   const span = rings[rings.length - 1].z - z0 || 1;
   const pos: number[] = [];
@@ -122,7 +122,7 @@ function loft(rings: Array<{ z: number; rx: number; ry: number; y: number }>, si
  * A claw (or a fang): its POINT at the origin, its root `length` up +z, bowed out toward +y on the way and hooked
  * back in to the point: a talon, not a cone. Four-sided, an edge along its back.
  */
-function horn(length: number, thick: number, bow: number): THREE.BufferGeometry {
+export function horn(length: number, thick: number, bow: number): THREE.BufferGeometry {
   const us = [0, 0.1, 0.25, 0.45, 0.7, 1];
   const ring = (u: number, k: number): [number, number, number, number, number] => {
     const r = thick * u ** 0.75;
@@ -156,7 +156,7 @@ function horn(length: number, thick: number, bow: number): THREE.BufferGeometry 
 }
 /** Lays a bar from a to b. (By its own turning, not by looking at b: so it is right whatever she is drawn inside.) */
 const ALONG = new THREE.Vector3(0, 0, 1);
-function lay(m: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3): void {
+export function lay(m: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3): void {
   const d = b.clone().sub(a);
   const len = Math.max(0.01, d.length());
   m.position.copy(a);

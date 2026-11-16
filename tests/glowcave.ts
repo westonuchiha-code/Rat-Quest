@@ -37,7 +37,8 @@ const spikes = def.decor.filter((d) => d.kind === 'stalactite');
   check('the cave is a test room: found by its name, and in none of the game\'s lists', levelById('glowcave')?.id === 'glowcave' && TEST_ROOMS.some((l) => l.id === 'glowcave') && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'glowcave'));
   check('there is nothing in it to win, and its door leads back to the Move Garden', def.goals.length === 0 && def.returnTo === 'garden');
   // Its glow bugs: the Firefly Bomber, each in a colour of its own, keeping to the air of the room.
-  const bugs = def.enemies;
+  const bugs = def.enemies.filter((e) => e.type === 'firefly');
+  check('nothing in the cave has seen him as he comes in at the door: every creature starts further from it than it notices him from', def.enemies.every((e) => Math.hypot(e.x - def.spawn.x, e.z - def.spawn.z) > (e.type === 'firefly' ? 12 : 11)));
   const colours = bugs.map((b) => b.color);
   check('three glow bugs live in it, all fireflies, each a different colour, none the plain one', bugs.length === 3 && bugs.every((b) => b.type === 'firefly' && b.color !== undefined) && new Set(colours).size === 3, colours.map((c) => c?.toString(16)).join());
   check('...each keeps to the air inside the room, clear of its walls, and starts over open floor (not inside a ledge or a mushroom)', bugs.every((b) => !!b.arena && b.arena.x0 > -GLOWCAVE.halfX && b.arena.x1 < GLOWCAVE.halfX && b.arena.z0 > -GLOWCAVE.halfZ && b.arena.z1 < GLOWCAVE.halfZ && b.x > b.arena.x0 && b.x < b.arena.x1 && b.z > b.arena.z0 && b.z < b.arena.z1 && !def.solids.some((s) => s.kind !== 'floor' && b.x > s.x0 - 0.6 && b.x < s.x1 + 0.6 && b.z > s.z0 - 0.6 && b.z < s.z1 + 0.6 && s.y1 > 0.2)));

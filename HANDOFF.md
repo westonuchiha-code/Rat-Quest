@@ -1085,3 +1085,17 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   any hop course by trying timings, not by eye. The stalactites are given by the height of their POINT; the roof
   follows the tallest thing (`ceilingOf`), so adding a tall mushroom lengthens them all.
 
+## The Lamp Scorpion (2026-11-16; in the Glow Cave)
+- Rules `src/enemies/scorpion.ts` (`SCORPION` table, `Scorpion`, kind 'scorpion'), look `src/enemies/scorpionModel.ts`,
+  tests `tests/scorpion.ts`. START-HERE has what it does and that the owner has not judged it yet.
+- States: idle, stalk, stingWind, sting, stuck, snapWind, snap, recover, stagger, douse, dark, sprawl, dead, return.
+- For the game and the model: `light` (lamp, 0..1.6), `tail {ahead, up}` (the barb's point in its own frame), `tip`
+  (the same in the room: main.ts puts its lamp's light there, `stingLamps`), `aimDist` / `aim` / `mark` (the ring: the
+  blow is `bite.at` on the ring, so if it is shoved the ring and the blow go together), `claw` (-1 shut, 0, 1 wide).
+- The model reuses the Widow's shape helpers (`flat`, `loft`, `horn`, now exported from widowModel.ts). `tailJoints`
+  solves the tail: equal bend at every link, found by halving, clockwise (up and over forward) ALWAYS, so every pose
+  the rules give must have the barb ahead of the root or it would arch through the floor.
+- Sounds are borrowed (main.ts `beastSounds`): antClick, fireflyBlink, whoosh, chitinTap, antSnap, antHurt,
+  fireflyFade, plateKnock, roachDie.
+- Not registered: builder piece (`ENEMY_PIECES`), sticker, polycount list, Tweaks.
+

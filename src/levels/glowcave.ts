@@ -15,7 +15,8 @@
  * (The first try had the moss painted into the wall's tile: it came round every few steps, like wallpaper. And it had
  * rock so dark that no light showed on it.)
  * Round it, the Cap Walk (CAP_WALK): five tall yellow mushrooms to climb, with two bottle caps and a relic.
- * In it, three glow bugs, each its own colour (the Firefly Bomber with `color`): there to be fought, not a goal.
+ * In it, three glow bugs, each its own colour (the Firefly Bomber with `color`), and on the floor two Lamp Scorpions
+ * (enemies/scorpion.ts): there to be fought, not a goal.
  * A test room: `#level=glowcave&nostory`. Its door leads back to the Move Garden.
  */
 import type { LevelDef } from './types';
@@ -31,6 +32,7 @@ const MOSS = 0x18b4f0;
 const LICHEN = 0x14a078;
 const GREEN = 0x6aff6a;
 const YELLOW = 0xffe04a;
+const AMBER = 0xffb03a;
 
 /**
  * The Cap Walk: five tall yellow mushrooms, each cap a jump from the one before and higher: from the low step by
@@ -141,6 +143,9 @@ export function glowCave(): LevelDef {
   /** The air the glow bugs keep to: the west and the middle of the room, in from its walls (the Cap Walk's first two caps, which are at their height, are east of it). */
   const air = { x0: -G.halfX + 2, x1: 2.5, z0: -G.halfZ + 2, z1: G.halfZ - 2 };
 
+  /** The floor the scorpions keep to: the room. (Ledges, stems and walls stop them of themselves.) */
+  const ground = { x0: -G.halfX + 0.5, x1: G.halfX - 0.5, z0: -G.halfZ + 0.5, z1: G.halfZ - 0.5 };
+
   return {
     id: 'glowcave',
     name: 'The Glow Cave',
@@ -160,9 +165,14 @@ export function glowCave(): LevelDef {
     // Glow bugs, each its own colour: the Firefly Bomber as it is everywhere (it flies, bombs and burns the same),
     // but its lantern, its drops and the fire they leave are its colour.
     enemies: [
-      { type: 'firefly', x: -6, z: -3, arena: air, color: PINK },
-      { type: 'firefly', x: -1, z: 3, arena: air, color: BLUE },
-      { type: 'firefly', x: 0, z: -7, arena: air, color: GREEN },
+      // (All of them start further from the door than they notice him from: he comes in to a quiet cave.)
+      { type: 'firefly', x: -6, z: -3.6, arena: air, color: PINK },
+      { type: 'firefly', x: 1.5, z: -4.2, arena: air, color: BLUE },
+      { type: 'firefly', x: 0, z: -8, arena: air, color: GREEN },
+      // Lamp Scorpions, on the floor: one a scorpion's own blue-green, one amber. (Up on a ledge or a cap he is out
+      // of their reach, though not of the bugs'.)
+      { type: 'scorpion', x: -7.5, z: -1.5, arena: ground },
+      { type: 'scorpion', x: 4.6, z: -5.4, arena: ground, color: AMBER },
     ],
     waves: [],
     gear: [],
