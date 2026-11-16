@@ -3497,6 +3497,11 @@ function startGame(): void {
     if (!story.scene && !cutscene.active && !trans.active && !menu.open) {
       for (const e of enemies) {
         if ((e instanceof Brood || e instanceof Wyrm || e instanceof Widow) && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
+        // (Two Widows share one bar: what is left of both of them.)
+        if (e instanceof Widow && e.awake) {
+          const pack = enemies.filter((o): o is Widow => o instanceof Widow);
+          if (pack.length > 1 && pack.some((o) => o.alive)) fought = { name: 'The Widows', frac: pack.reduce((a, o) => a + o.hp, 0) / pack.reduce((a, o) => a + o.maxHp, 0) };
+        }
         else if (e instanceof Grimsqueak && e.alive && !e.asleep) fought = { name: 'Lord Grimsqueak', frac: e.hp / GRIM.hp };
       }
     }

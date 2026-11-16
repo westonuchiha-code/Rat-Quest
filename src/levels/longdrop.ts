@@ -360,9 +360,9 @@ function build(): Built {
   // The arena, far below: a round floor in the dark. Its floor is solid well past its edge, but he cannot go there.
   const arena = { x: 0, z: lip.z + ARENA.ahead, r: ARENA.r };
   solids.push({ ...extent('floor', arena.x - arena.r - 4, arena.x + arena.r + 4, -1, 0, arena.z - arena.r - 4, arena.z + arena.r + 4), hidden: true });
-  // (The stone of the way out, at the east edge: solid, so that the view does not go into it. Just past where he
+  // (The stone of the way out, at the south edge: solid, so that the view does not go into it. Just past where he
   // can stand: it is not in his way.)
-  solids.push({ ...extent('wall', arena.x + arena.r + 0.15, arena.x + arena.r + 0.85, 0, 4.6, arena.z - 2.2, arena.z + 2.2), hidden: true });
+  solids.push({ ...extent('wall', arena.x - 2.2, arena.x + 2.2, 0, 4.6, arena.z + arena.r + 0.15, arena.z + arena.r + 0.85), hidden: true });
   decor.push({ kind: 'arena', x: arena.x, y: 0, z: arena.z, r: arena.r });
   decor.push({ kind: 'eyes', x: arena.x, y: 0, z: arena.z, r0: arena.r + 4, r1: arena.r + 17, high: 8, count: 52 });
   // (A funnel: at the height of the ramp's underside it is wide enough to take one who only walks off the lip.)
@@ -417,13 +417,14 @@ export function longDrop(): LevelDef {
     crateContents: [],
     waves: [],
     gear: [],
-    // The Widow sits in the dark past the south edge of the light, facing up the room (see enemies/widow.ts).
-    enemies: [{ type: 'widow', x: B.arena.x, y: 0, z: B.arena.z + B.arena.r + WIDOW_OUT, facing: Math.PI, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } }],
-    goals: [{ type: 'defeat', label: 'Beat the Widow' }],
+    // The Widows: two of them, one out past the east edge of the light and one past the west, each facing the middle
+    // (see enemies/widow.ts). Between them their legs reach the whole floor.
+    enemies: [1, -1].map((side) => ({ type: 'widow' as const, x: B.arena.x + side * (B.arena.r + WIDOW_OUT), y: 0, z: B.arena.z, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } })),
+    goals: [{ type: 'defeat', label: 'Beat the Widows' }],
     well: { ...B.well },
-    // Its way out stands at the east edge of the arena's light (to his left as he lands), opens when she is beaten,
-    // and leads back to the Move Garden. (Not behind him: that is where the view is when he faces her.)
-    exit: { x: B.arena.x + B.arena.r - 0.35, z: B.arena.z, yaw: -Math.PI / 2, width: 2.6, height: 3.8, y: 0 },
+    // Its way out stands at the south edge of the arena's light (ahead of him as he lands, between the two of them),
+    // appears when they are beaten, and leads back to the Move Garden.
+    exit: { x: B.arena.x, z: B.arena.z + B.arena.r - 0.35, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
     returnTo: 'garden',
   };
 }

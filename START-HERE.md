@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,909 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,912 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -762,8 +762,21 @@ Ocarina of Time. But: "My imagination for this battle though was how I was descr
 well into it, her front LIT so the legs are seen to join her, and (next) baby spiders from the far side to keep him
 moving and bring him toward her; perhaps a second spider on the other side.
 **VERSION FOUR IS BUILT (2026-11-16). He was shown stills of the bigger spider and said "Good continue".**
-THE RULE NOW: she is VERY big (her head 4.5 in radius, her legs reaching 21), she STAYS WHERE SHE IS at the south
-edge with her face and the roots of her legs IN THE LIGHT, and IT IS THE FOUR LEGS SHE STANDS ON THAT STRIKE, from
+**THEN, having played it (2026-11-16):** "Her feet are clipping through the ground ... it looks pretty bad. Also she's
+a little too big now because you can't even really see [her] face, this is less Dark Souls and more like Shadow of
+the Colossus kind of big ... why don't you make her like 70% [as] big and make [there] like two of them or something
+then maybe that could cover the whole field instead of making her gigantic?" DONE THE SAME DAY:
+- **70% of that size** (head 3.2 in radius, legs reaching 15: `SIZE` is 1.3 times the first model), and she carries
+  her head LOW (`HEAD_UP`), so her eyes, jaws and fangs are in the picture in play.
+- **TWO OF THEM**, one out past the EAST edge of the light and one past the WEST, facing each other. Each reaches
+  to the middle; between them they reach the whole floor (tested). THEY TAKE TURNS: one does not start a blow while
+  the other is anywhere in the middle of one (`PACK`, `sisterStriking` in widow.ts), and neither strikes at what
+  she cannot reach. 32 health each; the bar along the bottom is "The Widows", what is left of both. The goal is
+  "Beat the Widows" (both); the way out is at the SOUTH edge, between them, and appears when both are beaten.
+- **Her feet:** a claw's point IS the foot, and the claw runs back up the leg from it; the shin stops where the claw
+  begins. Nothing of a leg goes under the floor (it did: the claw was centred on the foot and half of it was sunk).
+THE RULE: she is big (numbers above), she STAYS WHERE SHE IS at the edge
+with her face and the roots of her legs IN THE LIGHT, and IT IS THE FOUR LEGS SHE STANDS ON THAT STRIKE, from
 where they stand, still arched and joined to her. Nothing lies flat, nothing is flung, she does not crawl or lean
 (`crawl` and `lean` are 0; the code for them is still there and does nothing). Do not shrink the arena.
 She wakes when he stands on the floor (a scream, 1.9 s). Then, in a round that repeats: slams, stabs, a bite,
@@ -777,18 +790,17 @@ slams, a bite, stabs.
   rests a moment (hit it). Then the other leg does the same from the other side.
 - **The stab.** An inner leg spikes down on a small RING marked on him: 1 heart; a shield stops it; or step away.
   Two, one from each side (but strike at a stuck foot while another stab is coming and that one catches him).
-- **The bite**, when he is within 12 of her place: her head rears, a big RING marks the place, and it comes down on
+- **The bite**, when he is within 8.5 of her place: her head rears, a big RING marks the place, and it comes down on
   it: 2 hearts, no shield. Her head then LIES ON THE FLOOR for 1.6 s: the great opening.
 - **Her face is armoured:** while her head is up, a sword only glances off it (`deflects`). It can be hurt only
   when it lies on the floor (after a bite, or thrown down by a perfect guard: 2.4 s).
-- **Harm to her:** a blow on a foot counts HALF, on her head DOUBLE. 54 health. Angry below half: leg wind-ups a
+- **Harm to her:** a blow on a foot counts HALF, on her head DOUBLE. 32 health each. Angry below half: leg wind-ups a
   fifth shorter, each rake comes BACK as well, four stabs, three bites, less rest.
-- **How far she reaches:** her legs cover the near two thirds of the room (tested at six places); THE FAR THIRD IS
-  OUT OF HER REACH. That is on purpose for now: the owner's answer is HER YOUNG (baby spiders coming out of the dark
-  at the far side to keep him moving and bring him to her), or a second spider on the other side. NOT BUILT YET:
-  until then one who stays at the far edge is safe (and cannot hurt her from there).
-- A rat who keeps to the rules, strikes what is on the floor and is not greedy beats her in about two minutes,
-  unhurt; one who stays in her reach and does nothing about her blows dies in 12 s.
+- **How far she reaches:** each reaches her own half of the room, to its middle (tested); with two of them there is
+  nowhere on the floor out of reach. (Her young, baby spiders to keep him moving, were his other idea: not built.)
+- Against ONE of them (the tests fight one at a time), a rat who keeps to the rules, strikes what is on the floor
+  and is not greedy wins in 70 to 80 seconds, unhurt; one who stays in her reach and does nothing dies in seconds.
+  A whole fight against BOTH has not been run by a test, only forty seconds of keeping out of both's blows.
 **How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
 each, eight red eyes, a broad body tapering back into the dark, four legs of two bones with a knuckle at the knee
 and a claw. Everything goes by one number (`SIZE`, from `legReach`). The light in

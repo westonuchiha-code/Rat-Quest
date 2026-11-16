@@ -47,33 +47,33 @@ export type WidowState =
   | 'reel' | 'dead';
 
 export const WIDOW = {
-  hp: 54,
-  radius: 4.5, // her head
+  hp: 32,
+  radius: 3.2, // her head
   rageAt: 0.5,
   rise: 1.9, // she wakes: this long before the first blow can start
   wait: [0.7, 1.2] as [number, number],
   waitRage: [0.35, 0.6] as [number, number],
   hurry: 0.8, // angry, a leg's wind-up is this much of its length (her bites and the stabs after the first are not hurried: there are more of them)
   out: 0.8, // how far past the edge of the light her place is
-  back: 2.2, // how far behind that the middle of her head is: her face is in the light, where it is seen
-  hipHigh: 6.5, // how high over the floor her hips are
-  hip: 5.7, // how far to each side of her middle an outer leg's hip is; an inner leg's is half that
+  back: 1.6, // how far behind that the middle of her head is: her face is in the light, where it is seen
+  hipHigh: 4.5, // how high over the floor her hips are
+  hip: 4.0, // how far to each side of her middle an outer leg's hip is; an inner leg's is half that
   // Getting to him.
   crawl: 0, // how fast she goes round the rim (radians a second): she does NOT (the owner: do not invent; she stays, and is big enough)
   crawlRage: 0,
   near: 4, // within this of his bearing she strikes: anywhere
   patience: 5, // ...and after this long (he will not stand still) she strikes from where she is
-  legReach: 21, // how far from its hip a leg reaches: they are the legs she stands on, and she is very big
+  legReach: 15, // how far from its hip a leg reaches: they are the legs she stands on (at 21 she was too big to be seen whole: "Shadow of the Colossus kind of big"; there are two of her instead)
   lean: 0, // how far in over the edge she can lean to reach him: she does not
   // The slam.
-  slamR: 1.6,
+  slamR: 1.4,
   slamWind: 1.05,
   slamTrack: 0.5, // the ring follows him for this much of a wind-up, then holds
   slamTime: 0.14,
   slamDamage: 2,
   slamStuck: 0.8,
   // The sweep.
-  rakeR: 1.6, // the foot that rakes the floor: this far round it strikes
+  rakeR: 1.3, // the foot that rakes the floor: this far round it strikes
   sweepWind: 0.45,
   sweepRate: 1.4, // radians a second
   sweepRateRage: 1.8,
@@ -81,9 +81,9 @@ export const WIDOW = {
   sweepDamage: 1,
   sweepEnd: 0.5,
   // The bite.
-  biteReach: 12, // how far from her place her head can come: further off, it is her legs
-  biteR: 4.0, // (nearly as wide as her head)
-  biteWind: 1.4,
+  biteReach: 8.5, // how far from her place her head can come: further off, it is her legs
+  biteR: 2.8, // (nearly as wide as her head)
+  biteWind: 1.1,
   biteTrack: 0.4,
   biteTime: 0.14,
   biteDamage: 2,
@@ -102,13 +102,20 @@ export const WIDOW = {
   stabsRage: 4,
   // Thrown down by a perfect guard.
   reel: 2.4,
-  reelReach: 12, // her head falls toward him, as far into the light as this...
-  reelShort: 5.8, // ...and this far short of him
+  reelReach: 9, // her head falls toward him, as far into the light as this...
+  reelShort: 4.4, // ...and this far short of him
   headDouble: 2, // her head takes this many times a blow's harm...
   legPart: 0.5, // ...and a leg this much of it: they are armoured, and there is a lot of her
 };
 
 const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
+/**
+ * Every Widow there is. Two share a room (one each side of it), and they take turns: one does not start a blow while
+ * the other is in the middle of one. (A new one made in the same place takes the old one's place here.)
+ */
+const PACK: Widow[] = [];
+/** Counts every Widow's every tick: one that has not ticked lately is no longer in the game (an old room's), and is not waited for. */
+let CLOCK = 0;
 
 export class Widow {
   readonly kind = 'widow' as const;
@@ -163,6 +170,7 @@ export class Widow {
   private sweepGoal = 0;
   private leanGoal = 0;
   private stepIn = 0;
+  private beat = 0;
   private headFrom = { x: 0, z: 0 };
   private playerX = 0;
   private playerY = 0;
@@ -178,6 +186,21 @@ export class Widow {
     const home = this.home;
     this.x = home.x;
     this.z = home.z;
+    for (let i = PACK.length - 1; i >= 0; i--) if (!this.shares(PACK[i]) || Math.abs(wrap(PACK[i].theta - this.theta)) < 0.01) PACK.splice(i, 1);
+    PACK.push(this);
+  }
+  private shares(o: Widow): boolean {
+    return o.field.x === this.field.x && o.field.z === this.field.z && o.field.r === this.field.r;
+  }
+  /** Another of her, in this room, is in the middle of a blow. */
+  private get sisterStriking(): boolean {
+    // (In the middle of one: from its wind-up till she is back at rest, the moments a piece of her is stuck included.)
+    return PACK.some((o) => o !== this && o.alive && this.shares(o) && o.state !== 'idle' && o.state !== 'lurk' && o.state !== 'rise' && CLOCK - o.beat <= PACK.length + 1);
+  }
+  /** How far out from her place, straight ahead, a leg can come down. */
+  get reach(): number {
+    const most = Math.sqrt((WIDOW.legReach * 0.98) ** 2 - WIDOW.hipHigh ** 2);
+    return Math.sqrt(most * most - WIDOW.hip * WIDOW.hip);
   }
 
   /** The edge of the light in front of her (less her lean), and the way she faces: at the middle of the floor. */
@@ -229,7 +252,7 @@ export class Widow {
   }
   /** She has waited, and means to strike (the game's turn-taking asks: see director.ts). */
   get ready(): boolean {
-    return this.state === 'idle' && this.waitLeft <= 0;
+    return this.state === 'idle' && this.waitLeft <= 0 && !this.sisterStriking;
   }
   get attacking(): boolean {
     const s = this.state;
@@ -436,6 +459,7 @@ export class Widow {
 
   update(dt: number, px: number, py: number, pz: number, playerAlive: boolean): void {
     const W = WIDOW;
+    this.beat = ++CLOCK;
     this.stateTime += dt;
     this.playerX = px;
     this.playerY = py;
@@ -477,7 +501,9 @@ export class Widow {
         }
         this.waitLeft -= dt;
         this.waited += dt;
-        if (this.waitLeft <= 0 && this.mayAttack && (Math.abs(off) <= W.near || this.waited >= W.patience)) this.choose(px, pz);
+        // (She strikes at what she can reach, and waits her turn if her sister is striking.)
+        const inReach = Math.hypot(px - this.px, pz - this.pz) <= this.reach + W.slamR + 0.5;
+        if (this.waitLeft <= 0 && this.mayAttack && inReach && !this.sisterStriking && (Math.abs(off) <= W.near || this.waited >= W.patience)) this.choose(px, pz);
         break;
       }
 

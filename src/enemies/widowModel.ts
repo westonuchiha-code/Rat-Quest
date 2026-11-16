@@ -29,7 +29,10 @@ const SIZE = WIDOW.legReach / 11.5;
 /** Her head is built 1.5 across its half-width and drawn this many times that: as wide as the rules have it. */
 const HEAD_SCALE = WIDOW.radius / 1.5;
 /** How high her head is carried while it waits, and how high its middle is when it lies on the floor. */
-const HEAD_UP = 4.6 * SIZE;
+/** (Low: a spider carries her body near the ground, under the arch of her legs. Carried high, her face was above the top of the picture in play.) */
+const HEAD_UP = WIDOW.radius * 0.62 + 0.9;
+/** How long a claw is: the last of a leg, down to the foot. */
+const CLAW = 1.1 * SIZE;
 const HEAD_DOWN = 0.92 * HEAD_SCALE + 0.1;
 const CHITIN = 0x3a2c40;
 const CHITIN_PALE = 0x7a4a58;
@@ -173,7 +176,10 @@ export class WidowModel {
       const thick = (inner ? 0.62 : 0.86) * SIZE;
       const upper = new THREE.Mesh(shadeAlong(bar(thick, thick * 0.8, 5), CHITIN, 0.55, 1), upperMat);
       const lower = new THREE.Mesh(shadeAlong(bar(thick * 0.86, thick * 0.34, 5), CHITIN_PALE, 0.75, 1.1), lowerMat);
-      const claw = new THREE.Mesh(paintAll(flat(new THREE.ConeGeometry(thick * 0.42, 1.1 * SIZE, 4)), BONE_WHITE), lowerMat);
+      // (Its point is the foot: the claw runs back up the leg from there, so nothing of it is ever under the floor.)
+      const clawGeo = new THREE.ConeGeometry(thick * 0.42, CLAW, 4);
+      clawGeo.translate(0, -CLAW / 2, 0);
+      const claw = new THREE.Mesh(paintAll(flat(clawGeo), BONE_WHITE), lowerMat);
       // (A knuckle at the knee, so that a leg reads as jointed however it lies.)
       const knob = new THREE.Mesh(paintAll(flat(new THREE.OctahedronGeometry(thick * 1.25, 0)), CHITIN_PALE), upperMat);
       this.root.add(upper, lower, claw, knob);
@@ -367,7 +373,9 @@ export class WidowModel {
       up.lerp(fall, this.fallen).normalize();
       leg.knee.copy(leg.hip).add(leg.foot).multiplyScalar(0.5).addScaledVector(up, rise);
       lay(leg.upper, leg.hip, leg.knee);
-      lay(leg.lower, leg.knee, leg.foot);
+      // (The shin stops where the claw begins: its blunt end would otherwise dip into the floor.)
+      const shinEnd = leg.foot.clone().lerp(leg.knee, Math.min(0.5, (CLAW * 0.7) / Math.max(0.01, leg.knee.distanceTo(leg.foot))));
+      lay(leg.lower, leg.knee, shinEnd);
       leg.claw.position.copy(leg.foot);
       leg.claw.quaternion.copy(leg.lower.quaternion);
       leg.claw.rotateX(Math.PI / 2); // the cone's point along the bone

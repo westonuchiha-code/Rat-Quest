@@ -31,7 +31,9 @@ function check(name: string, ok: boolean, detail = ''): void {
 const def = longDrop();
 const A = longDropPlan().arena;
 const cs = def.solids.map(aabbOf);
-const spec = def.enemies.find((e) => e.type === 'widow')!;
+// (One of her, at the south edge, for looking at each thing she does. The level has two: see "Two of them".)
+const spec = { type: 'widow' as const, x: A.x, y: 0, z: A.z + A.r + WIDOW_OUT, arena: { x0: A.x - A.r, x1: A.x + A.r, z0: A.z - A.r, z1: A.z + A.r } };
+const pair = def.enemies.filter((e) => e.type === 'widow');
 const R = TUNING.rat.radius;
 const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
 const events = (): CombatEvents => ({ enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] });
@@ -136,10 +138,10 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
 {
   const w = widow();
   check('the Widow starts just past the south edge of the light in the Long Drop\'s arena, facing its middle', Math.abs(w.theta) < 1e-9 && Math.abs(w.px - A.x) < 1e-9 && Math.abs(w.pz - (A.z + A.r + W.out)) < 1e-9 && Math.abs(Math.abs(w.facing) - Math.PI) < 1e-9 && w.field.r === A.r && WIDOW_OUT === W.out);
-  check('the level asks for her to be beaten, and its way out is at the side of the light', def.goals.length === 1 && def.goals[0].type === 'defeat' && Math.abs(def.exit.z - A.z) < 1 && def.exit.x > A.x + A.r - 1);
+  check('the level has two of her, one out past the east edge of the light and one past the west, each facing the middle; both are to be beaten; the way out is at the south edge, between them', pair.length === 2 && pair.every((e) => Math.abs(e.z - A.z) < 1e-9 && Math.abs(Math.abs(e.x - A.x) - (A.r + W.out)) < 1e-9) && pair[0].x !== pair[1].x && def.goals.length === 1 && def.goals[0].type === 'defeat' && Math.abs(def.exit.x - A.x) < 1 && def.exit.z > A.z + A.r - 1);
   {
     // Her face is in the light, where it is seen; while it is up a sword only glances off it.
-    const q = ratAt(0, -(A.r - 3.2));
+    const q = ratAt(0, -(A.r - 1.7));
     const o = woken(q);
     face(q, o.w.x, o.w.z);
     const hp = o.w.hp;
@@ -178,23 +180,22 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   // She stays where she is: it is the legs she stands on that strike, and they are long enough for the near two
   // thirds of the room.
   const hit: string[] = [];
-  for (const [x, north] of [[0, 0], [6, -4], [-8, -2], [0, -8], [4, 3], [-5, 2.5]]) {
+  for (const [x, north] of [[0, 0], [6, -4], [-8, -2], [0, -8], [3, -1], [-5, -3]]) {
     const p = ratAt(x, north);
     const { w, seen } = woken(p);
     const hp = p.hp;
     until(w, p, 'slamStuck', seen);
     if (hp - p.hp !== W.slamDamage || Math.hypot(w.spot.x - w.hip(w.side).x, w.spot.z - w.hip(w.side).z) > W.legReach) hit.push(`${x},${north}: ${hp - p.hp}`);
   }
-  check('the legs she stands on reach the near two thirds of the room: wherever he stands still there (under her, the middle, either side), one comes down on him', hit.length === 0, hit.join('; '));
+  check('the legs she stands on reach her half of the room, to its middle: wherever he stands still there (under her, the middle, either side), one comes down on him', hit.length === 0, hit.join('; '));
   const far: string[] = [];
-  for (const [x, north] of [[0, 11], [6, 9.5], [-7, 9]]) {
+  for (const [x, north] of [[0, 11], [6, 9.5], [-7, 9], [0, 4]]) {
     const p = ratAt(x, north);
     const { w, seen } = woken(p);
-    const hp = p.hp;
-    until(w, p, 'slamStuck', seen);
-    if (hp !== p.hp || Math.hypot(w.spot.x - p.position.x, w.spot.z - p.position.z) < W.slamR + R) far.push(`${x},${north}`);
+    for (let i = 0; i < 60 * 8; i++) step(w, p, seen);
+    if (w.state !== 'idle' || seen.hits !== 0 || seen.states.includes('slamWind')) far.push(`${x},${north}: ${w.state}`);
   }
-  check('the far third is out of their reach: the leg comes down as far out as it can, short of him (what comes for him there is her young: not built yet)', far.length === 0, far.join('; '));
+  check('the far half is out of their reach, and she does not strike at what she cannot reach: she waits (it is her sister\'s half)', far.length === 0, far.join('; '));
   const p = ratAt(0, 6);
   const w = widow();
   const seen = fresh();
@@ -206,6 +207,35 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
     if (p.dead) p.respawn();
   }
   check('she does not move from her place, whatever he does: no crawling, no leaning in', moved === 0);
+}
+
+// ---- Two of them ----
+{
+  // The two in the level, with him in the middle of the room, where both can reach: they take turns.
+  const p = ratAt(0, 0);
+  const ws = pair.map((e) => {
+    const w = new Widow(e);
+    w.rng = () => 0.5;
+    return w;
+  });
+  const struckBy = [0, 0];
+  let both = 0;
+  let hits = 0;
+  for (let i = 0; i < 60 * 40; i++) {
+    const hp = p.hp;
+    p.update(DT, input(keepRules(ws[0], p) ?? keepRules(ws[1], p) ?? {}), cs);
+    for (const w of ws) w.update(DT, p.position.x, p.position.y, p.position.z, !p.dead);
+    resolveCombat(p, ws, events());
+    for (const w of ws) w.events.length = 0;
+    ws.forEach((w, k) => (struckBy[k] += w.state === 'slam' && w.stateTime < DT * 1.5 ? 1 : 0));
+    if (ws[0].attacking && ws[1].attacking) both++;
+    hits += hp - p.hp;
+    // (He comes back to the middle between their blows.)
+    if (!ws.some((w) => w.attacking) && Math.hypot(p.position.x - A.x, p.position.z - A.z) > 1) p.position.lerp(new THREE.Vector3(A.x, 0, A.z), 0.1);
+  }
+  check('TWO OF THEM, one each side: they face each other across the room, and between them their legs reach all of its floor', Math.abs(Math.abs(ws[0].theta - ws[1].theta) - Math.PI) < 1e-6 && ws.every((w) => w.reach + W.slamR + 0.5 >= A.r + W.out), `each reaches ${ws[0].reach.toFixed(1)} of the ${(A.r + W.out).toFixed(1)} to the middle`);
+  check('...they take turns: with him in the middle, where both can reach, each strikes in its turn and never both at once', both === 0 && struckBy[0] >= 3 && struckBy[1] >= 3, `${struckBy.join(' and ')} slams; ${both} frames with both striking`);
+  check('...and one who keeps to the rules comes through forty seconds between the two of them unhurt', hits === 0, `${hits} lost`);
 }
 
 // ---- The slam ----
@@ -283,7 +313,11 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
     const p = ratAt(2, -6);
     const w = widow();
     const seen = fresh();
-    until(w, p, 'stabWind', seen, () => keepRules(w, p) ?? {}, 4000);
+    // (He keeps out of her slams and rakes, and goes back to his place between her blows: she strikes only at what she can reach.)
+    until(w, p, 'stabWind', seen, () => {
+      const home = new THREE.Vector3(A.x + 2 - p.position.x, 0, A.z + 6 - p.position.z);
+      return keepRules(w, p) ?? ((w.state === 'idle' || w.state === 'sweepEnd') && home.length() > 0.3 ? { move: home.normalize(), run: true } : {});
+    }, 4000);
     seen.hits = 0;
     seen.results.length = 0;
     const before = p.hp;
@@ -354,6 +388,7 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
   w.takeHit((W.hp * (1 - W.rageAt) + 0.5) / W.legPart, 0, 0, 'sword', 0);
   check('below half her health she is angry, and says so', w.raging && w.events.splice(0).includes('rage'));
   let sweeps = 0;
+  const runs: number[] = [];
   let stabs = 0;
   let bites = 0;
   let last: WidowState = w.state;
@@ -364,13 +399,17 @@ function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): {
     if (p.dead) break;
     if (w.state !== last) {
       if (w.state === 'sweep') sweeps++;
+      if (w.state === 'idle' && sweeps > 0) {
+        runs.push(sweeps);
+        sweeps = 0;
+      }
       if (w.state === 'stab') stabs++;
       if (w.state === 'bite') bites++;
       last = w.state;
     }
   }
-  check('angry, each leg\'s sweep comes back as well: four sweeps to a pair of slams', sweeps === 4, `${sweeps}`);
-  check('...she stabs four times running, and bites three', stabs === W.stabsRage && bites === W.bitesRage, `${stabs} stabs, ${bites} bites`);
+  check('angry, each leg\'s rake comes back as well: four of them to every pair of slams', runs.length >= 1 && runs.every((n) => n === 4), runs.join());
+  check('...she stabs four times running, and bites three', stabs % W.stabsRage === 0 && stabs >= W.stabsRage && bites === W.bitesRage, `${stabs} stabs, ${bites} bites`);
   check('...and one who keeps to the rules (out of the rings, over the sweeps) comes through a whole round of it unhurt', seen.hits === 0, `${seen.hits} lost; ${seen.hitBy.join()}`);
 }
 
