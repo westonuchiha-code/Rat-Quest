@@ -1406,8 +1406,9 @@ function paintWidowChitin(p: Px, rand: Rand): void {
   const streak = Array.from({ length: S }, () => rand());
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
-      // (Round the limb: a ridge that catches the light, falling away to either side.)
-      const round = 0.5 + 0.5 * Math.cos(((x - S / 2) / S) * Math.PI * 2);
+      // (Round the limb: a ridge that catches the light, falling away to either side. The ridge is at the picture's
+      // edge, x = 0, which is the TOP of a limb as widowModel lays it.)
+      const round = 0.5 + 0.5 * Math.cos((x / S) * Math.PI * 2);
       let v = 0.22 + 0.4 * round ** 2 + (streak[x] - 0.5) * 0.16 + (rand() - 0.5) * 0.08;
       // (Along it: plates overlapping, each a little darker toward its trailing edge.)
       v -= 0.1 * ((y % 8) / 8);
@@ -1429,6 +1430,22 @@ function paintWidowChitin(p: Px, rand: Rand): void {
     p.blend(x, 2, 0xa02a30, 0.7);
     p.blend(x, 3, 0xc8a096, 0.45);
     p.blend(x, S - 1, 0x0e0a12, 0.5);
+  }
+}
+
+/**
+ * Her back: the same shell, with her mark down its ridge in blood red edged with bone: an hourglass, as a widow has.
+ * (It is laid along her body more than once, so there is a row of them going back into the dark.)
+ */
+function paintWidowBack(p: Px, rand: Rand): void {
+  paintWidowChitin(p, rand);
+  for (let y = 7; y <= 26; y++) {
+    // (Two triangles, point to point: wide at each end of the mark, pinched in its middle.)
+    const half = 1 + Math.round(Math.abs(y - 16.5) * 0.36);
+    for (let dx = -half - 1; dx <= half + 1; dx++) {
+      const edge = Math.abs(dx) > half;
+      p.blend(dx, y, edge ? 0xd8c0a8 : (dx + y) % 5 === 0 ? 0x8a141c : 0xc02228, edge ? 0.55 : 0.95);
+    }
   }
 }
 
@@ -1501,6 +1518,7 @@ const DEFS = {
   // The Widow (enemies/widowModel.ts): her shell, and the horn of her claws and fangs. Both run ALONG a limb (v).
   widowChitin: { size: 32, seed: 701, paint: paintWidowChitin },
   widowHorn: { size: 32, seed: 702, paint: paintWidowHorn },
+  widowBack: { size: 32, seed: 703, paint: paintWidowBack },
   wroughtIron: { size: 32, seed: 601, paint: paintWroughtIron },
   cutStone: { size: 32, seed: 607, paint: paintCutStone },
   charred: { size: 32, seed: 602, paint: paintCharred },

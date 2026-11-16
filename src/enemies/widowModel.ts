@@ -70,13 +70,22 @@ function paintAll(geo: THREE.BufferGeometry, color: number): THREE.BufferGeometr
  * `repeat` times (the chitin's joint ring comes round once each time: a leg of segments).
  */
 function limb(profile: Array<[number, number]>, sides: number, squash: number, repeat: number): THREE.BufferGeometry {
+  return loft(profile.map(([t, r]) => ({ z: t, rx: r, ry: r * squash, y: 0 })), sides, repeat);
+}
+/**
+ * A shape drawn out along z through a row of cross-sections, each as wide (`rx`) and as high (`ry`) as it says and
+ * lifted by `y`: a limb is one of these, and so is her head. A corner of each section is uppermost (a ridge down
+ * its top); its picture runs along it `repeat` times, the picture's edge on that ridge.
+ */
+function loft(rings: Array<{ z: number; rx: number; ry: number; y: number }>, sides: number, repeat: number): THREE.BufferGeometry {
+  const z0 = rings[0].z;
+  const span = rings[rings.length - 1].z - z0 || 1;
   const pos: number[] = [];
   const uv: number[] = [];
   const at = (i: number, k: number): [number, number, number, number, number] => {
-    const [t, r] = profile[i];
-    // (A corner uppermost: a ridge down the top of the limb.)
-    const a = ((k + 0.5) / sides) * Math.PI * 2 + Math.PI / 2 - Math.PI / sides;
-    return [Math.cos(a) * r, Math.sin(a) * r * squash, t, k / sides, t * repeat];
+    const g = rings[i];
+    const a = (k / sides) * Math.PI * 2 + Math.PI / 2;
+    return [Math.cos(a) * g.rx, g.y + Math.sin(a) * g.ry, g.z, k / sides, ((g.z - z0) / span) * repeat];
   };
   const tri = (...v: Array<[number, number, number, number, number]>): void => {
     for (const q of v) {
@@ -84,7 +93,7 @@ function limb(profile: Array<[number, number]>, sides: number, squash: number, r
       uv.push(q[3], q[4]);
     }
   };
-  for (let i = 0; i + 1 < profile.length; i++) {
+  for (let i = 0; i + 1 < rings.length; i++) {
     for (let k = 0; k < sides; k++) {
       const a = at(i, k);
       const b = at(i, k + 1);
@@ -96,15 +105,18 @@ function limb(profile: Array<[number, number]>, sides: number, squash: number, r
     }
   }
   // (Closed at both ends.)
-  for (const [i, flip] of [[0, false], [profile.length - 1, true]] as Array<[number, boolean]>) {
-    const mid: [number, number, number, number, number] = [0, 0, profile[i][0], 0.5, profile[i][0] * repeat];
-    for (let k = 0; k < sides; k++) flip ? tri(mid, at(i, k), at(i, k + 1)) : tri(mid, at(i, k + 1), at(i, k));
+  for (const [i, far] of [[0, false], [rings.length - 1, true]] as Array<[number, boolean]>) {
+    const g = rings[i];
+    const mid: [number, number, number, number, number] = [0, g.y, g.z, 0.5, ((g.z - z0) / span) * repeat];
+    // (An end takes its colour from the shell a little way in, not from the dark crease the picture has at its edge.)
+    const inShell = (q: [number, number, number, number, number]): [number, number, number, number, number] => [q[0], q[1], q[2], q[3], q[4] - 0.4];
+    for (let k = 0; k < sides; k++) far ? tri(inShell(mid), inShell(at(i, k)), inShell(at(i, k + 1))) : tri(inShell(mid), inShell(at(i, k + 1)), inShell(at(i, k)));
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
-  g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
-  g.computeVertexNormals();
-  return g;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(uv), 2));
+  geo.computeVertexNormals();
+  return geo;
 }
 /**
  * A claw (or a fang): its POINT at the origin, its root `length` up +z, bowed out toward +y on the way and hooked
@@ -177,9 +189,9 @@ export class WidowModel {
   private readonly jaws: THREE.Group[] = [];
   private readonly neck: THREE.Mesh;
   private readonly headMat = createPs1Material({ lit: true, tex: getTexture('widowChitin') });
-  private readonly neckMat = createPs1Material({ lit: true, tex: getTexture('widowChitin') });
+  private readonly neckMat = createPs1Material({ lit: true, tex: getTexture('widowBack') });
   private readonly fangMat = createPs1Material({ lit: true, tex: getTexture('widowHorn') });
-  private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3a22 });
+  private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
   private readonly legs: Leg[] = [];
   private readonly strip: THREE.Mesh;
   private readonly ring: THREE.Mesh;
@@ -194,26 +206,53 @@ export class WidowModel {
 
   constructor() {
     // ---- Her head: one faceted lump, wider than it is tall, and a brow plate over her eyes. ----
-    const skull = flat(new THREE.DodecahedronGeometry(1, 0));
-    skull.scale(1.5, 0.92, 1.6);
-    this.head.add(new THREE.Mesh(paintAll(skull, SHELL), this.headMat));
-    const brow = flat(new THREE.CylinderGeometry(0.75, 1.25, 0.34, 5, 1));
-    brow.rotateY(Math.PI / 5);
-    brow.scale(1, 1, 1.15);
-    const browMesh = new THREE.Mesh(paintAll(brow, SHELL_PALE), this.headMat);
-    browMesh.position.set(0, 0.86, -0.15);
-    this.head.add(browMesh);
-    // Eight eyes across her face: two great ones, and three small ones stepping away to each side.
+    // One carapace, shaped: narrow where it joins her body, swelling to a dome behind her eyes, then drawn in and
+    // down to a blunt face. (It was a faceted lump with a plate laid on it.)
+    const carapace = loft(
+      [
+        { z: -1.6, rx: 0.95, ry: 0.6, y: 0.05 },
+        { z: -1.0, rx: 1.4, ry: 0.9, y: 0.14 },
+        { z: -0.2, rx: 1.5, ry: 1.0, y: 0.16 },
+        { z: 0.7, rx: 1.32, ry: 0.84, y: 0.06 },
+        { z: 1.3, rx: 1.08, ry: 0.68, y: -0.04 },
+        { z: 1.6, rx: 0.8, ry: 0.5, y: -0.1 },
+      ],
+      8,
+      2,
+    );
+    this.head.add(new THREE.Mesh(shadeAlong(carapace, SHELL, 1, 1), this.headMat));
+    // Eight eyes: each a lens, dark at its rim and burning at its middle, with a glint. Two great ones in her face,
+    // and three smaller stepping back over her brow to each side. They glow whatever the light is.
     const eye = (r: number, x: number, y: number, z: number): void => {
-      const m = new THREE.Mesh(new THREE.OctahedronGeometry(r, 0), this.eyeMat);
+      const lens = flat(new THREE.IcosahedronGeometry(1, 1));
+      lens.scale(1, 1, 0.5);
+      const q = lens.attributes.position;
+      const cols = new Float32Array(q.count * 3);
+      const rim = new THREE.Color(0x2a0303);
+      const fire = new THREE.Color(0xff2a12);
+      const glint = new THREE.Color(0xfff0d8);
+      for (let i = 0; i < q.count; i += 3) {
+        // (Each face one colour: by how far forward it is; the faces high on its front catch a glint.)
+        const fz = (q.getZ(i) + q.getZ(i + 1) + q.getZ(i + 2)) / 3;
+        const fy = (q.getY(i) + q.getY(i + 1) + q.getY(i + 2)) / 3;
+        const fxm = (q.getX(i) + q.getX(i + 1) + q.getX(i + 2)) / 3;
+        const k = Math.max(0, Math.min(1, (fz - 0.05) / 0.42));
+        const c = fz > 0.36 && fy > 0.3 && fxm < -0.05 && fxm > -0.4 ? glint : rim.clone().lerp(fire, k * k * k);
+        for (let j = 0; j < 3; j++) cols.set([c.r, c.g, c.b], (i + j) * 3);
+      }
+      lens.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      const m = new THREE.Mesh(lens, this.eyeMat);
       m.position.set(x, y, z);
+      m.scale.setScalar(r);
+      // (Looking out from her head: forward, and outward by where it sits.)
+      m.quaternion.setFromUnitVectors(ALONG, new THREE.Vector3(x * 0.9, (y - 0.1) * 0.8, Math.max(0.25, z - 0.5)).normalize());
       this.head.add(m);
     };
-    for (const s of [-1, 1]) {
-      eye(0.3, s * 0.42, 0.42, 1.42);
-      eye(0.17, s * 0.95, 0.52, 1.12);
-      eye(0.14, s * 1.24, 0.34, 0.7);
-      eye(0.12, s * 0.62, 0.84, 0.95);
+    for (const sd of [-1, 1]) {
+      eye(0.33, sd * 0.36, 0.12, 1.5);
+      eye(0.2, sd * 0.8, 0.4, 1.22);
+      eye(0.16, sd * 1.12, 0.36, 0.72);
+      eye(0.14, sd * 0.52, 0.74, 0.8);
     }
     // Her jaws: a thick tapered bar each, hung under the front of her head, with a pale fang hooking in at its end.
     for (const s of [-1, 1]) {
@@ -226,7 +265,7 @@ export class WidowModel {
       // (Its root at the end of the jaw, its point down and a little in: all of it shows.)
       // (A fang: a curved horn, its root in the end of the jaw, arching forward and down to its point, hooking in.)
       const fang = new THREE.Mesh(paintAll(horn(1.35, 0.27, 0.34), 0xffffff), this.fangMat);
-      fang.position.set(-s * 0.12, -0.62, 2.4);
+      fang.position.set(-s * 0.36, -0.8, 2.4);
       fang.rotation.set(-0.42, Math.PI - s * 0.3, 0, 'YXZ');
       jaw.add(fang);
       this.head.add(jaw);
@@ -336,7 +375,7 @@ export class WidowModel {
     const headLight = this.lightAt(w, this.head.position);
     this.headMat.uniforms.tint.value.setScalar(headLight);
     // Her eyes burn in the dark whatever the light is; they go out when she dies.
-    this.eyeMat.color.setRGB(1, 0.23, 0.13).multiplyScalar(dead ? Math.max(0.08, 1 - this.fallen) : w.raging ? 1 : 0.82 + 0.18 * Math.sin(this.age * 3));
+    this.eyeMat.color.setRGB(1, 1, 1).multiplyScalar(dead ? Math.max(0.08, 1 - this.fallen) : w.raging ? 1 : 0.82 + 0.18 * Math.sin(this.age * 3));
 
     // ---- The body behind it: from deep in the dark to the back of her head ----
     const anchor = new THREE.Vector3(w.px - fx * 12 * SIZE, floor + (5 - 2.6 * this.fallen) * SIZE, w.pz - fz * 12 * SIZE);

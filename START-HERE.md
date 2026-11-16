@@ -811,6 +811,12 @@ her legs and claws"), BY SHAPE AND PICTURE, NOT BY MORE PIECES:**
   three times along the thigh and four along the shin, so the red rings make it a leg of SEGMENTS.
 - A claw is a hooked talon (`horn()`: its point at the foot, bowed outward, its root in the wrist), not a cone; her
   fangs are the same shape, seated in the ends of her jaws. Her head, brow, jaws and body wear the chitin too.
+- Then her head and body ("looks good continue"): her head is ONE shaped carapace (`loft()`: narrow at her body,
+  domed behind her eyes, drawn in to a blunt face) where it was a faceted lump with a plate on it; her eight eyes
+  are lenses (dark at the rim, burning at the middle, each face one colour), unlit so they glow; her back wears
+  `widowBack`: the shell with a blood-red HOURGLASS edged in bone down its ridge, repeated going back into the dark.
+  (`limb()` is a `loft()` of round sections. The picture's edge, x = 0, is the TOP ridge of anything lofted; an
+  end cap takes its colour from a little way into the shell, or it samples the dark crease and looks like a hole.)
 - (Both new shapes were wound inside-out at first: drawn from within, they looked hollow and were lit dark. If a
   hand-built shape looks hollow, check which way its faces look.)
 **How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
