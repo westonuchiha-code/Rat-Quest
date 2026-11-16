@@ -14,7 +14,7 @@
  */
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
-import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
+import { bead, mix, modelKit, paint, type ColorAt } from '../render/modelKit';
 
 export type PatronKind = 'turtle' | 'fox';
 export type PatronLook = 'mo' | 'pebble' | 'vix' | 'ash';
@@ -281,16 +281,45 @@ class Turtle implements PatronBody {
 
 // ---------------------------------------------------------------------------------------------------------------
 // The fox: tall, narrow, all ears and tail, and too pleased with himself.
+//
+// (Rebuilt 2026-11-16. The first one was balls strung together, three to a leg and three to the tail, and the owner
+// said so: "I don't know if it's just too many pieces or something or they're all too round ... he just looks
+// weird". This one is a FEW pieces, each a shape of its own and cut in flat faces: one tapered body, one head that is
+// a wedge from its cheeks to its nose, one brush of a tail, and thin tapered limbs.)
 // ---------------------------------------------------------------------------------------------------------------
 
 const FOX = {
-  vix: { coat: 0xd8702a, coatDark: 0xa84f1c, cream: 0xf3e3c4, sock: 0x33241c, earIn: 0x3a2018, cloth: 0x2f8f8a, clothDark: 0x226b68 },
-  ash: { coat: 0x8a94a8, coatDark: 0x646e84, cream: 0xe6e8ee, sock: 0x24262e, earIn: 0x2a2c36, cloth: 0x6a3f8f, clothDark: 0x4f2f6c },
+  vix: { coat: 0xd8702a, coatDark: 0xa84f1c, cream: 0xf3e3c4, sock: 0x33241c, earIn: 0x5a2a1c, cloth: 0x2f8f8a, clothDark: 0x226b68 },
+  ash: { coat: 0x8a94a8, coatDark: 0x646e84, cream: 0xe6e8ee, sock: 0x24262e, earIn: 0x3a3c4a, cloth: 0x6a3f8f, clothDark: 0x4f2f6c },
 } as const;
+
+/** Cuts a shape in flat faces, so it reads as carved and not as blown up. */
+function faceted(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+  const flat = geo.index ? geo.toNonIndexed() : geo;
+  flat.computeVertexNormals();
+  return flat;
+}
+/**
+ * A turned shape: `profile` is its outline, [how far out, how far up], from its bottom to its top; `sides` flat faces
+ * round it; `deep` squeezes it front to back. `lie`: laid over so that its length runs along +z (a head, a muzzle).
+ */
+function turned(profile: Array<[number, number]>, color: ColorAt, sides = 6, deep = 1, lie = false): THREE.Mesh {
+  const geo = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), sides);
+  geo.rotateY(Math.PI / sides);
+  geo.scale(1, 1, deep);
+  if (lie) geo.rotateX(Math.PI / 2);
+  return new THREE.Mesh(paint(faceted(geo), color, 0.2), mat);
+}
+/** A tapered limb hanging from the origin: `r0` across at the top, `r1` at the bottom, `length` long. */
+function limb(r0: number, r1: number, length: number, color: ColorAt, sides = 5): THREE.Mesh {
+  const geo = new THREE.CylinderGeometry(r0, r1, length, sides, 1);
+  geo.translate(0, -length / 2, 0);
+  return new THREE.Mesh(paint(faceted(geo), color, 0.15), mat);
+}
 
 class Fox implements PatronBody {
   readonly root = new THREE.Group();
-  readonly height = 1.74;
+  readonly height = 1.72;
   private readonly body = new THREE.Group();
   private readonly chest = new THREE.Group();
   private readonly head = new THREE.Group();
@@ -298,58 +327,58 @@ class Fox implements PatronBody {
   private readonly ears: THREE.Group[] = [];
   private readonly arms: Array<{ upper: THREE.Group; fore: THREE.Group; side: number }> = [];
   private readonly legs: Array<{ thigh: THREE.Group; shin: THREE.Group; side: number }> = [];
-  private readonly tail: THREE.Group[] = [];
+  private readonly tail = new THREE.Group();
   private readonly mugHand = new THREE.Group();
   private readonly cards = new THREE.Group();
   private readonly common: Common;
   private sip = 0;
-  private flick = [0, 0];
 
   constructor(private readonly look: 'vix' | 'ash') {
     const C = FOX[look];
     this.root.add(this.body);
-    this.body.position.y = 0.545;
-    // Hips, and a narrow chest with a pale front.
-    this.body.add(kit.blob(0.175, 0.14, 0.15, C.coat, 0, 0, 0, 7, 5));
-    this.chest.position.set(0, 0.1, 0);
+    this.body.position.y = LEG;
+    // The body: ONE piece from his hips to the root of his neck, narrow at the waist, a pale bib down the front.
     this.body.add(this.chest);
-    this.chest.add(kit.blob(0.2, 0.25, 0.165, (nx, ny, nz) => (nz > 0.25 && Math.abs(nx) < 0.62 - 0.25 * ny ? C.cream : C.coat), 0, 0.2, 0, 8, 6));
-    // Legs: a thigh and a shin, dark from the knee down like stockings.
+    this.chest.add(turned(
+      [[0, 0], [0.13, 0.02], [0.155, 0.1], [0.115, 0.27], [0.165, 0.47], [0.15, 0.56], [0.07, 0.62], [0, 0.63]],
+      (nx, ny, nz) => (nz > 0.2 && ny > -0.25 && ny < 0.75 && Math.abs(nx) < 0.55 ? C.cream : C.coat), 6, 0.78,
+    ));
+    // Legs: a thigh and a long thin shin, dark from the knee down like stockings, and a wedge of a foot.
     for (const side of [-1, 1]) {
       const thigh = new THREE.Group();
-      thigh.position.set(side * 0.1, -0.03, 0);
-      thigh.add(kit.blob(0.088, 0.15, 0.092, C.coat, 0, -0.11, 0, 6, 5));
+      thigh.position.set(side * 0.085, 0.06, 0);
+      thigh.add(limb(0.078, 0.052, THIGH + 0.06, C.coat));
       const shin = new THREE.Group();
-      shin.position.set(0, -0.23, 0);
-      shin.add(kit.blob(0.066, 0.135, 0.068, C.sock, 0, -0.11, 0, 6, 5));
-      shin.add(kit.blob(0.075, 0.04, 0.12, C.sock, 0, -0.235, 0.045, 6, 4));
+      shin.position.set(0, -(THIGH + 0.06), 0);
+      shin.add(limb(0.05, 0.034, SHIN, C.sock));
+      const foot = kit.box(0.085, 0.045, 0.17, C.sock, 0, -SHIN + 0.022, 0.045);
+      shin.add(foot);
       thigh.add(shin);
       this.body.add(thigh);
       this.legs.push({ thigh, shin, side });
     }
-    // Arms: thin, dark gloves.
+    // Arms: thin, dark gloves to the elbow.
     for (const side of [-1, 1]) {
       const upper = new THREE.Group();
-      upper.position.set(side * 0.22, 0.36, 0);
-      upper.add(kit.blob(0.064, 0.135, 0.064, C.coat, 0, -0.11, 0, 6, 5));
+      upper.position.set(side * 0.165, 0.52, 0);
+      upper.add(limb(0.052, 0.042, 0.23, C.coat));
       const fore = new THREE.Group();
-      fore.position.set(0, -0.22, 0);
-      fore.add(kit.blob(0.054, 0.12, 0.054, C.sock, 0, -0.1, 0, 6, 5));
-      fore.add(kit.blob(0.064, 0.055, 0.068, C.sock, 0, -0.21, 0.01, 6, 4));
+      fore.position.set(0, -0.23, 0);
+      fore.add(limb(0.042, 0.03, 0.2, C.sock));
+      fore.add(kit.box(0.062, 0.07, 0.055, C.sock, 0, -0.225, 0.008));
       upper.add(fore);
       if (side > 0) {
-        this.mugHand.position.set(0, -0.24, 0.075);
+        this.mugHand.position.set(0, -0.25, 0.075);
         this.mugHand.add(mug());
         fore.add(this.mugHand);
       } else {
         // A hand of cards, fanned.
-        this.cards.position.set(0, -0.22, 0.06);
+        this.cards.position.set(0, -0.24, 0.05);
         for (let i = 0; i < 4; i++) {
-          const card = kit.box(0.075, 0.11, 0.006, i % 2 ? 0xe9e2cf : 0xdcd3bb, 0, 0.055, 0);
           const fan = new THREE.Group();
           fan.rotation.z = (i - 1.5) * 0.28;
           fan.position.z = i * 0.004;
-          fan.add(card);
+          fan.add(kit.box(0.075, 0.11, 0.006, i % 2 ? 0xe9e2cf : 0xdcd3bb, 0, 0.055, 0));
           this.cards.add(fan);
         }
         fore.add(this.cards);
@@ -357,54 +386,41 @@ class Fox implements PatronBody {
       this.chest.add(upper);
       this.arms.push({ upper, fore, side });
     }
-    // The tail: three puffs, the last one white, each a group so it can curl and swing.
-    let parent: THREE.Object3D = this.body;
-    const puffs: Array<[number, number, number, number]> = [[0.1, 0.17, C.coat, 0.22], [0.15, 0.22, C.coat, 0.3], [0.125, 0.19, C.cream, 0.36]];
-    puffs.forEach(([r, len, color, at], i) => {
-      const seg = new THREE.Group();
-      seg.position.set(0, i === 0 ? 0 : at, i === 0 ? -0.1 : 0);
-      seg.add(kit.blob(r, len, r, i === 1 ? (_x: number, ny: number) => (ny > 0.55 ? C.cream : color) : color, 0, len * 0.8, 0, 7, 5));
-      parent.add(seg);
-      parent = seg;
-      this.tail.push(seg);
-    });
-    // A neckerchief.
-    this.chest.add(kit.blob(0.15, 0.055, 0.135, C.cloth, 0, 0.43, 0.01, 8, 4, 0.15));
-    const knot = kit.cone(0.055, 0.15, C.clothDark, 4);
-    knot.rotation.x = Math.PI - 0.45;
-    knot.position.set(-0.04, 0.42, 0.11);
-    this.chest.add(knot);
-    // The head: a wide skull, a long pointed muzzle pale underneath, cheek tufts, tall ears dark at the back.
-    this.head.position.set(0, 0.52, 0.02);
-    this.head.scale.setScalar(1.32);
+    // The tail: ONE brush, thin where it leaves him, fat in the middle, a white point. It hinges at its root.
+    this.tail.position.set(0, 0.07, -0.1);
+    this.tail.add(turned([[0, 0], [0.05, 0.04], [0.13, 0.26], [0.15, 0.42], [0.1, 0.6], [0, 0.78]], (_x, ny) => (ny > 0.36 ? C.cream : C.coat), 6));
+    this.body.add(this.tail);
+    // A neckerchief: a collar and one point of it hanging in front.
+    this.chest.add(turned([[0.075, 0], [0.135, 0.02], [0.12, 0.075], [0.07, 0.085]], C.cloth, 6, 0.85).translateY(0.57));
+    const point = limb(0.06, 0.008, 0.16, C.clothDark, 3);
+    point.position.set(-0.03, 0.6, 0.1);
+    point.rotation.x = -0.35;
+    this.chest.add(point);
+    // The head: ONE wedge, widest at the cheeks and running out to the nose, pale underneath; two tall ears.
+    this.head.position.set(0, 0.69, 0.01);
+    this.head.scale.setScalar(1.15);
     this.chest.add(this.head);
-    this.head.add(kit.blob(0.165, 0.135, 0.15, (_nx, ny, nz) => (ny < -0.25 && nz > 0 ? C.cream : C.coat), 0, 0.08, 0, 8, 6));
-    const muzzle = kit.spar(0.085, 0.03, 0.2, (_x, ny) => (ny < 0.05 ? C.cream : C.coat), 6);
-    muzzle.rotation.y = -Math.PI / 2;
-    muzzle.position.set(0, 0.055, 0.1);
-    this.head.add(muzzle);
-    this.head.add(bead(0.028, BLACK, 0, 0.062, 0.305));
-    this.jaw.position.set(0, 0.02, 0.1);
-    const lower = kit.spar(0.05, 0.02, 0.15, C.cream, 5);
-    lower.rotation.y = -Math.PI / 2;
-    lower.position.y = -0.03;
-    this.jaw.add(lower);
+    this.head.add(turned(
+      [[0, -0.15], [0.12, -0.12], [0.19, -0.03], [0.165, 0.05], [0.075, 0.2], [0.04, 0.33], [0, 0.345]],
+      (_nx, ny, nz) => (ny < -0.2 || (nz > 0.25 && ny < 0.12) ? C.cream : C.coat), 6, 0.8, true,
+    ).translateY(0.09));
+    this.head.add(kit.box(0.05, 0.04, 0.04, 0x14100c, 0, 0.105, 0.345));
+    // (His lower jaw: a thin wedge under the muzzle, hinged at the back, that drops when he talks.)
+    this.jaw.position.set(0, 0.03, 0.1);
+    this.jaw.add(turned([[0, 0], [0.05, 0.02], [0.022, 0.19], [0, 0.2]], C.cream, 4, 0.5, true));
     this.head.add(this.jaw);
     for (const side of [-1, 1]) {
-      const tuft = kit.cone(0.05, 0.11, C.cream, 4);
-      tuft.rotation.z = side * -1.9;
-      tuft.position.set(side * 0.13, 0.03, 0.02);
-      this.head.add(tuft);
       const ear = new THREE.Group();
-      ear.position.set(side * 0.105, 0.18, -0.01);
+      ear.position.set(side * 0.11, 0.2, -0.04);
       ear.userData.side = side;
-      // (Ash has lost the tip of one.)
-      const tall = look === 'ash' && side < 0 ? 0.15 : 0.24;
-      ear.add(kit.cone(0.075, tall, (_x, ny, nz) => (nz < -0.1 || ny > 0.5 ? C.sock : C.coat), 4));
-      const inner = kit.cone(0.045, tall * 0.8, C.earIn, 3);
-      inner.position.set(0, 0.01, 0.022);
-      ear.add(inner);
-      ear.rotation.z = side * -0.22;
+      // (Ash has lost the tip of one.) Each is one flat-sided spike: coat behind, dark inside and at its tip.
+      const cut = look === 'ash' && side < 0;
+      const geo = new THREE.ConeGeometry(0.085, cut ? 0.17 : 0.28, 4, 1, cut);
+      geo.translate(0, (cut ? 0.17 : 0.28) / 2, 0);
+      geo.rotateY(Math.PI / 4);
+      geo.scale(1, 1, 0.5);
+      ear.add(new THREE.Mesh(paint(faceted(geo), (_x, ny, nz) => (ny > 0.55 ? C.sock : nz > 0.1 ? C.earIn : C.coat)), mat));
+      ear.rotation.z = side * -0.25;
       this.head.add(ear);
       this.ears.push(ear);
     }
@@ -412,20 +428,20 @@ class Fox implements PatronBody {
     for (const side of [-1, 1]) {
       if (look === 'ash' && side > 0) {
         // An eyepatch, and its strap.
-        this.head.add(kit.blob(0.05, 0.045, 0.02, 0x1c1c22, side * 0.075, 0.11, 0.13, 6, 4, 0));
-        const strap = kit.box(0.36, 0.014, 0.014, 0x1c1c22, 0, 0.14, 0.03);
-        strap.rotation.z = -0.3;
+        this.head.add(kit.box(0.085, 0.075, 0.02, 0x1c1c22, side * 0.085, 0.125, 0.115));
+        const strap = kit.box(0.36, 0.016, 0.016, 0x1c1c22, 0, 0.165, 0.03);
+        strap.rotation.z = -0.28;
         this.head.add(strap);
         continue;
       }
       const e = eye(0.036, 0.019);
-      e.position.set(side * 0.075, 0.11, 0.115);
-      e.rotation.y = side * 0.35;
+      e.position.set(side * 0.082, 0.125, 0.105);
+      e.rotation.y = side * 0.45;
       e.rotation.z = side * 0.32; // narrow and sly
       this.head.add(e);
       eyes.push(e);
     }
-    if (look === 'vix') this.head.add(bead(0.022, new THREE.MeshBasicMaterial({ color: 0xe8b83a }), 0.15, 0.2, -0.01));
+    if (look === 'vix') this.head.add(bead(0.024, new THREE.MeshBasicMaterial({ color: 0xe8b83a }), 0.165, 0.27, -0.04));
     this.common = new Common(eyes, 0.72);
   }
 
@@ -435,40 +451,38 @@ class Fox implements PatronBody {
     const lean = ctx.doing === 'lean' && !ctx.seated;
     const speaking = ctx.talking || this.common.mouth > 0.05;
     // Standing, sitting (thighs out, shins down), or leaning back on something with one foot crossed over.
-    this.body.position.y = ctx.seated ? SEAT + 0.07 : lean ? 0.57 : 0.545;
-    this.body.position.z = lean ? -0.06 : 0;
+    this.body.position.y = ctx.seated ? SEAT + 0.03 : lean ? LEG + 0.03 : LEG;
+    this.body.position.z = lean ? -0.08 : 0;
     this.body.rotation.x = lean ? -0.2 : ctx.seated ? 0.06 : 0;
-    this.chest.rotation.x = (lean ? 0.14 : ctx.doing === 'cards' ? 0.2 : 0) + 0.02 * Math.sin(t * 1.7);
+    this.chest.rotation.x = (lean ? 0.14 : ctx.doing === 'cards' ? 0.18 : 0) + 0.02 * Math.sin(t * 1.7);
     for (const leg of this.legs) {
       if (ctx.seated) {
-        leg.thigh.rotation.set(-1.45, 0, leg.side * 0.12);
-        leg.shin.rotation.set(1.4 + 0.12 * Math.sin(t * 1.8 + leg.side), 0, 0);
+        leg.thigh.rotation.set(-1.5, 0, leg.side * 0.1);
+        leg.shin.rotation.set(1.45 + 0.1 * Math.sin(t * 1.8 + leg.side), 0, 0);
       } else if (lean) {
-        leg.thigh.rotation.set(leg.side > 0 ? 0.42 : 0.12, 0, leg.side > 0 ? -0.28 : 0);
-        leg.shin.rotation.set(leg.side > 0 ? 0.2 : 0.06, 0, 0);
+        leg.thigh.rotation.set(leg.side > 0 ? 0.5 : 0.2, 0, leg.side > 0 ? -0.3 : 0);
+        leg.shin.rotation.set(leg.side > 0 ? 0.1 : 0, 0, 0);
       } else {
         leg.thigh.rotation.set(0, 0, leg.side * 0.03);
         leg.shin.rotation.set(0, 0, 0);
       }
     }
-    // The tail: a slow swing, curling up at its tip; quicker when he is pleased with what he is saying.
-    const swing = Math.sin(t * (speaking ? 2.6 : 1.3));
-    this.tail[0].rotation.set(ctx.seated ? -1.95 : lean ? -1.45 : -1.75, 0.35 * swing, 0);
-    this.tail[1].rotation.set(0.72 + 0.1 * Math.sin(t * 1.1), 0.3 * Math.sin(t * 1.3 - 0.7), 0);
-    this.tail[2].rotation.set(0.62, 0.3 * Math.sin(t * 1.3 - 1.4), 0);
+    // The tail: carried up behind him, swinging slowly; quicker when he is pleased with what he is saying. Sitting,
+    // it hangs out behind the stool.
+    this.tail.rotation.set(ctx.seated ? -1.95 : lean ? -1.25 : -0.85 + 0.06 * Math.sin(t * 1.1), 0, 0.3 * Math.sin(t * (speaking ? 2.6 : 1.3)));
     // Ears: one flicks, then the other.
     this.ears.forEach((ear, i) => {
       const side = ear.userData.side as number;
-      this.flick[i] = now(t, 4.3 + i * 1.7, 0.28, i * 2.2);
-      ear.rotation.z = side * (-0.22 - 0.35 * this.flick[i]) + (Common.listening(ctx) ? side * -0.08 : 0);
-      ear.rotation.x = -0.1 * this.flick[i];
+      const flick = now(t, 4.3 + i * 1.7, 0.28, i * 2.2);
+      ear.rotation.z = side * (-0.25 - 0.35 * flick) + (Common.listening(ctx) ? side * -0.08 : 0);
+      ear.rotation.x = -0.1 * flick;
     });
     // The head: turned to whoever it is, tipped a little; a slow look down at his cards.
     const peek = ctx.doing === 'cards' && !ctx.talking ? now(t, 6.5, 2.2, ctx.turn * 3) : 0;
     this.head.rotation.y = ctx.headYaw * (1 - 0.8 * peek);
     this.head.rotation.x = (lean ? 0.1 : 0) + 0.35 * peek + (Common.listening(ctx) ? 0.08 * Math.max(0, Math.sin(t * 2.9)) ** 3 : 0) + (ctx.talking ? 0.06 * Math.sin(t * 8.5) : 0) - 0.5 * this.sip;
     this.head.rotation.z = 0.1 * Math.sin(t * 0.6) + (lean ? 0.12 : 0);
-    this.jaw.rotation.x = 0.45 * this.common.mouth;
+    this.jaw.rotation.x = 0.5 * this.common.mouth;
     // Arms: folded when he leans; a mug or a hand of cards when he has one; a wave of the paw when he talks.
     const drinking = ctx.doing === 'drink' && !ctx.talking;
     this.sip = drinking ? now(t, 6.2, 2.2, this.look === 'ash' ? 2.4 : 0) : ease(this.sip, 0, dt, 8);
@@ -497,6 +511,10 @@ class Fox implements PatronBody {
     }
   }
 }
+/** The fox's legs: how long a thigh and a shin are, and so how high his hips stand. */
+const THIGH = 0.2;
+const SHIN = 0.26;
+const LEG = THIGH + SHIN;
 
 export function makePatron(kind: PatronKind, look: PatronLook): PatronBody {
   return kind === 'turtle' ? new Turtle(look === 'pebble' ? 'pebble' : 'mo') : new Fox(look === 'ash' ? 'ash' : 'vix');

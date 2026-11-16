@@ -267,6 +267,15 @@ These are OUR characters in that spirit: not the cantina's or that bar's own peo
 - **Two new builds, two looks each** (`src/npc/patrons.ts`): TURTLES Mossback Mo (old, mossy, glasses, a beard) and
   Pebble (young, a flat cap and a kerchief); FOXES Vix (red) and Ash (grey, an eyepatch, a notched ear). The look
   goes by name (`patronLook`), like the mice and birds.
+- **THE FOX WAS REBUILT THE SAME DAY, and why (a rule for every creature to come).** The owner on the first one:
+  "the turtle is pretty good ... but that fox just needs some more work right away ... I don't know if it's just too
+  many pieces or something or they're all too round I don't know he just looks weird I don't really like it." It
+  was balls strung together: three to a leg, three to the tail, a ball for a head with a cone stuck on. The second
+  is a FEW pieces, each a shape of its own, cut in flat faces (`turned`, `limb`, `faceted` in patrons.ts): one
+  tapered body, one head that is a wedge from the cheeks to the nose, one brush of a tail, thin tapered limbs.
+  **So: build a creature from few shaped pieces, not many round ones.** (The same lesson as the fire bowl: "more
+  detail" and "better" mean a better SHAPE, never more parts.) The round turtle suits a turtle; do not make the
+  ferret or the owl out of balls.
 - **Doing something** (`NpcSpec.doing`: stand, drink, chat, lean, cards; `seated`, `partner`, `turn`): the turtles
   sit across a table, one drinking and one talking, taking turns (the one listening nods; a turtle's neck comes out
   when he speaks); the foxes play cards, each looking at his hand and then at the other. One who is busy keeps to
