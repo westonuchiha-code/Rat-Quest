@@ -2,6 +2,7 @@
  * The levels. Each one is a LevelDef built from small pieces. The first is the original sewer chamber;
  * the rest are test levels, one for each kind of goal.
  */
+import { glimmerDeep } from './glimmer';
 import { buildLayout, extent } from '../world/layout';
 import { chamberCollectibles } from '../world/collectibleLayout';
 import { chamberPickups } from '../world/equipmentLayout';
@@ -213,7 +214,7 @@ function crates(): LevelDef {
   };
 }
 
-const built: LevelDef[] = [sewer(), caps(), hunt(), waves(), leap(), crates(), waterworks(), ...kingdomLevels(), pumpworks(), junction(), cistern(), foundry(), foundryShaft(), foundryCellars(), hollows(), hollowsWebs(), hollowsFaith(), hollowsDark(), hollowsPit(), keep(), throne(), cisternWorks(), sludgePit(), cisternSump()];
+const built: LevelDef[] = [sewer(), caps(), hunt(), waves(), leap(), crates(), waterworks(), ...kingdomLevels(), pumpworks(), junction(), cistern(), foundry(), foundryShaft(), foundryCellars(), hollows(), hollowsWebs(), hollowsFaith(), glimmerDeep(), hollowsDark(), hollowsPit(), keep(), throne(), cisternWorks(), sludgePit(), cisternSump()];
 const rank = (l: LevelDef): number => {
   const i = (CAMPAIGN as readonly string[]).indexOf(l.id);
   return i < 0 ? CAMPAIGN.length : i;

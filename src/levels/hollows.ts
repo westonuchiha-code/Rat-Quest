@@ -213,6 +213,9 @@ export function hollows(): LevelDef {
       { to: 'faith', name: 'Leap of Faith', need: 0, door: doorOn('east', 48, -41, 48, 0) },
       // Under the Mouth, in the south wall: the way into the dark.
       { to: 'dark', name: 'The Lightless Way', need: 0, door: doorOn('south', 48, -24, 48, 0) },
+      // In the east wall, on the cave's own floor, just south of the foot of the stair to the Root Shelf: a way
+      // through to where the cave glows (levels/glimmer.ts).
+      { to: 'glimmer', name: 'The Glimmer Deep', need: 0, door: doorOn('east', 48, 23, 48, 0) },
     ],
     fogRange: [30, 125],
     wedges: HOLLOWS_WEDGES,

@@ -74,7 +74,7 @@ for (const def of LEVELS) {
     arrivals.push({ def, name: cd.name, x: d.x + Math.sin(d.yaw) * 3.2, y: (d.y ?? 0) + 0.05, z: d.z + Math.cos(d.yaw) * 3.2 });
   }
 }
-check('the Club, every world and the Keep have doors he comes back out of (17 in all)', arrivals.filter((a) => a.def === hub).length === 6 && ['cistern', 'foundry', 'hollows', 'keep'].every((w) => arrivals.some((a) => a.def.id === w)) && arrivals.length === 17, `${arrivals.length}`);
+check('the Club, every world and the Keep have doors he comes back out of (18 in all: the door to the Glimmer Deep, in the Hollows, made it one more)', arrivals.filter((a) => a.def === hub).length === 6 && ['cistern', 'foundry', 'hollows', 'keep'].every((w) => arrivals.some((a) => a.def.id === w)) && arrivals.length === 18, `${arrivals.length}`);
 for (const a of arrivals) {
   const s = standAt(a.def, a.x, a.y, a.z);
   const from = computeReach({ ...a.def, spawn: { ...a.def.spawn, x: a.x, y: a.y, z: a.z } }, { traps: true });

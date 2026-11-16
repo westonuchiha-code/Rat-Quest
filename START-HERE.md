@@ -75,10 +75,11 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 | Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
 | | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 3 / 2 / 1 | webs: the Sleeper's Wedge secret (Moss Scarf). faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
 | | brood | The Brood Pit | 1 | A boss: the Broodmother. Its door is on the gallery's north ledge. Her wedge appears where she falls |
+| | glimmer | The Glimmer Deep | 2 | The glowing cave as a real level (2026-11-16). Its door is in the Hollows' east wall, on the floor, south of the stair to the Root Shelf. Dark (`ambient` 0.4). The Caps over the Rift; two Lamp Scorpions in the Rift; three coloured glow bugs |
 | Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Two Keep Guards and an Ironback in the courtyard; a guard, and bats on chains, on the battlements |
 | | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
 
-- 47 wedges in all (Cistern 16, Foundry 12, Hollows 12, Keep 7). The Club's doors ask 5 (Foundry), 12 (Hollows) and
+- 49 wedges in all (Cistern 16, Foundry 12, Hollows 14, Keep 7). The Club's doors ask 5 (Foundry), 12 (Hollows) and
   25 (Keep): about a third, under half and just under two thirds of what is open by then. They were 4, 10 and 20,
   set when there were 38 wedges, and were raised on 2026-11-15 to the same shares (tests/balance.ts holds the shares:
   add wedges to a world and it will say the doors want looking at). A door he has already been through stays open
@@ -424,6 +425,32 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   handheld), and the chunkier pictures stay as choices. The 32-dot pictures on things are still blocky up close:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
+
+## The Glimmer Deep: the glowing cave as a real level (the owner's list, 2026-11-16. BUILT; `tests/glimmer.ts`)
+His list said "a real level for the glowing cave (it is only a try-out room)". **He had not yet said what he thinks
+of the try-out room or of the Lamp Scorpion when this was built on them: its look and its fights are still his to
+accept, change or throw out.** `src/levels/glimmer.ts`, id `glimmer`, a side area of the Hollows.
+- **How he gets there:** a door in the Hollows' east wall, on the floor (`courseDoors` in hollows.ts), open from the
+  start. `#level=glimmer&nostory`.
+- **Its shape:** he comes in on the Landing. The cave is split wall to wall by the RIFT, ten across and seven deep.
+  Beyond is the Far Bank (two and a half higher than the Landing); down the east side stands the High Shelf, nine
+  and a half over the Landing, which cannot be climbed to from any ground (a test tries every place near it).
+  - **The Caps:** four great yellow mushrooms growing up out of the Rift, each a running jump from the last and
+    nearly two higher: the only way to the High Shelf. Wedge: THE HIGH SHELF.
+  - **The Rift's floor:** two Lamp Scorpions. Wedge: LAMPS OUT (beat both; they are the only creatures that count).
+    Three steps of rock at its west end are the way out; its sides are too high to climb.
+  - **Over the Far Bank:** three glow bugs, each its own colour, counting toward nothing.
+  - **Three finds:** a bottle cap in the air on the hop from the third Cap to the fourth; one at the bottom of the
+    Rift behind the last Cap's foot; a relic on the Spire, the tall pink mushroom of the Far Bank (the second jump
+    and a caught edge).
+- **THE LEVEL'S ZERO IS THE RIFT'S FLOOR** and the Landing is seven up (`LANDING`). He is sent back to where he
+  started from six below zero (`TUNING.pit.respawnY`), in every level: the first lay-out had the Rift's floor at
+  seven under, and he could not stand on it. **Nothing he is meant to walk on may be below minus six.**
+- The Lamp Scorpion has its sticker now (`foe:scorpion`, with an icon).
+- The world has 49 wedges now (the Hollows 14). The Keep's door still asks 25: tests/balance.ts is content.
+- NOT DONE: nobody has played it. It has no talking character and no secret. The fireflies' fire over the Far Bank
+  and a scorpion fight at the bottom of a rift with four great stems in it have not been tried by hand. The
+  creatures in the Rift cannot follow him up the steps (no way-finding), which is as it should be for a den.
 
 ## Creatures on slopes (the owner's list, 2026-11-16: "enemies walking on ramps". DONE; `tests/foeramps.ts`)
 - **A slope the knight can walk is GROUND to a creature now** (`src/enemies/footing.ts`): solid only UNDER its

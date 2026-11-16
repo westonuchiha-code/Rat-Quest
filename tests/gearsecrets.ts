@@ -256,7 +256,7 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
 {
   const total = LEVELS.reduce((n, l) => n + (l.wedges?.length ?? 0), 0);
   const geared = LEVELS.flatMap((l) => (l.wedges ?? []).filter((x) => x.gear).map((x) => x.gear));
-  check('there are 47 Golden Wedges now (41, these four, and one from each of the two great insects)', total === 47, String(total));
+  check('there are 49 Golden Wedges now (41, these four, one from each of the two great insects, and the Glimmer Deep\'s two)', total === 49, String(total));
   check('four wedges are tagged with the gear they need, each a different piece, and every piece is one Pip sells', geared.length === 4 && new Set(geared).size === 4 && geared.every((id) => !!ITEMS[id as string] && !Object.values(STARTING_GEAR).includes(id as string)), geared.join(', '));
 }
 

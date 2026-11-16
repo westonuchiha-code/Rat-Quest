@@ -1220,3 +1220,15 @@ things are:
 - `Director.update(dt, foes, px, pz, locked)`; `DIRECTOR.lockedGap` 0.3. main.ts passes `lockTarget`.
 - Tests: tests/lockon.ts, tests/combat2.ts (the director's block).
 
+## The Glimmer Deep (2026-11-16; test `tests/glimmer.ts`)
+- `src/levels/glimmer.ts`: `GLIMMER`, `LANDING`, `RIFT`, `FAR_BANK`, `HIGH_SHELF`, `CAPS`, `CAP_WIDE`, `CAP_STEM`,
+  `RIFT_STEPS`, `SPIRE`, `GLIMMER_PRIZES`, `GLIMMER_WEDGES`, `glimmerDeep()`. In `built` in levels.ts after
+  `hollowsFaith()`; door in hollows.ts `courseDoors`.
+- Moss heights and stalactite tips in its lists are given above the Landing.
+- tests/glimmer.ts has `hop`, `ways` (how many timings land a hop with one jump and with two) and `reachUp` (every
+  way of climbing tried: back from the wall or against it, second jump or wall kick at every moment, a caught edge
+  hauled up by a press of jump). Use `reachUp` when a thing must NOT be reachable.
+- Tests that count things and were moved on: gearsecrets and halls (49 wedges), softlock (18 doors he comes back out
+  of), glowcave (the Glimmer Deep is the one level of the game that turns the plain light down).
+- Sticker `foe:scorpion` in data/stickers.ts; icon `scorpion` in ui/icons.ts.
+
