@@ -2074,7 +2074,7 @@ function startGame(): void {
     }
     // Who may attack: up close they take turns. Roosting bats hear him unless he sneaks.
     SENSES.quiet = sneak && player.grounded;
-    director.update(dt, enemies, player.position.x, player.position.z);
+    director.update(dt, enemies, player.position.x, player.position.z, lockTarget);
     // The ants find their mates, and settle which of each pair holds him and which goes round him.
     if (antList.length) pairAnts(antList, player.position.x, player.position.z);
     const swinging = player.state === 'attack';

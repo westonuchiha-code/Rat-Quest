@@ -1215,3 +1215,8 @@ things are:
 - menu.ts: `MenuHost.scenes`, `playCutscene`; rows `scene:<id>` on the TOOLS page.
 - Scratch: `scenesheet.sh <id> <t1> <t2> ...` makes a sheet of held frames (needs the dev server on 5199).
 
+## Lock-on (2026-11-16)
+- `keepTarget` (combat/lockon.ts) returns the current foe or null; it never picks another.
+- `Director.update(dt, foes, px, pz, locked)`; `DIRECTOR.lockedGap` 0.3. main.ts passes `lockTarget`.
+- Tests: tests/lockon.ts, tests/combat2.ts (the director's block).
+

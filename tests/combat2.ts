@@ -47,6 +47,41 @@ function check(name: string, ok: boolean, detail = ''): void {
   const far = fake(40, 0);
   d.update(DT, [far], 0, 0);
   check('one far from the rat does as it likes', far.mayAttack);
+  // The one he is LOCKED ON to (2026-11-16: "the enemy you are locked on to fights harder").
+  {
+    const trio = [fake(2, 0), fake(0, 4), fake(-6, 0)];
+    const locked = trio[2]; // the FURTHEST of the three
+    const dl = new Director();
+    dl.update(DT, trio, 0, 0, locked);
+    check('locked on to one of three, THAT one has first claim on the attack, though it is the furthest off', locked.mayAttack && trio.filter((e) => e.mayAttack).length === 1);
+    // How long each must wait after an attack: the locked one comes again sooner.
+    const breath = (lock: boolean): number => {
+      const two = [fake(2, 0), fake(0, 4)];
+      const dd = new Director();
+      dd.update(DT, two, 0, 0, lock ? two[0] : null);
+      (two[0] as { attacking: boolean }).attacking = true;
+      dd.update(DT, two, 0, 0, lock ? two[0] : null);
+      (two[0] as { attacking: boolean }).attacking = false;
+      let frames = 0;
+      for (; frames < 200; frames++) {
+        dd.update(DT, two, 0, 0, lock ? two[0] : null);
+        if (two[0].mayAttack) break;
+      }
+      return frames * DT;
+    };
+    const plain = breath(false);
+    const duel = breath(true);
+    check('...and it waits a shorter breath before it comes again: under half the wait of one he is not locked on to. Locking on is a duel, and the one he duels presses him harder (never easier)', duel < plain * 0.5 && duel > 0.2 && plain > 0.6, `${duel.toFixed(2)} s against ${plain.toFixed(2)} s`);
+    const busy = [fake(2, 0), fake(0, 4)];
+    const db = new Director();
+    (busy[1] as { ready: boolean }).ready = false;
+    db.update(DT, busy, 0, 0, busy[1]);
+    check('a locked-on enemy that is not ready does not hold the others up: the nearest waiting one goes', busy[0].mayAttack && !busy[1].mayAttack);
+    const away = [fake(2, 0), fake(30, 0)];
+    const da = new Director();
+    da.update(DT, away, 0, 0, away[1]);
+    check('...nor does one locked on to from across the room', away[0].mayAttack);
+  }
 }
 
 // ---- The roach: approaches, circles, picks bite or charge by distance, hops back from a swing ----

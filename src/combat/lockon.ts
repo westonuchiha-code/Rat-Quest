@@ -2,6 +2,9 @@
  * Enemy lock-on, in the style of Zelda 64: press the lock button to fix on the nearest foe in front of the camera; the camera
  * swings round to keep him in view, the rat faces him while he circles, and sword swings aim at him. Flick the right stick to
  * switch to the next foe; press again (or run far away, or kill him) to let go. All the choosing is here as plain functions.
+ *
+ * (2026-11-16: killing him LETS GO. It used to move on to the next foe by itself, which swung the view round with
+ * nobody asking: and the view turns only when the player turns it. He presses again for the next one.)
  */
 import type { Foe } from '../enemies/foe';
 
@@ -67,8 +70,7 @@ export function switchTarget(rat: Spot, camYaw: number, current: Foe, foes: Foe[
   return best;
 }
 
-/** Keeps the lock while the foe is alive and within reach. If he dies, moves on to another nearby foe, or lets go (null). */
-export function keepTarget(rat: Spot, camYaw: number, current: Foe, foes: Foe[]): Foe | null {
-  if (current.alive && Math.hypot(current.x - rat.x, current.z - rat.z) <= LOCK_DROP) return current;
-  return pickTarget(rat, camYaw, foes.filter((e) => e !== current), 9);
+/** Keeps the lock while the foe is alive and within reach. If he dies or is left far behind, it lets go (null): it never moves to another by itself. */
+export function keepTarget(rat: Spot, _camYaw: number, current: Foe, _foes: Foe[]): Foe | null {
+  return current.alive && Math.hypot(current.x - rat.x, current.z - rat.z) <= LOCK_DROP ? current : null;
 }

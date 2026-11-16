@@ -34,7 +34,7 @@ check('nothing further right keeps the current', switchTarget(rat, 0, R, all, 1)
 
 check('keeps a live foe in reach', keepTarget(rat, 0, M, all) === M);
 const dead = foe(0, -6, false);
-check('a dead foe hands over to another nearby', keepTarget(rat, 0, dead, [dead, foe(2, -5)])?.x === 2);
+check('a dead foe LETS GO, even with another nearby: the lock never moves to a new foe by itself (that swung the view round with nobody asking; he presses again for the next one)', keepTarget(rat, 0, dead, [dead, foe(2, -5)]) === null);
 check('a dead foe with nobody else lets go', keepTarget(rat, 0, dead, [dead]) === null);
 check('running far away lets go', keepTarget(rat, 0, foe(0, -30), [foe(0, -30)]) === null);
 if (failures) { console.log(`${failures} FAILED`); process.exit(1); }

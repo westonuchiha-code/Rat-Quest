@@ -443,6 +443,9 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
 - **They still never fall:** at an edge higher than a step a creature stops, as it always has.
 - **To see it: the Move Garden's three ramps** have a roach whose home is the landing and a guard at the foot of the
   hill (`RAMP_FOES`, `RAMP_PATCH` in garden.ts; they count toward nothing and keep to the ramps).
+- **KNOWN: creatures have no way-finding.** They go straight at him, as they always have. One that circles off the
+  foot of a slope and ends up on the floor BESIDE it (the slope's side is a wall there) does not go round to the
+  foot: it gives up, as at any wall. A level that wants a creature to use a slope should give it a wide foot.
 - NOT DONE: no real level has a creature on a slope yet (the Long Drop's one-hit creatures are the place for it).
   Nobody has fought one on a slope by hand: a sword swing up or down a hill at a creature has not been looked at.
   The toad could be taught (plan the hop's landing by the floor there) if it is wanted on slopes.
@@ -704,8 +707,13 @@ a move.** Nothing in the game has been changed on the strength of them yet.
   useless. The Water Temple had to be rebuilt late because the hero's numbers changed after its maps were made:
   SETTLE THE JUMP NUMBERS BEFORE REBUILDING MORE LEVELS.
 - *Found in our own code while writing them:* the wait before the next roll (0.5 s) started when a roll STARTED and
-  a roll lasts 0.5 s, so rolls chained back to back. **Mended 2026-11-15** (see "Rolling" below). Still open: when a
-  locked-on enemy dies the lock moves to another by itself (`keepTarget`), which turns the view without the right stick.
+  a roll lasts 0.5 s, so rolls chained back to back. **Mended 2026-11-15** (see "Rolling" below).
+- **LOCK-ON, DONE 2026-11-16 (on his list as "lock-on"):** (1) when the locked-on enemy dies the lock LETS GO; it
+  used to move to another by itself (`keepTarget`), which turned the view with nobody asking. He presses again for
+  the next. (2) THE ONE HE IS LOCKED ON TO FIGHTS HARDER: the director (`enemies/director.ts`) gives it first claim
+  on the next attack however near the others are, and it waits a shorter breath before it comes again (0.3 s
+  against 0.7). Never easier. Not done: the others moving to his flanks; the locked one using its bigger moves
+  more (that is each creature's own rules). Nobody has fought with it by hand.
 1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
    the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
 2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
