@@ -2352,13 +2352,13 @@ function paintTurtleBelly(p: Px, rand: Rand): void {
 function paintShortFur(p: Px, rand: Rand): void {
   const S = p.size;
   const f = fbm(S, rand, 4, 3);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.7 + (f[y * S + x] - 0.5) * 0.36, SURFACE, x, y, 0.1));
-  for (let k = 0; k < S * 7; k++) {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.74 + (f[y * S + x] - 0.5) * 0.24, SURFACE, x, y, 0.1));
+  for (let k = 0; k < S * 5; k++) {
     const x = Math.floor(rand() * S);
     const y = Math.floor(rand() * S);
-    const len = 3 + Math.floor(rand() * 5);
-    const light = rand() < 0.5;
-    for (let i = 0; i < len; i++) p.blend(x + (i > 2 && rand() < 0.4 ? 1 : 0), y + i, light ? 0xffffff : 0x4e5258, light ? 0.62 - i * 0.06 : 0.5);
+    const len = 2 + Math.floor(rand() * 4);
+    const light = rand() < 0.55;
+    for (let i = 0; i < len; i++) p.blend(x + (i > 2 && rand() < 0.4 ? 1 : 0), y + i, light ? 0xffffff : 0x4e5258, light ? 0.5 - i * 0.06 : 0.3);
   }
 }
 
@@ -2451,6 +2451,10 @@ function paintStripeSock(p: Px, rand: Rand): void {
 // textures we need to do this with them!"). Surface pictures in greys, as the stag's are: a creature keeps the colours
 // painted on it and the picture is laid over them. RULE (his, of the turtle's first skin): NOTHING ORGANIC IN ROWS OF
 // OBLONGS. So none of these is a tiling of shapes: each is marks scattered on a ground.
+// AND A SECOND RULE (his, of fur strokes and feather flecks tried on the mice, the birds and Grimsqueak): "its like
+// you just threw a bunch of shit all over them". Marks scattered over a smooth cartoon character read as DIRT. These
+// pictures are for hard-shelled creatures, whose shells really are streaked and pitted. Nothing soft and friendly
+// wears them.
 // ---------------------------------------------------------------------------
 
 /** An insect's shell: smooth, faintly streaked the long way, pitted here and there, a soft cloud of dark and light under it. */
@@ -2546,29 +2550,21 @@ function paintMembrane(p: Px, rand: Rand): void {
 }
 
 /**
- * Plumage: a soft ground, and on it small dark flecks, each a short stroke down with a paler tip, scattered (thick
- * here, thin there, never in rows). A feathered thing seen from a little way off. (Round-ended feathers laid like
- * tiles were tried on the owl first, and at this size they were a wall of bricks.)
+ * SOFT PAINT: A TRY-OUT, WORN BY NOBODY IN THE GAME (the model viewer shows it with `&soft=1`). The owner, 2026-11-16,
+ * after fur strokes and feather flecks on the mice and birds were taken off ("like you just threw a bunch of shit all
+ * over them"), with pictures of old games' characters: "Their texture doesn't have to be intense remember we're going
+ * for an old school game". What those characters have is not marks but PAINTED SHADING: big soft clouds of a little
+ * lighter and a little darker, as if brushed on, and nothing else. So: slow clouds, five near-white greys, no dots.
  */
-function paintPlumage(p: Px, rand: Rand): void {
-  const S = p.size;
-  const f = fbm(S, rand, 3, 3);
-  const g = fbm(S, rand, 8, 2);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.82 + (f[y * S + x] - 0.5) * 0.22 + (g[y * S + x] - 0.5) * 0.1, SURFACE, x, y, 0.1));
-  for (let k = 0; k < 120; k++) {
-    const x = Math.floor(rand() * S);
-    const y = Math.floor(rand() * S);
-    if (f[y * S + x] < 0.42 && rand() < 0.7) continue;
-    const len = 2 + Math.floor(rand() * 3);
-    for (let i = 0; i < len; i++) {
-      p.tint(x, y + i, 0.62);
-      if (i === 0 && len > 2) {
-        p.tint(x - 1, y + 1, 0.8);
-        p.tint(x + 1, y + 1, 0.8);
-      }
-    }
-    p.blend(x, y + len, 0xffffff, 0.5);
-  }
+function paintSoftPaintAs(strong: boolean): Painter {
+  return (p, rand) => {
+    const S = p.size;
+    const a = fbm(S, rand, 2, 2);
+    const b = fbm(S, rand, 4, 2);
+    // (`strong`: the same clouds, twice as deep. Two strengths, for him to choose between or refuse both.)
+    const soft = strong ? [0xa8adb2, 0xbfc3c7, 0xd5d8da, 0xebecee, 0xffffff] : [0xcfd2d4, 0xdcdee0, 0xe9eaeb, 0xf5f5f6, 0xffffff];
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.2 + a[y * S + x] * 0.6 + (b[y * S + x] - 0.5) * 0.3, soft, x, y, 0.1));
+  };
 }
 
 /** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
@@ -2782,7 +2778,9 @@ const DEFS = {
   wartSkin: { size: 64, seed: 862, paint: paintWartSkin },
   leafChitin: { size: 32, seed: 863, paint: paintLeafChitin },
   membrane: { size: 32, seed: 864, paint: paintMembrane },
-  plumage: { size: 64, seed: 865, paint: paintPlumage },
+  // A try-out, worn by nobody: soft painted shading for the friendly characters (viewer: &soft=1).
+  softPaint: { size: 64, seed: 871, paint: paintSoftPaintAs(false) },
+  softPaintStrong: { size: 64, seed: 871, paint: paintSoftPaintAs(true) },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },

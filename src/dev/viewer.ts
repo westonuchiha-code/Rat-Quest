@@ -1,6 +1,7 @@
 import { Widow, WIDOW } from '../enemies/widow';
 import { WidowModel } from '../enemies/widowModel';
 import * as THREE from 'three';
+import { getTexture } from '../render/textures';
 import { makePuppet, PUPPET_FOES } from '../cutscene/stage';
 import { Npc } from '../npc/npc';
 import { BatModel } from '../enemies/batModel';
@@ -253,6 +254,15 @@ export function runViewer(canvas: HTMLCanvasElement): void {
   camera.position.x += lx;
   camera.position.z += lz;
   camera.lookAt(lx, h, lz);
+  // &soft=1 (or 2, twice as deep): A TRY-OUT. Everything of it that is lit wears `softPaint` (soft painted shading and nothing else),
+  // to be looked at beside itself plain. Nothing in the game wears it.
+  if (q.has('soft')) {
+    const soft = getTexture(q.get('soft') === '2' ? 'softPaintStrong' : 'softPaint');
+    scene.traverse((o) => {
+      const mat = (o as THREE.Mesh).isMesh ? ((o as THREE.Mesh).material as THREE.ShaderMaterial) : null;
+      if (mat?.uniforms?.tex) mat.uniforms.tex.value = soft;
+    });
+  }
   // &post=0.5: it stands on a post that wide each way from its middle (&ox, &oz: the post's middle), and its shadow
   // is cut to the post's top as it is in the game (render/cutShadow.ts).
   if (q.has('post')) {

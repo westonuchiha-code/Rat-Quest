@@ -426,7 +426,32 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
-## The texture pass, second sitting (2026-11-16): ten creatures and six characters. NOT YET: the knight and the guard
+## HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES (2026-11-16): TAKEN OFF. READ THIS BEFORE TEXTURING ANYONE FRIENDLY
+
+"okay so the mice an birds look wayaaaaaayyyyyy worse than before. same with the rat king, its like you just threw a
+bunch of shit all over them."
+ - TAKEN OFF AT ONCE, back to exactly what they were: the mice (Pip, Mort), the birds (Finch, Wren), Dave, the owl,
+   Lord Grimsqueak. The picture `plumage` is gone; `shortFur` is back at the strength he had seen on the fox, the
+   ferret and Jinx. (`npc/npc.ts` and `npc/grimsqueakModel.ts` are as they were before the second sitting.)
+ - KEPT, because he did not speak against them (ask if in doubt): the ten creatures (roach, toad, ironback, mantis,
+   ant, bat, hornet, glow bug, broodmother, wyrm), and from before: the stag, the turtles, the fox, the ferret, Jinx.
+ - THE RULE IT LEAVES: MARKS SCATTERED OVER A SMOOTH CARTOON CHARACTER READ AS DIRT. Strokes of fur, flecks of
+   feather, noise of any kind: no. What he liked on the stag was STRUCTURE THAT FOLLOWS THE FORM and says what a thing
+   is made of: grooves down a wing case, plates down a belly, iron with rivets. A soft friendly character has no such
+   thing on his fur or feathers; if he gets any picture at all it belongs on what he WEARS AND CARRIES (a knitted
+   jumper's rows, a leather pack's stitching, a scarf's weave, a gold chain), drawn to fit that one thing.
+ - WHAT HE SAID NEXT, with six pictures of old games' characters (flat colour with soft painted shading, a few
+   painted folds, strands in hair; nothing gritty): "Their texture doesn't have to be intense remember we're going for
+   an old school game"; and: "its hard to capture that feeling all over especially when we can cheat, and want to
+   cheat when it makes the game better, but some stuff needs to be thought about carefully." So: GENTLE, and thought
+   about one character at a time; not a pass over everybody.
+ - A TRY-OUT WAS SHOWN HIM AS STILLS ONLY: `softPaint` and `softPaintStrong` (slow clouds of a little lighter and
+   darker, nothing else), worn by nobody in the game; the viewer puts them on anything with `&soft=1` or `&soft=2`.
+   Waiting on his word: A plain, B soft, C deeper, or something else.
+ - AND THE WAY OF WORKING: this is a contested look now. Stills first, in the model viewer, of ONE character; his
+   yes; then the rest. Nothing of the kind goes into the game unseen again. The same holds for the knight.
+
+## The texture pass, second sitting (2026-11-16): ten creatures KEPT; six characters TAKEN OFF AGAIN (see above)
 
 He said "Continue" to: carry on the texture pass. Everything below is a SURFACE PICTURE IN GREYS laid over the model's
 own painted colours, as the stag's is. Before-and-after sheets went to him.

@@ -1304,3 +1304,10 @@ things are:
 - `npc/grimsqueakModel.ts`: `mat` shortFur, `both` knit.
 - Not done: `player/ratModel.ts` (the knight; the guard is made from it).
 
+## The soft characters' textures taken off (2026-11-16, the owner's verdict)
+
+- `npc/npc.ts` and `npc/grimsqueakModel.ts` restored to what they were before the second sitting (no `coat`,
+  `plainMat`, or `uv` multiplying). The owl's `ink` is plain again; `plumeMat` and the picture `plumage` are gone;
+  `shortFur` is back at its first strength. The ten creatures keep theirs.
+- The rule and the way of working are in START-HERE.md ("HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES").
+
