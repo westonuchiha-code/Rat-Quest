@@ -1293,3 +1293,14 @@ things are:
   `class Jinx`; `ink`; `furMat`. `audio/speech.ts` `VOICES.rat`; `npc/portrait.ts` a `rat` portrait;
   `cutscene/stage.ts` `PUPPET_NPCS` has `rat`.
 
+## The texture pass, second sitting (2026-11-16)
+
+- `render/textures.ts`: `chitin`, `wartSkin`, `leafChitin`, `membrane`, `plumage`; a note above them on the rule
+  (nothing organic in rows of oblongs: marks scattered on a ground).
+- Each creature model's materials take `tex: getTexture(...)` (scuttler, toad, ironback, mantis, ant, bat, hornet,
+  firefly, brood, wyrm). `npc/npc.ts`: `coat`, `mat` (the coat), `plainMat`, `kit` = soft blobs and spars, hard
+  boxes and cones; the coat's `uv` multiplied at the end of the constructor. `npc/patrons.ts`: `plumeMat` on the owl.
+- `dev/viewer.ts`: `who=foe&type=`, `who=npc&kind=&name=`.
+- `npc/grimsqueakModel.ts`: `mat` shortFur, `both` knit.
+- Not done: `player/ratModel.ts` (the knight; the guard is made from it).
+

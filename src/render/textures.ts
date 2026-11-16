@@ -2352,13 +2352,13 @@ function paintTurtleBelly(p: Px, rand: Rand): void {
 function paintShortFur(p: Px, rand: Rand): void {
   const S = p.size;
   const f = fbm(S, rand, 4, 3);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.74 + (f[y * S + x] - 0.5) * 0.24, SURFACE, x, y, 0.1));
-  for (let k = 0; k < S * 5; k++) {
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.7 + (f[y * S + x] - 0.5) * 0.36, SURFACE, x, y, 0.1));
+  for (let k = 0; k < S * 7; k++) {
     const x = Math.floor(rand() * S);
     const y = Math.floor(rand() * S);
-    const len = 2 + Math.floor(rand() * 4);
-    const light = rand() < 0.55;
-    for (let i = 0; i < len; i++) p.blend(x + (i > 2 && rand() < 0.4 ? 1 : 0), y + i, light ? 0xffffff : 0x4e5258, light ? 0.5 - i * 0.06 : 0.3);
+    const len = 3 + Math.floor(rand() * 5);
+    const light = rand() < 0.5;
+    for (let i = 0; i < len; i++) p.blend(x + (i > 2 && rand() < 0.4 ? 1 : 0), y + i, light ? 0xffffff : 0x4e5258, light ? 0.62 - i * 0.06 : 0.5);
   }
 }
 
@@ -2443,6 +2443,131 @@ function paintStripeSock(p: Px, rand: Rand): void {
       p.set(x, y, shade(c, 0.9 + (f[y * S + x] - 0.5) * 0.3 + (x % 2 ? 0.06 : 0)));
       if (y % 4 === 0) p.tint(x, y, violet ? 1.2 : 0.8);
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// THE TEXTURE PASS (the owner, 2026-11-16: "We've got to think about all the models in the game that don't have
+// textures we need to do this with them!"). Surface pictures in greys, as the stag's are: a creature keeps the colours
+// painted on it and the picture is laid over them. RULE (his, of the turtle's first skin): NOTHING ORGANIC IN ROWS OF
+// OBLONGS. So none of these is a tiling of shapes: each is marks scattered on a ground.
+// ---------------------------------------------------------------------------
+
+/** An insect's shell: smooth, faintly streaked the long way, pitted here and there, a soft cloud of dark and light under it. */
+function paintChitin(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 3);
+  const g = fbm(S, rand, 7, 2);
+  const streak = Array.from({ length: S }, () => (rand() - 0.5) * 0.1);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      let v = 0.72 + (f[y * S + x] - 0.5) * 0.44 + streak[x] * 1.6 + (g[y * S + x] - 0.5) * 0.14;
+      // (A long soft glint down it, off to one side, as on anything polished.)
+      const glint = Math.abs(x - S * 0.3 - (f[y * S + x] - 0.5) * 10);
+      if (glint < 3) v += 0.16 - glint * 0.045;
+      // Lines it has grown by, across it: wavering, not evenly apart, a pale lip under each.
+      const band = Math.sin(((y + f[y * S + x] * 14) / S) * Math.PI * 9 + Math.sin(y / 7) * 0.8);
+      const next = Math.sin(((y + 1 + f[((y + 1) % S) * S + x] * 14) / S) * Math.PI * 9 + Math.sin((y + 1) / 7) * 0.8);
+      if (band > 0 && next <= 0) v -= 0.3;
+      else if (band <= 0 && next < band && band > -0.25) v += 0.1;
+      p.set(x, y, ramp(v, SURFACE, x, y, 0.1));
+    }
+  }
+  // Pits: a dark dot with a pale one under it, some of them in pairs.
+  for (let k = 0; k < 90; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.tint(x, y, 0.5);
+    if (rand() < 0.4) p.tint(x + 1, y, 0.6);
+    p.blend(x, y + 1, 0xffffff, 0.5);
+  }
+}
+
+/** A toad's skin: warts of every size, crowded in some places and sparse in others, each a little dome; blotches under them. */
+function paintWartSkin(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 3);
+  const g = fbm(S, rand, 6, 2);
+  // (It goes once round a ball and only half way over it, so everything in it is painted HALF AS WIDE as it is to
+  // look: a wart is a tall oval here and a round one on the toad.)
+  const wide = (x: number, y: number, of: Field): number => of[y * S + ((x * 2) % S)];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.7 + (wide(x, y, f) - 0.5) * 0.56 + (wide(x, y, g) - 0.5) * 0.16, SURFACE, x, y, 0.12));
+  for (let k = 0; k < 110; k++) {
+    const cx = rand() * S;
+    const cy = rand() * S;
+    // (More of them where the blotches are dark: they come in patches.)
+    if (f[(Math.floor(cy) % S) * S + (Math.floor(cx) % S)] > 0.56 && rand() < 0.6) continue;
+    const r = 0.9 + rand() * rand() * 3.4;
+    for (let dy = -Math.ceil(r) - 1; dy <= Math.ceil(r) + 1; dy++) {
+      for (let dx = -Math.ceil(r) - 1; dx <= Math.ceil(r) + 1; dx++) {
+        const d = Math.hypot(dx * 2, dy) / r;
+        const x = Math.floor(cx + dx);
+        const y = Math.floor(cy + dy);
+        if (d <= 1) p.blend(x, y, dx + dy < -r * 0.3 ? 0xffffff : dx + dy > r * 0.6 ? 0x4e5258 : 0xe2e3e4, dx + dy < -r * 0.3 ? 0.7 : 0.5);
+        else if (d <= 1 + 1.1 / r && dx + dy > 0) p.tint(x, y, 0.55);
+      }
+    }
+  }
+}
+
+/** A mantis's shell, thin as a leaf: fine veins the long way, a cross-vein now and then, nothing else. */
+function paintLeafChitin(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 2);
+  const vein = Array.from({ length: S }, (_, x) => (x % 5 === 0 ? -0.34 : x % 5 === 1 ? 0.12 : 0) + (rand() - 0.5) * 0.08);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const vx = (x + Math.round(Math.sin(y / 11) * 0.9) + S) % S;
+      p.set(x, y, ramp(0.84 + vein[vx] + (f[y * S + x] - 0.5) * 0.14, SURFACE, x, y, 0.08));
+    }
+  }
+  for (let k = 0; k < 14; k++) {
+    const x0 = Math.floor(rand() * (S / 5)) * 5 + 1;
+    const y = Math.floor(rand() * S);
+    for (let i = 0; i < 4; i++) p.tint(x0 + i, y + (i > 1 ? 1 : 0), 0.62);
+  }
+}
+
+/** A wing's skin, a bat's or an insect's: veins running out across it from one edge and forking, pale between them. */
+function paintMembrane(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 4, 2);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.86 + (f[y * S + x] - 0.5) * 0.16, SURFACE, x, y, 0.08));
+  const run = (x: number, y: number, dx: number, dy: number, len: number, depth: number): void => {
+    for (let i = 0; i < len; i++) {
+      p.tint(x, y, 0.62);
+      p.blend(x, y + 1, 0xffffff, 0.25);
+      x += dx;
+      y += dy + (rand() - 0.5) * 0.5;
+      if (depth > 0 && i > 3 && rand() < 0.12) run(x, y, dx, dy + (rand() < 0.5 ? 0.6 : -0.6), len - i, depth - 1);
+    }
+  };
+  for (let k = 0; k < 5; k++) run(0, (k + 0.5) * (S / 5), 1, (k - 2) * 0.12, S, 2);
+}
+
+/**
+ * Plumage: a soft ground, and on it small dark flecks, each a short stroke down with a paler tip, scattered (thick
+ * here, thin there, never in rows). A feathered thing seen from a little way off. (Round-ended feathers laid like
+ * tiles were tried on the owl first, and at this size they were a wall of bricks.)
+ */
+function paintPlumage(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 3);
+  const g = fbm(S, rand, 8, 2);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.82 + (f[y * S + x] - 0.5) * 0.22 + (g[y * S + x] - 0.5) * 0.1, SURFACE, x, y, 0.1));
+  for (let k = 0; k < 120; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    if (f[y * S + x] < 0.42 && rand() < 0.7) continue;
+    const len = 2 + Math.floor(rand() * 3);
+    for (let i = 0; i < len; i++) {
+      p.tint(x, y + i, 0.62);
+      if (i === 0 && len > 2) {
+        p.tint(x - 1, y + 1, 0.8);
+        p.tint(x + 1, y + 1, 0.8);
+      }
+    }
+    p.blend(x, y + len, 0xffffff, 0.5);
   }
 }
 
@@ -2652,6 +2777,12 @@ const DEFS = {
   ratTail: { size: 32, seed: 854, paint: paintRatTail },
   tartan: { size: 64, seed: 855, paint: paintTartan },
   stripeSock: { size: 32, seed: 856, paint: paintStripeSock },
+  // The texture pass: surface pictures for the creatures and characters that were plain.
+  chitin: { size: 64, seed: 861, paint: paintChitin },
+  wartSkin: { size: 64, seed: 862, paint: paintWartSkin },
+  leafChitin: { size: 32, seed: 863, paint: paintLeafChitin },
+  membrane: { size: 32, seed: 864, paint: paintMembrane },
+  plumage: { size: 64, seed: 865, paint: paintPlumage },
   starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },

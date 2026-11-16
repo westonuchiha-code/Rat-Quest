@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import type { IronbackState } from './ironback';
 import { IRONBACK } from './ironback';
 
@@ -48,7 +49,8 @@ interface Leg {
 
 export class IronbackModel {
   readonly root = new THREE.Group();
-  private readonly material = createPs1Material({ lit: true });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly material = createPs1Material({ lit: true, shine: 0.45, tex: getTexture('stagShell') });
   private readonly eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff9a2a });
   private readonly hornTipMaterial = new THREE.MeshBasicMaterial({ color: 0x5a6068 });
   private readonly body = new THREE.Group();

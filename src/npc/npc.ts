@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture } from './grimsqueakModel';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
@@ -139,7 +140,12 @@ export class Npc {
   near = false;
 
   constructor(readonly spec: NpcSpec) {
-    const mat = createPs1Material({ lit: true });
+    // What he is made of: his coat (fur for a mouse, plumage for a bird: a surface picture in greys over the colours
+    // painted on him), and plain for the hard things he carries and wears (boxes and cones: straps, buckles, a
+    // lantern, a beak, shades). The texture pass, 2026-11-16.
+    const coat = spec.kind === 'bird' || spec.kind === 'pigeon' ? 'plumage' : spec.kind === undefined || spec.kind === 'mouse' ? 'shortFur' : null;
+    const mat = createPs1Material(coat ? { lit: true, tex: getTexture(coat) } : { lit: true });
+    const plainMat = coat ? createPs1Material({ lit: true }) : mat;
     const blob = (sx: number, sy: number, sz: number, color: number, x: number, y: number, z: number, w = 7, h = 5): THREE.Mesh => {
       const geo = new THREE.SphereGeometry(1, w, h);
       geo.scale(sx, sy, sz);
@@ -159,7 +165,7 @@ export class Npc {
       const cols = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) cols.set([c.r, c.g, c.b], i * 3);
       geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-      const m = new THREE.Mesh(geo, mat);
+      const m = new THREE.Mesh(geo, plainMat);
       m.position.set(x, y, z);
       return m;
     };
@@ -179,7 +185,10 @@ export class Npc {
       m.position.set(x, y, z);
       return m;
     };
-    const kit = modelKit(mat);
+    const soft = modelKit(mat);
+    const hard = modelKit(plainMat);
+    // (Round things are of his coat; spikes are hard: beaks, claws, a lantern's cap.)
+    const kit = { blob: soft.blob, spar: soft.spar, box: hard.box, cone: hard.cone };
     const look = lookOf(spec.kind, spec.name);
     this.who = look;
     const patronKind = PATRON_KINDS.find((k) => k === spec.kind);
@@ -343,7 +352,7 @@ export class Npc {
         for (let i = 0; i < n; i++) cols.set([g.r, g.g, g.b], i * 3);
         tube.setAttribute('color', new THREE.BufferAttribute(cols, 3));
       }
-      this.body.add(new THREE.Mesh(tube, mat));
+      this.body.add(new THREE.Mesh(tube, plainMat));
       // The medallion hangs from the bottom of the V (the front point of the loop).
       this.pendant.position.copy(loop[0]);
       this.body.add(this.pendant);
@@ -423,11 +432,11 @@ export class Npc {
           pack.add(box(0.08, 0.06, 0.03, GOLD, s * 0.16, 0.1, 0.225));
           pack.add(kit.box(0.2, 0.22, 0.1, 0x7a4e2a, s * 0.36, -0.12, 0)); // side pockets
         }
-        const roll = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.16, 0.16, 0.76, 8, 10), (_nx, ny) => (Math.abs(ny) > 0.95 ? 0xe8d8b0 : Math.abs(ny) > 0.5 && Math.abs(ny) < 0.7 ? STRAP : 0xb84a3a)), mat);
+        const roll = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.16, 0.16, 0.76, 8, 10), (_nx, ny) => (Math.abs(ny) > 0.95 ? 0xe8d8b0 : Math.abs(ny) > 0.5 && Math.abs(ny) < 0.7 ? STRAP : 0xb84a3a)), plainMat);
         roll.rotation.z = Math.PI / 2;
         roll.position.set(0, 0.42, 0);
         pack.add(roll);
-        const map = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6, 4), (_nx, ny) => (ny > 0.7 ? 0xb84a3a : 0xe8dcb8)), mat);
+        const map = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6, 4), (_nx, ny) => (ny > 0.7 ? 0xb84a3a : 0xe8dcb8)), plainMat);
         map.position.set(-0.2, 0.36, -0.12);
         map.rotation.z = 0.25;
         pack.add(map);
@@ -455,7 +464,7 @@ export class Npc {
             pos.setXYZ(n, mid.x + (pos.getX(n) - mid.x) * k, mid.y + (pos.getY(n) - mid.y) * k, mid.z + (pos.getZ(n) - mid.z) * k);
           }
         }
-        this.tail.add(new THREE.Mesh(paint(tube, (nx) => (Math.floor((nx + 1) * 7) % 2 ? (mort ? 0xb890a8 : 0xd89890) : PINK)), mat));
+        this.tail.add(new THREE.Mesh(paint(tube, (nx) => (Math.floor((nx + 1) * 7) % 2 ? (mort ? 0xb890a8 : 0xd89890) : PINK)), plainMat));
       }
       this.body.add(this.tail);
 
@@ -528,12 +537,12 @@ export class Npc {
       if (mort) {
         // The mug, held in both paws in front of his belly: blue enamel, a handle, something dark in it.
         this.mug.position.set(0, 0.53, 0.33);
-        const cup = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.075, 0.065, 0.13, 8, 3), (_nx, ny) => (ny > 0.6 ? 0xf0f0f0 : 0x4a7ab0)), mat);
+        const cup = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.075, 0.065, 0.13, 8, 3), (_nx, ny) => (ny > 0.6 ? 0xf0f0f0 : 0x4a7ab0)), plainMat);
         this.mug.add(cup);
-        const tea = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.062, 0.062, 0.01, 8), 0x5a3420), mat);
+        const tea = new THREE.Mesh(paint(new THREE.CylinderGeometry(0.062, 0.062, 0.01, 8), 0x5a3420), plainMat);
         tea.position.y = 0.062;
         this.mug.add(tea);
-        const handle = new THREE.Mesh(paint(new THREE.TorusGeometry(0.04, 0.014, 4, 6, Math.PI), 0x4a7ab0), mat);
+        const handle = new THREE.Mesh(paint(new THREE.TorusGeometry(0.04, 0.014, 4, 6, Math.PI), 0x4a7ab0), plainMat);
         handle.position.set(0.075, 0, 0);
         handle.rotation.z = -Math.PI / 2;
         this.mug.add(handle);
@@ -561,6 +570,17 @@ export class Npc {
         this.lantern.add(box(0.16, 0.03, 0.16, 0x3a3a40, 0, -0.245, 0));
         for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.lantern.add(box(0.018, 0.16, 0.018, 0x3a3a40, x * 0.065, -0.16, z * 0.065));
       }
+    }
+    // His coat's picture is laid several times round each part of him, so that its grain is fine: once round a body
+    // as big and round as a mouse's, a hair was as thick as his finger and his jumper was a patchwork.
+    if (coat) {
+      const [ku, kv] = coat === 'shortFur' ? [5, 3] : [3, 2];
+      this.root.traverse((o) => {
+        const m = o as THREE.Mesh;
+        const uv = m.isMesh && m.material === mat ? (m.geometry.attributes.uv as THREE.BufferAttribute | undefined) : undefined;
+        if (!uv) return;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * ku, uv.getY(i) * kv);
+      });
     }
     // A soft shadow (a floating head casts a wider, fainter one).
     // (Not one who is a creature from elsewhere: an ant or a stag brings its own, and two lay one on the other, twice as dark.)

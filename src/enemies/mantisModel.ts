@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
 import { Springs, Walker, aim, ease, walkerLeg, type WalkerLeg } from '../render/bugRig';
@@ -218,8 +219,9 @@ export class MantisModel {
   private readonly arms: THREE.Group[][] = [[], []];
   private readonly tips: THREE.Group[] = [];
   private readonly legs: Leg[] = [];
-  private readonly mat = createPs1Material({ lit: true });
-  private readonly matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.2, tex: getTexture('leafChitin') });
+  private readonly matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('membrane') });
   private readonly glintMat = glowMaterial(0xfff0f4);
   private readonly glints: THREE.Mesh[][] = [[], []];
   private readonly shadow: THREE.Mesh;

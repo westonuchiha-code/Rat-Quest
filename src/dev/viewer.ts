@@ -1,6 +1,12 @@
 import { Widow, WIDOW } from '../enemies/widow';
 import { WidowModel } from '../enemies/widowModel';
 import * as THREE from 'three';
+import { makePuppet, PUPPET_FOES } from '../cutscene/stage';
+import { Npc } from '../npc/npc';
+import { BatModel } from '../enemies/batModel';
+import { HornetModel } from '../enemies/hornetModel';
+import { BroodModel } from '../enemies/broodModel';
+import { WyrmModel } from '../enemies/wyrmModel';
 import { ShadowCuts } from '../render/cutShadow';
 import { makeAabb } from '../world/collision';
 import { ps1Uniforms } from '../render/ps1Material';
@@ -165,6 +171,24 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     };
     const P = pose[state] ?? pose.stalk;
     for (let time = 0; time <= Math.max(t, 0.6) + 1e-6; time += dt) sm.update(dt, { state, stateTime: time, tail: P.tail, light: P.light, claw: P.claw, moving: num('walk', 0) ? 3 : 0, mark: P.mark === null ? null : { ahead: aim, r: S.stingR, fill: P.mark } });
+  } else if (who === 'foe') {
+    // Any creature, standing as it is first made: #view&who=foe&type=toad (the walkers move as a scene's puppet does: &speed=1)
+    const type = q.get('type') ?? 'scuttler';
+    if ((PUPPET_FOES as readonly string[]).includes(type)) {
+      const p = makePuppet({ is: 'foe', type } as never);
+      scene.add(p.root);
+      for (let time = 0; time <= Math.max(t, 0.5) + 1e-6; time += dt) p.pose({ x: 0, y: 0, z: 0, facing: 0, headYaw: 0, headPitch: 0, leanFwd: 0, leanSide: 0, hopY: 0, speed: num('speed', 0), doing: 'stand', seated: false, talking: false, visible: true } as never, dt);
+    } else {
+      const m = type === 'bat' ? new BatModel({ x: 0, y: 1.6, z: 0 }, 'rock') : type === 'hornet' ? new HornetModel() : type === 'brood' ? new BroodModel() : new WyrmModel();
+      scene.add(m.root);
+      if (type === 'hornet') m.root.position.y = 0.9;
+    }
+  } else if (who === 'npc') {
+    // A talking character: #view&who=npc&kind=mouse&name=Pip&t=2
+    const n = new Npc({ name: q.get('name') ?? 'Pip', kind: (q.get('kind') ?? 'mouse') as never, x: 0, y: 0, z: 0, facing: 0, lines: ['.'] });
+    scene.add(n.root);
+    for (let time = 0; time <= Math.max(t, 0.5) + 1e-6; time += dt) n.update(dt, 1e6, 1e6, 1e6, q.get('talking') === '1');
+    n.root.rotation.y = 0;
   } else if (who === 'stag') {
     // The Stag Knight, standing: #view&who=stag&yaw=0.6&dist=5
     const stag = new StagModel();

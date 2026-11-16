@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { Probe, Springs, aim, ease, twoBone } from '../render/bugRig';
 import type { FireflyState } from './firefly';
@@ -125,9 +126,10 @@ export class FireflyModel {
   private readonly legs: Limb[] = [];
   private readonly halo: THREE.Mesh;
   private readonly shadow: THREE.Mesh;
-  private readonly mat = createPs1Material({ lit: true, shine: 0.25 });
-  private readonly matPlain = createPs1Material({ lit: true });
-  private readonly wingMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.25, tex: getTexture('chitin') });
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('stagHorn') });
+  private readonly wingMat = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('membrane') });
   /** Its lantern: lit from inside, so it is not shaded by the room. Its colour is its light. */
   private readonly glow = new THREE.MeshBasicMaterial({ color: C.lit });
   private readonly haloMat = new THREE.MeshBasicMaterial({ color: C.lit, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending });

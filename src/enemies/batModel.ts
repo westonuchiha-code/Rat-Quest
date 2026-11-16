@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import type { BatState } from './bat';
 import { BAT } from './bat';
 
@@ -48,8 +49,9 @@ export class BatModel {
   readonly root = new THREE.Group();
   private readonly flier = new THREE.Group();
   private readonly perch = new THREE.Group();
-  private readonly material = createPs1Material({ lit: true });
-  private readonly wingMaterial = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly material = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+  private readonly wingMaterial = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('membrane') });
   private readonly eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xff6a8a });
   private readonly body = new THREE.Group();
   private readonly head = new THREE.Group();

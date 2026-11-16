@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { Springs, Walker, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
 import { BROOD, type BroodState } from './brood';
@@ -160,8 +161,9 @@ export class BroodModel {
   /** Each walking leg, with where its foot goes off the floor: `spread` in the air (out and down, as a falling spider's), `curled` in tight when she is dead. In her body's space. */
   private readonly legs: Array<WalkerLeg & { curled: THREE.Vector3; spread: THREE.Vector3 }> = [];
   private readonly walker: Walker;
-  private readonly mat = createPs1Material({ lit: true, shine: 0.45 });
-  private readonly matPlain = createPs1Material({ lit: true });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.45, tex: getTexture('chitin') });
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('shortFur') });
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: C.eye });
   private readonly thread: THREE.Mesh;
   private readonly ring: THREE.Mesh;

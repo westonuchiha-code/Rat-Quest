@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 
 /**
@@ -149,8 +150,9 @@ interface Arm {
 
 export class GrimsqueakModel {
   readonly root = new THREE.Group();
-  private readonly mat = createPs1Material({ lit: true });
-  private readonly both = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (A surface picture in greys over his painted colours: fur for him, a weave for his robes. The texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+  private readonly both = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('knit') });
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
   private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0xffb040 });
   private readonly lightMat = new THREE.MeshBasicMaterial({ color: C.light });
@@ -552,6 +554,12 @@ export class GrimsqueakModel {
     jewel.scale.set(0.8, 1.2, 0.5);
     this.crown.add(jewel);
     this.head.add(this.crown);
+    // (His fur's picture is laid several times round each part of him, so its grain is fine: see npc/npc.ts.)
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      const uv = m.isMesh && m.material === this.mat ? (m.geometry.attributes.uv as THREE.BufferAttribute | undefined) : undefined;
+      if (uv) for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * 4, uv.getY(i) * 3);
+    });
   }
 
   /** Flashes him white for a moment (the sword has landed). */

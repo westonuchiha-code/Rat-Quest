@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import type { ToadState } from './toad';
 
@@ -38,7 +39,8 @@ function ease(cur: number, target: number, dt: number, rate: number): number {
 
 export class ToadModel {
   readonly root = new THREE.Group();
-  private readonly material = createPs1Material({ lit: true });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly material = createPs1Material({ lit: true, tex: getTexture('wartSkin') });
   private readonly sacMat = new THREE.MeshBasicMaterial({ color: 0x9aff6a, vertexColors: true });
   private readonly body = new THREE.Group();
   private readonly head = new THREE.Group();

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { Probe, Springs, aim, ease, twoBone } from '../render/bugRig';
 import { HORNET, type HornetState } from './hornet';
@@ -121,9 +122,10 @@ export class HornetModel {
   private readonly lance = new THREE.Group();
   private readonly pennant: THREE.Mesh;
   private readonly shadow: THREE.Mesh;
-  private readonly mat = createPs1Material({ lit: true, shine: 0.3 });
-  private readonly matPlain = createPs1Material({ lit: true });
-  private readonly wingMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('chitin') });
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('stagHorn') });
+  private readonly wingMat = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('membrane') });
   private readonly springs = new Springs(SIZE);
   private readonly lanceDir = new THREE.Vector3(0, -0.34, 0.94);
   /** Where its right front leg has the shaft (the root's own space). */

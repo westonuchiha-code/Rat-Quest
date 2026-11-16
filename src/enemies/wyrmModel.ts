@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, mix, modelKit, paint } from '../render/modelKit';
 import { Springs, aim, ease, twoBone } from '../render/bugRig';
 import { WYRM, wyrmTaper, type WyrmState } from './wyrm';
@@ -127,8 +128,9 @@ export class WyrmModel {
   private readonly feelers: THREE.Group[] = [];
   private readonly spurs: THREE.Group[] = [];
   private readonly segs: Segment[] = [];
-  private readonly mat = createPs1Material({ lit: true, shine: 0.5 });
-  private readonly matPlain = createPs1Material({ lit: true });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.5, tex: getTexture('chitin') });
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('stagHorn') });
   private readonly eyeMat = new THREE.MeshBasicMaterial({ color: 0x9aff5a });
   private readonly headShadow: THREE.Mesh;
   private readonly ring: THREE.Mesh;

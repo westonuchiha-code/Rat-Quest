@@ -67,10 +67,12 @@ const kit = modelKit(mat);
 // painted on him part by part, and the picture is laid over them. (The owner, 2026-11-16: "The turtles are also
 // fairly texturless".)
 /**
- * A coat of fur: a surface picture in greys over each furred regular's own painted colours. (The owl is still
- * plain: feathers tried at this size came out as a wall of bricks, and were taken off again. 2026-11-16.)
+ * A coat of fur, and one of plumage: surface pictures in greys over each regular's own painted colours. (The owl's
+ * first feathers, round-ended and laid like tiles, came out as a wall of bricks and were taken off; `plumage` is
+ * flecks scattered on a soft ground, and nothing in rows. 2026-11-16.)
  */
 const furMat = createPs1Material({ lit: true, tex: getTexture('shortFur') });
+const plumeMat = createPs1Material({ lit: true, tex: getTexture('plumage') });
 const scuteMat = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('turtleScute') }); // a plate of his shell, its ridges
 const mossyMat = createPs1Material({ lit: true, shine: 0.15, tex: getTexture('turtleScuteMossy') }); // the old one's: moss in from its edges
 const skinKit = modelKit(createPs1Material({ lit: true, tex: getTexture('turtleSkin') })); // scales
@@ -830,6 +832,7 @@ class Owl implements PatronBody {
 
   constructor(private readonly look: 'tawny' | 'snow') {
     const C = OWL[look];
+    ink = plumeMat;
     this.root.add(this.body);
     // The body: ONE egg, pale down its breast with darker bars across it.
     this.body.add(turned(
@@ -904,6 +907,7 @@ class Owl implements PatronBody {
       this.head.add(glass);
       this.body.add(kit.box(0.2, 0.07, 0.03, 0x8a2a3a, 0, 0.72, 0.17));
     }
+    ink = mat;
     this.common = new Common(eyes, 1);
   }
 

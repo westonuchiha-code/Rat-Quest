@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, modelKit, paint } from '../render/modelKit';
 import { glowMaterial, twinkleGeometry, twinkleSize } from '../world/itemModels';
 import { Probe, Springs, Walker, aim, ease, twoBone, walkerLeg, type WalkerLeg } from '../render/bugRig';
@@ -161,9 +162,10 @@ export class AntModel {
   private readonly tassel = new THREE.Group();
   private readonly glints: THREE.Mesh[] = [];
   private readonly shadow: THREE.Mesh;
-  private readonly mat = createPs1Material({ lit: true, shine: 0.35 });
-  private readonly matPlain = createPs1Material({ lit: true });
-  private readonly metal = createPs1Material({ lit: true, shine: 0.75 });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly mat = createPs1Material({ lit: true, shine: 0.35, tex: getTexture('chitin') });
+  private readonly matPlain = createPs1Material({ lit: true, tex: getTexture('stagHorn') });
+  private readonly metal = createPs1Material({ lit: true, shine: 0.75, tex: getTexture('stagShell') });
   private readonly matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide });
   private readonly glintMat = glowMaterial(0xf4fbff);
   private readonly springs = new Springs(SIZE);

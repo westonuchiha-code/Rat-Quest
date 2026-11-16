@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createPs1Material, lyingOn } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import { bead, modelKit } from '../render/modelKit';
 import type { ScuttlerState } from './scuttler';
 
@@ -51,7 +52,8 @@ interface Leg {
 
 export class ScuttlerModel {
   readonly root = new THREE.Group();
-  private readonly material = createPs1Material({ lit: true });
+  // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
+  private readonly material = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('chitin') });
   private readonly eyeMaterial = new THREE.MeshBasicMaterial({ color: 0xffd23a });
   private readonly pupilMaterial = new THREE.MeshBasicMaterial({ color: 0x1a0a08 });
   private readonly wingCases: THREE.Group[] = [];

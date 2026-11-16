@@ -426,15 +426,37 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## The texture pass, second sitting (2026-11-16): ten creatures and six characters. NOT YET: the knight and the guard
+
+He said "Continue" to: carry on the texture pass. Everything below is a SURFACE PICTURE IN GREYS laid over the model's
+own painted colours, as the stag's is. Before-and-after sheets went to him.
+ - New pictures (`render/textures.ts`): `chitin` (an insect's shell: streaks, wavering growth lines, pits),
+   `wartSkin` (blotches and warts of every size), `leafChitin` (fine veins the long way), `membrane` (a wing's veins,
+   forking), `plumage` (flecks scattered on a soft ground). `shortFur` was made bolder.
+ - Who wears what: the roach `chitin`; the toad `wartSkin`; the ironback `stagShell` (beaten steel: the best of
+   them); the mantis `leafChitin`, its wings `membrane`; the ant `chitin`, its limbs `stagHorn`, its metal
+   `stagShell`; the bat `shortFur` and `membrane`; the hornet and the glow bug `chitin`, `stagHorn`, `membrane`;
+   the broodmother `chitin` and `shortFur`; the wyrm `chitin` and `stagHorn`. The mice `shortFur`; the birds, Dave
+   and the owl `plumage`.
+ - TWO THINGS LEARNED. (1) A picture goes ONCE round a ball and only half way over it, so on a ball everything in it
+   comes out twice as wide as it was painted: the toad's warts are painted as tall ovals to come out round. (2) On a
+   body as big and round as a mouse's, one turn of a 32-dot picture makes a hair as thick as a finger: `npc/npc.ts`
+   lays its coat's picture several times round each part (it multiplies the `uv` of every part made of the coat).
+ - In `npc/npc.ts` round things are of the coat and boxes and cones are plain (straps, buckles, a lantern, a beak).
+ - Lord Grimsqueak (his own model, `npc/grimsqueakModel.ts`): `shortFur`, and `knit` for his robes.
+ - STILL PLAIN, AND WHY: the knight himself, and with him the Keep Guard, who is made from his model
+   (`player/ratModel.ts`: one material for every part of him, so fur, cloth, leather and steel want sorting by
+   part; his hit flash, his dream colours and `ownMaterials` all hang on that one material). He is the one model that
+   must not be got wrong: do him by himself, and show stills before it goes in.
+ - Viewer: `#view&who=foe&type=toad` (any creature), `#view&who=npc&kind=mouse&name=Mort` (any talking character).
+
 ## What he said of the last lot, and Jinx (2026-11-16, later the same day). Tests `tests/glimmer.ts`, `tests/milkyway.ts`, `tests/club.ts`
 
  - "Dude see that Beetle looks so much more ... cool now! We've got to think about all the models in the game that
    don't have textures we need to do this with them!" THE TEXTURE PASS IS WANTED FOR EVERY MODEL. The way of it is
    settled (a surface picture in greys over the model's own painted colours). Done so far: the stag, the turtles, the
-   fox and the ferret (`shortFur`), Jinx. STILL PLAIN: the owl (feathers tried at 32 dots came out as a wall of bricks
-   and were taken off: they want a bigger picture or one laid several times round him), the mouse, the birds, Dave,
-   Grimsqueak, the knight himself; and of the creatures the roach, toad, firefly, ironback, guard, mantis, ant, bat,
-   hornet, broodmother, wyrm. In `npc/patrons.ts` `turned` and `limb` take a material, and make their shapes of `ink`
+   fox and the ferret (`shortFur`), Jinx; and since, everything but the knight and the guard (see the section
+   above). In `npc/patrons.ts` `turned` and `limb` take a material, and make their shapes of `ink`
    when not told (a constructor sets `ink` to its coat and back).
  - THE TURTLE, AGAIN. "you use like a brick texture for his skin ... the skin shouldn't look like bricks": his skin
    is pebbled leather now (scales of no two sizes, in no rows: `paintTurtleSkin`). "the turtle shell looks okay but
