@@ -5,7 +5,7 @@ import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, bu
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS } from '../render/ps1Material';
+import { createPs1Material, bakeVertexColor, ps1Uniforms, MAX_LIGHTS, lyingOn } from '../render/ps1Material';
 import { getTexture, TextureName } from '../render/textures';
 import { JET_SPEED, gasAt, gasWidth } from './gusts';
 import { Aabb, makeAabb, topAt } from './collision';
@@ -214,6 +214,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const waterMat = createPs1Material({ tex: getTexture('sludge') });
   const trimMat = mat('archTrim');
   const plainMat = createPs1Material({ lit: true });
+  /** Plain colour for a thing that LIES ON another surface, `level` layers up (see `lyingOn`): one material a layer. */
+  const plainLayers: THREE.ShaderMaterial[] = [];
+  const plainOn = (level: number): THREE.ShaderMaterial => (plainLayers[level] ??= lyingOn(createPs1Material({ lit: true }), level));
+  let couchPatchOn: THREE.ShaderMaterial | null = null;
   let ironMaterial: THREE.ShaderMaterial | null = null;
   /** Wrought iron for things that stand in the room (a fire bowl): its picture, lifted, so that it is iron and not a black shape in a dark hall. */
   const ironMat = (): THREE.ShaderMaterial => (ironMaterial ??= createPs1Material({ tex: getTexture('wroughtIron'), color: new THREE.Color().setRGB(1.5, 1.48, 1.45) }));
@@ -257,7 +261,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // A barrel: bulging staves, two iron hoops, a lid. Its collider stays the box.
       const r = Math.min(w, d) / 2;
       // (Drawn inside its box all the way round: its bulge and its hoops used to stand a little proud of it.)
-      const body = new THREE.CylinderGeometry(r * 0.86, r * 0.86, h, 10, 4);
+      // (Its staves: open at both ends. Its head is a thing of its own, set down inside them: a barrel drawn as a
+      // closed can with a lid laid a hair over its top had two tops in one place, and they flickered.)
+      const R0 = r * 0.86;
+      const body = new THREE.CylinderGeometry(R0, R0, h, 10, 4, true);
       const p = body.attributes.position;
       for (let i = 0; i < p.count; i++) {
         const yy = p.getY(i) / (h / 2);
@@ -277,11 +284,25 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const hoopGeo = bakeVertexColor(mergeAll(parts), 0x3a3a40);
       const hoops = new THREE.Mesh(hoopGeo, plainMat);
       mesh.add(hoops);
-      const lid = new THREE.CircleGeometry(r * 0.86, 10);
-      lid.rotateX(-Math.PI / 2);
-      lid.translate(0, h / 2 + 0.005, 0);
-      bakeVertexColor(lid, 0x8a6040);
-      mesh.add(new THREE.Mesh(lid, plainMat));
+      // Its head: boards, set a little down inside the staves, whose ends stand round it as a rim (the chime).
+      const SINK = Math.min(0.07, h * 0.08);
+      const INNER = R0 * 0.9;
+      const START = -Math.PI / 2; // (the head's ten sides turned to the staves' ten)
+      const head = new THREE.CircleGeometry(INNER, 10, START);
+      head.rotateX(-Math.PI / 2);
+      head.translate(0, h / 2 - SINK, 0);
+      bakeVertexColor(head, b.skin ? 0xd8d8d8 : 0xd2b890, false);
+      mesh.add(new THREE.Mesh(head, mat(b.skin ?? 'planks')));
+      const chime = new THREE.RingGeometry(INNER, R0, 10, 1, START);
+      chime.rotateX(-Math.PI / 2);
+      chime.translate(0, h / 2, 0);
+      const wall = new THREE.CylinderGeometry(INNER, INNER, SINK, 10, 1, true);
+      wall.scale(-1, 1, 1); // (inside out: it is its inner face that is seen)
+      wall.translate(0, h / 2 - SINK / 2, 0);
+      const foot = new THREE.CircleGeometry(R0, 10, START);
+      foot.rotateX(Math.PI / 2);
+      foot.translate(0, -h / 2, 0);
+      mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([chime, wall, foot]), 0x6a4a30), plainMat));
       crates.push({ type: 'barrel', index: crates.length, x: cx, y: cy, z: cz, half: r, alive: true, aabb, mesh, lastSwing: -1 });
       continue;
     }
@@ -451,6 +472,15 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       side(d, ceiling.x1, cz, -Math.PI / 2);
     }
   }
+  /**
+   * How an end of a string of lights at (x, y, z) is held: 0 if it is at a wall (made fast to it), otherwise how far
+   * up it is to what it hangs from.
+   */
+  const bulbHang = (x: number, y: number, z: number): number => {
+    const AT = 0.6;
+    for (const b of colliders) if (b.max.y > y && b.min.y < y && x > b.min.x - AT && x < b.max.x + AT && z > b.min.z - AT && z < b.max.z + AT) return 0;
+    return Math.max(0, roofOver(x, y, z) - y);
+  };
   /** What a hanging thing at (x, y, z) hangs from: the underside of whatever is over it, or the ceiling. */
   const roofOver = (x: number, y: number, z: number): number => {
     let best = ceiling ? ceiling.y : y + 8;
@@ -826,20 +856,23 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       lightDefs.push({ x: d.x, y: d.y - 0.5, z: d.z, r: 10, color: new THREE.Color(0xffc860), power: 0.8, flash: 0, flicker: 0.06, phase: d.x * 1.3 + d.z });
     } else if (d.kind === 'light') {
       // A little post with a bulb on top; it glows in its colour, and flashes if it is a warning light.
-      const post = new THREE.BoxGeometry(0.16, 0.5, 0.16);
-      bakeVertexColor(post, 0x3a3a42);
-      addMesh(post, plainMat, d.x, d.y + 0.25, d.z);
-      const cap = new THREE.BoxGeometry(0.34, 0.1, 0.34);
-      bakeVertexColor(cap, 0x4a4a54);
-      addMesh(cap, plainMat, d.x, d.y + 0.53, d.z);
-      const bright = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
-      bakeVertexColor(bright, d.color, false);
-      const dim = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
-      bakeVertexColor(dim, new THREE.Color(d.color).multiplyScalar(0.25), false);
-      const onM = addMesh(bright, darkMat, d.x, d.y + 0.73, d.z);
-      const offM = addMesh(dim, darkMat, d.x, d.y + 0.73, d.z);
-      offM.visible = d.flash > 0;
-      if (d.flash > 0) bulbs.push({ on: onM, off: offM, flash: d.flash, phase: d.x * 0.7 + d.z * 0.3 });
+      // (A bare one is only its light.)
+      if (!d.bare) {
+        const post = new THREE.BoxGeometry(0.16, 0.5, 0.16);
+        bakeVertexColor(post, 0x3a3a42);
+        addMesh(post, plainMat, d.x, d.y + 0.25, d.z);
+        const cap = new THREE.BoxGeometry(0.34, 0.1, 0.34);
+        bakeVertexColor(cap, 0x4a4a54);
+        addMesh(cap, plainMat, d.x, d.y + 0.53, d.z);
+        const bright = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
+        bakeVertexColor(bright, d.color, false);
+        const dim = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
+        bakeVertexColor(dim, new THREE.Color(d.color).multiplyScalar(0.25), false);
+        const onM = addMesh(bright, darkMat, d.x, d.y + 0.73, d.z);
+        const offM = addMesh(dim, darkMat, d.x, d.y + 0.73, d.z);
+        offM.visible = d.flash > 0;
+        if (d.flash > 0) bulbs.push({ on: onM, off: offM, flash: d.flash, phase: d.x * 0.7 + d.z * 0.3 });
+      }
       lightDefs.push({ x: d.x, y: d.y + 0.9, z: d.z, r: 11, color: new THREE.Color(d.color), power: 1, flash: d.flash, flicker: 0, phase: d.x * 0.7 + d.z * 0.3 });
     } else if (d.kind === 'web') {
       // Spokes and rings of thin pale thread, on a wall facing yaw.
@@ -1272,7 +1305,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         cones.push({ mesh: woofer, base: 1, dz: 0.5 }, { mesh: dust, base: 1, dz: 0.9 });
       } else {
         // The couch (couchModel.ts): old cloth, cushions, a patch, rips, a pillow, a blanket over one arm.
-        const couch = buildCouch({ cloth: mat('couchFabric'), patch: mat('couchPatch'), blanket: mat('knitBlanket'), plain: plainMat });
+        const couch = buildCouch({ cloth: mat('couchFabric'), patch: mat('couchPatch'), blanket: mat('knitBlanket'), plain: plainMat, patchOn: (couchPatchOn ??= lyingOn(createPs1Material({ tex: getTexture('couchPatch') }))), plainOn });
         couch.position.set(d.x, d.y, d.z);
         couch.rotation.y = d.yaw;
         group.add(couch);
@@ -1290,10 +1323,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       });
     } else if (d.kind === 'rug' || d.kind === 'dancefloor' || d.kind === 'bulbs' || d.kind === 'bottles' || d.kind === 'dartboard') {
       // More of the Club's dressing (tavernModels.ts): all of it only drawn.
-      const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat };
+      const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat, layer: plainOn };
       const piece = d.kind === 'rug' ? buildRug(mats, { r: d.r, w: d.w, d: d.d, colors: d.colors })
         : d.kind === 'dancefloor' ? buildDanceFloor(d.nx, d.nz, d.tile, d.colors)
-        : d.kind === 'bulbs' ? buildBulbs(d.x1 - d.x, d.z1 - d.z, d.sag, d.count)
+        : d.kind === 'bulbs' ? buildBulbs(d.x1 - d.x, d.z1 - d.z, d.sag, d.count, [bulbHang(d.x, d.y, d.z), bulbHang(d.x1, d.y, d.z1)])
         : d.kind === 'bottles' ? buildBottles(mats, d.width) : buildDartboard(mats);
       piece.position.set(d.x, d.y, d.z);
       if (d.kind === 'rug' || d.kind === 'bottles' || d.kind === 'dartboard') piece.rotation.y = d.yaw;

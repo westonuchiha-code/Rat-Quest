@@ -215,7 +215,8 @@ export type Decor =
   /** A stone bowl of fire standing on the floor at y. */
   | { kind: 'brazier'; x: number; y: number; z: number }
   /** A coloured beacon on a short post. `flash` is flashes per second (0 = steady). It lights up the walls and floor around it. */
-  | { kind: 'light'; x: number; y: number; z: number; color: number; flash: number }
+  /** `bare`: only its light, from that place: no post, no bulb (the glow of a fire, which has its own flames to be seen). */
+  | { kind: 'light'; x: number; y: number; z: number; color: number; flash: number; bare?: boolean }
   /** A busted old speaker stack, facing `yaw` (0 faces south, +z). Its cone thumps to the beat. */
   | { kind: 'speaker'; x: number; y: number; z: number; yaw: number }
   /** A sagging old couch, facing `yaw`. */

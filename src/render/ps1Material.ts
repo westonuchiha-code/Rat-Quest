@@ -165,6 +165,22 @@ export function createPs1Material(options: Ps1Options = {}): THREE.ShaderMateria
   });
 }
 
+/**
+ * Marks a material as one for things that LIE ON another surface (a patch on cloth, a rug on a floor, a ring painted
+ * on a board): it is drawn a hair toward the eye, `level` hairs for the `level`th layer up, so that two faces in all
+ * but the same plane never fight over which is in front.
+ * (The owner, 2026-11-16, of the Club: "texture clipping top of barrel", "clipping on couch patches", "clipping with
+ * the coffee in coffee cups", "clipping rug". Every one was a flat thing laid two to five thousandths over another and
+ * left to the depth buffer, which at a distance cannot tell them apart. A thing that lies on another is given one of
+ * these materials, or is built so that no two of its faces share a plane. A small gap alone is NOT enough.)
+ */
+export function lyingOn<T extends THREE.Material>(material: T, level = 1): T {
+  material.polygonOffset = true;
+  material.polygonOffsetFactor = -2 * level;
+  material.polygonOffsetUnits = -8 * level;
+  return material;
+}
+
 /** Single fixed light direction used for baked, per-vertex shading. */
 const BAKE_LIGHT = new THREE.Vector3(0.45, 1, 0.3).normalize();
 

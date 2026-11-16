@@ -89,7 +89,9 @@ const club: CustomLevel = {
     at('torch', -19, -21.7, 3.2, { dir: 'n' }), at('torch', -13, -21.7, 3.2, { dir: 'n' }),
 
     // ---- Light and dressing: warm round the fire, club lights on the stage ----
-    at('light', 0, 0, 2.5, { props: { color: 'yellow' } }),
+    // (The fire's own glow on the hearth and the couches: only light. It was a warning-light post hung in the air
+    // over the flames, bulb and all, and solid: the owner, 2026-11-16: "light box above fire looks bad".)
+    at('light', 0, 0, 2.5, { props: { color: 'yellow', bare: true } }),
     at('light', -4, -21, 0.8, { props: { color: 'blue' } }), at('light', 4, -21, 0.8, { props: { color: 'purple' } }),
     at('light', -7, -20, 3.7, { props: { color: 'red', flash: 1.5 } }), at('light', 7, -20, 3.7, { props: { color: 'red', flash: 1.5 } }),
     at('brazier', -21, -18), at('brazier', 21, -18), at('brazier', -21, 18), at('brazier', 21, 18),

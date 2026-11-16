@@ -43,6 +43,8 @@ export interface PieceProps {
   /** A beacon's colour name (red, yellow, blue, green, purple, white) and how many times a second it flashes (0 = steady). */
   color?: string;
   flash?: number;
+  /** A light: only its light, no post (see the `light` decor). */
+  bare?: boolean;
   /** An NPC who starts talking by himself when the rat gets this close (a cutscene). */
   auto?: number;
   /** An NPC that is not in the room until a story scene brings him in. */
@@ -307,9 +309,10 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         solids.push({ ...extent('stone', cx - BRAZIER.bowl * 0.9, cx + BRAZIER.bowl * 0.9, p.top + BRAZIER.bowlFrom, p.top + BRAZIER.rim, cz - BRAZIER.bowl * 0.9, cz + BRAZIER.bowl * 0.9), hidden: true });
         break;
       case 'light':
-        decor.push({ kind: 'light', x: cx, y: p.top, z: cz, color: LIGHT_COLORS[p.props?.color ?? 'red'] ?? 0xff2a2a, flash: p.props?.flash ?? 0 });
-        // (Solid to the top of its bulb, as drawn: it stopped short of it, so standing on one sank his feet into the bulb.)
-        solids.push({ ...extent('stone', cx - 0.17, cx + 0.17, p.top, p.top + 0.88, cz - 0.17, cz + 0.17), hidden: true });
+        decor.push({ kind: 'light', x: cx, y: p.top, z: cz, color: LIGHT_COLORS[p.props?.color ?? 'red'] ?? 0xff2a2a, flash: p.props?.flash ?? 0, ...(p.props?.bare ? { bare: true } : {}) });
+        // (Solid to the top of its bulb, as drawn: it stopped short of it, so standing on one sank his feet into the bulb.
+        // A bare one is only light: nothing is drawn of it, and nothing of it is solid.)
+        if (!p.props?.bare) solids.push({ ...extent('stone', cx - 0.17, cx + 0.17, p.top, p.top + 0.88, cz - 0.17, cz + 0.17), hidden: true });
         break;
       case 'speaker':
       case 'couch':

@@ -19,6 +19,13 @@ export interface CouchMats {
   blanket: THREE.Material;
   /** Plain colour (the stuffing, the feet, the dark of a rip). */
   plain: THREE.Material;
+  /**
+   * The same two for what is SEWN ON the cloth and lies flat on it (ps1Material's `lyingOn`): `patchOn` for a patch,
+   * `plainOn(level)` for a rip's dark slit (1) and the stitches over it (2). Without them the patches are laid in the
+   * ordinary materials a hair off the cloth, and at a distance the cloth shows through them.
+   */
+  patchOn?: THREE.Material;
+  plainOn?: (level: number) => THREE.Material;
 }
 
 /** Texture coordinates from where each corner is, so the cloth's weave is the same size on every face. */
@@ -108,24 +115,26 @@ export function buildCouch(mats: CouchMats): THREE.Group {
   cord(C.half * 2 - 0.04, 0.03, 0, C.backTop - 0.03, C.back + 0.012);
   cord(C.half * 2 - 0.04, 0.03, 0, 0.5, C.back - 0.004);
   // The back of it (what is seen from across the room): a second patch, and a long rip sewn up with big stitches.
-  const backPatch = add('patch', bakeVertexColor(new THREE.PlaneGeometry(0.42, 0.3), 0xf0f0f0, false), mats.patch, 0.62, 0.98, C.back - 0.004);
+  const patchOn = mats.patchOn ?? mats.patch;
+  const plainOn = (level: number): THREE.Material => mats.plainOn?.(level) ?? mats.plain;
+  const backPatch = add('patch', bakeVertexColor(new THREE.PlaneGeometry(0.42, 0.3), 0xf0f0f0, false), patchOn, 0.62, 0.98, C.back - 0.006);
   backPatch.rotation.set(0, Math.PI, -0.12);
-  const scar = add('rip', bakeVertexColor(new THREE.PlaneGeometry(0.5, 0.03), 0x1a0e0a, false), mats.plain, -0.5, 0.9, C.back - 0.004);
+  const scar = add('rip', bakeVertexColor(new THREE.PlaneGeometry(0.5, 0.03), 0x1a0e0a, false), plainOn(1), -0.5, 0.9, C.back - 0.006);
   scar.rotation.set(0, Math.PI, 0.2);
   for (let k = 0; k < 5; k++) {
-    const st = add('stitch', bakeVertexColor(new THREE.PlaneGeometry(0.02, 0.1), 0xe8dcb0, false), mats.plain, -0.5 + (k - 2) * 0.1, 0.9 - (k - 2) * 0.02, C.back - 0.006);
+    const st = add('stitch', bakeVertexColor(new THREE.PlaneGeometry(0.02, 0.1), 0xe8dcb0, false), plainOn(2), -0.5 + (k - 2) * 0.1, 0.9 - (k - 2) * 0.02, C.back - 0.012);
     st.rotation.set(0, Math.PI, 0.2 + (k % 2 ? 0.5 : -0.4));
   }
 
   // ---- A patch sewn on the right-hand seat cushion's front, a little crooked ----
   const patch = new THREE.PlaneGeometry(0.34, 0.2);
-  const pm = add('patch', bakeVertexColor(patch, 0xffffff, false), mats.patch, 0.52, 0.57, C.front + 0.004);
+  const pm = add('patch', bakeVertexColor(patch, 0xffffff, false), patchOn, 0.52, 0.57, C.front + 0.006);
   pm.rotation.z = 0.09;
 
   // ---- Rips: a dark slit with the stuffing coming out of it. One in the left back cushion, one on the right arm. ----
   const rip = (x: number, y: number, z: number, len: number, lean: number, faceX: boolean): void => {
     const slit = new THREE.PlaneGeometry(0.045, len);
-    const sm = add('rip', bakeVertexColor(slit, 0x160c0a, false), mats.plain, x, y, z);
+    const sm = add('rip', bakeVertexColor(slit, 0x160c0a, false), plainOn(1), x, y, z);
     if (faceX) sm.rotation.y = Math.PI / 2 * Math.sign(x);
     sm.rotation.z = lean;
     for (let k = 0; k < 3; k++) {

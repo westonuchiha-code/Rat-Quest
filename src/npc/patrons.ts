@@ -14,6 +14,7 @@
  */
 import * as THREE from 'three';
 import { createPs1Material } from '../render/ps1Material';
+import { buildMug } from '../world/tavernModels';
 import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
 
 export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl';
@@ -70,13 +71,81 @@ function now(time: number, every: number, span: number, at = 0): number {
 
 /** A thimble for a mug, held in a paw: its mouth up, its middle at the origin. */
 function mug(): THREE.Group {
+  // (The same thimble that stands on the tables and the bar, held by its middle.)
   const g = new THREE.Group();
-  const cup = kit.spar(0.058, 0.075, 0.15, 0xa9a79c, 7);
-  cup.rotation.z = Math.PI / 2;
+  const cup = buildMug({ wood: mat, plain: mat, glow: mat });
   cup.position.y = -0.075;
   g.add(cup);
-  g.add(kit.blob(0.064, 0.012, 0.064, 0x5a3418, 0, 0.07, 0, 7, 3, 0));
   return g;
+}
+
+/**
+ * A turtle's shell, in the shell's own frame (its back toward -z): an eight-sided dome in flat plates. Each plate is
+ * its face drawn in a little from its edges and stood a hair proud, light (`plate`); the border left round it is the
+ * seam, dark (`seam`). The lowest ring is the rim (`rim`), plain.
+ */
+export function shellGeometry(seam: number, plate: number, rim: number): THREE.BufferGeometry {
+  const RX = 0.37;
+  const RY = 0.4;
+  const RZ = 0.27;
+  const SIDES = 8;
+  // Rings, from the middle of his back out to the rim and under it: [how far out (of 1), how far back (of 1)].
+  // (And on round his sides to his front, so that from the side it is a shell he is IN, not a lid on his back.)
+  const rings: Array<[number, number]> = [[0.4, 0.95], [0.8, 0.64], [1, 0.14], [0.97, -0.22], [0.8, -0.7]];
+  const at = (j: number, i: number): THREE.Vector3 => {
+    // (A flat side uppermost, not a corner.)
+    const a = ((i + 0.5) / SIDES) * Math.PI * 2;
+    return new THREE.Vector3(Math.cos(a) * rings[j][0] * RX, Math.sin(a) * rings[j][0] * RY, -0.06 - rings[j][1] * RZ);
+  };
+  const middle = new THREE.Vector3(0, 0, -0.06);
+  const pos: number[] = [];
+  const col: number[] = [];
+  const tri = (a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, color: THREE.Color): void => {
+    // (Wound so that it faces out of the shell.)
+    const n = b.clone().sub(a).cross(c.clone().sub(a));
+    const out = a.clone().add(b).add(c).divideScalar(3).sub(middle);
+    const [p, q, r] = n.dot(out) >= 0 ? [a, b, c] : [a, c, b];
+    for (const v of [p, q, r]) {
+      pos.push(v.x, v.y, v.z);
+      col.push(color.r, color.g, color.b);
+    }
+  };
+  const SEAM = new THREE.Color(seam);
+  /** One plate: its face `verts` (in order round it), the light part of it this shade. */
+  const face = (verts: THREE.Vector3[], shade: number, inset: number): void => {
+    const c = verts.reduce((acc, v) => acc.add(v), new THREE.Vector3()).divideScalar(verts.length);
+    const n = verts[1].clone().sub(verts[0]).cross(verts[2].clone().sub(verts[0])).normalize();
+    if (n.dot(c.clone().sub(middle)) < 0) n.negate();
+    const inner = verts.map((v) => v.clone().lerp(c, inset).addScaledVector(n, 0.012));
+    const light = new THREE.Color(plate).multiplyScalar(shade);
+    const top = c.clone().addScaledVector(n, 0.012);
+    for (let i = 0; i < verts.length; i++) {
+      const k = (i + 1) % verts.length;
+      tri(top, inner[i], inner[k], light);
+      tri(verts[i], verts[k], inner[k], SEAM);
+      tri(verts[i], inner[k], inner[i], SEAM);
+    }
+  };
+  // The plate in the middle of his back: an octagon.
+  face(Array.from({ length: SIDES }, (_, i) => at(0, i)), 1.08, 0.16);
+  // Eight round it, and eight below those: each four-sided, every other one a shade darker.
+  for (let j = 0; j < 2; j++) {
+    for (let i = 0; i < SIDES; i++) face([at(j, i), at(j, i + 1), at(j + 1, i + 1), at(j + 1, i)], (i + j) % 2 ? 0.9 : 1, j === 0 ? 0.2 : 0.24);
+  }
+  // The rim, turned under.
+  const RIM = new THREE.Color(rim);
+  for (let i = 0; i < SIDES; i++) {
+    tri(at(2, i), at(2, i + 1), at(3, i + 1), RIM);
+    tri(at(2, i), at(3, i + 1), at(3, i), RIM);
+    // (Under the rim, in to his front: in the seam's dark.)
+    tri(at(3, i), at(3, i + 1), at(4, i + 1), SEAM);
+    tri(at(3, i), at(4, i + 1), at(4, i), SEAM);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(col), 3));
+  geo.computeVertexNormals();
+  return geo;
 }
 
 /** An eye: a white with a pupil on it, looking along +z. Its `lid` is scaled to close it. */
@@ -144,17 +213,11 @@ class Turtle implements PatronBody {
   constructor(private readonly look: 'mo' | 'pebble') {
     const C = TURTLE[look];
     this.root.add(this.body);
-    // The shell: a dome on his back, its plates lighter in their middles, a pale rim; and the flat pale shield of his front.
-    const dome: ColorAt = (nx, ny) => (ny < -0.7 || Math.abs(nx) > 0.9 ? C.rim : C.shell);
+    // The shell: eight-sided, in flat plates (the owner, 2026-11-16: "turtle shells should be more octagonal and less
+    // like bumps"). One octagonal plate in the middle of his back, eight round it, eight more below those, and a pale
+    // rim: each a flat face with a dark seam round it. And the flat pale shield of his front.
     this.shell.position.set(0, 0.5, -0.06);
-    this.shell.add(kit.blob(0.37, 0.4, 0.27, dome, 0, 0, -0.06, 10, 7, 0.3));
-    // Its plates: a row of three down the middle and two each side, each a low lighter boss on the dome.
-    for (const [x, y, r] of [[0, 0.22, 0.13], [0, 0, 0.14], [0, -0.21, 0.12], [-0.2, 0.12, 0.1], [0.2, 0.12, 0.1], [-0.21, -0.1, 0.1], [0.21, -0.1, 0.1]]) {
-      const back = -0.06 - 0.27 * Math.sqrt(Math.max(0, 1 - (x / 0.37) ** 2 - (y / 0.4) ** 2));
-      const plate = kit.blob(r, r * 1.05, 0.03, C.scute, x, y, back + 0.012, 6, 4, 0.12);
-      plate.rotation.set((y / 0.4) * 0.75, (x / 0.37) * -0.95, 0);
-      this.shell.add(plate);
-    }
+    this.shell.add(new THREE.Mesh(shellGeometry(C.shell, C.scute, C.rim), mat));
     this.shell.add(kit.blob(0.3, 0.34, 0.13, (nx, ny) => (Math.abs(ny) < 0.06 || Math.abs(nx) < 0.07 ? mix(C.belly, 0x6a5a30, 0.35) : C.belly), 0, -0.01, 0.11, 8, 6, 0.18));
     this.body.add(this.shell);
     if (look === 'mo') {

@@ -222,6 +222,18 @@ export const TUNING = {
     targetHeight: 0.8,
     minPitch: 0.1,
     maxPitch: 0.9,
+    /**
+     * LOOKING UP (the owner, 2026-11-16: "i want to be able to pan up, look up more with the right stick. i dont want
+     * to clip the floor with the camera but we could still do something"). Pushed on past its lowest place behind him,
+     * the view does not go down through the floor: it sinks a little more (`lookUpDrop`, radians of its swing: to
+     * about knee height), is kept `floorClear` over whatever ground is under it, and TILTS UP (`lookUpTilt`, radians)
+     * with him at the foot of the picture. `lookUp`: how much further the stick goes for all of that (radians of
+     * stick travel at `pitchSpeed`; 0: it stops at `minPitch`, as it used to).
+     */
+    lookUp: 0.5,
+    lookUpDrop: 0.2,
+    lookUpTilt: 0.36,
+    floorClear: 0.3,
     turnSpeed: 2.2,
     pitchSpeed: 0.8,
     // How fast the view swings round behind him as he moves. 0: it does not; only the right stick turns it. (It was

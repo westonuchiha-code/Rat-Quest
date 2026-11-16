@@ -1128,3 +1128,21 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - Gas sounds (main.ts `soundWorld`): `jets` = `jetsOf(def.decor)` (all jets); a jet with `delay` 0 plays `gasBurst`
   when `gasAt(j, worldClock, 0)` turns true; `gasHiss` loops at a volume from `gasNear` (the nearest gas of any jet).
 
+## The Club fixes, the look-up and the picture (2026-11-16; tests `tests/clubfixes.ts`)
+START-HERE has the owner's words and the rules. Where things are:
+- `lyingOn(material, level)` (ps1Material.ts): polygon offset for a thing lying on another. chamber.ts `plainOn(level)`.
+- `src/render/pixelFont.ts` (`drawText`, `textWidth`, `wrapText`, `hasGlyph`); `signPixels`, `SIGN` in courseDoors.ts.
+- `src/world/shadow.ts` (`shadowSpokes`, `groundAt`); main.ts rebuilds his shadow's twelve spokes each frame.
+- `buildBulbs(dx, dz, sag, count, hang)`; `bulbHang` in chamber.ts decides each end.
+- `light` decor `bare`; piece prop `bare` in custom.ts (no post, no solid).
+- `shellGeometry(seam, plate, rim)` in patrons.ts.
+- Camera: `FollowCamera.pitch` now runs from `minPitch - lookUp` to `maxPitch`; `lookingUp` 0..1; the swing behind
+  him uses `max(pitch, minPitch) - up * lookUpDrop`; at the end of `update` the position is kept `floorClear` over
+  the ground under it and `look.y` is raised by `up * lookUpTilt`.
+- Controller `moveAxis`: EPS on the perpendicular overlap test; push-out to the nearer face if he did not cross the
+  travel face this step.
+- `src/render/picture.ts` (`pictureSize`, `SHARPS`, `SHARP_ROWS`, `PICTURE`); `Display.sharp`, `cycleSharp`; main.ts
+  `resize()` sets the canvas's own size in px and its box to `overflow: hidden`.
+- Scratch tools used: frames from a video with `ffmpeg -vf fps=N`; `shot.mjs <out> <w> <h> <hash>` for a screenshot
+  at a chosen window size (the others are fixed at 1100 by 620).
+

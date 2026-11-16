@@ -353,6 +353,53 @@ better story when we get around to actually telling one."
 - "Find some common poses online": this session can reach only two sites, so poses would have to come from what is
   known already or from a computer session where more sites can be allowed.
 
+## What he found walking round the Club (2026-11-16): ten things, and the rules they leave
+He played the build on a PC and sent pictures and a video, one after another, while work was going on. All are fixed
+and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
+- **"texture clipping top of barrel", "clipping on couch patches", "clipping with the coffee in coffee cups",
+  "clipping rug", "clipping dart board".** Five of ONE fault: a flat thing laid two to five thousandths over another
+  and left to the depth buffer, which cannot tell them apart at a distance, so they flicker through each other.
+  **RULE: A SMALL GAP IS NEVER ENOUGH. A thing that LIES ON another either (a) is built so no two faces share a
+  plane (the barrel's head is set down INSIDE its staves; a mug is an open cup with the drink a finger under its
+  rim), or (b) is drawn in a material made for it: `lyingOn(material, level)` in ps1Material.ts (polygon offset, a
+  layer at a time). In chamber.ts `plainOn(level)` gives one; tavern models take `mats.layer`, the couch `patchOn`
+  and `plainOn`. LOOK FOR THIS in every new prop before it goes in: anything painted, sewn, laid or stuck on a
+  face.** Look at it from across the room, not only close.
+- **"text on signs in game are unreadable".** The door signs were smooth lettering shrunk to a few dots. Now block
+  letters a dot to a dot (`src/render/pixelFont.ts`, 5 by 7) on a board hung big enough that a dot of it is a dot
+  of the screen from fourteen units off (`SIGN` in courseDoors.ts: 5.5 by 2.5 units). **RULE: writing in the
+  world is drawn in the pixel font, and sized by how far off it is read from.** (The garden's boards in signs.ts
+  still use smooth lettering: they are big, but are the next to move over.)
+- **"shadow of player is sometimes larger than floor".** His round shadow stood out in the air past the edge of a
+  post. It is cut now where the ground ends (`src/world/shadow.ts`). Creatures' and patrons' shadows are still
+  plain discs.
+- **"string light decorations ending in mid air".** An end at no wall hangs from the roof by its own wire now
+  (`buildBulbs(..., hang)`, `bulbHang` in chamber.ts). **RULE: everything that hangs, hangs FROM something.**
+- **"light box above fire looks bad".** A warning-light post had been put in the air over the fire only to throw
+  warm light (and was solid up there). A `light` decor can be `bare` now: light only.
+- **"turtle shells should be more octagonal and less like bumps".** `shellGeometry` in patrons.ts: an eight-sided
+  dome of seventeen flat plates with dark seams. (The standing rule again: a few shaped flat-faced pieces.)
+- **"i want to be able to pan up, look up more with the right stick. i dont want to clip the floor with the camera
+  but we could still do something".** Pushed past its lowest place the view now LOOKS UP: it sinks a little, is
+  kept clear of the floor, and tilts up with him at the foot of the picture (`TUNING.camera.lookUp`, `lookUpDrop`,
+  `lookUpTilt`, `floorClear`; two sliders). Dev: `&tilt=-0.4` on an `at=` address.
+- **"weird bug" (a video): he was THROWN from one corner of the hearth to the other.** Pressed against a face of a
+  box exactly at its corner, the least sideways push counted him as overlapping the thing he was only touching, and
+  he was put out at its FAR end. Fixed in `moveAxis` (controller.ts): across the way he is going, touching is not
+  overlapping; and one who really is inside a thing is put out at its NEARER face, never the length of it away.
+  The video was read by pulling frames with ffmpeg and measuring frame-to-frame change to find the jump.
+- **"what resolution is this game ... a lot of the quality seems kind of bad and a little garbled on a pc
+  screen".** It drew 240 rows and stretched them 4.5 times on a 1080 screen: uneven dots. Now EVERY DOT OF THE
+  PICTURE IS A WHOLE NUMBER OF SCREEN DOTS (`src/render/picture.ts`), and there is a setting, PICTURE, in the pause
+  menu's settings: CHUNKY (PS1, at least 240 rows: 270 on a 1080 screen), CRISP (360), SHARP (480: 540 on 1080).
+  And HD (the screen's own dots).
+  **THE DEFAULT IS HD, BY HIS WORD the same day: "honestly lets just go for the hd one, even stretched a little bit
+  makes it look bad. we can get the retro look from overlay options and the like".** So: the game is drawn at the
+  screen's own sharpness; the RETRO LOOK IS NOW THE OVERLAYS' JOB (the FILTER setting: scanlines, old TV, VHS, green
+  handheld), and the chunkier pictures stay as choices. The 32-dot pictures on things are still blocky up close:
+  that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
+  pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
+
 ## A look-over of old things, and new themes (the owner, 2026-11-16: TRY-OUTS ONLY SO FAR, NOTHING REPLACED)
 His words, in short: "you've been on a roll with the textures so I'm wondering if you could also just do a texture
 pass especially through stuff that we haven't really touched in a while early characters ... go over [their] models

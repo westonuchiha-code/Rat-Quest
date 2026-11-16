@@ -1503,8 +1503,15 @@ export class PlayerController {
       if (b.max.y <= feet + TUNING.physics.stepHeight + EPS) continue;
       // Boxes entirely above our head are ignored.
       if (b.min.y >= head - EPS) continue;
-      if (p.x + r <= b.min.x || p.x - r >= b.max.x) continue;
-      if (p.z + r <= b.min.z || p.z - r >= b.max.z) continue;
+      // (ACROSS the way he is going, touching is not overlapping. Pressed against the south face of a thing he is
+      // exactly his own half-width from it, and that sum comes out a hair inside it as often as not: then the least
+      // sideways push "met" the thing he was only standing beside, and he was put out at its far END, the length of
+      // it away in one step. The owner's "weird bug", 2026-11-16: thrown from one corner of the Club's hearth to
+      // the other.)
+      const ex = axis === 'z' ? EPS : 0;
+      const ez = axis === 'x' ? EPS : 0;
+      if (p.x + r <= b.min.x + ex || p.x - r >= b.max.x - ex) continue;
+      if (p.z + r <= b.min.z + ez || p.z - r >= b.max.z - ez) continue;
       // A ramp is a wall only where it stands higher than a step above his feet: at its high end and along its
       // sides. Where its slope is under him, or is the air over its low end, it is not. What he has to step onto is
       // its slope under his middle, where he will be standing: on any ramp he can take a step up, that is never more
@@ -1551,14 +1558,19 @@ export class PlayerController {
         this.wallBox = b;
         if (this.longJump) this.longJump = false;
       }
-      // Overlap on this axis: push back out.
-      if (axis === 'x') {
-        p.x = delta > 0 ? b.min.x - r : b.max.x + r;
-        this.velocity.x = 0;
-      } else {
-        p.z = delta > 0 ? b.min.z - r : b.max.z + r;
-        this.velocity.z = 0;
+      // Overlap on this axis: push back out, to the face he came in at. (If that face is further back than he came
+      // this step, he did not come in at it: he was in the thing already, by whatever put him there. Then he is put
+      // out at whichever of its two faces is nearer, and never thrown the length of it.)
+      const lo = (axis === 'x' ? b.min.x : b.min.z) - r;
+      const hi = (axis === 'x' ? b.max.x : b.max.z) + r;
+      let out = delta > 0 ? lo : hi;
+      if (Math.abs(p[axis] - out) > Math.abs(delta) + 1e-3) {
+        const was = p[axis] - delta;
+        out = Math.abs(was - lo) <= Math.abs(was - hi) ? lo : hi;
       }
+      p[axis] = out;
+      if (axis === 'x') this.velocity.x = 0;
+      else this.velocity.z = 0;
     }
   }
 

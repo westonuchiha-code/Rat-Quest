@@ -95,7 +95,10 @@ export function sight(a: THREE.Vector3, b: THREE.Vector3, colliders: Aabb[], gro
 export class FollowCamera {
   /** Angle of the camera around the rat, measured from +Z. Movement is relative to this. */
   yaw = Math.PI;
+  /** His tilt of it (the right stick): from `minPitch - lookUp` (looking up) to `maxPitch` (looking down on him). */
   pitch = 0.3;
+  /** How far it is into looking up, 0 (not) to 1. */
+  lookingUp = 0;
 
   private readonly camera: THREE.PerspectiveCamera;
   private readonly pos = new THREE.Vector3();
@@ -176,7 +179,12 @@ export class FollowCamera {
       // Ease behind the rat's facing direction while he moves.
       this.yaw = lerpAngle(this.yaw, facing + Math.PI, 1 - Math.exp(-C.autoFollowRate * dt));
     }
-    this.pitch = Math.min(C.maxPitch, Math.max(C.minPitch, this.pitch + pitchInput * dt * C.pitchSpeed));
+    this.pitch = Math.min(C.maxPitch, Math.max(C.minPitch - C.lookUp, this.pitch + pitchInput * dt * C.pitchSpeed));
+    // Past its lowest place it is LOOKING UP (see TUNING.camera.lookUp): how far into that it is, 0 to 1.
+    const up = C.lookUp > 0 ? Math.max(0, Math.min(1, (C.minPitch - this.pitch) / C.lookUp)) : 0;
+    this.lookingUp = up;
+    /** Where it swings to behind him: his own tilt of it, and below that only a little further down. */
+    const swing = Math.max(this.pitch, C.minPitch) - up * C.lookUpDrop;
 
     // The view follows him sideways closely but rides up and down gently, so hops and landings do not jolt it.
     if (fresh) this.smoothY = focus.y;
@@ -200,10 +208,10 @@ export class FollowCamera {
         this.target.set(this.chest.x + this.ahead.x, this.chest.y, this.chest.z + this.ahead.z);
       }
     }
-    const cp = Math.cos(this.pitch);
+    const cp = Math.cos(swing);
     this.desired.set(
       this.target.x + Math.sin(this.yaw) * cp * C.distance,
-      this.target.y + Math.sin(this.pitch) * C.distance,
+      this.target.y + Math.sin(swing) * C.distance,
       this.target.z + Math.cos(this.yaw) * cp * C.distance,
     );
 
@@ -322,6 +330,23 @@ export class FollowCamera {
         this.look.y,
         this.look.z + (this.chest.z - this.look.z) * this.over - uz * more,
       );
+    }
+
+    // Looking up: it is never under the ground (it is kept clear of whatever floor is beneath it), and it tilts up
+    // from the line to him, so that he is at the foot of the picture and what is over him is in it.
+    if (up > 0) {
+      let floor = -Infinity;
+      for (const b of colliders) {
+        if (this.pos.x < b.min.x || this.pos.x > b.max.x || this.pos.z < b.min.z || this.pos.z > b.max.z) continue;
+        const top = topAt(b, this.pos.x, this.pos.z);
+        if (top <= this.chest.y + 0.3 && top > floor) floor = top;
+      }
+      if (floor > -Infinity) this.pos.y = Math.max(this.pos.y, floor + C.floorClear);
+      const fx = this.look.x - this.pos.x;
+      const fz = this.look.z - this.pos.z;
+      const flat = Math.max(1e-4, Math.hypot(fx, fz));
+      const elev = Math.atan2(this.look.y - this.pos.y, flat);
+      this.look.y = this.pos.y + flat * Math.tan(Math.min(1.2, elev + up * C.lookUpTilt));
     }
 
     this.camera.position.copy(this.pos);

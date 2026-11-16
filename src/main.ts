@@ -1,7 +1,7 @@
 // Must be first: turns off color management before any THREE.Color is created.
 import './core/colorSetup';
 import * as THREE from 'three';
-import { ps1Uniforms } from './render/ps1Material';
+import { ps1Uniforms, lyingOn } from './render/ps1Material';
 import { SwordTrail } from './render/swordTrail';
 import { input } from './core/input';
 import { TUNING } from './data/tuning';
@@ -51,6 +51,8 @@ import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
+import { shadowSpokes } from './world/shadow';
+import { PICTURE, pictureSize } from './render/picture';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -132,7 +134,6 @@ import { Boot } from './ui/boot';
 // ---- Low-res internal resolution. The canvas is CSS-scaled with nearest-neighbor filtering. ----
 // The short side of the screen gets this many pixels; the long side follows the screen's shape,
 // so nothing is stretched on a tall phone.
-const SHORT_SIDE = 240;
 const SIM_HZ = 60;
 const SIM_STEP = 1 / SIM_HZ;
 
@@ -181,10 +182,15 @@ function startGame(): void {
     const box = canvas.parentElement ?? gameWrap;
     const w = Math.max(1, box.clientWidth);
     const h = Math.max(1, box.clientHeight);
-    const scale = SHORT_SIDE / Math.min(w, h);
-    const iw = Math.round(w * scale);
-    const ih = Math.round(h * scale);
+    // (Every dot of the picture a whole number of the screen's dots, the same each way: see render/picture.ts.)
+    const size = pictureSize(w, h, PICTURE.rows, window.devicePixelRatio || 1);
+    const iw = size.iw;
+    const ih = size.ih;
     renderer.setSize(iw, ih, false);
+    // (So it is drawn at exactly that many times its size: a hair bigger than its box at most, and cropped by it.)
+    canvas.style.width = `${size.cssW}px`;
+    canvas.style.height = `${size.cssH}px`;
+    box.style.overflow = 'hidden';
     ps1Uniforms.resolution.value.set(iw, ih);
     camera.aspect = iw / ih;
     // On a tall screen, widen the vertical view so the sides are not cropped away.
@@ -233,11 +239,16 @@ function startGame(): void {
   scene.add(rat.root);
 
   // Soft round shadow under the rat. It makes jumps much easier to judge.
-  const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.34, 10),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false }),
-  );
-  shadow.rotation.x = -Math.PI / 2;
+  // (A disc of spokes lying flat: each spoke is drawn in where the ground under the shadow ends, so it never stands out
+  // in the air past the edge of what he is on. See world/shadow.ts.)
+  const SHADOW_R = 0.34;
+  const SHADOW_SPOKES = 12;
+  const shadowGeo = new THREE.BufferGeometry();
+  shadowGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SHADOW_SPOKES + 1) * 3), 3));
+  shadowGeo.setIndex(Array.from({ length: SHADOW_SPOKES }, (_, i) => [0, 1 + ((i + 1) % SHADOW_SPOKES), 1 + i]).flat());
+  const shadow = new THREE.Mesh(shadowGeo, lyingOn(new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false, side: THREE.DoubleSide })));
+  shadow.frustumCulled = false;
+  const shadowLen: number[] = [];
   scene.add(shadow);
 
   const trail = new SwordTrail();
@@ -2361,6 +2372,7 @@ function startGame(): void {
       { id: 'auto', group: 'save', label: () => saveRowLabel('LOAD AUTOSAVE', 'auto'), change: (d) => { if (d === 1 && applySave(readSave(storage, 'auto'))) menu.close(); } },
       { id: 'glyphs', group: 'controls', label: () => `BUTTON ICONS: ${glyphModeLabel()}`, change: (d) => setGlyphMode(GLYPH_MODES[(GLYPH_MODES.indexOf(glyphMode()) + d + GLYPH_MODES.length) % GLYPH_MODES.length]) },
       { id: 'screen', label: () => `SCREEN: ${display.aspect === 'wide' ? 'WIDE' : '4:3'}`, change: () => display.toggleAspect() },
+      { id: 'sharp', label: () => `PICTURE: ${display.sharpLabel()}`, change: (d) => display.cycleSharp(d) },
       { id: 'filter', label: () => `FILTER: ${display.filterLabel()}`, change: (d) => display.cycleFilter(d) },
       { id: 'text', label: () => `TALK TEXT: ${display.largeText ? 'LARGE' : 'NORMAL'}`, change: () => display.toggleText() },
       { id: 'lights', label: () => `COLOUR LIGHTS: ${display.lights ? 'ON' : 'OFF'}`, change: () => display.toggleLights() },
@@ -3154,6 +3166,9 @@ function startGame(): void {
     player.position.set(x, y, z);
     player.prevPosition.copy(player.position);
     follow.yaw = yaw || 0;
+    // (`&tilt=-0.3`: and the view tilted so, as his right stick would: under 0.1 it is looking up.)
+    const tilt = /[#&]tilt=(-?[\d.]+)/.exec(location.hash);
+    if (tilt) follow.pitch = Number(tilt[1]);
     follow.snap();
     // (`&riding`: and on his shield from the start, for pictures of the ride.)
     if (/[#&]riding\b/.test(location.hash)) player.devRide();
@@ -3514,7 +3529,14 @@ function startGame(): void {
     if (ground !== null) {
       const drop = Math.max(0, renderPos.y - ground);
       shadow.position.set(renderPos.x, ground + 0.02, renderPos.z);
-      shadow.scale.setScalar(Math.max(0.35, 1 - drop * 0.14));
+      const size = SHADOW_R * Math.max(0.35, 1 - drop * 0.14);
+      shadowSpokes(chamber.colliders, renderPos.x, ground, renderPos.z, size, SHADOW_SPOKES, shadowLen);
+      const sp = shadowGeo.attributes.position;
+      for (let i = 0; i < SHADOW_SPOKES; i++) {
+        const a = (i / SHADOW_SPOKES) * Math.PI * 2;
+        sp.setXYZ(1 + i, Math.cos(a) * size * shadowLen[i], 0, Math.sin(a) * size * shadowLen[i]);
+      }
+      sp.needsUpdate = true;
     }
 
     // Sword ribbon during the fast part of a swing.

@@ -2,6 +2,7 @@
  * Display options: wide or 4:3 picture, an old-screen filter (scanlines, CRT, VHS, green handheld), and coloured lights on or off.
  * Saved between runs. The picture sits in a "frame" that centres it, so 4:3 gets black bars at the sides on a wide screen.
  */
+import { PICTURE, SHARPS, SHARP_DEFAULT, SHARP_LABEL, SHARP_ROWS, type Sharp } from '../render/picture';
 import type { StorageLike } from '../world/collectibles';
 import { ps1Uniforms } from '../render/ps1Material';
 
@@ -40,6 +41,8 @@ export class Display {
   lights = true;
   /** Bigger talk-box text. */
   largeText = false;
+  /** How sharp the game's picture is: how many rows it has at the least (render/picture.ts). */
+  sharp: Sharp = SHARP_DEFAULT;
   private readonly frame: HTMLDivElement;
   private readonly fx: HTMLDivElement;
 
@@ -56,11 +59,12 @@ export class Display {
     this.fx.id = 'fx';
     wrap.appendChild(this.fx);
     try {
-      const d = JSON.parse(storage?.getItem(KEY) ?? '{}') as { aspect?: string; filter?: string; lights?: boolean; large?: boolean };
+      const d = JSON.parse(storage?.getItem(KEY) ?? '{}') as { aspect?: string; filter?: string; lights?: boolean; large?: boolean; sharp?: string };
       if (d.aspect === '4:3') this.aspect = '4:3';
       if (FILTERS.includes(d.filter as Filter)) this.filter = d.filter as Filter;
       if (d.lights === false) this.lights = false;
       if (d.large === true) this.largeText = true;
+      if (SHARPS.includes(d.sharp as Sharp)) this.sharp = d.sharp as Sharp;
     } catch {
       /* use the defaults */
     }
@@ -69,6 +73,9 @@ export class Display {
       if (location.hash.includes('ar43')) this.aspect = '4:3';
       const m = /filter=(\w+)/.exec(location.hash);
       if (m && FILTERS.includes(m[1] as Filter)) this.filter = m[1] as Filter;
+      // (And #sharp=crisp.)
+      const sh = /sharp=(\w+)/.exec(location.hash);
+      if (sh && SHARPS.includes(sh[1] as Sharp)) this.sharp = sh[1] as Sharp;
     }
     this.apply();
   }
@@ -81,6 +88,15 @@ export class Display {
   cycleFilter(dir = 1): void {
     this.filter = FILTERS[(FILTERS.indexOf(this.filter) + dir + FILTERS.length) % FILTERS.length];
     this.save();
+  }
+
+  cycleSharp(dir = 1): void {
+    this.sharp = SHARPS[(SHARPS.indexOf(this.sharp) + dir + SHARPS.length) % SHARPS.length];
+    this.save();
+  }
+
+  sharpLabel(): string {
+    return SHARP_LABEL[this.sharp];
   }
 
   toggleText(): void {
@@ -100,7 +116,7 @@ export class Display {
   private save(): void {
     this.apply();
     try {
-      this.storage?.setItem(KEY, JSON.stringify({ aspect: this.aspect, filter: this.filter, lights: this.lights, large: this.largeText }));
+      this.storage?.setItem(KEY, JSON.stringify({ aspect: this.aspect, filter: this.filter, lights: this.lights, large: this.largeText, sharp: this.sharp }));
     } catch {
       /* ignore */
     }
@@ -112,6 +128,7 @@ export class Display {
     this.fx.className = this.filter;
     document.documentElement.style.setProperty('--rq-text', this.largeText ? '1.3' : '1');
     ps1Uniforms.lightsOn.value = this.lights ? 1 : 0;
+    PICTURE.rows = SHARP_ROWS[this.sharp];
     // The picture changed shape: let the renderer re-measure.
     window.dispatchEvent(new Event('resize'));
   }
