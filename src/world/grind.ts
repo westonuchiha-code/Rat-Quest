@@ -22,6 +22,8 @@ export interface GrindLine {
 
 /** A solid under this wide is a rail: its line is down its middle. */
 export const RAIL_WIDTH = 0.5;
+/** ...and it is one to grind if it stands this far above the ground either side of it (a ledge needs TUNING.grind.drop). */
+export const RAIL_DROP = 0.2;
 const INSIDE = 0.05; // an edge's height is read this far in from it
 const OUTSIDE = 0.45; // ...and its drop this far out
 const EPS = 1e-6;
@@ -51,7 +53,9 @@ export function grindHeight(line: GrindLine, s: number, was: number, moved: numb
     if (top <= was + give && top > h) h = top;
   }
   if (h < was - give) return 'end';
-  // Still a ledge: the ground beside it is well below it (on both sides, for a rail).
+  // Still a ledge: the ground beside it is well below it (on both sides, for a rail). A RAIL need not stand as
+  // high as a ledge must: a track's rails are low enough to ride over, and are rails all the same.
+  if (line.side === 0) drop = Math.min(drop, RAIL_DROP);
   for (const side of line.side === 0 ? [-1, 1] : [line.side]) {
     const [ox, oz] = at(line, s, side * OUTSIDE);
     for (const b of colliders) {

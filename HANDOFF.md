@@ -982,3 +982,19 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - A pipe's fall must be at least `ride.minSlope` (0.4) if the air attack is to work over its flat middle; the
   garden's is 5 in 12.
 
+## The Long Drop (2026-11-16: the downhill level, a first version)
+- `src/levels/longdrop.ts` (`LONGDROP`, `dropFloor(z)`, `WEED`, `KICKER_ARC`) and `src/levels/pipes.ts` (`pipeRun`,
+  `SEWER_PIPE`, `pipeHalf`, `pipeRim`, `floorAlong`). A test room: `#level=longdrop&nostory`, or the door in the
+  garden's west wall. Add `&riding` to start on the shield, `&slow=0.2` to watch.
+- New decor kinds (layout.ts, drawn in chamber.ts): `runnel` (the slime), `sleepers`, `weed`.
+- A level made of ramps needs a floor under the whole of it: the station had none at first and he fell out of the
+  world there. `longDrop()` puts one `extent('floor', ...)` under everything.
+- An obstacle on a falling floor must be TALL at its uphill face (see `WEED.high`): the step-up allowance on a ramp
+  grows with the slope, so a low solid is ridden up onto, not hit.
+- The pipe's two outer facets are under 0.6 wide and its last is under 0.5 (a "rail" by width). It is not ground
+  as one because the shoulder beside it is higher (`grindHeight` ends the line); without a shoulder, check again.
+- `RAIL_DROP` 0.2 (grind.ts): how far a rail must stand over the ground either side. Any thin solid (under 0.5
+  wide, over 0.5 long) that stands 0.2 proud is now a grind line: mind that when placing kerbs and trims.
+- Braking from top speed (16) takes about twelve units; the station gives a grinder who hops off at its start
+  about thirty.
+

@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,798 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,828 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -614,6 +614,41 @@ enough. `tests/ramps.ts` holds a tipped ramp to everything (he walks it six ways
 fall, and turns are still to be worked out (a pipe that bends needs lengths at angles: ramps run along x or z
 only, so a bend is a corner piece, or the pipe turns in right angles through a chamber). Not tried yet: two
 lengths joined at different falls, a kicker or a rail inside a pipe, and the water in its bottom.
+
+### The Long Drop: the downhill level, a FIRST VERSION (2026-11-16)
+The level the owner asked for on 2026-11-15 (his words are under "What the owner asked for after riding it") now
+exists to try: `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM (in `TEST_ROOMS` with the garden; in none of the
+game's lists). **Way in:** a door in the Move Garden's west wall (z -15.6), or `#level=longdrop&nostory`. Its own way
+out, on the station platform, leads back to the garden.
+**What it is,** going south, 178 long and 45 down: a HEAD to drop in from (a hop, then ATTACK); the FIRST PIPE (36
+long, falling 15: just over `ride.minSlope`); a LEVEL LENGTH of the same trough (12 long) with a kicker on each
+shoulder; the SECOND PIPE (36 long, falling 18: steeper); the RAILWAY (48 long, falling 12: a bed across the whole
+width, two rails to grind, sleepers); the STATION (flat, 36 long, buffers across the end of the line, a platform with
+the way out). Tall walls shut it all in. A steered run takes about eleven seconds at the shield's top speed.
+- **Built from `src/levels/pipes.ts`:** `pipeRun(kind, shape, x, z0, z1, top, bottom, shoulder)` makes one length
+  (a floor and four facets a side, level or falling), with an optional SHOULDER either side level with the rim.
+  `SEWER_PIPE` is its shape. Lengths with different falls join with no step (tested: 0.008 at most).
+- **Shoulders:** the head is level with the pipe's floor, so the shoulders stand over it; he gets onto one by
+  carving up the trough's wall and out over its rim (it works at speed), and can ride on there. The kickers are on
+  the shoulders; crumbs hang along the arc one throws him in (`KICKER_ARC`, measured from a real jump at full speed).
+- **Slime:** decor `runnel`, a strip down the trough's middle. It is only drawn: it does nothing to him yet.
+- **Weeds:** decor `weed` plus a hidden solid (`WEED`: 0.44 square, 1.1 high). A weed is a WALL to a rider: riding
+  into one throws him off (a bail). The first version of them was half that high and he rode up onto each and off
+  its top like a kicker: with the floor falling away, the uphill side of a low solid is a step he can take. Keep
+  obstacles well over a step high at their uphill face. One weed is nearly on the middle line on purpose: a rider
+  who holds nothing is thrown off at it.
+- **Rails:** thin ramps (0.24 wide, 0.3 high: low enough to ride over) then level into the station. A rail that
+  low was not a grind line before: `RAIL_DROP` (grind.ts) now lets a RAIL stand only 0.2 over the ground (a ledge
+  still needs `grind.drop`). Riding beside one, STOW puts him on it; he keeps full speed to the station; a hop
+  takes him off with room to stop; left on it, the buffers throw him off.
+- **Why it is STRAIGHT:** the view may not turn by itself, and a bend would ask it to. Turns are not worked out.
+- `tests/longdrop.ts` rides it every way with the real controller (down the middle into the weed; steered top to
+  bottom and on foot to the way out; out onto a shoulder and over its kicker; onto a rail, off it, and into the
+  buffers; walked down and back up).
+- **NOT done:** turns; one-hit enemies to swing at while riding (the owner's back-burner idea); the slime doing
+  anything (a splash, a slowing); sounds of its own; branches (the railway does not "break off": it is the same
+  line); it is not in the level editor's pieces; and nobody has PLAYED it by hand: it was ridden by tests and
+  looked at in still pictures of the running game.
 
 ### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
 His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the

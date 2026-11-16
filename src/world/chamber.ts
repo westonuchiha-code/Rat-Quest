@@ -1028,6 +1028,63 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       piece.position.set(d.x, d.y, d.z);
       if (d.kind === 'rug' || d.kind === 'bottles' || d.kind === 'dartboard') piece.rotation.y = d.yaw;
       group.add(piece);
+    } else if (d.kind === 'runnel' || d.kind === 'sleepers') {
+      // Things that lie on a slope down the line x (the downhill level): a runnel of slime; a track's sleepers.
+      const len = Math.hypot(d.z1 - d.z0, d.y1 - d.y0);
+      const tip = Math.atan2(d.y0 - d.y1, d.z1 - d.z0); // how far it is tipped down toward +z
+      const lie = new THREE.Group();
+      lie.position.set(d.x, d.y0, d.z0);
+      lie.rotation.x = tip;
+      if (d.kind === 'runnel') {
+        // (A strip of sludge a hair over the floor, its picture running down it.)
+        const geo = new THREE.PlaneGeometry(d.w, len, 1, Math.max(1, Math.ceil(len / 2.5)));
+        geo.rotateX(-Math.PI / 2);
+        geo.translate(0, 0.02, len / 2);
+        const uv = geo.attributes.uv;
+        for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (d.w / 2), uv.getY(i) * (len / 2));
+        bakeVertexColor(geo, 0xb8e0a0, false);
+        lie.add(new THREE.Mesh(geo, mat('sludge')));
+      } else {
+        const parts: THREE.BufferGeometry[] = [];
+        for (let u = d.gap / 2; u < len; u += d.gap) {
+          const plank = new THREE.BoxGeometry(d.w, 0.08, 0.34);
+          plank.translate(0, 0.045, u);
+          parts.push(plank);
+        }
+        if (parts.length) {
+          const geo = mergeAll(parts);
+          applyWorldUvs(geo, 1.2);
+          bakeVertexColor(geo, 0x9a8468);
+          lie.add(new THREE.Mesh(geo, mat('planks')));
+        }
+      }
+      group.add(lie);
+    } else if (d.kind === 'weed') {
+      // A weed out of a crack: a fan of blades, a paler one in the middle, a seed head. It sways.
+      const weed = new THREE.Group();
+      weed.position.set(d.x, d.y, d.z);
+      const blades = 6;
+      for (let i = 0; i < blades; i++) {
+        const tall = d.size * (0.7 + 0.3 * ((i * 37) % 10) / 10);
+        const blade = new THREE.ConeGeometry(d.size * 0.11, tall, 3);
+        blade.translate(0, tall / 2, 0);
+        blade.scale(1, 1, 0.35);
+        bakeVertexColor(blade, i % 3 === 0 ? 0x86b04a : 0x4f8a3a);
+        const m = new THREE.Mesh(blade, plainMat);
+        m.rotation.set(0.45 + 0.12 * (i % 2), (i / blades) * Math.PI * 2, 0, 'YXZ');
+        weed.add(m);
+      }
+      const stalk = new THREE.ConeGeometry(d.size * 0.05, d.size * 1.25, 3);
+      stalk.translate(0, d.size * 0.62, 0);
+      bakeVertexColor(stalk, 0x6a9a44);
+      weed.add(new THREE.Mesh(stalk, plainMat));
+      const head = new THREE.OctahedronGeometry(d.size * 0.13);
+      bakeVertexColor(head, 0xd8c860);
+      const top = new THREE.Mesh(head, plainMat);
+      top.position.y = d.size * 1.25;
+      weed.add(top);
+      group.add(weed);
+      swayers.push({ obj: weed, axis: 'z', amount: 0.07, speed: 1.3, phase: d.x * 1.7 + d.z * 0.9 });
     } else if (d.kind === 'fall') {
       buildFall(d);
     } else if (d.kind === 'chain') {

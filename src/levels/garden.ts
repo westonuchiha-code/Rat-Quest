@@ -318,5 +318,8 @@ export function garden(): LevelDef {
     exit: doorOn('south', GARDEN.halfX, 0, GARDEN.halfZ),
     // Its door is open from the start and leads back to the Club.
     returnTo: 'hub',
+    // A second door, in the west wall north of the steps (clear of the roll-out from the run, which ends at that
+    // wall further south): the downhill level, a test room of its own.
+    courseDoors: [{ to: 'longdrop', name: 'The Long Drop', need: 0, door: doorOn('west', GARDEN.halfX, -15.6, GARDEN.halfZ, 0) }],
   };
 }

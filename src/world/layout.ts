@@ -195,6 +195,12 @@ export type Decor =
   | { kind: 'bottles'; x: number; y: number; z: number; yaw: number; width: number }
   /** A dartboard on a wall, facing `yaw`, its middle at y. */
   | { kind: 'dartboard'; x: number; y: number; z: number; yaw: number }
+  /** A runnel of slimy water lying on the ground down the line x, from (z0, y0) to (z1, y1), `w` wide. Only drawn. */
+  | { kind: 'runnel'; x: number; z0: number; z1: number; y0: number; y1: number; w: number }
+  /** Railway sleepers: planks `w` long laid across the line x every `gap`, from (z0, y0) to (z1, y1). Only drawn. */
+  | { kind: 'sleepers'; x: number; z0: number; z1: number; y0: number; y1: number; w: number; gap: number }
+  /** A weed growing out of a crack at (x, y, z), `size` tall. (What is solid of it is a box of its own.) */
+  | { kind: 'weed'; x: number; y: number; z: number; size: number }
   /** A wall grate pouring sludge: the opening is at (x, y, z) facing `yaw`, `width` wide, falling down to `bottom`. */
   | { kind: 'fall'; x: number; y: number; z: number; yaw: number; width: number; bottom: number }
   /** A chain hanging from (x, top, z) down to `bottom`. */
