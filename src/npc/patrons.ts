@@ -45,6 +45,8 @@ export interface PatronCtx {
   seated: boolean;
   /** Of two talking across a table, which one he is (0 or 1): they take turns. */
   turn: number;
+  /** A cutscene's string on his head: nodded this far down (radians), on top of what he does by himself. */
+  nod?: number;
 }
 
 export interface PatronBody {
@@ -328,7 +330,7 @@ class Turtle implements PatronBody {
     this.head.rotation.y = ctx.headYaw * 0.85;
     this.neck.rotation.y = ctx.headYaw * 0.15;
     const nod = Common.listening(ctx) ? 0.1 * Math.max(0, Math.sin(t * 2.6 * slow)) ** 3 : 0;
-    this.head.rotation.x = 0.1 + 0.05 * Math.sin(t * 0.9 * slow) + nod - 0.75 * this.sip + (ctx.talking ? 0.07 * Math.sin(t * 8) : 0);
+    this.head.rotation.x = 0.1 + 0.05 * Math.sin(t * 0.9 * slow) + nod - 0.75 * this.sip + (ctx.talking ? 0.07 * Math.sin(t * 8) : 0) + (ctx.nod ?? 0);
     this.head.rotation.z = 0.06 * Math.sin(t * 0.7 + 1);
     this.jaw.rotation.x = 0.5 * this.common.mouth + 0.2 * this.sip;
     // Arms: the right has the mug (on his knee, or up at his beak); the left rests, or waves his point home.
@@ -570,7 +572,7 @@ class Fox implements PatronBody {
     // The head: turned to whoever it is, tipped a little; a slow look down at his cards.
     const peek = ctx.doing === 'cards' && !ctx.talking ? now(t, 6.5, 2.2, ctx.turn * 3) : 0;
     this.head.rotation.y = ctx.headYaw * (1 - 0.8 * peek);
-    this.head.rotation.x = (lean ? 0.1 : 0) + 0.35 * peek + (Common.listening(ctx) ? 0.08 * Math.max(0, Math.sin(t * 2.9)) ** 3 : 0) + (ctx.talking ? 0.06 * Math.sin(t * 8.5) : 0) - 0.5 * this.sip;
+    this.head.rotation.x = (lean ? 0.1 : 0) + 0.35 * peek + (Common.listening(ctx) ? 0.08 * Math.max(0, Math.sin(t * 2.9)) ** 3 : 0) + (ctx.talking ? 0.06 * Math.sin(t * 8.5) : 0) - 0.5 * this.sip + (ctx.nod ?? 0);
     this.head.rotation.z = 0.1 * Math.sin(t * 0.6) + (lean ? 0.12 : 0);
     this.jaw.rotation.x = 0.5 * this.common.mouth;
     // Arms: folded when he leans; a mug or a hand of cards when he has one; a wave of the paw when he talks.
@@ -737,7 +739,7 @@ class Ferret implements PatronBody {
     const snap = Math.min(1, dt * 18);
     const settled = ctx.talking || Common.listening(ctx);
     this.head.rotation.y += (ctx.headYaw + (settled ? 0 : this.dart.y) - this.head.rotation.y) * snap;
-    this.head.rotation.x += ((settled ? 0 : this.dart.x) + (lean ? 0.1 : 0) - 0.5 * this.sip + (ctx.talking ? 0.06 * Math.sin(t * 9) : 0) - this.head.rotation.x) * snap;
+    this.head.rotation.x += ((settled ? 0 : this.dart.x) + (lean ? 0.1 : 0) - 0.5 * this.sip + (ctx.talking ? 0.06 * Math.sin(t * 9) : 0) + (ctx.nod ?? 0) - this.head.rotation.x) * snap;
     this.head.rotation.z = 0.12 * Math.sin(t * 1.1);
     this.jaw.rotation.x = 0.5 * this.common.mouth;
     const drinking = ctx.doing === 'drink' && !ctx.talking;
@@ -880,7 +882,7 @@ class Owl implements PatronBody {
     const settled = ctx.talking;
     this.head.rotation.y += (ctx.headYaw * 1.25 - this.head.rotation.y) * Math.min(1, dt * 9);
     this.head.rotation.z += ((settled ? 0.12 * Math.sin(t * 2) : this.cock.z) - this.head.rotation.z) * Math.min(1, dt * 7);
-    this.head.rotation.x = (Common.listening(ctx) ? 0.07 * Math.max(0, Math.sin(t * 2.4)) ** 3 : 0) + (ctx.talking ? 0.05 * Math.sin(t * 8) : 0) - 0.45 * this.sip;
+    this.head.rotation.x = (Common.listening(ctx) ? 0.07 * Math.max(0, Math.sin(t * 2.4)) ** 3 : 0) + (ctx.talking ? 0.05 * Math.sin(t * 8) : 0) - 0.45 * this.sip + (ctx.nod ?? 0);
     this.beak.rotation.x = 0.35 * this.common.mouth;
     // Wings: at his sides; a mug in one; or (keeping the bar) a mug in one and a rag going round it in the other.
     const tending = ctx.doing === 'tend' && !ctx.talking;

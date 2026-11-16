@@ -612,6 +612,16 @@ export class Npc {
 
   /** A story scene's direction: somewhere to look instead of at the rat, and how far into a shrug he is (0..1). */
   act: NpcAct | null = null;
+  /**
+   * A cutscene's strings (cutscene/stage.ts): while this is set he is a marionette. His body faces exactly where
+   * it says, his head is turned and nodded as it says, and he "talks" (bobs, moves his paws) when it says. Where he
+   * is, what he is doing and whether he sits are his `spec`, which the stage also sets.
+   */
+  puppet: { facing: number; headYaw: number; nod: number; talking: boolean } | null = null;
+  /** Whether his own head takes a nod (a turtle's, a fox's, a mouse's): if not, the stage tips his whole body a little instead. */
+  get nods(): boolean {
+    return !this.grim && !this.ant && !this.stag;
+  }
   /** The villain's own model. */
   private grim: GrimsqueakModel | null = null;
   /** Time that keeps running even when he is standing still (his light does not stop). */
@@ -650,6 +660,15 @@ export class Npc {
   }
 
   update(dt: number, px: number, py: number, pz: number, talking: boolean): void {
+    const strings = this.puppet;
+    this.step(dt, px, py, pz, talking || !!strings?.talking);
+    if (!strings) return;
+    this.marker.visible = false;
+    // (A patron's head has been nodded inside its own update; a mouse's, a bird's or the pigeon's is nodded here.)
+    if (!this.patron && this.nods) this.head.rotation.x += strings.nod;
+  }
+
+  private step(dt: number, px: number, py: number, pz: number, talking: boolean): void {
     const a = this.act;
     if (a) {
       if (a.pos) this.moveTo(a.pos[0], a.pos[1], a.pos[2]);
@@ -681,6 +700,11 @@ export class Npc {
       const turn = Math.atan2(Math.sin(at - this.look), Math.cos(at - this.look));
       this.headYaw += (Math.max(-1.25, Math.min(1.25, turn)) - this.headYaw) * Math.min(1, dt * 6);
     }
+    if (this.puppet) {
+      this.look = this.puppet.facing;
+      this.root.rotation.y = this.look;
+      this.headYaw = this.puppet.headYaw;
+    }
     this.talkBob += ((talking ? 1 : 0) - this.talkBob) * Math.min(1, dt * 8);
     this.mouth = Math.max(0, this.mouth - dt * 7);
     if (this.grim) {
@@ -696,7 +720,7 @@ export class Npc {
       return;
     }
     if (this.patron) {
-      this.patron.update(dt, { time: this.time, talking, mouth: this.mouth, headYaw: this.headYaw, doing: this.spec.doing ?? 'stand', seated: !!this.spec.seated, turn: this.spec.turn ?? 0 });
+      this.patron.update(dt, { time: this.time, talking, mouth: this.mouth, headYaw: this.headYaw, doing: this.spec.doing ?? 'stand', seated: !!this.spec.seated, turn: this.spec.turn ?? 0, nod: this.puppet?.nod });
       this.marker.visible = this.near && !talking;
       this.marker.position.y = this.markerY() + 0.08 * Math.sin(this.time * 4);
       this.marker.rotation.y = this.time * 2.5;

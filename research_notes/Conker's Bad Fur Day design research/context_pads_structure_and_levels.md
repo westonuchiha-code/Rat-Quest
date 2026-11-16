@@ -144,3 +144,38 @@ All of these are my suggestions, each tied to a finding above.
 - **Beware the "minigame procession".** Edge's criticism is the risk of any scene-by-scene design. Vary the Club errands, but have most of them use the knight's normal moves (a shield-ride delivery, a wall-kick shortcut to the rafters) so the hub exercises the core game.
 - **Signal the next step.** The standing complaint was not knowing where to go. With a hub full of talkers, make sure exactly one of them is visibly "the one with the job" at any time.
 - **Four hits, not three.** A small subversion of boss convention was part of the game's humour. RatQuest's bosses, which rely on tells, could each break one genre habit in the same spirit.
+
+---
+
+## Second pass, 2026-11-16
+
+METHOD NOTE. Same day, a second researcher. Reachable by `curl`: en.wikipedia.org, www.gamedeveloper.com, shmuplations.com, critpoints.net, glitterberri.com, www.nintendo.com. Still refused: every fan wiki, review site, archive and video. So the manual, the reviews themselves and any statement by Rare on why the pads exist are still unread. This pass re-read the Wikipedia article's raw text (the first pass's quotations are exact), read Wikipedia's "Donkey Kong 64" for the collecting that Conker turned away from, and read three general design pieces on one-off, context-sensitive actions. None of the three is about Conker; they are here because they say when such actions work. Labels: READ (page read, quote exact) or SEARCH SUMMARY.
+
+### The pads: one new second-hand lead, and nothing first-hand
+- **SEARCH SUMMARY** (Giant Bomb's page on the game, via a search tool; not read) Giant Bomb is summarised as saying the system was inspired "in no small part" by the context-sensitive A button of The Legend of Zelda: Ocarina of Time, that it replaced a spread of abilities across every button (as in Banjo-Kazooie and Donkey Kong 64) with one all-purpose button, and that the game did not even have a real attack button. This is a fan-edited wiki's reading, not a statement by Rare. https://giantbomb.com/wiki/Games/Conkers_Bad_Fur_Day
+- **SEARCH SUMMARY** (same search) No interview was found in which Chris Seavor explains the pads. The interviews that exist (Kotaku 2012, Nintendo Force via Exophase, Scouse Gamer 88) are on refused sites, and their summaries do not mention pads.
+- **READ** (re-check) Seavor's line that the first pass called "the nearest thing to a stated reason", in full. Quote: "is far more engaging if there's a motivation behind it to disguise the binary nature of the act". "Binary" is the telling word: he is describing actions that are one press, on or off. https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+- **READ** (re-check) Next Generation's complaint about direction, in Wikipedia's words (the odd word "wonders" is Wikipedia's). Quote: "long-length wonders that only ended in stumbling upon the next required area". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+
+### What Conker was turning away from: Rare's own collecting (Donkey Kong 64, 1999)
+- **READ** The game Rare shipped sixteen months before Conker was built on MORE things to pick up, by order from the top. Quote: "The strong emphasis on collectibles was a design choice made at the request of Rare co-founder" Tim Stamper; the director recalls being told "No, more things". https://en.wikipedia.org/wiki/Donkey_Kong_64
+- **READ** Reviewers at the time already objected. Quote: "criticized its camera and emphasis on item collection and backtracking". One called it "an interactive [[egg hunt]]" (brackets are Wikipedia's link marks). https://en.wikipedia.org/wiki/Donkey_Kong_64
+- **READ** The verdict stuck to the studio. Quote: "Rare's 3D platformers became notorious for their emphasis on collecting items". A later developer "blamed" the game for the genre's decline. https://en.wikipedia.org/wiki/Donkey_Kong_64
+- **READ** The scale: "200 goals in total", five characters each with their own colour of banana. https://en.wikipedia.org/wiki/Donkey_Kong_64
+- **READ** (re-check, for the contrast) IGN's reviewer "credited Rare for reducing the number of items to collect" in Conker. https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+
+### When a one-off, context-sensitive action works (general design writing, read in full)
+- **READ** (Game Developer blog, Joshua Hallaran, 5 July 2017; about a 2D RPG) The problem stated. Quote: "you generally don't want to tutorialise and spend time on something that the player will rarely encounter, but you also need to clearly communicate what the player needs to do". https://www.gamedeveloper.com/design/organically-teaching-and-implementing-context-sensitive-mechanics
+- **READ** (same) His three rules are a visible goal, the buttons the player already knows ("Same Methods, New Interactions"), and speed ("Keep it Quick"). On how often: "using a context-sensitive interaction once is too rare", and "this type of mechanic should remain a novelty, instead of overstaying its welcome". https://www.gamedeveloper.com/design/organically-teaching-and-implementing-context-sensitive-mechanics
+- **READ** (Game Developer blog, Evan Hemsley, 4 November 2015; about a first-person platformer) A button that does nothing outside its context confuses. Quote: "Inputs should never be contextually useless." His example: a grapple that would not throw without a target, which players did not realise existed; and "inputs should always have immediate and clear feedback (even if that feedback is negative!)". https://www.gamedeveloper.com/design/don-t-surprise-me-or-preventing-input-related-frustration
+- **READ** (CritPoints, Celia Wagar, 19 March 2015; opinion, about quick-time events) What makes a context action tolerable to a critic who dislikes most of them. Quote: "this is a context sensitive action and you're not locked out of your other options to do that"; and of the good ones, "They all consistently use the same inputs." https://critpoints.net/2015/03/19/making-good-qtes/
+
+### Inferences (mine, second pass)
+- Conker's pads meet Hallaran's and Hemsley's tests better than their reputation suggests: the pad is the visible goal, the button is always B, B always does something (the frying pan) away from a pad, and each bit is quick. Where they fail Hallaran's "once is too rare" is exactly where Edge's "minigames" complaint lands: many pad actions are used once and never again.
+- For a game with a real move set, the safest reading is Wagar's: a context action is fine so long as it is the same button every time and does not take the player's other moves away. That argues for context moments in RatQuest that are entered and LEFT freely (he can walk off a stool), not ones that lock him in.
+- The Donkey Kong 64 page gives the owner's own instinct ("less collectibles ... each collectible should be more rewarding") a history: the studio that made Conker had just been told "more things", was criticised for it, and its next platformer collected one thing only.
+
+### Still not found
+- Rare's own reason for the pads; how many there are; what each does.
+- The reviews themselves (IGN, Edge, Next Generation, GameSpot): still only as Wikipedia quotes them.
+- Any numbers for Conker's movement.

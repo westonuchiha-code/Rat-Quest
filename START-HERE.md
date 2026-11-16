@@ -325,7 +325,7 @@ lines and portraits are untested by eye. The Conker research's first pass (below
 opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
 their own evening.
 
-## A little cutscene system (the owner, 2026-11-16: ON THE LIST, NOT STARTED)
+## A little cutscene system (the owner, 2026-11-16: FIRST VERSION BUILT the same day; `tests/cutscene.ts`)
 His words: "I want us to try to build a little cutscene system that works with all of our characters where we can
 sort of marionette them around maybe find some common poses online they can nod their head and move around a little
 bit to you know sort of look like they're talking we don't have to actually like animate their mouths or anything.
@@ -334,6 +334,31 @@ them talking at a table or at the bar maybe one of them ordering the other one a
 bar, you know the soldier and drinking by himself maybe like you can pan around the table like a cool movie scene or
 something just try to build something where we can make scenes like this frame by frame so we can sort of tell a
 better story when we get around to actually telling one."
+**WHAT IS BUILT (first version; nobody has watched one play through by eye, only frames of each):**
+- **A scene is DATA** (`src/cutscene/cutscene.ts`): who is in it, what things are in it, where the view is, and for
+  each a list of KEYS in time. A key says what is true AT its moment; between keys things go smoothly. Words a key
+  can say: `at` (he walks there, facing his way), `hop`, `slide`, `ease`, `face`/`faceAt`, `head`/`headAt`, `lean`,
+  `doing`, `seated`, `hide`, `nod`, `shake`, `talk`. Things (a mug): `at`, `yaw`, `tip`, `hide`, `ease: 'out'` for a
+  slide that comes to rest. The view: `pos` and `look`, or `watch` a named character or thing, or `orbit` round a
+  place (two orbit keys pan round it), `cut` to jump. `sampleCutscene(scene, t)` gives any moment at once.
+- **The marionettes** (`src/cutscene/stage.ts`): the knight, all ten kinds of talking character, and eight creatures
+  that walk (roach, toad, ironback, guard, mantis, stag, ant, scorpion). Each takes its own poses by name; what a
+  model has no pose for it gets as a marionette does (a patron has no walk, so he bobs along; an ant has no nod, so
+  its body dips). **NOT TAUGHT: the fliers (bat, hornet, firefly) and the three great beasts.** It says so if asked.
+- **A scene has its own cast**, fresh models; the room's own people of the same names step out while it plays.
+- **The four first scenes** (`src/cutscene/scenes.ts`), all in the Club: TWO AT A TABLE (Mo and Pebble), A DRINK
+  FOR A FRIEND (Vix buys Slink one; Tawny pushes it along to him), A GLASS DOWN THE BAR (to the knight on the far
+  stool), THE SOLDIER, ALONE (Nib at his table, the view once round him).
+- **To watch one: pause, TOOLS, "SCENE: ...".** From any room (it takes him to the Club first). JUMP ends it.
+- **FRAME BY FRAME: ATTACK holds it; held, LEFT and RIGHT step one frame of thirty back and on** (keep them down to
+  run), and a line at the foot says the time and the frame. That is the "frame by frame" tool so far: a scene is
+  WRITTEN as keys in scenes.ts and LOOKED AT a frame at a time. There is no editor in the game for writing one yet.
+- Dev: `#level=hub&scene=<id>&t=<seconds>&hold`. Sheet tool in the scratch folder: a row of held frames at chosen times.
+- NOT DONE: an in-game editor; sounds in the scenes (the `sounds` list is there, empty); poses "found online" (no
+  site for it could be reached); hands that hold a thing (a prop is put in the world, not in a paw: when Slink
+  "takes" the thimble it is hidden and his own drinking pose brings its own); walking patrons have no legs' walk.
+  The Conker report (`reports/`) has advice for this system: any frame at any time, short, skippable, cut on the beat.
+
 **What he asked for, plainly:**
 - One system that works with EVERY character (the knight, the Club's regulars and patrons, the enemies).
 - Characters moved like marionettes: walk to a place, turn, take a pose, nod, gesture, lean in. No mouths.
@@ -617,8 +642,18 @@ comes, is done in a try-out room.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
 crate and barrel); the furnace refresh (the `jet` is ready for its steam); the dream theme and the dream knight.
 
-## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
-**TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not
+## Research the owner has asked for (2026-11-15: ALL FIVE HAVE REPORTS in `reports/`, notes in `research_notes/`)
+**CONKER AND RAYMAN 2: REPORTS WRITTEN 2026-11-16, FROM WHAT COULD BE REACHED.** He put the research back on his list
+that day ("lets do 14, 19, ..."). The sites with the makers' own interviews are still refused, and the request to
+allow them still cannot be shown on his phone, so a second pass read everything reachable (Wikipedia and Game
+Developer again, more widely: one new first-hand piece on Rayman 2, a 2002 book excerpt with Michel Ancel; nothing
+first-hand from the Conker team) and the two reports were written, each saying near its top what was read in full,
+what is second-hand, and what was not read at all. **Read them as that: roughly half of each rests on pages read in
+full, and for Conker that is mostly Wikipedia reporting the makers.** If he opens a session on a computer and
+allows GamesRadar, Nintendo Life, RareGamer, Kotaku, RayWiki, the Conker wiki and web.archive.org, a third pass can
+check the second-hand parts. What they say that matters most is at the end of each report ("All the suggestions at
+a glance").
+**The first pass (2026-11-16), for the record:** The owner, when the sites could not
 be allowed from his phone: "if you can't do the research that's fine we can save it for later". So: one researcher a
 game read what could be reached (Wikipedia and Game Developer in full; everything else only as search summaries,
 each finding marked READ or SEARCH SUMMARY) and left notes in `research_notes/Conker's Bad Fur Day design research/`

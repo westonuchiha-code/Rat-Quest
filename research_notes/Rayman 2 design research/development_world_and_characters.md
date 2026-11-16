@@ -161,3 +161,43 @@ Suggestions of mine, tied to the findings above.
 - Take the Tonic Trouble lesson: shared tools and a bigger team did not make the better game. Spend time on the camera and on the feel of the rat rather than on more content. Ancel's own line, read on Game Developer: "Time is more important than the number of people."
 - Use "Basis, variety, rhythm" as the test for the downhill level: the basis is the rat's existing moves, the variety is one new situation (the long ride), the rhythm is where it falls between slower levels reached from the Club.
 - Keep the 2D instinct. A team that came from 2D built side-on courses and framed them in 3D. For rails and half-pipes, a side-on or fixed framing is not a compromise, it is the thing that made this game readable.
+
+---
+
+## Second pass, 2026-11-16 (a different researcher; appended, nothing above was changed)
+
+WHAT THIS PASS COULD REACH: see the note at the same place in `rides_slides_and_level_structure.md`. READ means I fetched the page and read it (exact quote given); SEARCH SUMMARY means a search tool's paraphrase of a page I could not open.
+
+A CHECK OF THE FIRST PASS. This was the last file written before the first researcher was cut off. It is COMPLETE: all of Question 5 and Question 6 are there, each with findings, inferences and gaps, and it ends with a finished nine-item "Ideas" list whose last sentence is whole. Its READ quotes were re-read against Wikipedia (wikitext of 2026-11-16) and Game Developer and are exact. Small things: Wikipedia's own article is inconsistent about the world's name (its lead says "the fantastical land of the Fairy Glade", its plot "The Glade of Dreams"); the one idea that needs care is tying health to rescues, which would make the game easier and is not something the owner has asked for.
+
+### New findings
+
+Ancel, near the time, on how a character is made (a maker's statement, read in full)
+- READ. On Rayman's design: "When I created Rayman, I didn't really analyze it. I just made it like this because it was fun for me and my friends. I also wanted an easy-to-animate character. Your character must not look like [other characters], but at the same time he must appear familiar to people." Marc Saltzman, "Game Design: Secrets of the Sages", excerpted on Game Developer, 15 March 2002. https://www.gamedeveloper.com/design/game-design-secrets-of-the-sages----creating-characters-storyboarding-and-design-documents
+- READ (same passage). The order in which a player meets a character: "The visual aspect is important for the first impact. After this first feeling, the next one is about animation. A lot of the personality is revealed by the animations—the way your character move in common actions. The next and most important step—especially for games—comes from his powers, his specific actions ... The next and deepest aspect will come from his feelings, his personality, the way he reacts in particular situations: danger, love, surprises, victory".
+- READ (same passage). "Rayman is 50 percent action and 50 percent humor."
+- READ (same passage). A friend defined by one contradiction: among the sequences the team set out to invent was "cooperating with a powerful but fearful friend". (I take this to be Globox, whom Wikipedia describes as easily frightened but brave when it counts; the identification is mine.)
+- READ (the 2011 interview, re-read). What Ancel later learned from Serge Hascoët about story, during King Kong (about 2004, so AFTER Rayman 2, which does use cutscenes): "We're done putting cinematics in video games ... If you have anything to tell, you'd better have the player living it." https://www.gamedeveloper.com/design/the-evolutionary-process-of-building-i-rayman-origins-i-
+
+"The General": confirmed second-hand
+- SEARCH SUMMARY (RayWiki). "At a very late point in Rayman 2, Razorbeard is visited by the General, a character who first appeared in Tonic Trouble", who sells him the Grolgoth in one short cutscene; his sales patter is summarised as the machine doing "everything but the dishes". So the first pass's recollection was right, and the character is a one-scene salesman borrowed from the sister game. https://raymanpc.com/wiki/en/Grolgoth
+
+Where the team sat
+- READ. Ubisoft's chief executive, 2017, on the first big internal team: "That's how we created a big team for Rayman. We then had some people in Montpellier—Michel Ancel was in Montpellier—and some people in Paris." (Mathew Kumar's interview with Yves Guillemot, 9 August 2017.) This supports the first pass's reading that the 70 to 80 people were split between Montpellier and the Paris area; it is said of "Rayman" in general, not of the second game by name. https://www.gamedeveloper.com/business/q-a-ceo-guillemot-on-ubisoft-s-origins-china-expansion
+- READ. Frédéric Houde, the studio's co-founder, turns up by name in the 2004 Game Developers Choice nominations as a designer of Beyond Good & Evil ("Michel Ancel, Jacques Exertier, Frédéric Houde, and Sébastien Morin for game design"). Nothing read says what he did on Rayman 2. https://www.gamedeveloper.com/game-platforms/igda-announces-nominees-more-award-winners
+
+The engine after Rayman 2
+- READ. It was reused for a licensed game a year later: Ubi Soft Casablanca built Donald Duck: Goin' Quackers for Windows, Dreamcast and N64 "on an optimized Rayman 2 engine", with music by Daniel Masson (the N64 Rayman 2's composer). IGN's reviewer, as Wikipedia reports him, thought it looked worse than Rayman 2 on the same engine. Another small proof that the engine was not what made Rayman 2 good. https://en.wikipedia.org/wiki/Donald_Duck:_Goin%27_Quackers
+- READ. Rayman 2 and Tonic Trouble were added to Nintendo's N64 Classics library on the same day, 17 December 2025. https://en.wikipedia.org/wiki/Nintendo_Classics (Nintendo's own store page for that library names both games only in its trademark lines: https://www.nintendo.com/us/store/products/nintendo-64-nintendo-classics-switch/ )
+
+The award: see `rides_slides_and_level_structure.md`, second pass. In short, Wikipedia's Rayman 2 article says it won "Excellence in Level Design (2001)" at the Game Developers Choice Awards; Wikipedia's article on those awards does not list it; a search summary of the organiser's archive suggests several teams were honoured that year, Ancel's among them. Unverified.
+
+Wikipedia pages looked for and not there (as of 2026-11-16): Serge Hascoët, Olivier Palmieri, Pauline Jacquey, Éric Chevalier (no article). "Ubisoft Paris", "Ubisoft Annecy" and "Ubisoft Shanghai" redirect to a list. Wikipedia's Psychonauts and Evil Twin articles do not mention Rayman 2, so the two "influenced" claims in the Rayman 2 article's Legacy section stand on that article's own citations only.
+
+The studio's later games, on teaching and on secrets (different games; players' analyses on Game Developer's blogs, read in full)
+- READ (Jorge Albor, 9 February 2012, on Rayman Origins). Powers are handed over one world at a time, as in Rayman 2: "Unlock an ability, then work your way through a series of levels using that ability", and "Rayman Origins rarely leaves previous abilities behind." He quotes its director Sébastien Morin (from an NZGamer interview I could not read): "we populated the game with a lot of (really, I mean really) hard challenges, that can be done, when you're ready for it." https://www.gamedeveloper.com/design/gated-learning-in-rayman-origins-
+- READ (Stanislav Costiuc, 20 April 2016, on Rayman Legends). Prisoners are found by ear: "Whenever we're not far from a captured teensie or a secret room with one, we hear cries for help." And the count is drawn as places, not a number: "you instantly know when, and most importantly approximately where, you've missed something." https://www.gamedeveloper.com/design/secrets-design-in-rayman-legends
+
+### Gaps that remain
+- Why gibberish: still no maker statement. Which studios did what: still not settled. Sales of this game alone: still unknown.
+- The GamesRadar retrospective (the one piece with the level designer's own account), Retro Gamer 275, the press kit, the "Q64" interview, a TechRadar retrospective ("Rayman 2 and the great escape from 2D", found by search this pass) and the Devs Play video are all still unread.

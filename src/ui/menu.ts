@@ -78,6 +78,9 @@ export interface MenuHost {
   /** Optional: window controls for the desktop build. */
   fullscreen?(): boolean;
   toggleFullscreen?(): void;
+  /** The try-out cutscenes, for the TOOLS list; and how one is played. */
+  scenes?: Array<{ id: string; name: string }>;
+  playCutscene?(id: string): void;
   /** Opens the level builder. */
   openBuilder?(): void;
   openTweaks?(): void;
@@ -682,6 +685,10 @@ export class Menu {
       } else if (id === 'workshop') {
         this.host.openWorkshop?.();
         return this.close();
+      } else if (id.startsWith('scene:')) {
+        this.close();
+        this.host.playCutscene?.(id.slice(6));
+        return;
       } else if (id === 'photo') {
         this.close();
         this.host.openPhoto?.();
@@ -937,6 +944,7 @@ export class Menu {
       ...(this.host.openBuilder ? [{ id: 'builder', label: 'LEVEL EDITOR' }] : []),
       ...(this.host.openTweaks ? [{ id: 'tweaks', label: 'TWEAKS (GAME FEEL)' }] : []),
       ...(this.host.openWorkshop ? [{ id: 'workshop', label: 'WORKSHOP (ALL TOOLS)' }] : []),
+      ...(game && this.host.playCutscene ? (this.host.scenes ?? []).map((sc) => ({ id: `scene:${sc.id}`, label: `SCENE: ${sc.name}` })) : []),
       ...(game ? [{ id: 'restart', label: this.confirmRestart ? 'SELECT AGAIN TO RESTART' : 'RESTART (TESTING)', warn: true }] : []),
     ];
     if (this.savePage === 'tools') return [...tools, back];

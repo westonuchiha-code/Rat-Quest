@@ -115,3 +115,50 @@ Suggestions of mine, tied to the findings above.
 - RatQuest's lock-on fighting with tells is already a step beyond Rayman 2's strafe-and-shoot. What is worth taking from Rayman 2 is the staging: few enemy types, each with one clear attack that asks for a different position, and bosses that examine a movement skill (a boss fought on the shield, or on rails) rather than a pure duel.
 - If a boss is fought on a ride, do not restart the phase on one hit. That is the single most criticised moment found in these notes.
 - Hand over new moves at story beats and put the first use right after the scene, as Ly and Globox do with Silver Lums. A regular at the Club could "give" the rail grind just before the level that needs it.
+
+---
+
+## Second pass, 2026-11-16 (a different researcher; appended, nothing above was changed)
+
+WHAT THIS PASS COULD REACH: see the note at the same place in `rides_slides_and_level_structure.md`. READ means I fetched the page and read it (exact quote given); SEARCH SUMMARY means a search tool's paraphrase of a page I could not open.
+
+A CHECK OF THE FIRST PASS. This file is complete (it ends with a finished "Ideas" list). Its READ quotes from Wikipedia and Game Developer were re-read and are exact. Two cautions: the suggestion of a "brief shield-glide" to slow a fall runs against what the owner has since decided about the jump numbers (START-HERE, "The Move Garden and the jump sets"), and "take the camera away" on slides and rails runs against his rule that only the right stick turns the view. The report deals with both.
+
+### New findings
+
+Ancel, near the time, on tuning controls (a maker's statement, read in full)
+- READ. "You must look at the player's reflexes. To avoid frustration, you must think about what's natural for people. Test your new control with your friends, wife, children—everyone who will give you feedback. A single delay on the buttons, the acceleration curve of the camera—all these parameters are important to tune if you want good control. You must have more than 100 of these kinds of parameters in your game, and must be able to change them easily depending on the player's feedback." From Marc Saltzman's "Game Design: Secrets of the Sages", excerpted on Game Developer, 15 March 2002 (so said between Rayman 2 and Beyond Good & Evil). The book's own framing: "The Rayman series is a good example of it done right." https://www.gamedeveloper.com/design/game-design-secrets-of-the-sages----creating-characters-storyboarding-and-design-documents
+- READ (same passage). On what a hero's moves are for: "The next and most important step—especially for games—comes from his powers, his specific actions. What can he do that will surprise the player?" Same address.
+
+More from the 2011 Ancel interview (re-read in full)
+- READ. Miyamoto's verdict on the camera of Ancel's NEXT 3D game, as Ancel tells it: "He even told me he wasn't fond of BGE! ... He really liked the cooperation work with [sidekick character] Pey'j, but wasn't satisfied with cameras. He suggested we had a look at what Nintendo did with Super Mario Sunshine." So the camera stayed a sore point for this team after Rayman 2. https://www.gamedeveloper.com/design/the-evolutionary-process-of-building-i-rayman-origins-i-
+- READ. The fuller version of his remark about Mario: "I find Mario's controls very interesting, but I don't buy it. I can't help but seeing the ropes of the game, even if it works." Same address. (In context "gliding" and "inertia" are about Mario sliding on after the stick is let go, not about a hover move.)
+- READ. On levels only their maker can finish: "We had some levels no one could even play, but the level designer himself! ... I began to repeat to myself how important it was that someone like me could finish the game. I'm not an amazing player". Same address. Said of Rayman Origins.
+- The news item Game Developer ran the same day (5 December 2011) repeats the Mario quote and adds nothing. READ. https://www.gamedeveloper.com/design/-i-rayman-i-s-ancel-i-don-t-really-enjoy-playing-i-mario-i-games-
+
+The move set: three things the first pass could not confirm, now confirmed only second-hand
+- SEARCH SUMMARY (Speed Demos Archive notes). Ledge catching exists and works with the hover: "when you need to use the helicopter to grab an edge, it's usually faster to only helicopter enough to grab the edge than it is to helicopter enough to land on the platform." Climbing exists: "Rayman can climb certain walls and ceilings"; the Precipice has nets to hang from, and "hold Z to move faster" while hanging. https://kb.speeddemosarchive.com/Rayman_2:_The_Great_Escape
+- SEARCH SUMMARY (same). The hover has a second speed: "If you hold Z while using the helicopter, you will move forward a little faster. However, your descent will be steeper." So the glide trades height for distance on a held button.
+- SEARCH SUMMARY (GamesRadar, Palmieri). Updrafts are a level ingredient that turn the hover into a climb: "the updrafts allowing Rayman to ascend thanks to his helicopter ability". And a forgiving edge: the summary says Rayman was allowed to walk slightly past a platform's edge, quoted as "It was quite subtle but let the player have more fun and fail less". https://www.gamesradar.com/games/platformer/how-rayman-2-offered-2d-gameplay-situations-in-a-3d-environment-to-get-the-best-of-both-worlds
+- The climb between two close walls is STILL unconfirmed by any source.
+- SEARCH SUMMARY (a scan of the N64 manual on the Internet Archive and a quick-reference site; not opened). A jumps; B throws an energy orb (hold to charge); Z is "Strafe / lock onto a target" in the quick reference's words; the C buttons give "a panoramic view left or right around Rayman", and the manual is summarised as saying moving the camera is crucial for finding your way. This is still not a verified button map. Note the quick reference's "lock onto a target": the first pass found nobody calling the strafe a lock-on, so that question stays open. https://archive.org/download/Nintendo64Manuals_201812/ and https://strategywiki.org/wiki/Rayman_2:_The_Great_Escape/Controls
+
+The camera: what the makers and the manual say pull in different directions
+- SEARCH SUMMARY ("Q64" interview with Ancel, forum repost). A second summary adds that "the level artists were careful not to build scenes so tight that the camera couldn't move", and that many different cameras were used deliberately in the game's tricky passages. https://raymanpc.com/forum/viewtopic.php?p=1435802
+- Put beside the manual summary above (move the camera yourself, it matters) and Wikipedia's READ line (control "limited to only certain angles" in places), the fair statement is: the player turns the camera in open places, and the level takes it over in authored ones. Nothing read says the camera never turns by itself in open play; one N64 review (search summary, first pass) called it "erratic".
+
+The sequel, from Wikipedia (read in full this pass, not only its development section)
+- READ. "Rayman's controls are similar to that of Rayman 2: The Great Escape, albeit utilising long-ranged punches". Powers became temporary pickups: "Instead of permanent upgrades to his abilities, Rayman can find special 'Laser Detergent' cans ... containing one of five temporary power-ups", one of them a helmet "that allows him to fly vertically for a limited time." https://en.wikipedia.org/wiki/Rayman_3:_Hoodlum_Havoc
+- READ. How it was received beside its predecessors: "the franchise's third game was not as well received as the first two." https://en.wikipedia.org/wiki/Platformer
+
+The studio's later writing on bosses and on feel (Rayman Origins; re-read)
+- READ. "Apart from the odd chase sequence or Moskito shooter boss fight, the rest are quite lackluster and require little skill to defeat; the player simply has to meticulously memorize an otherwise unpredictable pattern". https://www.gamedeveloper.com/design/remaking-i-rayman-i-camera-character-controls
+- READ. On why feel comes first: "When the control of the main character feels wrong, when the camera just doesn't cut it, or when the character animations don't provide good feedback to player inputs and in-game actions, the overall experience of the game world feels awful, even if the level design is outstanding." Same address.
+
+A critic on movement design in 3D platformers (CritPoints, Celia Wagar; opinion, not about Rayman 2; read in full)
+- READ. "Don't make any movement ability a silver bullet for a particular type of obstacle." Good 3D platformers pose generic obstacles ("get up to this height, move across these moving platforms") "and leave the rest up to you." https://critpoints.net/2018/03/03/building-deep-traversal-systems/
+- READ. Against the air stall, praising a 2024 game that leaves it out: "once you jump, you have no mechanical way to stall your fall, or change direction in mid-air besides simple air control", and "We've seen many 3d platformers that allow you to double jump, air stall, and dive in different directions than where you started ... but we haven't seen many that force you to simply jump correctly." https://critpoints.net/2024/06/27/the-big-catch-tacklebox-review/
+
+### Gaps that remain
+- No numbers at all: jump height, hover fall speed, run speed, how far past an edge he can walk. Rayman 2 has no public decompilation that I could reach, so nothing like the Mario 64 table can be made.
+- The N64 manual, StrategyWiki's controls page, the GamesRadar piece, the press kit and the Devs Play video are still unread.

@@ -54,6 +54,9 @@ import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts'
 import { shadowSpokes } from './world/shadow';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
+import { compileCutscene, sampleCutscene, CUT_FPS, type Cutscene, type CutsceneDef } from './cutscene/cutscene';
+import { CutStage } from './cutscene/stage';
+import { CUTSCENES, cutsceneById } from './cutscene/scenes';
 import { Flames, flameHeat, groundFrom, makeEmber, stepEmbers, type Ember } from './world/embers';
 import { EmberFx, type FxLight } from './world/emberFx';
 import { BatModel } from './enemies/batModel';
@@ -1149,6 +1152,8 @@ function startGame(): void {
   const storyCamLook = new THREE.Vector3();
   const storyOff = !!import.meta.env.VITE_EDITOR || /nostory|at=|view/.test(location.hash);
   const storyFreeze = location.hash.includes('sthold'); // dev: hold a scene still at &st=, for screenshots
+  /** Where a cutscene has the view. */
+  const showCam = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
   const unlockAll = location.hash.includes('unlockall');
   // dev: `&slow=0.25` starts the game in slow motion (the Workshop's own switch), for pictures of quick things.
   const slowHash = /[#&]slow=([\d.]+)/.exec(location.hash);
@@ -1257,6 +1262,47 @@ function startGame(): void {
   }
   /** The line a scene has up in the talk box. */
   let storySaying: string | null = null;
+
+  // ---- A cutscene (cutscene/): marionettes, things and the view, played from a list of keys. ----
+  // It plays INSIDE a story scene of one long beat, which is what holds the knight still, takes his buttons, puts up
+  // the bars and keeps everything else (saving, doors, talk) waiting, as for any scene. Its time is that scene's.
+  let show: { sc: Cutscene; stage: CutStage; paused: boolean; last: number; hidden: Npc[]; stepHeld: number; sounds: number } | null = null;
+  /** One asked for from another room: it plays when he has been taken to its own. */
+  let showPending: CutsceneDef | null = null;
+  const showReadout = document.createElement('div');
+  showReadout.style.cssText = 'position:absolute;left:10px;bottom:8px;font:12px monospace;color:#f4e9c8;text-shadow:1px 1px 0 #000;pointer-events:none;display:none;z-index:6';
+  gameWrap.appendChild(showReadout);
+  function playCutscene(def: CutsceneDef, at = 0, hold = false): void {
+    if (cur.id !== def.level) {
+      const there = levelById(def.level);
+      if (!there) return;
+      showPending = def;
+      startTransition(there);
+      return;
+    }
+    endCutscene();
+    if (dialog.open) dialog.close();
+    const sc = compileCutscene(def);
+    const stage = new CutStage(sc);
+    scene.add(stage.group);
+    // The room's own people of the same names step out while it plays (nobody is in two places).
+    const names = new Set([...Object.values(def.cast).map((c) => (c.who.is === 'npc' ? c.who.name : '')), ...(def.clear ?? [])].filter(Boolean).map((n) => n.toLowerCase()));
+    const hidden = npcs.filter((n) => !n.gone && names.has(n.spec.name.toLowerCase()));
+    for (const n of hidden) n.gone = true;
+    syncNpcBodies();
+    show = { sc, stage, paused: hold, last: at, hidden, stepHeld: 0, sounds: at };
+    playScene({ id: `show:${def.id}`, beats: [{ dur: 0, bars: 1 }, { dur: def.length, bars: 1 }] }, endCutscene, at);
+  }
+  function endCutscene(): void {
+    if (!show) return;
+    const was = show;
+    show = null;
+    was.stage.dispose();
+    for (const n of was.hidden) n.gone = false;
+    syncNpcBodies();
+    showReadout.style.display = 'none';
+    if (story.scene) endScene();
+  }
   /** The boss joins the fight: he leaves the dais (the talking figure goes) and comes awake in the hall. */
   function wakeBoss(): void {
     for (const e of enemies) if (e instanceof Grimsqueak && e.asleep) e.wake();
@@ -1955,7 +2001,7 @@ function startGame(): void {
       player.velocity.set(0, 0, 0);
     }
     // A villain who speaks first: when the rat walks into his hall he starts his speech.
-    if (!dialog.open && !jumpPressed && audio.started && player.grounded && !player.dead && !builder.live) {
+    if (!dialog.open && !jumpPressed && audio.started && player.grounded && !player.dead && !builder.live && !story.scene && !showPending) {
       const starter = npcs.find((n) => n.spec.auto && !n.autoDone && Math.hypot(n.spec.x - player.position.x, n.spec.z - player.position.z) < (n.spec.auto ?? 0));
       if (starter) {
         starter.autoDone = true;
@@ -2369,6 +2415,11 @@ function startGame(): void {
     restart: restartGame,
     fullscreen: () => !!document.fullscreenElement || platform.isFullscreen(),
     toggleFullscreen: () => platform.toggleFullscreen(),
+    scenes: CUTSCENES.map((c) => ({ id: c.id, name: c.name })),
+    playCutscene: (id) => {
+      const def = cutsceneById(id);
+      if (def) playCutscene(def);
+    },
     openBuilder: () => builder.show(),
     openTweaks: () => tweaksPanel.show(),
     openWorkshop: () => workshop.show(),
@@ -3184,6 +3235,12 @@ function startGame(): void {
   }
   if (cutAt || location.hash.includes('cutscene')) startCutscene(cutAt ? Number(cutAt[1]) : 0);
   // Development aids: #story=open or #story=exit plays that scene of this level now; &st=4.5 starts it that many seconds in.
+  // Development aid: #level=hub&scene=<id>&t=<seconds>&hold plays a cutscene from a moment (and holds it there).
+  const showAt = /[#&]scene=([\w-]+)/.exec(location.hash);
+  if (showAt) {
+    const def = cutsceneById(showAt[1]);
+    if (def) playCutscene(def, Number(/[#&]t=([\d.]+)/.exec(location.hash)?.[1] ?? 0), /[#&]hold\b/.test(location.hash));
+  }
   const storyAt = /story=(open|exit|find|near)/.exec(location.hash);
   if (storyAt && (storyAt[1] === 'find' || storyAt[1] === 'near')) {
     // #story=find or #story=near: stand him by the spot and play it.
@@ -3233,7 +3290,7 @@ function startGame(): void {
     setTimeout(() => (lockTarget = pickTarget(player.position, follow.yaw, enemies, 60)), 400);
     if (location.hash.includes('debug')) setInterval(() => console.log('LOCK', !!lockTarget, follow.yaw.toFixed(2), lockTarget ? cameraYawToward(player.position, lockTarget).toFixed(2) : '-', player.facing.toFixed(2)), 1000);
   }
-  if (location.hash.includes('talk') && npcs[0]) {
+  if (/[#&]talk\b/.test(location.hash) && npcs[0]) {
     talkingTo = npcs[0];
     dialog.start(npcs[0].spec.name, npcs[0].spec.lines, npcs[0].spec.kind);
   }
@@ -3344,6 +3401,11 @@ function startGame(): void {
       if (f.done) cutscene.active = false;
     }
     // A story scene: it places him, turns his head, and says where the camera is.
+    if (showPending && !trans.active && !boot.blocking && cur.id === showPending.level) {
+      const def = showPending;
+      showPending = null;
+      playCutscene(def);
+    }
     if (storyPending && !boot.blocking) {
       storySeen.mark(storyPending.id);
       playScene(storyPending, STORY[cur.id]?.boss ? wakeBoss : null);
@@ -3352,8 +3414,25 @@ function startGame(): void {
     if (story.scene) {
       const sc = story.scene;
       const jumpTap = keyTap('jump') || consumeAction('jump');
+      // (A cutscene can be HELD and gone through a frame at a time: attack holds it or lets it go; held, left and
+      // right step it back and on, one frame of thirty to the second, and go on stepping while they are kept down.)
+      if (show) {
+        if (keyTap('attack') || consumeAction('attack')) show.paused = !show.paused;
+        if (show.paused) {
+          const stickX = controlSources.reduce((a, c) => a + c.moveX, 0) + (input.isDown('ArrowRight') || input.isDown('KeyD') || input.isDown('Period') ? 1 : 0) - (input.isDown('ArrowLeft') || input.isDown('KeyA') || input.isDown('Comma') ? 1 : 0);
+          const way = stickX > 0.5 ? 1 : stickX < -0.5 ? -1 : 0;
+          if (way === 0) show.stepHeld = 0;
+          else {
+            const before = show.stepHeld;
+            show.stepHeld += rawDt;
+            if (before === 0 || (show.stepHeld > 0.4 && Math.floor(show.stepHeld / 0.06) !== Math.floor(before / 0.06))) {
+              story.t = Math.max(0, Math.min(sc.total - 1e-3, Math.round(story.t * CUT_FPS + way) / CUT_FPS));
+            }
+          }
+        }
+      }
       for (const a of ['attack', 'dodge', 'stow'] as const) consumeAction(a);
-      if (!trans.active && !story.finished && !storyFreeze) {
+      if (!trans.active && !story.finished && !storyFreeze && !show?.paused) {
         story.t += frameDt;
         // The jump button skips to the end.
         if (jumpTap && frameDt > 0 && story.t > 0.4) story.t = sc.total;
@@ -3415,6 +3494,19 @@ function startGame(): void {
           // He turns it over while he looks at it.
           if (f.gesture === 'inspect') keepsake.rotation.set(Math.sin(story.t * 2.2) * 0.9, story.t * 1.6, 0);
         } else if (f.prop === 'gone') clearKeepsake();
+      }
+      if (show) {
+        const cf = sampleCutscene(show.sc, story.t);
+        // (Stepped back, the models' own clocks do not run back: they are only put where the frame has them.)
+        // (HELD, the scene's own time stands still but its people go on breathing: so a held frame is a settled pose.)
+        show.stage.apply(cf, show.paused ? frameDt : Math.max(0, story.t - show.last));
+        for (const snd of show.sc.def.sounds ?? []) if (snd.t > show.sounds && snd.t <= story.t) audio.play(snd.name as Parameters<typeof audio.play>[0], { vol: 0.7, verb: 0.3, priority: 7 });
+        show.sounds = Math.max(show.sounds, story.t);
+        show.last = story.t;
+        showCam.pos.set(...cf.cam.pos);
+        showCam.look.set(...cf.cam.look);
+        showReadout.style.display = show.paused ? 'block' : 'none';
+        if (show.paused) showReadout.textContent = `${show.sc.def.id}   ${story.t.toFixed(2)} / ${show.sc.def.length.toFixed(2)} s   frame ${cf.frame} of ${Math.round(show.sc.def.length * CUT_FPS)}   HELD: left/right step, attack plays, jump ends`;
       }
       if (f.done && !story.finished) {
         story.finished = true;
@@ -3530,11 +3622,13 @@ function startGame(): void {
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.
     rat.root.visible = photo.open ? !photo.hideRat : !(player.recentlyHit && Math.floor(time * 18) % 2 === 0 && player.state !== 'hurt');
+    // (A cutscene has its own cast: the knight himself waits out of the picture.)
+    if (show) rat.root.visible = false;
     flash = Math.max(0, flash - frameDt * 5);
     rat.setFlash(flash * 0.7, flash * 0.05, flash * 0.05);
 
     const ground = groundBelow(renderPos.x, renderPos.y, renderPos.z);
-    shadow.visible = ground !== null && !(photo.open && photo.hideRat);
+    shadow.visible = ground !== null && !(photo.open && photo.hideRat) && !show;
     if (ground !== null) {
       const drop = Math.max(0, renderPos.y - ground);
       shadow.position.set(renderPos.x, ground + 0.02, renderPos.z);
@@ -3711,6 +3805,10 @@ function startGame(): void {
     motes.update(frameDt, time, renderPos);
     pickups.update(frameDt, time);
     drops.update(frameDt, time);
+    if (show && story.scene) {
+      camera.position.copy(showCam.pos);
+      camera.lookAt(showCam.look);
+    }
     fly.applyCamera();
     photo.applyCamera();
     renderer.render(scene, camera);

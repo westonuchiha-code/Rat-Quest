@@ -155,3 +155,46 @@ All of these are my suggestions, each tied to a finding above.
 - **Let sound and music do half the populating.** Re-mix the Club's music by position (stage, bar, back room) as Conker's music re-mixes by location, and change footsteps by floor surface. Both are cheap and were singled out by reviewers.
 - **Give the knight bar idles.** Conker has 15 idles. A few Club-only idles for the rat (leans on the bar, drums the shield, yawns) make the player's own character part of the crowd.
 - **Spend detail only where it matters.** "Only important bits could afford to have eye-catching detail" is a good rule for the added props: dress the spots that are destinations, keep the rest plain, and the room will read clearly on low polygons.
+
+---
+
+## Second pass, 2026-11-16
+
+METHOD NOTE. Same day, a second researcher, a slightly wider network: en.wikipedia.org, www.gamedeveloper.com, shmuplations.com, critpoints.net, glitterberri.com and www.nintendo.com answered to `curl` (iwataasks.nintendo.com and www.glitterberri.com were refused). Every fan wiki, magazine site and video is still refused, so **nothing below changes the main gap: nobody here has seen the inside of the Cock and Plucker, and what is in it is still known only from search summaries.** What this pass did: re-read the whole Wikipedia article from its raw text and checked the first pass's quotations against the pages by machine (all three files, the second pass's own additions included: about 270 quoted passages on lines marked READ, every one found word for word in a page fetched today; the two lines of in-game dialogue sit in Wikipedia's footnotes and were checked by eye); read four more Wikipedia pages and a handful of Game Developer pieces that bear on "a small room that feels full"; and looked for Conker or Rare material on the other reachable sites (none: see the end). Labels as before: READ (page read, quote exact) or SEARCH SUMMARY (a search tool's summary; page not opened).
+
+### The pub and the hub: checked, and what little is new
+- **READ** (re-check) The pub sentences the first pass quoted are exact, and they are the ONLY sentences about the pub in the article: the lead ("after an evening of heavily drinking at the local pub"), the plot's first line, and the epilogue. Wikipedia never names the pub, never describes its inside, and does not mention the main menu. Quote: "Conker is seen back at the same pub he was drinking in at the start of the game". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+- **READ** (re-check) The hub's sentences are exact too. One the first pass did not quote: the game's world is one kingdom with a name. Quote: "is set in the Fairy Panther King's Kingdom". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+- **SEARCH SUMMARY** (vgfacts.com trivia, via a search tool; not read) The Nintendo Power guide's bar tab from the opening is said to total $173 in drinks (tequila shots, whiskey sours, double scotch) and to be dated to the game's release day. The same search's summary of the opening: Conker is on the pub's phone misleading Berri about where he is. https://www.vgfacts.com/game/conkersbadfurday/trivia-1095
+- **SEARCH SUMMARY** (same search) No result described the main menu or named the other drinkers. The first pass's list of who is in the menu pub therefore still rests on one fan-wiki summary.
+
+### The other room the owner named: the Star Wars cantina (read in full)
+The owner's first comparison for the Club was "the Star Wars Cantina". Wikipedia's article on Mos Eisley has a production section on how that room was filled, and it could be read.
+- **READ** The crowd was designed as a set of TYPES first. Quote: "compile a chart of visual designs for a range of character types". (Costume designer John Mollo with George Lucas; masks then made to match each costume.) https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** The room is one bar and many corners. Quote: "created the cantina set complete with circular bar and shady alcoves". https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** Its effect was planned as a contrast with what came before. Quote: "the cantina scene was specifically set up to be a" shock scene (Wikipedia puts the word shock in quotation marks, as make-up artist Stuart Freeborn's own); until then the film had shown few non-human creatures. https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** A band is part of the furniture, and it was mimed. Quote: "all mimed to the [[Benny Goodman]] tune" (film crew in masks, to "Sing, Sing, Sing"). The music brief: "several creatures in a future century finding some 1930s [[Benny Goodman]] swing band music ... and how they might attempt to interpret it" (brackets are Wikipedia's link marks). https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** The first shoot did not make the room full enough, and the fix was CLOSE-UPS of individuals, cut in afterwards. Quote: "several close-ups of alien creatures". https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** How the novelisation describes the same room: by what the drinkers' hands are doing. Quote: "Tentacles, claws and hands... wrapped around drinking utensils". https://en.wikipedia.org/wiki/Mos_Eisley
+- **READ** The place has house rules that make a joke and a character at once: the bartender throws the droids out. Quote: "We don't serve their kind in here". https://en.wikipedia.org/wiki/Mos_Eisley
+
+### Idle animation, in general and at Rare
+- **READ** (Wikipedia's "Idle animation"; the page is flagged by Wikipedia itself as under-cited and partly original research, so treat as a pointer) Why idles carry character. Quote: "the only in-game actions aside from cutscenes where the characters are free to act independent of the player's input". https://en.wikipedia.org/wiki/Idle_animation
+- **READ** (same page, same caution) Rare had done the juggling idle before Conker. Quote: "Diddy Kong juggles a few balls after a few seconds without input" (Donkey Kong Country 2). This fits the first pass's finding that an animator learned to juggle for Conker's idle. https://en.wikipedia.org/wiki/Idle_animation
+- **READ** (re-check, a detail the first pass passed over) The props in Conker's idles are fixed to odd joints so they move well. Quote: "Conker's juggling balls moved based on his right hip, the Game Boy was attached to his foot, and the frying pan was connected to his wrist". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+- **READ** (re-check, likewise) One of the "small details" was a reaction of the VIEW, not of a character. Quote: "the camera shaking and triggering a sound effect if hit by an object". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+
+### Voices on a budget (Banjo-Kazooie, re-read)
+- **READ** The mumble voices were a choice against real speech, and the reason given is the player's imagination. Quote: "could ruin the player's perception of the characters". https://en.wikipedia.org/wiki/Banjo-Kazooie_(video_game)
+- **READ** One voice was reused at another pitch to save room. Quote: "pitch-shifted down to save space on the cartridge". (RatQuest's regulars already do this: "a borrowed recording at his own pitch", START-HERE.) https://en.wikipedia.org/wiki/Banjo-Kazooie_(video_game)
+
+### A crowd that talks: one general piece (read in the relevant part)
+- **READ** (Game Developer blog, Natalie Mikkelson, 18 May 2020; about open-world games, not Conker) Overheard lines work as the middle of a talk, not the whole of it. Quote: "I also like to think of barks as small excerpts of a longer conversation". And a warning that fits a room of regulars written by one hand: "you can unintentionally end up with a town full of people who talk the same". https://www.gamedeveloper.com/design/adding-life-to-worlds-with-dialogue-barks
+
+### Inferences (mine, second pass)
+- The cantina and the Conker pub are filled the same way, as far as can be read: a set of TYPES chosen for contrast, each given one thing to do with its hands, a band or a barman as fixed furniture, and close views of a few individuals. Neither source describes anyone wandering about or deciding anything. The Club as built on 2026-11-16 (tables, a bar, a barkeeper, pairs who take turns, an ant who sips) is already this.
+- What the Club does not yet have, and both rooms do: a "shock" on the way in (the cantina) and a reason to look closely at one face at a time (the cantina's added close-ups; Conker's cutscene camera). The talk box's portrait is our close-up; a short staged look round the room the first time he walks in would be the other half.
+
+### Still not found
+- Any description of the pub's inside, or of the menu, from a page that could be opened.
+- Chris Seavor, or anyone at Rare, on the pub or on Windy. Looked for on Game Developer (site search for "seavor", "conker", "bad fur day", "twelve tales", "rare replay": no interview with the Conker team exists there), on shmuplations.com (site search for "conker", "rare", "banjo": nothing; it translates Japanese developers), on critpoints.net (search "conker", "banjo": nothing found), on glitterberri.com ("0 Search Results Found") and on nintendo.com (nothing).

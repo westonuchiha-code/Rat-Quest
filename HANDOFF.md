@@ -1194,3 +1194,24 @@ things are:
   WeakMap of eased slopes) and a quaternion premultiplied on the model's root after `setTransform` (the root's
   rotation is put back to zero first on a frame after a tipped one, since `setTransform` only sets its yaw).
 
+## Cutscenes (2026-11-16; test `tests/cutscene.ts`)
+- `src/cutscene/cutscene.ts` (pure): `CutsceneDef`, `ActorKey`, `PropKey`, `CamKey`, `compileCutscene`,
+  `sampleCutscene(sc, t)` → `CutFrame` (cast, props, cam), `checkCutscene(def)` → what is wrong in words, `CUT_FPS`
+  30, `NOD_TIME`, `SHAKE_TIME`. A walker's turns are worked out at compile (he faces his way a moment after he sets
+  off and until a moment before he arrives; a key that says a facing at a moment wins it). `Ease`: smooth, out, in,
+  line.
+- `src/cutscene/stage.ts`: `makePuppet(who)` → `{ root, pose(frame, dt) }`; `CutStage` (cast and props in one
+  group; `apply(frame, dt)`; `dispose()`); `PUPPET_NPCS`, `PUPPET_FOES`. `strings()` is the marionette's part for
+  any root (rotation order YXZ: lean, a body nod for those with none of their own, a bob for those with no walk).
+- `src/cutscene/scenes.ts`: `CUTSCENES`, `cutsceneById`. Places come from `BAR` in junction.ts.
+- npc.ts: `Npc.puppet` (facing, headYaw, nod, talking), `Npc.nods`; `update` is now a wrapper round `step`.
+  patrons.ts: `PatronCtx.nod`.
+- main.ts: `show`, `showPending`, `playCutscene(def, at, hold)`, `endCutscene()`. A cutscene plays INSIDE a story
+  scene of one long beat (`playScene({ id: 'show:...', beats: [{dur 0, bars 1}, {dur length, bars 1}] })`), which
+  is what freezes the knight, takes the buttons and puts up the bars; its time is `story.t`. The stage is applied
+  in the story block; the view is set just before `fly.applyCamera()`. Held: models are still given the frame's
+  time so that eased parts settle. The dev `talk` address is now matched as a whole word (it used to match
+  "table-talk").
+- menu.ts: `MenuHost.scenes`, `playCutscene`; rows `scene:<id>` on the TOOLS page.
+- Scratch: `scenesheet.sh <id> <t1> <t2> ...` makes a sheet of held frames (needs the dev server on 5199).
+

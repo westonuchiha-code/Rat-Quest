@@ -57,3 +57,90 @@ there with no run-up, anywhere, at any time. Every one of Mario's high jumps has
 landing, by a crouch or a turn, or by a wall. That bears on the owner's complaint that he "can just jump over stuff":
 it is the levels' walls that have been wrong so far, but the height of the double jump is the other half of it.
 Nothing in the game has been changed on the strength of this.
+
+## Conker's Bad Fur Day: the second pass and the report (2026-11-16)
+The first pass (same day, earlier) read Wikipedia and Game Developer and left three notes files. The second pass
+checked those notes, read a little more, and wrote `reports/Conker's Bad Fur Day design research.md`. Each notes file
+now ends with a dated "Second pass" section. (Rayman 2 had its own second pass the same day: see the next section.)
+
+**What the second pass read**
+- Wikipedia's "Conker's Bad Fur Day" again, from its raw text, and checked every quotation the first pass marked READ
+  against the pages by machine: all were exact. Also "Conker: Live & Reloaded", "Conker (series)", "Rare", "Rare
+  Replay" and "Banjo-Kazooie" again, and new: "Donkey Kong 64" (the collecting Conker turned away from), "Mos Eisley"
+  (how the Star Wars cantina, the owner's other reference for the Club, was filled), "Idle animation".
+- Game Developer: the 2007 interview with two Rare staff (checked: its "four and a half, five years" IS about
+  Conker); an interview with the two makers of Thank Goodness You're Here! (comedy first, the hero as straight man, one button);
+  "No Laughing Matter" (Al Lowe, Chuck Jordan, Rhianna Pratchett on comedy in games); the Psychonauts postmortem's
+  account of its cutscene editor; an animator's deep dive on Little Kitty, Big City; and blog pieces on
+  context-sensitive actions, on wordless (pantomime) scenes, on silent heroes and on overheard lines.
+- CritPoints: one essay with a passage on context-sensitive actions.
+
+**What still could not be read**
+- **The makers' own words, at first hand.** Chris Seavor's and Chris Marlow's interviews (Kotaku, Nintendo Life,
+  Scouse Gamer 88, Splice Today, RareGamer, Retro Gamer, Eurogamer), the 2013 director's commentary and the Rare
+  Replay "making of" film (video). Everything they are reported as saying reaches us through Wikipedia.
+- **The game itself.** No video could be watched, so nobody here has seen the opening in the pub, the menu, or a
+  single pad being used. What is inside the Cock and Plucker is known only from search summaries of fan wikis.
+- The Conker wiki, Giant Bomb, TV Tropes, StrategyWiki, GameFAQs, the manual and the official guide (archive.org),
+  and the 2001 reviews themselves (IGN, Edge, GameSpot, Next Generation).
+- Nothing about Conker or Rare was found on the other reachable sites: shmuplations.com (Japanese developers),
+  critpoints.net, glitterberri.com, nintendo.com. iwataasks.nintendo.com was refused.
+
+**For whoever does more:** the sites reachable on 2026-11-16 were en.wikipedia.org, www.gamedeveloper.com,
+shmuplations.com, www.nintendo.com, critpoints.net and glitterberri.com (without "www"). Wikipedia's raw text is the
+easiest to check quotations against: `curl -G https://en.wikipedia.org/w/index.php --data-urlencode "title=..."
+--data-urlencode "action=raw"`. Game Developer has a working site search (`/search?q=...`). shmuplations.com answers
+plain `curl` but answered 403 when sent a browser's User-Agent line. The first sites to ask for, if more can be
+allowed: www.scousegamer88.com (a three-part interview with Seavor), www.nintendolife.com, kotaku.com,
+www.raregamer.co.uk, conker.fandom.com, and YouTube for the commentary.
+
+## Rayman 2: the second pass (2026-11-16)
+
+The first pass (same day, earlier) left three notes files and no report; its researcher was cut off as it finished.
+The second pass checked those files, read what the reachable sites hold, appended a "Second pass, 2026-11-16" section
+to each notes file, and wrote `reports/Rayman 2 design research.md`.
+
+**The first-pass files:** all three are COMPLETE (each ends with a finished "Ideas" list; the last file written,
+`development_world_and_characters.md`, is whole). Every quotation they mark READ was checked against Wikipedia's raw
+text and Game Developer's pages and is exact. Three things in them to read with care, all noted in the files: the
+"Basis, variety, rhythm" line is Ancel on the FIRST Rayman and on games in general; the level-design award is less
+sure than it looks (below); and several of their closing "Ideas" break the owner's standing rules (a camera that
+takes itself to a chosen angle, easier obstacles on a ride, a glide, breaks on foot in the Long Drop). The report
+says what survives of each.
+
+**What the second pass read**
+- Wikipedia, from raw text: "Rayman 2: The Great Escape" in full again; "Rayman 3: Hoodlum Havoc" in full; "Game
+  Developers Choice Awards"; "Donald Duck: Goin' Quackers" (built on Rayman 2's engine); "Platformer"; "Nintendo
+  Classics"; and looked for, and found no article on, Serge Hascoët, Olivier Palmieri, Pauline Jacquey or Éric
+  Chevalier.
+- Game Developer: **a 2002 excerpt from Marc Saltzman's "Game Design: Secrets of the Sages" with Michel Ancel on
+  Rayman's set pieces ("being chased by a pirate spaceship"), on character and on tuning controls: the only maker's
+  statement about this game read in full.** Also the 2011 Ancel interview and the three Rayman Origins design pieces
+  again, in full; a 2017 interview with Ubisoft's chief executive (the team was split between Montpellier and
+  Paris); and two players' analyses of Rayman Origins and Rayman Legends. Its site search was tried with about
+  thirty queries: **it holds no postmortem of Rayman 2.**
+- CritPoints (opinion; nothing there is about Rayman 2): "Pacing and Games", a reply on Crash Bandicoot (the camera
+  for a run-forward level), "Building Deep Traversal Systems", and a review of The Big Catch: Tacklebox (a 3D
+  platformer with no way to stall a fall).
+- By search summary only: more of the GamesRadar piece (Palmieri on updrafts, on walking past an edge), a scan of
+  the N64 manual (buttons), speedrun notes (the hover, ledges, climbing, the slide into the first boss), and the
+  RayWiki on "the General".
+
+**What still could not be read**
+- **The level designer's own account**: the GamesRadar retrospective of 28 December 2025 with Olivier Palmieri. It is
+  the source of the game's best-known design statements and everything from it here is a search summary.
+- Retro Gamer 275 ("The Making of Rayman 2"), the game's digital press kit, the "Q64" interview with Ancel (on the
+  RaymanPC forum), a TechRadar retrospective, and the Double Fine "Devs Play" video with Ancel.
+- **The levels themselves.** RayWiki, Speed Demos Archive, GameFAQs, StrategyWiki and the N64 manual (archive.org)
+  were all refused, and no video could be watched. So no ride or slide was timed, the controls on each ride are
+  known only in fragments, and where a crash puts Rayman back was never found. There is no public source code, so
+  there are no movement numbers of the kind the Mario 64 research has.
+- **One unsettled fact:** Wikipedia's Rayman 2 article says it won "Excellence in Level Design (2001)" at the Game
+  Developers Choice Awards; Wikipedia's article on those awards lists only American McGee's Alice for that year. A
+  search summary of the organiser's archive (gamechoiceawards.com, refused) suggests several teams were honoured,
+  Ancel's among them. Not checked.
+- Nothing on Rayman was found on shmuplations.com, glitterberri.com or nintendo.com (a trademark line only).
+  iwataasks.nintendo.com failed its certificate check and was left alone.
+
+**The first sites to ask for, if more can be allowed:** www.gamesradar.com, raymanpc.com (the wiki and the forum),
+kb.speeddemosarchive.com, archive.org (the manual), discmaster.textfiles.com (the press kit), www.techradar.com.
