@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,719 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,742 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -221,7 +221,7 @@ to find"). Eight things where there were thirty-two: five caps and three HUNKS o
   second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
 The other fifteen levels are as they were.
 
-## The Club, more alive (the owner, 2026-11-15: ASKED FOR, NOT STARTED. On the list.)
+## The Club, more alive (the owner, 2026-11-15. FIRST PART BUILT 2026-11-16: see the end of this section)
 His words (dictated, so read past the slips: "busy days" and "dizzy Dave's" are Dizzy Dave's; "conquer" is Conker):
 - "I want the main room you know where dizzy Dave and everybody else hangs out I want it to be a little more
   populated I'm thinking like I want it to feel almost like the Star Wars Cantina or maybe a better example would be
@@ -257,8 +257,52 @@ count of ants beaten), on top of a room that is already busy with nothing done. 
 as an enemy: looked at from all sides on the model sheet before it goes in (see the spear-through-the-head note).
 These are OUR characters in that spirit: not the cantina's or that bar's own people, places or jokes.
 
+**What is built (2026-11-16), the first part:**
+- **Furniture** (`src/world/tavernModels.ts`; decor kinds `table` and `stool`; `TABLE`, `STOOL`, `tableSolids`,
+  `stoolSolids` in layout.ts): a table is a wooden cable drum on its side, with thimbles for mugs, a candle stub in a
+  bottle cap, or a game of cards; a stool is a cork with a bottle cap on it. Solid as drawn.
+- **Three tables in the Club** (`TABLES` and `clubTables()` in junction.ts: a table, the stools round it, and who is
+  on each). They are added to the compiled room in `junction()`; they are NOT builder pieces (the level editor does
+  not offer them yet).
+- **Two new builds, two looks each** (`src/npc/patrons.ts`): TURTLES Mossback Mo (old, mossy, glasses, a beard) and
+  Pebble (young, a flat cap and a kerchief); FOXES Vix (red) and Ash (grey, an eyepatch, a notched ear). The look
+  goes by name (`patronLook`), like the mice and birds.
+- **Doing something** (`NpcSpec.doing`: stand, drink, chat, lean, cards; `seated`, `partner`, `turn`): the turtles
+  sit across a table, one drinking and one talking, taking turns (the one listening nods; a turtle's neck comes out
+  when he speaks); the foxes play cards, each looking at his hand and then at the other. One who is busy keeps to
+  his table and turns only his HEAD to the rat (`busy` in `Npc.update`).
+- **An enemy as a regular**: Corporal Nib, an Ant Pikeman off duty (`AntModel.offDuty()`: no pike, a thimble in the
+  claw that held it), standing at the third table.
+- **It grows** (`NpcSpec.when`): Nib is there only once the Hollows are cleared (`#unlockall` shows him). Everyone
+  else is there from the first minute. That is the whole of the growth so far: one regular, one condition.
+- Each has lines, a voice (a borrowed recording at his own pitch: `VOICES` in speech.ts) and a talk-box portrait.
+- `tests/club.ts` checks the furniture is solid as drawn, who is where and doing what, that the room is full
+  without the extras, and every body at everything it does. Each build was looked at from four sides in the model
+  viewer (`#view&who=patron&kind=fox&name=Ash&doing=cards&seated=1&t=2`) and all three tables in the running game.
+**Not done yet:** the ferret and the owl; anyone leaning on a wall or standing about (the fox CAN lean: nobody is
+placed doing it); a bar; more props (the room is still mostly floor); more who arrive with progress (mini bosses, a
+count of ants beaten: the save does not count creatures beaten yet); voices of their own; the ant only stands (it
+does not drink from its thimble or turn its head). Nobody has spoken to any of them in the running game: their
+lines and portraits are untested by eye. The Conker research's first pass (below) found that game's bar is its
+opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
+their own evening.
+
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
-**TWO MORE ASKED FOR 2026-11-15, NOT STARTED:** "Conker's Bad Fur Day from the Nintendo 64 is probably a really good
+**TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not
+be allowed from his phone: "if you can't do the research that's fine we can save it for later". So: one researcher a
+game read what could be reached (Wikipedia and Game Developer in full; everything else only as search summaries,
+each finding marked READ or SEARCH SUMMARY) and left notes in `research_notes/Conker's Bad Fur Day design research/`
+and `research_notes/Rayman 2 design research/` (three files each). The Rayman 2 researcher was cut off by a usage
+limit as it finished: its three files are there but it never reported back, so READ THEM CRITICALLY and check the
+last one is complete. **To finish:** the makers' own interviews are on sites this environment refuses (GamesRadar,
+Nintendo Life, RareGamer, Kotaku, the Rayman 2 press kit, RayWiki, the Conker wiki, web.archive.org). Allowing them
+needs the session opened at claude.ai on a computer, or a newer Claude app: the phone app could not show the
+request. Then a second pass that reads those pages, then the two reports.
+What the Conker pass says that matters at once: its bar (the Cock and Plucker) is the opening scene, the main menu
+and the epilogue, not a walk-about hub; its only change is from full to EMPTY at the end; the walk-about hub is
+another place, whose residents are gates and job-givers; three people voiced everyone; enemy kinds double as
+talking individuals; many characters are objects (a box, a paint pot, a barrel).
+The first ask, in his words: "Conker's Bad Fur Day from the Nintendo 64 is probably a really good
 thing for you to research or add to your research for this game specifically because I think they're going to end up
 being very similar in a lot of ways. Also Rayman 2 the one that was on the Nintendo 64 the 3D one that one is also a
 good game to reference for this game." Same shape as the others: real sources (the makers' own interviews and

@@ -46,7 +46,7 @@ Windy, the hub
 - **FROM GENERAL KNOWLEDGE, UNVERIFIED** I recall that the windmill is destroyed when the war starts, and that the wreck marks the way into It's War. I searched for this and found no source; treat it as unconfirmed.
 
 How the N64 made it feel alive
-- **READ** Everyone speaks. Reviewers singled out the faces. Quotes: "Conker himself is equipped with an in-game facial animation system that realistically portrays his different moods" and "individually rendered fingers on some characters". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
+- **READ** The cast is voiced and the faces act. Reviewers singled out the faces. Quotes: "Conker himself is equipped with an in-game facial animation system that realistically portrays his different moods" and "individually rendered fingers on some characters". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
 - **READ** Small reactive details were a stated priority. Quote: "small details were a priority, such as the Fire Imps reacting if a swear word was entered into the cheat code menu". https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
 - **READ** The hero never stands dead still. Quote: "Conker has 2,000 animations, including 15 idle animations." The article also mentions juggling balls and a Game Boy as props attached to his body for animations. https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day
 - **READ** Drunk movement was studied. Quote: "Some animations, such as drunk character movements, required research." https://en.wikipedia.org/wiki/Conker%27s_Bad_Fur_Day

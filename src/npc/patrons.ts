@@ -290,7 +290,7 @@ const FOX = {
 
 class Fox implements PatronBody {
   readonly root = new THREE.Group();
-  readonly height = 1.5;
+  readonly height = 1.74;
   private readonly body = new THREE.Group();
   private readonly chest = new THREE.Group();
   private readonly head = new THREE.Group();
@@ -308,7 +308,7 @@ class Fox implements PatronBody {
   constructor(private readonly look: 'vix' | 'ash') {
     const C = FOX[look];
     this.root.add(this.body);
-    this.body.position.y = 0.5;
+    this.body.position.y = 0.545;
     // Hips, and a narrow chest with a pale front.
     this.body.add(kit.blob(0.175, 0.14, 0.15, C.coat, 0, 0, 0, 7, 5));
     this.chest.position.set(0, 0.1, 0);
@@ -435,7 +435,7 @@ class Fox implements PatronBody {
     const lean = ctx.doing === 'lean' && !ctx.seated;
     const speaking = ctx.talking || this.common.mouth > 0.05;
     // Standing, sitting (thighs out, shins down), or leaning back on something with one foot crossed over.
-    this.body.position.y = ctx.seated ? SEAT + 0.07 : lean ? 0.485 : 0.5;
+    this.body.position.y = ctx.seated ? SEAT + 0.07 : lean ? 0.57 : 0.545;
     this.body.position.z = lean ? -0.06 : 0;
     this.body.rotation.x = lean ? -0.2 : ctx.seated ? 0.06 : 0;
     this.chest.rotation.x = (lean ? 0.14 : ctx.doing === 'cards' ? 0.2 : 0) + 0.02 * Math.sin(t * 1.7);
