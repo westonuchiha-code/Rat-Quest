@@ -92,6 +92,8 @@ export interface LevelDef {
   fog?: number;
   /** Where the fog starts and where it is total (default 18 and 90). Big open levels push it back so their landmarks show. */
   fogRange?: [number, number];
+  /** What drifts in its air, if not its theme's own: 'ice' is fine snow sifting down. (See world/motes.ts.) */
+  motes?: 'ice' | 'foundry' | 'cave' | 'keep' | 'sewer';
   /**
    * How much plain light there is in the place, 0 to 1 (default 1). A dark place (the Glow Cave: 0.4) is lit by its
    * coloured lights and by what glows in it.

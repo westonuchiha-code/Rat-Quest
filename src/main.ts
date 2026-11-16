@@ -1422,7 +1422,7 @@ function startGame(): void {
     audio.stopLoops();
     audio.playTrack(def.music ?? 'drift');
     braziers = def.decor.filter((d) => d.kind === 'brazier').map((d) => ({ x: d.x, y: d.y + 0.8, z: d.z }));
-    motes.setTheme(def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
+    motes.setTheme(def.motes ?? def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
     enemies.length = 0;
     antList.length = 0;
     enemyModels.length = 0;

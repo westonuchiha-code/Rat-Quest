@@ -21,6 +21,7 @@ import { junction } from './junction';
 import { garden } from './garden';
 import { longDrop } from './longdrop';
 import { glowCave } from './glowcave';
+import { coldMain } from './coldmain';
 import { CAMPAIGN } from './campaign';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
@@ -236,7 +237,7 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
  * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
  */
-export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave()];
+export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain()];
 
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */

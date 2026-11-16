@@ -22,6 +22,8 @@ export interface Box {
   hidden?: boolean;
   /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
   tough?: boolean;
+  /** Ice: he cannot grip its top. He is slow to get going on it, slow to turn, and slides a long way before he stops (TUNING.ice). */
+  slick?: boolean;
   /**
    * A ramp: its top runs up from `low` at one end to y1 at the other, along x or z, climbing toward the + end of that
    * axis (`up` 1) or the - end (-1). (North is -z: a ramp that climbs north has axis 'z', up -1.) See collision.ts.
@@ -161,6 +163,12 @@ export function mushroomStem(size: number, stem?: number): number {
 export function mushroomTop(x: number, y: number, z: number, size: number, cap?: number): number {
   return y + size - mushroomCap(x, z, size, cap) * MUSHROOM.top;
 }
+/** An ice spike (decor `iceSpike`): what of it is solid. Its tall middle spike, as a post: half its width is `ICE_SPIKE.solid` of its height. */
+export const ICE_SPIKE = { solid: 0.13, tall: 0.86 } as const;
+export function iceSpikeSolids(x: number, y: number, z: number, size: number): Box[] {
+  const s = size * ICE_SPIKE.solid;
+  return [{ ...extent('stone', x - s, x + s, y, y + size * ICE_SPIKE.tall, z - s, z + s), hidden: true }];
+}
 export function mushroomSolids(x: number, y: number, z: number, size: number, cap?: number, stem?: number): Box[] {
   if (size < MUSHROOM.solid) return [];
   const s = mushroomStem(size, stem) * MUSHROOM.stemSolid;
@@ -269,6 +277,23 @@ export type Decor =
   | { kind: 'moss'; x: number; y: number; z: number; yaw: number; size: number; color: number; flat?: boolean; threads?: number; light?: boolean }
   /** A stalactite: a spike of rock hanging from whatever is over (x, z), `length` long, `r` thick at its root. Keep its point out of his reach: it is only drawn. */
   | { kind: 'stalactite'; x: number; z: number; length: number; r: number; skin?: Skin }
+  /**
+   * An icicle: a spike of clear ice hanging from whatever is over (x, z), or from `top` if that is given (a pipe is
+   * not a thing the room knows to hang from). Only drawn: keep its point out of his reach.
+   */
+  | { kind: 'icicle'; x: number; z: number; length: number; r: number; top?: number }
+  /**
+   * Ice standing up from the ground: one tall spike and two short ones leaning from its foot. `size` is how tall. It
+   * is SOLID (a level adds `iceSpikeSolids` for it): its middle spike stops him.
+   */
+  | { kind: 'iceSpike'; x: number; y: number; z: number; size: number }
+  /**
+   * A jet of gas or steam: puffs leaving (x, y, z) one after another along `dir` (a direction, any length), growing
+   * and thinning as they go, `length` far. `color` (default a cold white). `width`: how wide a puff is where the
+   * jet ends (default a third of its length). `every` and `on`: it comes in bursts, one every `every` seconds,
+   * each `on` seconds long (default: it never stops). Only drawn.
+   */
+  | { kind: 'jet'; x: number; y: number; z: number; dir: [number, number, number]; length: number; color?: number; width?: number; every?: number; on?: number }
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }
   /** The curved underside of an archway (the solid parts are boxes): spans x0..x1 along the wall (or z if `alongZ`). */

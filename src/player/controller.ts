@@ -139,6 +139,10 @@ export class PlayerController {
   private onRamp = false;
   /** What he is standing on (null in the air). */
   private groundBox: Aabb | null = null;
+  /** He is standing on ice. */
+  get onIce(): boolean {
+    return this.grounded && !!this.groundBox?.slick;
+  }
   /**
    * Riding his shield (see `rideStep` and TUNING.ride). While he is: `rideSteer` is how hard he is steering, from -1
    * to 1 (for his lean and his tail), and `rideFlipProgress` how far through a kickflip he is (0..1, -1 when not).
@@ -783,7 +787,9 @@ export class PlayerController {
       const mul = (this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1) * scrabble;
       const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * mul;
       const hasInput = move.lengthSq() > 0.01;
-      const accel = swimming ? T.swim.accel : this.grounded ? (hasInput ? T.move.groundAccel : T.move.groundDecel * this.gear.grip) : T.move.airAccel;
+      // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
+      const ice = this.onIce;
+      const accel = swimming ? T.swim.accel : this.grounded ? (hasInput ? T.move.groundAccel * (ice ? T.ice.accel : 1) : T.move.groundDecel * this.gear.grip * (ice ? T.ice.decel : 1)) : T.move.airAccel;
       this.velocity.x = approach(this.velocity.x, move.x * target, accel * dt);
       this.velocity.z = approach(this.velocity.z, move.z * target, accel * dt);
     }

@@ -1105,3 +1105,17 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - Mushroom pictures (chamber.ts): cap = MeshBasic with `mushroomCap` map times the per-face colours, its uv doubled
   round; stem = its own lit material with `mushroomStem`, uv flipped so the picture's top is the stem's top.
 
+## The Cold Main (2026-11-16: a try-out room for the ice theme; `#level=coldmain&nostory`)
+- Level `src/levels/coldmain.ts` (`COLDMAIN`, `ICE_BLOCKS`, `ICE_BLOCK`, `ICE_SPIKES`, `ICE_PRIZES`), tests
+  `tests/coldmain.ts`. START-HERE has the owner's words and his two corrections.
+- Slick ice: `Box.slick` -> `Aabb.slick` (chamber.ts and `aabbOf`) -> controller `onIce` (grounded on a slick box) ->
+  the ground accel and decel are multiplied by `TUNING.ice`. Only the ordinary walk and run: dodge, lunge, the
+  shield ride and the body slide are as on any ground.
+- Decor in chamber.ts: `icicle` and `iceSpike` (four-sided cones in `iceMat`, lit with a glint, picture
+  `iceClear`); `jet` (nine sprites with `puffTexture()`, white with alpha; moved in `update(time)`; `every`/`on`
+  make gusts). `haloTexture()` is the additive glow's; do not use it for fog.
+- Pictures: iceBrick 32 (painted over paintSewerBrick), frostCobbles 64 (HIS CHOICE: see its comment), iceSheet 64
+  (tile 5), iceBlock 64, frostPipe 32 (not yet worn by anything: the `pipe` decor is plain colour), iceClear 32.
+- `LevelDef.motes` picks what drifts in the air apart from the theme; 'ice' is snow (world/motes.ts).
+- tests/coldmain.ts has `hop(from, to, jumpFrame, secondJumpAfter, brakeWithin, runUp)` for hops onto slick tops.
+

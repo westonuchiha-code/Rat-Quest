@@ -55,7 +55,7 @@ const spikes = def.decor.filter((d) => d.kind === 'stalactite');
     console.log(String(e));
   }
   check('it builds (its moss, mushrooms and stalactites too)', built);
-  check('it is a dark place, and the only one: no other level turns the plain light down', (def.ambient ?? 1) < 0.6 && [...LEVELS, ...ARCHIVE, ...TEST_ROOMS].every((l) => l.id === 'glowcave' || l.ambient === undefined));
+  check('it is a dark place, and the darkest: no level of the game turns the plain light down, and no other try-out room as far', (def.ambient ?? 1) < 0.6 && [...LEVELS, ...ARCHIVE].every((l) => l.ambient === undefined) && TEST_ROOMS.every((l) => l.id === 'glowcave' || (l.ambient ?? 1) > (def.ambient ?? 1)));
   check('it has no lamps: nothing lights it but what grows there', !def.decor.some((d) => d.kind === 'lamp' || d.kind === 'torch' || d.kind === 'brazier' || d.kind === 'light'));
 }
 

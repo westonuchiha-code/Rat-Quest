@@ -445,14 +445,43 @@ tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's sou
   for looking at one creature at a time, take bugs out before changing any creature's rules.
 - Not in it yet: any other glowing creature (ideas given him: glow-worm threads, railroad worms, headlight
   beetles).
-**The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `iceWall`, `frostCobbles`,
-`frostPipe`, `icicles`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`. (Sheet tool:
-`TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
+**The Cold Main (2026-11-16): the ICE theme, done the same way. `#level=coldmain&nostory`, a TEST ROOM**
+(`src/levels/coldmain.ts`, tests `tests/coldmain.ts`). **How he gets there: a door in the Move Garden's south wall,
+east of the way out, between the low stone and the foot of the slope.** His ask: "a frozen over area maybe it's got
+like some bursted CO2 pipes on the walls and there's [icicles] coming off the ceiling and coming out of the ground".
+- A length of the sewer, frozen: walls `iceBrick` (the sewer's own brick, painted over its picture, gone cold),
+  banks `frostCobbles`, and down the middle a sheet of ICE (`iceSheet`).
+- **ICE IS SLICK: `Box.slick` (it goes to the collider), `TUNING.ice { accel 0.2, decel 0.12 }`, `player.onIce`.**
+  He is slow to get going on it, turns wide, and slides about six units from a run. His jump is his own.
+- Put on the tiles as things: steel pipes along the long walls, BURST in two places each, with a JET of gas in
+  gusts (decor `jet`: soft white puffs running out along a direction; made to be used again as STEAM, which he
+  also asked for: give it a warm colour and point it up); icicles under the pipes and from the roof (decor
+  `icicle`); spikes of ice standing from the floor (decor `iceSpike`, SOLID: `iceSpikeSolids`); little cold lamps;
+  fine snow (`LevelDef.motes: 'ice'`).
+- To do in it: two bottle caps out on the ice, each in a pocket of spikes; a relic on the last of four BLOCKS of
+  ice in the channel, each higher than the last, their tops ice too: land with speed and he slides off. The tests
+  hop them with a rat who brakes in the air, and check that one who does not, slides off.
+- **HIS TWO CORRECTIONS, made while it was being built (he watches the pictures as they are taken):**
+  - **"The platform block and the floor that the platform block is on are using the same texture and it looks
+    wrong."** The blocks wore the sheet's dark picture. They have their own now, `iceBlock`, pale and milky. THE
+    RULE: A THING STANDING ON A FLOOR NEVER WEARS THE FLOOR'S PICTURE.
+  - **"Your early rendering of the [frost] texture I think looked better than your current one."** The first
+    `frostCobbles` (small stones, a lace of rime in every joint) had been swapped for bigger stones with frost in
+    soft drifts, "to be calmer". He preferred the first. It is back, and a comment in its painter says to leave it.
+    THE LESSON: he LIKES a busy, detailed tile; do not smooth one out on a guess that it is too much.
+- Lessons of building it: a jet is fog (white puffs with soft see-through edges, drawn over what is behind), not
+  light; added as light it was a beam ("rays of light" is what he threw out of the Widow). And the camera, close
+  to a wall, does not look as high as a pipe at 5: a jet must come down to where he is to be seen.
+- NOT in it: any creature; the jets are only drawn (they do not push or chill him); the walls have no frost in
+  patches or icicle curtains of their own (a patch painted into the brick came round like wallpaper, so it is
+  plain); nobody has slid on the ice by hand.
+**The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `starfield`, `rainbowRoad`,
+`pomoTiles`; `emberBrick`, `steamVent`. (The four ice mock-ups are gone: the Cold Main's tiles replace them. Sheet
+tool: `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
 `/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
-comes, is done the Glow Cave's way.
+comes, is done in a try-out room.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
-crate and barrel); no steam animation; the ice, furnace and dream
-themes; the dream knight.
+crate and barrel); the furnace refresh (the `jet` is ready for its steam); the dream theme and the dream knight.
 
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)
 **TWO MORE ASKED FOR 2026-11-15: A FIRST PASS ONLY (2026-11-16), NO REPORTS YET.** The owner, when the sites could not

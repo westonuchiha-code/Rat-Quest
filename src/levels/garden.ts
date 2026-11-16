@@ -325,6 +325,8 @@ export function garden(): LevelDef {
     courseDoors: [
       { to: 'longdrop', name: 'The Long Drop', need: 0, door: doorOn('west', GARDEN.halfX, -15.6, GARDEN.halfZ, 0) },
       { to: 'glowcave', name: 'The Glow Cave', need: 0, door: doorOn('south', GARDEN.halfX, -6, GARDEN.halfZ, 0) },
+      // (And a fourth, east of the way out, between the low stone and the foot of the slope: the Cold Main.)
+      { to: 'coldmain', name: 'The Cold Main', need: 0, door: doorOn('south', GARDEN.halfX, 10.5, GARDEN.halfZ, 0) },
     ],
   };
 }

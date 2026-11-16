@@ -93,7 +93,7 @@ const PALETTE: Record<Kind, number> = {
 const TILE: Partial<Record<TextureName, number>> = {
   wetCobbles: 2, sewerBrick: 2.5, concreteSlab: 3, mossStone: 2, planks: 1.5, ceramicTiles: 1.5, drainGrate: 1.2,
   rustPlate: 2.5, rubbleWall: 4, mineBrick: 2, roughRock: 3, wetRock: 3, mossRock: 3, dirt: 2.5, mudFloor: 2.5,
-  caveRock: 4, caveFloor: 4,
+  caveRock: 4, caveFloor: 4, iceBrick: 2.5, iceSheet: 5,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
 };
 const MOSS = 0xc8f0a8; // tops of platforms pick up a green tint
@@ -247,6 +247,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const cz = (b.z0 + b.z1) / 2;
     const aabb = makeAabb(cx, cy, cz, w, h, d);
     if (b.ramp) aabb.ramp = b.ramp; // its top is a slope: see collision.ts
+    if (b.slick) aabb.slick = true; // ice: no grip on its top
     if (b.kind === 'pillar' && !b.hidden) aabb.lip = PILLAR_LIP; // its capital overhangs: see below
     colliders.push(aabb);
     if (b.hidden) continue; // collider only
@@ -471,7 +472,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   let mossGlow: THREE.MeshBasicMaterial | null = null;
   /** A soft round glow, to hang in the air round a thing that shines: brightest at its middle, dying away to nothing at its rim. */
   let haloTex: THREE.DataTexture | null = null;
-  const halo = (x: number, y: number, z: number, size: number, color: THREE.Color, strength: number): void => {
+  const haloTexture = (): THREE.DataTexture => {
     if (!haloTex) {
       const S = 32;
       const data = new Uint8Array(S * S * 4);
@@ -487,7 +488,33 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       haloTex.minFilter = THREE.NearestFilter;
       haloTex.needsUpdate = true;
     }
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: color.clone().multiplyScalar(strength), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
+    return haloTex;
+  };
+  /** A jet's puffs, and what each needs to be put in its place as time goes: see the `jet` decor. */
+  const jets: Array<{ puffs: THREE.Sprite[]; from: THREE.Vector3; dir: THREE.Vector3; length: number; width: number; color: THREE.Color; every: number; on: number }> = [];
+  const JET_SPEED = 3.4;
+  let iceMat: THREE.ShaderMaterial | null = null;
+  /** A puff of gas: white, soft, thinning to nothing at its rim. */
+  let puffTex: THREE.DataTexture | null = null;
+  const puffTexture = (): THREE.DataTexture => {
+    if (!puffTex) {
+      const S = 32;
+      const data = new Uint8Array(S * S * 4);
+      for (let j = 0; j < S; j++) {
+        for (let i = 0; i < S; i++) {
+          const r = Math.hypot(i - S / 2 + 0.5, j - S / 2 + 0.5) / (S / 2);
+          data.set([255, 255, 255, Math.round(255 * Math.max(0, 1 - r) ** 1.15)], (j * S + i) * 4);
+        }
+      }
+      puffTex = new THREE.DataTexture(data, S, S, THREE.RGBAFormat);
+      puffTex.magFilter = THREE.NearestFilter;
+      puffTex.minFilter = THREE.NearestFilter;
+      puffTex.needsUpdate = true;
+    }
+    return puffTex;
+  };
+  const halo = (x: number, y: number, z: number, size: number, color: THREE.Color, strength: number): void => {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture(), color: color.clone().multiplyScalar(strength), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
     sprite.position.set(x, y, z);
     sprite.scale.set(size, size, 1);
     group.add(sprite);
@@ -1103,6 +1130,43 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         halo(d.x + nx * 0.3, d.y + up * 0.4, d.z + nz * 0.3, d.size * 4.5, c, 0.22);
         lightDefs.push({ x: d.x + nx * 0.8, y: d.y + up, z: d.z + nz * 0.8, r: 3.5 + d.size * 2.2, color: c, power: 0.7, flash: 0, flicker: 0.04, phase: d.x * 0.9 + d.z * 1.7 });
       }
+    } else if (d.kind === 'icicle' || d.kind === 'iceSpike') {
+      // Clear ice: an icicle hanging (one four-sided spike, its point down), or a spike of it standing (one tall, two
+      // short ones leaning from its foot). Lit like the room and glinting as he moves round it.
+      iceMat ??= createPs1Material({ lit: true, shine: 0.7, tex: getTexture('iceClear') });
+      const one = (r: number, length: number): THREE.BufferGeometry => {
+        const g = new THREE.ConeGeometry(r, length, 4, 2).toNonIndexed();
+        g.translate(0, length / 2, 0);
+        g.computeVertexNormals();
+        return bakeVertexColor(g, 0xffffff, false);
+      };
+      const hash = (n: number): number => {
+        const v = Math.sin(n * 91.7 + d.x * 311.7 + d.z * 74.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      if (d.kind === 'icicle') {
+        const m = addMesh(one(d.r, d.length), iceMat, d.x, d.top ?? roofOver(d.x, 3, d.z), d.z);
+        // (Point down, and each turned its own way.)
+        m.rotation.set(Math.PI, hash(1) * Math.PI, 0);
+      } else {
+        const tall = addMesh(one(d.size * 0.2, d.size), iceMat, d.x, d.y, d.z);
+        tall.rotation.y = hash(1) * Math.PI;
+        for (const [k, a] of [[0.52, hash(2) * Math.PI * 2], [0.36, hash(2) * Math.PI * 2 + 2.2 + hash(3)]] as Array<[number, number]>) {
+          const m = addMesh(one(d.size * 0.14, d.size * k), iceMat, d.x + Math.cos(a) * d.size * 0.12, d.y, d.z + Math.sin(a) * d.size * 0.12);
+          m.rotation.set(Math.sin(a) * 0.3, hash(4) * Math.PI, -Math.cos(a) * 0.3);
+        }
+      }
+    } else if (d.kind === 'jet') {
+      // A jet of gas: a row of soft puffs, each put in its place as time goes (see `update`).
+      const dir = new THREE.Vector3(...d.dir).normalize();
+      const puffs: THREE.Sprite[] = [];
+      for (let i = 0; i < 9; i++) {
+        // (Fog, not light: each puff a soft white ball that hides what is behind it a little, and thins away.)
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTexture(), color: d.color ?? 0xdcefff, opacity: 0, depthWrite: false, transparent: true }));
+        group.add(sp);
+        puffs.push(sp);
+      }
+      jets.push({ puffs, from: new THREE.Vector3(d.x, d.y, d.z), dir, length: d.length, width: d.width ?? d.length * 0.55, color: new THREE.Color(d.color ?? 0xdcefff), every: d.every ?? 0, on: d.on ?? 0 });
     } else if (d.kind === 'stalactite') {
       // A spike of rock hanging from the roof: five-sided, thick at its root and spreading into the rock there, then
       // narrowing by stages to a point, with a slight crook in it. Lit like the rock, so the lights of the place catch it.
@@ -1686,6 +1750,28 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const dt = lastTime < 0 ? 0 : Math.min(0.1, Math.max(0, time - lastTime));
     lastTime = time;
     stepFalling(dt);
+    // Jets: each puff runs out along the jet, growing and thinning, and starts again at its mouth. A jet that comes
+    // in bursts lets go only the puffs that leave its mouth while it is on.
+    for (const j of jets) {
+      const run = j.length / JET_SPEED;
+      j.puffs.forEach((sp, i) => {
+        const t = (((time / run + i / j.puffs.length) % 1) + 1) % 1;
+        const left = time - t * run;
+        const on = j.every <= 0 || ((left % j.every) + j.every) % j.every < j.on;
+        // (Thick for most of its way, thinning quickly at its end.)
+        const k = on ? Math.min(1, t / 0.05) * (1 - t * t * t) * 0.8 : 0;
+        sp.visible = k > 0.004;
+        // (It billows: each puff strays a little from the line as it goes, its own way.)
+        const stray = j.width * 0.16 * t;
+        sp.position.copy(j.from).addScaledVector(j.dir, j.length * t ** 0.8);
+        sp.position.x += Math.sin(i * 2.4 + left * 1.7) * stray;
+        sp.position.y += Math.cos(i * 1.9 + left * 2.3) * stray;
+        sp.position.z += Math.sin(i * 3.1 + left * 1.3) * stray;
+        const w = j.width * (0.14 + 0.86 * t);
+        sp.scale.set(w, w, 1);
+        (sp.material as THREE.SpriteMaterial).opacity = k;
+      });
+    }
     // Two crossing waves plus a small ripple. Amplitude stays under the floor top, so the water never pokes through.
     for (const { geo, base } of sheets) {
       const posAttr = geo.attributes.position;

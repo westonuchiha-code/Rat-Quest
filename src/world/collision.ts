@@ -14,6 +14,8 @@ export interface Aabb {
    * solid is the wedge under that slope; the air over the low end, inside the box, is air.
    */
   ramp?: Ramp;
+  /** Ice: he cannot grip its top (see Box.slick). */
+  slick?: boolean;
 }
 
 /**
@@ -84,9 +86,10 @@ export function slopeOf(b: Aabb): number {
 }
 
 /** The collider for a level's box (a ramp's slope goes with it). */
-export function aabbOf(b: { x0: number; x1: number; y0: number; y1: number; z0: number; z1: number; ramp?: Ramp }): Aabb {
+export function aabbOf(b: { x0: number; x1: number; y0: number; y1: number; z0: number; z1: number; ramp?: Ramp; slick?: boolean }): Aabb {
   const a = makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0);
   if (b.ramp) a.ramp = b.ramp;
+  if (b.slick) a.slick = true;
   return a;
 }
 

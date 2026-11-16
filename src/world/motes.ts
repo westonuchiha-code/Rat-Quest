@@ -29,6 +29,8 @@ export interface MoteStyle {
 export const MOTES: Record<string, MoteStyle | null> = {
   foundry: { count: 120, color: 0xff8a2a, size: 0.24, rise: 0.9, drift: 0.35, flicker: 0.8, bright: 1, low: -2, high: 10 },
   cave: { count: 100, color: 0x8ae8d0, size: 0.18, rise: 0.08, drift: 0.25, flicker: 0.35, bright: 0.95, low: -1, high: 7 },
+  // (Not a theme of its own: a level asks for it by `motes`. Fine snow, sifting down.)
+  ice: { count: 150, color: 0xeaf6ff, size: 0.11, rise: -0.55, drift: 0.3, flicker: 0.15, bright: 0.8, low: -1, high: 9 },
   keep: { count: 110, color: 0xc9b8e0, size: 0.13, rise: -0.22, drift: 0.12, flicker: 0.1, bright: 0.45, low: -1, high: 9 },
   sewer: { count: 60, color: 0xbfe6c0, size: 0.13, rise: 0.05, drift: 0.18, flicker: 0.2, bright: 0.3, low: -1, high: 5 },
   mine: null,

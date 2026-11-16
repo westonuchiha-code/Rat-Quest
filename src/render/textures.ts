@@ -1475,86 +1475,214 @@ function paintWidowHorn(p: Px, rand: Rand): void {
 // None of these is used by any level. They are here to be looked at (tests/textureSheet.ts, TEX_FOCUS=...).
 // ---------------------------------------------------------------------------
 
-/** Ice: a frozen wall. Deep blue ice with the light caught slantwise in it, white cracks, and bubbles frozen in. */
-function paintIceWall(p: Px, rand: Rand): void {
+/**
+ * Ice: the sewer's own brick wall, frozen. The same courses of brick (it is painted over the sewer's picture), gone
+ * a cold slate blue, its vines dead and white with rime; frost packed into every joint, and creeping down the face of
+ * each brick from the course above; a sparkle here and there. (No icicles or burst pipes in it: those are things put
+ * ON a wall, each in its own place.)
+ */
+function paintIceBrick(p: Px, rand: Rand): void {
   const S = p.size;
+  // (The sewer's wall underneath, at its own size, laid out twice each way.)
+  const under = new Px(32);
+  paintSewerBrick(under, rand);
+  const cold = [0x101a26, 0x1c2a3a, 0x2c3e52, 0x40566c, 0x587288, 0x7a94a8, 0xa6bccb];
   const f = fbm(S, rand, 4, 3);
-  const pal = [0x14263e, 0x234a70, 0x3f7aa6, 0x7fb6d6, 0xbfe4f4, 0xf2fcff];
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.18 + f[y * S + x] * 0.5 + 0.14 * Math.sin(((x + y * 0.5) / S) * Math.PI * 6), pal, x, y, 0.2));
-  for (let c = 0; c < 4; c++) {
-    let x = rand() * S;
-    let y = rand() * S;
-    for (let k = 0; k < 14; k++) {
-      p.set(x, y, 0xf2fcff);
-      p.blend(x + 1, y, 0x14263e, 0.35);
-      x += rand() < 0.6 ? 1 : 0;
-      y += rand() < 0.75 ? 1 : -1;
+  const lum = (c: number): number => (((c >> 16) & 255) * 0.3 + ((c >> 8) & 255) * 0.5 + (c & 255) * 0.2) / 255;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const c = under.get(x, y);
+      const l = lum(c);
+      // (What was green on it, its vines, is the palest: dead and furred with frost.)
+      const green = ((c >> 8) & 255) > ((c >> 16) & 255) * 1.15;
+      p.set(x, y, ramp(l * 1.5 + (green ? 0.3 : 0) + (f[y * S + x] - 0.5) * 0.14, cold, x, y, 0.16));
     }
   }
-  for (let b = 0; b < 6; b++) {
+  // Frost: its joints (the dark lines of the picture underneath) are packed with it, grey-blue, not white: white
+  // lines that fine only glitter at a distance. And a line of rime lies along the top of every course of brick.
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const joint = lum(under.get(x, y)) <= 0.16;
+      const patch = f[y * S + x];
+      // (Faintly: a patch strong enough to see as a shape comes round again every few bricks, like wallpaper.)
+      if (joint) p.set(x, y, rand() < 0.5 ? 0x6a869a : 0x4c667c);
+      else p.blend(x, y, 0xcfe2ee, Math.max(0, Math.min(0.22, (patch - 0.4) * 0.8)) + (y % 8 === 1 || y % 8 === 2 ? 0.22 : 0));
+    }
+  }
+  for (let i = 0; i < S * 0.25; i++) p.set(Math.floor(rand() * S), Math.floor(rand() * S), 0xffffff);
+}
+
+/**
+ * Ice: the sewer's cobbles under frost. The same stones, cold grey-blue; rime white in the joints between them and
+ * dusted over the crown of each stone, thicker on some than others. He can stand on it: it is rough.
+ */
+function paintFrostCobbles(p: Px, rand: Rand): void {
+  // (THE OWNER CHOSE THIS ONE, 2026-11-16. A later try had bigger stones with frost in soft drifts, to be calmer; he
+  // was shown both in the game and said of this, the first: "your early rendering of the [frost] texture I think
+  // looked better than your current one". Small stones, a lace of rime in every joint. Leave it.)
+  const S = p.size;
+  const cells = voronoi(S, S === 64 ? 7 : 5, rand);
+  const f = fbm(S, rand, 5, 3);
+  const tones = Array.from({ length: 64 }, () => 0.25 + rand() * 0.3);
+  const dusted = Array.from({ length: 64 }, () => rand());
+  const stone = [0x131c26, 0x1f2c3a, 0x2f4052, 0x435a6e, 0x5c788c, 0x7e9aac];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const edge = cells[i].d2 - cells[i].d1;
+      const id = cells[i].id % 64;
+      if (edge < 1.3) {
+        p.set(x, y, rand() < 0.25 ? 0xdcecf6 : rand() < 0.6 ? 0x9ab6c8 : 0x6f8ea2);
+        continue;
+      }
+      p.set(x, y, ramp(tones[id] + (f[i] - 0.5) * 0.3 + Math.min(0.14, (edge - 1.3) * 0.03), stone, x, y, 0.2));
+      // (Rime on its crown: where the stone is highest, if this one has caught any.)
+      if (edge > 4.2 && dusted[id] > 0.45 && f[i] > 0.42) p.blend(x, y, 0xe8f4fb, 0.35 + 0.4 * (dusted[id] - 0.45));
+      else if (edge < 2.3) p.blend(x, y, 0xcfe2ee, 0.3);
+    }
+  }
+}
+
+/**
+ * Ice: a sheet of it over still water. Black-blue and glassy; paler where it is clouded; a few long cracks running
+ * across it, each white with a dark line beside it; bubbles frozen in, as rings; and glints. He cannot grip it.
+ */
+function paintIceSheet(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 3, 4);
+  const g = fbm(S, rand, 7, 2);
+  const ice = [0x0a1622, 0x10202e, 0x182c3e, 0x243c52, 0x34526a, 0x4c6e88, 0x74a0b8];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(f[y * S + x] * 0.7 + g[y * S + x] * 0.22 - 0.06, ice, x, y, 0.14));
+  // Cracks: a few, long, wandering; each forks once.
+  const crack = (x0: number, y0: number, a0: number, len: number, fork: boolean): void => {
+    let x = x0;
+    let y = y0;
+    let a = a0;
+    for (let k = 0; k < len; k++) {
+      p.blend(x, y, 0xe8f6ff, 0.9);
+      p.blend(x + 1, y + 1, 0x060c14, 0.5);
+      a += (rand() - 0.5) * 0.5;
+      x += Math.cos(a);
+      y += Math.sin(a);
+      if (fork && k === Math.floor(len * 0.45)) crack(x, y, a + (rand() < 0.5 ? 0.8 : -0.8), Math.floor(len * 0.4), false);
+    }
+  };
+  for (let c = 0; c < 3; c++) crack(rand() * S, rand() * S, rand() * Math.PI * 2, Math.floor(S * (0.5 + rand() * 0.4)), true);
+  // Bubbles, frozen in: small rings, in a drift of three or four.
+  for (let b = 0; b < 5; b++) {
+    const bx = rand() * S;
+    const by = rand() * S;
+    for (let k = 0; k < 3 + Math.floor(rand() * 2); k++) {
+      const x = Math.floor(bx + (rand() - 0.5) * 9);
+      const y = Math.floor(by + (rand() - 0.5) * 9);
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) p.blend(x + dx, y + dy, 0xb8dcf0, 0.75);
+      p.blend(x, y, 0x0a1622, 0.5);
+      p.set(x - 1, y - 1, 0xffffff);
+    }
+  }
+  for (let i = 0; i < S * 0.5; i++) {
     const x = Math.floor(rand() * S);
     const y = Math.floor(rand() * S);
-    p.set(x, y, 0xf2fcff);
-    p.blend(x + 1, y + 1, 0x14263e, 0.5);
+    if (f[y * S + x] > 0.55) p.set(x, y, 0xcfeaf8);
   }
 }
 
-/** Ice: the old cobbles under a glaze. Dark stones, ice in the joints, frost on the top of each. */
-function paintFrostCobbles(p: Px, rand: Rand): void {
+/**
+ * Ice: a BLOCK of it, cut or frozen solid: not the dark sheet over water (he, shown a block wearing the sheet's
+ * picture: "the platform block and the floor that the platform block is on are using the same texture and it looks
+ * wrong"). Pale and milky, blue in its depths; flat white planes where it has cracked inside, running slantwise; a
+ * string of bubbles. (Nothing at the picture's edges: a block's faces do not begin where the picture does, and a
+ * border drawn there fell as a cross in the middle of each face.)
+ */
+function paintIceBlock(p: Px, rand: Rand): void {
   const S = p.size;
-  const stone = [0x1c2430, 0x2a3644, 0x3c4c5c, 0x566a7a];
-  for (let y = 0; y < S; y++) {
-    const row = Math.floor(y / 8);
-    for (let x = 0; x < S; x++) {
-      const lx = (x + (row % 2) * 4) % 8;
-      const ly = y % 8;
-      const edge = lx === 0 || ly === 0;
-      const dome = 1 - (Math.abs(lx - 4) + Math.abs(ly - 4)) / 9;
-      if (edge) p.set(x, y, ramp(0.5 + rand() * 0.4, [0x4a86ac, 0x8cc4e0, 0xd4f0fa], x, y, 0.3));
-      else p.set(x, y, ramp(dome * 0.8 + rand() * 0.15, stone, x, y, 0.2));
-      if (!edge && ly <= 2 && rand() < 0.75 - ly * 0.22) p.blend(x, y, 0xeaf8ff, 0.8);
+  const f = fbm(S, rand, 3, 3);
+  const g = fbm(S, rand, 8, 2);
+  const ice = [0x4a7896, 0x6494b0, 0x82b0c8, 0xa2c8dc, 0xc2deec, 0xe0f1f8];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.18 + f[y * S + x] * 0.62 + g[y * S + x] * 0.16, ice, x, y, 0.14));
+  // Planes where it has cracked inside: straight, slantwise, each white along one edge and fading back from it.
+  for (let c = 0; c < 4; c++) {
+    const x0 = rand() * S;
+    const y0 = rand() * S;
+    const a = (rand() < 0.5 ? 0.5 : -0.5) + (rand() - 0.5) * 0.5;
+    const len = S * (0.3 + rand() * 0.3);
+    for (let k = 0; k < len; k++) {
+      const x = x0 + Math.cos(a) * k;
+      const y = y0 + Math.sin(a) * k;
+      p.blend(x, y, 0xffffff, 0.85);
+      for (let d = 1; d < 5; d++) p.blend(x, y + d, 0xe0f1f8, 0.4 - d * 0.08);
     }
   }
-  for (let g = 0; g < 8; g++) p.set(rand() * S, rand() * S, 0xffffff);
+  // Bubbles, risen in a string and caught.
+  for (let b = 0; b < 3; b++) {
+    const x = Math.floor(rand() * S);
+    let y = Math.floor(rand() * S);
+    for (let k = 0; k < 6; k++) {
+      p.set(x + (k % 2), y, 0xffffff);
+      p.blend(x + (k % 2), y + 1, 0x4a7896, 0.6);
+      y -= 2 + Math.floor(rand() * 3);
+    }
+  }
 }
 
-/** Ice: a pipe that has burst. Steel bands, a split in one, frost blooming white round it and icicles hung below. */
+/**
+ * Ice: a steel pipe in the cold. Across is round it, its top at the picture's edge; down is along it. Dull steel,
+ * a seam, rivets at its bands; white rime lying thick along its top and thinning down its sides. (Whole: a pipe that
+ * has burst is a thing of its own, a jet of gas and frost round it.)
+ */
 function paintFrostPipe(p: Px, rand: Rand): void {
   const S = p.size;
-  const steel = [0x1a2026, 0x2e3840, 0x4a5862, 0x6e7e88, 0x98a8b0];
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.5 + 0.45 * Math.cos((((y % 16) - 8) / 16) * Math.PI * 2) + (rand() - 0.5) * 0.08, steel, x, y, 0.15));
-  for (let x = 0; x < S; x++) {
-    p.set(x, 0, 0x101418);
-    p.set(x, 16, 0x101418);
-    if (x % 8 === 3) p.set(x, 2, 0xb8c4cc);
-  }
+  const steel = [0x1a222a, 0x2a343e, 0x3e4a56, 0x56646f, 0x72828c, 0x94a4ad];
+  const f = fbm(S, rand, 4, 3);
   for (let y = 0; y < S; y++) {
     for (let x = 0; x < S; x++) {
-      const d = Math.hypot((x - 16) * 0.8, y - 8);
-      if (d < 9) p.blend(x, y, 0xf0faff, Math.max(0, 0.95 - d / 9 - rand() * 0.25));
+      const u = x / S;
+      const round = 0.5 + 0.5 * Math.cos(u * Math.PI * 2);
+      p.set(x, y, ramp(0.2 + 0.5 * round ** 1.5 + (f[y * S + x] - 0.5) * 0.16, steel, x, y, 0.16));
+      // (Rime: on its top, in a ragged edge.)
+      const top = Math.min(u, 1 - u);
+      if (top < 0.1 + f[y * S + x] * 0.12) p.blend(x, y, rand() < 0.8 ? 0xe8f4fb : 0xbcd4e2, 0.9 - top * 3);
     }
   }
-  for (let x = 12; x <= 20; x++) p.set(x, 8 + (x % 3 === 0 ? 1 : 0), 0x05080c);
-  for (const x of [6, 11, 15, 19, 24, 28]) {
-    const len = 3 + Math.floor(rand() * 6);
-    for (let k = 0; k < len; k++) p.set(x, 17 + k, k > len - 3 ? 0xf4fcff : 0xa8d4ea);
+  // A band, with rivets, and the seam along the pipe's side.
+  for (let x = 0; x < S; x++) {
+    p.blend(x, 2, 0x10161c, 0.7);
+    p.blend(x, 3, 0x94a4ad, 0.5);
+    p.blend(x, 6, 0x10161c, 0.6);
+    if (x % 5 === 2) {
+      p.set(x, 4, 0xb4c2ca);
+      p.blend(x, 5, 0x10161c, 0.6);
+    }
   }
+  for (let y = 0; y < S; y++) p.blend(Math.round(S * 0.3), y, 0x10161c, 0.45);
 }
 
-/** Ice: icicles hanging from a ledge, for the top of a wall. */
-function paintIcicles(p: Px, rand: Rand): void {
+/**
+ * Clear ice, for icicles and for the spikes of it that stand up from the floor. Across is round it; down is along
+ * it, from its root to its point. Pale blue, a white core running its length where the light goes through, a bright
+ * edge, milky at the root and clearest at the point; faint rings where it grew.
+ */
+function paintIceClear(p: Px, rand: Rand): void {
   const S = p.size;
-  const f = fbm(S, rand, 4, 2);
-  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.15 + f[y * S + x] * 0.3, [0x0c1622, 0x16283a, 0x223c54], x, y, 0.2));
-  for (let x = 0; x < S; x++) for (let y = 0; y < 4; y++) p.set(x, y, ramp(0.6 + rand() * 0.4, [0x8cc4e0, 0xd4f0fa, 0xffffff], x, y, 0.3));
-  for (let c = 0; c < 9; c++) {
-    const x0 = Math.floor(rand() * S);
-    const len = 8 + Math.floor(rand() * 18);
-    const w = 1 + Math.floor(rand() * 2.5);
-    for (let k = 0; k < len; k++) {
-      const half = Math.round(w * (1 - k / len));
-      for (let dx = -half; dx <= half; dx++) p.set(x0 + dx, 4 + k, dx < 0 ? 0xf4fcff : dx === 0 ? 0xb4dcf0 : 0x5a94b8);
+  const ice = [0x3e6e8e, 0x5a90ae, 0x7eb2cc, 0xa6d2e6, 0xcfeaf6, 0xf2fbff];
+  const streak = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const u = x / S;
+      // (Two bright lines round it: the edge that catches the light, and the core seen through it.)
+      const edge = Math.max(0, 1 - Math.min(u, 1 - u) * 9);
+      const core = Math.max(0, 1 - Math.abs(u - 0.5) * 7);
+      let v = 0.34 + 0.45 * edge + 0.4 * core + (streak[x] - 0.5) * 0.2 - 0.14 * (y / S);
+      if (y % 7 === 0) v += 0.1;
+      if (y < 4) v += 0.25;
+      p.set(x, y, ramp(v, ice, x, y, 0.14));
     }
+  }
+  for (let i = 0; i < 10; i++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.set(x, y, 0xffffff);
+    p.blend(x, y + 1, 0xffffff, 0.5);
   }
 }
 
@@ -2037,16 +2165,19 @@ const DEFS = {
   hazardTrim: { size: 32, seed: 404, paint: paintHazardTrim },
   // props (not offered in the level builder: they are what things are made of, not what rooms are built from)
   // MOCK-UPS (2026-11-16): looked at, used by nothing yet. Ice; glow cave; dream; the furnace and the sewer refreshed.
-  iceWall: { size: 32, seed: 801, paint: paintIceWall },
-  frostCobbles: { size: 32, seed: 802, paint: paintFrostCobbles },
-  frostPipe: { size: 32, seed: 803, paint: paintFrostPipe },
-  icicles: { size: 32, seed: 804, paint: paintIcicles },
   scorpShell: { size: 64, seed: 821, paint: paintScorpShell },
   scorpTail: { size: 32, seed: 822, paint: paintScorpTail },
   scorpClaw: { size: 32, seed: 823, paint: paintScorpClaw },
   scorpLamp: { size: 32, seed: 824, paint: paintScorpLamp },
   mushroomCap: { size: 64, seed: 825, paint: paintMushroomCap },
   mushroomStem: { size: 32, seed: 826, paint: paintMushroomStem },
+  // Ice (the Cold Main): the sewer frozen. Plain tiles; icicles, spikes and burst pipes are things put on them.
+  iceBrick: { size: 32, seed: 801, paint: paintIceBrick },
+  frostCobbles: { size: 64, seed: 802, paint: paintFrostCobbles },
+  iceSheet: { size: 64, seed: 805, paint: paintIceSheet },
+  iceBlock: { size: 64, seed: 807, paint: paintIceBlock },
+  frostPipe: { size: 32, seed: 803, paint: paintFrostPipe },
+  iceClear: { size: 32, seed: 806, paint: paintIceClear },
   caveRock: { size: 64, seed: 811, paint: paintCaveRock },
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
   glowMoss: { size: 32, seed: 813, paint: paintGlowMoss },
