@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { ps1Uniforms } from '../render/ps1Material';
 import { RatModel, RatAnimInput } from '../player/ratModel';
 import { ScuttlerModel } from '../enemies/scuttlerModel';
+import { Firefly } from '../enemies/firefly';
+import { FireflyModel } from '../enemies/fireflyModel';
 import type { ScuttlerState } from '../enemies/scuttler';
 import type { PlayerState } from '../player/controller';
 import { TUNING } from '../data/tuning';
@@ -120,6 +122,13 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     for (let i = 0; i < 240; i++) m.update(dt, view as never);
     camera.far = 500;
     camera.updateProjectionMatrix();
+  } else if (who === 'firefly') {
+    // The Firefly Bomber, hanging low so it is in the picture: `&color=ff4aa8` gives it a colour of its own,
+    // `&light=0` puts its lantern out (default full).
+    const f = new Firefly({ x: 0, z: 0, color: q.has('color') ? parseInt(q.get('color')!, 16) : undefined });
+    const fm = new FireflyModel(f.color);
+    scene.add(fm.root);
+    for (let time = 0; time <= t + 1e-6; time += dt) fm.update(dt, { state: 'spent', stateTime: time, x: 0, y: 0.7, z: 0, facing: 0, vent: { x: 0, y: 0.72, z: -0.8 }, light: num('light', 1), floor: 0, moving: 0 });
   } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);

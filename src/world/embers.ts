@@ -26,6 +26,8 @@ export interface Ember {
   /** How big the flames it leaves are, and how long they burn. */
   radius: number;
   burnFor: number;
+  /** The colour of its fire, if not a fire's own (only looks). */
+  color?: number;
 }
 
 /** The floor under a point: the game's `groundBelow`. Null where there is none. */
@@ -81,8 +83,8 @@ export function emberLanding(from: { x: number; y: number; z: number; vx: number
 }
 
 /** A drop let go at a place with a speed. Its landing is worked out now. */
-export function makeEmber(at: { x: number; y: number; z: number; vx: number; vy: number; vz: number }, opts: { gravity: number; radius: number; burnFor: number }, groundAt: GroundAt): Ember {
-  const e: Ember = { ...at, gravity: opts.gravity, age: 0, done: false, owed: 0, land: null, radius: opts.radius, burnFor: opts.burnFor };
+export function makeEmber(at: { x: number; y: number; z: number; vx: number; vy: number; vz: number; color?: number }, opts: { gravity: number; radius: number; burnFor: number }, groundAt: GroundAt): Ember {
+  const e: Ember = { x: at.x, y: at.y, z: at.z, vx: at.vx, vy: at.vy, vz: at.vz, gravity: opts.gravity, age: 0, done: false, owed: 0, land: null, radius: opts.radius, burnFor: opts.burnFor, color: at.color };
   e.land = emberLanding(e, groundAt);
   return e;
 }
@@ -116,6 +118,8 @@ export interface Flame {
   r: number;
   age: number;
   life: number;
+  /** Its colour, if not a fire's own (only looks). */
+  color?: number;
 }
 
 /** How long flames take to catch, and to die down at the end. */
@@ -131,8 +135,8 @@ export function flameHeat(f: Flame): number {
 export class Flames {
   readonly list: Flame[] = [];
 
-  add(x: number, y: number, z: number, r: number, life: number): Flame {
-    const f: Flame = { x, y, z, r, age: 0, life };
+  add(x: number, y: number, z: number, r: number, life: number, color?: number): Flame {
+    const f: Flame = { x, y, z, r, age: 0, life, color };
     this.list.push(f);
     return f;
   }

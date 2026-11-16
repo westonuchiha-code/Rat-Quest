@@ -23,6 +23,21 @@ export interface FxLight {
   phase: number;
 }
 
+/** What a fire of one colour is drawn with. */
+interface Look {
+  core: THREE.Material;
+  halo: THREE.Material;
+  ringMat: THREE.Material;
+  fillMat: THREE.Material;
+  glowMat: THREE.Material;
+  tongueGeo: THREE.BufferGeometry;
+  flameMat: THREE.Material;
+  dropLight: number;
+  flameLight: number;
+  /** How far a patch's light reaches, and how strong it is at its hottest. */
+  flameReach: number;
+  flamePower: number;
+}
 interface DropView {
   root: THREE.Group;
   mark: THREE.Group;
@@ -33,6 +48,7 @@ interface FireView {
   tongues: THREE.Mesh[];
   glow: THREE.Mesh;
   phase: number;
+  power: number;
   light: FxLight;
 }
 
@@ -52,6 +68,8 @@ export class EmberFx {
   private readonly fillMat = new THREE.MeshBasicMaterial({ color: 0xff4303, transparent: true, opacity: 0.4, depthWrite: false });
   private readonly glowMat = new THREE.MeshBasicMaterial({ color: 0xff5a06, transparent: true, opacity: 0.45, depthWrite: false });
   private readonly flameMat = createPs1Material({});
+  /** The same things in another colour, for the fire of a firefly that has a colour of its own: made once a colour. */
+  private readonly tinted = new Map<number, Look>();
   private readonly drops = new Map<Ember, DropView>();
   private readonly fires = new Map<Flame, FireView>();
   private readonly dropLights = new Map<Ember, FxLight>();
@@ -67,6 +85,44 @@ export class EmberFx {
     }
     cone.setAttribute('color', new THREE.BufferAttribute(col, 3));
     this.tongueGeo = cone;
+  }
+
+  /** What a fire of this colour is drawn with: a fire's own orange, or (given a colour) the same shapes in that colour. */
+  private look(color?: number): Look {
+    if (color === undefined) return { core: this.core, halo: this.halo, ringMat: this.ringMat, fillMat: this.fillMat, glowMat: this.glowMat, tongueGeo: this.tongueGeo, flameMat: this.flameMat, dropLight: 0xffc060, flameLight: 0xff7a20, flameReach: 7, flamePower: 1.1 };
+    let L = this.tinted.get(color);
+    if (!L) {
+      const c = new THREE.Color(color);
+      const pale = c.clone().lerp(new THREE.Color(0xffffff), 0.5);
+      const deep = c.clone().multiplyScalar(0.8);
+      const paint = c.clone().multiplyScalar(0.85);
+      // (A tongue of it: deep in its colour at the root, pale at the tip, as a flame is yellow there. It is drawn as
+      // it is, lit by nothing: a cold fire of this kind is its own light, and the room's lights on top of it only
+      // turned it white. And it lights less of the room than a real fire: it is for dark places.)
+      const geo = this.tongueGeo.clone();
+      const pos = geo.attributes.position;
+      const col = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const u = pos.getY(i);
+        col.set([deep.r + (pale.r - deep.r) * u * u, deep.g + (pale.g - deep.g) * u * u, deep.b + (pale.b - deep.b) * u * u], i * 3);
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      L = {
+        core: new THREE.MeshBasicMaterial({ color: c.clone().lerp(new THREE.Color(0xffffff), 0.3) }),
+        halo: glowMaterial(color, 0.4),
+        ringMat: new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.95, depthWrite: false }),
+        fillMat: new THREE.MeshBasicMaterial({ color: paint, transparent: true, opacity: 0.4, depthWrite: false }),
+        glowMat: new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.45, depthWrite: false }),
+        tongueGeo: geo,
+        flameMat: new THREE.MeshBasicMaterial({ vertexColors: true }),
+        dropLight: color,
+        flameLight: color,
+        flameReach: 5,
+        flamePower: 0.75,
+      };
+      this.tinted.set(color, L);
+    }
+    return L;
   }
 
   /** Everything gone (a new level). */
@@ -91,21 +147,22 @@ export class EmberFx {
       if (e.done) continue;
       let v = this.drops.get(e);
       if (!v) {
+        const K = this.look(e.color);
         const root = new THREE.Group();
-        root.add(new THREE.Mesh(this.dropGeo, this.core), new THREE.Mesh(this.haloGeo, this.halo));
+        root.add(new THREE.Mesh(this.dropGeo, K.core), new THREE.Mesh(this.haloGeo, K.halo));
         // (A tail of sparks behind it.)
         for (let k = 1; k <= 3; k++) {
-          const s = new THREE.Mesh(this.sparkGeo, this.core);
+          const s = new THREE.Mesh(this.sparkGeo, K.core);
           s.scale.setScalar(1 - k * 0.22);
           root.add(s);
         }
         const mark = new THREE.Group();
-        const fill = new THREE.Mesh(this.discGeo, this.fillMat);
-        mark.add(new THREE.Mesh(this.ringGeo, this.ringMat), fill);
+        const fill = new THREE.Mesh(this.discGeo, K.fillMat);
+        mark.add(new THREE.Mesh(this.ringGeo, K.ringMat), fill);
         v = { root, mark, fill };
         this.drops.set(e, v);
         this.group.add(root, mark);
-        this.dropLights.set(e, { x: 0, y: 0, z: 0, r: 4.5, color: new THREE.Color(0xffc060), power: 0.7, flash: 0, flicker: 0, phase: 0 });
+        this.dropLights.set(e, { x: 0, y: 0, z: 0, r: 4.5, color: new THREE.Color(K.dropLight), power: 0.7, flash: 0, flicker: 0, phase: 0 });
       }
       v.root.position.set(e.x, e.y, e.z);
       for (let k = 1; k <= 3; k++) v.root.children[1 + k].position.set(-e.vx * 0.045 * k, -e.vy * 0.045 * k, -e.vz * 0.045 * k);
@@ -136,18 +193,19 @@ export class EmberFx {
     for (const f of flames) {
       let v = this.fires.get(f);
       if (!v) {
+        const K = this.look(f.color);
         const root = new THREE.Group();
         root.position.set(f.x, f.y, f.z);
         const tongues: THREE.Mesh[] = [];
         for (let i = 0; i < TONGUES; i++) {
-          const t = new THREE.Mesh(this.tongueGeo, this.flameMat);
+          const t = new THREE.Mesh(K.tongueGeo, K.flameMat);
           root.add(t);
           tongues.push(t);
         }
-        const glow = new THREE.Mesh(this.discGeo, this.glowMat);
+        const glow = new THREE.Mesh(this.discGeo, K.glowMat);
         glow.position.y = 0.04;
         root.add(glow);
-        v = { root, tongues, glow, phase: f.x * 2.3 + f.z * 4.1, light: { x: f.x, y: f.y + 0.9, z: f.z, r: 7, color: new THREE.Color(0xff7a20), power: 1, flash: 0, flicker: 0.3, phase: f.x * 1.3 + f.z * 0.7 } };
+        v = { root, tongues, glow, phase: f.x * 2.3 + f.z * 4.1, power: K.flamePower, light: { x: f.x, y: f.y + 0.9, z: f.z, r: K.flameReach, color: new THREE.Color(K.flameLight), power: K.flamePower, flash: 0, flicker: 0.3, phase: f.x * 1.3 + f.z * 0.7 } };
         this.fires.set(f, v);
         this.group.add(v.root);
       }
@@ -169,13 +227,19 @@ export class EmberFx {
         t.rotation.y = time * 1.7 + ph;
       });
       if (lights && heat > 0.02) {
-        v.light.power = 1.1 * heat;
+        v.light.power = v.power * heat;
         lights.push(v.light);
       }
     }
   }
 
   /** For the tests: how many drops and patches are drawn, and where the marks are. */
+  /** (And, for the tests, the colours of what is drawn: each drop's core, each mark's ring, each patch's light.) */
+  colours(): { drops: number[]; marks: number[]; fires: number[] } {
+    const hex = (m: THREE.Object3D): number => ((m as THREE.Mesh).material as THREE.MeshBasicMaterial).color.getHex();
+    return { drops: [...this.drops.values()].map((v) => hex(v.root.children[0])), marks: [...this.drops.values()].map((v) => hex(v.mark.children[0])), fires: [...this.fires.values()].map((v) => v.light.color.getHex()) };
+  }
+
   shown(): { drops: number; fires: number; marks: Array<{ x: number; y: number; z: number; r: number; fill: number }>; tongues: Array<{ x: number; z: number; h: number }> } {
     this.group.updateMatrixWorld(true);
     const marks = [...this.drops.values()].filter((v) => v.mark.visible).map((v) => ({ x: v.mark.position.x, y: v.mark.position.y, z: v.mark.position.z, r: v.mark.scale.x, fill: v.fill.scale.x }));

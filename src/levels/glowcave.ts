@@ -13,7 +13,8 @@
  * stalactites (decor `stalactite`: their points kept above where he can jump to). A mushroom as tall as he is, or
  * taller, is solid: its cap is a thing to stand on (`mushroomSolids`).
  * (The first try had the moss painted into the wall's tile: it came round every few steps, like wallpaper. And it had
- * rock so dark that no light showed on it. No glow bugs in it yet.)
+ * rock so dark that no light showed on it.)
+ * In it, three glow bugs, each its own colour (the Firefly Bomber with `color`): there to be fought, not a goal.
  * A test room: `#level=glowcave&nostory`. Its door leads back to the Move Garden.
  */
 import type { LevelDef } from './types';
@@ -26,6 +27,7 @@ const ORANGE = 0xff8a2a;
 const BLUE = 0x4ad8ff;
 const MOSS = 0x18b4f0;
 const LICHEN = 0x14a078;
+const GREEN = 0x6aff6a;
 
 export function glowCave(): LevelDef {
   const G = GLOWCAVE;
@@ -92,6 +94,9 @@ export function glowCave(): LevelDef {
   for (const [x, z, length, r] of spikes) decor.push({ kind: 'stalactite', x, z, length, r });
   decor.push({ kind: 'crystal', x: -13.2, y: 0, z: 9.4, size: 1.6, color: 0x6ad8ff }, { kind: 'crystal', x: 13, y: 0, z: 9.6, size: 1.2, color: 0xb07aff }, { kind: 'crystal', x: 0.6, y: 0, z: -10.2, size: 1.9, color: 0x5fd0c0 });
 
+  /** The air the glow bugs keep to: the room, in from its walls. */
+  const air = { x0: -G.halfX + 2, x1: G.halfX - 2, z0: -G.halfZ + 2, z1: G.halfZ - 2 };
+
   return {
     id: 'glowcave',
     name: 'The Glow Cave',
@@ -108,9 +113,13 @@ export function glowCave(): LevelDef {
     spawn: { x: 0, y: 0, z: 8, facing: Math.PI },
     collectibles: [],
     crateContents: [],
-    // (No glow bugs yet: the Firefly Bomber as it is sets the floor alight, which drowns the room. In colours, and
-    // gentler, they are the next thing to try here.)
-    enemies: [],
+    // Glow bugs, each its own colour: the Firefly Bomber as it is everywhere (it flies, bombs and burns the same),
+    // but its lantern, its drops and the fire they leave are its colour.
+    enemies: [
+      { type: 'firefly', x: -6, z: -3, arena: air, color: PINK },
+      { type: 'firefly', x: 6, z: 2, arena: air, color: BLUE },
+      { type: 'firefly', x: 0, z: -7, arena: air, color: GREEN },
+    ],
     waves: [],
     gear: [],
     goals: [],

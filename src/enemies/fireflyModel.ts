@@ -142,7 +142,15 @@ export class FireflyModel {
   /** How bright its lantern is drawn, 0..1.8 (it follows the rules' light, quickly). For the tests. */
   shining = 1;
 
-  constructor() {
+  /** The colour its lantern is lit, and its hood: a firefly's own, unless it is given one (`color`). */
+  private readonly lit: number;
+
+  constructor(color?: number) {
+    this.lit = color ?? C.lit;
+    // (A coloured one wears its colour on its hood too, deeper: so it can be told from the others when its light is out.)
+    const hoodColor = color === undefined ? C.hood : new THREE.Color(color).multiplyScalar(0.8).getHex();
+    this.glow.color.set(this.lit);
+    this.haloMat.color.set(this.lit);
     const K = modelKit(this.mat);
     const P = modelKit(this.matPlain);
     this.root.add(this.frame);
@@ -151,7 +159,7 @@ export class FireflyModel {
     // Chest: soft and dark, a little paler underneath.
     this.frame.add(K.blob(0.2, 0.165, 0.25, (_x, y) => (y < -0.4 ? C.bodyLight : C.body), 0, 0, 0, 8, 6));
     // The hood: a broad flat shield out over its head. Orange-red, a black spot in the middle of it, a pale rim.
-    const hood = K.blob(0.25, 0.06, 0.2, (x, _y, z) => (Math.hypot(x, z * 0.9 + 0.1) < 0.36 ? C.spot : Math.hypot(x, z) > 0.86 ? C.hoodRim : C.hood), 0, 0.11, 0.3, 9, 4, 0.1);
+    const hood = K.blob(0.25, 0.06, 0.2, (x, _y, z) => (Math.hypot(x, z * 0.9 + 0.1) < 0.36 ? C.spot : Math.hypot(x, z) > 0.86 ? C.hoodRim : hoodColor), 0, 0.11, 0.3, 9, 4, 0.1);
     hood.rotation.x = 0.22;
     this.frame.add(hood);
 
@@ -373,7 +381,7 @@ export class FireflyModel {
     const breath = state === 'idle' || state === 'circle' || state === 'return' ? 0.12 * Math.sin(this.time * 2.4) : 0;
     const k = Math.max(0, Math.min(1, L + breath));
     // (Squared: so that half full looks half as bright, not nearly full.)
-    this.glow.color.set(C.dark).lerp(T.c.set(C.lit), k * k);
+    this.glow.color.set(C.dark).lerp(T.c.set(this.lit), k * k);
     if (L > 1) this.glow.color.lerp(T.c.set(C.hot), Math.min(1, (L - 1) / 0.8));
     this.haloMat.color.copy(this.glow.color);
     this.haloMat.opacity = Math.min(0.3, 0.13 * k + (L > 1 ? 0.16 * (L - 1) : 0));

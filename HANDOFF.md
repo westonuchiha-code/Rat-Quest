@@ -1071,4 +1071,8 @@ START-HERE has the rules and the owner's words. Things to know before touching i
   size is 1.5 or more), `stalactite` (five-sided, lit like the rock, hangs from `roofOver`).
 - `MUSHROOM`, `mushroomCap`, `mushroomSolids` in layout.ts: the shape drawn and the shape solid come from the same
   numbers. A level must push `mushroomSolids(...)` for each mushroom it places.
+- Glow bugs: `EnemySpec.color` -> `Firefly.color` -> `Drop.color` -> `Ember.color` -> `Flame.color` (main.ts passes
+  it at `makeEmber` and `flames.add`). `FireflyModel(color)` lights its lantern and tints its hood. `EmberFx.look(color)`
+  makes one set of materials a colour (cached): MeshBasic tongues, reach 5, power 0.75; no colour = the old look,
+  untouched. `EmberFx.colours()` is for the tests. Viewer: `#view&who=firefly&color=<hex>&light=<0..1>`.
 

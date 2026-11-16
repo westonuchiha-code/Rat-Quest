@@ -76,6 +76,8 @@ export interface Drop extends V3 {
   vx: number;
   vy: number;
   vz: number;
+  /** The colour of its fire, if its firefly has a colour of its own. */
+  color?: number;
 }
 
 export class Firefly {
@@ -97,6 +99,8 @@ export class Firefly {
   canStand: CanStand | null = null;
   canFly: CanFly | null = null;
 
+  /** The colour of its light and of its fire, if it has one of its own (only looks: see EnemySpec.color). */
+  readonly color: number | undefined;
   readonly floorY: number;
   readonly home: { x: number; z: number; facing: number };
   readonly hunt: boolean;
@@ -141,7 +145,8 @@ export class Firefly {
   private landZ = 0;
   private fallFor: number = FIREFLY.fallTime;
 
-  constructor(spec: { x: number; z: number; y?: number; facing?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean }) {
+  constructor(spec: { x: number; z: number; y?: number; facing?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean; color?: number }) {
+    this.color = spec.color;
     this.floorY = spec.y ?? 0;
     this.home = { x: spec.x, z: spec.z, facing: spec.facing ?? 0 };
     this.hunt = !!spec.hunt;
@@ -519,7 +524,7 @@ export class Firefly {
         const total = this.release.length;
         for (let i = 0; i < total; i++) {
           if (!(before <= this.release[i] && this.along > this.release[i])) continue;
-          this.drops.push({ x: this.vent.x, y: this.vent.y, z: this.vent.z, vx: Math.sin(this.heading) * F.runSpeed * F.bombDrift, vy: 0, vz: Math.cos(this.heading) * F.runSpeed * F.bombDrift });
+          this.drops.push({ x: this.vent.x, y: this.vent.y, z: this.vent.z, vx: Math.sin(this.heading) * F.runSpeed * F.bombDrift, vy: 0, vz: Math.cos(this.heading) * F.runSpeed * F.bombDrift, color: this.color });
           this.events.push('drop');
         }
         // (Its light goes down with each drop: after its last run it is all but out.)

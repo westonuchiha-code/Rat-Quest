@@ -107,7 +107,7 @@ function step(w: Fight, act: Partial<PlayerInput> = {}): void {
   w.heard.push(...f.events.splice(0));
   for (const em of stepEmbers(w.embers, DT, groundBelow)) {
     if (!em.land) continue;
-    w.flames.add(em.x, em.y, em.z, em.radius, em.burnFor);
+    w.flames.add(em.x, em.y, em.z, em.radius, em.burnFor, em.color);
     w.landed.push({ t: w.t, x: em.x, y: em.y, z: em.z, offMark: Math.hypot(em.x - em.land.x, em.z - em.land.z), fell: em.age, fromRat: Math.hypot(em.x - p.position.x, em.z - p.position.z), run: runOf.get(em) ?? 0 });
   }
   for (let i = w.embers.length - 1; i >= 0; i--) if (w.embers[i].done) w.embers.splice(i, 1);
@@ -721,6 +721,65 @@ const YARD = { x: spec.x + 8, z: spec.z };
   check('a level made with one has it there, facing the way it was set, with room to fly', !!made && made.x === 3 && made.z === 4 && Math.abs((made.facing ?? 0) - Math.PI / 2) < 1e-6 && !!made.arena && made.arena.x1 - made.arena.x0 >= 20);
   const sticker = STICKERS.find((s) => s.id === 'foe:firefly');
   check('it has a page in the sticker book, with a picture', !!sticker && sticker.blurb.length > 80 && stickerIcon(sticker.icon, 40).includes('<svg') && stickerIcon(sticker.icon, 40) !== stickerIcon('hornet', 40));
+}
+
+// ---- A firefly with a colour of its own (the Glow Cave's glow bugs): only its looks are different ----
+{
+  const PINK = 0xff4aa8;
+  // (Back in the Hollows' cave, where the first of these fights were.)
+  enter(cave);
+  // The same fight twice, a rat running the same way: once against a plain one, once against a pink one.
+  const run = (color?: number): { path: string; drops: Array<number | undefined>; embers: Array<number | undefined>; flames: Array<number | undefined>; w: Fight } => {
+    const w = fight(YARD.x, YARD.z, 7, { ...spec, color });
+    let path = '';
+    const flamesSeen = new Set<object>();
+    const flameColours: Array<number | undefined> = [];
+    const dropColours: Array<number | undefined> = [];
+    for (let i = 0; i < 60 * 24; i++) {
+      step(w, { move: new THREE.Vector3(Math.sin(i / 90), 0, Math.cos(i / 90)), run: true });
+      for (const em of w.embers) {
+        if (flamesSeen.has(em)) continue;
+        flamesSeen.add(em);
+        dropColours.push(em.color);
+      }
+      for (const fl of w.flames.list) {
+        if (flamesSeen.has(fl)) continue;
+        flamesSeen.add(fl);
+        flameColours.push(fl.color);
+      }
+      if (i % 30 === 0) path += `${w.f.state}:${w.f.x.toFixed(3)},${w.f.y.toFixed(3)},${w.f.z.toFixed(3)};`;
+    }
+    return { path, drops: dropColours, embers: dropColours, flames: flameColours, w };
+  };
+  const plain = run();
+  const pink = run(PINK);
+  check('a coloured firefly flies, bombs and burns exactly as a plain one does: the same fight, step for step', plain.path === pink.path && plain.w.burns === pink.w.burns && plain.w.runs === pink.w.runs && plain.w.runs >= 2 && plain.drops.length === pink.drops.length && plain.w.p.health === pink.w.p.health, `${pink.w.runs} runs, ${pink.drops.length} drops, burned ${pink.w.burns} times (plain ${plain.w.burns})`);
+  check('...its colour goes with its fire all the way: each drop it lets go, each drop falling, each patch of flame', pink.drops.length >= 6 && pink.drops.every((c) => c === PINK) && pink.embers.length === pink.drops.length && pink.embers.every((c) => c === PINK) && pink.flames.length >= 3 && pink.flames.every((c) => c === PINK), `${pink.drops.length} drops, ${pink.flames.length} patches`);
+  check('...and a plain one\'s fire has no colour given: it is a fire\'s own', plain.drops.every((c) => c === undefined) && plain.flames.length >= 3 && plain.flames.every((c) => c === undefined));
+  // What is drawn: the drop, the mark where it will land, and the light of the flames, in its colour; a plain one's as before.
+  const fx = new EmberFx();
+  const mk = (color: number | undefined, x: number): Ember => makeEmber({ x, y: 4, z: 0, vx: 0, vy: 0, vz: 0, color }, { gravity: F.bombFall, radius: F.flameRadius, burnFor: F.flameTime }, () => 0);
+  const two = [mk(undefined, 0), mk(PINK, 3)];
+  fx.update(0, two, []);
+  const cols = fx.colours();
+  const hue = (hex: number): number => new THREE.Color(hex).getHSL({ h: 0, s: 0, l: 0 }).h;
+  const pinkHue = hue(PINK);
+  const near = (a: number, b: number): boolean => Math.min(Math.abs(a - b), 1 - Math.abs(a - b)) < 0.04;
+  check('a coloured drop and its mark on the floor are drawn in its colour; a plain drop and its mark in a fire\'s orange', cols.drops.length === 2 && near(hue(cols.drops[1]), pinkHue) && near(hue(cols.marks[1]), pinkHue) && !near(hue(cols.drops[0]), pinkHue) && hue(cols.drops[0]) < 0.12 && hue(cols.marks[0]) < 0.12, cols.drops.map((c) => c.toString(16)).join());
+  const fl = new Flames();
+  fl.add(0, 0, 0, F.flameRadius, F.flameTime);
+  fl.add(3, 0, 0, F.flameRadius, F.flameTime, PINK);
+  fl.step(0.5);
+  const lights: Array<{ color: THREE.Color; r: number; power: number }> = [];
+  fx.update(0.5, [], fl.list, lights as never);
+  check('the flames a coloured drop leaves light the room in its colour, and less of it than a real fire does (they are for dark places)', lights.length === 2 && near(hue(lights[1].color.getHex()), pinkHue) && hue(lights[0].color.getHex()) < 0.12 && lights[1].r < lights[0].r && lights[1].power < lights[0].power, lights.map((l) => `${l.color.getHexString()} r${l.r} p${l.power.toFixed(2)}`).join('; '));
+  check('...and are the same size and height as any flames: what is drawn is still what burns', (() => {
+    const t = fx.shown().tongues;
+    const a = t.filter((q) => Math.abs(q.x) < 1.5);
+    const b = t.filter((q) => Math.abs(q.x - 3) < 1.5);
+    const tall = (q: typeof t): number => Math.max(...q.map((k) => k.h));
+    return a.length === b.length && a.length >= 5 && b.every((q) => Math.hypot(q.x - 3, q.z) < F.flameRadius) && a.every((q) => Math.hypot(q.x, q.z) < F.flameRadius) && Math.abs(tall(a) - tall(b)) < 0.5;
+  })());
 }
 
 console.log(failures === 0 ? '\nfirefly: all passed' : `\nfirefly: ${failures} FAILED`);

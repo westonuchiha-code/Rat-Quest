@@ -391,15 +391,24 @@ tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's sou
     through. Those of 1.5 and up light the rock round them.
   - decor `stalactite` (hangs from the roof; only drawn, so its point must be above a double jump from the highest
     thing within six of it: a test checks).
-- Not in it yet: glow bugs (the Firefly Bomber as it is sets the floor alight and drowned the room: they want
-  colours and a gentler way), any fight, anything to collect, and anything that makes use of the caps as a course.
+- **Its glow bugs (2026-11-16): three Firefly Bombers, each a colour of its own (pink, blue, green).** His ask: "we
+  already have the glow bug so we can use those and maybe give them different colors ... fight a bunch of glow bugs
+  that glow all different colors". `EnemySpec.color` on a firefly is ONLY LOOKS: its lantern and hood, its drops,
+  the rings they mark on the floor, the flames and their light take the colour; it flies, bombs and burns exactly
+  as a plain one (a test runs the same fight both ways, step for step). Coloured flames are drawn unlit in their
+  own colour and light less of the room than real fire (reach 5 not 7), so a dark place stays dark: plain orange
+  fire at full reach is what drowned the first try. They are there to be fought; beating them is not a goal.
+  See one: `#view&who=firefly&color=ff4aa8` (`&light=0` puts its lantern out).
+- Not in it yet: other glowing creatures (he named none; ideas given him: scorpions, glow-worm threads, railroad
+  worms, headlight beetles, glowing millipedes), anything to collect, and anything that makes use of the caps as a
+  course.
 **The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `iceWall`, `frostCobbles`,
 `frostPipe`, `icicles`; `starfield`, `rainbowRoad`, `pomoTiles`; `emberBrick`, `steamVent`. (Sheet tool:
 `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
 `/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
 comes, is done the Glow Cave's way.
 **Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
-crate and barrel); no coloured glow bugs or other glowing creatures; no steam animation; the ice, furnace and dream
+crate and barrel); no glowing creatures other than the coloured fireflies; no steam animation; the ice, furnace and dream
 themes; the dream knight.
 
 ## Research the owner has asked for (2026-11-15: the first three DONE; reports in `reports/`, notes in `research_notes/`)

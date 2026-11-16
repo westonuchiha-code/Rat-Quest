@@ -39,6 +39,12 @@ export interface EnemySpec {
   respawn?: boolean;
   /** Hunts the rat from anywhere in the room instead of keeping to its patch. Used for enemies that arrive in waves. */
   hunt?: boolean;
+  /**
+   * A firefly: the colour of its light, and of the fire it lets fall (its drops, the marks they make on the floor, the
+   * flames and their light). Default: a firefly's yellow-green lantern and orange fire. The colour is only looks: a
+   * coloured one flies, bombs and burns as any other does.
+   */
+  color?: number;
   /** A bat: what it hangs from (drawn above its roost). Default rock. */
   perch?: 'rock' | 'chain';
   /**

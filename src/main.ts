@@ -437,10 +437,10 @@ function startGame(): void {
       scene.add(m.root);
     } else if (spec.type === 'firefly') {
       const e = new Firefly(spec);
-      const m = new FireflyModel();
+      const m = new FireflyModel(spec.color);
       e.canFly = canFly;
       enemies.push(e);
-      lanterns.set(e, { x: e.x, y: e.y, z: e.z, r: 6.5, color: new THREE.Color(0xd9ff5a), power: 0, flash: 0, flicker: 0, phase: 0 });
+      lanterns.set(e, { x: e.x, y: e.y, z: e.z, r: 6.5, color: new THREE.Color(spec.color ?? 0xd9ff5a), power: 0, flash: 0, flicker: 0, phase: 0 });
       enemyModels.push({
         root: m.root,
         // (Its model is put where the rules have it each frame, the tip of its lantern and all: see its tick.)
@@ -2009,7 +2009,7 @@ function startGame(): void {
     // Drops of fire fall; where one meets the floor it catches, and the flames burn for a while.
     for (const em of stepEmbers(embers, dt, emberGround())) {
       if (!em.land) continue;
-      flames.add(em.x, em.y, em.z, em.radius, em.burnFor);
+      flames.add(em.x, em.y, em.z, em.radius, em.burnFor, em.color);
       audio.play('emberBurst', { vol: Math.max(0.25, hearAt(em.x, em.z, 22)), rate: roll(0.92, 1.1), priority: 5 });
     }
     for (let i = embers.length - 1; i >= 0; i--) if (embers[i].done) embers.splice(i, 1);
