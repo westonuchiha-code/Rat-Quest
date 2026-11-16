@@ -124,7 +124,9 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
       const bz = from.z - p.z;
       const inFront = angleBetween(Math.atan2(-bx, -bz), e.biteDir ?? e.facing) <= B.arc;
       if (inFront && Math.hypot(bx, bz) <= from.r + B.reach + TUNING.rat.radius && !(B.ground && !player.grounded)) {
-        const result = player.takeHit(from.x, from.z, B.damage, !!B.heavy);
+        // (Which way it comes from, for his shield and for where it throws him: the blow's own place, unless it says.)
+        const origin = B.from ?? from;
+        const result = player.takeHit(origin.x, origin.z, B.damage, !!B.heavy);
         events.playerResult = result;
         if (result !== 'dodged') e.lungeLanded(result === 'blocked', result === 'parried');
       }

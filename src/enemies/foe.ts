@@ -37,7 +37,7 @@ export interface BodyPart {
 
 /** What the combat code needs from any enemy, whatever kind it is. */
 export interface Foe {
-  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly';
+  readonly kind: 'scuttler' | 'toad' | 'boss' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly' | 'widow';
   x: number;
   y: number;
   z: number;
@@ -55,7 +55,8 @@ export interface Foe {
   /** The shape of that attack, if it is not the roach's bite: how far beyond its body, how wide (radians each side of its facing), how hard. */
   /** `heavy`: a shield does not stop it (only a perfect guard does). `ground`: it runs along the floor, and misses a rat in the air. */
   /** `at`: the blow comes from there (a place on its body, with that part's radius), not from its middle: a tail's lash. */
-  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; at?: BodyPart };
+  /** `from`: where it is taken to come from, for his shield and for which way it throws him, if that is not `at` (a spike that comes down on where he stands comes from the beast it belongs to). */
+  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; at?: BodyPart; from?: { x: number; z: number } };
   /**
    * The rest of a long body: more circles, besides its own (x, z, radius), that the sword can hit and the rat cannot walk
    * through. A blow that lands on one is passed to takeHit with that part's place in this list (its own circle is -1).

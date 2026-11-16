@@ -29,7 +29,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
-2. `npm run test:sim`: 2,839 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+2. `npm run test:sim`: 2,890 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
 3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
    Headless screenshot:
    `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
@@ -653,9 +653,10 @@ the tunnel there's this giant ramp that you fly off of and you catch this huge a
 into the darkness and you land in a room it's like a boss room where like the floor is lit for a certain amount of
 radius but then it's like total darkness beyond that and the Darkness is filled with like little twinkling white
 eyes but you can't actually go beyond the lit up part of the floor and there's a boss that comes out".
-**All of that is built EXCEPT THE BOSS (the next section).** `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM
+**All of that is built, and the boss too (the next section).** `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM
 (in `TEST_ROOMS` with the garden; in none of the game's lists). **Way in:** the door in the Move Garden's west wall
-(z -15.6), or `#level=longdrop&nostory`. Its way out stands at the far edge of the arena's light and leads back.
+(z -15.6), or `#level=longdrop&nostory`. Its way out is at the east edge of the arena's light, appears when the
+Widow is beaten, and leads back.
 **What it is:** 1,386 long, 656 down, dead straight south. The line worth riding takes 91 seconds, all of it on the
 shield, about 14 of them in the air. It is a LIST OF SECTIONS (`COURSE` in longdrop.ts), laid end to end:
 - a PIPE: a trough (slime down its middle, weeds on its walls) with a shoulder either side, falling;
@@ -692,13 +693,13 @@ floor, he rode up onto them like kickers.) **Rails** are thin ramps 0.3 high; `R
 that low be ground.
 - `tests/longdrop.ts` (34 checks) rides it every way: the whole line from the head to the arena, every kicker,
   every rail, the giant ramp three ways, getting back on in every section, and the arena's edge.
-- **NOT done:** the BOSS; turns (the view may not turn by itself); one-hit enemies to swing at while riding (his
+- **NOT done:** turns (the view may not turn by itself); one-hit enemies to swing at while riding (his
   back-burner idea); the slime doing anything; sounds of its own (it plays the 'pump' music); branches or more
   than one route; a second look to the tunnel (it is one sewer theme for the whole length). The in-run does not
   yet LOOK like a giant ramp from above: it is a steep plain bed. And nobody has PLAYED it by hand: it was ridden
   by tests and looked at in still pictures of the running game.
 
-### The boss for the Long Drop's arena: a giant spider (the owner, 2026-11-16: THE NEXT JOB, NOT STARTED)
+### The Widow: the boss in the Long Drop's arena (asked for by the owner 2026-11-16; BUILT the same day)
 His words: "there's a boss that comes out he's in the room he's in the darkness he comes out and he's like a I don't
 like a giant spider or something that you got to fight. It could be one of those fights too or like it's actually so
 big that he doesn't even really fit in the arena it's just like a giant spider's head connected to a body that goes
@@ -706,17 +707,52 @@ into the darkness and then you have to deal with like his front four legs and hi
 have a mandibles he has mandibles and his front four legs and he'll like slam down one side of the field and sweep
 across and then slam down the other side of the field and sweep across or he'll like bite down on certain parts of
 the field and you have to like Dodge all his attacks."
-**What he asked for, plainly:** a boss too big for the room: only its HEAD, its MANDIBLES and its FRONT FOUR LEGS
-come into the light; the body goes back into the dark. Attacks: a leg slams down on one side of the floor and
-SWEEPS across; then the other side; and it BITES DOWN on parts of the floor. He dodges all of it.
-**Notes for whoever builds it (Claude's reading, not his words):**
-- The arena is ready for it: radius 13, he lands near its middle off the giant ramp, the way out is at its south
-  edge (move it, or shut it till the boss is beaten, with a 'defeat' goal).
-- There are two bosses to follow for how a boss is made, told and tested: the Broodmother (`enemies/brood.ts`) and
-  the Sump Wyrm (`enemies/wyrm.ts`); HANDOFF.md has a section on each.
-- His rules for creatures hold: a few shaped, flat-faced pieces, not many round ones; looked at from all sides
-  before it goes in; every attack has a tell; and DO NOT MAKE IT EASY.
-- The eyes in the dark (decor `eyes`) are small and many; the boss's own eyes should be told apart from them.
+**What was built** (`src/enemies/widow.ts` the rules, `src/enemies/widowModel.ts` the look, kind `widow`):
+She sits in the dark just past the SOUTH edge of the light, facing him as he lands, and NEVER comes into it: only her
+head, her jaws and her four front legs do. She wakes when he stands on the floor (a scream, 1.9 s, the legs come out
+of the dark and are set down). Then, in a round that repeats: slams, stabs, a bite, slams, a bite, stabs.
+- **The slam and the sweep.** An outer leg goes up on the side he is on; a red LINE on the floor shows where it will
+  come down, follows him, then holds (it beats brighter once it has stopped following). It comes down right across
+  the room: 2 hearts, no shield stops it, a jump does not get him out of it: STEP OFF THE LINE. It lies there 0.8 s
+  (hit it), draws back, and SWEEPS across the whole floor to the other side: 1 heart, no shield: JUMP IT. Then the
+  other leg does the same from the other side. Each leg's slam reaches across the middle, so nowhere is safe from it.
+- **The stab.** An inner leg spikes down on a small RING marked on him: 1 heart; a shield stops it; or step away.
+  Two of them, one from each side. The foot is stuck in the floor a moment (but strike at it while another stab is
+  coming and that one catches him).
+- **The bite.** Her head rears, a big RING marks the place, and she comes out of the dark and bites down on it: 2
+  hearts, no shield. Her head then LIES IN THE LIGHT for 1.6 s: the great opening. Her head cannot reach the far
+  (north) third of the room: one who stays there is only ever stabbed and slammed.
+- **A perfect guard** against anything throws her down: her head falls into the light near him and lies 2.4 s.
+- **Harm to her:** a blow on a leg counts HALF, on her head DOUBLE. 44 health. Angry below half: leg wind-ups are a
+  fifth shorter, each sweep comes BACK as well (two jumps), four stabs, three bites, shorter rests.
+- A rat who keeps to the rules perfectly beats her in about a minute, unhurt; one who stands still dies in 12 s.
+**How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
+each, eight red eyes, a broad body tapering back into the dark, four legs of two long bones and a claw. The light in
+the room is a pool on the floor, so each piece is only as bright as the place it is in: past the edge or high over
+the floor she is black, and only her eyes show. She is drawn in the world's own places exactly where the rules have
+her (tested: a leg on the floor is on the line it strikes along; her head is where the sword meets it).
+**In the game:** her name and health show along the bottom; the level's goal is "Beat the Widow"; the WAY OUT is at
+the EAST edge of the light and is not there until she is beaten (then the game's own door scene shows it). Once he
+has stood on the arena's floor, that is where he comes back to if he dies: he is not sent up to ride the whole way
+down again. She keeps the health she had.
+**Three things that were wrong the first time she was put in the game (each has a test or a note now):**
+- She never attacked: the game's turn-taking (`director.ts`) only gives a turn to a beast that has a `ready`.
+- Standing straight in front of her was safe from both slams (each leg could only aim to its own side).
+- He could walk out of the door past her: a level with `returnTo` had its way out open from the start. Now only if
+  it has no goals (main.ts, where the level is loaded).
+**NOT done, and said plainly:**
+- Nobody has fought her by hand. Her numbers are first guesses, tested only by a rat that plays by rule.
+- Beating her and the door appearing has NOT been seen in the running game (the tests beat her; the game's door
+  scene is the same one every level uses, but it has not been watched here).
+- She has no sounds of her own: she uses the Broodmother's. No sliders in the tweaks panel (`WIDOW` in widow.ts).
+- The game's view looks down at him, so most of her (her head high in the dark, her knees) is at the top edge of
+  the picture or off it. What he must read is on the floor (the line, the rings, the legs and head when down), and
+  that is all in view. A view that pulls back in this room would show her better; the owner's rule is that the
+  view does not TURN by itself, so that is his to ask for.
+- A leg lying on the floor is a plain long bar: it could do with joints, hair or markings.
+- Not in the level editor. No story scene.
+See her: `#view&who=widow&t=<seconds>&yaw=..&pitch=..&dist=46&h=3&lz=9` (`&rage=1`, `&die=<seconds>`, `&px=&pz=` for
+where the rat stands). In the game: `#level=longdrop&nostory&at=2,0.5,1419,3.1416`.
 
 ### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
 His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the

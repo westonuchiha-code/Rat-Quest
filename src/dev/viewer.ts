@@ -1,3 +1,5 @@
+import { Widow, WIDOW } from '../enemies/widow';
+import { WidowModel } from '../enemies/widowModel';
 import * as THREE from 'three';
 import { ps1Uniforms } from '../render/ps1Material';
 import { RatModel, RatAnimInput } from '../player/ratModel';
@@ -58,6 +60,31 @@ export function runViewer(canvas: HTMLCanvasElement): void {
     for (let time = 0; time <= t + 1e-6; time += dt) {
       body.update(dt, { time, talking: q.get('talking') === '1', mouth: q.get('talking') === '1' ? Math.max(0, Math.sin(time * 14)) : 0, headYaw: num('head', 0), doing: (q.get('doing') ?? 'stand') as Doing, seated: q.get('seated') === '1', turn: num('turn', 0) });
     }
+  } else if (who === 'widow') {
+    // The Widow, `t` seconds into her fight with a rat who stands still at (px, pz): #view&who=widow&t=4.5&yaw=0&dist=40&pitch=0.5&lz=8
+    // She is at the origin facing +z; her floor's middle is 13.8 in front of her. `rage=1`: angry from the start. `die=<seconds>`: killed then.
+    const w = new Widow({ x: 0, z: 0, facing: 0, arena: { x0: -13, x1: 13, z0: 0.8, z1: 26.8 } });
+    w.rng = () => 0.5;
+    const m = new WidowModel();
+    scene.add(m.root);
+    floor.visible = false;
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(13, 40), new THREE.MeshBasicMaterial({ color: 0x4a5462 }));
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.set(0, -0.001, 13.8);
+    scene.add(disc);
+    const rat = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.1, 8), new THREE.MeshBasicMaterial({ color: 0xd8b070 }));
+    rat.position.set(num('px', 3), 0.55, num('pz', 12));
+    scene.add(rat);
+    if (q.get('rage') === '1') w.takeHit(WIDOW.hp, 0, 0, 'sword', 0);
+    const die = num('die', -1);
+    for (let time = 0; time <= t + 1e-6; time += dt) {
+      if (die >= 0 && time >= die && w.alive) w.takeHit(9999, 0, 0, 'sword', -1);
+      w.update(dt, rat.position.x, 0, rat.position.z, true);
+      w.events.length = 0;
+      m.update(dt, w);
+    }
+    camera.far = 400;
+    camera.updateProjectionMatrix();
   } else if (who === 'bug') {
     const bug = new ScuttlerModel();
     scene.add(bug.root);
@@ -108,6 +135,11 @@ export function runViewer(canvas: HTMLCanvasElement): void {
   const dist = num('dist', 2.6);
   const h = num('h', 0.55);
   camera.position.set(Math.sin(yaw) * Math.cos(pitch) * dist, h + Math.sin(pitch) * dist, Math.cos(yaw) * Math.cos(pitch) * dist);
-  camera.lookAt(0, h, 0);
+  // (`lx`, `lz`: what it looks at, if not the origin.)
+  const lx = num('lx', 0);
+  const lz = num('lz', 0);
+  camera.position.x += lx;
+  camera.position.z += lz;
+  camera.lookAt(lx, h, lz);
   renderer.render(scene, camera);
 }

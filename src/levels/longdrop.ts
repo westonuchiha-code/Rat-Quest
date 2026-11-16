@@ -9,7 +9,7 @@
  * giant ramp that you fly off of and you catch this huge amount of air but then you fall like into the darkness and
  * you land in a room ... the floor is lit for a certain amount of radius but then it's like total darkness beyond
  * that and the Darkness is filled with like little twinkling white eyes but you can't actually go beyond the lit up
- * part of the floor". (The boss he wants in that room, a giant spider, is not built: see START-HERE.md.)
+ * part of the floor". The boss in that room is the Widow (enemies/widow.ts).
  *
  * It runs STRAIGHT south (the view may not turn by itself, and a bend would ask it to). It is a list of SECTIONS,
  * `COURSE` below, laid end to end, each lower than the last:
@@ -21,7 +21,8 @@
  * stands across his way but a weed. Every falling section is steep enough for the air attack to be the shield, so
  * one thrown off can get back on wherever he is. The last bed is the in-run of the GIANT RAMP; past its lip there is
  * nothing, and far below it the ARENA: a round floor in the dark that he cannot leave (`LevelDef.well`).
- * It is a test room: reached by a door in the Move Garden, and its way out (in the arena) leads back there.
+ * It is a test room: reached by a door in the Move Garden, and its way out (in the arena, once the Widow is beaten)
+ * leads back there.
  */
 import type { LevelDef } from './types';
 import type { CollectibleDef } from '../world/collectibles';
@@ -71,6 +72,8 @@ export const RAIL = { x: 1.4, wide: 0.24, high: 0.3 } as const;
 export const LIP = { table: 3, len1: 3, rise1: 1.05, len2: 2.4, rise2: 1.8, over: 46, speed: 12.6 } as const;
 /** The arena: how wide its light is, how far past the lip its middle is, and how high he would have to be to be over its edge. */
 export const ARENA = { r: 13, ahead: 36, clear: 6 } as const;
+/** How far past the edge of the light the Widow's place is. */
+export const WIDOW_OUT = 0.8;
 
 // Weeds to steer round. A and B leave the line x = -1 clear; the slalom has gates to weave through.
 const WEEDS_A: Weeds = [[1.7, 9], [-1.9, 16], [2.2, 24], [-0.2, 29], [1.2, 37]];
@@ -357,6 +360,9 @@ function build(): Built {
   // The arena, far below: a round floor in the dark. Its floor is solid well past its edge, but he cannot go there.
   const arena = { x: 0, z: lip.z + ARENA.ahead, r: ARENA.r };
   solids.push({ ...extent('floor', arena.x - arena.r - 4, arena.x + arena.r + 4, -1, 0, arena.z - arena.r - 4, arena.z + arena.r + 4), hidden: true });
+  // (The stone of the way out, at the east edge: solid, so that the view does not go into it. Just past where he
+  // can stand: it is not in his way.)
+  solids.push({ ...extent('wall', arena.x + arena.r + 0.15, arena.x + arena.r + 0.85, 0, 4.6, arena.z - 2.2, arena.z + 2.2), hidden: true });
   decor.push({ kind: 'arena', x: arena.x, y: 0, z: arena.z, r: arena.r });
   decor.push({ kind: 'eyes', x: arena.x, y: 0, z: arena.z, r0: arena.r + 4, r1: arena.r + 17, high: 8, count: 52 });
   // (A funnel: at the height of the ramp's underside it is wide enough to take one who only walks off the lip.)
@@ -409,13 +415,15 @@ export function longDrop(): LevelDef {
     spawn: { x: 0, y: B.head.y, z: -6, facing: 0 },
     collectibles: B.collectibles.map((c) => ({ ...c })),
     crateContents: [],
-    enemies: [],
     waves: [],
     gear: [],
-    goals: [],
+    // The Widow sits in the dark past the south edge of the light, facing up the room (see enemies/widow.ts).
+    enemies: [{ type: 'widow', x: B.arena.x, y: 0, z: B.arena.z + B.arena.r + WIDOW_OUT, facing: Math.PI, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } }],
+    goals: [{ type: 'defeat', label: 'Beat the Widow' }],
     well: { ...B.well },
-    // Its way out stands at the far edge of the arena's light, and leads back to the Move Garden.
-    exit: { x: B.arena.x, z: B.arena.z + B.arena.r - 0.35, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
+    // Its way out stands at the east edge of the arena's light (to his left as he lands), opens when she is beaten,
+    // and leads back to the Move Garden. (Not behind him: that is where the view is when he faces her.)
+    exit: { x: B.arena.x + B.arena.r - 0.35, z: B.arena.z, yaw: -Math.PI / 2, width: 2.6, height: 3.8, y: 0 },
     returnTo: 'garden',
   };
 }

@@ -33,6 +33,8 @@ import { STAG, Stag } from './enemies/stag';
 import { Brood } from './enemies/brood';
 import { BroodModel } from './enemies/broodModel';
 import { Wyrm } from './enemies/wyrm';
+import { Widow } from './enemies/widow';
+import { WidowModel } from './enemies/widowModel';
 import { WyrmModel } from './enemies/wyrmModel';
 import { BossBar } from './ui/bossBar';
 import { Workshop } from './ui/workshop';
@@ -364,6 +366,13 @@ function startGame(): void {
         tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, windTime: e.windTime, x: e.x, z: e.z, facing: e.facing, body: e.body, crawled: e.crawled, moving: e.moving, raging: e.raging, coilAt: e.coilAt }),
       });
       scene.add(m.root);
+    } else if (spec.type === 'widow') {
+      // The Widow. She is drawn in the world's own places, wherever the rules have each piece of her.
+      const m = new WidowModel();
+      const e = new Widow(spec);
+      enemies.push(e);
+      enemyModels.push({ root: m.root, setTransform: () => {}, flash: () => m.flash(), tick: (dt) => m.update(dt, e) });
+      scene.add(m.root);
     } else if (spec.type === 'brood') {
       // The Broodmother. She is drawn on the floor under her even when the rules have her up in the air (the model
       // lifts her itself), and her whirl turns her on top of the way she faces.
@@ -502,7 +511,7 @@ function startGame(): void {
   let orbShown: Orb | null = null;
   /** The ironback's and the bat's noises (their events), and a bat's wing beats so it is heard before it is seen. */
   const flapIn = new WeakMap<Bat, number>();
-  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Hornet | Ant | Firefly, dt: number): void {
+  function beastSounds(e: Ironback | Bat | Guard | Mantis | Stag | Brood | Wyrm | Widow | Hornet | Ant | Firefly, dt: number): void {
     const v = hearAt(e.x, e.z);
     for (const ev of e.events.splice(0)) {
       if (e instanceof Ant) {
@@ -601,6 +610,37 @@ function startGame(): void {
         } else if (ev === 'reel') audio.play('wyrmCry', { vol: v, rate: 0.8, priority: 8 });
         else if (ev === 'crit') audio.play('wyrmCry', { vol: v * 0.7, rate: 1.4, priority: 6 });
         else if (ev === 'hurt') audio.play('plateKnock', { vol: v * 0.7, priority: 4 });
+      } else if (e instanceof Widow) {
+        // The Widow (in the Broodmother's voice, till she has her own): her scream when she wakes and when she turns
+        // angry; the rasp of a leg going up and the floor shaking where it comes down; a rattle as it draws back to
+        // sweep, and the rush of it; a long low hiss before her head comes down, and the crack of her jaws; the rasp
+        // and the spike of a stab; a cry when she is thrown down, a yelp when struck, a sharper one for her head.
+        const loud = Math.max(0.6, v);
+        if (ev === 'wake' || ev === 'rage') {
+          audio.play('broodScream', { vol: loud, rate: ev === 'rage' ? 0.7 : 0.82, priority: 9 });
+          audio.play('rumble', { vol: loud * 0.7, rate: 1.1, priority: 6 });
+          shake = Math.max(shake, 0.16);
+        } else if (ev === 'slamWind') audio.play('broodHiss', { vol: loud * 0.9, rate: 0.75 / Math.max(0.5, e.windTime), priority: 7 });
+        else if (ev === 'slam') {
+          audio.play('shock', { vol: loud, rate: 0.7, priority: 9 });
+          audio.play('spikeHit', { vol: loud * 0.8, rate: 0.6, priority: 8 });
+          shake = Math.max(shake, 0.3);
+          rumble.shock();
+        } else if (ev === 'sweepWind') audio.play('broodRattle', { vol: loud, rate: 0.6, priority: 8 });
+        else if (ev === 'sweep') audio.play('whoosh', { vol: loud, rate: 0.55, priority: 8 });
+        else if (ev === 'biteWind') audio.play('broodHiss', { vol: loud, rate: 0.55, priority: 8 });
+        else if (ev === 'bite') {
+          audio.play('broodDrop', { vol: loud, rate: 1.2, priority: 9 });
+          shake = Math.max(shake, 0.22);
+          rumble.shock();
+        } else if (ev === 'stabWind') audio.play('broodHiss', { vol: loud * 0.8, rate: e.windTime < 0.5 ? 1.5 : 1.15, priority: 7 });
+        else if (ev === 'stab') {
+          audio.play('whoosh', { vol: loud * 0.7, rate: 1.5, priority: 6 });
+          audio.play('spikeHit', { vol: loud * 0.9, priority: 7 });
+          shake = Math.max(shake, 0.08);
+        } else if (ev === 'reel') audio.play('broodHurt', { vol: loud, rate: 0.55, priority: 8 });
+        else if (ev === 'crit') audio.play('broodHurt', { vol: loud * 0.8, rate: 1.3, priority: 6 });
+        else if (ev === 'hurt') audio.play('broodHurt', { vol: loud * 0.5, priority: 4 });
       } else if (e instanceof Brood) {
         // The Broodmother, in sounds of her own: her scream when she sees him and again when she turns angry; the tap
         // of her feet; the rasp of a spike going up and the crack of it into the floor; a quick light rattle before
@@ -1386,8 +1426,9 @@ function startGame(): void {
       wedgeWasOut = def.wedges.map((_, i) => goals.wedgeOut(i, aliveCount()));
     }
     // A hub: its own door is open from the start, and its course doors show what they lead to and what they want.
-    // A sub-area's door back out is open from the start.
-    if (def.returnTo) levelProgress.markCleared(def.id);
+    // A sub-area's door back out is open from the start: unless the area asks something of him first (the Long
+    // Drop's way out opens when the Widow is beaten; he walked out past her, the first time she was put in).
+    if (def.returnTo && def.goals.length === 0) levelProgress.markCleared(def.id);
     // Doors to other areas (the Club's world doors, or a world's doors into its side areas), each with a sign.
     const doors = doorsOf(def);
     if (doors.length) {
@@ -1606,6 +1647,11 @@ function startGame(): void {
           audio.play('wyrmDie', { vol: 1, priority: 9 });
           audio.play('recall', { vol: 0.7, rate: 0.5, priority: 8 });
         }
+      } else if (e.kind === 'widow') {
+        if (e.state === 'dead') {
+          audio.play('broodDie', { vol: 1, rate: 0.75, priority: 9 });
+          audio.play('rumble', { vol: 0.8, rate: 0.9, priority: 8 });
+        }
       } else if (e.kind === 'brood') {
         // (What she does has its own sounds, in beastSounds; only her fall is here.)
         if (e.state === 'dead') {
@@ -1724,6 +1770,10 @@ function startGame(): void {
   function lavaStep(): void {
     if (player.dead) return;
     const p = player.position;
+    // A round room at the bottom of a long way down (the Long Drop's arena): once he stands on its floor, that is
+    // where he comes back to. He is not sent up to ride all the way down again.
+    const well = cur.well;
+    if (well && player.grounded && p.y < well.y + 0.5 && player.spawn.y > well.top) player.spawn.set(well.x, well.y, well.z - well.r * 0.5);
     // A level with a drop into the dark: a heart, and back to the last ground he stood on.
     if (cur.fallBack && p.y < -3) {
       p.copy(lastSafe);
@@ -1931,7 +1981,7 @@ function startGame(): void {
     }
     // One bat waking wakes the roost; then the new beasts' sounds.
     rouseRoost(enemies.filter((e): e is Bat => e instanceof Bat));
-    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Hornet || e instanceof Ant || e instanceof Firefly) beastSounds(e, dt);
+    for (const e of enemies) if (e instanceof Ironback || e instanceof Bat || e instanceof Guard || e instanceof Mantis || e instanceof Stag || e instanceof Brood || e instanceof Wyrm || e instanceof Widow || e instanceof Hornet || e instanceof Ant || e instanceof Firefly) beastSounds(e, dt);
     // Globs fly, splat on the ground, or hit him.
     const landed = stepGlobs(globs, dt, groundBelow);
     const hitGlobs = resolveGlobs(player, globs, events);
@@ -3444,7 +3494,7 @@ function startGame(): void {
     let fought: { name: string; frac: number } | null = null;
     if (!story.scene && !cutscene.active && !trans.active && !menu.open) {
       for (const e of enemies) {
-        if ((e instanceof Brood || e instanceof Wyrm) && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
+        if ((e instanceof Brood || e instanceof Wyrm || e instanceof Widow) && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
         else if (e instanceof Grimsqueak && e.alive && !e.asleep) fought = { name: 'Lord Grimsqueak', frac: e.hp / GRIM.hp };
       }
     }

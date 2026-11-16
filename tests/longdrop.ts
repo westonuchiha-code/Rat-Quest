@@ -309,7 +309,7 @@ const fromMiddle = (p: PlayerController): number => Math.hypot(p.position.x - B.
     w.update(DT, inp({ move: v(def.exit.x - w.position.x, def.exit.z - w.position.z).normalize(), run: true }), cs);
     reached = atDoor(def.exit, w.position.x, w.position.z);
   }
-  check('the way out stands at the far edge of its light, and he can walk to it', reached && Math.hypot(def.exit.x - A.x, def.exit.z - A.z) < A.r && def.exit.y === 0);
+  check('the way out stands at the edge of its light, and he can walk to it', reached && Math.hypot(def.exit.x - A.x, def.exit.z - A.z) < A.r && def.exit.y === 0);
 }
 
 // ---- The crumbs ----
