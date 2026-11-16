@@ -1395,6 +1395,64 @@ function paintRoyalCarpet(p: Px, rand: Rand): void {
   p.set(c, c, shade(gold, 1.2));
 }
 
+/**
+ * The Widow's shell: dark plum chitin with a dull sheen down its ridge, bristles lying along it, and once in its
+ * length a joint: a pale band, a dark crease, a blood-red ring. (Laid along a leg several times over, the joints
+ * make it a thing of segments, as a spider's leg is.)
+ */
+function paintWidowChitin(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x1e1524, 0x33243a, 0x4c3450, 0x6c4458, 0x8e5866, 0xb07a7c];
+  const streak = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      // (Round the limb: a ridge that catches the light, falling away to either side.)
+      const round = 0.5 + 0.5 * Math.cos(((x - S / 2) / S) * Math.PI * 2);
+      let v = 0.22 + 0.4 * round ** 2 + (streak[x] - 0.5) * 0.16 + (rand() - 0.5) * 0.08;
+      // (Along it: plates overlapping, each a little darker toward its trailing edge.)
+      v -= 0.1 * ((y % 8) / 8);
+      p.set(x, y, ramp(v, pal, x, y, 0.18));
+    }
+  }
+  // Bristles: short dark strokes lying along the limb, a pale one here and there.
+  for (let i = 0; i < 46; i++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    const len = 2 + Math.floor(rand() * 4);
+    const pale = rand() < 0.2;
+    for (let k = 0; k < len; k++) p.blend(x, y + k, pale ? 0xc09a94 : 0x120c16, pale ? 0.5 : 0.6);
+  }
+  // The joint: a crease, a blood-red ring, and the pale lip of the next plate.
+  for (let x = 0; x < S; x++) {
+    p.set(x, 0, 0x0e0a12);
+    p.blend(x, 1, 0x8a1e28, 0.85);
+    p.blend(x, 2, 0xa02a30, 0.7);
+    p.blend(x, 3, 0xc8a096, 0.45);
+    p.blend(x, S - 1, 0x0e0a12, 0.5);
+  }
+}
+
+/** The horn of her claws and fangs: from a dark root (v = 1) through ivory to a blackened point (v = 0), with its grain running along it. */
+function paintWidowHorn(p: Px, rand: Rand): void {
+  const S = p.size;
+  const pal = [0x1a120e, 0x4a3828, 0x8a7458, 0xc4b494, 0xe6dcc2, 0xf6f0de];
+  const grain = Array.from({ length: S }, () => rand());
+  for (let y = 0; y < S; y++) {
+    const t = y / (S - 1);
+    // (Blackened at the point, palest a third of the way up, darkening to the root.)
+    const along = t < 0.16 ? 0.1 + (t / 0.16) * 0.7 : 0.95 - Math.max(0, t - 0.4) * 0.9;
+    for (let x = 0; x < S; x++) {
+      const round = 0.5 + 0.5 * Math.cos(((x - S / 2) / S) * Math.PI * 2);
+      p.set(x, y, ramp(along * (0.72 + 0.28 * round) + (grain[x] - 0.5) * 0.12, pal, x, y, 0.2));
+    }
+  }
+  for (let i = 0; i < 10; i++) {
+    const x = Math.floor(rand() * S);
+    const y = 6 + Math.floor(rand() * (S - 8));
+    for (let k = 0; k < 5; k++) p.blend(x, y + k, 0x3a2a1e, 0.35);
+  }
+}
+
 const DEFS = {
   // legacy (mid-grey / murky green, tinted by vertex colour)
   stone: { size: 32, seed: 11, paint: legacyBlocks(4, 2, 150, 70) },
@@ -1440,6 +1498,9 @@ const DEFS = {
   ironBars: { size: 32, seed: 403, paint: paintIronBars },
   hazardTrim: { size: 32, seed: 404, paint: paintHazardTrim },
   // props (not offered in the level builder: they are what things are made of, not what rooms are built from)
+  // The Widow (enemies/widowModel.ts): her shell, and the horn of her claws and fangs. Both run ALONG a limb (v).
+  widowChitin: { size: 32, seed: 701, paint: paintWidowChitin },
+  widowHorn: { size: 32, seed: 702, paint: paintWidowHorn },
   wroughtIron: { size: 32, seed: 601, paint: paintWroughtIron },
   cutStone: { size: 32, seed: 607, paint: paintCutStone },
   charred: { size: 32, seed: 602, paint: paintCharred },

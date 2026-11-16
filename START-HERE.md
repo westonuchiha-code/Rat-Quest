@@ -801,6 +801,18 @@ slams, a bite, stabs.
 - Against ONE of them (the tests fight one at a time), a rat who keeps to the rules, strikes what is on the floor
   and is not greedy wins in 70 to 80 seconds, unhurt; one who stays in her reach and does nothing dies in seconds.
   A whole fight against BOTH has not been run by a test, only forty seconds of keeping out of both's blows.
+**Her look was made better (the owner, 2026-11-16: "improve the textures and quality of the spider model especially
+her legs and claws"), BY SHAPE AND PICTURE, NOT BY MORE PIECES:**
+- Two pictures of her own in `src/render/textures.ts`: `widowChitin` (dark plum shell with a sheen down its ridge,
+  bristles lying along it, and once in its length a JOINT: a crease, a blood-red ring, a pale lip) and `widowHorn`
+  (ivory, blackened at the point, dark at the root, grained). Both run ALONG a limb.
+- A leg's two bones are shaped (`limb()` in widowModel.ts: a profile of thicknesses along it): a stout thigh that
+  narrows and flares into the knee; a shin thick out of the knee and long and fine to the wrist. The chitin is laid
+  three times along the thigh and four along the shin, so the red rings make it a leg of SEGMENTS.
+- A claw is a hooked talon (`horn()`: its point at the foot, bowed outward, its root in the wrist), not a cone; her
+  fangs are the same shape, seated in the ends of her jaws. Her head, brow, jaws and body wear the chitin too.
+- (Both new shapes were wound inside-out at first: drawn from within, they looked hollow and were lit dark. If a
+  hand-built shape looks hollow, check which way its faces look.)
 **How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
 each, eight red eyes, a broad body tapering back into the dark, four legs of two bones with a knuckle at the knee
 and a claw. Everything goes by one number (`SIZE`, from `legReach`). The light in
