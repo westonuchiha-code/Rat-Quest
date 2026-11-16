@@ -26,7 +26,7 @@ export interface Box {
    * A ramp: its top runs up from `low` at one end to y1 at the other, along x or z, climbing toward the + end of that
    * axis (`up` 1) or the - end (-1). (North is -z: a ramp that climbs north has axis 'z', up -1.) See collision.ts.
    */
-  ramp?: { axis: 'x' | 'z'; up: 1 | -1; low: number };
+  ramp?: { axis: 'x' | 'z'; up: 1 | -1; low: number; cross?: number };
   x0: number;
   x1: number;
   y0: number;
@@ -59,9 +59,12 @@ export const MAX_WALK_SLOPE = 1;
  * A ramp given by its ground plan, the height of its low end and of its high end, and the way it climbs
  * ('n' is -z, 's' +z, 'e' +x, 'w' -x). It is solid down to `bottom` (default: its low end's height).
  */
-export function rampBox(kind: Kind, x0: number, x1: number, z0: number, z1: number, low: number, high: number, toward: 'n' | 's' | 'e' | 'w', bottom = low): Box {
-  const axis = toward === 'e' || toward === 'w' ? 'x' : 'z';
-  return { kind, x0, x1, y0: Math.min(bottom, low), y1: high, z0, z1, ramp: { axis, up: toward === 'e' || toward === 's' ? 1 : -1, low } };
+export function rampBox(kind: Kind, x0: number, x1: number, z0: number, z1: number, low: number, high: number, toward: 'n' | 's' | 'e' | 'w', bottom = low, cross = 0): Box {
+  const axis: 'x' | 'z' = toward === 'e' || toward === 'w' ? 'x' : 'z';
+  // (`cross`: tilted the other way too, rising that much toward its other axis's + side, or - side if negative. `high`
+  // is still the top of its first slope's high end on its LOW side: the box's own top is that and the cross rise.)
+  const ramp = { axis, up: (toward === 'e' || toward === 's' ? 1 : -1) as 1 | -1, low, ...(cross ? { cross } : {}) };
+  return { kind, x0, x1, y0: Math.min(bottom, low), y1: high + Math.abs(cross), z0, z1, ramp };
 }
 
 /** A pool the rat can swim in. y is the surface height. */

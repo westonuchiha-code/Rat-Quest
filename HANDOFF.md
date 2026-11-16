@@ -972,3 +972,13 @@ START-HERE has the rules and the owner's words. Things to know before touching i
 - My picture script could not time a drop-in by keyboard (the page's first seconds run unevenly): `&riding` and
   `&slow=0.1` with `at=` on the wall was the way to see the ride across the pipe.
 
+## Ramps tipped two ways (2026-11-16)
+- `b.max.y` of a ramp with `cross` is its highest CORNER, not its first slope's high end. Anything that read
+  "`b.max.y` is where the ramp gets to" must use `topAt`. (All that did were changed; check any new code.)
+- Ask `slopeXZ(b)` for how a ramp climbs in a direction; `slopeOf(b)` is only how steep it is. `ramp.axis` and
+  `ramp.up` no longer say which way is down by themselves.
+- Facets of a curved wall share edges exactly only if they are built from the same numbers (the garden builds each
+  from `f.h0`, `f.h1`): floating sums differ in the sixteenth place, which is why the test rounds join lines.
+- A pipe's fall must be at least `ride.minSlope` (0.4) if the air attack is to work over its flat middle; the
+  garden's is 5 in 12.
+

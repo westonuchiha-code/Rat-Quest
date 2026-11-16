@@ -2,7 +2,7 @@ import { MAX_WALK_SLOPE } from '../world/layout';
 import { findGrind, grindHeight, type GrindLine } from '../world/grind';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
-import { Aabb, topAt, slopeOf } from '../world/collision';
+import { Aabb, topAt, slopeOf, slopeXZ } from '../world/collision';
 import type { WaterVolume } from '../world/layout';
 import { NO_GEAR, type GearMods } from '../data/equipment';
 import { ATTACK_CLIPS } from './animations';
@@ -892,7 +892,8 @@ export class PlayerController {
     // Ledge grab: falling past the top of a wall he is facing, with room on top, he catches it.
     const wb = this.wallBox;
     // (Of a ramp, only the wall at its high end has an edge to catch: its sides slope, and its low end is no wall.)
-    const edge = !wb?.ramp || (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up);
+    // (A ramp has an edge to catch only at its high end, and only one that is not tipped across as well.)
+    const edge = !wb?.ramp || (!wb.ramp.cross && (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up));
     if (wb && edge && !this.riding && !this.sliding && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
       const top = wb.max.y;
       const p = this.position;
@@ -1066,9 +1067,11 @@ export class PlayerController {
   private slopeUnder(): { dx: number; dz: number; steep: number } | null {
     const b = this.grounded ? this.groundBox : null;
     if (!b?.ramp) return null;
-    const steep = slopeOf(b);
-    if (steep <= 0) return null;
-    return { dx: b.ramp.axis === 'x' ? -b.ramp.up : 0, dz: b.ramp.axis === 'z' ? -b.ramp.up : 0, steep };
+    // (Straight down it, whichever way it is tipped: one that is tipped two ways falls away between the two.)
+    const [sx, sz] = slopeXZ(b);
+    const steep = Math.hypot(sx, sz);
+    if (steep <= 1e-9) return null;
+    return { dx: -sx / steep, dz: -sz / steep, steep };
   }
 
   /**
@@ -1490,11 +1493,12 @@ export class PlayerController {
       // he is on, not a wall. A rider at speed up the wall of a pipe met it as a wall, and was thrown off.)
       // (And coming to the foot of one up another ramp, as from one facet of a curve to the next: the ground he is
       // on rises to meet it under him, by his own half-width of its slope, before his middle is there.)
-      const rise = (b.ramp && b.ramp.axis === axis ? Math.abs(delta) * slopeOf(b) : 0) + (b.ramp && this.onRamp && this.groundBox ? slopeOf(this.groundBox) * r : 0);
+      const mine = b.ramp ? slopeXZ(b)[axis === 'x' ? 0 : 1] : 0; // how it climbs the way he is going
+      const rise = Math.abs(delta * mine) + (b.ramp && this.onRamp && this.groundBox ? slopeOf(this.groundBox) * r : 0);
       if (high <= feet + TUNING.physics.stepHeight + rise + EPS) continue;
       // One so steep that a single step up it is more than he can take, met going up it: he is given his step
       // back, no more. It does not put him at its foot, which may be a long way behind one who jumped at it.
-      if (b.ramp && slopeOf(b) > MAX_WALK_SLOPE + 1e-6 && b.ramp.axis === axis && delta * b.ramp.up > 0) {
+      if (b.ramp && slopeOf(b) > MAX_WALK_SLOPE + 1e-6 && delta * mine > 0) {
         if (axis === 'x') {
           p.x -= delta;
           this.velocity.x = 0;
@@ -1555,8 +1559,12 @@ export class PlayerController {
       // middle has not reached the foot of a ramp is not on it yet. Where one facet of a curve met the next, the
       // steeper one's foot held him up before he got to it: a shelf a body's half-width deep at every join.)
       if (b.ramp) {
-        const a = b.ramp.axis === 'x' ? p.x : p.z;
-        if (b.ramp.up > 0 ? a < (b.ramp.axis === 'x' ? b.min.x : b.min.z) : a > (b.ramp.axis === 'x' ? b.max.x : b.max.z)) continue;
+        // (He is beyond a LOW edge of it if, from where he is, its top climbs as it goes in under him. That is so
+        // of either of its slopes, for one tipped two ways.)
+        const [sx, sz] = slopeXZ(b);
+        const inX = p.x < b.min.x ? 1 : p.x > b.max.x ? -1 : 0;
+        const inZ = p.z < b.min.z ? 1 : p.z > b.max.z ? -1 : 0;
+        if (inX * sx > 1e-9 || inZ * sz > 1e-9) continue;
       }
       const top = b.ramp ? topAt(b, p.x, p.z) : b.max.y;
       // Support must be reachable: at most a step above where we started, and at or below our feet now.

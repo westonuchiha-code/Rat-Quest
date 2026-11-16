@@ -579,13 +579,41 @@ floor and steps off. Leaning along the pipe turns him down it.
   holds one whose middle has not reached it (`moveVertical`).
 - A fast rider up a steep facet rose more than a step in a step and met it as a wall. The step-up allowed on a
   ramp grows with how far he went along it.
-**Not done:** the pipe is LEVEL. One that runs downhill needs ground that slopes two ways at once (down along it,
+**Not done (as it stood then; since DONE, see "Ramps tipped two ways" below):** the pipe is LEVEL. One that runs downhill needs ground that slopes two ways at once (down along it,
 and up across it), and a ramp here slopes one way. That is the next thing to decide for the level: either a ramp
 that can tilt both ways (`Aabb.ramp` gets a second slope: collision, drawing, the camera's `sight`, the jump
 checker and shadows all read `topAt`, so it is mostly one function), or a pipe that goes down in level lengths
 joined by straight drops. He cannot yet fly out over the lip and come back in (he rides onto the deck instead).
 Nobody has ridden it with a controller: the drop-in asks for a slow approach, which may or may not feel right.
 For pictures: `&riding` on the address starts him on his shield where `at=` puts him (new).
+
+### Ramps tipped two ways, and the downhill pipe (2026-11-16)
+The decision the level pipe left open is made: **a ramp can be tipped two ways.** `Ramp.cross` (collision.ts): as
+well as its first slope (`axis`, `up`, `low`), its top rises by `cross` across its OTHER axis (toward that axis's +
+side, or its - side if negative). It is still one flat plane. The box's own top (`y1`, `max.y`) is the top of its
+highest corner; the first slope runs from `low` to the box's top LESS the cross rise. `rampBox(..., bottom, cross)`
+makes one (`high` there is still the first slope's top on its low side). Without `cross`, nothing is different.
+**Who was taught** (each asks `topAt`, `slopeXZ` or `slopeOf`, so most of it was one function):
+- collision.ts: `topAt` (the plane), `slopeXZ` (its rise per unit toward +x and +z: NEW, and what to ask for a
+  direction), `slopeOf` (how steep straight up it, whichever way that is), `topUnder` (its uphill CORNER).
+- The knight: the way down a slope is now straight down the plane (`slopeUnder`), so the shield's pull, the slide,
+  the lean of his body and "too steep to stand" all follow the two slopes together; the step-up allowed on a ramp is
+  by how it climbs the way he is going; "beyond its low edge" (the shelf rule) is asked of either slope.
+- The camera's `sight`, the jump checker (reach.ts), drawing (chamber.ts), shadows and grinding already went
+  through `topAt`, and needed nothing or one line.
+- NOT taught: the level editor's ramp piece (it makes ramps with no cross), and the ledge grab (a ramp tipped
+  across has no edge to catch). Enemies still know nothing of any ramp.
+**The downhill pipe** in the Move Garden (`DROP`, `dropFacets`, `dropHalf` in garden.ts), by the north wall east of
+the strip: twelve long, falling five (0.42 in one: just over `ride.minSlope`, so the air attack is the shield
+anywhere over it), a platform at its top with a ramp up to it from the west. Nine planes side by side: a floor
+level across, and four facets a side, each tipped down the pipe AND up across it. He drops in from the platform,
+rides it to its foot on it the whole way (no jolt at any join), and leaves it at about twelve a second (a run is
+6.2); dropped in off its middle, the wall turns him back across. He must brake at its end: the room is not long
+enough. `tests/ramps.ts` holds a tipped ramp to everything (he walks it six ways); `tests/garden.ts` rides the pipe.
+**What this means for the level:** a long pipe is now only many of these lengths end to end, each with its own
+fall, and turns are still to be worked out (a pipe that bends needs lengths at angles: ramps run along x or z
+only, so a bend is a corner piece, or the pipe turns in right angles through a chamber). Not tried yet: two
+lengths joined at different falls, a kicker or a rail inside a pipe, and the water in its bottom.
 
 ### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
 His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the

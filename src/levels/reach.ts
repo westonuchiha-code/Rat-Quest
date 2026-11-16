@@ -10,6 +10,7 @@
 import { TUNING } from '../data/tuning';
 import type { LevelDef } from './types';
 import { MAX_WALK_SLOPE, type Box } from '../world/layout';
+import { aabbOf, topAt } from '../world/collision';
 
 const STEP = 0.5;
 const HEADROOM = 0.9;
@@ -145,10 +146,7 @@ export function computeReach(def: LevelDef, opts: { traps?: boolean; gatesShut?:
       }
       // A ramp is taken a column at a time: over each point, a box as high as its slope is there. (He walks from
       // one to the next whatever the rise between them, as long as the ramp is one he can walk: see the walking step.)
-      const r = b.ramp;
-      let f = r.axis === 'x' ? (x - b.x0) / (b.x1 - b.x0) : (z - b.z0) / (b.z1 - b.z0);
-      if (r.up < 0) f = 1 - f;
-      const slice: Box = { ...b, ramp: undefined, y1: r.low + (b.y1 - r.low) * f };
+      const slice: Box = { ...b, ramp: undefined, y1: topAt(aabbOf(b), x, z) };
       rampSlices.add(slice);
       cols[i * nj + j].push(slice);
     }

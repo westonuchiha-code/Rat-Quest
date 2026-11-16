@@ -149,6 +149,44 @@ export const pipeDeck = (): { y: number; out: number } => {
   return { y: last.h1, out: PIPE.flat + last.d1 };
 };
 
+/**
+ * The downhill pipe: a short length of pipe that RUNS DOWNHILL, by the north wall east of the strip, to try ramps
+ * tipped two ways. (The owner's level to come is a pipe like this the whole way: "a really long steep decline that's
+ * like a sewer pipe going down".) It falls five in twelve, from a platform at its north end to the floor at its
+ * south end; its floor is a narrow flat, and either side of that a wall curves up, cut into facets as the level
+ * pipe's are. Every piece of it is ONE plane tipped two ways: down the pipe, and (the facets) up across it.
+ * A ramp west of the platform is the way up. He drops in from the platform: a hop out over it, and ATTACK.
+ */
+export const DROP = {
+  /** Its middle line, and half the width of its flat floor. */
+  x: 16.8,
+  flat: 0.6,
+  radius: 2.5,
+  facets: 4,
+  turn: 18.75,
+  /** Its high end (north) and its low end (south), and how far it falls between them. */
+  z0: -16,
+  z1: -4,
+  rise: 5,
+  /** The platform at its top runs back to here; the way up to that starts here (and climbs east). */
+  back: -19,
+  wayFrom: 8.6,
+} as const;
+/** One wall's facets, from its floor outward: how far out each starts and ends, and how high (above the pipe's floor there). */
+export function dropFacets(): Array<{ d0: number; d1: number; h0: number; h1: number }> {
+  const at = (i: number): [number, number] => {
+    const a = (i * DROP.turn * Math.PI) / 180;
+    return [DROP.radius * Math.sin(a), DROP.radius * (1 - Math.cos(a))];
+  };
+  return Array.from({ length: DROP.facets }, (_, i) => {
+    const [d0, h0] = at(i);
+    const [d1, h1] = at(i + 1);
+    return { d0, d1, h0, h1 };
+  });
+}
+/** How far out from its middle line its walls end. */
+export const dropHalf = (): number => DROP.flat + dropFacets()[DROP.facets - 1].d1;
+
 export function garden(): LevelDef {
   const W = -GARDEN.halfX;
   const N = -GARDEN.halfZ;
@@ -223,6 +261,25 @@ export function garden(): LevelDef {
     }
     // (Its board stands at its south end, beside the way in along its floor, not in it.)
     decor.push({ kind: 'sign', x: PIPE.x + PIPE.flat + 1.7, y: 1.5, z: PIPE.z1 + 0.8, yaw: south, w: 2.8, h: 1.4, lines: ['THE PIPE', 'DROP IN FROM TOP'], post: 0 });
+  }
+
+  // ---- The downhill pipe ----
+  {
+    const half = dropHalf();
+    // Its floor: flat across, falling south.
+    solids.push(rampBox('stone', DROP.x - DROP.flat, DROP.x + DROP.flat, DROP.z0, DROP.z1, 0, DROP.rise, 'n', 0));
+    for (const side of [-1, 1] as const) {
+      for (const f of dropFacets()) {
+        const a = DROP.x + side * (DROP.flat + f.d0);
+        const b = DROP.x + side * (DROP.flat + f.d1);
+        // (Falling south like the floor, and rising outward by as much as the curve does across it.)
+        solids.push(rampBox('stone', Math.min(a, b), Math.max(a, b), DROP.z0, DROP.z1, f.h0, f.h0 + DROP.rise, 'n', 0, side * (f.h1 - f.h0)));
+      }
+    }
+    // The platform at its top, and the way up to that from the west.
+    solids.push(extent('stone', DROP.x - half, DROP.x + half, 0, DROP.rise, DROP.back, DROP.z0));
+    solids.push(rampBox('stone', DROP.wayFrom, DROP.x - half, DROP.back, DROP.z0, 0, DROP.rise, 'e'));
+    decor.push({ kind: 'sign', x: DROP.x + half + 1.2, y: 1.5, z: DROP.z1 + 0.6, yaw: south, w: 2.8, h: 1.4, lines: ['DOWNHILL PIPE', 'BRAKE AT ITS END'], post: 0 });
   }
 
   // ---- The pole and the strip ----

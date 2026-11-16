@@ -7,7 +7,7 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
-import { aabbOf, slopeOf, topAt, topUnder, type Aabb } from '../src/world/collision';
+import { aabbOf, slopeOf, slopeXZ, topAt, topUnder, type Aabb } from '../src/world/collision';
 import { MAX_WALK_SLOPE, extent, rampBox, type Box } from '../src/world/layout';
 import { sight } from '../src/camera/followCamera';
 import { groundFrom } from '../src/world/embers';
@@ -171,6 +171,79 @@ for (const [len, rise, name] of [[12, 3, 'a gentle slope (1 up in 4)'], [6, 3, '
   const lv = tower(true);
   const ramp = lv.solids.find((b) => b.ramp);
   check('a ramp piece is one solid with a slope (not a flight of steps), climbing the way it faces', !!ramp && ramp.ramp!.axis === 'x' && ramp.ramp!.up === 1 && ramp.ramp!.low === 0 && ramp.y1 === 9 && ramp.x0 === -7 && ramp.x1 === 2);
+}
+
+// ---- A ramp tipped two ways (2026-11-16: what the floor of a pipe that runs downhill is made of) ----
+{
+  // Ten by ten. Its first slope climbs toward +x, from the floor to four up; and it is tipped across as well, two up
+  // toward +z. So its corners are at 0 (x 0, z 0), 4 (x 10, z 0), 2 (x 0, z 10) and 6 (x 10, z 10).
+  const box = rampBox('stone', 0, 10, 0, 10, 0, 4, 'e', 0, 2);
+  const t = aabbOf(box);
+  const corners = [topAt(t, 0, 0), topAt(t, 10, 0), topAt(t, 0, 10), topAt(t, 10, 10)];
+  check('a ramp tipped two ways is one flat plane: its four corners at four heights, and its box as high as the highest', corners.join() === '0,4,2,6' && t.max.y === 6 && t.min.y === 0, corners.join());
+  check('...evenly between: the middle is the mean of the corners, and any point is its share of each slope', Math.abs(topAt(t, 5, 5) - 3) < 1e-9 && Math.abs(topAt(t, 2.5, 7.5) - (1 + 1.5)) < 1e-9);
+  const [sx, sz] = slopeXZ(t);
+  check('...it knows how it climbs each way, and how steep it is straight up it', Math.abs(sx - 0.4) < 1e-9 && Math.abs(sz - 0.2) < 1e-9 && Math.abs(slopeOf(t) - Math.hypot(0.4, 0.2)) < 1e-9);
+  check('...what he would have to step onto is its top at the uphill CORNER of his footprint', Math.abs(topUnder(t, 5, 5, 0.3) - (3 + 0.3 * 0.4 + 0.3 * 0.2)) < 1e-9);
+  check('...beside it, its nearest edge, which is itself a slope', Math.abs(topAt(t, -3, 5) - 1) < 1e-9 && Math.abs(topAt(t, 5, 14) - 4) < 1e-9);
+  const other = aabbOf(rampBox('stone', 0, 10, 0, 10, 0, 4, 'e', 0, -2));
+  check('tipped the other way across, it is the mirror of that', [topAt(other, 0, 0), topAt(other, 10, 0), topAt(other, 0, 10), topAt(other, 10, 10)].join() === '2,6,0,4' && Math.abs(slopeXZ(other)[1] + 0.2) < 1e-9);
+  const plain = aabbOf(rampBox('stone', 0, 10, 0, 10, 0, 4, 'e'));
+  check('a ramp not tipped across is exactly what it was', plain.max.y === 4 && slopeXZ(plain).join() === '0.4,0' && !plain.ramp?.cross);
+
+  // Played: a big floor, and the tipped ramp on it.
+  const cs: Aabb[] = [aabbOf(extent('floor', -40, 40, -1, 0, -40, 40)), t];
+  const walk = (from: THREE.Vector3, move: THREE.Vector3, frames: number): { p: PlayerController; off: number; air: number; jolt: number } => {
+    const p = new PlayerController(from.clone());
+    let off = 0;
+    let air = 0;
+    let jolt = 0;
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
+    let last = p.position.y;
+    for (let i = 0; i < frames; i++) {
+      p.update(DT, inp({ move, run: false }), cs);
+      const inside = p.position.x > 0.4 && p.position.x < 9.6 && p.position.z > 0.4 && p.position.z < 9.6;
+      if (inside) {
+        off = Math.max(off, Math.abs(p.position.y - topAt(t, p.position.x, p.position.z)));
+        if (!p.grounded) air++;
+        jolt = Math.max(jolt, Math.abs(p.position.y - last));
+      }
+      last = p.position.y;
+    }
+    return { p, off, air, jolt };
+  };
+  for (const [name, from, move] of [
+    ['up its first slope', new THREE.Vector3(1, 1.6, 5), v(1, 0)], ['down it', new THREE.Vector3(9, 4.8, 5), v(-1, 0)],
+    ['up across it', new THREE.Vector3(5, 2.4, 1), v(0, 1)], ['down across it', new THREE.Vector3(5, 4, 9), v(0, -1)],
+    ['cornerwise, up both at once', new THREE.Vector3(1, 0.8, 1), v(0.7, 0.7)], ['cornerwise, down both', new THREE.Vector3(9, 5.6, 9), v(-0.7, -0.7)],
+  ] as const) {
+    const w = walk(from, move, 120);
+    check(`he walks ${name}: on its slope at every step, never in the air, never jolted`, w.off < 1e-6 && w.air === 0 && w.jolt < 0.08, `off by ${w.off.toFixed(4)}; ${w.air} frames in the air; biggest step ${w.jolt.toFixed(3)}`);
+  }
+  // On his shield, with nothing held, it takes him straight down it: between its two slopes, twice as much one way as the other.
+  const p = new PlayerController(new THREE.Vector3(8, 9, 8));
+  let rode = false;
+  let dir: [number, number] = [0, 0];
+  for (let i = 0; i < 90; i++) {
+    p.update(DT, inp(p.riding ? { run: false } : { attackPressed: !p.grounded }), cs);
+    rode ||= p.riding;
+    if (p.riding && p.grounded && p.position.x > 1 && p.position.z > 1) dir = [p.velocity.x, p.velocity.z];
+  }
+  const len = Math.hypot(dir[0], dir[1]);
+  check('riding it with nothing held, he goes straight down it: twice as far toward its first low end as across', rode && len > 2 && Math.abs(dir[0] / len + 0.4 / Math.hypot(0.4, 0.2)) < 0.06 && Math.abs(dir[1] / len + 0.2 / Math.hypot(0.4, 0.2)) < 0.06, `going ${(dir[0] / len).toFixed(2)}, ${(dir[1] / len).toFixed(2)}`);
+  // The camera, and the jump checker.
+  check('the camera sees its plane: a line over its low corner passes, one into its high corner is stopped', sight(new THREE.Vector3(-2, 1.5, 1), new THREE.Vector3(3, 1.5, 1), cs) === 1 && sight(new THREE.Vector3(-2, 1.5, 9), new THREE.Vector3(12, 1.5, 9), cs) < 0.5);
+  const lvl: LevelDef = { ...compileCustom(emptyCustom(), 'tilted'), solids: [extent('floor', -12, 22, -1, 0, -12, 22), box], water: [], decor: [], spawn: { x: -6, y: 0, z: -6, facing: 0 } } as LevelDef;
+  const reach = computeReach(lvl);
+  check('the jump checker walks him up it: its high corner is reached, at the height the plane has there', reach.near(9.2, 5.4, 9.2, 0.6, 0.5, 0.6) && !reach.near(9.2, 8, 9.2, 0.6, 0.5, 0.6));
+  let built = true;
+  try {
+    buildChamber({ solids: lvl.solids, pit: null, water: [], decor: [], movers: [] } as never);
+  } catch (e) {
+    built = false;
+    console.log(String(e));
+  }
+  check('and it is drawn', built);
 }
 
 // ---- The Move Garden's ramps ----

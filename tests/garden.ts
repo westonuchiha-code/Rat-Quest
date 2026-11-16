@@ -7,10 +7,10 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
-import { makeAabb, aabbOf } from '../src/world/collision';
+import { makeAabb, aabbOf, slopeOf, slopeXZ, topAt } from '../src/world/collision';
 import { atDoor } from '../src/world/rooms';
 import { MAX_WALK_SLOPE } from '../src/world/layout';
-import { garden, GARDEN, STEPS, STEP_SIZE, CHIMNEYS, CHIMNEY_WALL, chimneyFaces, POLE, STRIP, RUN, PIPE, pipeFacets, pipeDeck, type Chimney, type Step } from '../src/levels/garden';
+import { garden, GARDEN, STEPS, STEP_SIZE, CHIMNEYS, CHIMNEY_WALL, chimneyFaces, POLE, STRIP, RUN, PIPE, pipeFacets, pipeDeck, DROP, dropFacets, dropHalf, type Chimney, type Step } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { JUMP_SETS, Tweaks, readTweak, defaultTweak, TWEAKS, type TweakSet } from '../src/core/tweaks';
@@ -569,6 +569,93 @@ for (const r of rows) {
   });
   const standable = Math.max(...facets.filter((f, i) => slopes[i] <= MAX_WALK_SLOPE).map((f) => f.h1));
   check('on his feet he walks up its wall as far as he can stand, scrabbles a little further, and slides back down: he does not walk out of it', top >= standable - 0.01 && top < deck.y - 0.2 && slid && walked.events.includes('slip') && !walked.p.sliding && walked.p.position.y <= standable + 0.01, `${top.toFixed(2)} up (he can stand to ${standable.toFixed(2)}, the deck is ${deck.y.toFixed(2)}); ${walked.events.slice(0, 4).join()}`);
+}
+
+// ---- The downhill pipe: ramps tipped two ways ----
+{
+  const rs = def.solids.map(aabbOf);
+  const half = dropHalf();
+  const fall = DROP.rise / (DROP.z1 - DROP.z0);
+  const pieces = rs.filter((b) => !!b.ramp && b.min.z === DROP.z0 && b.max.z === DROP.z1 && b.min.x >= DROP.x - half - 1e-9 && b.max.x <= DROP.x + half + 1e-9);
+  const facets = dropFacets();
+  check('the downhill pipe is a floor and two walls of facets: nine planes side by side', pieces.length === 1 + 2 * DROP.facets, `${pieces.length} pieces`);
+  check('every one of them falls south at the same rate, steep enough for the air attack to be the shield', pieces.every((b) => Math.abs(slopeXZ(b)[1] + fall) < 1e-9) && fall >= TUNING.ride.minSlope && fall <= MAX_WALK_SLOPE, `falls ${fall.toFixed(3)} in one`);
+  check('...its floor is level across, and each facet is tipped up across as well, away from the middle, more than the one inside it', pieces.filter((b) => Math.abs(slopeXZ(b)[0]) < 1e-9).length === 1 && [-1, 1].every((side) => {
+    const wall = pieces.filter((b) => Math.sign((b.min.x + b.max.x) / 2 - DROP.x) === side && Math.abs(slopeXZ(b)[0]) > 1e-9).sort((a, b) => Math.abs(a.min.x + a.max.x - 2 * DROP.x) - Math.abs(b.min.x + b.max.x - 2 * DROP.x));
+    return wall.length === DROP.facets && wall.every((b, i) => Math.sign(slopeXZ(b)[0]) === side && (i === 0 || Math.abs(slopeXZ(b)[0]) > Math.abs(slopeXZ(wall[i - 1])[0])));
+  }));
+  // It is one surface: where two pieces meet, they are at the same height, at the top of the pipe and at the bottom.
+  let seam = 0;
+  const xs = [...new Set(pieces.flatMap((b) => [b.min.x, b.max.x]).map((x) => Math.round(x * 1e6) / 1e6))].sort((a, b) => a - b).slice(1, -1);
+  for (const x of xs) {
+    for (const z of [DROP.z0, (DROP.z0 + DROP.z1) / 2, DROP.z1]) {
+      const here = pieces.filter((b) => Math.abs(b.min.x - x) < 1e-5 || Math.abs(b.max.x - x) < 1e-5).map((b) => topAt(b, x, z));
+      seam = Math.max(seam, Math.max(...here) - Math.min(...here));
+    }
+  }
+  check('...and it is ONE surface: where two pieces meet they are at the same height, all the way down', xs.length === 2 * DROP.facets && seam < 1e-5, `greatest step at a join ${seam.toExponential(1)}`);
+  check('its top facet is too steep to stand on, its floor is not', Math.max(...pieces.map(slopeOf)) > MAX_WALK_SLOPE && Math.min(...pieces.map(slopeOf)) <= MAX_WALK_SLOPE && facets[facets.length - 1].h1 > 1.5);
+  check('its board says what it is', def.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'DOWNHILL PIPE'));
+  const drive = (from: THREE.Vector3, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): { p: PlayerController; events: string[] } => {
+    const p = new PlayerController(from.clone());
+    const events: string[] = [];
+    for (let i = 0; i < 20; i++) p.update(DT, inp({}), rs);
+    for (let i = 0; i < frames; i++) {
+      p.update(DT, inp(at(i, p)), rs);
+      if (p.moveEvent) events.push(p.moveEvent);
+      each?.(p);
+    }
+    return { p, events };
+  };
+  const EAST = new THREE.Vector3(1, 0, 0);
+  const SOUTH = new THREE.Vector3(0, 0, 1);
+  // The way up: from the floor west of it, east up the ramp onto the platform at the pipe's top.
+  const up = drive(new THREE.Vector3(DROP.wayFrom - 1.5, 0, (DROP.back + DROP.z0) / 2), 240, (i, p) => ({ move: p.position.x < DROP.x - 0.5 ? EAST : new THREE.Vector3(), run: true }));
+  check('he walks up the way to the top of it', Math.abs(up.p.position.y - DROP.rise) < 0.01 && up.p.grounded && Math.abs(up.p.position.x - DROP.x) < 1.5, `y ${up.p.position.y.toFixed(2)} at x ${up.p.position.x.toFixed(1)}`);
+  // Dropping in: from the platform, a hop out over the pipe and ATTACK. Then nothing held till he is out of it.
+  const ridden = (off: number): { events: string[]; out: number; crossed: number; air: number; jolt: number; fastest: number; left: number; end: PlayerController } => {
+    let rode = false;
+    let out = 0;
+    let crossed = 0;
+    let air = 0;
+    let jolt = 0;
+    let fastest = 0;
+    let left = 0;
+    let landed = false;
+    let sideWas = Math.sign(off || 1);
+    const last = new THREE.Vector3(DROP.x + off, DROP.rise, DROP.z0 - 0.5);
+    const r = drive(last.clone(), 400, (i, p) => {
+      rode ||= p.riding;
+      // (Out of its end he brakes: the room is not long enough to roll to a stop in from that speed.)
+      if (rode) return { run: false, move: p.grounded && p.position.z > DROP.z1 + 2 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3() };
+      return { move: p.grounded ? new THREE.Vector3() : SOUTH, run: false, jumpPressed: i === 0, jumpHeld: false, attackPressed: !p.grounded && p.position.z > DROP.z0 + 0.3 };
+    }, (p) => {
+      if (p.moveEvent === 'rideLand') landed = true;
+      if (rode && p.position.z < DROP.z1) {
+        jolt = Math.max(jolt, p.position.distanceTo(last));
+        if (landed && !p.grounded) air++;
+        out = Math.max(out, Math.abs(p.position.x - DROP.x));
+        const side = Math.sign(p.position.x - DROP.x);
+        if (side !== 0 && side !== sideWas) {
+          crossed++;
+          sideWas = side;
+        }
+        left = Math.hypot(p.velocity.x, p.velocity.z);
+      }
+      if (rode) fastest = Math.max(fastest, Math.hypot(p.velocity.x, p.velocity.z));
+      last.copy(p.position);
+    });
+    return { events: r.events, out, crossed, air, jolt, fastest, left, end: r.p };
+  };
+  const mid = ridden(0);
+  check('DOWNHILL PIPE: dropped in at its top (a hop, and ATTACK) he rides it to its foot, on it the whole way, faster and faster', mid.events[0] === 'ride' && mid.events.includes('rideLand') && mid.air === 0 && mid.left > TUNING.move.run * 1.6 && !mid.events.includes('bail') && !mid.events.includes('slip'), `leaves it at ${mid.left.toFixed(1)}; ${mid.events.join()}`);
+  check('...smoothly: no join between its planes jolts him, down its length or across it', mid.jolt < TUNING.ride.max * DT + 0.08, `furthest in a step ${mid.jolt.toFixed(2)}`);
+  check('...and out of its end onto the floor, where he can brake and step off', mid.end.position.z > DROP.z1 && mid.end.position.y < 0.01 && !mid.end.riding && mid.events[mid.events.length - 1] === 'rideEnd');
+  const side = ridden(1.2);
+  check('...dropped in off its middle, its wall turns him back across it: he stays in the pipe, and no wall of it is a wall to him', side.crossed >= 1 && side.out < half && side.air === 0 && side.jolt < TUNING.ride.max * DT + 0.08 && !side.events.includes('bail'), `furthest out ${side.out.toFixed(2)} of ${half.toFixed(2)}; crossed its middle ${side.crossed} time(s); ${side.events.join()}`);
+  // On his feet he can walk down its floor, and up it.
+  const walkDown = drive(new THREE.Vector3(DROP.x, DROP.rise, DROP.z0 - 0.5), 300, () => ({ move: SOUTH, run: false }));
+  check('on his feet he walks down its floor to the bottom, never sliding', !walkDown.events.includes('slip') && walkDown.p.position.z > DROP.z1 && walkDown.p.position.y < 0.01);
 }
 
 console.log(failures === 0 ? '\nAll garden checks passed.' : `\n${failures} garden check(s) FAILED.`);
