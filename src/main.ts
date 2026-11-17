@@ -1884,7 +1884,7 @@ function startGame(): void {
       audio.play('land', { vol: Math.min(1, 0.35 + Math.abs(vyBefore) / 12), rate: roll(0.9, 1.1) });
       rumble.land(Math.abs(vyBefore));
     }
-    if (s === 'attack' && player.swingId !== heard.swing) {
+    if ((s === 'attack' || (player.riding && player.attackTime > 0)) && player.swingId !== heard.swing) {
       audio.play('swing', { vol: 0.7, rate: roll(0.95, 1.12), priority: 6 });
       if (Math.random() < 0.7) audio.play('ratAttack', { vol: 0.7, rate: roll(0.9, 1.15), priority: 6 });
     }
@@ -2301,6 +2301,7 @@ function startGame(): void {
       jumpHeld = a.jumpHeld;
       attackPressed = a.attackPressed;
       guardHeld = a.guardHeld;
+      dodgePressed = a.dodgePressed;
     }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
@@ -2340,7 +2341,7 @@ function startGame(): void {
     director.update(dt, enemies, player.position.x, player.position.z, lockTarget);
     // The ants find their mates, and settle which of each pair holds him and which goes round him.
     if (antList.length) pairAnts(antList, player.position.x, player.position.z);
-    const swinging = player.state === 'attack';
+    const swinging = player.state === 'attack' || (player.riding && player.attackTime > 0);
     for (const e of enemies) {
       if (!DEV.still) e.update(dt, player.position.x, player.position.y, player.position.z, !player.dead, swinging);
       if (e instanceof Grimsqueak) bossTick(e);
@@ -3986,7 +3987,7 @@ function startGame(): void {
     // Sword ribbon during the fast part of a swing.
     rat.getBlade(bladeBase, bladeTip);
     const clip = ATTACK_CLIPS[player.comboStep];
-    const swinging = player.state === 'attack' && player.attackTime > clip.activeStart - 0.05 && player.attackTime < clip.activeEnd + 0.05;
+    const swinging = (player.state === 'attack' || player.riding) && player.attackTime > clip.activeStart - 0.05 && player.attackTime < clip.activeEnd + 0.05;
     trail.update(animDt, swinging && animDt > 0, bladeBase, bladeTip);
 
     enemies.forEach((e, i) => {

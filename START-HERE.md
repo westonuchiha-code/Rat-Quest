@@ -430,6 +430,35 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## OFF THE LIP AND BACK INTO THE PIPE; THE SWORD ON THE SHIELD (2026-11-17). Tests `tests/toybox.ts` (37)
+
+**His words:** "You should be able to **swing your sword on attack while you're riding your shield**. When riding up a half
+pipe ramp you should **disconnect up at the top like in Tony Hawk's Pro Skater and come back down into the pipe** and
+you can press buttons to do tricks or different board grabs while you're in the air. Is that possible we don't have to
+include the spinning and stuff I just want to be able to **launch out of the half pipe and come back down into it**."
+ - **THE LIP** (`Box.vert`; `PlayerController.vertLaunch`; `TUNING.ride.vertMin/vertPop/vertTop/vertDrift`). The top two
+   facets of each wall of the Toy Box's half pipe, and of its quarter pipe, are marked. **A rider going up one faster
+   than 2.5 goes STRAIGHT UP off it**: what he had up the wall is all upward (and a little more, never over 20: eleven
+   up over the lip, two seconds in the air); what he had ALONG the pipe he keeps; he drifts back in over the wall and
+   comes down on it riding. **MEASURED: rolled in and pumped, 5.5 over the lip, a second and a half in the air; with the
+   stick held at the wall all the way, 10 over it, two seconds.** Slower than 2.5 he comes to the top and back, as before.
+   **JUMP pressed at the lip adds to it.** To get OUT onto a deck now: grind the lip, or walk up the ramp at its end.
+ - **TWO THINGS THE FILM OF THE REAL GAME CAUGHT THAT THE TESTS HAD NOT (keep both as rules):**
+   (1) **THE GAME MAKES ITS SOLIDS IN `world/chamber.ts`, NOT WITH `aabbOf`.** A new mark on a box (`vert`) has to be
+   copied THERE (as `slick` is), or it works in tests and not in the game. `tests/toybox.ts` now takes its solids
+   from `buildChamber`, as the game does. **A test of a level should.**
+   (2) **AT SOME SPEEDS THE WALL LETS GO OF HIM A MOMENT BEFORE ITS LIP** (13 in the film, 16 in a sweep), and he went
+   out over the deck instead of up. The launch is done wherever the top of a marked wall lets go of him going up, not
+   only at its edge; and it is tested at EVERY speed from 12 to 30 in halves, at 60 and 30 frames a second.
+ - **THE SWORD, ON THE SHIELD:** ATTACK while riding is a swing of the sword (the same swing, it hits as one does), on the
+   ground or in the air; it does not turn him or slow him. In the air on the shield it is a swing, not the dive.
+   His sword arm does the swing over the riding pose. **So the SPIN moved: it is the ROLL button in the air now** (on
+   the ground the roll button still steps him off). In the air on the shield: **JUMP flips, ROLL spins, GUARD grabs,
+   ATTACK swings.** The Toy Box's sign says so.
+ - **ALSO FOUND:** on his shield from a STANDSTILL (in a skate park), the stick pushed forward, he was stepped off it
+   again before the push had got him going. He is not stepped off while he is pushing.
+ - `&autoride=pipe&at=-7,3.5,0,-1.5708` films the pipe: rolls in, pumps, grabs in the air.
+
 ## THE HALF PIPE'S DECKS ARE FLUSH, AND ITS LIP IS AN EDGE TO GRIND (2026-11-17). Tests `tests/toybox.ts` (31)
 
 **His words:** "The tops of the half pipes should be more flush and they should also count as an edge that you can grind

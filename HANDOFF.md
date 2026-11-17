@@ -1464,3 +1464,5 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
    sliding sound remade soft and mixed very low.
  - Half pipe decks flush with the wall tops (`COPING` 0), and their lips grind (a ledge). What made a flush deck a wall to
    a fast rider is mended in the controller (`rampHead`: a box at the head of his ramp, no higher than the ramp there).
+ - Off a pipe's lip he goes straight up and comes back down into it (`Box.vert`, `vertLaunch`); ATTACK on the shield
+   swings the sword, and the spin is the roll button in the air. A new mark on a box must be copied in `chamber.ts`.

@@ -10,7 +10,8 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
-import { aabbOf, topAt, type Aabb } from '../src/world/collision';
+import { topAt, type Aabb } from '../src/world/collision';
+import { buildChamber } from '../src/world/chamber';
 import { toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
@@ -28,7 +29,9 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const def = toyBox();
 const P = toyBoxPlan();
-const cs: Aabb[] = def.solids.map((b) => aabbOf(b));
+// (What is solid is taken as THE GAME takes it, from the chamber it builds: not made here from the level's boxes. The
+// lip of the pipe was tested with boxes made here, which had its mark, and worked; the game's had not, and did not.)
+const cs: Aabb[] = buildChamber({ solids: def.solids, pit: def.pit, water: def.water ?? [], decor: [], movers: def.movers }).colliders;
 const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
 const v = (x: number, z: number): THREE.Vector3 => new THREE.Vector3(x, 0, z);
 const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filter((b) => x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z).map((b) => topAt(b, x, z)));
@@ -62,6 +65,15 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const pushed = speedOf(p);
   check('the stick pushed forward PUSHES him along the flat, up to his standing top speed and no faster: he skates', Math.abs(pushed - R.max) < 0.3 && p.riding, `${pushed.toFixed(1)}`);
   for (let i = 0; i < 60; i++) p.update(DT, inp({}), cs);
+  {
+    // FROM A STANDSTILL: on his shield where he stands (a jump straight up, ATTACK), then the stick forward.
+    const q = rat(17.5, 0, -30);
+    q.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
+    for (let i = 0; i < 80 && !(q.riding && q.grounded); i++) q.update(DT, inp({ jumpHeld: true, attackPressed: !q.riding && q.velocity.y < 5 }), cs);
+    const stood = q.riding && speedOf(q) < 0.5;
+    for (let i = 0; i < 120; i++) q.update(DT, inp({ move: v(0, 1) }), cs);
+    check('from a STANDSTILL on his shield, the stick forward gets him going: he is not stepped off it before the push has taken hold', stood && q.riding && speedOf(q) > 6, `${speedOf(q).toFixed(1)} after two seconds`);
+  }
   check('...and the stick let go, he rolls on, slowing', speedOf(p) < pushed - 1 && speedOf(p) > 4, `${speedOf(p).toFixed(1)}`);
   const q = new PlayerController(new THREE.Vector3(0, 0.01, -10));
   for (let i = 0; i < 10; i++) q.update(DT, inp({}), cs);
@@ -105,24 +117,59 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const coastStart = (): PlayerController => dropIn(DT);
   const coast = session(() => v(0, 0), 7);
   check('dropped in from a deck and doing nothing, he rides down the wall, across, and three quarters of the way up the far wall; and back, and again, lower each time: a half pipe', coast.on && coast.peaks.length >= 2 && coast.peaks[0] > wallTop * 0.7 && coast.peaks[1] < coast.peaks[0], `${coast.peaks.map((q) => q.toFixed(1)).join(' ')} of ${wallTop.toFixed(1)}`);
-  // PUMPING: the stick pushed the way he is going while he is down in the flat of it. He comes up the far wall
-  // fast enough to go over its lip; what is seen is that he does, and comes down on the deck still on his shield.
-  {
-    const p = coastStart();
+  // THE LIP (the owner, 2026-11-17: "when riding up a half pipe ramp you should disconnect up at the top like in Tony
+  // Hawk's Pro Skater and come back down into the pipe"). `stick`: what he holds. What he does at the far lip.
+  const atTheLip = (dt: number, stick: (p: PlayerController) => THREE.Vector3): { high: number; back: boolean; bailed: boolean; out: boolean; air: number; riding: boolean } => {
+    const p = dropIn(dt);
     let high = 0;
     let bailed = false;
-    let onDeck = false;
-    for (let i = 0; i < 60 * 5 && !onDeck && p.riding; i++) {
-      p.update(DT, inp({ move: Math.abs(p.position.x - HALF.x) < HALF.flat + 2.5 ? v(Math.sign(p.velocity.x) || -1, 0) : v(0, 0) }), cs);
+    let flew = 0;
+    let back = false;
+    let out = false;
+    for (let i = 0; i < 6 / dt && !back && p.riding; i++) {
+      p.update(dt, inp({ move: stick(p) }), cs);
       if (p.moveEvent === 'bail') bailed = true;
-      if (p.position.x < HALF.x) high = Math.max(high, p.position.y);
-      if (p.grounded && p.position.x < HALF.x - deck.out - 0.3) onDeck = true;
+      if (p.position.x < HALF.x - HALF.flat) {
+        high = Math.max(high, p.position.y);
+        if (!p.grounded && p.position.y > wallTop) flew += dt;
+        if (p.position.x < HALF.x - deck.out - 0.2 && p.grounded) out = true;
+        if (flew > 0 && p.grounded && p.position.x > HALF.x - deck.out) back = true;
+      }
     }
-    check('PUMPED (the stick pushed the way he is going, down in the flat of it), he goes right up the far wall, OVER ITS LIP and onto the deck beyond, still on his shield: he does not come off at the lip (coasting, he got three quarters of the way up)', onDeck && high > wallTop - 0.1 && !bailed && p.riding, `${high.toFixed(1)} up, the lip at ${wallTop.toFixed(1)}`);
+    return { high, back, bailed, out, air: flew, riding: p.riding };
+  };
+  {
+    const a = atTheLip(DT, (p) => (Math.abs(p.position.x - HALF.x) < HALF.flat + 2.5 ? v(Math.sign(p.velocity.x) || -1, 0) : v(0, 0)));
+    check('PUMPED (the stick pushed the way he is going, down in the flat of it), at the far lip he goes STRAIGHT UP off it, a good way over it, and comes back down INTO the pipe on the wall he left, still riding: not out onto the deck, and not thrown off', a.back && !a.out && !a.bailed && a.riding && a.high > wallTop + 1 && a.air > 0.4, `${a.high.toFixed(1)} up (the lip is at ${wallTop.toFixed(1)}), ${a.air.toFixed(2)}s over it`);
+    const b = atTheLip(DT, () => v(-1, 0));
+    check('...and the same with the stick held toward the far wall the whole time, higher', b.back && !b.out && !b.bailed && b.riding && b.high >= a.high - 0.2, `${b.high.toFixed(1)} up, ${b.air.toFixed(2)}s`);
+  }
+  // AT EVERY SPEED. (Sent at the far wall from the flat. At some speeds the wall let go of him a moment before its lip,
+  // and he went out over the deck instead of up: found by a film of the real game, at 13; in a sweep, at 16.)
+  {
+    const told: string[] = [];
+    let ok = true;
+    for (let speed = 12; speed <= 30; speed += 0.5) for (const fps of [60, 30]) {
+      const dt = 1 / fps;
+      const p = rat(HALF.x, 0, 0);
+      p.devRide();
+      p.velocity.set(-speed, 0, 0);
+      let high = 0;
+      let back = false;
+      let sunk = 0;
+      for (let i = 0; i < 8 / dt && p.riding && !back; i++) {
+        p.update(dt, inp({}), cs);
+        high = Math.max(high, p.position.y);
+        sunk = Math.max(sunk, ground(p.position.x, p.position.z) - p.position.y);
+        if (high > wallTop + 0.5 && p.grounded) back = p.position.x > HALF.x - deck.out;
+      }
+      if (!back || !p.riding || sunk > 0.05 || high < wallTop + 1) { ok = false; told.push(`${speed} at ${fps} fps: ${high.toFixed(1)} up${back ? '' : ', NOT BACK'}${sunk > 0.05 ? ', in the wall' : ''}`); }
+    }
+    check('sent at the far wall at EVERY speed from 12 to 30, at sixty frames a second and at thirty: he goes up off its lip and comes back down into the pipe, riding', ok, told.join('; '));
   }
   // AT A PHONE'S FRAME RATE. (The owner, 2026-11-17: "it's okay going down but then when you're trying to go back up the
   // other side your character just like phases through the wall". At thirty frames a second and under, a rider holding
-  // the stick toward the far wall was put INSIDE it near its top, and thrown off. Every test here ran at sixty.)
+  // the stick toward the far wall was put INSIDE it near its top, and thrown off. Every test here had run at sixty.)
   {
     const told: string[] = [];
     let ok = true;
@@ -130,19 +177,15 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       const dt = 1 / fps;
       const p = dropIn(dt);
       let sunk = 0;
-      let bailed = false;
-      let onDeck = false;
-      for (let i = 0; i < fps * 5 && !onDeck; i++) {
+      for (let i = 0; i < fps * 3 && p.riding; i++) {
         p.update(dt, inp({ move: v(-1, 0) }), cs);
         sunk = Math.max(sunk, ground(p.position.x, p.position.z) - p.position.y);
-        if (p.moveEvent === 'bail') bailed = true;
-        // (Past the far lip, on the deck or in the air over it: that is all that is asked here.)
-        if (p.position.x < HALF.x - deck.out - 0.5) onDeck = true;
       }
-      told.push(`${fps}: ${sunk.toFixed(2)} in${bailed ? ', THROWN OFF' : ''}`);
-      if (sunk > 0.05 || bailed || !onDeck || !p.riding) ok = false;
+      const a = atTheLip(dt, () => v(-1, 0));
+      told.push(`${fps}: ${sunk.toFixed(2)} in, ${a.high.toFixed(1)} up${a.bailed ? ', THROWN OFF' : ''}${a.back ? '' : ', NOT BACK'}`);
+      if (sunk > 0.05 || a.bailed || !a.back || a.out || !a.riding) ok = false;
     }
-    check('at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it and over its lip, never inside it, never thrown off', ok, told.join('; '));
+    check('at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it, off its lip and back down into the pipe, never inside the wall, never thrown off', ok, told.join('; '));
   }
   // THE LIP IS AN EDGE TO GRIND ("and they should also count as an edge that you can grind on").
   {
@@ -174,6 +217,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     }
     check('...and from inside the pipe: going along high on the wall, within reach of the lip, the grind button takes him up onto it', on > 30, `${(on / 60).toFixed(1)}s`);
   }
+  check('the top of each wall of the pipe, and of the quarter pipe, is marked as a lip IN THE GAME\'S OWN SOLIDS (its top two facets: six in all)', cs.filter((b) => b.vert && b.ramp).length === 6);
   check('its walls curve up to sixty degrees, three and a half high; its decks are FLUSH with the walls\' tops ("the tops of the half pipes should be more flush"), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING === 0 && [-1, 1].every((sd) => Math.abs(ground(HALF.x + sd * (deck.out + 0.05), 0) - ground(HALF.x + sd * (deck.out - 0.02), 0)) < 0.05) && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
 }
 
@@ -264,6 +308,37 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   check('each begins on something he can stand on, and curves', P.rails.every((c) => Math.abs(ground(c.x[0], c.z[0]) - c.y[0]) < 0.4 && [0.2, 0.4, 0.6, 0.8].some((t) => Math.abs(railAt(c, c.len * t).tx - railAt(c, c.len * (t + 0.15)).tx) > 0.25)), P.rails.map((c) => `${ground(c.x[0], c.z[0]).toFixed(2)}/${c.y[0].toFixed(2)}`).join(' '));
 }
 
+// ---- The sword, on the shield (the owner, 2026-11-17: "you should be able to swing your sword on attack while you're
+// riding your shield") ----
+{
+  const p = rat(17.5, 0, -30);
+  getOn(p, v(0, 1));
+  for (let i = 0; i < 90; i++) p.update(DT, inp({ move: v(0, 1) }), cs);
+  const before = speedOf(p);
+  const heading = Math.atan2(p.velocity.x, p.velocity.z);
+  const id = p.swingId;
+  let hit = false;
+  p.update(DT, inp({ move: v(0, 1), attackPressed: true }), cs);
+  for (let i = 0; i < 40; i++) {
+    p.update(DT, inp({ move: v(0, 1) }), cs);
+    hit ||= p.attackActive;
+  }
+  check('ATTACK on his shield is a swing of the sword: it can hit, as a swing does; he rides on at the speed he had, the way he was going, still on his shield', p.swingId === id + 1 && hit && p.riding && speedOf(p) >= before - 0.3 && Math.abs(Math.atan2(p.velocity.x, p.velocity.z) - heading) < 0.05 && p.state === 'ride', `${before.toFixed(1)} then ${speedOf(p).toFixed(1)}`);
+  // In the air on the shield: a swing too, not the dive, and not a spin.
+  p.update(DT, inp({ move: v(0, 1), jumpPressed: true, jumpHeld: true }), cs);
+  for (let i = 0; i < 6; i++) p.update(DT, inp({ jumpHeld: true }), cs);
+  const id2 = p.swingId;
+  p.update(DT, inp({ jumpHeld: true, attackPressed: true }), cs);
+  let hit2 = false;
+  let spun = false;
+  for (let i = 0; i < 50 && !p.grounded; i++) {
+    p.update(DT, inp({ jumpHeld: true }), cs);
+    hit2 ||= p.attackActive;
+    spun ||= p.rideSpinProgress >= 0;
+  }
+  check('...and in the air on it: a swing, not the dive and not a spin; he comes down riding', p.swingId === id2 + 1 && hit2 && !spun && p.riding && p.state === 'ride');
+}
+
 // ---- Tricks ----
 {
   /** Off the big ramp's kicker, doing in the air what `air` says; what happened when he came down. */
@@ -292,13 +367,13 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const plain = trick(() => ({}));
   check('a jump with nothing done in it is only a landing: no speed for it', plain.riding && plain.events.includes('rideLand') && !plain.events.includes('trick'), `${plain.before.toFixed(1)} to ${plain.after.toFixed(1)}; ${plain.events.join(' ')}`);
   const gain = plain.after - plain.before; // (what the landing itself gives or takes, tricks or none)
-  const spin = trick((t) => ({ attackPressed: t > 0.1 && t < 0.14 }));
-  check('ATTACK in the air is a SPIN: he and his shield go right round; landed, it is a trick, and speed', spin.spun && spin.riding && spin.events.includes('trick') && spin.after - spin.before > gain + R.trickBoost - 0.6, `${spin.before.toFixed(1)} to ${spin.after.toFixed(1)}`);
+  const spin = trick((t) => ({ dodgePressed: t > 0.1 && t < 0.14 }));
+  check('the ROLL button in the air is a SPIN: he and his shield go right round; landed, it is a trick, and speed', spin.spun && spin.riding && spin.events.includes('trick') && spin.after - spin.before > gain + R.trickBoost - 0.6, `${spin.before.toFixed(1)} to ${spin.after.toFixed(1)}`);
   const grab = trick((t) => ({ guardHeld: t > 0.1 && t < 0.1 + R.grabTime + 0.15 }));
   check('GUARD held in the air is a GRAB: held long enough it is a trick, and speed', grab.riding && grab.events.includes('trick') && grab.after - grab.before > gain + R.trickBoost - 0.6, `${grab.before.toFixed(1)} to ${grab.after.toFixed(1)}`);
   const tap = trick((t) => ({ guardHeld: t > 0.1 && t < 0.16 }));
   check('...a tap of it is not', tap.riding && !tap.events.includes('trick'));
-  const three = trick((t) => ({ attackPressed: t > 0.08 && t < 0.12, guardHeld: t > 0.1 && t < 0.6, jumpPressed: t > 0.62 && t < 0.66 }));
+  const three = trick((t) => ({ dodgePressed: t > 0.08 && t < 0.12, guardHeld: t > 0.1 && t < 0.6, jumpPressed: t > 0.62 && t < 0.66 }));
   check('a spin, a grab and a kickflip in one air are THREE tricks: three times the speed (past his standing top speed, up to his tucked one)', three.riding && three.events.includes('trick') && three.after > Math.min(R.tuckMax, three.before + gain + R.trickBoost * 3) - 0.8 && three.after > R.max + 4, `${three.before.toFixed(1)} to ${three.after.toFixed(1)}`);
   // Landing half way round a spin: he comes off.
   const p = rat(17.5, 0, -30);
@@ -308,7 +383,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const ev: MoveEvent[] = [];
   for (let i = 0; i < 120 && ev.length === 0; i++) {
     // (Late in a small hop: the spin is not half done when the floor comes.)
-    p.update(DT, inp({ jumpHeld: true, attackPressed: p.velocity.y < -5.5 && p.rideSpinProgress < 0 }), cs);
+    p.update(DT, inp({ jumpHeld: true, dodgePressed: p.velocity.y < -5.5 && p.rideSpinProgress < 0 }), cs);
     if (p.grounded && p.moveEvent) ev.push(p.moveEvent);
     if (p.moveEvent === 'bail') ev.push('bail');
   }
@@ -323,7 +398,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   let top = 0;
   for (let i = 0; i < 60 * 16 && !(ev.includes('trick') && !p.riding); i++) {
     const a = auto(p);
-    p.update(DT, inp({ move: v(a.x, a.z), jumpPressed: a.jumpPressed, jumpHeld: a.jumpHeld, attackPressed: a.attackPressed, guardHeld: a.guardHeld }), cs);
+    p.update(DT, inp({ move: v(a.x, a.z), jumpPressed: a.jumpPressed, jumpHeld: a.jumpHeld, attackPressed: a.attackPressed, guardHeld: a.guardHeld, dodgePressed: a.dodgePressed }), cs);
     if (p.moveEvent) ev.push(p.moveEvent);
     top = Math.max(top, speedOf(p));
   }

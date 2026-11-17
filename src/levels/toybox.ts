@@ -94,11 +94,13 @@ function build(): Plan {
   const H = HALF;
   const deck = halfDeck();
   for (const side of [-1, 1] as const) {
-    for (const f of facetsOf(H.radius, H.facets, H.turn)) {
+    const hf = facetsOf(H.radius, H.facets, H.turn);
+    hf.forEach((f, i) => {
       const a = H.x + side * (H.flat + f.d0);
       const b = H.x + side * (H.flat + f.d1);
-      solids.push(rainbow(rampBox('stone', Math.min(a, b), Math.max(a, b), H.z0, H.z1, f.h0, f.h1, side > 0 ? 'e' : 'w', 0)));
-    }
+      // (The top two are the LIP: off the wall there, going up it fast, he goes straight up, and comes back down on it.)
+      solids.push({ ...rainbow(rampBox('stone', Math.min(a, b), Math.max(a, b), H.z0, H.z1, f.h0, f.h1, side > 0 ? 'e' : 'w', 0)), ...(i >= hf.length - 2 ? { vert: true } : {}) });
+    });
     const in0 = H.x + side * deck.out;
     // (The west deck runs right to the box's side: one who comes over that lip at speed has a floor under him all the way.)
     const out0 = side < 0 ? -T.half : H.x + side * (deck.out + H.deck);
@@ -136,7 +138,7 @@ function build(): Plan {
   const qf = facetsOf(Q.radius, Q.facets, Q.turn);
   const qOut = qf[qf.length - 1].d1;
   const qFoot = T.halfZ - Q.deck - qOut;
-  for (const f of qf) solids.push(rainbow(rampBox('stone', Q.x0, Q.x1, qFoot + f.d0, qFoot + f.d1, f.h0, f.h1, 's', 0)));
+  qf.forEach((f, i) => solids.push({ ...rainbow(rampBox('stone', Q.x0, Q.x1, qFoot + f.d0, qFoot + f.d1, f.h0, f.h1, 's', 0)), ...(i >= qf.length - 2 ? { vert: true } : {}) }));
   // (A deck behind it, level with its lip, for one who goes over the top: the box's side is beyond that.)
   solids.push(tiles(extent('stone', Q.x0, Q.x1, 0, qf[qf.length - 1].h1 - COPING, T.halfZ - Q.deck, T.halfZ)));
 
@@ -157,7 +159,7 @@ function build(): Plan {
 
   // ---- What stands about ----
   decor.push({ kind: 'sign', x: -4.2, y: 1.7, z: -T.halfZ + 0.06, yaw: 0, w: 4.2, h: 2, lines: ['THE TOY BOX', 'JUMP, THEN ATTACK: SKATE', 'STICK FORWARD: PUSH'], post: 0 });
-  decor.push({ kind: 'sign', x: 4.2, y: 1.7, z: -T.halfZ + 0.06, yaw: 0, w: 4.2, h: 2, lines: ['IN THE AIR: JUMP FLIPS', 'ATTACK SPINS', 'GUARD GRABS'], post: 0 });
+  decor.push({ kind: 'sign', x: 4.2, y: 1.7, z: -T.halfZ + 0.06, yaw: 0, w: 4.2, h: 2, lines: ['IN THE AIR: JUMP FLIPS', 'ROLL SPINS, GUARD GRABS', 'ATTACK: THE SWORD'], post: 0 });
   for (const [x, z, w, d, seed] of [[-30, -46, 8, 10, 3], [-28, 42, 10, 14, 7]] as const) {
     decor.push({ kind: 'flowers', x, y: 0, z, w, d, seed });
     decor.push({ kind: 'butterflies', x, y: 1.4, z, r: 2.4, count: 3 });
@@ -215,14 +217,14 @@ export function toyBox(): LevelDef {
  * shield, goes down the roll-in tucked, jumps off the kicker, and in the air SPINS, GRABS and KICKFLIPS; lands on the
  * bank, and brakes to a stop in the lane beyond it. What it gives each step is what the pad would.
  */
-export function makeToyRide(): (p: { position: { x: number; y: number; z: number }; velocity: { x: number; y: number; z: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; guardHeld: boolean } {
+export function makeToyRide(): (p: { position: { x: number; y: number; z: number }; velocity: { x: number; y: number; z: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; guardHeld: boolean; dodgePressed: boolean } {
   const lip = BIG.kick.z0 + BIG.kick.len;
   let air = -1;
   let tick = 0;
   let flipped = false;
   let landed = false;
   return (p) => {
-    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false };
+    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false, dodgePressed: false };
     const z = p.position.z;
     if (!p.riding) {
       if (landed) return none;
@@ -238,7 +240,7 @@ export function makeToyRide(): (p: { position: { x: number; y: number; z: number
       air += 1 / 60;
       const flip = !flipped && air > 1.12;
       if (flip) flipped = true;
-      return { ...none, z: 1, jumpHeld: true, attackPressed: air > 0.1 && air < 0.14, guardHeld: air > 0.6 && air < 1.05, jumpPressed: flip };
+      return { ...none, z: 1, jumpHeld: true, dodgePressed: air > 0.1 && air < 0.14, guardHeld: air > 0.6 && air < 1.05, jumpPressed: flip };
     }
     if (air > 0.3 && p.grounded) landed = true;
     // (After the landing he is going very fast: he brakes, down the clear lane beyond the bank, to a stop.)
@@ -248,16 +250,21 @@ export function makeToyRide(): (p: { position: { x: number; y: number; z: number
 }
 
 /**
- * A rider for the half pipe, for the films (`&autoride=pipe`, started on its east deck facing west): he walks to the
- * lip, jumps out over the wall, gets on his shield, and then does nothing: the pipe carries him from wall to wall.
+ * A rider for the half pipe, for the films (`&autoride=pipe`, started on its east deck): he gets on his shield, rolls
+ * in off the lip, and PUMPS (the stick pushed
+ * the way he is going while he is down in the flat of it): off each lip into the air, a grab up there, and back down.
  */
-export function makePipeRide(): (p: { position: { x: number }; velocity: { y: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; guardHeld: boolean } {
-  const lip = HALF.x + halfDeck().out;
-  let rode = false;
+export function makePipeRide(): (p: { position: { x: number }; velocity: { x: number; y: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; guardHeld: boolean; dodgePressed: boolean } {
+  const deck = halfDeck();
+  let tick = 0;
   return (p) => {
-    rode ||= p.riding;
-    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false };
-    if (rode) return none;
-    return { ...none, x: -1, jumpPressed: p.grounded && p.position.x < lip + 0.5, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 };
+    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false, dodgePressed: false };
+    if (!p.riding) {
+      tick++;
+      return { ...none, x: -1, jumpPressed: tick === 14, jumpHeld: !p.grounded, attackPressed: tick > 14 && !p.grounded && p.velocity.y < 5 };
+    }
+    const inFlat = Math.abs(p.position.x - HALF.x) < HALF.flat + 2.5;
+    const onDeck = p.position.x > HALF.x + deck.out - 0.1;
+    return { ...none, x: onDeck ? -1 : inFlat ? (p.velocity.x < 0 ? -1 : 1) : 0, guardHeld: !p.grounded && p.velocity.y < 6 && p.velocity.y > -4 };
   };
 }

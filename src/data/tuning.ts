@@ -140,8 +140,18 @@ export const TUNING = {
     tuckPush: 5, // below his standing top speed, a tuck pushes him along at this rate on ANY ground: on the flat he skates
     // MORE TRICKS (the owner, the same day: "maybe different things you can do while you're in the air we already have
     // the kick flip so we could do a couple more things like that"). In the air on his shield: JUMP is the kickflip (as
-    // it was); ATTACK is a SPIN, right round; GUARD held is a GRAB. Each one landed is speed, and they add up.
+    // it was); the ROLL button is a SPIN, right round; GUARD held is a GRAB. Each one landed is speed, and they add up.
+    // (The spin was on ATTACK for a day. Then: "you should be able to swing your sword on attack while you're riding your
+    // shield". ATTACK is the sword, on the shield as off it.)
     spinTime: 0.45, // seconds a spin takes
+    // THE LIP OF A PIPE (the owner, 2026-11-17: "when riding up a half pipe ramp you should disconnect up at the top like in
+    // Tony Hawk's Pro Skater and come back down into the pipe"). Off the high end of a wall that is marked for it
+    // (`Box.vert`), a rider going up fast enough goes STRAIGHT UP, with what speed he had up the wall, and drifts back
+    // in over the wall he left: he comes down on it and rides back into the pipe.
+    vertMin: 2.5, // going up the wall at least this fast (across the ground), or he only comes to its top and back
+    vertPop: 1.5, // a little more than the wall gave him
+    vertTop: 20, // ...and never faster upward than this (eleven up over the lip, two seconds and a bit in the air)
+    vertDrift: 1.1, // how fast he drifts back in over the wall while he is in the air
     spinSafe: 0.75, // landed this far round a spin or further, it counts; less than that (and well begun) and he comes off
     grabTime: 0.3, // a grab held this long counts
     stop: 1.4, // slower than this, on ground he can stand on, he steps off

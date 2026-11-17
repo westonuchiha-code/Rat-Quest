@@ -277,6 +277,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const aabb = makeAabb(cx, cy, cz, w, h, d);
     if (b.ramp) aabb.ramp = b.ramp; // its top is a slope: see collision.ts
     if (b.slick) aabb.slick = true; // ice: no grip on its top
+    if (b.vert) aabb.vert = true; // the lip of a pipe's wall: a fast rider goes straight up off it
     if (b.kind === 'pillar' && !b.hidden) aabb.lip = PILLAR_LIP; // its capital overhangs: see below
     colliders.push(aabb);
     if (b.hidden) continue; // collider only

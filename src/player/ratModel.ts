@@ -1125,6 +1125,15 @@ export class RatModel {
       pose.tail[0] += Math.abs(r.steer) * 0.25;
       pose.chest[2] = -r.steer * 0.18;
       pose.hipPos[1] -= Math.abs(r.steer) * 0.035;
+      // A SWING on the shield: his sword arm does what it does in a swing on his feet, and his chest turns with it a
+      // little; the rest of him rides.
+      if (ctx.attackTime > 0) {
+        const cut = samplePose(ATTACK_CLIPS[Math.min(ctx.comboStep, ATTACK_CLIPS.length - 1)].keys, ctx.attackTime);
+        pose.armS = cut.armS;
+        pose.elbowS = cut.elbowS;
+        pose.wrist = cut.wrist;
+        pose.chest = [pose.chest[0], pose.chest[1] + (cut.chest[1] - pose.chest[1]) * 0.5, pose.chest[2]];
+      }
       // Tucked: down low over the shield, his chest forward over his front knee, his tail straight out behind.
       // (A grab, in the air, is the same crouch and deeper: down over the shield with a paw to it.)
       const tk = r.air ? (r.grab ?? 0) * 1.3 : r.tuck ?? 0;

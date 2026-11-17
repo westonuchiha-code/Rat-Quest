@@ -24,7 +24,9 @@ export interface Box {
   /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
   tough?: boolean;
   /** Ice: on its top he keeps his momentum. He glides on a couple of seconds with the stick let go, and turns wide (TUNING.ice). */
-  slick?: boolean;
+/** The top of a pipe's curved wall: a rider who goes off its high end fast goes straight UP and comes back down on it (TUNING.ride.vertMin). */
+  vert?: boolean;
+    slick?: boolean;
   /**
    * A ramp: its top runs up from `low` at one end to y1 at the other, along x or z, climbing toward the + end of that
    * axis (`up` 1) or the - end (-1). (North is -z: a ramp that climbs north has axis 'z', up -1.) See collision.ts.
