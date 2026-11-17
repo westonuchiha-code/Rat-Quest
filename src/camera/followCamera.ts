@@ -17,6 +17,9 @@ const CLEAR = 0.06;
 const SEE_DOWN = 0.25;
 const SEE_SIDE = 0.22;
 /** How finely it looks for the lowest line that clears (radians of pitch). */
+/** The point it looks at is kept this far over the ground under him, and comes up to that at this rate when a slope has left it lower. */
+const CHEST_CLEAR = 0.5;
+const RISE_RATE = 20;
 const LIFT_STEP = 0.07;
 /** Pulled in to less than this much of its distance it starts to go up over his head; at the second, it is all the way up. */
 const SQUEEZE_FROM = 0.55;
@@ -190,12 +193,29 @@ export class FollowCamera {
     if (fresh) this.smoothY = focus.y;
     this.smoothY += (focus.y - this.smoothY) * (1 - Math.exp(-C.heightRate * dt));
     this.smoothY = Math.min(focus.y + C.heightSlack, Math.max(focus.y - C.heightSlack, this.smoothY));
+    // GOING UP A SLOPE, IT KEEPS UP. (The owner, 2026-11-17: "the camera needs to stay behind the character right now if
+    // you're going up ramps at any kind of speed whether you're walking or especially while you're riding the board it
+    // just like zooms in too far into the back of the character or straight up into the wall and you can't see
+    // anything".) Its height comes after his gently, so that a hop does not jolt it: but up a slope the GROUND comes up
+    // too, and the point it looks at, a little behind his rise, was left inside the slope. Nothing can be seen from in
+    // there, so it shot in to the back of his head. Now the point it looks at is never nearer the ground UNDER HIM than
+    // this: it comes up with the ground, quickly but not at a stroke. (A hop off flat ground is as it was: the ground
+    // under him has not moved.)
+    let floorUnder = -Infinity;
+    for (const b of colliders) {
+      if (focus.x < b.min.x || focus.x > b.max.x || focus.z < b.min.z || focus.z > b.max.z) continue;
+      const top = b.ramp ? topAt(b, focus.x, focus.z) : b.max.y;
+      if (top <= focus.y + 0.3 && top > floorUnder) floorUnder = top;
+    }
+    const least = floorUnder + CHEST_CLEAR - C.targetHeight;
+    if (this.smoothY < least) this.smoothY = fresh ? least : this.smoothY + (least - this.smoothY) * (1 - Math.exp(-RISE_RATE * dt));
     const wantX = Math.max(-C.lookAheadMax, Math.min(C.lookAheadMax, (velocity?.x ?? 0) * C.lookAhead));
     const wantZ = Math.max(-C.lookAheadMax, Math.min(C.lookAheadMax, (velocity?.z ?? 0) * C.lookAhead));
     const k = this.initialized ? 1 - Math.exp(-C.lookAheadRate * dt) : 1;
     this.ahead.x += (wantX - this.ahead.x) * k;
     this.ahead.z += (wantZ - this.ahead.z) * k;
-    this.chest.set(focus.x, this.smoothY + C.targetHeight, focus.z);
+    // (And however fast the ground comes up, what is taken for his chest is over it: lines of sight are drawn from there.)
+    this.chest.set(focus.x, Math.max(this.smoothY + C.targetHeight, floorUnder + CHEST_CLEAR * 0.7), focus.z);
     this.target.set(this.chest.x + this.ahead.x, this.chest.y, this.chest.z + this.ahead.z);
     // The lean stops short of anything solid. (Running into a wall, the point it looked at went on into the wall for
     // a quarter of a second, and with nothing to be seen from in there the view shot in to the back of his head.)

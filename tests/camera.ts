@@ -2,7 +2,7 @@
 // a brazier or a crate, it ended up inside his head. Now something LOW in the way does not pull it in: it rises to look
 // over it, from as far off as ever. A wall still pulls it in, but pulled in close it goes up over his head and looks
 // ahead of him. It never turns to do either. All of it against the real levels' own solid boxes.
-import { BRAZIER } from '../src/world/layout';
+import { BRAZIER, extent, rampBox } from '../src/world/layout';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { FollowCamera, sight } from '../src/camera/followCamera';
@@ -10,7 +10,7 @@ import { PlayerController, PlayerInput } from '../src/player/controller';
 import { buildChamber } from '../src/world/chamber';
 import { LEVELS } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
-import { Aabb, makeAabb, segmentAabbT } from '../src/world/collision';
+import { Aabb, aabbOf, makeAabb, segmentAabbT, topAt } from '../src/world/collision';
 import { TWEAKS } from '../src/core/tweaks';
 
 const DT = 1 / 60;
@@ -315,6 +315,51 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   check('...it never swings sharply from one frame to the next', swing < 12, `most ${swing.toFixed(1)} degrees in a frame`);
   check('...and only the stick turned it', turned < 1e-9);
   void L;
+}
+
+// ---- GOING UP A SLOPE (the owner, 2026-11-17: "if you're going up ramps at any kind of speed whether you're walking or
+// especially while you're riding the board it just like zooms in too far into the back of the character or straight up
+// into the wall and you can't see anything"). Its height comes after his gently; up a slope the ground comes up too,
+// and the point it looks at was left inside the slope: it shot in to within half a unit of him. ----
+{
+  const told: string[] = [];
+  let ok = true;
+  for (const slope of [0.42, 0.5, 1]) {
+    const ramp = aabbOf(rampBox('stone', -6, 6, 0, 80, 0, 80 * slope, 's', 0));
+    const cs: Aabb[] = [aabbOf(extent('floor', -40, 40, -1, 0, -60, 200)), ramp];
+    for (const speed of [6, 16, 30]) for (const fps of [60, 30]) {
+      const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+      const cam = new FollowCamera(eye);
+      cam.yaw = Math.PI;
+      const focus = new THREE.Vector3(0, 0, -20);
+      const dt = 1 / fps;
+      let nearest = 99;
+      let under = 0;
+      for (let i = 0; i < fps * 5 && focus.z < 79; i++) {
+        focus.z += speed * dt;
+        focus.y = focus.z > 0 ? topAt(ramp, 0, Math.min(80, focus.z)) : 0;
+        cam.update(dt, focus, 0, true, 0, 0, cs, { x: 0, z: speed });
+        if (focus.z > 4) {
+          nearest = Math.min(nearest, Math.hypot(eye.position.x - focus.x, eye.position.y - (focus.y + C.targetHeight), eye.position.z - focus.z));
+          under = Math.max(under, (eye.position.z > 0 ? topAt(ramp, eye.position.x, eye.position.z) : 0) - eye.position.y);
+        }
+      }
+      if (nearest < C.distance * 0.85 || under > 0) { ok = false; told.push(`slope ${slope} at ${speed}, ${fps} fps: ${nearest.toFixed(2)} off${under > 0 ? ', under the ramp' : ''}`); }
+    }
+  }
+  check('going UP a slope (as steep as the roads, and steeper; walking, riding, tucked; at sixty frames a second and at thirty) it stays its distance behind him and over the slope: it is not drawn in to his back', ok, told.join('; '));
+  // And a hop on the flat is as it was: its height comes after his gently.
+  const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+  const cam = new FollowCamera(eye);
+  cam.yaw = Math.PI;
+  const flat: Aabb[] = [aabbOf(extent('floor', -40, 40, -1, 0, -60, 200))];
+  const focus = new THREE.Vector3(0, 0, 0);
+  for (let i = 0; i < 60; i++) cam.update(DT, focus, 0, false, 0, 0, flat);
+  const y0 = eye.position.y;
+  focus.y = 2;
+  cam.update(DT, focus, 0, false, 0, 0, flat);
+  cam.update(DT, focus, 0, false, 0, 0, flat);
+  check('a hop off flat ground does not jolt it: two up in a step, it has risen a fifth of that or less (the ground under him has not moved)', eye.position.y - y0 < 0.45 && eye.position.y - y0 > 0, `${(eye.position.y - y0).toFixed(2)}`);
 }
 
 console.log(failures === 0 ? '\ncamera: all passed' : `\ncamera: ${failures} FAILED`);

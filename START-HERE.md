@@ -430,6 +430,26 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE CAMERA GOING UP A SLOPE (2026-11-17: he found it). Tests `tests/camera.ts` (38)
+
+**His words:** "The camera needs to stay behind the character right now **if you're going up ramps at any kind of speed
+whether you're walking or especially while you're riding the board it just like zooms in too far into the back of the
+character or straight up into the wall and you can't see anything**."
+ - **WHY:** its height comes after his GENTLY (`heightRate` 5, up to 1.4 behind), so that a hop does not jolt it. Up a
+   slope the ground comes up as fast as he does: the point it looks at, behind his rise, was left INSIDE the slope.
+   Nothing can be seen from in there, so it was drawn in to the back of his head. **MEASURED BEFORE: riding up a road's
+   slope at 16 it came within 0.4 to 0.6 of him (it sits 3.5 off), and under the ramp; walking up a steep one, 0.4.**
+ - **NOW** (`src/camera/followCamera.ts`, `CHEST_CLEAR`, `RISE_RATE`): the point it looks at is never nearer than half a
+   unit to the GROUND UNDER HIM, and comes up to that quickly (not at a stroke); and what is taken for his chest, where
+   lines of sight are drawn from, is always over that ground. **MEASURED AFTER: 3.5 or more off at every slope (0.42,
+   0.5, 1.0), every speed (6, 16, 30), at 60 and 30 frames a second; never under the ramp.** A hop off flat ground is
+   as it was (the ground under him has not moved): held by a test.
+ - **NOT DONE, and likely still to be seen:** (1) riding UP a curved wall that has a tall side beyond it, he faces the
+   wall: a camera behind him shows the wall. (2) **In a half pipe, when the wall turns him round, the camera swings
+   round behind his new way of going, which is the wall he has just left**: it is squeezed there until he is clear of
+   it. That wants a camera of its own for pipes (one that stays where it was while he comes back down), not built.
+   (3) Nothing was changed about how it follows him DOWN a slope, which he has not complained of.
+
 ## THE HISS IN THE DREAM, AND THE MUSIC TOO LOUD (2026-11-17). Tests `tests/ambience.ts` (30), `tests/tunes.ts` (20)
 
 **His words:** "I turn the music all the way down and there's just this **white noise that permeates in the background
