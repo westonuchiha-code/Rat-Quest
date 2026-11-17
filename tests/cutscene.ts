@@ -7,7 +7,7 @@ import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { checkCutscene, compileCutscene, sampleCutscene, CUT_FPS, NOD_TIME, type CutsceneDef } from '../src/cutscene/cutscene';
 import { CutStage, makePuppet, PUPPET_FOES, PUPPET_NPCS } from '../src/cutscene/stage';
-import { CUTSCENES, cutsceneById } from '../src/cutscene/scenes';
+import { BEAT, CUTSCENES, cutsceneById } from '../src/cutscene/scenes';
 import { levelById } from '../src/levels/levels';
 import { BAR } from '../src/levels/junction';
 import { aabbOf, type Aabb } from '../src/world/collision';
@@ -165,7 +165,7 @@ const near = (a: number, b: number, e = 1e-6): boolean => Math.abs(a - b) < e;
   const hub = levelById('hub')!;
   const cs: Aabb[] = hub.solids.map((b) => aabbOf(b));
   const inSolid = (x: number, y: number, z: number): boolean => cs.some((b) => x > b.min.x && x < b.max.x && y > b.min.y && y < b.max.y && z > b.min.z && z < b.max.z);
-  check('there are four to begin with, the four he named: two talking at a table, one ordering another a drink, a glass slid down the bar, the soldier drinking alone', CUTSCENES.map((c) => c.id).join() === 'table-talk,a-drink-for-a-friend,down-the-bar,the-soldier-alone' && new Set(CUTSCENES.map((c) => c.name)).size === 4 && !!cutsceneById('down-the-bar') && !cutsceneById('nope'));
+  check('there are four to begin with, the four he named: two talking at a table, one ordering another a drink, a glass slid down the bar, the soldier drinking alone', CUTSCENES.slice(0, 4).map((c) => c.id).join() === 'table-talk,a-drink-for-a-friend,down-the-bar,the-soldier-alone' && new Set(CUTSCENES.map((c) => c.name)).size === CUTSCENES.length && !!cutsceneById('down-the-bar') && !cutsceneById('nope'));
   for (const def of CUTSCENES) {
     const bad = checkCutscene(def);
     const sc = compileCutscene(def);
@@ -193,6 +193,26 @@ const near = (a: number, b: number, e = 1e-6): boolean => Math.abs(a - b) < e;
     const end = sampleCutscene(sc, def.length);
     const placed = Object.entries(stage.cast).every(([name, p]) => near(p.root.position.x, end.cast[name].x) && near(p.root.position.z, end.cast[name].z));
     check(`"${def.name}": played in the Club, ${def.length} seconds, ${cast.length} in it; its keys are sound; whoever stands, stands on the floor; the view is never inside a wall, under the floor or outside the room; and it plays through on real models, every frame, each left where the last frame has it`, def.level === 'hub' && bad.length === 0 && lost.length === 0 && camIn === 0 && camLow === 0 && !broke && placed && def.name === def.name.toUpperCase() && def.name.length <= 24, [...bad, ...lost.slice(0, 3), camIn ? `the view is in a wall for ${camIn} samples` : '', camLow ? `the view is out of the room for ${camLow}` : '', broke].filter(Boolean).join('; '));
+  }
+  // The four he asked for next (2026-11-17): Dizzy Dave's four bars, and three more with others of the Club.
+  {
+    const more = CUTSCENES.slice(4).map((c) => c.id);
+    check('four more after them: Dizzy Dave live, the foxes at cards, two at the bar, the old stag by himself', more.join() === 'dizzy-dave-live,a-hand-of-cards,two-at-the-bar,the-old-stag');
+    const live = cutsceneById('dizzy-dave-live')!;
+    const sc = compileCutscene(live);
+    check('Dizzy Dave\'s is four bars of the Club\'s own music to the beat: 86 to the minute, so a little over eleven seconds', Math.abs(BEAT - 60 / 86) < 1e-9 && Math.abs(live.length - BEAT * 16) < 1e-9 && live.length > 10 && live.length < 12);
+    // Danced on the beat: each dancer is in the air half way between beats and down on every beat.
+    let up = 0;
+    let down = 0;
+    for (let b = 1; b < 16; b++) {
+      for (const who of ['jinx', 'vix']) {
+        if (sampleCutscene(sc, (b + 0.5) * BEAT).cast[who].hopY > 0.1) up++;
+        if (sampleCutscene(sc, b * BEAT).cast[who].hopY < 0.03) down++;
+      }
+    }
+    check('...the two on the floor come down on every beat and are in the air between them; Dave is on his stage throughout, facing them', up >= 28 && down === 30 && [0, 3, 6, 9, 11].every((t) => Math.abs(sampleCutscene(sc, t).cast.dave.z + 16.5) < 0.01 && sampleCutscene(sc, t).cast.dave.y === 0.8), `${up} up, ${down} down`);
+    const cuts = live.cam.filter((k) => k.cut).map((k) => k.t / (BEAT * 4));
+    check('...the view is cut on the bar and the half bar, goes right in on him, and ends away up over the room', cuts.every((c) => Math.abs(c * 2 - Math.round(c * 2)) < 1e-6) && cuts.length >= 5 && Math.min(...live.cam.filter((k) => k.pos).map((k) => Math.hypot(k.pos![0], k.pos![2] + 16.5))) < 2.2 && live.cam[live.cam.length - 1].pos![1] > 5);
   }
   // The thimble.
   for (const id of ['a-drink-for-a-friend', 'down-the-bar']) {

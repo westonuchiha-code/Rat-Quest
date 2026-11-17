@@ -18,7 +18,7 @@
  */
 import { BAR } from '../levels/junction';
 import { STOOL, TABLE } from '../world/layout';
-import type { CutsceneDef, V3 } from './cutscene';
+import type { ActorKey, CutsceneDef, V3 } from './cutscene';
 
 const EAST = Math.PI / 2;
 const WEST = -Math.PI / 2;
@@ -38,6 +38,42 @@ const onBar = (z: number): V3 => [BAR.x0 + 0.2, BAR.top, z];
 const TALK_TABLE = { x: 11, z: 14 } as const;
 /** The table in the south-west, where the soldier stands at his thimble. */
 const SOLDIER_TABLE = { x: -11, z: 6 } as const;
+
+/** The table where the foxes play cards (east), and its two seats. */
+const CARD_TABLE = { x: 17, z: -1 } as const;
+/**
+ * The Club's own music (audio/music.ts, `groove`) goes at 86 beats a minute: a beat, and a bar of four. A scene that is
+ * DANCED is keyed on these, so that a film of it and the music laid under the film fall together.
+ */
+export const BEAT = 60 / 86;
+const BAR_OF_FOUR = BEAT * 4;
+/**
+ * A dancer's keys: from foot to foot with a hop on every beat, leaning into each step, about a spot, facing `face`.
+ * `spins`: beats on which he goes once round as he hops. `big`: beats on which the hop is a jump.
+ */
+function dancing(spot: V3, face: number, beats: number, o: { step?: number; hop?: number; spins?: number[]; big?: number[]; first?: number } = {}): ActorKey[] {
+  const keys: ActorKey[] = [];
+  const step = o.step ?? 0.4;
+  let turned = 0;
+  const place = (side: number): V3 => [spot[0] + Math.cos(face) * side * step, spot[1], spot[2] - Math.sin(face) * side * step];
+  for (let b = 0; b <= beats; b++) {
+    const side = (b + (o.first ?? 0)) % 2 ? 1 : -1;
+    const t = b * BEAT;
+    if (b === 0) {
+      keys.push({ t: 0, at: place(side), face, lean: [0.05, side * 0.12], head: [0, 0] });
+      continue;
+    }
+    if (o.spins?.includes(b)) {
+      // (Once round in three, so that each part of the turn is the short way to the next.)
+      for (const k of [1, 2]) keys.push({ t: t - BEAT * (1 - k / 3), face: face + turned + (k * Math.PI * 2) / 3 });
+      turned += Math.PI * 2;
+    }
+    // (The last step lands a moment before the end, and he stands: a scene ends with everybody where the last frame has him.)
+    keys.push({ t: b === beats ? t - 0.12 : t, at: place(side), hop: o.big?.includes(b) ? 0.55 : o.hop ?? 0.22, face: face + turned, lean: [0.05, side * 0.14] });
+    if (b === beats) keys.push({ t, at: place(side) });
+  }
+  return keys;
+}
 
 export const CUTSCENES: CutsceneDef[] = [
   // ---------------------------------------------------------------- two talking at a table
@@ -305,6 +341,192 @@ export const CUTSCENES: CutsceneDef[] = [
       // Once round his table, slowly, drawing in.
       { t: 0, orbit: { centre: [SOLDIER_TABLE.x, 0.95, SOLDIER_TABLE.z + 0.5], r: 5.2, h: 1.7, angle: 0.5 } },
       { t: 18, orbit: { centre: [SOLDIER_TABLE.x, 0.95, SOLDIER_TABLE.z + 0.5], r: 3.3, h: 0.75, angle: 0.5 + Math.PI * 2 } },
+    ],
+  },
+
+  // ================================================================ FOUR MORE (the owner, 2026-11-17)
+  // "I think I'd like to request a few more cutscene videos ... a few of the other characters talking at the bar
+  // talking at the table drinking alone ... one with Dizzy Dave and like two other characters dancing with the
+  // speakers in the background and maybe you could like zoom in and zoom out do like a little 10 second music video".
+
+  // ---------------------------------------------------------------- Dizzy Dave, live: four bars
+  {
+    id: 'dizzy-dave-live',
+    name: 'DIZZY DAVE, LIVE',
+    level: 'hub',
+    length: BAR_OF_FOUR * 4,
+    cast: {
+      dave: {
+        who: { is: 'npc', kind: 'pigeon', name: 'Dizzy Dave' },
+        keys: ([
+          // On his stage, at it the whole time: a nod to every beat, rocking from side to side, a jump into the last bar.
+          { t: 0, at: [0, 0.8, -16.5], face: 0, talk: BAR_OF_FOUR * 4, nod: 4, lean: [0.08, 0.1], doing: 'chat' },
+          ...Array.from({ length: 15 }, (_, i): ActorKey => ({ t: (i + 1) * BEAT, lean: [i % 4 === 3 ? 0.2 : 0.08, i % 2 ? 0.1 : -0.1], ...((i + 1) % 4 === 0 ? { nod: 4 } : {}) })),
+          { t: BEAT * 11.5, at: [0, 0.8, -16.5] },
+          { t: BEAT * 12, at: [0, 0.8, -16.5], hop: 0.5 },
+          { t: BEAT * 13, at: [0, 0.8, -16.5], hop: 0.5 },
+          { t: BEAT * 16, lean: [0.1, 0] },
+        ] as ActorKey[]).sort((a, b) => a.t - b.t),
+      },
+      jinx: { who: { is: 'npc', kind: 'rat', name: 'Jinx' }, keys: dancing([-2.5, 0, -8.7], 0.45, 16, { spins: [7, 15], big: [12] }) },
+      vix: { who: { is: 'npc', kind: 'fox', name: 'Vix' }, keys: dancing([2.5, 0, -8.3], -0.45, 16, { first: 1, step: 0.5, spins: [11], big: [4, 13] }) },
+    },
+    cam: [
+      // Bar one: the floor, the stage and the speakers beyond it, going in.
+      // (From beside the hearth in the middle of the room, not through it.)
+      // (And over the couch that faces the stage: from behind it, it hid the floor.)
+      { t: 0, pos: [2.8, 3.8, 1.2], look: [0, 1.1, -13] },
+      { t: BAR_OF_FOUR - 0.04, pos: [0.4, 2.5, -4.2], look: [0, 1.1, -13] },
+      // Bar two: Dave, close; then low past Jinx to a speaker.
+      { t: BAR_OF_FOUR, cut: true, pos: [2.3, 2.3, -13.1], look: [0, 1.7, -16.5] },
+      { t: BAR_OF_FOUR * 1.5 - 0.04, pos: [1.5, 2.1, -14.1], look: [0, 1.7, -16.5] },
+      { t: BAR_OF_FOUR * 1.5, cut: true, pos: [-0.2, 0.5, -6.3], look: [-4.6, 1.6, -14] },
+      { t: BAR_OF_FOUR * 2 - 0.04, pos: [0.3, 0.6, -6.9], look: [-4.6, 1.7, -14] },
+      // Bar three: round the two on the floor, Dave and his speakers going by behind them.
+      { t: BAR_OF_FOUR * 2, cut: true, orbit: { centre: [0, 1.0, -8.5], r: 5.2, h: 2.0, angle: -1.05 } },
+      { t: BAR_OF_FOUR * 3 - 0.04, orbit: { centre: [0, 1.0, -8.5], r: 5.2, h: 2.0, angle: 1.05 } },
+      // Bar four: right in on him, and then away up over the whole room.
+      { t: BAR_OF_FOUR * 3, cut: true, pos: [2.0, 2.1, -14.4], look: [0, 1.65, -16.5] },
+      { t: BAR_OF_FOUR * 3.5 - 0.04, pos: [1.3, 2.0, -15.0], look: [0, 1.65, -16.5] },
+      { t: BAR_OF_FOUR * 3.5, cut: true, pos: [0, 2.0, -4.5], look: [0, 1.3, -14] },
+      { t: BAR_OF_FOUR * 4, pos: [0, 6.2, 7], look: [0, 1.0, -12] },
+    ],
+  },
+
+  // ---------------------------------------------------------------- the foxes at cards
+  {
+    id: 'a-hand-of-cards',
+    name: 'A HAND OF CARDS',
+    level: 'hub',
+    length: 13,
+    cast: {
+      vix: {
+        who: { is: 'npc', kind: 'fox', name: 'Vix' },
+        keys: [
+          { t: 0, at: [CARD_TABLE.x + 1.25, 0, CARD_TABLE.z], face: WEST, seated: true, doing: 'cards', head: [0, 0.15], lean: [0.1, 0] },
+          // She is sure of this one: she looks up at him, says so, and sits back to wait.
+          { t: 1.6, head: [0, 0] },
+          { t: 2.2, talk: 2.4, lean: [0.18, 0] },
+          { t: 4.8, lean: [-0.08, 0], head: [0, -0.05] },
+          // He plays. She looks at it. Her head goes down, and then she shakes it.
+          { t: 7.4, head: [0, 0.3], lean: [0.12, 0] },
+          { t: 8.6, shake: 2 },
+          { t: 10.4, lean: [-0.12, 0], head: [0.5, 0] },
+          { t: 13, lean: [-0.12, 0], head: [0.5, 0] },
+        ],
+      },
+      ash: {
+        who: { is: 'npc', kind: 'fox', name: 'Ash' },
+        keys: [
+          { t: 0, at: [CARD_TABLE.x - 1.25, 0, CARD_TABLE.z], face: EAST, seated: true, doing: 'cards', head: [0, 0.2], lean: [0.08, 0] },
+          // He hears her out without looking up; one slow nod.
+          { t: 3.4, nod: 1 },
+          // Then he leans in and plays it, looks up at her, and says his two words.
+          { t: 5.4, lean: [0.26, 0], head: [0, 0.25] },
+          { t: 6.4, lean: [0.1, 0], head: [0, 0] },
+          { t: 7.0, talk: 1.2 },
+          { t: 9.6, nod: 2, lean: [-0.06, 0] },
+          { t: 13, lean: [-0.06, 0] },
+        ],
+      },
+    },
+    cam: [
+      { t: 0, pos: [CARD_TABLE.x - 0.5, 2.4, CARD_TABLE.z + 5.6], look: [CARD_TABLE.x, 0.85, CARD_TABLE.z] },
+      { t: 2.0, pos: [CARD_TABLE.x - 0.3, 1.8, CARD_TABLE.z + 4.2], look: [CARD_TABLE.x, 0.85, CARD_TABLE.z] },
+      // Over his shoulder at her, while she is sure of it.
+      { t: 2.1, cut: true, pos: [CARD_TABLE.x - 2.5, 1.35, CARD_TABLE.z + 1.0], look: [CARD_TABLE.x + 1.25, 0.95, CARD_TABLE.z] },
+      { t: 5.0, pos: [CARD_TABLE.x - 2.3, 1.3, CARD_TABLE.z + 0.8], look: [CARD_TABLE.x + 1.25, 0.95, CARD_TABLE.z] },
+      // Over hers at him, for the card.
+      { t: 5.1, cut: true, pos: [CARD_TABLE.x + 2.5, 1.35, CARD_TABLE.z - 1.0], look: [CARD_TABLE.x - 1.25, 0.9, CARD_TABLE.z] },
+      { t: 7.3, pos: [CARD_TABLE.x + 2.2, 1.25, CARD_TABLE.z - 0.8], look: [CARD_TABLE.x - 1.25, 0.9, CARD_TABLE.z] },
+      // Her, taking it in; and out.
+      { t: 7.4, cut: true, pos: [CARD_TABLE.x - 1.9, 1.2, CARD_TABLE.z + 0.9], look: [CARD_TABLE.x + 1.25, 0.95, CARD_TABLE.z] },
+      { t: 10.2, pos: [CARD_TABLE.x - 1.8, 1.2, CARD_TABLE.z + 0.8], look: [CARD_TABLE.x + 1.25, 0.95, CARD_TABLE.z] },
+      { t: 10.3, cut: true, pos: [CARD_TABLE.x + 0.3, 1.9, CARD_TABLE.z + 4.0], look: [CARD_TABLE.x, 0.85, CARD_TABLE.z] },
+      { t: 13, pos: [CARD_TABLE.x + 0.6, 2.5, CARD_TABLE.z + 5.4], look: [CARD_TABLE.x, 0.85, CARD_TABLE.z] },
+    ],
+  },
+
+  // ---------------------------------------------------------------- two at the bar
+  {
+    id: 'two-at-the-bar',
+    name: 'TWO AT THE BAR',
+    level: 'hub',
+    length: 13,
+    // (Slink keeps the first stool as he always does; the two who talk have the other two.)
+    cast: {
+      snow: {
+        who: { is: 'npc', kind: 'owl', name: 'Professor Snow' },
+        keys: [
+          { t: 0, at: [BAR.stoolX, 0, STOOLS[2]], face: EAST, seated: true, doing: 'drink', head: [0, 0] },
+          // He has a thing to explain, and turns to her to explain it, at length.
+          { t: 1.0, head: [0.9, 0] },
+          { t: 1.4, talk: 4.2, doing: 'chat', lean: [0.06, 0.1] },
+          { t: 5.8, lean: [0, 0], doing: 'drink' },
+          // She has an answer. He considers it, and nods, twice, slowly; and back to his thimble.
+          { t: 8.8, nod: 2 },
+          { t: 11.0, head: [0.9, 0] },
+          { t: 12.2, head: [0, 0] },
+        ],
+      },
+      jinx: {
+        who: { is: 'npc', kind: 'rat', name: 'Jinx' },
+        keys: [
+          { t: 0, at: [BAR.stoolX, 0, STOOLS[1]], face: EAST, seated: true, doing: 'drink', head: [0, 0.1] },
+          // She lets him run on, looking at the bottles; a glance at him; her head shakes.
+          { t: 2.6, head: [-0.7, 0] },
+          { t: 4.6, shake: 2 },
+          // Then she turns and tells him, short.
+          { t: 6.0, head: [-0.9, 0], doing: 'chat', talk: 2.2, lean: [0.08, -0.12] },
+          { t: 8.6, lean: [0, 0], doing: 'drink', head: [-0.4, 0] },
+          { t: 11.4, head: [0, 0.1] },
+          { t: 13, head: [0, 0.1] },
+        ],
+      },
+    },
+    cam: [
+      // Along the bar from its south end, drawing level with them.
+      { t: 0, pos: [BAR.stoolX - 2.4, 1.7, BAR.z1 + 2.6], look: [BAR.stoolX + 0.4, 1.0, BAR_MID + 0.6] },
+      { t: 5.6, pos: [BAR.stoolX - 2.9, 1.45, STOOLS[2] - 0.2], look: [BAR.stoolX + 0.2, 1.05, (STOOLS[1] + STOOLS[2]) / 2] },
+      // Her say, from past his shoulder.
+      { t: 5.7, cut: true, pos: [BAR.stoolX - 1.3, 1.45, STOOLS[2] + 1.5], look: [BAR.stoolX, 1.1, STOOLS[1]] },
+      { t: 8.7, pos: [BAR.stoolX - 1.1, 1.4, STOOLS[2] + 1.2], look: [BAR.stoolX, 1.1, STOOLS[1]] },
+      // His nod, from past hers; and back off down the room.
+      { t: 8.8, cut: true, pos: [BAR.stoolX - 1.3, 1.45, STOOLS[1] - 1.5], look: [BAR.stoolX, 1.15, STOOLS[2]] },
+      { t: 11.0, pos: [BAR.stoolX - 1.2, 1.4, STOOLS[1] - 1.3], look: [BAR.stoolX, 1.15, STOOLS[2]] },
+      { t: 11.1, cut: true, pos: [BAR.stoolX - 3.4, 1.6, BAR_MID + 0.4], look: [BAR.stoolX + 0.4, 1.0, BAR_MID + 0.4] },
+      { t: 13, pos: [BAR.stoolX - 5.6, 2.2, BAR_MID + 0.4], look: [BAR.stoolX + 0.4, 1.0, BAR_MID + 0.4] },
+    ],
+  },
+
+  // ---------------------------------------------------------------- the old stag, by himself
+  {
+    id: 'the-old-stag',
+    name: 'THE OLD STAG',
+    level: 'hub',
+    length: 14,
+    cast: {
+      stag: {
+        who: { is: 'npc', kind: 'stag', name: 'Sir Hobnail' },
+        keys: [
+          // He stands where he always stands, by the way in, with his back half to the room.
+          { t: 0, at: [4.4, 0, 20.2], face: Math.atan2(-0.5, -1), doing: 'stand', head: [0, 0.1], lean: [0.04, 0] },
+          // The music gets to him. His head comes round to the stage, slowly, and stays.
+          { t: 2.4, head: [0, 0.1] },
+          { t: 5.0, head: [0.6, -0.05] },
+          { t: 8.0, head: [0.6, -0.05], nod: 1 },
+          // One nod, with the beat. And then he remembers himself.
+          { t: 10.2, head: [0.6, -0.05] },
+          { t: 12.0, head: [0, 0.15], lean: [0.07, 0] },
+          { t: 14, head: [0, 0.15], lean: [0.07, 0] },
+        ],
+      },
+    },
+    cam: [
+      // Half round him and in: from the room's side to his own, so that what he looks at comes into the picture.
+      { t: 0, orbit: { centre: [4.4, 1.5, 20.2], r: 6.2, h: 1.4, angle: Math.PI + 0.9 } },
+      { t: 9.0, orbit: { centre: [4.4, 1.6, 20.2], r: 4.6, h: 0.6, angle: Math.PI - 0.9 } },
+      { t: 14, orbit: { centre: [4.4, 1.6, 20.2], r: 4.0, h: 0.5, angle: Math.PI - 1.2 } },
     ],
   },
 ];
