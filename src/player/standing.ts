@@ -48,3 +48,25 @@ export function safeToReturnTo(colliders: readonly Aabb[], x: number, y: number,
   for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (!groundAt(colliders, x + dx * margin, y, z + dz * margin)) return false;
   return true;
 }
+
+/**
+ * HOW FAR HE HAS FALLEN, in a level with a long fall he is put back from (`LevelDef.fallDepth`): measured from where
+ * he last had SOMETHING UNDER HIM (the ground, an edge he was grinding, a light rail), not from the last place it was
+ * safe to put him back at.
+ * (The owner, 2026-11-17, on the Big Dipper: "if you grind on the edge of the rainbow road while you're going down it
+ * then when you jump off and land on the next area you get like fall damage or something and then you're off your
+ * shield ... it doesn't happen if I just do the normal way". The fall was measured from the last SAFE place, and an
+ * edge is not one: so all the way down a road's edge that place stayed at the top, the road fell away twenty-eight
+ * below it, and the moment he left the edge he had "fallen".)
+ * `from`: the height kept so far; `held`: has he something under him now; `wasY`: how high he was a step ago.
+ * Gives the height to keep. (Moved further in one step than anything can fall in one, he was PUT there: brought back
+ * after a defeat, sent to another place. That is not a fall, and he starts again from where he is.)
+ */
+export const PUT_NOT_FALLEN = 6;
+export function fallFrom(from: number, y: number, held: boolean, wasY: number = y): number {
+  return held || Math.abs(y - wasY) > PUT_NOT_FALLEN ? y : from;
+}
+/** Has he fallen `depth` below it? */
+export function fellTooFar(from: number, y: number, depth: number): boolean {
+  return y < from - depth;
+}

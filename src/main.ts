@@ -61,7 +61,7 @@ import { railCurve } from './world/rails';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
 import { SkyDome } from './world/sky';
-import { drawnHeight, safeToReturnTo } from './player/standing';
+import { drawnHeight, safeToReturnTo, fallFrom, fellTooFar } from './player/standing';
 import { compileCutscene, sampleCutscene, CUT_FPS, type Cutscene, type CutsceneDef } from './cutscene/cutscene';
 import { CutStage } from './cutscene/stage';
 import { CUTSCENES, cutsceneById } from './cutscene/scenes';
@@ -2078,6 +2078,8 @@ function startGame(): void {
   let braziers: Array<{ x: number; y: number; z: number }> = [];
   // Lava: touching it hurts and puts him back on the last safe ground he stood on.
   const lastSafe = new THREE.Vector3();
+  let fallFromY = 0;
+  let fallWasY = 0;
 
   function lavaStep(): void {
     if (player.dead) return;
@@ -2087,8 +2089,11 @@ function startGame(): void {
     const well = cur.well;
     if (well && player.grounded && p.y < well.y + 0.5 && player.spawn.y > well.top) player.spawn.set(well.x, well.y, well.z - well.r * 0.5);
     // A level with a drop into the dark: a heart, and back to the last ground he stood on.
-    // (On a light rail he is not falling, however far down it has carried him.)
-    if ((cur.fallBack && p.y < -3) || (cur.fallDepth !== undefined && !player.grinding && p.y < lastSafe.y - cur.fallDepth)) {
+    // (How far: from where he last had something under him, a rail or an edge he was grinding as much as the ground.)
+    fallFromY = fallFrom(fallFromY, p.y, player.grounded || player.grinding, fallWasY);
+    fallWasY = p.y;
+    if ((cur.fallBack && p.y < -3) || (cur.fallDepth !== undefined && fellTooFar(fallFromY, p.y, cur.fallDepth))) {
+      fallFromY = lastSafe.y;
       p.copy(lastSafe);
       player.prevPosition.copy(lastSafe);
       const result = player.gear.fireproof ? 'dodged' : player.takeFall(1);

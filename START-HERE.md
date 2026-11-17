@@ -429,6 +429,25 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## A FALL IS MEASURED FROM WHERE HE LAST HAD SOMETHING UNDER HIM (2026-11-17: a bug he found). Tests `tests/bigdipper.ts` (29)
+
+**His words:** "For some reason if you grind on the edge of the rainbow road while you're going down it then when you
+jump off and land on the next area you get like fall damage or something and then you're off your shield, it doesn't
+matter no matter how high I jump it doesn't happen if I just do the normal way but if I grind on the edge it
+immediately for some reason makes my landing hurt."
+ - **WHY:** in a level with a long fall (`fallDepth`: the dream's two) he is put back, a heart the poorer, when he is that
+   far below... the last SAFE place he stood (`lastSafe`: ground under his middle and round it). An EDGE is not a safe
+   place, so all the way down a road's edge `lastSafe` stayed at the top of it; the road falls twenty-eight in
+   sixty-seven; and the moment he left the edge he had "fallen". (A light rail had the same fault and a patch for it.)
+ - **NOW:** how far he has fallen is measured from where he last had SOMETHING UNDER HIM: the ground, an edge he was
+   grinding, a light rail (`fallFrom`, `fellTooFar` in `src/player/standing.ts`; `main.ts` `lavaStep`). `lastSafe` is
+   still where he is PUT BACK. Moved more than six in one step he was put there, not dropped (a defeat, a door): he
+   starts again from where he is.
+ - **A RULE FOR LATER:** "where to put him back" and "how far has he fallen" are two questions. Do not answer the second
+   with the first.
+ - **NOT CHECKED IN THE RUNNING GAME:** the test drives the real controller down a real road's edge and applies the
+   game's own rule each step; nobody has done it with thumbs since the fix.
+
 ## THE TUCK: push the stick forward on the shield to crouch and go faster (2026-11-17). Tests `tests/ride.ts` (72), `tests/bigdipper.ts` (26)
 
 **His words, after riding the Big Dipper:** "I liked it I thought it was good but **the sliding seems a little slow**. I'm

@@ -16,6 +16,7 @@ import { railAt, railCurve, findRail, RAIL_REACH } from '../src/world/rails';
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
+import { safeToReturnTo, fallFrom, fellTooFar, PUT_NOT_FALLEN } from '../src/player/standing';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -149,6 +150,46 @@ check('the rider crossed every one of them by GRINDING a light rail', railsRidde
   q.velocity.set(9, 0, 0);
   q.update(DT, inp({ stowPressed: true }), []);
   check('...but not one who is going ACROSS it', !q.grinding);
+}
+
+// ---- GRINDING THE ROAD'S OWN EDGE, all the way down a road, and jumping off onto the next ----
+// (The owner, 2026-11-17: "if you grind on the edge of the rainbow road while you're going down it then when you jump
+// off and land on the next area you get like fall damage or something and then you're off your shield".)
+{
+  const p = new PlayerController(new THREE.Vector3(def.spawn.x, def.spawn.y + 0.01, def.spawn.z));
+  p.rails = P.rails;
+  const auto = makeDipRide();
+  const r0 = P.roads[0];
+  const r1 = P.roads[1];
+  let ground2 = 0;
+  let safeY = def.spawn.y;
+  let from = def.spawn.y;
+  let wasY = def.spawn.y;
+  let oldRule = false;
+  let fell = false;
+  let landed = false;
+  let pressed = 0;
+  for (let f = 0; f < 60 * 30 && !landed; f++) {
+    const a = auto(p);
+    // (Once he is riding: over to the road's east edge, the grind button there, and then nothing till its end; a jump off the end.)
+    const edge = r0.x + r0.wide / 2;
+    const riding = p.riding && p.position.z > 4 && p.position.z < r0.z1;
+    const move = riding && !p.grinding ? new THREE.Vector3(p.position.x < edge - 0.5 ? 0.5 : 0, 0, 0) : new THREE.Vector3(a.x, 0, a.z);
+    const stow = riding && !p.grinding && p.position.x > edge - 0.7 && f % 6 === 0;
+    if (stow) pressed++;
+    p.update(DT, inp({ move, jumpPressed: p.grinding ? r0.z1 - p.position.z < 0.6 : a.jumpPressed, jumpHeld: a.jumpHeld, attackPressed: a.attackPressed, stowPressed: stow, dodgePressed: false }), cs);
+    if (p.grinding) ground2++;
+    // What the game does each step (main.ts): the last SAFE place; where he last had something under him; has he fallen.
+    if (p.grounded && safeToReturnTo(cs, p.position.x, p.position.y, p.position.z)) safeY = p.position.y;
+    from = fallFrom(from, p.position.y, p.grounded || p.grinding, wasY);
+    wasY = p.position.y;
+    if (p.position.y < safeY - DIP_FALL) oldRule = true;
+    if (fellTooFar(from, p.position.y, DIP_FALL)) fell = true;
+    if (p.position.z > r1.z0 + 2 && p.grounded && !p.grinding) landed = true;
+  }
+  check('he can grind the road\'s own edge all the way down a road (four seconds of it) and jump off its end onto the next, still on his shield', ground2 > 60 * 3 && landed && p.riding, `${(ground2 / 60).toFixed(1)}s on the edge`);
+  check('...and he has NOT "fallen": a fall is measured from where he last had something under him, and the edge was under him (measured from the last SAFE place, as it was, that ride IS a fall: the edge is no place to be put back at)', !fell && oldRule);
+  check('one put somewhere else in a single step (brought back, sent on) has not fallen either; one who drops step by step has', fallFrom(100, 20, false, 100) === 20 && fallFrom(100, 99.6, false, 100) === 100 && fallFrom(100, 60, true, 60.2) === 60 && PUT_NOT_FALLEN > 1 && fellTooFar(100, 71, DIP_FALL) && !fellTooFar(100, 73, DIP_FALL));
 }
 
 // ---- Jumps ----
