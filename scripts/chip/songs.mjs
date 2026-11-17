@@ -206,6 +206,38 @@ SONGS.push(
   },
 );
 
+/**
+ * A DUET (the owner, 2026-11-17: "I really really liked overlaying the voice track so if you want to try to use one of
+ * the more feminine voices ... just again remember the era and that type of vibe we're going for"). A third boom bap
+ * for the Club: Dave is the drums again, and the tune is SUNG, by the recording that is Wren's and Jinx's voice in the
+ * game (recordings/wren.m4a: thirty-seven spoken syllables). make.mjs (`vox`) holds its darkest long syllable on each
+ * note of the line, a fourth to an octave and a half above where it was spoken (which is what makes it a girl's), and
+ * says its short syllables on the chord's notes as scat at the ends of phrases: a voice played from a sampler's keys,
+ * as that era did it.
+ */
+SONGS.push({
+  id: 'bap3', name: 'Jinx Cuts In', where: 'Dizzy Dave and Jinx', bpm: 90,
+  chords: ['Am7', 'Fmaj7', 'Dm7', 'E7', 'Am7', 'Fmaj7', 'Dm7', 'E7'],
+  parts: [
+    { type: 'stab', con: 'x68', v: 'epiano', vol: 0.55, oct: 4, rhythm: 'x.....x.....x...', len: 5 },
+    { type: 'bass', con: 'n64', v: 'bass', vol: 1, oct: 2, pat: 'r......r..r.R...' },
+    { type: 'arp', con: 'n64', v: 'marimba', vol: 0.3, oct: 5, pat: '....2.....1.....' },
+  ],
+  drums: { con: 'ps1', swing: 0.5, order: 'AAABAAAB', pats: {
+    A: { kick: 'x......x..x.....', snare: '....x.......x...', chh: 'x.xox.xox.xox.xo' },
+    B: { kick: 'x......x........', snare: '....x.......x...', chh: 'x.xox.xo........', ohh: '..............x.' },
+  } },
+  dave: { vol: 0.7, bars: ['k...s.....k.s...', 'k...s..h..k.s...', 'k...s.....k.s...', 'k...s...k.h.s.hh', 'k...s.....k.s...', 'k...s..h..k.s...', 'k...s.....k.s...', 'k...s...kksh.shs'] },
+  vox: {
+    file: 'wren.m4a',
+    line: { vol: 0.34, bars: [
+      'E4:4 -:2 C4:2 E4:4 A4:4', 'F4:6 E4:2 C4:8', 'D4:4 -:2 F4:2 A4:4 F4:4', 'G#4:6 E4:2 B3:8',
+      'A4:4 -:2 E4:2 A4:4 B4:4', 'A4:6 F4:2 C4:8', 'D4:4 F4:4 A4:4 F4:4', 'G#4:8 -:8',
+    ] },
+    scat: { oct: 4, vol: 0.42, bars: ['................', '............2.1.', '................', '............0.21', '................', '............2.1.', '................', '........0.1.2.31'] },
+  },
+});
+
 /** A line an octave (or more) up or down. */
 const octave = (bars, by) => bars.map((bar) => bar.replace(/([A-G][#b]?)(\d)/g, (_, n, o) => n + (Number(o) + by)));
 

@@ -426,6 +426,24 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## VOICES IN THE MUSIC: he wants more of it (2026-11-17)
+
+His words: "I really really liked overlaying the voice track so if you want to try to use one of the more feminine
+voices or if you want [me] to record some different kinds of styles of voices or words for you to use in the music
+we can totally do that as well just again remember the era and that type of vibe we're going for."
+ - **A THIRD BOOM BAP, A DUET: `bap3` "Jinx Cuts In"** (`scripts/chip/songs.mjs`; NOT in the game: he has not heard
+   it). Dave is the drums again; the tune is SUNG by the recording that is Wren's and Jinx's voice
+   (`recordings/wren.m4a`: 37 spoken syllables, all said at about 155 Hz, a man's speaking pitch).
+   **`make.mjs` `vox`:** `voiceSounds()` cuts any voice recording into its sounds and finds the NOTE each is said on;
+   `sing()` plays a sound at the speed that puts it on a wanted note and HOLDS it by going round a few whole waves of
+   its middle (a sampler's way), with a little waver; `say()` plays a short one once on a note (scat). She sings
+   B3 to B4: a fourth to an octave and a half above where it was spoken, which is what makes it a girl's. Checked by
+   frequency: she is on her notes. An echo three and six sixteenths behind.
+ - **WHAT HE WAS ASKED TO RECORD, if he wants to** (told to him in the reply): for a voice to be SUNG, long steady
+   vowels ("ooh", "aah", "la", "na", "hey", a second or more each, on one note); for Dave, more beatbox and a few
+   short words; a crowd "hey!" and "ho!"; a laugh. One take a voice, a gap between sounds, each two or three times.
+   A new recording goes in `recordings/` and is named in the song (`vox.file`, or `daveSounds`).
+
 ## HIS VERDICT ON THE SOUND, and what went into the game for it (2026-11-17). Tests `tests/tunes.ts`
 
 **HIS WORDS (keep these: they are the brief for all the sound from here on):**
