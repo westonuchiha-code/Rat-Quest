@@ -426,6 +426,45 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## HIS TWO SOUND TOOLS, and the first tunes and effects made with them (2026-11-17). **NOT IN THE GAME YET: HE MUST HEAR THEM FIRST**
+
+He sent two of his own tools in the middle of the film work and said: "When you're done with the video stuff I would
+like you to try to use these two tools to create a series of music tracks and also sound effects to use for the game."
+ - **THE TOOLS ARE IN THE PROJECT NOW: `recordings/tools/chip-drum-pad.html` and `recordings/tools/chiptune-pad-studio.html`**
+   (his files, copied as they came). Both are one page each, and both make every sound by working out the chip
+   itself, sample by sample, for 27 old machines (Game Boy, NES, SNES, N64, PS1, Genesis, C64, X68000 ...).
+     CHIP DRUM PAD: sixteen pads a machine (kick, snare, hats, toms, clap, rim, bell, crash, ride, ZAP, BLIP, SWEEP,
+       BOOM), four bars of sixteen steps, swing.
+     CHIPTUNE PAD STUDIO: each machine's own voices (NES pulses and triangle; SNES flute, strings, piano; Genesis
+       brass and slap bass; C64 sync lead ...), songs as takes of notes in seconds, a chip's own arpeggio chords.
+   Neither can save a WAV, and the Studio's save button only works inside Claude's own app. But everything in both
+   is a plain global, so a script asks them directly:
+ - **`scripts/chip/lib.mjs` DRIVES THEM in a headless browser** (nothing is clicked): `studio.song(song)` and
+   `drums.beat({...})` are the tools' own offline renders; `studio.note(machine, voice, note)` and
+   `drums.hit(machine, pad)` are one note and one hit. (Both must be told the same rate: `setOutRate(44100)`.
+   The Studio fetches an MP3 coder from the net: it is not needed and the request is refused.)
+ - **`scripts/chip/songs.mjs`: THE TUNES, written as bars** (a chord a bar; the tune as `'E5:2 G5:2 -:4'`; bass, arp
+   and stab patterns a letter a sixteenth; drum bars in the Drum Pad's own `x.o.` writing). `toStudio()` makes the
+   Studio's song of one. **`node scripts/chip/make.mjs <folder>`** renders each through BOTH tools (the Studio's notes,
+   the Drum Pad's beat), folds what rings past the end back onto the start so the loop meets itself, and mixes.
+     EIGHT TUNES, eight bars each: `title` The Kingdom Below (NES), `club` Dave's Groove (Genesis), `cistern` Still
+     Water (SNES), `foundry` Hammer and Bellows (C64), `hollows` No Bottom (N64), `keep` The Long Stair (PS1),
+     `dream` Star Slide (Game Boy Color), `boss` Teeth (X68000). TWO JINGLES: `wedge`, `defeat`.
+ - **`node scripts/chip/sfx.mjs <folder>`: 27 EFFECTS**, each named for the game's own sound it could stand in for
+   (menuMove, menuOk, menuBack, boot, crumb, cap, relic, item, heal, sparkle, clear, jump, doubleJump, land, swing,
+   dodge, hurt, block, hit, kill, shock, spit, crate, doorOpen, gate, splash, whoosh): single notes cut short and
+   run up or down in steps as a chip slides, and single drum hits cut, tuned and laid over each other.
+ - **CLAUDE CANNOT HEAR. They were written by the rules and checked by number only** (the right notes sound at the
+   right pitch, nothing is silent, levels). Whether they are any GOOD is his to say. He was sent each tune twice
+   round, the jingles, and a reel of the effects in the order above.
+ - **HOW THEY WOULD GO IN, when he has chosen:** an EFFECT is a file in `recordings/` and a line in
+   `recordings/map.json` (then `python3 scripts/make-recorded.py`): that is how the fourteen recorded ones are in,
+   and it replaces the made-up sound of that name. A TUNE should NOT go in as a recording (half a megabyte each, in
+   a game that is one file of three): the game's music is notes played on short sampled instruments
+   (`audio/music.ts`, `audio/synth.ts` `instrument`), and it fades its drum and lead lanes with the fighting. So:
+   take each voice from his tools as ONE short sample (a held voice's loop is given by the tool; a drum is one hit),
+   and write the tune's bars out as a `Track`. `songs.mjs` is already notes, so that is a translation.
+
 ## FILMS (2026-11-17): he loved the cutscene videos and asked for more. HOW A FILM IS MADE NOW; what was made
 
 His words: "This all looks good and I love the cutscene Video thing you did that was awesome. The only note I have

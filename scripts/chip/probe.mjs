@@ -1,0 +1,15 @@
+import { openTools, rms, peak } from './lib.mjs';
+const t = await openTools();
+console.log('pads', JSON.stringify(await t.drums.pads()));
+const v = await t.studio.voices();
+console.log('voices nes', v.nes.join(' '), '| snes', v.snes.join(' '), '| gen', v.gen.join(' '));
+console.log('studio drums nes', JSON.stringify((await t.studio.drums()).nes));
+const n = await t.studio.note('nes', 'p50', 69);
+console.log('note nes p50 A4:', n.data.length, 'samples at', n.rate, 'loop', JSON.stringify(n.loop), 'rms', rms(n.data).toFixed(3));
+const h = await t.drums.hit('nes', 0, 4);
+console.log('kick:', h.data.length, 'at', h.rate, 'peak', peak(h.data).toFixed(2));
+const s = await t.studio.song({ name: 'probe', cfg: { bpm: 120, key: 0, scale: 'major' }, takes: [{ notes: [{ t: 0, d: 0.4, c: 'nes', v: 'p25', m: 72 }, { t: 0.5, d: 0.4, c: 'nes', v: 'p25', m: 76 }, { t: 1, d: 0.9, c: 'nes', v: 'p25', m: 79 }], len: 2 }] });
+console.log('song:', (s.L.length / s.sr).toFixed(2), 's at', s.sr, 'peak', peak(s.L).toFixed(2), 'rms', rms(s.L).toFixed(3));
+const b = await t.drums.beat({ con: 'nes', bpm: 120, pats: [{ kick: 'x...x...x...x...', snare: '....x.......x...', chh: 'x.x.x.x.x.x.x.x.' }], reps: 2 });
+console.log('beat:', (b.L.length / b.sr).toFixed(2), 's at', b.sr, 'plan', b.len, 'peak', peak(b.L).toFixed(2));
+await t.close();

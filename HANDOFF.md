@@ -1384,3 +1384,13 @@ things are:
 - Textures: `fireBrick` (128), `deckPlate`, `castIron`, `girder`, `castingSand` (64), `coalLumps` (32); their world
   sizes are in `TILE` in chamber.ts. `Def.size` is `32 | 64 | 128`.
 - A dev camera: `&eye=x,y,z&look=x,y,z`. Filming a level: `&slow=0.2`, a screenshot every 333 ms, ffmpeg at 15.
+
+## Films, more scenes, and his two sound tools (2026-11-17)
+
+- Film aids in `main.ts`: `&film=4` (fixed step, waits for each picture: `window.__filmReady`, `__filmGo()`),
+  `&autoride`, `&autofight`, `&god`, `&chase=dx,dy,dz`, `&orbit=x,y,z,r,h,rate[,from]`, `&eye=&look=`. Slow motion
+  slows the scenery clock too (`slowClock`). `levels/milkyway.ts` `makeAutoRide()`.
+- `cutscene/scenes.ts`: `BEAT`, `dancing()`, and scenes `dizzy-dave-live`, `a-hand-of-cards`, `two-at-the-bar`,
+  `the-old-stag`. `world/forge.ts` ladle: pours 4.5 s in a round of 12.
+- `scripts/chip/` (`lib.mjs`, `songs.mjs`, `make.mjs`, `sfx.mjs`, `probe.mjs`) drive `recordings/tools/*.html`.
+  Needs `puppeteer-core` and Chrome at /usr/bin/google-chrome, and ffmpeg for the MP3s.
