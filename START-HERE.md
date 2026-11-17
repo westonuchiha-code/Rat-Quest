@@ -117,8 +117,16 @@ that is still in the code.)
    (`player.feel`). `waking`: no tuck, tricks pay speed only up to his standing top speed (as before the dream), no
    spin or grab. `dream`: all of them. A level is `dream` if it wears the dream's look (`look: 'dream'`), or says so.
    **A controller that is not told is in the waking world**: a test of a dream move must set `p.feel = FEELS.dream`.
- - **NOT DONE:** (1) the dream is not yet floatier, faster or higher-jumping, and has no triple jump: the table has
-   the place for it, but the dream's courses are measured to the jump he has now. (2) No inventory of assets yet.
+ - **THE DREAM ON FOOT (the same day; he said: "continue and forget the triple jump for now").** In the dream he RUNS
+   a quarter faster, JUMPS four high where the waking world's jump is two and a half, and is in the air half as long
+   again (`TUNING.dream`: run 1.25, jump 1.1, gravity 0.75; they are the dream's `foot` in `data/feel.ts`, and three
+   sliders under "The dream" in Tweaks). **ON FOOT ONLY: on his shield the air is as it was**, because the dream's
+   rides are measured to it (gaps, landings, the half pipe's launch); a test holds that. Two jumps still, no third.
+   Film: `film-dream-jump.mp4` (the Hall, then the dream). `&autojump` is a film aid (a double jump every two seconds).
+   **Not weighed:** from the Toy Box's decks a double jump now clears its 12-high wall (7 + 7.5); a fall there costs
+   nothing and puts him back, and he could already jump out from the tower.
+ - **NOT DONE:** (1) no triple jump (he said to leave it), and he does not hit harder in the dream ("stronger ... a
+   superhero": his words, not built). (2) No inventory of assets yet.
    (3) The practice rooms and the Hall are plainly dressed. (4) The Club's own doors still ask for Golden Wedges.
    (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
    (6) Nobody has played any of it by hand.

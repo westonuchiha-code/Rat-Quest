@@ -2328,6 +2328,19 @@ function startGame(): void {
       m.set(devWalk[0], 0, devWalk[1]);
       run = true;
     }
+    // (`&autojump`: every two seconds he jumps, holds it, and jumps again at the top: for a film of how a place's air feels.)
+    if (devJump && !player.dead) {
+      devJumpAt += dt;
+      if (devJumpAt > 2 && player.grounded) {
+        devJumpAt = 0;
+        jumpPressed = true;
+        devJumpTwice = true;
+      } else if (devJumpTwice && !player.grounded && player.velocity.y <= 0) {
+        devJumpTwice = false;
+        jumpPressed = true;
+      }
+      jumpHeld = jumpHeld || !player.grounded || jumpPressed;
+    }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
       let nd = 26;
@@ -3053,6 +3066,9 @@ function startGame(): void {
   // sweep through part of a turn, for a place with a wall close on one side.)
   const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
   let orbitFrom = -1;
+  const devJump = /[#&]autojump\b/.test(location.hash);
+  let devJumpAt = 1;
+  let devJumpTwice = false;
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;

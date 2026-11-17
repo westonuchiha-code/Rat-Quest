@@ -12,11 +12,13 @@
  * never a change to the numbers every place shares (TUNING). A level says which it is with `feel` (levels/types.ts);
  * one that does not say is `waking`, unless it wears the dream's look, which is `dream`.
  *
- * WHAT IS NOT HERE YET, and is his for the dream ("he can jump higher and move faster and maybe we'll give him a
- * triple jump ... you're kind of way floatier and stronger in this world so you almost feel like a superhero"): a
- * higher jump, a faster run, a third jump, harder blows. The dream's courses are measured to the jump he has now
- * (tests/bigdipper.ts, tests/toybox.ts): those come in with the courses re-measured, not as numbers changed here alone.
+ * THE DREAM ON FOOT (2026-11-17, the same day: "continue and forget the triple jump for now"): he runs faster, jumps
+ * higher and falls slower there (`foot`). ON HIS SHIELD THE AIR IS AS IT WAS: the dream's rides are measured to it.
+ * WHAT IS NOT HERE YET, and is his for the dream ("maybe we'll give him a triple jump ... you're kind of way floatier
+ * and stronger in this world so you almost feel like a superhero"): a third jump (he said to leave it for now), and
+ * harder blows.
  */
+import { TUNING } from './tuning';
 export type FeelId = 'waking' | 'dream';
 
 export interface Feel {
@@ -25,6 +27,11 @@ export interface Feel {
   name: string;
   /** What playing there is to be LIKE (his words, shortened). */
   like: string;
+  /**
+   * ON FOOT: what his running speed and his jumps (the first and the one in the air) are multiplied by, and how much
+   * of gravity pulls on him while he is not on his shield. 1, 1, 1 is the waking world.
+   */
+  foot: { run: number; jump: number; gravity: number };
   /** On his shield. */
   ride: {
     /** THE TUCK: the stick pushed the way he is going crouches him, pushes him along on the flat, and builds speed past his standing top speed downhill. */
@@ -41,12 +48,15 @@ export const FEELS: Record<FeelId, Feel> = {
     id: 'waking',
     name: 'The waking world',
     like: 'Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that.',
+    foot: { run: 1, jump: 1, gravity: 1 },
     ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
   dream: {
     id: 'dream',
     name: 'The wacky Pomo dream',
-    like: 'Fantastical, floatier, faster, hyperactive: a skate park. Lean forward for speed, tricks pay speed, spins and grabs in the air.',
+    like: 'Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air.',
+    // (The numbers are TUNING.dream, so that they can be tried from the Tweaks panel: "The dream".)
+    foot: TUNING.dream,
     ride: { tuck: true, trickSpeed: true, airTricks: true },
   },
 };

@@ -15,7 +15,13 @@ import { SIGN, signPixels } from '../src/world/courseDoors';
 import { DOOR_REACH, atDoor } from '../src/world/rooms';
 import { PLATE_LEAVE, PLATE_REACH, buttonStep } from '../src/world/plates';
 import { wrapText } from '../src/render/pixelFont';
-import { feelOf } from '../src/data/feel';
+import { FEELS, feelOf, type Feel } from '../src/data/feel';
+import * as THREE from 'three';
+import { PlayerController, type PlayerInput } from '../src/player/controller';
+import { aabbOf, type Aabb } from '../src/world/collision';
+import { extent } from '../src/world/layout';
+import { TUNING } from '../src/data/tuning';
+import { TWEAKS } from '../src/core/tweaks';
 import type { LevelDef } from '../src/levels/types';
 
 let failures = 0;
@@ -114,7 +120,55 @@ const hall = levelById(HALL_ID)!;
 {
   const dream = all.filter((l) => feelOf(l).id === 'dream').map((l) => l.id).sort();
   check('the dream\'s way of playing (the tuck, speed for tricks, spins and grabs) is the dream\'s three rooms\' and nobody else\'s', dream.join(' ') === 'bigdipper milkyway toybox', dream.join(' '));
+  // ---- THE DREAM ON FOOT (the owner, 2026-11-17: "it's supposed to feel floatier and more high velocity and
+  // hyperactive ... he can jump higher and move faster"; and then: "continue and forget the triple jump for now"). ----
+  const floor: Aabb[] = [aabbOf(extent('floor', -200, 200, -1, 0, -200, 200))];
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const DT = 1 / 60;
+  /** A jump (and, `twice`, the second one at the top of it) held all the way: how high he got, and how long he was off the ground. */
+  const jump = (feel: Feel, twice = false, riding = false): { high: number; air: number; jumps: number } => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    p.feel = feel;
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), floor);
+    if (riding) p.devRide();
+    p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), floor);
+    let high = 0;
+    let air = 0;
+    let jumps = 1;
+    let tries = 0;
+    for (let i = 0; i < 600 && !(i > 3 && p.grounded); i++) {
+      // (At the top of the first: the second, if asked for. At the top of that: once more, which must do nothing.)
+      const press = twice && p.velocity.y <= 0 && tries < 2;
+      const y0 = p.velocity.y;
+      p.update(DT, inp({ jumpPressed: press, jumpHeld: true }), floor);
+      if (press) {
+        tries++;
+        if (p.velocity.y > y0 + 1) jumps++;
+      }
+      high = Math.max(high, p.position.y);
+      air += DT;
+    }
+    return { high, air, jumps };
+  };
+  const awake = jump(FEELS.waking);
+  const asleep = jump(FEELS.dream);
+  check('IN THE DREAM HE JUMPS HIGHER AND FLOATS: a jump is four high where the waking world\'s is two and a half, and he is in the air half as long again', Math.abs(awake.high - 2.45) < 0.15 && asleep.high > 3.8 && asleep.high < 4.3 && asleep.air > awake.air * 1.4 && asleep.air < awake.air * 1.8, `${awake.high.toFixed(2)} high in ${awake.air.toFixed(2)}s awake; ${asleep.high.toFixed(2)} in ${asleep.air.toFixed(2)}s in the dream`);
+  const two = jump(FEELS.dream, true);
+  const twoAwake = jump(FEELS.waking, true);
+  check('...the jump in the air is higher too; and there are still TWO jumps and no third (he said to leave the triple jump)', two.high > twoAwake.high * 1.5 && two.jumps === 2 && twoAwake.jumps === 2 && TUNING.jump.airJumps === 1, `${twoAwake.high.toFixed(2)} awake, ${two.high.toFixed(2)} in the dream; ${two.jumps} jumps`);
+  const top = (feel: Feel): number => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    p.feel = feel;
+    for (let i = 0; i < 180; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), floor);
+    return Math.hypot(p.velocity.x, p.velocity.z);
+  };
+  check('...and he RUNS faster: a quarter as fast again', Math.abs(top(FEELS.dream) / top(FEELS.waking) - TUNING.dream.run) < 0.02 && TUNING.dream.run >= 1.2, `${top(FEELS.waking).toFixed(2)} awake, ${top(FEELS.dream).toFixed(2)} in the dream`);
+  const hopAwake = jump(FEELS.waking, false, true);
+  const hopDream = jump(FEELS.dream, false, true);
+  check('ON HIS SHIELD the air is as it was, in the dream as awake: the rides are measured to it (their gaps, their landings, the half pipe\'s launch)', hopAwake.high > 1 && Math.abs(hopAwake.high - hopDream.high) < 1e-6 && Math.abs(hopAwake.air - hopDream.air) < 1e-6, `an ollie ${hopAwake.high.toFixed(2)} high awake, ${hopDream.high.toFixed(2)} in the dream`);
+  check('the numbers are in one place (TUNING.dream, which the dream\'s line of the table IS), the waking world\'s are all 1, and the Tweaks panel has a slider for each', FEELS.dream.foot === TUNING.dream && FEELS.waking.foot.run === 1 && FEELS.waking.foot.jump === 1 && FEELS.waking.foot.gravity === 1 && ['dream.run', 'dream.jump', 'dream.gravity'].every((path) => TWEAKS.some((t) => t.path === path)));
 }
+
 
 console.log(failures === 0 ? '\nhall: all passed' : `\nhall: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

@@ -120,6 +120,19 @@ export const TUNING = {
    * his tail to balance and make hard curves"). Running down a slope, SNEAK drops it under his feet; on a slope too
    * steep to stand on he has no choice. Speeds are along the ground, in units a second.
    */
+  /**
+   * THE DREAM, ON FOOT (data/feel.ts reads these as the dream's `foot`): how much faster he runs, how much harder he
+   * jumps, and how much of the world's gravity pulls on him. The owner, 2026-11-17: "the dream world is supposed to
+   * be fantastical, it's supposed to feel floatier and more high velocity and hyperactive ... he can jump higher and
+   * move faster". Together a jump is 4 high where the waking world's is 2.5, and he is in the air half as long again.
+   * ON FOOT ONLY: on his shield the air is as it was, because the dream's rides are measured to it (their gaps, their
+   * landings, the half pipe's launch).
+   */
+  dream: {
+    run: 1.25,
+    jump: 1.1,
+    gravity: 0.75,
+  },
   ride: {
     minSlope: 0.4, // over a slope at least this steep (rise over run) the air attack is the shield under his feet, not the dive
     surfDrop: 10, // ...if it is no further below him than this

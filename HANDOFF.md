@@ -1482,4 +1482,7 @@ room, a playground for one kind of play; one long hallway hub with everyone in i
    (a film aid: he runs that way). `CourseDoorDef.under`: a sign's second line.
  - Tests: `tests/hall.ts` (38). Changed for it: ride (the tuck is the dream's), toybox, bigdipper, milkyway, camera
    (riders marked as in the dream), falls and glimmer (doors and levels found by id, not by name).
+ - The dream on foot (the same day): `TUNING.dream` (run 1.25, jump 1.1, gravity 0.75), read as `FEELS.dream.foot`;
+   the controller applies it to his run, his two jumps and the gravity on him while he is NOT on his shield or a rail.
+   No triple jump (the owner: leave it for now). Tests in `tests/hall.ts`.
 

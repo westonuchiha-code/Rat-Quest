@@ -861,7 +861,7 @@ export class PlayerController {
       const mul = (this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1) * scrabble;
       // (In slime his feet are held: he wades.)
       const mire = !swimming && this.inSlime ? T.slime.walk : 1;
-      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * mul * mire;
+      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * this.feel.foot.run * mul * mire;
       const hasInput = move.lengthSq() > 0.01;
       // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
       const ice = this.onIce;
@@ -910,7 +910,7 @@ export class PlayerController {
         this.moveEvent = 'longjump';
       } else if (this.coyoteTimer > 0 && !(swimming && this.ceilingOver(colliders, 0.9))) {
         // (Not out of the water with a roof right over his head: there is no room to jump.)
-        this.velocity.y = T.jump.velocity;
+        this.velocity.y = T.jump.velocity * this.feel.foot.jump;
         this.grounded = false;
         this.coyoteTimer = 0;
         if (swimming) {
@@ -920,7 +920,7 @@ export class PlayerController {
         this.jumpBuffer = 0;
         this.jumpCut = false;
       } else if (!this.grounded && this.airJumpsLeft > 0 && this.kickHold <= 0) {
-        this.velocity.y = T.jump.doubleVelocity;
+        this.velocity.y = T.jump.doubleVelocity * this.feel.foot.jump;
         this.airJumpsLeft--;
         this.flipTimer = 0;
         this.jumpBuffer = 0;
@@ -935,7 +935,10 @@ export class PlayerController {
     }
 
     // Gravity. Falling is a little stronger than rising, so the arc hangs at the top and drops with snap.
-    const gravity = this.velocity.y < 0 ? T.physics.gravity * T.physics.fallGravityMultiplier : T.physics.gravity;
+    // (How much of it pulls on him is the place's (data/feel.ts): in the dream he floats. Not on his shield, nor on a
+    // rail: the rides are measured to the gravity they were built in.)
+    const float = this.riding || this.grind ? 1 : this.feel.foot.gravity;
+    const gravity = (this.velocity.y < 0 ? T.physics.gravity * T.physics.fallGravityMultiplier : T.physics.gravity) * float;
     if (swimming && pool) {
       // Buoyancy: a spring toward floating height, so a splash sinks him a little and he bobs back up.
       const target = pool.y - T.swim.sink;

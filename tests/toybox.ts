@@ -347,7 +347,9 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   /** Off the big ramp's kicker, doing in the air what `air` says; what happened when he came down. */
   const trick = (air: (t: number, p: PlayerController) => Partial<PlayerInput>): { events: MoveEvent[]; before: number; after: number; riding: boolean; spun: boolean } => {
     const x = (BIG.x0 + BIG.x1) / 2;
-    const z0 = BIG.tower.z1 + BIG.rollIn - 6;
+    // (Far enough up the roll-in that the hop onto his shield, which is higher and longer in the dream, comes down
+    // on the slope and not past its foot.)
+    const z0 = BIG.tower.z1 + BIG.rollIn - 13;
     const p = rat(x, ground(x, z0), z0);
     getOn(p, v(0, 1));
     const events: MoveEvent[] = [];
