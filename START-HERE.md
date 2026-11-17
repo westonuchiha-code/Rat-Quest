@@ -426,6 +426,64 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## HIS VERDICT ON THE SOUND, and what went into the game for it (2026-11-17). Tests `tests/tunes.ts`
+
+**HIS WORDS (keep these: they are the brief for all the sound from here on):**
+ - "I think I like the Dizzy Dave boom bap number 2 the best but the boom bap track sound way better than you have for
+   the club track so they should probably just be what plays in dizzy Dave's hideout, it's his place after all so it
+   makes sense that he would be jamming out to his own vibes."
+ - "I think the dream music fits for that world, we might make a darker version of the same track too cuz I plan on
+   that area like glitching out and having a weird glitch boss or something."
+ - "The music for the keep is pretty epic ... I'm not sure if it'll stay in the keep or if we'll use it somewhere else
+   but for now it could be for the keep." "The music for The Hollows is also pretty good." "I really like the music for
+   The Foundry it might end up being too hyperactive but for now we should just use it." "The one for the cistern is
+   better than what we have already so we can use that."
+ - No opinion on the others (the title, the boss). "The jingles were just a little off like the death one sounded
+   happy ... we already have like a death groaning sound ... it'll have to be something a little more solemn."
+ - The small effects: the old ones "kind of suck", so "it's fine if you replace a lot of that stuff with stuff that
+   you feel like works best".
+ - **THE DIRECTION: "we're aiming for like Nintendo 64 PlayStation 1 era stuff ... we really have to like ramp it up on
+   the music and try to stylize it for this type of game otherwise it's going to feel like we're playing a Nintendo 64
+   game while listening to it through an NES. [Not that] I entirely hate that idea, that's the whole reason I gave
+   you these tools ... I like a lot of the weird sounds you can make with some of those obscure chips. But we got to do
+   it how musicians do it and we have to really try to make some funky chiptune stuff ... you can mix and match chips
+   ... if you're going to mix and match two or three chips you want to try to make a third of the track with one, a
+   third of the track with the other and then a third with the other, then you can put them all together to make one
+   track that'll have a really really super cool unique sound, but ... you want it to sort of go along and match the
+   visuals of the game."**
+
+**WHAT WAS DONE FOR IT:**
+ - **THE CHOSEN TUNES PLAY IN THE GAME.** `audio/music.ts` `PLAYLISTS` says which recorded tunes each track name
+   plays: `groove` (the Club) `bap2` then `bap1`, two rounds each; `drift` the Cistern's; `pump` the Foundry's; `echo`
+   the Hollows'; `march` the Keep's; and a new name `dream` (the Milky Way, which had the Club's). The side areas and
+   boss rooms that share a name share its tune for now (the Forge and the Long Drop have the Foundry's; the boss
+   rooms the Keep's). The old NOTES are still under every name, and play if a recording cannot.
+   **HOW A TUNE IS IN: as MP3 in `src/audio/tunes.ts`, made by `node scripts/chip/embed.mjs <folder of renders> <ids>`**
+   (80 thousand bits a second, stereo; 1.9 MB of text for the seven: the game went from 3 MB to 5). (The notes had
+   said a tune should NOT go in as a recording, for the size. He chose them for how they SOUND, which is the tools'
+   own render: echo, chip arpeggios, Dave's voice. Size was the lesser thing.) Each is stored with 0.3 s of its own
+   end before it and of its own start after it, and `audio.ts` (`startTunes`) plays exactly one round's length out
+   of the middle, the rounds set end to end ahead of the clock: so it does not matter where a browser's MP3 decoder
+   begins. Checked in Chrome: all seven decode, and the game starts the right one in the Club, the dream and the Keep.
+   A recorded tune has no lanes: the drums no longer come in with a fight (the under-water muffle still works).
+ - **TWELVE EFFECTS REPLACED** (`recordings/chip/*.wav`, lines in `recordings/map.json` with a `chip/` file, then
+   `python3 scripts/make-recorded.py`): menuOk, menuBack, boot, crumb, cap, relic, heal, sparkle, clear, doorOpen,
+   gate, crate. Delete a line to go back to the made-up sound. THE WHOLE SET WAS RE-VOICED FIRST for the N64/PS1 era
+   (`scripts/chip/sfx.mjs`): mallets, piano, flute, choir, brass, strings, the orchestra hit, and those machines'
+   drum kits; the first set was NES pulses. The fights' and creatures' sounds were left alone.
+ - **THE JINGLES REWRITTEN** (not in the game: nothing plays a jingle yet): the wedge is a brass fanfare over
+   strings that comes home on its last chord; the defeat is slow (66), minor, a piano over low strings and a choir.
+ - **A TUNE THE WAY HE DESCRIBED: `kingdom`, "The Kingdom Below", 32 bars** (`scripts/chip/songs.mjs`, where his words
+   are quoted). One theme in four eights: the PlayStation states it (flute, strings, piano); the Genesis answers it
+   funky (slap bass, off-beat electric piano, a brass riff made of the theme); the C64 takes it apart (its buzzing
+   lead, pumping filter bass, a flickering chord); then all three at once. A part can now cover only some bars
+   (`from`, `to`), and a tune can have several lengths of drums, each on its own machine (`drums: [{ at, ... }]`).
+   **THIS IS THE PATTERN FOR NEW TUNES.** Not in the game: he has not heard it.
+ - **THE DREAM, BROKEN: `glitch`** (not in the game: there is no glitch boss yet). The dream's tune bar for bar in the
+   minor, slower, the Atari's buzz for the tune; then broken after it is made (`make.mjs` `breakIt`): bits stuck and
+   repeating, bits crushed, a beat backwards, the end of each round running down like a tape.
+ - CLAUDE STILL CANNOT HEAR. All of it is checked by number only.
+
 ## HIS TWO SOUND TOOLS, and the first tunes and effects made with them (2026-11-17). **NOT IN THE GAME YET: HE MUST HEAR THEM FIRST**
 
 He sent two of his own tools in the middle of the film work and said: "When you're done with the video stuff I would

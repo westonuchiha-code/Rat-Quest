@@ -206,16 +206,120 @@ SONGS.push(
   },
 );
 
-/** Two short pieces that are played once (no drums, no loop). */
+/** A line an octave (or more) up or down. */
+const octave = (bars, by) => bars.map((bar) => bar.replace(/([A-G][#b]?)(\d)/g, (_, n, o) => n + (Number(o) + by)));
+
+/**
+ * HOW HE SAID TO DO IT (the owner, 2026-11-17): "we got to do it how musicians do it and we have to really try to make
+ * some funky chiptune stuff ... you can mix and match chips ... if you're going to mix and match two or three chips you
+ * want to try to make you know a third of the track with one a third of the track with the other and then a third of
+ * the track [with] the other then you can put them all together to make one track that'll have a really really super
+ * cool unique sound but you just have to remember that you want it to sort of go along and match the visuals of the
+ * game" (which are the N64's and the PS1's: "otherwise it's going to feel like we're playing a Nintendo 64 game while
+ * listening to it through an NES").
+ * So: ONE THEME, thirty-two bars, in four eights. The PlayStation states it (flute over strings, a piano under). The
+ * Genesis answers it, funky: slap bass, electric piano on the off beats, brass with a riff made out of the theme. The
+ * C64 takes it apart: its buzzing lead with the theme again over a pumping filter bass and a chord that flickers.
+ * Then ALL THREE AT ONCE: flute and brass with the theme in octaves, the C64's lead behind them, strings, the slap
+ * bass, the off-beat piano, the flickering chord, the Genesis's drums with the PlayStation's cymbals on top.
+ */
+const THEME = [
+  'D5:4 G5:4 B5:6 A5:2', 'B5:6 G5:2 E5:8', 'E5:4 G5:4 C6:6 B5:2', 'A5:8 F#5:4 D5:4',
+  'D6:6 B5:2 G5:4 B5:4', 'G5:6 E5:2 B4:4 E5:4', 'C5:2 E5:2 A5:4 G5:2 E5:2 C5:4', 'F#5:4 A5:4 D6:4 C6:2 A5:2',
+];
+const RIFF = [
+  'B5:3 D6:1 B5:2 G5:2 -:2 B5:2 D6:2 B5:2', 'G5:3 B5:1 G5:2 E5:2 -:4 E5:2 G5:2', 'E5:3 G5:1 C6:2 E6:2 -:2 C6:2 G5:2 E5:2', 'A5:3 F#5:1 D5:4 -:2 D5:2 F#5:2 A5:2',
+  'D6:3 B5:1 G5:2 B5:2 -:2 D6:2 G6:4', 'E6:3 D6:1 B5:4 -:2 G5:2 B5:2 E6:2', 'C6:2 -:1 C6:1 E6:2 A5:4 -:2 G5:2 E5:2', 'F#5:2 A5:2 C6:4 -:2 A5:2 F#5:2 D5:2',
+];
+const EIGHT = ['G', 'Em7', 'C', 'D', 'G', 'Em7', 'Am7', 'D7'];
+const FUNK = { kick: 'x..x..x...x.x...', snare: '....x.......x...', clap: '....x.......x...', chh: 'x.xox.xox.xox.xo' };
+const FUNK_FILL = { kick: 'x..x..x...x.....', snare: '....x.......x.xx', chh: 'x.xox.xox.xo....', thi: '..........x.....', tmid: '...........x....', tlo: '.............x..' };
+SONGS.push({
+  id: 'kingdom', name: 'The Kingdom Below', where: 'The title (three machines)', bpm: 108,
+  chords: [...EIGHT, ...EIGHT, ...EIGHT, ...EIGHT],
+  parts: [
+    // ---- 1: the PlayStation ----
+    { from: 0, to: 8, type: 'line', con: 'ps1', v: 'flute', vol: 0.95, gate: 0.95, bars: THEME },
+    { from: 0, to: 8, type: 'pad', con: 'ps1', v: 'strings', vol: 0.42, oct: 4 },
+    { from: 0, to: 8, type: 'arp', con: 'ps1', v: 'piano', vol: 0.5, oct: 4, pat: '0.1.2.1.3.2.1.2.' },
+    { from: 0, to: 8, type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: 'r.......r...f...' },
+    // ---- 2: the Genesis ----
+    { from: 8, to: 16, type: 'line', con: 'gen', v: 'brass', vol: 0.95, gate: 0.85, bars: RIFF },
+    { from: 8, to: 16, type: 'bass', con: 'gen', v: 'fmbass', vol: 1, oct: 2, pat: 'r..R.r..r.R..rf.' },
+    { from: 8, to: 16, type: 'stab', con: 'gen', v: 'epiano', vol: 0.5, oct: 4, rhythm: '..x...x...x..x..', len: 2 },
+    // ---- 3: the C64 ----
+    { from: 16, to: 24, type: 'line', con: 'c64', v: 'sync', vol: 1, gate: 0.85, bars: THEME },
+    { from: 16, to: 24, type: 'bass', con: 'c64', v: 'fbass', vol: 1.1, oct: 2, pat: 'r.r.R.r.r.r.R.r.' },
+    { from: 16, to: 24, type: 'chip', con: 'c64', v: 'arp', vol: 0.4, oct: 4 },
+    // ---- 4: all three ----
+    { from: 24, to: 32, type: 'line', con: 'ps1', v: 'flute', vol: 0.85, gate: 0.95, bars: octave(THEME, 1) },
+    { from: 24, to: 32, type: 'line', con: 'gen', v: 'brass', vol: 0.75, gate: 0.9, bars: THEME },
+    { from: 24, to: 32, type: 'line', con: 'c64', v: 'sync', vol: 0.35, gate: 0.85, bars: octave(RIFF, -1) },
+    { from: 24, to: 32, type: 'pad', con: 'ps1', v: 'strings', vol: 0.4, oct: 4 },
+    { from: 24, to: 32, type: 'bass', con: 'gen', v: 'fmbass', vol: 1, oct: 2, pat: 'r..R.r..r.R..rf.' },
+    { from: 24, to: 32, type: 'stab', con: 'gen', v: 'epiano', vol: 0.45, oct: 4, rhythm: '..x...x...x..x..', len: 2 },
+    { from: 24, to: 32, type: 'chip', con: 'c64', v: 'arp', vol: 0.28, oct: 5 },
+  ],
+  drums: [
+    { at: 0, con: 'ps1', order: 'AAABAAAC', pats: {
+      A: { kick: 'x.......x.x.....', rim: '....x.......x...', chh: 'o.o.o.o.o.o.o.o.' },
+      B: { kick: 'x.......x.x.....', rim: '....x.......x...', chh: 'o.o.o.o.o.o.o...', ohh: '..............x.' },
+      C: { kick: 'x.......x.x.....', rim: '....x.......x...', chh: 'o.o.o.o.o.......', snare: '..........o.oxxx' },
+    } },
+    { at: 8, con: 'gen', order: 'AAABAAAB', pats: { A: FUNK, B: FUNK_FILL } },
+    { at: 16, con: 'c64', order: 'AAAAAAAB', pats: {
+      A: { kick: 'x...x...x...x...', ohh: '..x...x...x...x.', clap: '....x.......x...' },
+      B: { kick: 'x...x...x...x...', ohh: '..x...x.........', clap: '....x...........', thi: '........x.x.....', tmid: '...........x.x..', tlo: '..............xx' },
+    } },
+    { at: 24, con: 'gen', order: 'AAABAAAB', pats: { A: FUNK, B: FUNK_FILL } },
+    { at: 24, con: 'ps1', gain: 0.6, order: 'ZAAAZAAA', pats: { Z: { crash: 'x...............', ride: '....o...o...o...' }, A: { ride: 'o...o...o...o...' } } },
+  ],
+});
+
+/**
+ * THE DREAM, GONE WRONG (the owner: "we might make a darker version of the same track too cuz I plan on that area like
+ * glitching out and having a weird glitch boss or something"). The same tune as Star Slide, bar for bar, in the minor;
+ * slower; on harsher machines (the Atari's buzz for the tune, the C64's filter bass); and then BROKEN after it is
+ * made (make.mjs, `glitch`): bits of it stuck and repeating, bits crushed, bits backwards, and the end of each round
+ * running down like a tape.
+ */
+SONGS.push({
+  id: 'glitch', name: 'Star Slide (Broken)', where: 'The Milky Way, gone wrong', bpm: 126, glitch: 7,
+  chords: ['Cm', 'Gm', 'Ab', 'Fm', 'Cm', 'Gm', 'Fm', 'G'],
+  parts: [
+    { type: 'line', con: 'vcs', v: 'lead', vol: 0.9, gate: 0.85, bars: [
+      'Eb5:2 G5:2 C6:4 Bb5:2 C6:2 G5:4', 'D5:2 G5:2 Bb5:4 A5:2 Bb5:2 G5:4', 'C5:2 Eb5:2 Ab5:4 G5:2 Ab5:2 Eb5:4', 'F5:2 Ab5:2 C6:4 Ab5:2 F5:2 G5:4',
+      'Eb6:4 D6:2 C6:2 G5:4 C6:4', 'D6:4 C6:2 Bb5:2 G5:4 Bb5:4', 'C6:2 Ab5:2 F5:2 Ab5:2 C6:2 F6:2 Eb6:2 D6:2', 'D6:6 B5:2 G5:4 B5:2 D6:2',
+    ] },
+    { type: 'bass', con: 'c64', v: 'fbass', vol: 1, oct: 2, pat: 'r.R.r.R.r.R.r.R.' },
+    { type: 'chip', con: 'c64', v: 'arp', vol: 0.34, oct: 4 },
+    { type: 'arp', con: 'gbc', v: 'bell', vol: 0.35, oct: 6, pat: '..2...1...2...0.' },
+  ],
+  drums: { con: 'vcs', swing: 0, order: 'AAABAAAB', pats: {
+    A: { kick: 'x.....x.x.....x.', snare: '....x.......x...', chh: 'xoxoxoxoxoxoxoxo' },
+    B: { kick: 'x.....x.x.....x.', snare: '....x.......xxxx', chh: 'xoxoxoxoxoxo....', zap: '..............x.' },
+  } },
+});
+
+/**
+ * Two short pieces that are played once (no drums, no loop).
+ * (The first two were NES pulses, and he said of them: "the jingles were just a little off like the death one sounded
+ * happy ... it'll have to be something a little more solemn". So: the wedge is a fanfare for brass and strings that
+ * comes home on its last chord; and the defeat is slow, low and minor, a piano over strings and a choir, falling to
+ * its own keynote and staying there.)
+ */
 export const JINGLES = [
-  { id: 'wedge', name: 'A Golden Wedge', bpm: 150, chords: ['G', 'G'], parts: [
-    { type: 'line', con: 'nes', v: 'p25', vol: 1, gate: 0.9, bars: ['G4:2 B4:2 D5:2 G5:2 B5:2 D6:2 G6:4', 'G6:12 -:4'] },
-    { type: 'line', con: 'nes', v: 'p50', vol: 0.5, gate: 0.9, bars: ['-:4 G4:2 B4:2 D5:2 G5:2 B5:4', 'D6:12 -:4'] },
-    { type: 'bass', con: 'nes', v: 'tri', vol: 1, oct: 3, pat: ['r...r...r...r...', 'r-----------....'] },
+  { id: 'wedge', name: 'A Golden Wedge', bpm: 132, chords: ['G', 'C', 'G'], parts: [
+    { type: 'line', con: 'ps1', v: 'brass', vol: 1, gate: 0.9, bars: ['D5:2 G5:2 B5:2 D6:6 B5:2 D6:2', 'E6:4 C6:4 E6:4 G6:4', 'G6:12 -:4'] },
+    { type: 'pad', con: 'ps1', v: 'strings', vol: 0.5, oct: 4 },
+    { type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: ['r...r...r...r...', 'r...r...r...r...', 'r---------------'] },
+    { type: 'hit', con: 'ps1', v: 'hit', vol: 0.7, oct: 4, bars: [2] },
   ] },
-  { id: 'defeat', name: 'Down He Goes', bpm: 100, chords: ['Am', 'E'], parts: [
-    { type: 'line', con: 'nes', v: 'p25', vol: 1, gate: 0.95, bars: ['E5:3 D5:1 C5:4 A4:4 C5:4', 'B4:4 G#4:4 E4:8'] },
-    { type: 'bass', con: 'nes', v: 'tri', vol: 1, oct: 3, pat: ['r.......r.......', 'r-----------....'] },
+  { id: 'defeat', name: 'Down He Goes', bpm: 66, chords: ['Am', 'E', 'Am'], parts: [
+    { type: 'line', con: 'ps1', v: 'piano', vol: 1, gate: 1, bars: ['E5:6 D5:2 C5:8', 'B4:8 G#4:8', 'A4:16'] },
+    { type: 'pad', con: 'ps1', v: 'strings', vol: 0.5, oct: 3 },
+    { type: 'pad', con: 'ps1', v: 'choir', vol: 0.32, oct: 4 },
+    { type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: 'r---------------' },
   ] },
 ];
 
@@ -227,16 +331,17 @@ export function toStudio(s) {
   for (const p of s.parts) {
     const notes = [];
     // (Swung as the drums are: an odd sixteenth comes late by a third of the swing, or the bass and the kick part company.)
-    const sw = (s.drums?.swing ?? 0) / 3;
+    const sw = (s.swing ?? (Array.isArray(s.drums) ? 0 : s.drums?.swing) ?? 0) / 3;
     const put = (step, len, m, extra = {}) => notes.push({ t: +((step + (step % 2 ? sw : 0)) * six).toFixed(5), d: +(Math.max(0.03, len * six * (p.gate ?? 0.9))).toFixed(5), c: p.con, v: p.v, m, ...extra });
-    for (let b = 0; b < bars; b++) {
+    // (A part may play only some of the bars: `from` to `to`. A LINE's bars are then counted from its own first.)
+    for (let b = p.from ?? 0; b < (p.to ?? bars); b++) {
       const ch = chord(s.chords[b]);
       const base = 12 * ((p.oct ?? 4) + 1) + ch.root;
       const tone = (i) => base + ch.tones[i % ch.tones.length] + 12 * Math.floor(i / ch.tones.length);
       const at = b * 16;
       if (p.type === 'line') {
         let step = 0;
-        for (const tok of p.bars[b].split(/\s+/)) {
+        for (const tok of p.bars[b - (p.from ?? 0)].split(/\s+/)) {
           const [n, l] = tok.split(':');
           if (n !== '-') put(at + step, Number(l), midi(n));
           step += Number(l);

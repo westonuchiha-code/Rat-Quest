@@ -60,6 +60,54 @@ function daveSounds(sr) {
 }
 let daveCut = null;
 
+/**
+ * A finished round, BROKEN (the dream gone wrong): at places chosen by `seed`, a sixteenth sticks and repeats over
+ * what should have followed; a half bar is crushed to a few bits and a low rate; a beat runs backwards; and the last
+ * half bar runs down like a tape and stops just short of the round's end.
+ */
+function breakIt(mix, sr, six, bars, seed) {
+  let a = seed >>> 0;
+  const rand = () => ((a = (a * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const step = Math.round(six * sr);
+  const n = mix[0].length;
+  const at = (bar, sixteenth) => Math.round((bar * 16 + sixteenth) * six * sr);
+  for (const ch of mix) {
+    a = seed >>> 0;
+    // Stuck: a sixteenth (or a half of one) said four to eight times over.
+    for (let k = 0; k < bars; k++) {
+      if (rand() < 0.3) continue;
+      const from = at(k, 4 * Math.floor(rand() * 4) + 2);
+      const len = rand() < 0.5 ? step : step >> 1;
+      const times = 4 + Math.floor(rand() * 5);
+      for (let r = 1; r < times; r++) for (let i = 0; i < len && from + r * len + i < n; i++) ch[from + r * len + i] = ch[from + i] * (1 - 0.06 * r);
+    }
+    // Crushed: half a bar held at a low rate and a few bits.
+    for (const bar of [2, 5]) {
+      const from = at(bar, 8);
+      const hold = 5 + Math.floor(rand() * 6);
+      for (let i = 0; i < step * 8 && from + i < n; i++) ch[from + i] = Math.round(ch[from + i - (i % hold)] * 6) / 6;
+    }
+    // Backwards: one beat.
+    for (const bar of [3, 6]) {
+      const from = at(bar, 12);
+      const len = step * 4;
+      const copy = ch.slice(from, from + len);
+      for (let i = 0; i < len; i++) ch[from + i] = copy[len - 1 - i];
+    }
+    // The tape runs down over the last half bar, and there is a sixteenth of nothing before the round comes again.
+    const from = at(bars - 1, 8);
+    const len = n - from;
+    const copy = ch.slice(from);
+    let p = 0;
+    for (let i = 0; i < len; i++) {
+      const u = i / len;
+      const k = Math.floor(p);
+      ch[from + i] = u > 0.875 ? 0 : (copy[k] ?? 0) * (1 - u * 0.5);
+      p += Math.max(0.05, 1 - u * 1.1);
+    }
+  }
+}
+
 const mp3 = (wav, file) => execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', wav, '-codec:a', 'libmp3lame', '-b:a', '160k', file]);
 
 for (const s of SONGS.filter((q) => !only.length || only.includes(q.id))) {
@@ -70,34 +118,38 @@ for (const s of SONGS.filter((q) => !only.length || only.includes(q.id))) {
   const n = Math.round(bars * 16 * six * sr);
   const bar = Math.round(16 * six * sr);
   const music = [fold(st.L, sr, n), fold(st.R, sr, n)];
-  // The beat: the Drum Pad holds four bars at a time, so eight are two renders; each render is made as loud as it
-  // will go by the tool, so the second is brought to the first by a bar they have in common.
-  const D = s.drums;
-  const halves = [D.order.slice(0, 4), D.order.slice(4, 8)].filter(Boolean);
+  // The beat: the Drum Pad holds four bars at a time, so a length of beat is rendered four bars by four; each render is
+  // made as loud as it will go by the tool, so every one after a length's first is brought to it by a bar they have in
+  // common. A tune may have several lengths of beat, each on its own machine, each starting at its own bar (`at`).
   const drums = [new Float32Array(n), new Float32Array(n)];
-  let first = null;
-  for (let h = 0; h < halves.length; h++) {
-    // (Bars marked '-' at the start of a half have no drums: the rest of the half is rendered and laid in after them.)
-    const skip = [...halves[h]].findIndex((k) => k !== '-');
-    if (skip < 0) continue;
-    const r = await tools.drums.beat({ con: D.con, bpm: s.bpm, swing: D.swing ?? 0, pats: [...halves[h]].slice(skip).map((k) => D.pats[k]), reps: 1 });
-    if (r.sr !== sr) throw new Error(`the two tools gave different rates: ${r.sr} and ${sr}`);
-    let gain = 1;
-    const o = Math.round(LEAD * sr);
-    if (!first) first = { r, skip, half: halves[h] };
-    else {
-      // (A bar the two renders have in common, wherever it lies in each.)
-      const mine = [...halves[h]].slice(skip);
-      const theirs = [...first.half].slice(first.skip);
-      const i2 = mine.findIndex((k) => theirs.includes(k));
-      const i1 = i2 >= 0 ? theirs.indexOf(mine[i2]) : -1;
-      if (i1 >= 0) {
-        const a = rms(first.r.L.subarray(o + i1 * bar, o + (i1 + 1) * bar));
-        const b = rms(r.L.subarray(o + i2 * bar, o + (i2 + 1) * bar));
-        if (b > 1e-4) gain = a / b;
+  const D0 = Array.isArray(s.drums) ? s.drums[0] : s.drums;
+  for (const D of Array.isArray(s.drums) ? s.drums : [s.drums]) {
+    const groups = (D.order.match(/.{1,4}/g) ?? []);
+    let first = null;
+    for (let h = 0; h < groups.length; h++) {
+      // (Bars marked '-' at the start of a group have no drums: the rest of the group is rendered and laid in after them.)
+      const skip = [...groups[h]].findIndex((k) => k !== '-');
+      if (skip < 0) continue;
+      const r = await tools.drums.beat({ con: D.con, bpm: s.bpm, swing: D.swing ?? 0, pats: [...groups[h]].slice(skip).map((k) => D.pats[k]), reps: 1 });
+      if (r.sr !== sr) throw new Error(`the two tools gave different rates: ${r.sr} and ${sr}`);
+      let gain = 1;
+      const o = Math.round(LEAD * sr);
+      if (!first) first = { r, skip, group: groups[h] };
+      else {
+        const mine = [...groups[h]].slice(skip);
+        const theirs = [...first.group].slice(first.skip);
+        const i2 = mine.findIndex((k) => theirs.includes(k));
+        const i1 = i2 >= 0 ? theirs.indexOf(mine[i2]) : -1;
+        if (i1 >= 0) {
+          const a = rms(first.r.L.subarray(o + i1 * bar, o + (i1 + 1) * bar));
+          const b = rms(r.L.subarray(o + i2 * bar, o + (i2 + 1) * bar));
+          if (b > 1e-4) gain = a / b;
+        }
       }
+      gain *= D.gain ?? 1;
+      const base = ((D.at ?? 0) + h * 4 + skip) * bar;
+      for (const [c, src] of [[0, r.L], [1, r.R]]) for (let j = 0; o + j < src.length; j++) drums[c][(base + j) % n] += src[o + j] * gain;
     }
-    for (const [c, src] of [[0, r.L], [1, r.R]]) for (let j = 0; o + j < src.length; j++) drums[c][((h * 4 + skip) * bar + j) % n] += src[o + j] * gain;
   }
   const DG = s.drumGain ?? 0.62;
   // Dave: his sounds on the grid, swung as the drums are (an odd sixteenth comes late by a third of the swing).
@@ -110,12 +162,13 @@ for (const s of SONGS.filter((q) => !only.length || only.includes(q.id))) {
         if (!daveCut[c]) return;
         const snd = daveCut[c][turn[c]++ % daveCut[c].length].d;
         // (Each sound was cut with eight thousandths of a second before it begins: it is laid that much early, so that it BEGINS on the beat.)
-        const at = Math.round((b * 16 + i + (i % 2 ? ((D.swing ?? 0) / 3) : 0)) * six * sr) - Math.round(sr * 0.008);
+        const at = Math.round((b * 16 + i + (i % 2 ? ((D0.swing ?? 0) / 3) : 0)) * six * sr) - Math.round(sr * 0.008);
         for (let j = 0; j < snd.length; j++) voice[(((at + j) % n) + n) % n] += snd[j] * s.dave.vol * (c === 'h' ? 0.7 : 1);
       });
     });
   }
   const mix = [0, 1].map((c) => music[c].map((v, i) => v + drums[c][i] * DG + voice[i]));
+  if (s.glitch) breakIt(mix, sr, six, bars, s.glitch);
   const pk = Math.max(peak(mix[0]), peak(mix[1]));
   const k = 0.89 / pk;
   for (const ch of mix) for (let i = 0; i < n; i++) ch[i] *= k;

@@ -83,39 +83,46 @@ const slide = async (con, v, from, to, steps, step, lastLen = step, fade = 8) =>
 const run = async (con, v, names, len, last, fade = 60) => row(...(await Promise.all(names.map(async (n, i) => cut(await note(con, v, n), i === names.length - 1 ? last : len, i === names.length - 1 ? fade : 4)))));
 const fadeOut = (a, from = 0.3) => a.map((v, i) => v * Math.min(1, (a.length - i) / (a.length * (1 - from))));
 
+/** A chord: several notes struck together, `len` ms, each at its own gain. */
+const struck = async (con, v, names, len, fade, gain = 1) => over(...(await Promise.all(names.map(async (n) => [cut(await note(con, v, n), len, fade), 0, gain / Math.sqrt(names.length)]))));
+
+// THE OWNER, 2026-11-17, of the first set (NES pulses and Game Boy bells): "we're aiming for like Nintendo 64
+// PlayStation 1 era stuff ... otherwise it's going to feel like we're playing a Nintendo 64 game while listening to it
+// through an NES." So these are made of the N64's, the PS1's and the SNES's voices (mallets, piano, flute, choir,
+// brass, strings, the orchestra hit) and their drum kits: sampled sounds, as that era's were.
 const SFX = {
   // ---- menus ----
-  menuMove: async () => cut(await note('nes', 'p25', 'E6'), 34, 14),
-  menuOk: async () => run('nes', 'p25', ['C6', 'G6'], 55, 130, 90),
-  menuBack: async () => run('nes', 'p25', ['G5', 'C5'], 55, 130, 90),
-  boot: async () => over([await run('nes', 'p25', ['G5', 'B5', 'D6', 'G6'], 95, 520, 380)], [await run('nes', 'p50', ['D5', 'G5', 'B5', 'D6'], 95, 520, 380), 0, 0.45]),
+  menuMove: async () => cut(await note('n64', 'marimba', 'E6'), 60, 40),
+  menuOk: async () => run('n64', 'marimba', ['E5', 'B5'], 70, 200, 150),
+  menuBack: async () => run('n64', 'marimba', ['B4', 'E4'], 70, 200, 150),
+  boot: async () => over([await struck('ps1', 'strings', ['G3', 'D4', 'B4'], 1100, 600, 0.6)], [await run('ps1', 'piano', ['G4', 'B4', 'D5', 'G5'], 110, 700, 500), 60, 0.9]),
   // ---- things picked up ----
-  crumb: async () => run('nes', 'p50', ['B5', 'E6'], 48, 210, 170),
-  cap: async () => over([cut(await note('gbc', 'bell', 'E7'), 300, 220)], [tune(cut(await hit('nes', PAD.bell), 120, 90), 2), 0, 0.35]),
-  relic: async () => run('nes', 'p25', ['C6', 'E6', 'G6', 'C7', 'E7', 'G7'], 44, 330, 260),
-  item: async () => run('gbc', 'echo', ['E6', 'G6', 'B6'], 62, 300, 220),
-  heal: async () => run('nes', 'trisoft', ['C5', 'E5', 'G5', 'C6', 'E6'], 68, 320, 240),
-  sparkle: async () => run('gbc', 'bell', ['G6', 'C7', 'E7', 'G7'], 40, 260, 200),
-  clear: async () => over([await run('nes', 'p25', ['G5', 'G5', 'G5', 'D6'], 90, 520, 380)], [await run('nes', 'p50', ['B4', 'B4', 'B4', 'G5'], 90, 520, 380), 0, 0.45], [await run('nes', 'tri', ['G3', 'G3', 'G3', 'G3'], 90, 520, 380), 0, 0.8]),
+  crumb: async () => over([await run('n64', 'marimba', ['B5', 'E6'], 55, 240, 190)], [tune(cut(await hit('n64', PAD.rim), 60, 40), 1.5), 0, 0.3]),
+  cap: async () => over([tune(cut(await hit('ps1', PAD.bell), 260, 200), 1.9)], [cut(await hit('n64', PAD.rim), 70, 50), 0, 0.6]),
+  relic: async () => over([await struck('snes', 'choir', ['C5', 'E5', 'G5'], 900, 500, 0.55)], [await run('ps1', 'piano', ['C6', 'E6', 'G6', 'C7'], 80, 520, 400), 40, 0.9]),
+  item: async () => run('n64', 'piano', ['E5', 'G5', 'B5', 'E6'], 70, 420, 320),
+  heal: async () => over([await run('snes', 'flute', ['C5', 'E5', 'G5', 'C6'], 95, 420, 300)], [await struck('snes', 'strings', ['C4', 'G4'], 760, 400, 0.4)]),
+  sparkle: async () => run('n64', 'marimba', ['G6', 'C7', 'E7', 'G7'], 45, 260, 200),
+  clear: async () => over([await run('ps1', 'brass', ['G4', 'G4', 'G4', 'D5'], 120, 760, 500)], [await struck('ps1', 'strings', ['G3', 'B3', 'D4'], 1100, 500, 0.5)], [cut(await note('ps1', 'hit', 'G4'), 700, 500), 360, 0.7]),
   // ---- him ----
-  jump: async () => slide('nes', 'p50', 'A4', 'A5', 9, 11, 40, 30),
-  doubleJump: async () => slide('nes', 'p12', 'E5', 'E6', 8, 9, 46, 36),
-  land: async () => cut(tune(await hit('nes', PAD.boom), 1.3), 130, 90),
-  swing: async () => cut(await hit('nes', PAD.sweep), 170, 120),
-  dodge: async () => cut(tune(await hit('gbc', PAD.sweep), 1.5), 140, 100),
-  hurt: async () => over([await slide('nes', 'p50', 'E5', 'E4', 8, 22, 60, 50)], [cut(await hit('nes', PAD.snare), 120, 90), 0, 0.5]),
-  block: async () => over([cut(await hit('gen', PAD.rim), 90, 60)], [tune(cut(await hit('gen', PAD.bell), 220, 170), 1.4), 0, 0.7]),
+  jump: async () => slide('n64', 'ocarina', 'A4', 'E5', 6, 14, 60, 45),
+  doubleJump: async () => slide('n64', 'ocarina', 'E5', 'B5', 6, 12, 60, 45),
+  land: async () => cut(tune(await hit('ps1', PAD.kick), 0.9), 140, 100),
+  swing: async () => cut(tune(await hit('ps1', PAD.sweep), 1.2), 180, 130),
+  dodge: async () => cut(tune(await hit('n64', PAD.sweep), 1.5), 150, 110),
+  hurt: async () => over([cut(tune(await hit('ps1', PAD.tlo), 1.3), 160, 120)], [cut(await hit('ps1', PAD.snare), 140, 110), 0, 0.6]),
+  block: async () => over([cut(await hit('n64', PAD.rim), 90, 60)], [tune(cut(await hit('ps1', PAD.bell), 240, 190), 1.3), 0, 0.7]),
   // ---- blows ----
-  hit: async () => over([cut(await hit('gen', PAD.snare), 130, 100)], [cut(await hit('nes', PAD.zap), 110, 80), 0, 0.6]),
-  kill: async () => over([cut(await hit('c64', PAD.zap), 160, 120)], [await slide('nes', 'p25', 'A5', 'A3', 13, 13, 50, 40), 20, 0.7]),
-  shock: async () => cut(await hit('c64', PAD.zap), 260, 200),
-  spit: async () => cut(await hit('vcs', PAD.blip), 160, 110),
-  crate: async () => over([cut(tune(await hit('ps1', PAD.tlo), 1.2), 160, 120)], [cut(await hit('ps1', PAD.snare), 150, 120), 10, 0.7], [cut(await hit('nes', PAD.chh), 90, 70), 40, 0.5]),
+  hit: async () => over([cut(await hit('ps1', PAD.snare), 140, 110)], [cut(tune(await hit('ps1', PAD.kick), 1.4), 90, 70), 0, 0.7]),
+  kill: async () => over([cut(await hit('ps1', PAD.crash), 260, 200), 0, 0.5], [cut(tune(await hit('ps1', PAD.tlo), 0.8), 220, 170), 0, 1], [cut(await note('ps1', 'hit', 'C4'), 300, 220), 0, 0.5]),
+  shock: async () => cut(await hit('ps1', PAD.zap), 280, 220),
+  spit: async () => cut(tune(await hit('n64', PAD.blip), 0.8), 170, 120),
+  crate: async () => over([cut(tune(await hit('ps1', PAD.tlo), 1.25), 170, 130)], [cut(await hit('n64', PAD.clap), 150, 120), 8, 0.7], [cut(await hit('n64', PAD.rim), 80, 60), 45, 0.5]),
   // ---- the place ----
-  doorOpen: async () => over([await slide('nes', 'tri', 'C3', 'C4', 12, 30, 160, 120)], [cut(await hit('ps1', PAD.ohh), 380, 300), 60, 0.4]),
-  gate: async () => over([cut(await hit('x68', PAD.boom), 520, 380)], [cut(await hit('ps1', PAD.tlo), 200, 150), 120, 0.7], [cut(await hit('ps1', PAD.tlo), 200, 150), 260, 0.55]),
-  splash: async () => fadeOut(cut(tune(await hit('gbc', PAD.crash), 0.7), 420, 300), 0.2),
-  whoosh: async () => cut(tune(await hit('x68', PAD.sweep), 0.75), 320, 240),
+  doorOpen: async () => over([await slide('ps1', 'strings', 'C2', 'G2', 6, 70, 260, 200), 0, 0.8], [cut(tune(await hit('ps1', PAD.tlo), 0.7), 260, 200), 0, 0.7], [cut(await hit('ps1', PAD.ohh), 380, 300), 120, 0.3]),
+  gate: async () => over([cut(tune(await hit('ps1', PAD.boom), 0.8), 620, 460)], [cut(tune(await hit('ps1', PAD.tlo), 0.75), 240, 180), 140, 0.7], [cut(tune(await hit('ps1', PAD.tlo), 0.7), 240, 180), 300, 0.55]),
+  splash: async () => fadeOut(cut(tune(await hit('snes', PAD.crash), 0.7), 460, 340), 0.2),
+  whoosh: async () => cut(tune(await hit('ps1', PAD.sweep), 0.75), 340, 260),
 };
 
 const order = Object.keys(SFX);

@@ -139,5 +139,126 @@
     "bits": 6,
     "rate": 22050,
     "gain": 0.85
+  },
+  "_chip": "The entries whose file is in chip/ were made with the owner's two sound tools (scripts/chip/sfx.mjs), 2026-11-17: sounds of the N64's, the PS1's and the SNES's voices and drum kits. Delete one to go back to the made-up sound of that name.",
+  "menuOk": {
+    "file": "chip/menuOk.wav",
+    "start": 0,
+    "end": 0.27,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "menuBack": {
+    "file": "chip/menuBack.wav",
+    "start": 0,
+    "end": 0.27,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "boot": {
+    "file": "chip/boot.wav",
+    "start": 0,
+    "end": 1.1,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "crumb": {
+    "file": "chip/crumb.wav",
+    "start": 0,
+    "end": 0.295,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "cap": {
+    "file": "chip/cap.wav",
+    "start": 0,
+    "end": 0.137,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "relic": {
+    "file": "chip/relic.wav",
+    "start": 0,
+    "end": 0.9,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "heal": {
+    "file": "chip/heal.wav",
+    "start": 0,
+    "end": 0.76,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "sparkle": {
+    "file": "chip/sparkle.wav",
+    "start": 0,
+    "end": 0.395,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "clear": {
+    "file": "chip/clear.wav",
+    "start": 0,
+    "end": 1.12,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "doorOpen": {
+    "file": "chip/doorOpen.wav",
+    "start": 0,
+    "end": 0.61,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "gate": {
+    "file": "chip/gate.wav",
+    "start": 0,
+    "end": 0.62,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "crate": {
+    "file": "chip/crate.wav",
+    "start": 0,
+    "end": 0.17,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
   }
 }
