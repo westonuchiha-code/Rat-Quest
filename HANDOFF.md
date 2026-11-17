@@ -1462,3 +1462,5 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
  - Camera (the owner, the same day): going up a slope it shot in to his back (its look point, lagging his rise, was
    inside the slope). The look point now keeps half a unit over the ground under him (`CHEST_CLEAR`). The shield's
    sliding sound remade soft and mixed very low.
+ - Half pipe decks flush with the wall tops (`COPING` 0), and their lips grind (a ledge). What made a flush deck a wall to
+   a fast rider is mended in the controller (`rampHead`: a box at the head of his ramp, no higher than the ramp there).

@@ -74,15 +74,21 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
 {
   const deck = halfDeck();
   const wallTop = deck.y + COPING;
-  /** Dropped in from the east deck (a run, a jump west out over the wall, ATTACK); then `stick` each step. The height he got to on each crossing. */
+  /**
+   * DROPPED IN: on his shield on the east deck (a jump and ATTACK: it is a skate park), a push toward the lip, and over
+   * it. He rolls in off the lip and down the wall. (At first the drop was a running jump out over the wall: with the
+   * decks flush that carries him clear over the wall to land on the flat, and a flat landing keeps none of his fall.)
+   */
+  const dropIn = (dt: number): PlayerController => {
+    const p = rat(HALF.x + deck.out + 3, deck.y, 0);
+    p.update(dt, inp({ move: v(-1, 0), jumpPressed: true, jumpHeld: true }), cs);
+    for (let i = 0; i < 4 / dt && !(p.riding && p.position.x < HALF.x + deck.out - 0.1); i++) p.update(dt, inp({ move: v(-1, 0), jumpHeld: !p.riding, attackPressed: !p.riding && !p.grounded && p.velocity.y < 5 }), cs);
+    return p;
+  };
+  /** Dropped in; then `stick` each step. The height he got to on each crossing. */
   const session = (stick: (p: PlayerController) => THREE.Vector3, secs: number): { peaks: number[]; p: PlayerController; on: boolean; events: MoveEvent[] } => {
-    const p = rat(HALF.x + deck.out + 2, deck.y, 0);
-    let on = false;
-    for (let i = 0; i < 40 && !on; i++) {
-      const lip = p.position.x < HALF.x + deck.out + 0.5;
-      p.update(DT, inp({ move: v(-1, 0), jumpPressed: p.grounded && lip, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 }), cs);
-      on = p.riding;
-    }
+    const p = dropIn(DT);
+    const on = p.riding;
     const peaks: number[] = [];
     const events: MoveEvent[] = [];
     let side = 1;
@@ -96,14 +102,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     }
     return { peaks: peaks.slice(1), p, on, events };
   };
-  const coastStart = (): PlayerController => {
-    const p = rat(HALF.x + deck.out + 2, deck.y, 0);
-    for (let i = 0; i < 40 && !p.riding; i++) {
-      const lip = p.position.x < HALF.x + deck.out + 0.5;
-      p.update(DT, inp({ move: v(-1, 0), jumpPressed: p.grounded && lip, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 }), cs);
-    }
-    return p;
-  };
+  const coastStart = (): PlayerController => dropIn(DT);
   const coast = session(() => v(0, 0), 7);
   check('dropped in from a deck and doing nothing, he rides down the wall, across, and three quarters of the way up the far wall; and back, and again, lower each time: a half pipe', coast.on && coast.peaks.length >= 2 && coast.peaks[0] > wallTop * 0.7 && coast.peaks[1] < coast.peaks[0], `${coast.peaks.map((q) => q.toFixed(1)).join(' ')} of ${wallTop.toFixed(1)}`);
   // PUMPING: the stick pushed the way he is going while he is down in the flat of it. He comes up the far wall
@@ -129,11 +128,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     let ok = true;
     for (const fps of [60, 30, 24, 20]) {
       const dt = 1 / fps;
-      const p = rat(HALF.x + deck.out + 2, deck.y, 0);
-      for (let i = 0; i < 60 && !p.riding; i++) {
-        const lip = p.position.x < HALF.x + deck.out + 0.5;
-        p.update(dt, inp({ move: v(-1, 0), jumpPressed: p.grounded && lip, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 }), cs);
-      }
+      const p = dropIn(dt);
       let sunk = 0;
       let bailed = false;
       let onDeck = false;
@@ -141,14 +136,45 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
         p.update(dt, inp({ move: v(-1, 0) }), cs);
         sunk = Math.max(sunk, ground(p.position.x, p.position.z) - p.position.y);
         if (p.moveEvent === 'bail') bailed = true;
-        if (p.grounded && p.position.x < HALF.x - deck.out - 0.3) onDeck = true;
+        // (Past the far lip, on the deck or in the air over it: that is all that is asked here.)
+        if (p.position.x < HALF.x - deck.out - 0.5) onDeck = true;
       }
       told.push(`${fps}: ${sunk.toFixed(2)} in${bailed ? ', THROWN OFF' : ''}`);
       if (sunk > 0.05 || bailed || !onDeck || !p.riding) ok = false;
     }
     check('at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it and over its lip, never inside it, never thrown off', ok, told.join('; '));
   }
-  check('its walls curve up to sixty degrees, three and a half high; its decks are a little lower than the wall\'s top (the coping), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING > 0.3 && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
+  // THE LIP IS AN EDGE TO GRIND ("and they should also count as an edge that you can grind on").
+  {
+    const told: string[] = [];
+    let ok = true;
+    for (const side of [1, -1]) {
+      // Along the deck beside its lip, skating north; the grind button.
+      const p = rat(HALF.x + side * (deck.out + 0.6), deck.y, HALF.z1 - 3);
+      getOn(p, v(0, -1));
+      let on = 0;
+      let lipX = 0;
+      for (let i = 0; i < 60 * 6; i++) {
+        p.update(DT, inp({ move: p.grinding ? v(0, 0) : v(0, -1), stowPressed: p.riding && !p.grinding && on === 0 && i % 3 === 0 }), cs);
+        if (p.grinding) { on++; lipX = p.position.x; }
+        else if (on > 0) break;
+      }
+      told.push(`${side > 0 ? 'east' : 'west'} lip: ${(on / 60).toFixed(1)}s, at x ${lipX.toFixed(2)} (the lip is at ${(HALF.x + side * deck.out).toFixed(2)})`);
+      if (on < 45 || Math.abs(lipX - (HALF.x + side * deck.out)) > 0.15) ok = false;
+    }
+    check('the lip of each wall is an edge he can GRIND: skating along the deck beside it, the grind button puts his shield on the lip and it carries him along it', ok, told.join('; '));
+    // And from INSIDE the pipe: carving along high on the wall, the grind button takes him up onto the lip.
+    const p = rat(HALF.x + deck.out - 0.5, wallTop - 0.75, HALF.z1 - 3);
+    p.devRide();
+    p.velocity.set(0, 0, -9);
+    let on = 0;
+    for (let i = 0; i < 60 * 3; i++) {
+      p.update(DT, inp({ move: v(0, 0), stowPressed: !p.grinding && on === 0 && i % 2 === 0 }), cs);
+      if (p.grinding) on++;
+    }
+    check('...and from inside the pipe: going along high on the wall, within reach of the lip, the grind button takes him up onto it', on > 30, `${(on / 60).toFixed(1)}s`);
+  }
+  check('its walls curve up to sixty degrees, three and a half high; its decks are FLUSH with the walls\' tops ("the tops of the half pipes should be more flush"), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING === 0 && [-1, 1].every((sd) => Math.abs(ground(HALF.x + sd * (deck.out + 0.05), 0) - ground(HALF.x + sd * (deck.out - 0.02), 0)) < 0.05) && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
 }
 
 // ---- The big ramp ----

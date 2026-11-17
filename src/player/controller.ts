@@ -1677,7 +1677,28 @@ export class PlayerController {
       // (And coming to the foot of one up another ramp, as from one facet of a curve to the next: the ground he is
       // on rises to meet it under him, by his own half-width of its slope, before his middle is there.)
       const mine = b.ramp ? slopeXZ(b)[axis === 'x' ? 0 : 1] : 0; // how it climbs the way he is going
-      const rise = Math.abs(delta * mine) + (b.ramp && this.onRamp && this.groundBox ? slopeOf(this.groundBox) * r : 0);
+      // (And a BOX that stands at the head of the ramp he is on, no higher than the ramp comes up to at its face: the deck
+      // at the top of a curved wall. The edge of his body reaches the deck's side while his feet are still down the
+      // slope, and that was more than a step: the deck was a wall to him, and a fast rider came off at the lip every
+      // time. But the ground he is on rises to the deck before his middle is there. So: as high as his ramp is AT THE
+      // BOX'S FACE counts as under his feet already. The owner, 2026-11-17: "the tops of the half pipes should be more
+      // flush". They can be, now.)
+      // (The ramp's height is read no further along than the ramp itself goes, and only for a box that stands AT its end:
+      // read beyond its end its slope runs on up for ever, and every wall in the level was "under his feet".)
+      let rampHead = 0;
+      // (And only for a RIDER going fast enough that the deck would have thrown him off: one who comes up to the lip
+      // slowly is stopped by it and comes back down the wall, as he always was. That is the half pipe's to and fro.)
+      if (!b.ramp && this.onRamp && this.groundBox && this.riding && Math.hypot(this.velocity.x, this.velocity.z) > TUNING.ride.bailSpeed) {
+        const g = this.groundBox;
+        const face = axis === 'x' ? (delta > 0 ? b.min.x : b.max.x) : delta > 0 ? b.min.z : b.max.z;
+        const lo = axis === 'x' ? g.min.x : g.min.z;
+        const hi = axis === 'x' ? g.max.x : g.max.z;
+        if (face >= lo - 0.05 && face <= hi + 0.05) {
+          const at = Math.max(lo, Math.min(hi, face));
+          rampHead = Math.max(0, topAt(g, axis === 'x' ? at : p.x, axis === 'z' ? at : p.z) - feet);
+        }
+      }
+      const rise = Math.abs(delta * mine) + (b.ramp && this.onRamp && this.groundBox ? slopeOf(this.groundBox) * r : 0) + rampHead;
       if (high <= feet + TUNING.physics.stepHeight + rise + EPS) continue;
       // One so steep that a single step up it is more than he can take, met going up it: he is given his step
       // back, no more. It does not put him at its foot, which may be a long way behind one who jumped at it.

@@ -430,6 +430,26 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE HALF PIPE'S DECKS ARE FLUSH, AND ITS LIP IS AN EDGE TO GRIND (2026-11-17). Tests `tests/toybox.ts` (31)
+
+**His words:** "The tops of the half pipes should be more flush and they should also count as an edge that you can grind
+on."
+ - **THE COPING IS GONE** (`COPING` 0 in `src/levels/toybox.ts`): a deck is level with the top of the wall that curves up
+   to it, and the quarter pipe's the same. (It had been 0.4 lower, because level with the wall the deck's side was a
+   wall to a rider coming up fast, and he came off at the lip.)
+ - **THAT FAULT IS MENDED WHERE IT WAS** (`player/controller.ts`, `rampHead`): **a BOX at the head of the ramp he is on,
+   no higher than his ramp comes up to at the box's face, is not a wall to him.** The edge of his body reaches the
+   deck's side while his feet are still down the slope; the ground he is on rises to the deck before his middle is
+   there. **It is only for a RIDER going fast enough that the deck would have thrown him off** (over `bailSpeed`): one who
+   comes up to the lip slowly is stopped by it and comes back down the wall, as always: that is a pipe's to and fro, and
+   the garden's pipe is tested for it. **SO: a deck at the top of any curved wall can be flush with it. No coping is
+   needed again.**
+ - **THE LIP GRINDS** with nothing added: level with the wall's top, the deck's edge is a ledge with the wall falling
+   away beside it, and a ledge is a grind line (world/grind.ts). Tested from the deck (skating along beside the lip, the
+   grind button: five seconds along it, on the lip to the hundredth) and from INSIDE the pipe (going along high on the
+   wall, the button takes him up onto it).
+ - Rolled in off the flush lip and doing nothing, he gets to 3.0 of 3.5 up the far wall (it was 2.7 from a jump).
+
 ## THE CAMERA GOING UP A SLOPE (2026-11-17: he found it). Tests `tests/camera.ts` (38)
 
 **His words:** "The camera needs to stay behind the character right now **if you're going up ramps at any kind of speed
@@ -577,9 +597,8 @@ over ANY ground here** (anywhere else that is the dive, and needs a steep slope)
  - **The funbox** (middle): a table, a ramp at each end, a rail down its top. **The quarter pipe** (south), with a deck
    behind its lip. **Two light rails**: tower top to the half pipe's deck; that deck out over the funbox to the floor.
  - Six bottle caps, each where a trick takes him. `&autoride` (from the tower top) does the big ramp's line for films.
- - **THE COPING (a rule for any curved wall with a deck):** the deck must be LOWER than the wall's top (`COPING` 0.4).
-   Level with it, the deck's side is a wall to a rider coming up fast (the edge of his body meets it while his feet are
-   still down the slope), and he comes off at the lip every time. Three shapes of wall were tried before this was found.
+ - **(THE COPING, a deck 0.4 lower than its wall's top, was how the lip was first made to work. IT IS GONE: see "THE HALF
+   PIPE'S DECKS ARE FLUSH" above. The fault it worked round is mended in the controller.)**
  - **Its sides are tall for a reason:** a rider thrown up a curved wall at speed goes six or more OUT as he goes up, and
    clears any kerb. A kerb would have meant falls and lost hearts in a place that is for playing.
 

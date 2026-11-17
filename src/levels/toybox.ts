@@ -34,12 +34,14 @@ import { railCurve, railAt, type RailCurve } from '../world/rails';
 export const TOY = { half: 36, halfZ: 56, wall: 12, deep: 1.2 } as const;
 /** The half pipe: its middle line (it runs along z), half its flat floor, its curve, its decks, and the ramps up to them at its south end. */
 /**
- * (THE COPING: a deck is this much LOWER than the top of the wall that curves up to it. A rider coming up the wall
- * fast meets the deck's side with the edge of his body while his feet are still a body's half-width down the slope: if
- * the deck is level with the wall's top that is more than a step, the deck is a wall to him, and he comes off his
- * shield at the lip every time. Found by pumping the pipe: three shapes of wall were tried before the deck was.)
+ * How much LOWER a deck is than the top of the wall that curves up to it: NOTHING. It is flush, and its edge is the lip.
+ * (At first it was 0.4 lower, a "coping": level with the wall's top, the deck's side was a wall to a rider coming up
+ * fast, and he came off at the lip every time. The owner, 2026-11-17: "the tops of the half pipes should be more flush
+ * and they should also count as an edge that you can grind on". So the fault was mended where it was, in how a rider
+ * meets a box at the head of his ramp (player/controller.ts), and the deck came up level. And level, its edge is a
+ * LEDGE with the wall falling away beside it: he can grind it, as any ledge.)
  */
-export const COPING = 0.4;
+export const COPING = 0;
 export const HALF = { x: -19, flat: 2, radius: 7, facets: 6, turn: 10, deck: 5, z0: -16, z1: 14, way: 7 } as const;
 /** The big ramp (it runs along z, southward): the tower, its roll-in, the kicker, the gap, the bank he lands on. */
 /** (Off its lip at speed with a jump he goes thirty-eight along: the bank is where that comes down, and the lane beyond it is clear to the box's side, to stop in.) */
@@ -135,7 +137,7 @@ function build(): Plan {
   const qOut = qf[qf.length - 1].d1;
   const qFoot = T.halfZ - Q.deck - qOut;
   for (const f of qf) solids.push(rainbow(rampBox('stone', Q.x0, Q.x1, qFoot + f.d0, qFoot + f.d1, f.h0, f.h1, 's', 0)));
-  // (A deck behind it, under its lip, for one who goes over the top: the box's side is beyond that.)
+  // (A deck behind it, level with its lip, for one who goes over the top: the box's side is beyond that.)
   solids.push(tiles(extent('stone', Q.x0, Q.x1, 0, qf[qf.length - 1].h1 - COPING, T.halfZ - Q.deck, T.halfZ)));
 
   // ---- The light rails ----
