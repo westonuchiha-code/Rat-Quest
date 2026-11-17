@@ -1,3 +1,4 @@
+import { railCurve, railAt, type RailCurve } from './rails';
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildForge, type ForgeMats } from './forgeModels';
@@ -245,6 +246,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const skyMatBoth = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide });
   /** Things that turn slowly on their own (radians a second). */
   const spinners: Array<{ o: THREE.Object3D; rate: number }> = [];
+  const railBeads: Array<{ o: THREE.Object3D; c: RailCurve; at: number }> = [];
   /** Flowers that nod, and butterflies: moved by the room's clock. */
   const nodders: Array<{ o: THREE.Object3D; phase: number; lean: number }> = [];
   const flutterers: Array<{ o: THREE.Group; wings: THREE.Object3D[]; cx: number; cy: number; cz: number; r: number; phase: number; rate: number }> = [];
@@ -1065,6 +1067,52 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       }
       group.add(globe);
       spinners.push({ o: body, rate: 0.05 + 0.03 * ((d.x * 7 + d.z * 3) % 5) / 5 });
+    } else if (d.kind === 'lightrail') {
+      // A light rail: a thin tube along the very line that is ridden (world/rails.ts), in bands of the rainbow, lit of
+      // itself; and three bright beads that run down it the way he will go, so that it is seen to be a thing that
+      // carries, and which way.
+      const c = railCurve(d);
+      const SIDES = 5;
+      const R = 0.2;
+      const n = c.s.length;
+      const pos = new Float32Array(n * SIDES * 3);
+      const col = new Float32Array(n * SIDES * 3);
+      const BANDS = [0xff3b6b, 0xff9a2a, 0xffe84a, 0x4dff8a, 0x3ad8ff, 0x9a6bff];
+      const tint = new THREE.Color();
+      for (let i = 0; i < n; i++) {
+        const q = railAt(c, c.s[i]);
+        // (Round the way it goes: across the ground, and up.)
+        const k = 1 / Math.sqrt(1 + q.slope * q.slope);
+        const ux = -q.tx * q.slope * k, uy = k, uz = -q.tz * q.slope * k;
+        tint.setHex(BANDS[Math.floor(c.s[i] / 0.9) % BANDS.length]);
+        for (let j = 0; j < SIDES; j++) {
+          const a2 = (j / SIDES) * Math.PI * 2;
+          const o = (i * SIDES + j) * 3;
+          pos[o] = c.x[i] + (q.tz * Math.cos(a2) + ux * Math.sin(a2)) * R;
+          pos[o + 1] = c.y[i] + uy * Math.sin(a2) * R;
+          pos[o + 2] = c.z[i] + (-q.tx * Math.cos(a2) + uz * Math.sin(a2)) * R;
+          col.set([tint.r, tint.g, tint.b], o);
+        }
+      }
+      const idx: number[] = [];
+      for (let i = 0; i < n - 1; i++) for (let j = 0; j < SIDES; j++) {
+        const a2 = i * SIDES + j, b2 = i * SIDES + ((j + 1) % SIDES);
+        idx.push(a2, b2, a2 + SIDES, b2, b2 + SIDES, a2 + SIDES);
+      }
+      const tube = new THREE.BufferGeometry();
+      tube.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      tube.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      tube.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * SIDES * 2), 2));
+      tube.setIndex(idx);
+      tube.computeVertexNormals();
+      group.add(new THREE.Mesh(tube.toNonIndexed(), skyMatBoth));
+      const bead = new THREE.OctahedronGeometry(0.3, 0);
+      bakeVertexColor(bead, 0xffffff, false);
+      for (let b = 0; b < 3; b++) {
+        const m = new THREE.Mesh(bead, skyMat);
+        group.add(m);
+        railBeads.push({ o: m, c, at: b / 3 });
+      }
     } else if (d.kind === 'flowers') {
       // A bed of flowers. The turf lies on the floor (painted on after it, as a rug is); each flower is a thin green
       // stem with one leaf and a flat five-petalled head tipped toward the sky, a dot in its middle. They nod.
@@ -1987,6 +2035,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
 
   const update = (time: number): void => {
     for (const sp of spinners) sp.o.rotation.y = time * sp.rate;
+    for (const rb of railBeads) {
+      const q = railAt(rb.c, ((time * 9 + rb.at * rb.c.len) % rb.c.len + rb.c.len) % rb.c.len);
+      rb.o.position.set(q.x, q.y, q.z);
+      rb.o.rotation.y = time * 3;
+    }
     blinkTextures(time);
     for (const n of nodders) n.o.rotation.z = n.lean * Math.sin(time * 1.3 + n.phase);
     for (const f of flutterers) {

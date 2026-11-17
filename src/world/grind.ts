@@ -10,6 +10,7 @@
  * if that continues it at the same height, so a ledge built of several boxes is one ledge.
  */
 import { topAt, type Aabb } from './collision';
+import type { RailCurve } from './rails';
 
 export interface GrindLine {
   /** The way it runs. */
@@ -18,6 +19,8 @@ export interface GrindLine {
   c: number;
   /** Which side of it the drop is on, along the other axis (+1 or -1); 0 for a rail, which has one on both. */
   side: -1 | 0 | 1;
+  /** A LIGHT RAIL (world/rails.ts): a line through the air that curves. Then `axis` and `c` mean nothing, and `s` is how far along it. */
+  curve?: RailCurve;
 }
 
 /** A solid under this wide is a rail: its line is down its middle. */

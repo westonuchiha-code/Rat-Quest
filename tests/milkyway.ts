@@ -186,7 +186,8 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
 
 // ---------------------------------------------------------------- the dream's look
 {
-  check('in the dream he wears another look (`look`), and nowhere else: no level of the game and no other try-out room asks for it', def.look === 'dream' && [...LEVELS, ...ARCHIVE, ...TEST_ROOMS.filter((l) => l.id !== 'milkyway')].every((l) => l.look === undefined));
+  // (The Big Dipper, 2026-11-17, is the dream too: its long ride.)
+  check('in the dream he wears another look (`look`), and nowhere else: no level of the game asks for it, and of the try-out rooms only the dream\'s two', def.look === 'dream' && [...LEVELS, ...ARCHIVE, ...TEST_ROOMS.filter((l) => l.id !== 'milkyway' && l.id !== 'bigdipper')].every((l) => l.look === undefined));
   const rat = new RatModel();
   const dream = new RatModel(DREAM_LOOK);
   const paintOf = (r: RatModel): number[] => {

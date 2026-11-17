@@ -55,7 +55,9 @@ import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { ShadowCuts } from './render/cutShadow';
-import { Dozer } from './world/dozers';
+import { makeDipRide } from './levels/bigdipper';
+import { Dozer, dreamify } from './world/dozers';
+import { railCurve } from './world/rails';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
 import { SkyDome } from './world/sky';
@@ -135,6 +137,9 @@ import { platform } from './platform/platform';
 import { makeAabb, topAt } from './world/collision';
 import { floorUnder, slopeUnder, standsOn, wallOver } from './enemies/footing';
 import { AudioEngine, nearness } from './audio/audio';
+import { DreamVoices, speaksRobot, voiceOf } from './audio/dreamVoices';
+import { ROBOT_VOICES } from './audio/robotVoices';
+import { decodeRecorded, type Sample } from './audio/synth';
 import { SFX_NAMES, loudness, sfx, type SfxName } from './audio/synth';
 import { TRACK_NAMES, type TrackName } from './audio/music';
 import { speak } from './audio/speech';
@@ -1197,6 +1202,8 @@ function startGame(): void {
   dialog.onBlip = (ch, kind, step, line, idx) => {
     if (speak(audio, kind, ch, step, line, idx) && talkingTo) talkingTo.pulse();
   };
+  const dreamVoices = new DreamVoices<(typeof enemies)[number]>();
+  const robotSamples = new Map<string, Sample>();
   const hearAt = (x: number, z: number, range = 18): number => nearness(Math.hypot(x - player.position.x, z - player.position.z), range);
   const roll = (a: number, b: number): number => a + Math.random() * (b - a);
   /** What the last tick looked like, so the sound code can tell what just happened. */
@@ -1684,7 +1691,13 @@ function startGame(): void {
     doorway = new Doorway(def.exit, def.theme ?? 'sewer');
     scene.add(doorway.group);
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
+    dreamVoices.reset();
     for (const spec of def.enemies) addEnemy(spec);
+    // THE DREAM'S CREATURES ARE THE WAKING WORLD'S, IN LOUD COLOURS (as its sleepers are: world/dozers.ts): the same
+    // creature in all it does, its painted colours turned round the wheel. Only looks.
+    if (def.look === 'dream') enemyModels.forEach((m, i) => dreamify(m.root, [0.42, 0.58, 0.3, 0.7][i % 4]));
+    // Its light rails (world/rails.ts): the lines that are drawn are the lines he grinds.
+    player.rails = def.decor.filter((d): d is Extract<typeof d, { kind: 'lightrail' }> => d.kind === 'lightrail').map((d) => railCurve(d));
     // An open course: the wedges he already has, and the ones out in the course right now (so they do not chime on arrival).
     if (def.wedges) {
       for (const w of def.wedges) if (discoveries.has(`wedge:${def.id}:${w.id}`)) goals.earned.add(w.id);
@@ -1894,6 +1907,19 @@ function startGame(): void {
   }
   /** Sounds from the rest of the world: foes winding up, dying, spitting, water, gates. */
   function soundWorld(dt: number): void {
+    // The dream's creatures speak, in the voices of old speech chips: a word for an attack, a grunt when struck, a word
+    // as they go down (audio/dreamVoices.ts). ONLY in the dream: the owner's rule for the robot voice.
+    if (speaksRobot(cur)) {
+      for (const c of dreamVoices.step(dt, enemies)) {
+        const voice = voiceOf(c.who.kind);
+        const list = ROBOT_VOICES[voice][c.cry];
+        const i = Math.floor(Math.random() * list.length);
+        const key = `robot:${voice}:${c.cry}:${i}`;
+        let smp = robotSamples.get(key);
+        if (!smp) robotSamples.set(key, (smp = decodeRecorded(list[i])));
+        audio.playSample(key, smp, { vol: Math.max(0.35, hearAt(c.who.x, c.who.z, 26)) * (c.cry === 'hurt' ? 0.8 : 1), rate: roll(0.96, 1.06), priority: c.cry === 'die' ? 8 : 7 });
+      }
+    }
     for (const e of enemies) {
       const prev = heard.foes.get(e);
       if (prev === e.state) continue;
@@ -2061,7 +2087,8 @@ function startGame(): void {
     const well = cur.well;
     if (well && player.grounded && p.y < well.y + 0.5 && player.spawn.y > well.top) player.spawn.set(well.x, well.y, well.z - well.r * 0.5);
     // A level with a drop into the dark: a heart, and back to the last ground he stood on.
-    if ((cur.fallBack && p.y < -3) || (cur.fallDepth !== undefined && p.y < lastSafe.y - cur.fallDepth)) {
+    // (On a light rail he is not falling, however far down it has carried him.)
+    if ((cur.fallBack && p.y < -3) || (cur.fallDepth !== undefined && !player.grinding && p.y < lastSafe.y - cur.fallDepth)) {
       p.copy(lastSafe);
       player.prevPosition.copy(lastSafe);
       const result = player.gear.fireproof ? 'dodged' : player.takeFall(1);
@@ -2236,6 +2263,19 @@ function startGame(): void {
       jumpPressed = a.jumpPressed;
       jumpHeld = a.jumpHeld;
       attackPressed = a.attackPressed;
+    }
+    if (devAuto.ride && cur.id === 'bigdipper' && !player.dead) {
+      // (The Big Dipper's rider: rides, jumps, takes the rails, and stops at each pad. With `&autofight` he then fights.)
+      const a = (devAuto.dipRider ??= makeDipRide())(player);
+      const onPad = !player.riding && enemies.some((e) => e.alive && Math.hypot(e.x - player.position.x, e.z - player.position.z) < 30);
+      if (!(devAuto.fight && onPad)) {
+        m.set(a.x, 0, a.z);
+        jumpPressed = a.jumpPressed;
+        jumpHeld = a.jumpHeld;
+        attackPressed = a.attackPressed;
+        stowPressed = a.stowPressed;
+        dodgePressed = a.dodgePressed;
+      }
     }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
@@ -2946,7 +2986,7 @@ function startGame(): void {
   // sweep through part of a turn, for a place with a wall close on one side.)
   const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
   let orbitFrom = -1;
-  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
+  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
   const devEye = ((): number[] | null => {
@@ -3432,7 +3472,9 @@ function startGame(): void {
       const plates = g.spec.plates ?? [];
       const byPlates = plates.length > 0 && plates.every((i) => platesDown[i]);
       const byGoals = !!g.spec.onGoals && goals.mainDone(aliveCount());
-      if (byPipes || byGoals || byPlates) {
+      const foes = g.spec.foes ?? [];
+      const byFoes = foes.length > 0 && foes.every((i) => !enemies[i]?.alive);
+      if (byPipes || byGoals || byPlates || byFoes) {
         chamber.openGate(g);
         shake = Math.max(shake, 0.12);
       }

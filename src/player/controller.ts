@@ -1,5 +1,6 @@
 import { MAX_WALK_SLOPE , type SlimeZone } from '../world/layout';
 import { findGrind, grindHeight, type GrindLine } from '../world/grind';
+import { findRail, railAt, type RailCurve } from '../world/rails';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
 import { Aabb, topAt, slopeOf, slopeXZ, keepInWell, type Well } from '../world/collision';
@@ -169,6 +170,8 @@ export class PlayerController {
    */
   private grind: { line: GrindLine; s: number; h: number; v: number; slope: number; off: number; air: number; fall: number } | null = null;
   private grindAgain = 0;
+  /** The level's LIGHT RAILS (world/rails.ts): lines through the air that he can grind, and that are not solid. Set when a level is made. */
+  rails: RailCurve[] = [];
   /** On the line (not still coming down onto it). */
   get grinding(): boolean {
     return this.grind !== null && this.grind.air <= 0;
@@ -1276,13 +1279,20 @@ export class PlayerController {
   private startGrind(colliders: Aabb[]): boolean {
     const G = TUNING.grind;
     const p = this.position;
-    const found = findGrind(p.x, p.y, p.z, this.velocity.x, this.velocity.z, colliders, G);
+    // (A light rail first: it is what he is reaching for where there is one, and it reaches further.)
+    const lit = findRail(this.rails, p.x, p.y, p.z, this.velocity.x, this.velocity.z, G);
+    const found = lit ? { line: { axis: 'z' as const, c: 0, side: 0 as const, curve: lit.rail }, s: lit.s, h: lit.h, v: lit.v } : findGrind(p.x, p.y, p.z, this.velocity.x, this.velocity.z, colliders, G);
     if (!found) return false;
     if (!this.riding) this.beginRide();
     // Well above it, he is not put on it at a stroke: he comes down onto it, drawn in over it as he falls.
     const above = p.y - found.h;
     const drop = above > 0.3;
-    const off = (found.line.axis === 'x' ? p.z : p.x) - found.line.c;
+    let off = (found.line.axis === 'x' ? p.z : p.x) - found.line.c;
+    if (found.line.curve) {
+      // (To one side of a line that curves: across the way it is going there.)
+      const q = railAt(found.line.curve, found.s);
+      off = (p.x - q.x) * q.tz - (p.z - q.z) * q.tx;
+    }
     this.grind = { line: found.line, s: found.s, h: found.h, v: found.v, slope: 0, off: drop ? off : 0, air: drop ? above : 0, fall: Math.max(G.dropSpeed, -this.velocity.y) };
     this.placeOnGrind();
     // (A kickflip he was in the middle of is over: his shield is on the rail. He has his air jump again for after.)
@@ -1301,7 +1311,11 @@ export class PlayerController {
     const g = this.grind;
     if (!g) return;
     const falling = g.air > 0;
-    if (g.line.axis === 'x') {
+    if (g.line.curve) {
+      const q = railAt(g.line.curve, g.s);
+      this.position.set(q.x + q.tz * g.off, g.h + g.air, q.z - q.tx * g.off);
+      this.velocity.set(q.tx * g.v, falling ? -g.fall : 0, q.tz * g.v);
+    } else if (g.line.axis === 'x') {
       this.position.set(g.s, g.h + g.air, g.line.c + g.off);
       this.velocity.set(g.v, falling ? -g.fall : 0, 0);
     } else {
@@ -1324,10 +1338,20 @@ export class PlayerController {
     this.grind = null;
     this.grindAgain = TUNING.grind.again;
     const ax = g.line.axis === 'x';
-    this.velocity.set(ax ? g.v : side, up, ax ? side : g.v);
+    if (g.line.curve) {
+      // (Off a line that curves: on the way it was going where he left it, and thrown across that.)
+      const q = railAt(g.line.curve, g.s);
+      this.velocity.set(q.tx * g.v + q.tz * side, up, q.tz * g.v - q.tx * side);
+    } else this.velocity.set(ax ? g.v : side, up, ax ? side : g.v);
     this.grounded = false;
     this.wasGrounded = false;
     this.jumpCut = true; // (no button's letting go cuts this short)
+  }
+
+  /** A grind line's height `s` along it (see grindHeight). A light rail has no solid to ask: it is where it is, till it ends. */
+  private lineHeight(line: GrindLine, s: number, was: number, moved: number, colliders: Aabb[]): number | 'end' | 'wall' {
+    if (line.curve) return s < 0 || s > line.curve.len ? 'end' : railAt(line.curve, s).y;
+    return grindHeight(line, s, was, moved, colliders, TUNING.grind.drop);
   }
 
   /**
@@ -1349,7 +1373,7 @@ export class PlayerController {
       g.air = Math.max(0, g.air - g.fall * dt);
       g.off *= Math.exp(-G.dropIn * dt);
       const along = g.v * dt;
-      const there = grindHeight(g.line, g.s + along, g.h, along, colliders, G.drop);
+      const there = this.lineHeight(g.line, g.s + along, g.h, along, colliders);
       if (there === 'end' || there === 'wall') {
         // (It stopped before he got to it: he is riding, in the air, and comes down where he will.)
         this.grind = null;
@@ -1367,7 +1391,11 @@ export class PlayerController {
     }
     if (input.jumpPressed) {
       // (Across the line: the stick's push to the side he will land on.)
-      const push = (g.line.axis === 'x' ? input.move.z : input.move.x) * G.hopSide;
+      let push = (g.line.axis === 'x' ? input.move.z : input.move.x) * G.hopSide;
+      if (g.line.curve) {
+        const q = railAt(g.line.curve, g.s);
+        push = (input.move.x * q.tz - input.move.z * q.tx) * G.hopSide;
+      }
       this.leaveGrind(G.hop + Math.max(0, g.v * g.slope), push);
       this.jumpCut = false;
       this.coyoteTimer = 0;
@@ -1391,10 +1419,10 @@ export class PlayerController {
       return;
     }
     const moved = v * dt;
-    const next = grindHeight(g.line, g.s + moved, g.h, moved, colliders, G.drop);
+    const next = this.lineHeight(g.line, g.s + moved, g.h, moved, colliders);
     // (He is as wide as he is: what stands across the line stops him when his front reaches it, not his middle.)
     const reach = Math.sign(v) * TUNING.rat.radius;
-    if (next === 'wall' || grindHeight(g.line, g.s + moved + reach, g.h, moved + reach, colliders, G.drop) === 'wall') {
+    if (next === 'wall' || this.lineHeight(g.line, g.s + moved + reach, g.h, moved + reach, colliders) === 'wall') {
       this.grind = null;
       this.grindAgain = G.again;
       if (Math.abs(v) > R.bailSpeed) this.bail();

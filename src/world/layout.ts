@@ -304,6 +304,12 @@ export type Decor =
   /** Butterflies about a place: `count` of them, keeping within `r` of (x, y, z), each its own colours. Drawn only. */
   | { kind: 'butterflies'; x: number; y: number; z: number; r: number; count: number }
   | { kind: 'planet'; x: number; y: number; z: number; r: number; color: number; band: number; ring?: { out: number; color: number }; tilt?: number }
+  /**
+   * A LIGHT RAIL (world/rails.ts): a ribbon of light through the air, through these points, that he can GRIND on his
+   * shield. It curves as it likes. Not solid: he passes through it unless he is grinding it. What is drawn is the line
+   * that is ridden.
+   */
+  | { kind: 'lightrail'; pts: Array<[number, number, number]> }
   /** A mushroom that glows in its colour: `size` is how tall it stands. It lights the room round it. Drawn only. */
   /** `cap`: its cap's radius, `stem`: its stem's radius at the ground (each by its height if not given: see MUSHROOM). */
   | { kind: 'mushroom'; x: number; y: number; z: number; size: number; color: number; cap?: number; stem?: number }
@@ -393,6 +399,8 @@ export interface GateSpec {
   /** Opens when all of these floor plates (by their order in the level) have been stepped on. */
   plates?: number[];
   onGoals?: boolean;
+  /** Opens when all of these creatures (by their order in the level's `enemies`) are beaten. */
+  foes?: number[];
 }
 
 /**

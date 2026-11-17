@@ -340,6 +340,8 @@ export function garden(): LevelDef {
       { to: 'milkyway', name: 'The Milky Way', need: 0, door: doorOn('north', GARDEN.halfX, -7, GARDEN.halfZ, 0) },
       // (And a sixth, in the north wall's east end, on clear floor: the Forge, the furnace's try-out.)
       { to: 'forge', name: 'The Forge', need: 0, door: doorOn('north', GARDEN.halfX, 30, GARDEN.halfZ, 0) },
+      // (And a seventh, in the north wall between those two: the Big Dipper, the dream's long ride.)
+      { to: 'bigdipper', name: 'The Big Dipper', need: 0, door: doorOn('north', GARDEN.halfX, 12, GARDEN.halfZ, 0) },
     ],
   };
 }

@@ -207,7 +207,8 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   }
   if (!only) {
     check('every level and every try-out room was swept, and the layering as they load has real work to do (hundreds of things lie on others)', levels === ALL_LEVELS.length + TEST_ROOMS.length && levels >= 33 && cured > 300, `${levels} levels, ${cured} things layered`);
-    check('only the Long Drop is too big to sweep as it loads', big.join() === 'longdrop', big.join());
+    // (The Big Dipper, 2026-11-17: the dream's long ride, 2,260 long. Clean as built, as the Long Drop is.)
+    check('only the two long rides (the Long Drop, the Big Dipper) are too big to sweep as they load', big.join() === 'longdrop,bigdipper', big.join());
     check('in every room, every FLAT thing that lies on something (a rug and each of its layers, the dance floor, a patch, a mark on a wall) is painted on afterwards and writes no depth: so the depth buffer holds the true floor, and his shadow shows on a rug (it had vanished on the long rugs and the dance floor: they stood nearer the eye than it)', flats > 300 && lying.length === 0, `${flats} flat things${lying.length ? `; ${lying.slice(0, 4).join('; ')}` : ''}`);
     check('...and solid things with a flush face wear skins', skins > 200, `${skins} skins`);
   }

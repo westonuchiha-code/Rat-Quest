@@ -427,6 +427,65 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE BIG DIPPER: the dream's long ride; LIGHT RAILS that curve; the dream's creatures SPEAK (2026-11-17). Tests `tests/bigdipper.ts` (23), `tests/dreamvoices.ts` (13)
+
+**His words:** "Yeah let's give the creatures for the glitch world robotic voices. And everything right like their
+attacks they can say a word, when they die they can say a word, you can even approximate like grunts and stuff like
+that with the speech synthesizer for them. I'd also like to build like a **huge sort of like rainbow road-esque ramp
+level like the one you already made but I want it to be like a really long way that you slide down like I want to be
+sliding down for like a straight 2 minutes.** And I want there to be **lots of like jumps and you can add some rails too
+but obviously wacky Pomo style so you'll have to make a new version of a rail. You can make it curved** you know which
+is going to be different than a lot of the other rails we have in the game but I think it would really fit the wacky
+vibe we have here. I just want it to be like a really long sort of course that you go down, lots of cool jumps, rail
+grinds, and **you can even have areas where you have to like stop sliding and fight some monsters and then there'll be
+another area where you jump off and have to slide down some more.**"
+
+**THE BIG DIPPER** (`src/levels/bigdipper.ts`; a try-out room, `#level=bigdipper`; a door in the Move Garden's north wall
+at x 12; its way out leads back there). The Milky Way's rainbow road, nine times as long: **four rides with a place
+to fight between each and the next**, written as a list of pieces (`COURSE`) laid one after another downhill:
+ - a **road** (some narrow, some wide; some with a **kicker** down the middle of their end);
+ - a **gap** (the narrow ones a rider at speed clears as he is; the wide ones, 10 across, each follow a kicker);
+ - a **rail crossing**: a gap far too wide to jump (26 to 40), crossed on LIGHT RAILS. Three kinds: `ess` (one that
+   snakes), `braid` (three that plait over and under each other), `twist` (one that goes right round, a helter-skelter);
+ - a **pad**: the road eases out onto a floor with a kerb all round and a GATE in its far side; the dream's creatures
+   are awake on it; **the gate opens when THAT pad's creatures are beaten** (`GateSpec.foes`, new); beyond it a level
+   lip, and the next ride falls away. Pad 1: three roaches. Pad 2: two mantises and a roach. Pad 3: a Stag Knight and
+   a mantis. At the bottom, the Bowl, with the way out.
+ - **Twelve bottle caps**, each on a good line: over the kickers' gaps, on the rails.
+ - **MEASURED, with the real controller and a rider that does what a player would (`makeDipRide`): the four rides are
+   35, 35, 36.5 and 38 seconds on the shield: 2 minutes 25 in all**, over 16 gaps and 6 rail crossings, and that line
+   takes all twelve caps. To make it longer or shorter, add or take pieces in `COURSE`; the test re-measures.
+ - **A creature on a pad must be told NOT to come back (`respawn: false`)**: a roach comes back five seconds after it is
+   beaten unless told not to, and the gate would never open. (The first film showed it: thirty-seven seconds of the
+   same three roaches.)
+ - **A creature on a pad must NOT be given `hunt`**: a hunter's bounds are five hundred each way from the level's middle
+   (every creature's code), and this level is 2,260 long. They are given the pad as their `arena` instead.
+ - **The dream's creatures are the waking world's in loud colours** (`dreamify`, as the sleepers are): `main.ts` does it
+   to every creature of a level whose `look` is `'dream'`.
+ - `&autoride` rides it for the films (with `&autofight&god` he fights at each pad and rides on).
+
+**LIGHT RAILS** (`src/world/rails.ts`; decor `lightrail`, a few points; `PlayerController.rails`). The game's other
+rails are found in what is solid and run along x or z. A light rail is a LINE through the air of any shape, a ribbon
+of light. **It is NOT SOLID** (light is not): he passes through it unless he is grinding it. On his shield or in the
+air, within 1.6 of it and going along it, the grind button puts him on it (a solid rail's reach is 0.85), and it
+carries him as any rail does: the same speed, drag, hop off, roll off, and off its end with the speed he had. What is
+drawn (a rainbow tube with three beads running down it the way he will go) is the very line that is ridden. A grind
+on one does not count as a fall however far down it carries him (`main.ts`, the put-back).
+
+**THE DREAM'S CREATURES SPEAK** (`src/audio/dreamVoices.ts`, `robotVoices.ts`; made by `node scripts/chip/robot.mjs`
+with his Robot Voice Box). **Only in a level whose look is the dream's** (`speaksRobot`: the Milky Way and the Big
+Dipper; `tests/dreamvoices.ts` holds it to those two). A creature says a word as it begins an attack ("tag", "got
+you", "my turn"), grunts when struck ("ow", "oof", "hey"), and says one as it goes down ("bye bye", "night night").
+Four voices, by what it is: `small` (a roach: the Intellivoice clocked up), `thin` (a mantis: a Speak & Spell, high),
+`big` (a Stag Knight: the TI-99's chip, low and flat), `plain` (anything else: the Votrax). Its own sounds are still
+heard under the voice. 161 KB in the game. **To change a word or a voice: `WORDS` and `VOICES` in `robot.mjs`, run it.**
+
+**NOT DONE, NOT KNOWN:** nobody has PLAYED it: a test rider and a film are not thumbs on a phone. The rail crossings
+may be hard to take by hand (the button must be pressed near the lip; miss it and it is a fall and a heart). The
+creatures' words were not heard by Claude (it cannot hear). The gates are the game's iron ones, not the dream's: they
+want a look of their own. The level's tune is the Milky Way's; "Saturday Morning" was written for exactly this ride
+and is not in the game. Nothing glitches yet: the creatures are toys, not rogue machines.
+
 ## THE SOUND OF THIS GAME IS HIP-HOP (the owner, 2026-11-17). THIS IS THE BRIEF FOR ALL SOUND FROM HERE. Tests `tests/tunes.ts`
 
 **His words (keep them; they are the brief):** "So I like a lot of the sound effects on the sound effects reel I think that

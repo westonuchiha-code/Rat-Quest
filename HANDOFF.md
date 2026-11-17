@@ -1423,3 +1423,15 @@ world's voices, which he wants worked on hard next.
  - Claude cannot hear: all of it is checked by numbers and by what starts in a real browser, not by ear.
  - RULE (the owner, the same day): the robot voice SPEAKS only in the dream world; elsewhere it may only be a sound
    effect (the scratched record). `songs.mjs` refuses a tune with spoken words that is not marked `dream: true`.
+
+## The Big Dipper, light rails, and the dream's creatures' voices (2026-11-17)
+
+ - `src/levels/bigdipper.ts`: the dream's long ride, a try-out room: four rides (2 min 25 on the shield by the test
+   rider) with three fight pads between, 16 gaps, 6 rail crossings, 12 caps. Written as a list of pieces (`COURSE`).
+ - `src/world/rails.ts`: LIGHT RAILS, rails that curve: a line through the air, not solid, ground with the grind button
+   (`PlayerController.rails`; `GrindLine.curve`; decor `lightrail`).
+ - `GateSpec.foes`: a gate that opens when the creatures it names are beaten.
+ - `src/audio/dreamVoices.ts`, `robotVoices.ts` (made by `scripts/chip/robot.mjs`): in dream levels ONLY, a creature
+   says a word as it attacks, grunts when struck, says one as it goes down. Four voices by kind.
+ - A level's creatures are recoloured (`dreamify`) when its `look` is `'dream'`.
+

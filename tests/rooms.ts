@@ -100,7 +100,7 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   const open = everyone.filter((l) => l.sky);
   const all = everyone.filter((l) => !l.sky);
   const none = all.filter((l) => !ceilingOf(l.solids));
-  check(`all ${all.length} levels with a roof over them have a ceiling; the one place under the open sky (the Milky Way) has none, and no walls to carry one`, none.length === 0 && open.length === 1 && open[0].id === 'milkyway' && !ceilingOf(open[0].solids) && !open[0].solids.some((b) => b.kind === 'wall'), none.map((l) => l.id).join(', '));
+  check(`all ${all.length} levels with a roof over them have a ceiling; the two places under the open sky (the dream's: the Milky Way and the Big Dipper) have none, and no walls to carry one`, none.length === 0 && open.map((l) => l.id).sort().join() === 'bigdipper,milkyway' && open.every((l) => !ceilingOf(l.solids) && !l.solids.some((b) => b.kind === 'wall')), none.map((l) => l.id).join(', '));
   const wrong = all.filter((l) => {
     const c = ceilingOf(l.solids);
     if (!c) return false;
