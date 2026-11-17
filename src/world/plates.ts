@@ -55,3 +55,24 @@ export function pressPlate(pad: THREE.Mesh, y: number): void {
   pad.material = padDownMat;
   pad.position.y = y + PLATE.padDown - PLATE.padThick / 2;
 }
+
+/** Lets a button's pad come back up (a button that can be pressed again: the practice rooms'). */
+export function raisePlate(pad: THREE.Mesh, y: number): void {
+  pad.material = padMat;
+  pad.position.y = y + PLATE.padUp - PLATE.padThick / 2;
+}
+
+/** How near the middle of a plate he must be to press it, and how far off before a button comes back up. */
+export const PLATE_REACH = 0.95;
+export const PLATE_LEAVE = 1.5;
+/**
+ * A BUTTON THAT COMES BACK UP: what happens to it this frame. `down`: it is pressed. `off`: how far he is from its
+ * middle, across the floor. `standing`: he is on the ground at its height, and alive.
+ * It is pressed when he stands on it, and stays down until he has stepped well off it: so one step on it is one
+ * press, however long he stands there, and jumping on it again is another.
+ */
+export function buttonStep(down: boolean, off: number, standing: boolean): 'press' | 'release' | null {
+  if (!down && standing && off < PLATE_REACH) return 'press';
+  if (down && off > PLATE_LEAVE) return 'release';
+  return null;
+}

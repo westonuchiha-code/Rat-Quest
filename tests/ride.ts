@@ -3,6 +3,7 @@
 //
 // Played with the real controller: when a ride starts and when it does not, what the slope, the stick and the flat
 // do to it, the ollie and the kickflip, and every way of coming off.
+import { FEELS, feelOf, type Feel } from '../src/data/feel';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
@@ -29,10 +30,13 @@ const speedOf = (p: PlayerController): number => Math.hypot(p.velocity.x, p.velo
 function hill(len: number, rise: number): Aabb[] {
   return [aabbOf(extent('floor', -120, 60, -1, 0, -60, 60)), aabbOf(rampBox('stone', -len, 0, -4, 4, 0, rise, 'e')), aabbOf(extent('stone', 0, 6, 0, rise, -4, 4))];
 }
+/** How the place plays where the next rider is put (data/feel.ts): the waking world's way, unless a test says the dream's. */
+let FEEL: Feel = FEELS.waking;
 interface Run { p: PlayerController; events: MoveEvent[] }
 /** He starts on the landing and runs down the slope; `at` gives his input each frame. */
 function play(cs: Aabb[], rise: number, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, from = new THREE.Vector3(3, rise, 0)): Run {
   const p = new PlayerController(from.clone());
+  p.feel = FEEL;
   const events: MoveEvent[] = [];
   for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
   for (let i = 0; i < frames; i++) {
@@ -513,6 +517,8 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
 // go down, with a maximum speed obviously ... like a snowboarding game ... push forward on the left analog stick in
 // order to sort of crouch down and go a little faster") ----
 {
+  // (THE TUCK IS THE DREAM'S: data/feel.ts. What the same stick does in the waking world is checked after.)
+  FEEL = FEELS.dream;
   // A long hill, as steep as the dream's roads: 300 long, falling 126.
   const cs = hill(300, 126);
   const speeds = (extra: (i: number, p: PlayerController) => Partial<PlayerInput>, frames: number): { p: PlayerController; at: number[] } => {
@@ -538,6 +544,14 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // Hard over is a carve, not a tuck.
   const carve = speeds((i, p) => { const h = Math.atan2(p.velocity.x, p.velocity.z); return { move: v(Math.cos(h) * (i % 120 < 60 ? 1 : -1) + Math.sin(h) * 0.3, -Math.sin(h) * (i % 120 < 60 ? 1 : -1) + Math.cos(h) * 0.3) }; }, 60 * 5);
   check('the stick hard to one side is a carve and not a tuck: it gains nothing', Math.max(...carve.at) <= R.max + 0.1, `${Math.max(...carve.at).toFixed(1)}`);
+
+  // ---- PHYSICS ARE PER BIOME (the owner, 2026-11-17: "you'll still be able to surf on your shield outside the wacky
+  // Pomo world but you shouldn't be able to like lean forward and give yourself momentum and that kind of stuff"). ----
+  FEEL = FEELS.waking;
+  const awake = speeds(() => ({ move: WEST }), 60 * 9);
+  check('IN THE WAKING WORLD the same stick is no tuck: he rides the hill at his standing top speed and no faster, and is not crouched', Math.abs(Math.max(...awake.at) - R.max) < 0.2 && awake.p.rideTuck < 0.01 && awake.p.riding, `${Math.max(...awake.at).toFixed(1)}, tuck ${awake.p.rideTuck.toFixed(2)}`);
+  check('the table says so: the waking world has no tuck, no speed for tricks past his standing top, no spin or grab; the dream has all three; a level that wears the dream\'s look plays the dream\'s way, and any other the waking world\'s', !FEELS.waking.ride.tuck && !FEELS.waking.ride.trickSpeed && !FEELS.waking.ride.airTricks && FEELS.dream.ride.tuck && FEELS.dream.ride.trickSpeed && FEELS.dream.ride.airTricks && feelOf({ look: 'dream' }).id === 'dream' && feelOf({}).id === 'waking' && feelOf({ look: 'dream', feel: 'waking' }).id === 'waking');
+  check('one who is not told where he is plays the waking world\'s way', new PlayerController(new THREE.Vector3()).feel.id === 'waking');
 }
 
 console.log(failures === 0 ? 'ride: all passed' : `ride: ${failures} FAILED`);

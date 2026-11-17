@@ -7,6 +7,7 @@
 // Holds, with the real controller: that he gets on his shield anywhere here and PUSHES along the flat; that the half
 // pipe carries him from wall to wall; that the big ramp throws him high and far; that the funbox's rail, the quarter
 // pipe and both light rails can be ridden; the spin and the grab, and that tricks landed are speed; and its doors.
+import { FEELS } from '../src/data/feel';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
@@ -39,6 +40,7 @@ const speedOf = (p: PlayerController): number => Math.hypot(p.velocity.x, p.velo
 /** A rat at a place, in this level (a skate park, with its rails), settled on the ground. */
 function rat(x: number, y: number, z: number): PlayerController {
   const p = new PlayerController(new THREE.Vector3(x, y + 0.01, z));
+  p.feel = FEELS.dream;
   p.rails = P.rails;
   p.skateAnywhere = !!def.skate;
   for (let i = 0; i < 10; i++) p.update(DT, inp({}), cs);
@@ -76,6 +78,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   }
   check('...and the stick let go, he rolls on, slowing', speedOf(p) < pushed - 1 && speedOf(p) > 4, `${speedOf(p).toFixed(1)}`);
   const q = new PlayerController(new THREE.Vector3(0, 0.01, -10));
+  q.feel = FEELS.dream;
   for (let i = 0; i < 10; i++) q.update(DT, inp({}), cs);
   q.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
   for (let i = 0; i < 40; i++) q.update(DT, inp({ jumpHeld: true, attackPressed: q.velocity.y < 5 }), cs);

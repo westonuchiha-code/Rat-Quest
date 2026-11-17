@@ -120,17 +120,18 @@ const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3
 // ---------------------------------------------------------------- the sign over a door
 {
   const high = SIGN.h / SIGN.dots;
-  const all: Array<{ level: string; name: string; room: number; fit: ReturnType<typeof signFit> }> = [];
+  // (A door is known here by where it LEADS: what is written on it is "Test Room 8D" now, and may change again.)
+  const all: Array<{ level: string; name: string; to: string | null; room: number; fit: ReturnType<typeof signFit> }> = [];
   for (const L of [...LEVELS, ...TEST_ROOMS]) for (const cd of L.courseDoors ?? []) {
     const room = roomOverDoor(L.solids, cd.door);
-    all.push({ level: L.id, name: cd.name, room, fit: signFit(room) });
+    all.push({ level: L.id, name: cd.name, to: cd.to, room, fit: signFit(room) });
   }
   const poke = all.filter((d) => !d.fit.fits || d.fit.foot + high * d.fit.scale > d.room - SIGN_HANG.clear + 1e-9);
   check('EVERY door\'s sign, in every level, is wholly under whatever is over the door (a roof, a ledge, the ceiling), with a little to spare', all.length >= 20 && poke.length === 0, `${all.length} doors${poke.length ? `; pokes through: ${poke.map((d) => `${d.level} ${d.name}`).join(', ')}` : ''}`);
-  const faith = all.find((d) => d.name === 'Leap of Faith')!;
+  const faith = all.find((d) => d.to === 'faith')!;
   check('the door to Leap of Faith, under the grotto\'s roof, has two and a bit units over it: its sign (two and a half high at full size, hung a unit up) did not fit; it is hung just over the opening now, smaller, out in front of the arch\'s top stones', faith.room > 2 && faith.room < 2.5 && faith.fit.scale < 1 && faith.fit.scale >= 0.7 && faith.fit.foot < 0.2 && faith.fit.out > DOOR_FRAME.out + DOOR_FRAME.depth / 2, `room ${faith.room.toFixed(2)}, at ${Math.round(faith.fit.scale * 100)}% size`);
   const small = all.filter((d) => d.fit.scale < 1);
-  check('...and so is any other with a low roof (the Coal Cellars\' door in the Foundry); every door with room for it has its sign at full size, a unit over the arch, against the wall', small.length >= 2 && small.some((d) => d.name === 'The Coal Cellars') && all.filter((d) => d.fit.scale === 1).every((d) => d.fit.foot === SIGN_HANG.foot && d.fit.out < 0.2) && all.filter((d) => d.fit.scale === 1).length >= 16, small.map((d) => `${d.name} ${Math.round(d.fit.scale * 100)}%`).join(', '));
+  check('...and so is any other with a low roof (the Coal Cellars\' door in the Foundry); every door with room for it has its sign at full size, a unit over the arch, against the wall', small.length >= 2 && small.some((d) => d.to === 'coalcellars') && all.filter((d) => d.fit.scale === 1).every((d) => d.fit.foot === SIGN_HANG.foot && d.fit.out < 0.2) && all.filter((d) => d.fit.scale === 1).length >= 16, small.map((d) => `${d.name} ${Math.round(d.fit.scale * 100)}%`).join(', '));
   check('no sign is made smaller than half size (it must still be read), and with less room than that takes `fits` says so; a little short of room to hang a unit up, it hangs low at its full size; shorter still, low and smaller', signFit(1).scale === SIGN_HANG.least && !signFit(1).fits && signFit(10).scale === 1 && signFit(high + SIGN_HANG.foot + SIGN_HANG.clear).foot === SIGN_HANG.foot && signFit(high + SIGN_HANG.foot).foot === SIGN_HANG.low && signFit(2).scale < 1 && signFit(2).fits);
   check('a cave doorway\'s keystone is the arch\'s own stone (it was the dark wet rock of the cave\'s walls: on a pale arch, a block of wall stuck on top of the door)', DOOR_LOOKS.cave.key === DOOR_LOOKS.cave.frame && DOOR_LOOKS.cave.key !== 'wetRock' && levelById('hollows')?.theme === 'cave');
 }

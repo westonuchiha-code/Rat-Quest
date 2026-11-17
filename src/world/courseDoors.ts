@@ -36,7 +36,7 @@ const DIM = [0xd8, 0xc0, 0x98];
 const WEDGE = ['1111111', '1111111', '0111110', '0110110', '0011100', '0011100', '0001000'];
 
 /** The sign's picture: `SIGN.w` by `SIGN.h` dots, four numbers a dot, its top row first. And what is written on it, line by line. */
-export function signPixels(def: { name: string; need: number }, st: DoorState): { data: Uint8Array; lines: string[] } {
+export function signPixels(def: { name: string; need: number; under?: string }, st: DoorState): { data: Uint8Array; lines: string[] } {
   const { w, h } = SIGN;
   const data = new Uint8Array(w * h * 4);
   const put = (x: number, y: number, c: number[]): void => {
@@ -53,8 +53,10 @@ export function signPixels(def: { name: string; need: number }, st: DoorState): 
   };
   const name = wrapText(def.name.toUpperCase(), SIGN.lineMax).slice(0, 2);
   // What is under the name: his wedges of the course's; or what it wants of him; or that it is not built.
-  const under = st.open ? (st.of > 0 ? `${st.got}/${st.of}` : 'BEING DUG OUT') : `x ${def.need}`;
-  const icon = !(st.open && st.of <= 0);
+  // (A door with words of its own for that line, the Hall's "TEST ROOM 3", says those, and has no wedge beside them.)
+  const own = st.open && def.under !== undefined;
+  const under = own ? def.under!.toUpperCase() : st.open ? (st.of > 0 ? `${st.got}/${st.of}` : 'BEING DUG OUT') : `x ${def.need}`;
+  const icon = !own && !(st.open && st.of <= 0);
   const rows = name.length + 1;
   // (Its lines spread down the board: seven dots each, and what is left over shared out as the gaps.)
   const gap = Math.floor((h - 4 - rows * GLYPH_H) / (rows + 1));
@@ -64,7 +66,7 @@ export function signPixels(def: { name: string; need: number }, st: DoorState): 
     y += GLYPH_H + gap;
   }
   const lead = icon ? 10 : 0;
-  write(under, y, st.open ? (st.of > 0 ? GOLD : DIM) : ROSE, lead);
+  write(under, y, st.open ? (st.of > 0 || own ? GOLD : DIM) : ROSE, lead);
   if (icon) {
     const x0 = Math.round((w - textWidth(under) - lead) / 2);
     WEDGE.forEach((row, r) => [...row].forEach((bit, c) => {
@@ -140,7 +142,7 @@ export class CourseDoors {
     defs.forEach((def, i) => {
       const st = states[i];
       const d = new Doorway(def.door, theme);
-      d.lit = st.open && st.of > 0;
+      d.lit = st.open && (st.of > 0 || def.under !== undefined);
       this.doors.push(d);
       this.group.add(d.group);
       const local = new THREE.Group();

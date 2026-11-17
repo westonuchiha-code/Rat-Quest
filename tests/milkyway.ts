@@ -5,6 +5,7 @@
 // Holds: that it is a try-out room and how he gets to it; that the road can be RIDDEN top to bottom with the real
 // controller (every gap crossed, every bottle cap taken, landing on the Moon); that a slow rider needs the jump off
 // the board at a gap; that off the side is a fall he is put back from; and that the dream's look is only looks.
+import { FEELS } from '../src/data/feel';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
@@ -57,7 +58,7 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
     built = false;
     console.log(String(e));
   }
-  check('it builds (its planets too); there is nothing to fight, and its way out stands on the Moon and leads back to the garden', built && def.enemies.length === 0 && def.goals.length === 0 && def.returnTo === 'garden' && Math.abs(ground(def.exit.x, def.exit.z - 1)) < 1e-9 && def.exit.z > P.moon.z0 + 10);
+  check('it builds (its planets too); there is nothing to fight, and its way out stands on the Moon and leads back to the Toy Box (it is one of the rooms of the dream: Test Room 1B)', built && def.enemies.length === 0 && def.goals.length === 0 && def.returnTo === 'toybox' && Math.abs(ground(def.exit.x, def.exit.z - 1)) < 1e-9 && def.exit.z > P.moon.z0 + 10);
 }
 
 // ---------------------------------------------------------------- the road
@@ -114,6 +115,7 @@ interface Run { p: PlayerController; seconds: number; fastest: number; got: Set<
  */
 function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?: (p: PlayerController) => number | null } = {}): Run {
   const p = new PlayerController(new THREE.Vector3(0, P.headY, -3));
+  p.feel = FEELS.dream;
   const bag = new CollectibleTracker([{ id: def.id, name: def.name, items: def.collectibles }], null);
   const got = new Set<string>();
   let rode = false;
@@ -352,6 +354,7 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   const plan = milkyWayPlan();
   const solids = d.solids.map((b) => aabbOf(b));
   const p = new PlayerController(new THREE.Vector3(d.spawn.x, d.spawn.y + 0.01, d.spawn.z));
+  p.feel = FEELS.dream;
   const auto = makeAutoRide();
   let rode = false;
   let fell = false;

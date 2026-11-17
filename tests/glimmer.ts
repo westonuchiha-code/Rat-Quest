@@ -83,7 +83,7 @@ const reachUp = (x: number, y: number, z: number, toward: [number, number]): num
 {
   const hollows = levelById('hollows')!;
   const door = hollows.courseDoors?.find((d) => d.to === 'glimmer');
-  check('the Glimmer Deep is a level of the GAME, in the Hollows: in the game\'s list, not the test rooms\', and the way out of it leads back to the Hollows', LEVELS.some((l) => l.id === 'glimmer') && !TEST_ROOMS.some((l) => l.id === 'glimmer') && def.world === 'hollows' && def.returnTo === 'hollows' && levelById('glimmer')?.name === 'The Glimmer Deep');
+  check('the Glimmer Deep is a level of the GAME, in the Hollows: in the game\'s list, not the test rooms\', and the way out of it leads back to the Hollows', LEVELS.some((l) => l.id === 'glimmer') && !TEST_ROOMS.some((l) => l.id === 'glimmer') && def.world === 'hollows' && def.returnTo === 'hollows' && levelById('glimmer')?.was === 'The Glimmer Deep' && levelById('glimmer')?.name === 'Test Room 8F');
   const hs = hollows.solids.map((b) => makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0));
   const others = [hollows.exit, ...(hollows.courseDoors ?? []).filter((d) => d !== door).map((d) => d.door)];
   check('a door in the Hollows\' east wall leads to it: open from the start, on the cave\'s own floor with floor to stand on before it, and well clear of the other doors', !!door && door.need === 0 && (door.door.y ?? 0) === 0 && door.door.x > 47 && standsOn(hs, door.door.x - 1.4, 0, door.door.z, 0.4) && standsOn(hs, door.door.x - 3, 0, door.door.z, 0.4) && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 8));

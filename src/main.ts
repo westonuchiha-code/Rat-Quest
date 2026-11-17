@@ -25,7 +25,7 @@ import { IRONBACK, Ironback, IronbackState } from './enemies/ironback';
 import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
-import { buildPlate, pressPlate } from './world/plates';
+import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
 import { MantisModel } from './enemies/mantisModel';
@@ -96,6 +96,9 @@ import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt, inBrazierFire , slimeZones } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
+import { feelOf } from './data/feel';
+import { HALL_ID } from './levels/testRooms';
+import { wayOutOf } from './levels/wayOut';
 import { makeAutoRide } from './levels/milkyway';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
@@ -1322,6 +1325,15 @@ function startGame(): void {
   // The old chain of levels (only the archive's, opened by #level=, still lead one to the next).
   const levelOrder = ARCHIVE.map((l) => l.id);
   const hubLevel = LEVELS.find((l) => l.hub) ?? null;
+  /**
+   * HOME: the Hall (levels/hall.ts), where the game starts and every room's door leads back to. (`hubLevel` is the
+   * Club, the first hub: it is one of the Hall's rooms now, and its own doors and their prices still work.)
+   */
+  const homeLevel = levelById(HALL_ID) ?? hubLevel;
+  /** A place with no way out of its own: home. (The Club is a hub too, but its door leads back to the Hall.) */
+  const noWayOut = (l: LevelDef): boolean => !!l.hub && (l === homeLevel || !homeLevel);
+  /** Which level he came into each level FROM, by a door (this sitting): its way out leads back to that door. */
+  const cameFrom = new Map<string, string>();
   // The player's own levels from the builder: compiled on demand, and rebuilt when the library changes.
   const myLevels = new MyLevels(browserStorage());
   let myDefs: LevelDef[] = [];
@@ -1347,7 +1359,9 @@ function startGame(): void {
     }
     return doors;
   };
-  const doorsOf = (def: LevelDef): CourseDoorDef[] => (def.hub ? hubDoors() : def.courseDoors ?? []);
+  const doorsOf = (def: LevelDef): CourseDoorDef[] => (def.hub && def === hubLevel ? hubDoors() : def.courseDoors ?? []);
+  /** Where a level's way out leads (levels/wayOut.ts): the door he came in by, or the Hall, or the area it is part of. */
+  const parentOf = (l: LevelDef): LevelDef | null => wayOutOf(l, cameFrom.get(l.id), { home: homeLevel, hub: hubLevel, byId: levelById, doorsOf, isMine });
   /** Every area in the world this one belongs to (the world's main area and its side areas). */
   const worldAreas = (def: LevelDef): LevelDef[] => {
     const w = def.world ?? def.id;
@@ -1562,8 +1576,12 @@ function startGame(): void {
     }
     const d = newestSave(files)?.data ?? null;
     // Always build the level again, so nothing of the other file's game is left in it.
-    loadLevel((d && levelById(d.levelId ?? 'hub')) || hubLevel || LEVELS[0], true);
-    if (!applySave(d)) follow.snap();
+    // (As of 2026-11-17 a file opens IN THE HALL, whatever level it was saved in: the Hall is the list of places, and
+    // every level is a test room off it. What the file holds, his hearts and all he has found, is as it was saved.
+    // Loading a save from the pause menu still puts him back exactly where it was made.)
+    loadLevel(homeLevel || hubLevel || LEVELS[0], true);
+    if (d) player.hp = Math.max(1, d.hp);
+    follow.snap();
     applyGear();
   }
   const AUTOSAVE_EVERY = 20;
@@ -1698,6 +1716,7 @@ function startGame(): void {
     // creature in all it does, its painted colours turned round the wheel. Only looks.
     if (def.look === 'dream') enemyModels.forEach((m, i) => dreamify(m.root, [0.42, 0.58, 0.3, 0.7][i % 4]));
     // Its light rails (world/rails.ts): the lines that are drawn are the lines he grinds.
+    player.feel = feelOf(def);
     player.skateAnywhere = !!def.skate;
     player.rails = def.decor.filter((d): d is Extract<typeof d, { kind: 'lightrail' }> => d.kind === 'lightrail').map((d) => railCurve(d));
     // An open course: the wedges he already has, and the ones out in the course right now (so they do not chime on arrival).
@@ -1714,7 +1733,8 @@ function startGame(): void {
     // A hub: its own door is open from the start, and its course doors show what they lead to and what they want.
     // A sub-area's door back out is open from the start: unless the area asks something of him first (the Long
     // Drop's way out opens when the Widow is beaten; he walked out past her, the first time she was put in).
-    if (def.returnTo && def.goals.length === 0) levelProgress.markCleared(def.id);
+    // (And the Club's, now that it is a room off the Hall: it leads back there.)
+    if ((def.returnTo || (def.hub && !noWayOut(def))) && def.goals.length === 0) levelProgress.markCleared(def.id);
     // Doors to other areas (the Club's world doors, or a world's doors into its side areas), each with a sign.
     const doors = doorsOf(def);
     if (doors.length) {
@@ -2303,6 +2323,11 @@ function startGame(): void {
       guardHeld = a.guardHeld;
       dodgePressed = a.dodgePressed;
     }
+    // (`&autowalk=x,z`: he runs steadily that way across the floor, for a film of a place: the Hall, end to end.)
+    if (devWalk && !player.dead) {
+      m.set(devWalk[0], 0, devWalk[1]);
+      run = true;
+    }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
       let nd = 26;
@@ -2519,6 +2544,25 @@ function startGame(): void {
 
     // Floor plates.
     (cur.plates ?? []).forEach((pl, i) => {
+      if (pl.spawn) {
+        // A button that comes back up: each press puts one more of its creature in the room (levels/practice.ts).
+        const off = Math.hypot(pl.x - player.position.x, pl.z - player.position.z);
+        const pad = plateGroup?.children[i * 2] as THREE.Mesh | undefined;
+        const does = buttonStep(platesDown[i], off, player.grounded && !player.dead && Math.abs(player.position.y - pl.y) < 0.6);
+        if (does === 'press') {
+          platesDown[i] = true;
+          if (pad) pressPlate(pad, pl.y);
+          const room = aliveCount() < (pl.most ?? 6);
+          if (room) addEnemy({ ...pl.spawn });
+          if (room && cur.look === 'dream') dreamify(enemyModels[enemyModels.length - 1].root, 0.42);
+          audio.play('menuOk', { vol: 0.9, rate: room ? 0.7 : 0.45, priority: 6 });
+          shake = Math.max(shake, 0.05);
+        } else if (does === 'release') {
+          platesDown[i] = false;
+          if (pad) raisePlate(pad, pl.y);
+        }
+        return;
+      }
       if (platesDown[i] || !player.grounded || player.dead) return;
       if (Math.hypot(pl.x - player.position.x, pl.z - player.position.z) < 0.95 && Math.abs(player.position.y - pl.y) < 0.6) {
         platesDown[i] = true;
@@ -2568,7 +2612,7 @@ function startGame(): void {
       if (cur.reward) equipment.give(cur.reward);
     }
     // Stepping up to an open door takes him to the next level.
-    if (!cur.hub && levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && !story.scene && player.grounded && !player.dead && atDoor(cur.exit, player.position.x, player.position.z)) {
+    if (!noWayOut(cur) && levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && !story.scene && player.grounded && !player.dead && atDoor(cur.exit, player.position.x, player.position.z)) {
       const leaving = STORY[cur.id]?.exit;
       if (leaving && !storyOff && !exitScenePlayed) {
         // A last bit of acting at the door, then on to the next room.
@@ -2581,16 +2625,12 @@ function startGame(): void {
         builder.show();
         player.velocity.set(0, 0, 0);
         player.position.z += 2.5;
-      } else if (cur.returnTo && levelById(cur.returnTo)) {
-        // Out of a side area: back to its world, in front of the door that led here.
-        const parent = levelById(cur.returnTo)!;
+      } else if (parentOf(cur)) {
+        // Out of a room: back to where he came in from (or the Hall, or the area it is part of), in front of the door
+        // that leads here, if there is one.
+        const parent = parentOf(cur)!;
         const cd = doorsOf(parent).find((d) => d.to === cur.id);
         startTransition(parent);
-        if (cd) trans.arrive = { x: cd.door.x, z: cd.door.z, y: cd.door.y ?? 0, yaw: cd.door.yaw };
-      } else if ((cur.wedges || isMine(cur.id)) && hubLevel) {
-        // Out of a course (or one of his own levels): back to the hub, in front of its door if it has one.
-        const cd = hubDoors().find((d) => d.to === cur.id);
-        startTransition(hubLevel);
         if (cd) trans.arrive = { x: cd.door.x, z: cd.door.z, y: cd.door.y ?? 0, yaw: cd.door.yaw };
       } else startTransition(nextLevel());
     }
@@ -2599,6 +2639,7 @@ function startGame(): void {
       for (const cd of doorsOf(cur)) {
         const to = cd.to ? levelById(cd.to) : null;
         if (to && doorOpen(cd) && atDoor(cd.door, player.position.x, player.position.z)) {
+          cameFrom.set(to.id, cur.id);
           startTransition(to);
           break;
         }
@@ -2617,8 +2658,8 @@ function startGame(): void {
     storySeen.reset();
     trans.active = false;
     player.hp = player.maxHp;
-    // A new game starts at home, in the Club.
-    loadLevel(hubLevel ?? LEVELS[0]);
+    // A new game starts at home, in the Hall.
+    loadLevel(homeLevel ?? LEVELS[0]);
     applyGear();
   }
   const menu = new Menu(gameWrap, {
@@ -2673,13 +2714,13 @@ function startGame(): void {
     // to the Club; he arrives in front of the door that led here. (The owner, 2026-11-16, at the top of the Milky Way:
     // "there's no door to go back so it feels like a soft lock".)
     leave: () => {
-      if (cur.hub || cur.id === 'custom' || trans.active || cutscene.active || story.scene || player.dead) return null;
-      const parent = (cur.returnTo ? levelById(cur.returnTo) : null) ?? hubLevel;
+      if (noWayOut(cur) || cur.id === 'custom' || trans.active || cutscene.active || story.scene || player.dead) return null;
+      const parent = parentOf(cur) ?? homeLevel;
       if (!parent || parent === cur) return null;
       return {
         to: parent.name,
         go: () => {
-          const cd = [...doorsOf(parent), ...(parent === hubLevel ? hubDoors() : [])].find((d) => d.to === cur.id);
+          const cd = doorsOf(parent).find((d) => d.to === cur.id);
           startTransition(parent);
           if (cd) trans.arrive = { x: cd.door.x, z: cd.door.z, y: cd.door.y ?? 0, yaw: cd.door.yaw };
         },
@@ -3012,6 +3053,7 @@ function startGame(): void {
   // sweep through part of a turn, for a place with a wall close on one side.)
   const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
   let orbitFrom = -1;
+  const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
@@ -3518,8 +3560,9 @@ function startGame(): void {
   const cutAt = /cut=([\d.]+)/.exec(location.hash);
   const startAt = /level=(\w+)/.exec(location.hash);
   // He picks up where he was if that is part of the world; otherwise (a new game, or an old campaign level) at home.
-  const lastLevel = levelById(levelProgress.last ?? '');
-  const first = (startAt && levelById(startAt[1])) || (lastLevel && inWorld(lastLevel) ? lastLevel : null) || hubLevel || LEVELS[0];
+  // (As of 2026-11-17 every level is a test room off the Hall: he starts in the Hall, whatever he was in last. The
+  // Hall is the list of places.)
+  const first = (startAt && levelById(startAt[1])) || homeLevel || hubLevel || LEVELS[0];
   loadLevel(first, !startAt);
   // Development aid: #at=x,y,z,cameraYaw starts the rat somewhere else, for screenshots.
   const atMatch = /at=([-\d.,]+)/.exec(location.hash);
@@ -3715,7 +3758,7 @@ function startGame(): void {
 
     // The door reveal scene: he looks around, the room rumbles, the camera finds the wall, the door appears.
     // The Club has no door of its own: its ways out are the world doors.
-    const open = levelProgress.cleared(cur.id) && !cur.hub;
+    const open = levelProgress.cleared(cur.id) && !noWayOut(cur);
     let doorSparkle = open ? 1 : 0;
     let doorFade = open ? 1 : 0;
     let camBlend = 0;
@@ -3892,7 +3935,7 @@ function startGame(): void {
     }
     fader.set(Math.max(cover, story.scene && storyFrame ? storyFrame.cover : 0));
     doorway.setReveal(doorSparkle, doorFade, time);
-    if (doorFade >= 1 && !exitFrameSolid && !cur.hub) exitFrameSolid = addDoorFrame(cur.exit, true);
+    if (doorFade >= 1 && !exitFrameSolid && !noWayOut(cur)) exitFrameSolid = addDoorFrame(cur.exit, true);
     if (wedgeVis && cur.wedges) {
       const ws = cur.wedges;
       const alive = aliveCount();
@@ -3921,7 +3964,8 @@ function startGame(): void {
       wedgeVis.update(frameDt, time, (i) => wedgeWasOut[i], (i) => goals.earned.has(ws[i].id), camera.quaternion);
     }
     courseVis?.update(time);
-    const gs = cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
+    // (The Hall asks nothing of him and counts nothing: only its name.)
+    const gs = noWayOut(cur) ? { label: cur.name, text: '', done: false } : cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
     if (gs) goalHud.set(gs.label, gs.text, goals.mainDone(aliveCount()) || open);
     if (builder.live) builder.setPlayer(renderPos.x, renderPos.z, player.facing);
     if (builder.live) builder.info(`hearts ${player.hp}  ${gs ? `${gs.label} ${gs.text}` : ''}${open ? '  DOOR OPEN' : ''}`);

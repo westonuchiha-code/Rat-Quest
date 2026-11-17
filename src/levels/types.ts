@@ -9,6 +9,7 @@ import type { CollectibleDef, CollectibleKind } from '../world/collectibles';
 import type { PickupDef } from '../data/equipment';
 import type { DoorSpec } from '../world/rooms';
 import type { Well } from '../world/collision';
+import type { FeelId } from '../data/feel';
 
 /** One thing he must do. A level opens its exit when every main goal is done. */
 export type GoalDef =
@@ -82,6 +83,8 @@ export interface CourseDoorDef {
   name: string;
   need: number;
   door: DoorSpec;
+  /** What its sign says UNDER the name, instead of the wedges taken there (the Hall's doors: "TEST ROOM 3"). */
+  under?: string;
 }
 
 export interface LevelDef {
@@ -116,6 +119,8 @@ export interface LevelDef {
    * FOR EVERY DREAM LEVEL, AND EVERY LEVEL THAT IS A RIDE DOWNHILL, IN ANY WORLD.
    */
   fallFree?: boolean;
+  /** How the place PLAYS (data/feel.ts). Default: the waking world's way; the dream's, if it wears the dream's look. */
+  feel?: FeelId;
   /** A skate park: the air attack puts him on his shield over ANY ground here, not only over a steep slope (and so there is no dive). */
   skate?: boolean;
   /**
@@ -149,8 +154,12 @@ export interface LevelDef {
   well?: Well;
   /** Platforms that glide back and forth and carry the rat. */
   movers?: MoverSpec[];
-  /** Floor plates: stepping on one presses it for good; gates can wait for them. */
-  plates?: Array<{ x: number; z: number; y: number }>;
+  /**
+   * Floor plates: stepping on one presses it for good; gates can wait for them.
+   * With `spawn` it is a BUTTON THAT COMES BACK UP when he steps off: each time it is pressed, one more of that
+   * creature is put in the room, unless `most` (default 6) are alive already. (The practice rooms: levels/practice.ts.)
+   */
+  plates?: Array<{ x: number; z: number; y: number; spawn?: EnemySpec; most?: number }>;
   /** Friendly characters to talk to. */
   npcs?: NpcSpec[];
   spawn: { x: number; y: number; z: number; facing: number };
@@ -171,6 +180,8 @@ export interface LevelDef {
   noGrab?: boolean;
   /** No long jump here (gaps meant to be crossed with a plain running jump). */
   noLongJump?: boolean;
+  /** What it was called before every level became a numbered test room (levels/testRooms.ts): kept as a note. */
+  was?: string;
   /** A hub: doors into courses; its own door is open from the start. */
   hub?: boolean;
   courseDoors?: CourseDoorDef[];

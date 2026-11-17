@@ -28,6 +28,9 @@ import { glowCave } from './glowcave';
 import { forge } from './forge';
 import { coldMain } from './coldmain';
 import { CAMPAIGN } from './campaign';
+import { hall } from './hall';
+import { practiceRoom, widowPit } from './practice';
+import { HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from './testRooms';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
 
@@ -242,7 +245,44 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
  * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
  */
-export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox()];
+export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom)];
+
+/**
+ * EVERY LEVEL IS A NUMBERED TEST ROOM (the owner, 2026-11-17; levels/testRooms.ts). Each room in the list is named
+ * "Test Room N"; the areas its own doors lead to (and theirs) are N-B, N-C... in the order they are found, unless
+ * they are rooms of the list themselves or already another room's. What a level WAS called is kept in `was`. And every
+ * door anywhere that leads to a renamed level says its new name (the Hall's doors say what the list gives them).
+ */
+function nameTheRooms(all: LevelDef[]): void {
+  const by = new Map(all.map((l) => [l.id, l]));
+  const taken = new Set(ROOMS.map((r) => r.id));
+  for (const r of ROOMS) {
+    const main = by.get(r.id);
+    if (!main) continue;
+    const areas = [main];
+    for (let i = 0; i < areas.length; i++) {
+      for (const cd of areas[i].courseDoors ?? []) {
+        const to = cd.to ? by.get(cd.to) : undefined;
+        if (to && !taken.has(to.id)) {
+          taken.add(to.id);
+          areas.push(to);
+        }
+      }
+    }
+    areas.forEach((a, i) => {
+      a.was = a.name;
+      a.name = roomName(r.n, i);
+    });
+  }
+  for (const l of all) {
+    if (l.id === HALL_ID) continue;
+    for (const cd of l.courseDoors ?? []) {
+      const to = cd.to ? by.get(cd.to) : undefined;
+      if (to?.was) cd.name = to.name;
+    }
+  }
+}
+nameTheRooms([...ALL_LEVELS, ...TEST_ROOMS]);
 
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */

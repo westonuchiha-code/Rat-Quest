@@ -4,12 +4,124 @@ Read this first. HANDOFF.md is a log of each feature, oldest first, and PLAN.md 
 Where they disagree with this file (an old test-room hash, "the story is in progress"), this file is right.
 
 ## The project
-RATQUEST: THE KINGDOM BELOW is a PS1-style 3D action platformer: a rat knight, a hub (the Club), four worlds of
-Golden Wedges in the style of Mario 64, and sword and shield combat in the style of Zelda.
+RATQUEST: THE KINGDOM BELOW is a PS1-style 3D action platformer: a rat knight with a sword and a shield. **As of
+2026-11-17 it is a set of TEST ROOMS off one hallway (see "THE VISION CHANGED", next): each room is a playground for
+one kind of play.** (Before that: a hub, the Club, and four worlds of Golden Wedges in the style of Mario 64. All of
+that is still in the code.)
 - Stack: TypeScript (strict, no unused locals or parameters), Three.js 0.187, Vite 8. No other game libraries.
 - The owner tests on a **phone** with single-file HTML builds opened in the Claude app. The real targets are
   keyboard and mouse, controllers, and **Steam** (Electron wrapper in `steam/`, Steam Deck included).
 - Every mechanic has been built and tested by machine; the owner has not reported back on the latest builds.
+
+## THE VISION CHANGED (the owner, 2026-11-17). READ THIS BEFORE ANYTHING ELSE ABOUT LEVELS
+
+**His words** (spoken, so the punctuation is his dictation's; nothing is left out that says what he wants):
+
+> "At the beginning of this project I was thinking of a Mario 64 Style game or a Zelda Style game where you're going
+> from room to room and you have a big sort of normal space you can run around or whatever but **the vision is slowly
+> changing.** So right now **I want all the levels in the game to be labeled as test rooms and we're basically going
+> to use them all as playgrounds** just like we are currently doing with the dream world the wacky Pomo dream world.
+> We're going to make each different space feel unique. So **each current level we have right now is going to be a
+> representation of I guess a level genre in the game.** None of them are complete yet. **Nothing is officially part
+> of a story or anything**, all of the assets, little cut scenes and videos that we have, all of that kind of stuff,
+> **even things like fonts may change in the future so they all need to be well organized, kept track of and easily
+> replaceable.**"
+
+> "I also want to create **one big Hub world**, it should be pretty simple, it'll just be **a long hallway where NPCs
+> are all hanging out kind of like Dizzy Dave's room already is, except this one's going to be much longer and it's
+> going to have a door to each different test room.** Each test room instead of being labeled how they are now after
+> whatever name we came up with **they will just be labeled test room 1, Test Room 2, test room 3, test room 4 and we
+> can come up with nicknames for them in the future. The doors will be labeled after their sort of like biome type, as
+> placeholder names** so door one could be wacky Pomo dream world, then door two could be Mushroom cave, door three
+> could be the sewers, door four could be the ice world we were working on, etc. Anything that doesn't have a good
+> nickname title yet we can just keep it the number for now and we'll come up with the name later when we're testing
+> that specific level biome out. So **this hallway will have all the NPCs in the game, if we come up with new ones
+> they will join the crowd in the hallway**, then we will have a door for each different world like I just discussed,
+> **I would also like doors to specific boss fights we might want to work out** so like the spider boss fight should
+> have a room that we can use to test it out, the Grimsqueak fight should have its own room that we can work on, and
+> atmosphere, at this point we can tune the atmosphere while we tune the fight, I think that's a better workflow
+> anyways. **I also want each different enemy type to have a room where it spawns that enemy one at a time so you can
+> practice fighting them, maybe those rooms can even have buttons on the floor that spawn the enemy so you can spawn a
+> few of them at a time by jumping on the button** or something."
+
+> "And **certain physics should be kept separate.** So right now we're building the wacky Pomo skateboard type dream
+> world thing. The shield shouldn't work like that [elsewhere], and the surfing part, like **you'll still be able to
+> surf on your shield outside the wacky Pomo world but you shouldn't be able to like lean forward and give yourself
+> momentum and that kind of stuff**, like the dream world is supposed to be fantastical, it's supposed to feel
+> floatier and more high velocity and hyperactive and different than the normal world, so when you're playing the game
+> in the normal levels you want to have different physics. So along with separating the test room biomes, **we also
+> want to keep track of how the physics act in each biome**, or sort of whatever we end up calling it, I'm just going
+> to keep calling them biomes."
+
+**What each kind of level is to FEEL like (his examples; the numbers of the levels are only his for-instances):**
+ - **The sewers: Dark Souls.** "You're blocking, you're parrying, you're having more difficult fights, you're moving
+   slower through the level."
+ - **A platform level: a 3D Mario.** "A lot of wall jumping and double jumping and the enemies that you fight you can
+   kind of just ground pound your way out of because they're weaker enemies."
+ - **A railway: Sonic Adventure.** "A lot of grinding ... you're grinding down the railway on your shield and you're
+   smacking bats out of the air with your sword while you're grinding down the rail."
+ - **The wacky Pomo dream: Tony Hawk's Pro Skater mixed with everything else.** He gets there "after you get knocked
+   out by a bad guy or you eat a weird mushroom or however we end up getting them there". "Everything there is
+   fantastical and crazy and weird colors and his scarf is going crazy and **he can jump higher and move faster and
+   maybe we'll give him a triple jump** and he can like skate around". "You might fight some of the same enemies in
+   the wacky Pomo world that you fight in the sewers but in the wacky world they're not as scary because they have some
+   kind of crazy skin texture and they look funny and even though they fight the same **you're kind of way floatier
+   and stronger in this world so you almost feel like a superhero fighting them.**"
+ - **Then he wakes:** "things will start feeling more like Dark Souls again or like a Legend of Zelda Ocarina of Time
+   and things will start to be a little more scary and dangerous and enemies will be a little harder and **you'll
+   start to miss that feeling of superpowered, just long enough for the game to give it to you again**". "We want to
+   give people a smorgasbord of different kinds of feelings this game can give them even though technically every
+   single level is more or less an action hack and slash souls-like 3D platformer."
+ - And: "Your work on the ramp is looking good."
+
+**WHAT FOLLOWS FROM IT (rules for whoever works here next):**
+ 1. **Every level is a TEST ROOM, a playground for one kind of play.** None is finished, none is part of a story.
+    They are named "Test Room N"; their old names are kept only as notes (`was` in `src/levels/testRooms.ts`).
+ 2. **THE HALL (`hall`, `src/levels/hall.ts`) is the hub**: a long hallway, every NPC in the game standing about in
+    it, a door to every test room, to each boss fight, and to a practice room for each kind of enemy. **A new NPC
+    joins the crowd in the Hall. A new room gets a door in the Hall.** Both are done in ONE list:
+    `src/levels/testRooms.ts`.
+ 3. **A door's sign is its BIOME, a placeholder** ("WACKY POMO DREAM", "THE SEWERS"); a room with no good nickname
+    yet shows only its number.
+ 4. **PHYSICS ARE PER BIOME, and written down in one table: `src/data/feel.ts`.** The dream's tuck (lean forward for
+    speed), its speed for tricks and its air tricks are the DREAM'S. He can still ride his shield elsewhere, without
+    them. Anything new that changes how he moves goes in that table, per biome, never as a global change.
+ 5. **Everything may be replaced: models, textures, sounds, music, cutscenes, fonts, names.** Keep each in one named
+    place, and keep the list of them current. (An inventory of them is NOT yet written: it is on the list.)
+ 6. The Club, the wedges, the worlds' doors and their prices are still in the code and still work, but they are no
+    longer "the game": do not build on them as if they were.
+
+**WHAT WAS BUILT THE SAME DAY (2026-11-17; `tests/hall.ts`, 38 checks; films `film-the-hall.mp4`, `film-practice-room.mp4`):**
+ - **THE HALL** (`#level=hall`; plain `ratquest.html` opens in it). 125 long, 14 wide. NORTH wall: test rooms 1 to 11
+   from the west end, a gap, then four boss rooms. SOUTH wall: eleven practice rooms. EAST end: Dave and Jinx on a low
+   stage. All seventeen of the Club's cast stand about in it, clear of every door and of the middle (their words are
+   the Club's: placeholders). A fire by the way in to rest at. **The game always STARTS in the Hall now** (it used to
+   pick up in the last level).
+ - **THE LIST: `src/levels/testRooms.ts`** (`ROOMS`, `BOSS_ROOMS`, `PRACTICE_ROOMS`). The Hall's doors and every
+   level's name are made from it (`hall.ts` `hallDoors`, `levels.ts` `nameTheRooms`). As built:
+   1 WACKY POMO DREAM (toybox; 1B milkyway, 1C bigdipper) · 2 MUSHROOM CAVE (glowcave) · 3 THE SEWERS (cistern; 3B to
+   3E its four side areas) · 4 ICE WORLD (coldmain) · 5 DOWNHILL PIPES (longdrop) · 6 FOUNDRY (foundry; 6B, 6C) ·
+   7 FORGE (forge) · 8 DEEP CAVES (hollows; 8B to 8F) · 9 CASTLE (keep; 9B the throne room) · 10 MOVE GYM (garden) ·
+   11 THE CLUB (hub). **These biome names are MINE, as placeholders: he has named only the first four.**
+   Bosses: SPIDER BOSS (`widowpit`, new: the two Widows in their round of light, without the ride down to them),
+   GRIMSQUEAK (`lair`), SUMP WYRM (`sump`), BROOD MOTHER (`brood`).
+ - **A LEVEL'S OLD NAME IS IN `was`**; every door anywhere that leads to a renamed level says its new name. Level IDS
+   DID NOT CHANGE (saves, tests and `#level=` go by id).
+ - **PRACTICE ROOMS** (`src/levels/practice.ts`; `#level=practice_roach`, `_toad`, `_bat`, `_mantis`, `_ant`,
+   `_guard`, `_hornet`, `_firefly`, `_scorpion`, `_beetle`, `_stag`): a plain room, ONE of the creature (it comes
+   back a few seconds after it is beaten), and TWO FLOOR BUTTONS near where he comes in: each press puts in one more
+   (to six alive). A button comes back up when he steps off (`plates[].spawn`, `buttonStep` in `world/plates.ts`).
+ - **WHERE A WAY OUT LEADS** (`src/levels/wayOut.ts`): back to the door he came in by; else the Hall if the Hall has a
+   door to it; else the area it is part of. (The Club is a hub with a way out now: its south door leads to the Hall.)
+ - **PHYSICS PER BIOME: `src/data/feel.ts`** (`FEELS`, `feelOf`), set on the controller as a level loads
+   (`player.feel`). `waking`: no tuck, tricks pay speed only up to his standing top speed (as before the dream), no
+   spin or grab. `dream`: all of them. A level is `dream` if it wears the dream's look (`look: 'dream'`), or says so.
+   **A controller that is not told is in the waking world**: a test of a dream move must set `p.feel = FEELS.dream`.
+ - **NOT DONE:** (1) the dream is not yet floatier, faster or higher-jumping, and has no triple jump: the table has
+   the place for it, but the dream's courses are measured to the jump he has now. (2) No inventory of assets yet.
+   (3) The practice rooms and the Hall are plainly dressed. (4) The Club's own doors still ask for Golden Wedges.
+   (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
+   (6) Nobody has played any of it by hand.
 
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
@@ -70,6 +182,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 ## The game right now
 | World | Area id | Name | Wedges | Notes |
 |---|---|---|---|---|
+| (home) | hall | The Hall | 0 | THE HUB since 2026-11-17: a door to every test room, boss room and practice room; everyone stands about in it |
 | (hub) | hub | The Club | 0 | Doors to the worlds. Pip's shop, rest at the fire |
 | Cistern (door 0) | cistern | The Great Cistern | 6 | Includes the drain secret (Sludge Scarf) |
 | | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 4 / 2 | Side areas (returnTo cistern). works: the Fencer's Wedge (three perfect guards; the Buckler makes it fair) |

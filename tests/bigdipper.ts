@@ -7,6 +7,7 @@
 // long that is: two minutes and more); that every rail crossing is crossed by GRINDING a light rail, which curves and
 // is not solid; that a kicker's gap wants the kicker or the jump; that each pad's gate waits for that pad's creatures;
 // that the bottle caps are where a good line takes him; and how he gets to it.
+import { FEELS } from '../src/data/feel';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
@@ -30,7 +31,7 @@ const cs: Aabb[] = def.solids.map((b) => aabbOf(b));
 const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
 const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filter((b) => x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z).map((b) => topAt(b, x, z)));
 
-check('it is a room to try; its door is in the Toy Box (the dream\'s skate park, which the Move Garden has a door to), and its way out leads back to the garden', TEST_ROOMS.some((l) => l.id === 'bigdipper') && levelById('bigdipper') !== undefined && !!levelById('toybox')?.courseDoors?.some((d) => d.to === 'bigdipper') && !!garden().courseDoors?.some((d) => d.to === 'toybox') && def.returnTo === 'garden');
+check('it is a room to try; its door is in the Toy Box (the dream\'s skate park, which the Move Garden has a door to), and its way out leads back to the Toy Box', TEST_ROOMS.some((l) => l.id === 'bigdipper') && levelById('bigdipper') !== undefined && !!levelById('toybox')?.courseDoors?.some((d) => d.to === 'bigdipper') && !!garden().courseDoors?.some((d) => d.to === 'toybox') && def.returnTo === 'toybox');
 check('it is the dream: its look, its sky, its stars, and the long fall he is put back from', def.look === 'dream' && def.sky === 'space' && def.motes === 'stars' && def.fallDepth === DIP_FALL);
 
 // ---- The rides, ridden ----
@@ -42,6 +43,7 @@ const told: string[] = [];
 let allArrived = true;
 starts.forEach((st, ride) => {
   const p = new PlayerController(new THREE.Vector3(st.x, st.y + 0.01, st.z));
+  p.feel = FEELS.dream;
   p.rails = P.rails;
   const auto = makeDipRide();
   const endZ = ride < P.pads.length ? P.pads[ride].z0 : P.bowl.z0;
@@ -78,6 +80,8 @@ check('"sliding down for like a straight 2 minutes": standing on his shield it i
   const caps = new Set<string>();
   starts.forEach((st, ride) => {
     const p = new PlayerController(new THREE.Vector3(st.x, st.y + 0.01, st.z));
+    p.feel = FEELS.dream;
+  p.feel = FEELS.dream;
     p.rails = P.rails;
     const auto = makeDipRide(true);
     const endZ = ride < P.pads.length ? P.pads[ride].z0 : P.bowl.z0;
@@ -132,6 +136,7 @@ check('the rider crossed every one of them by GRINDING a light rail', railsRidde
   // The grind button near a rail, by a rider going along it, puts him on it; and it carries him round a curve.
   const c = railCurve({ pts: [[0, 10, 0], [0, 9, 6], [6, 7, 12], [6, 5, 20]] });
   const p = new PlayerController(new THREE.Vector3(1, 10.2, 0.5));
+  p.feel = FEELS.dream;
   p.rails = [c];
   p.velocity.set(0, 0, 9);
   p.update(DT, inp({ attackPressed: false, stowPressed: true }), []);
@@ -146,6 +151,7 @@ check('the rider crossed every one of them by GRINDING a light rail', railsRidde
   check('in the air beside a light rail and going along it, the grind button puts him on it (from further off than a solid rail: it is light)', on && RAIL_REACH > TUNING.grind.reach);
   check('...and it carries him along its curve to its end, never off the line, and he flies off the end going the way it went', maxOff < 0.05 && !p.grinding && p.position.x > 5 && p.velocity.z > 5 && Math.abs(p.velocity.x) < 2, `off by ${maxOff.toFixed(3)}, left at x ${p.position.x.toFixed(1)}`);
   const q = new PlayerController(new THREE.Vector3(1, 10.2, 0.5));
+  q.feel = FEELS.dream;
   q.rails = [c];
   q.velocity.set(9, 0, 0);
   q.update(DT, inp({ stowPressed: true }), []);
@@ -157,6 +163,7 @@ check('the rider crossed every one of them by GRINDING a light rail', railsRidde
 // off and land on the next area you get like fall damage or something and then you're off your shield".)
 {
   const p = new PlayerController(new THREE.Vector3(def.spawn.x, def.spawn.y + 0.01, def.spawn.z));
+  p.feel = FEELS.dream;
   p.rails = P.rails;
   const auto = makeDipRide();
   const r0 = P.roads[0];

@@ -1470,3 +1470,16 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
    own side, because its look point, leaned ahead of him, lay against the slope and no line over the wall was found.
    The leaned point now keeps over the ground under it (`AHEAD_UP`), a slope is never too tall to rise over, and over a
    slope it rises fast (`LIFT_HURRY`). 1.3 off before, 2.5 or more now. `camera.rideFollowRate` is a slider, 0.
+
+## Every level a test room; the Hall; practice rooms; physics per biome (2026-11-17)
+The owner changed the vision (his words are in START-HERE.md, "THE VISION CHANGED"): every level is a numbered test
+room, a playground for one kind of play; one long hallway hub with everyone in it and a door to every room.
+ - `src/levels/testRooms.ts`: the one list (rooms, boss rooms, practice rooms). `src/levels/hall.ts`: the Hall, laid
+   out from it. `src/levels/practice.ts`: a practice room per enemy kind, and the Widows' own room.
+   `src/levels/wayOut.ts`: where a level's way out leads. `src/data/feel.ts`: how each biome plays.
+ - `levels.ts` `nameTheRooms`: names every level "Test Room N" (side areas NB, NC...), keeps the old name in `was`.
+ - `main.ts`: `homeLevel` (the Hall), `noWayOut`, `cameFrom`, `parentOf`; buttons that come back up; `&autowalk=x,z`
+   (a film aid: he runs that way). `CourseDoorDef.under`: a sign's second line.
+ - Tests: `tests/hall.ts` (38). Changed for it: ride (the tuck is the dream's), toybox, bigdipper, milkyway, camera
+   (riders marked as in the dream), falls and glimmer (doors and levels found by id, not by name).
+

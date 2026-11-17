@@ -289,7 +289,7 @@ export function bigDipper(): LevelDef {
     gear: [],
     goals: [],
     exit: { x: last.x, z: P.bowl.z1 - 0.5, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
-    returnTo: 'garden',
+    returnTo: 'toybox',
   };
 }
 

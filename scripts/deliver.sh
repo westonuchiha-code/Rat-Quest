@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds everything the owner tests with, into one folder (default: ../deliver, next to the project):
 #   ratquest.html              the game, with the on-screen test pad (the owner tests on a phone)
-#   ratquest-<place>.html      the same, opening on one place: hub, cistern, foundry, hollows, keep
+#                              (it opens in THE HALL: the hallway with a door to every test room, boss room and practice room)
+#   ratquest-<place>.html      the same, opening on one place: hub (the Club), cistern, foundry, hollows, keep
 #   ratquest-testroom.html     the Club with every door open (level=hub&unlockall)
 #   ratquest-garden.html       the Move Garden: a test room for feeling the jump numbers (level=garden)
 #   ratquest-dream.html        the dream: opens on the Toy Box, its skate park (level=toybox), whose doors lead to its two rides

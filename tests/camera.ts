@@ -2,6 +2,7 @@
 // a brazier or a crate, it ended up inside his head. Now something LOW in the way does not pull it in: it rises to look
 // over it, from as far off as ever. A wall still pulls it in, but pulled in close it goes up over his head and looks
 // ahead of him. It never turns to do either. All of it against the real levels' own solid boxes.
+import { FEELS } from '../src/data/feel';
 import { BRAZIER, extent, rampBox } from '../src/world/layout';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
@@ -383,6 +384,7 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
       for (const fps of [60, 30]) {
         const dt = 1 / fps;
         const p = new PlayerController(new THREE.Vector3(HALF.x + deck.out + 3, deck.y + 0.01, 0));
+        p.feel = FEELS.dream;
         p.rails = toyBoxPlan().rails;
         p.skateAnywhere = true;
         const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);

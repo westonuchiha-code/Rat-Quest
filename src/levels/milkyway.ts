@@ -202,7 +202,7 @@ export function milkyWay(): LevelDef {
     goals: [],
     // The way out stands at the far end of the Moon, before the kerb, and leads back to the Move Garden.
     exit: { x: 0, z: P.moon.z1 - 0.5, yaw: Math.PI, width: 2.6, height: 3.8, y: 0 },
-    returnTo: 'garden',
+    returnTo: 'toybox',
   };
 }
 

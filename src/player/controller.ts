@@ -1,3 +1,4 @@
+import { FEELS, type Feel } from '../data/feel';
 import { MAX_WALK_SLOPE , type SlimeZone } from '../world/layout';
 import { findGrind, grindHeight, type GrindLine } from '../world/grind';
 import { findRail, railAt, type RailCurve } from '../world/rails';
@@ -157,6 +158,11 @@ export class PlayerController {
    * to 1 (for his lean and his tail), and `rideFlipProgress` how far through a kickflip he is (0..1, -1 when not).
    */
   riding = false;
+  /**
+   * HOW THE PLACE HE IS IN PLAYS (data/feel.ts): the dream's tuck, its speed for tricks and its air tricks are the
+   * dream's alone. The game sets this when a level loads; one who is not told is in the waking world.
+   */
+  feel: Feel = FEELS.waking;
   rideSteer = 0;
   /** How far he is TUCKED on his shield, 0 to 1 (the stick pushed the way he is going): crouched low, and faster for it. */
   rideTuck = 0;
@@ -1052,7 +1058,9 @@ export class PlayerController {
         this.rideTricks = 0;
         this.rideSpin = -1;
         const had = Math.hypot(this.velocity.x, this.velocity.z);
-        const v = Math.max(had, Math.min(T.ride.tuckMax, had + T.ride.trickBoost * tricks));
+        // (PAST his standing top speed is the dream's: elsewhere a trick landed brings him up towards that speed, as
+        // it did before there was a dream, and no further.)
+        const v = Math.max(had, Math.min(this.feel.ride.trickSpeed ? T.ride.tuckMax : T.ride.max, had + T.ride.trickBoost * tricks));
         this.velocity.x = Math.sin(this.rideHeading) * v;
         this.velocity.z = Math.cos(this.rideHeading) * v;
         this.moveEvent = 'trick';
@@ -1593,7 +1601,7 @@ export class PlayerController {
     this.rideHeading += side * R.turn * (hard ? R.carve : 1) * (this.grounded ? 1 : R.airTurn) * dt;
     this.rideSteer += (side * (hard ? 1 : 0.6) - this.rideSteer) * Math.min(1, dt * 10);
     // THE TUCK: the stick pushed the way he is going (and not hard over in a carve). He crouches.
-    const tuck = fwd > 0.5 && !hard;
+    const tuck = this.feel.ride.tuck && fwd > 0.5 && !hard;
     this.rideTuck += ((tuck ? 1 : 0) - this.rideTuck) * Math.min(1, dt * 8);
     let slow = 0;
     if (this.grounded) {
@@ -1661,7 +1669,7 @@ export class PlayerController {
     }
     // A SPIN: the ROLL button in the air. He and his shield go right round. One after another, as many as the air has
     // room for. (That press is not kept for the ground: on the ground the roll button steps him off.)
-    if (!this.grounded && input.dodgePressed && this.rideSpin < 0 && this.rideAge > 0.15) {
+    if (this.feel.ride.airTricks && !this.grounded && input.dodgePressed && this.rideSpin < 0 && this.rideAge > 0.15) {
       this.rideSpin = 0;
       this.dodgeBuffer = 0;
       this.moveEvent = 'kickflip';
@@ -1674,7 +1682,7 @@ export class PlayerController {
       }
     }
     // A GRAB: GUARD held in the air. Held long enough it counts, once an air.
-    const grabbing = !this.grounded && input.guardHeld;
+    const grabbing = this.feel.ride.airTricks && !this.grounded && input.guardHeld;
     this.rideGrab = grabbing ? this.rideGrab + dt : 0;
     if (this.grounded) this.rideGrabbed = false;
     if (grabbing && !this.rideGrabbed && this.rideGrab >= R.grabTime) {
