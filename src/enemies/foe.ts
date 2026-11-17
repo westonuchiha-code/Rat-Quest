@@ -107,6 +107,8 @@ export interface Foe {
   readonly ready?: boolean;
   readonly attacking?: boolean;
   mayAttack?: boolean;
+  /** It is DOWN for a moment in a way that is not one of its states by name (a roach on its back, a toad winded, after a perfect guard): it can be picked up. */
+  readonly down?: boolean;
   takeHit(damage: number, fromX: number, fromZ: number, how?: HitHow, part?: number): boolean;
   /** Its attack reached the rat: he was hit, or he blocked it, or he turned it aside with a perfectly timed shield. */
   lungeLanded(blocked: boolean, parried?: boolean): void;

@@ -13,7 +13,7 @@ import { LEVELS } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
 import { Aabb, aabbOf, makeAabb, segmentAabbT, topAt } from '../src/world/collision';
 import { TWEAKS } from '../src/core/tweaks';
-import { toyBox, toyBoxPlan, HALF, halfDeck } from '../src/levels/toybox';
+import { BOWL, facetsOf, toyBox, toyBoxPlan, HALF, halfDeck } from '../src/levels/toybox';
 
 const DT = 1 / 60;
 const C = TUNING.camera as { -readonly [K in keyof typeof TUNING.camera]: number };
@@ -414,6 +414,53 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
     }
   }
   check('in the half pipe (the view on either side of him and cornerwise, pumping gently and hard, at sixty frames a second and thirty) he goes up off the lips and comes back, and through all of it the view is never drawn in to his back (it was, to 1.3), is never under the wall, and never turns by itself', launches >= 24 && told.length === 0, `${launches} launches; ${told.join('; ')}`);
+}
+
+// ---- IN THE BOWL (2026-11-17): the same, with a wall on every side of him. ----
+{
+  const def = toyBox();
+  const cs: Aabb[] = buildChamber({ solids: def.solids, pit: def.pit, water: def.water ?? [], decor: [], movers: def.movers }).colliders;
+  const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filter((b) => x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z).map((b) => topAt(b, x, z)));
+  const bf = facetsOf(BOWL.radius, BOWL.facets, BOWL.turn);
+  const top = bf[bf.length - 1].h1;
+  const inner = BOWL.flat + bf[bf.length - 1].d1;
+  const v = (x: number, z: number): THREE.Vector3 => new THREE.Vector3(x, 0, z);
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const told: string[] = [];
+  let launches = 0;
+  for (const [dx, dz] of [[1, 0], [0, 1]] as const) {
+    for (const yaw of [Math.atan2(-dx, -dz), Math.atan2(dx, dz), Math.atan2(-dx, -dz) + Math.PI / 4]) {
+      for (const fps of [60, 30]) {
+        const dt = 1 / fps;
+        const p = new PlayerController(new THREE.Vector3(BOWL.x - dx * (inner + 1.6), top + 0.01, BOWL.z - dz * (inner + 1.6)));
+        p.feel = FEELS.dream;
+        p.skateAnywhere = true;
+        const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+        const cam = new FollowCamera(eye);
+        cam.yaw = yaw;
+        for (let i = 0; i < 10; i++) p.update(dt, inp({}), cs);
+        p.update(dt, inp({ move: v(dx, dz), jumpPressed: true, jumpHeld: true }), cs);
+        let nearest = 99;
+        let under = 0;
+        let wasUp = false;
+        for (let i = 0; i < fps * 12; i++) {
+          const along = (p.position.x - BOWL.x) * dx + (p.position.z - BOWL.z) * dz;
+          const going = Math.sign(p.velocity.x * dx + p.velocity.z * dz) || 1;
+          const move = !p.riding || along < -(inner - 0.1) ? v(dx, dz) : Math.abs(along) < BOWL.flat + 1.5 ? v(going * dx, going * dz) : v(0, 0);
+          p.update(dt, inp({ move, jumpHeld: !p.riding, attackPressed: !p.riding && !p.grounded && p.velocity.y < 5 }), cs);
+          cam.update(dt, p.position, p.facing, true, 0, 0, cs, p.velocity, 0);
+          const up = p.riding && !p.grounded && p.position.y > top + 0.5;
+          if (up && !wasUp) launches++;
+          wasUp = up;
+          if (i < fps * 1.5) continue;
+          nearest = Math.min(nearest, Math.hypot(eye.position.x - p.position.x, eye.position.y - (p.position.y + C.targetHeight), eye.position.z - p.position.z));
+          under = Math.max(under, ground(eye.position.x, eye.position.z) - eye.position.y);
+        }
+        if (nearest < 2.2 || under > 0.05) told.push(`along ${dx ? 'x' : 'z'}, yaw ${yaw.toFixed(2)}, ${fps} fps: nearest ${nearest.toFixed(2)}, under by ${under.toFixed(2)}`);
+      }
+    }
+  }
+  check('in the bowl (across it both ways; the view behind him, in front of him and cornerwise; sixty frames a second and thirty) he goes up off the lips and comes back, and the view is never drawn in to his back and never under a wall', launches >= 20 && told.length === 0, `${launches} launches; ${told.join('; ')}`);
 }
 
 // ---- ON HIS SHIELD, THE VIEW CAN BE ASKED TO COME ROUND BEHIND THE WAY HE IS GOING (TUNING.camera.rideFollowRate): it

@@ -10,7 +10,7 @@ import { aabbOf, type Aabb } from '../src/world/collision';
 import { POT, ROCK, extent, potBox, rockBox } from '../src/world/layout';
 import fs from 'node:fs';
 import { resolveCombat, type CombatEvents } from '../src/combat/combat';
-import { DOWN_STATES, THROWN_AS, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
+import { DOWN_STATES, THROWN_AS, isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
 const read = (p: string): string => fs.readFileSync(p, 'utf8');
 import type { Crate } from '../src/world/crates';
 import { compileCustom, type CustomLevel, type Piece } from '../src/levels/custom';
@@ -21,6 +21,7 @@ import { atDoor } from '../src/world/rooms';
 import { TUNING } from '../src/data/tuning';
 import { TWEAKS } from '../src/core/tweaks';
 import { Scuttler } from '../src/enemies/scuttler';
+import { Toad } from '../src/enemies/toad';
 import { Guard } from '../src/enemies/guard';
 import { Ironback } from '../src/enemies/ironback';
 import { BIND_NAMES } from '../src/core/bindings';
@@ -261,6 +262,28 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   // The real creatures do have those states (the list is not of names that have drifted).
   const stateLists: Record<string, string> = { bat: read('src/enemies/bat.ts'), firefly: read('src/enemies/firefly.ts'), hornet: read('src/enemies/hornet.ts'), roller: read('src/enemies/roller.ts'), scorpion: read('src/enemies/scorpion.ts'), mantis: read('src/enemies/mantis.ts') };
   check('every one of those states is a state that creature really has', Object.entries(DOWN_STATES).every(([k, states]) => states.every((st) => new RegExp(`State = [^;]*'${st}'`).test(stateLists[k]))));
+  // THE ROACH AND THE TOAD: down only after a PERFECT GUARD on their attack (earned: nothing easier about them).
+  {
+    const roach = new Scuttler({ x: 0, z: 1 });
+    const start = { kind: roach.kind, state: roach.state, down: roach.down };
+    roach.takeHit(1, 0, 0);
+    const flinch = roach.down;
+    roach.lungeLanded(true, false);
+    const blocked = roach.down;
+    roach.lungeLanded(true, true);
+    const flipped = roach.down && isDown(roach) && liftFoe([roach], { x: 0, y: 0, z: roach.z - 1.1 }, 0) === 0;
+    let secs = 0;
+    for (; secs < 5 && roach.down; secs += DT) roach.update(DT, 30, 0, 30, true);
+    check('a ROACH can be picked up when a PERFECT GUARD has flipped it on its back, for the two seconds that lasts; not standing, not flinching from a blow, not after a plain block', !start.down && !flinch && !blocked && flipped && Math.abs(secs - TUNING.scuttler.parriedRecover) < 0.1 && !roach.down, `${secs.toFixed(2)}s on its back`);
+    roach.lungeLanded(true, true);
+    roach.takeHit(1, 0, 0);
+    check('...struck while it lies there, it is up again (it is not held down by being hit)', !roach.down);
+    const toad = new Toad({ x: 0, z: 1 });
+    const before = toad.down;
+    toad.lungeLanded(false, true);
+    (toad as unknown as { state: string }).state = 'recover';
+    check('a TOAD the same: winded by a perfect guard on its pounce', !before && toad.down && isDown(toad));
+  }
   const thrownFoe = startThrow({ name: 'a hornet' }, 0.5, null, carryPlace(here, 0), 0, { x: 0, z: 0 }, 1, null, 1.1);
   let met: ReturnType<typeof stepThrown> = { what: 'none' };
   for (let i = 0; i < 300 && met.what === 'none'; i++) met = stepThrown(thrownFoe, DT, [floor], [{ x: 0, y: 0, z: 5.5, r: 0.5, high: 1, alive: true }]);

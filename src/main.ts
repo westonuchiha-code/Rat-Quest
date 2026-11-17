@@ -27,7 +27,7 @@ import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
-import { DOWN_STATES, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
+import { isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
 import type { Crate } from './world/crates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
@@ -2413,7 +2413,7 @@ function startGame(): void {
       };
       const foe = enemies.filter((e) => e.alive && !inHand(e)).sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
       // (A creature that is DOWN within reach of a short run comes first: he goes and picks IT up.)
-      const down = enemies.find((e) => e.alive && !inHand(e) && DOWN_STATES[e.kind]?.includes(e.state) && Math.hypot(e.x - player.position.x, e.z - player.position.z) < 9);
+      const down = enemies.find((e) => e.alive && !inHand(e) && isDown(e) && Math.hypot(e.x - player.position.x, e.z - player.position.z) < 9);
       if (!held && !heldFoe && down) {
         to(down.x, down.z, 0);
         run = true;

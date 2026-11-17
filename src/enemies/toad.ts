@@ -131,6 +131,7 @@ export class Toad {
   }
 
   takeHit(damage: number, fromX: number, fromZ: number): boolean {
+    this.winded = false;
     if (!this.alive) return false;
     this.hp -= damage;
     const dx = this.x - fromX;
@@ -148,9 +149,15 @@ export class Toad {
     return false;
   }
 
+  /** Thrown down winded by a perfect guard on its pounce, for as long as that lasts: it can be picked up (world/lifting.ts). */
+  private winded = false;
+  get down(): boolean {
+    return this.alive && this.winded && this.state === 'recover';
+  }
   lungeLanded(blocked = false, parried = false): void {
     this.pounceSpent = true;
     if (parried) this.recoverTime = this.T.pounceParried;
+    this.winded = parried;
     void blocked;
     // It has no bite.
   }
@@ -304,7 +311,10 @@ export class Toad {
         break;
       }
       case 'recover':
-        if (this.stateTime >= this.recoverTime) this.enter(inReach ? 'watch' : 'return');
+        if (this.stateTime >= this.recoverTime) {
+          this.winded = false;
+          this.enter(inReach ? 'watch' : 'return');
+        }
         break;
       case 'hop': {
         const t = this.stateTime / this.T.hopTime;

@@ -88,15 +88,23 @@ export const DOWN_STATES: Readonly<Record<string, readonly string[]>> = {
   scorpion: ['sprawl'],
   mantis: ['stuck'],
 };
+/**
+ * Whether a creature is down: in one of its kind's down states, or it says so itself (`down`: a ROACH flipped on its
+ * back, a TOAD winded, by a PERFECT GUARD on its attack. That is two seconds, and it is earned: nothing about how
+ * they fight was changed to make it so).
+ */
+export function isDown(e: { kind: string; state: string; down?: boolean }): boolean {
+  return !!e.down || !!DOWN_STATES[e.kind]?.includes(e.state);
+}
 /** The nearest creature he could pick up from where he stands (its place in the list), or -1. */
-export function liftFoe(foes: ReadonlyArray<{ kind: string; state: string; alive: boolean; x: number; y: number; z: number; radius: number }>, pos: { x: number; y: number; z: number }, facing: number): number {
+export function liftFoe(foes: ReadonlyArray<{ kind: string; state: string; alive: boolean; x: number; y: number; z: number; radius: number; down?: boolean }>, pos: { x: number; y: number; z: number }, facing: number): number {
   const L = TUNING.lift;
   const fx = Math.sin(facing);
   const fz = Math.cos(facing);
   let best = -1;
   let bestD = Infinity;
   foes.forEach((e, i) => {
-    if (!e.alive || !DOWN_STATES[e.kind]?.includes(e.state) || Math.abs(e.y - pos.y) > 0.6) return;
+    if (!e.alive || !isDown(e) || Math.abs(e.y - pos.y) > 0.6) return;
     const dx = e.x - pos.x;
     const dz = e.z - pos.z;
     const d = Math.hypot(dx, dz);

@@ -163,3 +163,5 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 - **A1 (first part): the Sewers' feel.** Run 0.88, his blows 0.67, a blow on him costs double. `TUNING.sewers`. STILL OPEN under A1: the Mario room (Test Room 8) and the Sonic room (Test Room 5); and his verdict on the numbers.
 - **A10: stronger in the dream.** His blows do 1.5 there (`TUNING.dream.dealt`). His verdict wanted.
 - **A2 (first part): a bowl and a spine in the Toy Box.** STILL OPEN under A2: banked turns (need a new kind of solid: ramps lie along x or z only), a launcher, loops of light rail, round corners for the bowl.
+- **A4: the roach and the toad can be grabbed** after a perfect guard (the stun was there already; it is now a grab window). No film: nothing automatic can time a perfect guard.
+- **A3 (part): the camera in the bowl** measured and held by a test. STILL OPEN under A3: (a) the deck edge, (b) knocked against a wall (the view goes overhead: that is how it was designed; his to judge), (c) the long fall, (d) his verdict on the follow slider.

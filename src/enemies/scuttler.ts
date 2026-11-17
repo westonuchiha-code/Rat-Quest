@@ -108,6 +108,7 @@ export class Scuttler {
   takeHit(damage: number, fromX: number, fromZ: number): boolean {
     if (!this.alive) return false;
     const S = TUNING.scuttler;
+    this.onBack = false;
     this.hp -= damage;
     const dx = this.x - fromX;
     const dz = this.z - fromZ;
@@ -127,6 +128,11 @@ export class Scuttler {
   }
 
   /** Its lunge landed (on the rat or on his shield), so the bite is used up. A block leaves it open for longer. */
+  /** Flipped on its back by a perfect guard, for as long as that lasts: it can be picked up (world/lifting.ts). */
+  private onBack = false;
+  get down(): boolean {
+    return this.alive && this.onBack && this.state === 'recover';
+  }
   lungeLanded(blocked: boolean, parried = false): void {
     this.lungeSpent = true;
     if (blocked || parried) {
@@ -136,6 +142,7 @@ export class Scuttler {
       this.velZ = -Math.cos(this.facing) * S.knockback * k;
       this.recoverTime = parried ? S.parriedRecover : S.blockedRecover;
       this.enter('recover');
+      this.onBack = parried;
     }
   }
 
@@ -263,6 +270,7 @@ export class Scuttler {
       }
       case 'recover':
         if (this.stateTime >= this.recoverTime) {
+          this.onBack = false;
           if (reachable) engage();
           else this.enter('return');
         }

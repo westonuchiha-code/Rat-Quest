@@ -228,6 +228,13 @@ have to implement right now."
  - **NOT DONE:** the bowl's corners are square blocks (ridden into, he stops); no banked turn (ramps here lie along x
    or z only: a curve wants a new kind of solid), no launcher, no loop of light rail; nobody has ridden either by hand.
 
+**THE ROACH AND THE TOAD CAN BE GRABBED, AFTER A PERFECT GUARD (2026-11-17, BACKLOG A4; `tests/lifting.ts` 55).**
+A perfect guard already flipped a roach on its back for 2 seconds and winded a toad for 2.1: nothing about their
+fights was changed. Each now says so (`down`, on `Foe`), and `isDown` in `world/lifting.ts` takes that as well as the
+states in `DOWN_STATES`. NOT SEEN IN THE GAME: no test player can time a perfect guard, so there is no film of it.
+**The camera in the bowl** was measured the way the half pipe was (`tests/camera.ts`, 43): never drawn in, never under
+a wall, through 60 launches.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
