@@ -199,6 +199,21 @@ having more difficult fights you're moving slower through the level".
  - **NOT DONE / his to judge:** the three numbers; creatures there are not faster or cleverer, only costlier; the
    Mario room and the Sonic room have no feel of their own yet.
 
+## NO DIFFICULTY SETTINGS: THE PLAYER GETS THE SLIDERS (the owner, 2026-11-17: a note for later, NOT to build now)
+
+**His words:** "I don't want this game to have difficulty settings I just want the way we build it to be the way it is,
+however in place of difficulty settings I want people to be able to make their own custom difficulty by giving them
+sliders for a lot of the stuff we do in the game so if they want the game to be hard they can crank up the enemies'
+health, they can decrease their jump height, they can change all sorts of stuff in the game that we already have like
+basically on sliders anyways and then the players can make their own little custom difficulty, we still want to try to
+make it feel balanced but I mean we're basically giving people the ability to break the game if they want to so they
+can either beat the game the way it's originally designed or they can do their own thing." And: "This is nothing you
+have to implement right now."
+ - **So:** never add an Easy / Normal / Hard. The game as built is THE game. The Tweaks panel (`src/core/tweaks.ts`,
+   about 280 sliders) is the seed of what players will get. Keep putting every new number on a slider.
+ - **When it is built (it is in BACKLOG.md, Part B):** a player's version of the panel (plain words, grouped, a way
+   back to "as designed", and a mark on a save that says the numbers were changed).
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
