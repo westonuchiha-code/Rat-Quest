@@ -2079,7 +2079,8 @@ function startGame(): void {
   scene.add(motes.points);
   const WORLD_BEDS = ['drain', 'machine', 'wind', 'hall'] as const;
   /** How loud the shield's scrape is as he rides: at his standing top speed, and the least of it while he is moving at all. */
-  const RIDE_SCRAPE = { speed: 0.18, least: 0.03 } as const;
+  /** (And then, of that: "it also should be mixed really low so you like barely hear it". A ninth of what it first was.) */
+  const RIDE_SCRAPE = { speed: 0.07, least: 0.01 } as const;
   /** Where this level's braziers stand (for their crackle). Set when a level loads. */
   let braziers: Array<{ x: number; y: number; z: number }> = [];
   // Lava: touching it hurts and puts him back on the last safe ground he stood on.

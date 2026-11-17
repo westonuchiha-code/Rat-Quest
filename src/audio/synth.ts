@@ -804,15 +804,18 @@ const RECIPES: Record<SfxName, () => Sample> = {
     };
   }, { bits: 7 }),
   // ---- Riding the shield ----
-  // The rim of it on stone: a gritty hiss with a hollow ring under it, catching now and then. (A loop: its two
-  // wobbles turn whole numbers of times in it.)
-  rideScrape: () => draw(0.6, RATE_HI, 221, (c) => (t) => {
+  // THE SHIELD SLIDING: a soft low rush, like a board rolling, with a faint hum under it. Nothing sharp in it, nothing
+  // that catches. (The owner, 2026-11-17, of the first one, "a gritty hiss with a hollow ring under it, catching now
+  // and then": "the sound while you're sliding your shield is also pretty annoying. Like it can make a sound but it
+  // shouldn't be such a grating one and it also should be mixed really low so you like barely hear it.")
+  // (A loop: its hums and its one slow swell turn whole numbers of times in it. Only the LOW of the noise is kept,
+  // smoothed twice over: what was a hiss is a rush.)
+  rideScrape: () => draw(1.2, RATE_HI, 221, (c) => (t) => {
     const n = c.r() * 2 - 1;
-    const grit = c.lp(0, n, 0.45) - c.lp(1, n, 0.09);
-    const hollow = c.lp(2, n, 0.03) * 2.2;
-    const catchy = 0.75 + 0.25 * wob(t, 0.6, 7) * wob(t, 0.6, 3);
-    return (grit * 0.9 + hollow * 0.5 + sine(c.osc(0, 310)) * 0.05) * catchy;
-  }, { bits: 7, loop: true, gain: 0.5 }),
+    const rush = c.lp(1, c.lp(0, n, 0.05), 0.05) * 7;
+    const hum = sine(c.osc(0, 95)) * 0.1 + sine(c.osc(1, 142.5)) * 0.04;
+    return (rush + hum) * (0.85 + 0.15 * wob(t, 1.2, 1));
+  }, { bits: 8, loop: true, gain: 0.5 }),
   // Its iron rim along a stone edge: a thin ringing shriek over grit, shivering. (A loop: every pitch and wobble in it
   // turns a whole number of times in its half second.)
   grindRing: () => draw(0.5, RATE_HI, 224, (c) => (t) => {

@@ -445,6 +445,12 @@ that which is doing really well but I just don't want it to feel annoying."
    time. **Now a place under the open sky (`sky: 'space'`) has no bed and no far-off noises at all** (`worldSoundFor`'s
    third argument). (2) **The shield's SCRAPE**, a hiss too, looped as loud as 0.63 of full whenever he rides: and in
    the dream he always rides. A third of that now (`RIDE_SCRAPE` in `main.ts`); the grind's ring a little down too.
+ - **AND THEN THE SCRAPE ITSELF WAS REMADE** (he said next: "the sound while you're sliding your shield is also pretty
+   annoying. Like it can make a sound but it shouldn't be such a grating one and it also should be mixed really low so
+   you like barely hear it"). It was "a gritty hiss with a hollow ring under it, catching now and then"; it is **a soft
+   low rush with a faint hum, nothing sharp, nothing that catches** (`rideScrape` in `src/audio/synth.ts`: 6% of it
+   above 2 kHz, where most of it was), and it is **mixed at a ninth of what it first was** (`RIDE_SCRAPE` 0.07 at top
+   speed). The grind's ring on a rail is as it was: he asked for friction there.
  - **The wind is halved in the real caves** (0.1, was 0.2): it is the one bed that is a hiss.
  - **EVERY LOOPED SOUND WAS MEASURED** for how like noise it is: the hissy ones are the wind, the scrape, the grind's
    ring, a burst pipe's gush, a gas leak, fire. The last three are only heard beside the thing itself.
