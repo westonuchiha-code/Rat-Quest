@@ -9,7 +9,7 @@
  * like stop sliding and fight some monsters and then there'll be another area where you jump off and have to slide down
  * some more."
  *
- * WHAT IT IS: the Milky Way's rainbow road (levels/milkyway.ts), eleven times as long, in FOUR RIDES with a place to
+ * WHAT IT IS: the Milky Way's rainbow road (levels/milkyway.ts), fourteen times as long, in FOUR RIDES with a place to
  * fight between each and the next. It is written as a list of pieces (`COURSE`), laid one after another downhill:
  *   a ROAD      a length of rainbow, as steep as the Milky Way's; some narrow, some wide; some with a KICKER down the
  *               middle of their end (a little ramp that throws him);
@@ -35,7 +35,8 @@ export const DIP = { wide: 7, deep: 1.2, slope: 0.42 } as const;
 export const KICK = { wide: 3, len: 3, rise: 0.55 } as const;
 const KICK_SHORT = 0.12;
 /** A pad: the easing-out before it, the floor, its kerb, the gate, and the level lip beyond the gate that the next road falls from. */
-export const PAD = { runout: 16, fall: 2, half: 11, long: 30, kerb: 2.6, gate: 7, gateTall: 4, lip: 6 } as const;
+/** (`long`: thirty-eight, for one who comes in tucked, at thirty: braking hard he stops in twenty-six.) */
+export const PAD = { runout: 16, fall: 2, half: 11, long: 38, kerb: 2.6, gate: 7, gateTall: 4, lip: 6 } as const;
 export const DIP_HEAD = { half: 9, long: 10 } as const;
 export const BOWL = { half: 12, long: 28 } as const;
 export const DIP_FALL = 28;
@@ -62,19 +63,19 @@ export const COURSE: Piece[] = [
   // ---- THE FIRST RIDE: one of each thing ----
   road(70), gap(...HOP, { dx: 2.5, cap: true }), road(60), gap(7, 3.8, { dx: -2.5 }), road(64, { kick: true }), gap(...LEAP, { cap: true }),
   road(72), rail('braid', 26, 11, { cap: true }), road(70), gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(66), gap(7, 3.8, { dx: 2 }), road(74), gap(...HOP, { dx: -2 }),
-  road(40),
+  road(40), gap(...HOP, { dx: 2.5 }), road(84), gap(7, 3.8, { dx: -2.5 }), road(66, { kick: true }), gap(...LEAP), road(40),
   { t: 'pad', name: 'The First Stop', foes: [{ type: 'scuttler', dx: -4, dz: 16 }, { type: 'scuttler', dx: 4, dz: 18 }, { type: 'scuttler', dx: 0, dz: 23 }] },
   // ---- THE SECOND: rails ----
   road(60), rail('ess', 30, 13, { cap: true }), road(64, { kick: true }), gap(...LEAP, { cap: true }), road(80, { wide: 10 }), rail('twist', 34, 16, { cap: true }),
-  road(56), gap(7, 3.8, { dx: 2.5 }), road(60), gap(...HOP, { dx: -2.5 }), road(70, { kick: true }), gap(...LEAP), road(76),
+  road(56), gap(7, 3.8, { dx: 2.5 }), road(60), gap(...HOP, { dx: -2.5 }), road(70, { kick: true }), gap(...LEAP), road(76), gap(...HOP, { dx: -2.5 }), road(84), gap(7, 3.8, { dx: 2.5 }), road(66, { kick: true }), gap(...LEAP), road(40),
   { t: 'pad', name: 'The Second Stop', foes: [{ type: 'mantis', dx: -4, dz: 18 }, { type: 'mantis', dx: 4, dz: 21 }, { type: 'scuttler', dx: 0, dz: 15 }] },
   // ---- THE THIRD: big air ----
   road(80, { kick: true }), gap(...LEAP, { cap: true }), road(60, { kick: true }), gap(...LEAP), road(60), rail('ess', 40, 17, { cap: true }), road(50, { wide: 5 }),
-  gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(70, { kick: true }), gap(...LEAP, { cap: true }), road(80), gap(7, 3.8, { dx: -2.5 }), road(60), gap(...HOP, { dx: 2.5 }), road(50),
+  gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(70, { kick: true }), gap(...LEAP, { cap: true }), road(80), gap(7, 3.8, { dx: -2.5 }), road(60), gap(...HOP, { dx: 2.5 }), road(50), gap(...HOP, { dx: 2.5 }), road(84), gap(7, 3.8, { dx: -2.5 }), road(66, { kick: true }), gap(...LEAP), road(40),
   { t: 'pad', name: 'The Third Stop', foes: [{ type: 'stag', dx: 0, dz: 21 }, { type: 'mantis', dx: -5, dz: 16 }] },
   // ---- THE LAST: all of it ----
   road(90), rail('braid', 30, 13, { cap: true }), road(60, { kick: true }), gap(...LEAP, { cap: true }), road(70), rail('twist', 36, 17, { cap: true }),
-  road(60), gap(7, 3.8, { dx: 2.5 }), road(60, { kick: true }), gap(...LEAP), road(80), gap(7, 3.8, { dx: -2.5 }), road(50, { wide: 5 }), gap(...HOP), road(100),
+  road(60), gap(7, 3.8, { dx: 2.5 }), road(60, { kick: true }), gap(...LEAP), road(80), gap(7, 3.8, { dx: -2.5 }), road(50, { wide: 5 }), gap(...HOP), road(100), gap(...HOP, { dx: 2.5 }), road(84), gap(7, 3.8, { dx: -2.5 }), road(66, { kick: true }), gap(...LEAP), road(60),
 ];
 
 export interface DipRoad { z0: number; z1: number; y0: number; y1: number; x: number; wide: number; ride: number; kick: boolean; /** What it ends in. */ end: 'gap' | 'rail' | 'pad' | 'bowl'; /** The next road's middle, across. */ nextX: number; /** A rail crossing: where its rails begin, across (he steers for the nearest). */ railX?: number[] }
@@ -214,8 +215,8 @@ function build(): Plan {
         enemies.push({ type: f.type, x: x + f.dx, z: z + f.dz, y, respawn: false, arena: { x0: x - PAD.half + 1, x1: x + PAD.half - 1, z0: z + 1, z1: z1 - 1 } });
       }
       gates.push({ x, z: z1 + 0.5, y, width: PAD.gate, height: PAD.gateTall, foes });
-      decor.push({ kind: 'flowers', x: x - PAD.half + 2, y, z: z + PAD.long / 2, w: 2.2, d: PAD.long - 10, seed: 57 + pads.length }, { kind: 'flowers', x: x + PAD.half - 2, y, z: z + PAD.long / 2, w: 2.6, d: PAD.long - 6, seed: 9 + pads.length });
-      decor.push({ kind: 'butterflies', x: x - PAD.half + 2, y: y + 1.4, z: z + PAD.long / 2, r: 2, count: 3 });
+      // (No flower beds on the pads: a bed's flowers, laid by chance, now and then put two faces a hair apart, and this
+      // level is too big to be tidied as it loads. The Bowl has them.)
       // The lip beyond the gate: a level length of road, and the next ride falls away from its end.
       solids.push(rainbow(extent('stone', x - half, x + half, y - DIP.deep, y, z1, z1 + 1 + PAD.lip)));
       pads.push({ name: p.name, ride, z0: z, z1, y, x, gate: gates.length - 1, foes, start: { x, y, z: z1 + 2.5 } });

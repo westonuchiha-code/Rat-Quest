@@ -38,8 +38,8 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
    One test: `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`
 
 ## Builds
-- `bash scripts/deliver.sh ../deliver` writes all twelve files (the twelfth, `ratquest-dream.html`, opens on the Big
-  Dipper: the owner, 2026-11-17: "give me a version of the game that starts like in that level so I can kind of mess
+- `bash scripts/deliver.sh ../deliver` writes all twelve files (the twelfth, `ratquest-dream.html`, opens on the dream: at first the Big
+  Dipper, now the Toy Box, whose doors lead to both rides: the owner, 2026-11-17: "give me a version of the game that starts like in that level so I can kind of mess
   around and run around in that version of the world and give you notes and ideas"):
   - ratquest.html (with the test pad)
   - ratquest-hub/cistern/foundry/hollows/keep.html (open on that place)
@@ -428,6 +428,74 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   handheld), and the chunkier pictures stay as choices. The 32-dot pictures on things are still blocky up close:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
+
+## THE DREAM IS A PLAYGROUND: the Toy Box (a skate park), a stronger tuck, a spin and a grab (2026-11-17). Tests `tests/toybox.ts` (25), `tests/ride.ts` (72)
+
+**His words (keep them: this is the brief for the dream, and for how levels are to be made fun):** "I also still think the
+leaning forward needs to have more of an effect on his momentum right now it feels like a realistic amount of momentum
+increase for the incline but **this is a video game and it's supposed to ... have fun like going off ramps and doing
+kick flips and spinning around in the air** ... we're going for more of a like a **Mario Sonic style downhill feel** ...
+I guess you can make it like SSX style that would be pretty cool but **I'm more concerned about the environment and
+how fun it is to move around in** ... So I'll leave it up to you but **I want this whole wacky Pomo area to feel like a
+big playground** and I want there to be **a lot of areas where you can just like almost skate around on the shield**
+like in one of the test levels you made like a half pipe and if you do it correctly you can kind of like use it almost
+like an actual half pipe ... if we can get more of that kind of feel like **the rat can really use his shield like a
+skateboard or a snowboard or even a skimboard** or something we can make a lot of really really cool fun levels **that
+don't actually require a lot of design work**. I think **one of our biggest flaws in this game so far is the levels
+aren't extremely fun to run around yet**, we're still trying to build up to that, but **these downhill sections have a
+momentum and an excitement to them that's already pretty fun**, so if we have extra stuff like **things for people to
+jump off and grind on and curved parts and different kinds of ramps and things that send you up high** ... and maybe
+**different things you can do while you're in the air we already have the kick flip so we could do a couple more
+things like that** and just like really enhance [the] playground feeling especially when we're in a wacky Pomo level,
+I mean **if we can't make the downhill level feel fun it's going to be almost impossible to make the normal levels
+feel fun.** And I feel like the game already has some pretty cool movement with the jumping around and the ledge
+grabbing and the wall jumping and stuff so if we can add sort of that kind of movement flavor with the board sliding
+as well we could have a pretty well-rounded character. I still think he needs to be able to do a few more things **we
+still need him to be able to pick up and throw things** for example ... I'll just let you take off with it."
+
+**THE TUCK IS STRONGER** (`TUNING.ride`): tucked top speed **30** (was 24); a tuck gains **1.3 times** the slope's pull
+(was 0.45: "a realistic amount"), so 16 to 30 takes **two seconds** (was four); and **below 16 a tuck PUSHES him along
+on any ground** (`tuckPush` 5): on the flat he skates, up to 16. **The brake is 16** (was 9: at 30 that was fifty units
+to stop in). The Big Dipper's pads are 38 long for it, and each ride has more road: **MEASURED: standing 3 min 48 on
+the shield; tucked all the way 2 min 10, top speed 30.**
+
+**TWO MORE TRICKS, AND TRICKS ARE SPEED.** In the air on his shield: **JUMP is the kickflip** (as it was); **ATTACK is a
+SPIN** (he and his shield go right round, 0.45 s; one after another as the air allows); **GUARD held is a GRAB** (held
+0.3 s it counts, once an air). Landing them: **3.5 of speed for EACH trick done in that air**, past his standing top
+speed, up to 30. Down on the ground part-way round a spin (or a flip), he comes off his shield.
+(`rideSpinProgress`, `rideGrabPose`; the pose is the tuck's crouch, deeper, and a turn of his whole body.)
+
+**THE TOY BOX** (`src/levels/toybox.ts`; `#level=toybox`; a door in the Move Garden, north wall, x 12, where the Big
+Dipper's was for a day: that ride is reached through the Toy Box now;
+**`ratquest-dream.html` opens on it**; its doors lead to the Milky Way and the Big Dipper). A skate park in a box with
+tall sides, its lid off to the stars. **It is a SKATE PARK (`LevelDef.skate`): a jump and ATTACK puts him on his shield
+over ANY ground here** (anywhere else that is the dive, and needs a steep slope). Nothing to fight; nowhere to fall.
+ - **The half pipe** (west): walls that curve up to sixty degrees, 3.5 high, thirty long, decks beyond. Coasting he gets
+   three quarters of the way up the far wall and less each time; PUMPED (the stick pushed the way he is going, down in
+   the flat) he goes over the lip.
+ - **The big ramp** (east): a tower sixteen up, a steep roll-in, a kicker. **Off its lip with a jump he goes twelve up
+   and thirty-eight along, two seconds in the air**: room for a spin, a grab and a kickflip. A bank where he comes
+   down; a clear lane beyond it to stop in. The way up the tower is a long ramp against the east side.
+ - **The funbox** (middle): a table, a ramp at each end, a rail down its top. **The quarter pipe** (south), with a deck
+   behind its lip. **Two light rails**: tower top to the half pipe's deck; that deck out over the funbox to the floor.
+ - Six bottle caps, each where a trick takes him. `&autoride` (from the tower top) does the big ramp's line for films.
+ - **THE COPING (a rule for any curved wall with a deck):** the deck must be LOWER than the wall's top (`COPING` 0.4).
+   Level with it, the deck's side is a wall to a rider coming up fast (the edge of his body meets it while his feet are
+   still down the slope), and he comes off at the lip every time. Three shapes of wall were tried before this was found.
+ - **Its sides are tall for a reason:** a rider thrown up a curved wall at speed goes six or more OUT as he goes up, and
+   clears any kerb. A kerb would have meant falls and lost hearts in a place that is for playing.
+
+**WHAT THIS LEAVES, in his order of caring: the ENVIRONMENT first.** More things to ride in the dream (bowls, spines,
+banked turns, loops of light rail, launchers); the same kit carried into the Big Dipper and the Milky Way; **picking
+things up and throwing them** (asked for again here; not begun); and then his real point: **the normal levels are not
+yet fun to run around in.** What works downhill (momentum, lines, something to do in the air) is the thing to bring
+to them.
+
+**NOT DONE, NOT KNOWN:** nobody has played the Toy Box or felt the new tuck: the tests ride every feature with the real
+controller, and a film shows the big ramp's line, but that is not thumbs. The spin and the grab have no sounds of
+their own (the spin uses the kickflip's whoosh) and the grab's pose is only a deeper crouch. The half pipe is sixty
+degrees, not vertical: over its lip he goes OUT onto the deck, not straight up and back in. The Long Drop is still
+not checked at tuck speed (30 now).
 
 ## A FALL IS MEASURED FROM WHERE HE LAST HAD SOMETHING UNDER HIM (2026-11-17: a bug he found). Tests `tests/bigdipper.ts` (29)
 

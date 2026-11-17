@@ -4,7 +4,7 @@
 #   ratquest-<place>.html      the same, opening on one place: hub, cistern, foundry, hollows, keep
 #   ratquest-testroom.html     the Club with every door open (level=hub&unlockall)
 #   ratquest-garden.html       the Move Garden: a test room for feeling the jump numbers (level=garden)
-#   ratquest-dream.html        the dream: opens on the Big Dipper, its long ride (level=bigdipper), to mess about in
+#   ratquest-dream.html        the dream: opens on the Toy Box, its skate park (level=toybox), whose doors lead to its two rides
 #   ratquest-nopad.html        no test pad (keyboard / controller; what the Steam build is)
 #   ratquest-editor.html       the level builder
 #   ratquest-source.zip        the project, without node_modules and build output
@@ -30,7 +30,7 @@ const src = fs.readFileSync(out + "/ratquest.html", "utf8");
 const make = (name, js) => fs.writeFileSync(out + "/" + name, src.replace("<head>", "<head><script>" + js + "</script>"));
 make("ratquest-testroom.html", "location.hash=\"level=hub&unlockall\"");
 make("ratquest-garden.html", "location.hash=\"level=garden&nostory\"");
-make("ratquest-dream.html", "location.hash=\"level=bigdipper&nostory\"");
+make("ratquest-dream.html", "location.hash=\"level=toybox&nostory\"");
 for (const l of ["hub", "cistern", "foundry", "hollows", "keep"]) make("ratquest-" + l + ".html", "if(!location.hash)location.hash=\"level=" + l + "\"");
 ' "$OUT"
 

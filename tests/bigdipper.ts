@@ -30,7 +30,7 @@ const cs: Aabb[] = def.solids.map((b) => aabbOf(b));
 const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
 const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filter((b) => x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z).map((b) => topAt(b, x, z)));
 
-check('it is a room to try, with a door in the Move Garden, and its way out leads back there', TEST_ROOMS.some((l) => l.id === 'bigdipper') && levelById('bigdipper') !== undefined && !!garden().courseDoors?.some((d) => d.to === 'bigdipper') && def.returnTo === 'garden');
+check('it is a room to try; its door is in the Toy Box (the dream\'s skate park, which the Move Garden has a door to), and its way out leads back to the garden', TEST_ROOMS.some((l) => l.id === 'bigdipper') && levelById('bigdipper') !== undefined && !!levelById('toybox')?.courseDoors?.some((d) => d.to === 'bigdipper') && !!garden().courseDoors?.some((d) => d.to === 'toybox') && def.returnTo === 'garden');
 check('it is the dream: its look, its sky, its stars, and the long fall he is put back from', def.look === 'dream' && def.sky === 'space' && def.motes === 'stars' && def.fallDepth === DIP_FALL);
 
 // ---- The rides, ridden ----
@@ -96,7 +96,7 @@ check('"sliding down for like a straight 2 minutes": standing on his shield it i
     ok &&= arrived;
   });
   check('TUCKED the whole way (the stick held forward) every ride can still be ridden: every gap, every rail, and a stop on the floor short of the gate', ok);
-  check('...at his tucked top speed, and it is STILL two minutes of sliding', Math.abs(top - TUNING.ride.tuckMax) < 0.2 && rode / 60 >= 120, `${(rode / 60).toFixed(1)}s, top ${top.toFixed(1)}`);
+  check('...at his tucked top speed, and it is STILL two minutes of sliding', Math.abs(top - TUNING.ride.tuckMax) < 0.2 && rode / 60 >= 120 && top > 28, `${(rode / 60).toFixed(1)}s, top ${top.toFixed(1)}`);
   check('...and that line takes the bottle caps too', caps.size >= 10, `${caps.size}`);
 }
 

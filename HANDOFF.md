@@ -1442,3 +1442,13 @@ lean forward. `TUNING.ride.tuckMax/tuckGain/tuckShed`; `rideStep`; `rideTuck` (t
 unchanged (16); tucked it builds to 24. Everywhere he rides. The Big Dipper lengthened so a fully tucked run is
 still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 24.
 
+## The dream as a playground: the Toy Box, a stronger tuck, a spin and a grab (2026-11-17)
+
+ - `TUNING.ride`: tuckMax 30, tuckGain 1.3, tuckPush 5 (a tuck pushes him along the flat), brake 16; spinTime,
+   spinSafe, grabTime; trickBoost 3.5 per trick landed, up to tuckMax.
+ - `PlayerController`: the SPIN (attack in the air on the shield), the GRAB (guard held), `skateAnywhere`.
+ - `LevelDef.skate`; `src/levels/toybox.ts`: a skate park (half pipe, big ramp, funbox, quarter pipe, two light rails),
+   the dream's hub, with doors to its two rides. `ratquest-dream.html` opens on it.
+ - A deck beside a curved wall must be lower than the wall's top (`COPING`), or a fast rider comes off at the lip.
+ - The Big Dipper lengthened again, its pads longer.
+

@@ -164,6 +164,19 @@ export class PlayerController {
   private rideAge = 0;
   private rideFlip = -1;
   private rideFlipDone = false;
+  /** A SPIN (ATTACK in the air on his shield): how far round, 0..1, or -1. A GRAB (GUARD held in the air): how long held. */
+  private rideSpin = -1;
+  private rideGrab = 0;
+  private rideGrabbed = false;
+  /** How many tricks he has done in this air, to be paid for in speed when he lands them. */
+  private rideTricks = 0;
+  /** For how he is drawn: how far round a spin he is (0..1, -1 not spinning), and how far into a grab (0..1). */
+  get rideSpinProgress(): number {
+    return this.riding ? this.rideSpin : -1;
+  }
+  rideGrabPose = 0;
+  /** A level that is a skate park (`LevelDef.skate`): the air attack puts him on his shield ANYWHERE, not only over a steep slope. */
+  skateAnywhere = false;
   private rideAgain = 0;
   /**
    * Grinding: his shield across a ledge or a rail, sliding along it (see `grindStep`, TUNING.grind, world/grind.ts).
@@ -988,14 +1001,22 @@ export class PlayerController {
     // Landing detection drives the short land state.
     const justLanded = !this.wasGrounded && this.grounded;
     if (this.riding && justLanded) {
-      if (this.rideFlip >= 0) {
+      // (A spin all but round when he lands is a spin done.)
+      if (this.rideSpin >= T.ride.spinSafe) {
+        this.rideSpin = -1;
+        this.rideTricks++;
+      }
+      if (this.rideFlip >= 0 || this.rideSpin > 0.12) {
         // Down before the shield came round: he comes off it.
         this.bail();
-      } else if (this.rideFlipDone) {
-        // A kickflip landed: a little speed for it.
+      } else if (this.rideFlipDone || this.rideTricks > 0) {
+        // Tricks landed: speed for each of them, past his standing top speed if they take him there (it goes as a tuck's does).
+        const tricks = this.rideTricks + (this.rideFlipDone ? 1 : 0);
         this.rideFlipDone = false;
+        this.rideTricks = 0;
+        this.rideSpin = -1;
         const had = Math.hypot(this.velocity.x, this.velocity.z);
-        const v = Math.max(had, Math.min(T.ride.max, had + T.ride.trickBoost));
+        const v = Math.max(had, Math.min(T.ride.tuckMax, had + T.ride.trickBoost * tricks));
         this.velocity.x = Math.sin(this.rideHeading) * v;
         this.velocity.z = Math.cos(this.rideHeading) * v;
         this.moveEvent = 'trick';
@@ -1231,6 +1252,8 @@ export class PlayerController {
         under = b;
       }
     }
+    // (In a skate park he gets on his shield over any ground at all.)
+    if (this.skateAnywhere && under && p.y - top <= TUNING.ride.surfDrop) return true;
     return !!under?.ramp && p.y - top <= TUNING.ride.surfDrop && slopeOf(under) >= TUNING.ride.minSlope - 1e-6;
   }
 
@@ -1247,6 +1270,10 @@ export class PlayerController {
     this.rideGroundAge = 0;
     this.rideFlip = -1;
     this.rideFlipDone = false;
+    this.rideSpin = -1;
+    this.rideGrab = 0;
+    this.rideGrabbed = false;
+    this.rideTricks = 0;
     this.rideSteer = 0;
     const speed = Math.hypot(this.velocity.x, this.velocity.z);
     this.rideHeading = speed > 0.5 ? Math.atan2(this.velocity.x, this.velocity.z) : this.facing;
@@ -1265,6 +1292,10 @@ export class PlayerController {
     this.riding = false;
     this.rideFlip = -1;
     this.rideFlipDone = false;
+    this.rideSpin = -1;
+    this.rideGrab = 0;
+    this.rideGrabbed = false;
+    this.rideTricks = 0;
     this.rideSteer = 0;
     this.rideAgain = TUNING.ride.again;
     this.moveEvent = event;
@@ -1302,6 +1333,10 @@ export class PlayerController {
     // (A kickflip he was in the middle of is over: his shield is on the rail. He has his air jump again for after.)
     this.rideFlip = -1;
     this.rideFlipDone = false;
+    this.rideSpin = -1;
+    this.rideGrab = 0;
+    this.rideGrabbed = false;
+    this.rideTricks = 0;
     this.airJumpsLeft = TUNING.jump.airJumps;
     this.jumpBuffer = 0;
     this.rideSteer = 0;
@@ -1499,6 +1534,8 @@ export class PlayerController {
     // as he goes down); standing up, what he has over it goes, a little at a time. In the air he keeps what he has.
     const was = Math.hypot(this.velocity.x, this.velocity.z);
     const floor = Math.max(R.max, Math.min(was, R.tuckMax));
+    // (Below his standing top speed a tuck PUSHES him along, on any ground: on the flat he skates.)
+    if (tuck && this.grounded && speed < R.max) speed = Math.min(R.max, speed + R.tuckPush * dt);
     if (speed > floor) speed = floor + (tuck && this.grounded ? (speed - floor) * R.tuckGain : 0);
     if (this.grounded && !tuck && speed > R.max) speed = Math.max(R.max, speed - R.tuckShed * dt);
     speed = Math.max(0, Math.min(R.tuckMax, speed - slow * dt));
@@ -1535,6 +1572,27 @@ export class PlayerController {
         this.rideFlipDone = true;
       }
     }
+    // A SPIN: ATTACK in the air. He and his shield go right round. One after another, as many as the air has room for.
+    if (!this.grounded && input.attackPressed && this.rideSpin < 0 && this.rideAge > 0.15) {
+      this.rideSpin = 0;
+      this.moveEvent = 'kickflip';
+    }
+    if (this.rideSpin >= 0) {
+      this.rideSpin += dt / R.spinTime;
+      if (this.rideSpin >= 1) {
+        this.rideSpin = -1;
+        this.rideTricks++;
+      }
+    }
+    // A GRAB: GUARD held in the air. Held long enough it counts, once an air.
+    const grabbing = !this.grounded && input.guardHeld;
+    this.rideGrab = grabbing ? this.rideGrab + dt : 0;
+    if (this.grounded) this.rideGrabbed = false;
+    if (grabbing && !this.rideGrabbed && this.rideGrab >= R.grabTime) {
+      this.rideGrabbed = true;
+      this.rideTricks++;
+    }
+    this.rideGrabPose += ((grabbing ? 1 : 0) - this.rideGrabPose) * Math.min(1, dt * 12);
     // Too slow to ride, on ground that will not start him again: he steps off. A slope will start him again, so on
     // one he stays on unless he is braking (and on one too steep to stand on, whatever he does): the top of his
     // climb up the wall of a pipe is the slowest he ever is, and he was stepped off there every time.

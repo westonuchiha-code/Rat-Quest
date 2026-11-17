@@ -527,11 +527,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   check('the stick pushed the way he is going is a TUCK: he goes on gaining speed past his standing top, to a higher one, and no further', Math.abs(top - R.tuckMax) < 0.2 && R.tuckMax > R.max + 4, `${top.toFixed(1)}`);
   const toMax = tuck.at.findIndex((q) => q >= R.max - 0.1);
   const toTop = tuck.at.findIndex((q) => q >= R.tuckMax - 0.2);
-  check('...and he BUILDS it: past his standing top speed it comes more slowly (two seconds and more from one top to the other)', toMax > 0 && toTop - toMax > 120, `${((toTop - toMax) / 60).toFixed(1)}s`);
+  // (At first it took four seconds, and he said: "it feels like a realistic amount of momentum increase for the incline but
+  // this is a video game". Now it is quick: between one second and three.)
+  check('...and he BUILDS it, quickly: from his standing top speed to his tucked one in a second or two, not at a stroke', toMax > 0 && toTop - toMax > 60 && toTop - toMax < 180, `${((toTop - toMax) / 60).toFixed(1)}s`);
   check('tucked, he is crouched (`rideTuck`); standing, he is not', tuck.p.rideTuck > 0.9 && stand.p.rideTuck < 0.01);
   // Tucked up to speed, then the stick let go.
-  const let2 = speeds((i) => (i < 60 * 6 ? { move: WEST } : {}), 60 * 9);
-  const after = let2.at.slice(-175);
+  const let2 = speeds((i) => (i < 60 * 5 ? { move: WEST } : {}), 60 * 9.5);
+  const after = let2.at.slice(-265);
   check('letting the stick go, he keeps his speed for a moment and then loses what he had over his standing top, a little at a time: not at a stroke', after[20] > R.max + 2 && Math.abs(after[after.length - 1] - R.max) < 0.3 && after.every((q, i) => i === 0 || q <= after[i - 1] + 0.2), `${after[20].toFixed(1)} then ${after[after.length - 1].toFixed(1)}`);
   // Hard over is a carve, not a tuck.
   const carve = speeds((i, p) => { const h = Math.atan2(p.velocity.x, p.velocity.z); return { move: v(Math.cos(h) * (i % 120 < 60 ? 1 : -1) + Math.sin(h) * 0.3, -Math.sin(h) * (i % 120 < 60 ? 1 : -1) + Math.cos(h) * 0.3) }; }, 60 * 5);

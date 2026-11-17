@@ -55,6 +55,7 @@ import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { ShadowCuts } from './render/cutShadow';
+import { makeToyRide } from './levels/toybox';
 import { makeDipRide } from './levels/bigdipper';
 import { Dozer, dreamify } from './world/dozers';
 import { railCurve } from './world/rails';
@@ -1697,6 +1698,7 @@ function startGame(): void {
     // creature in all it does, its painted colours turned round the wheel. Only looks.
     if (def.look === 'dream') enemyModels.forEach((m, i) => dreamify(m.root, [0.42, 0.58, 0.3, 0.7][i % 4]));
     // Its light rails (world/rails.ts): the lines that are drawn are the lines he grinds.
+    player.skateAnywhere = !!def.skate;
     player.rails = def.decor.filter((d): d is Extract<typeof d, { kind: 'lightrail' }> => d.kind === 'lightrail').map((d) => railCurve(d));
     // An open course: the wedges he already has, and the ones out in the course right now (so they do not chime on arrival).
     if (def.wedges) {
@@ -2282,6 +2284,15 @@ function startGame(): void {
         stowPressed = a.stowPressed;
         dodgePressed = a.dodgePressed;
       }
+    }
+    if (devAuto.ride && cur.id === 'toybox' && !player.dead) {
+      // (The Toy Box's rider: off the big ramp with a spin, a grab and a kickflip, and into the quarter pipe.)
+      const a = (devAuto.toyRider ??= makeToyRide())(player);
+      m.set(a.x, 0, a.z);
+      jumpPressed = a.jumpPressed;
+      jumpHeld = a.jumpHeld;
+      attackPressed = a.attackPressed;
+      guardHeld = a.guardHeld;
     }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
@@ -2992,7 +3003,7 @@ function startGame(): void {
   // sweep through part of a turn, for a place with a wall close on one side.)
   const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
   let orbitFrom = -1;
-  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
+  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
   const devEye = ((): number[] | null => {
@@ -3939,7 +3950,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
-      ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
+      ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.

@@ -5,6 +5,7 @@
 import { glimmerDeep } from './glimmer';
 import { milkyWay } from './milkyway';
 import { bigDipper } from './bigdipper';
+import { toyBox } from './toybox';
 import { buildLayout, extent } from '../world/layout';
 import { chamberCollectibles } from '../world/collectibleLayout';
 import { chamberPickups } from '../world/equipmentLayout';
@@ -241,7 +242,7 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
  * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
  */
-export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper()];
+export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox()];
 
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */

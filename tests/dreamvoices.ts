@@ -16,7 +16,7 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const all = [...LEVELS, ...ARCHIVE, ...TEST_ROOMS];
 const speaking = all.filter((l) => speaksRobot(l)).map((l) => l.id).sort();
-check('the robot voice speaks ONLY in the dream: the Milky Way and the Big Dipper, and in no other level of the game', speaking.join() === 'bigdipper,milkyway', speaking.join());
+check('the robot voice speaks ONLY in the dream: the Milky Way, the Big Dipper and the Toy Box, and in no other level of the game', speaking.join() === 'bigdipper,milkyway,toybox', speaking.join());
 check('...and every level that has the dream\'s look speaks so', all.filter((l) => l.look === 'dream').every((l) => speaksRobot(l)));
 
 const foe = { alive: true, hp: 6, attackActive: false, attacking: false };

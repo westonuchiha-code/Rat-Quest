@@ -292,7 +292,7 @@ export interface RatAnimInput {
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
    */
-  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number; /** 0 to 1: tucked, crouched low for speed. */ tuck?: number } | null;
+  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number; /** 0 to 1: tucked, crouched low for speed. */ tuck?: number; /** A spin in the air: how far round, 0..1 (-1: none). A grab: 0..1. */ spin?: number; grab?: number } | null;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
@@ -1126,7 +1126,8 @@ export class RatModel {
       pose.chest[2] = -r.steer * 0.18;
       pose.hipPos[1] -= Math.abs(r.steer) * 0.035;
       // Tucked: down low over the shield, his chest forward over his front knee, his tail straight out behind.
-      const tk = r.air ? 0 : r.tuck ?? 0;
+      // (A grab, in the air, is the same crouch and deeper: down over the shield with a paw to it.)
+      const tk = r.air ? (r.grab ?? 0) * 1.3 : r.tuck ?? 0;
       if (tk > 0.01) {
         pose.hipPos[1] -= 0.09 * tk;
         pose.chest[0] += 0.5 * tk;
@@ -1364,7 +1365,9 @@ export class RatModel {
     this.rideTiltZ = ease(this.rideTiltZ, onSlope ? Math.atan(onSlope.across ?? 0) : 0, dt, 14);
     // (Sliding on his hide he lies all the way to the slope; standing on his shield, most of the way.)
     const bodyTilt = state === 'slide' ? 1 : RIDE_BODY_TILT;
-    this.lean.rotation.set(this.pitch + this.rideTiltX * bodyTilt, 0, this.bank + this.rideLean + this.rideTiltZ * bodyTilt);
+    // (A spin on the shield: he and it go right round, about his own middle.)
+    const spin = state === 'ride' && (ctx.ride?.spin ?? -1) >= 0 ? Math.min(1, ctx.ride!.spin!) * Math.PI * 2 : 0;
+    this.lean.rotation.set(this.pitch + this.rideTiltX * bodyTilt, spin, this.bank + this.rideLean + this.rideTiltZ * bodyTilt);
     // (The hop onto his shield: lifted, stretched as he goes up and squashed as he comes down on it.)
     this.lean.position.y = this.hopY;
     this.lean.scale.set(1 / Math.sqrt(this.hopStretch), this.hopStretch, 1 / Math.sqrt(this.hopStretch));

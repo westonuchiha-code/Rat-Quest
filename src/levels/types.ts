@@ -108,6 +108,8 @@ export interface LevelDef {
   fallDepth?: number;
   /** He wears another look here: 'dream' is the knight in loud colours with a scarf three times as long. Only looks. */
   look?: 'dream';
+  /** A skate park: the air attack puts him on his shield over ANY ground here, not only over a steep slope (and so there is no dive). */
+  skate?: boolean;
   /**
    * How much plain light there is in the place, 0 to 1 (default 1). A dark place (the Glow Cave: 0.4) is lit by its
    * coloured lights and by what glows in it.

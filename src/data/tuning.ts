@@ -131,20 +131,30 @@ export const TUNING = {
     // you go down, with a maximum speed obviously ... like a snowboarding game ... push forward on the left analog
     // stick in order to sort of crouch down and go a little faster"). The stick pushed the way he is going: he
     // crouches, and a slope goes on speeding him up past his standing top speed, more slowly, to a higher one.
-    tuckMax: 24, // top speed, tucked
-    tuckGain: 0.45, // above his standing top speed, how much of a slope's pull still speeds him up (tucked)
-    tuckShed: 3, // standing up again (or on the flat), what he has over his standing top speed goes at this rate a second
+    // (And then, of a tuck that took four seconds to build to 24: "the leaning forward needs to have more of an effect on
+    // his momentum right now it feels like a realistic amount of momentum increase for the incline but this is a video
+    // game and it's supposed to ... have fun". So it is MORE than the slope gives: it takes two seconds, to a higher top.)
+    tuckMax: 30, // top speed, tucked
+    tuckGain: 1.3, // above his standing top speed, how much of a slope's pull speeds him up (tucked): more than all of it
+    tuckShed: 4, // standing up again (or on the flat), what he has over his standing top speed goes at this rate a second
+    tuckPush: 5, // below his standing top speed, a tuck pushes him along at this rate on ANY ground: on the flat he skates
+    // MORE TRICKS (the owner, the same day: "maybe different things you can do while you're in the air we already have
+    // the kick flip so we could do a couple more things like that"). In the air on his shield: JUMP is the kickflip (as
+    // it was); ATTACK is a SPIN, right round; GUARD held is a GRAB. Each one landed is speed, and they add up.
+    spinTime: 0.45, // seconds a spin takes
+    spinSafe: 0.75, // landed this far round a spin or further, it counts; less than that (and well begun) and he comes off
+    grabTime: 0.3, // a grab held this long counts
     stop: 1.4, // slower than this, on ground he can stand on, he steps off
     restSlope: 0.12, // ...if it is flatter than this (or he is braking): a real slope will start him again
     turn: 2.2, // how fast he turns with the stick held to one side (radians a second)
     carve: 1.8, // ...and how much faster with it held hard over: a carve, his tail out
     carveDrag: 3.2, // a carve scrubs speed off
-    brake: 9, // the stick pulled back against the way he is going
+    brake: 16, // the stick pulled back against the way he is going (it was 9: at a tuck's speed that was fifty units to stop in)
     airTurn: 0.5, // how much of his turning he keeps in the air
     ollie: 8.2, // the jump off the board
     flipLift: 5.4, // the little lift a kickflip gives (the second jump, in the air)
     flipTime: 0.42, // seconds the shield takes to spin round under his feet
-    trickBoost: 2.6, // speed added for landing one
+    trickBoost: 3.5, // speed added for landing one, for EACH trick done in that air (up to his tucked top speed)
     bailSpeed: 6, // into a wall faster than this, he comes off
     bailTime: 0.5, // ...and is this long picking himself up
     again: 0.4, // after stepping off, this long before SNEAK starts another
