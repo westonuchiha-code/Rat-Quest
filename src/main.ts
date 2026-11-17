@@ -4088,7 +4088,7 @@ function startGame(): void {
     // On the title screen the view drifts slowly round him (the game itself is holding still).
     const drifting = boot.blocking && (boot.where === 'title' || boot.where === 'files');
     if (drifting) follow.yaw += rawDt * 0.06;
-    follow.update(drifting ? rawDt : frameDt, renderPos, player.facing, !lockTarget && moving && player.state !== 'attack', lockTarget ? 0 : turn, pitchInput, chamber.colliders, player.velocity);
+    follow.update(drifting ? rawDt : frameDt, renderPos, player.facing, !lockTarget && moving && player.state !== 'attack', lockTarget ? 0 : turn, pitchInput, chamber.colliders, player.velocity, player.riding && player.grounded ? Math.hypot(player.velocity.x, player.velocity.z) : 0);
     lockMarker.visible = !!lockTarget && !builder.open;
     if (lockTarget) {
       lockMarker.position.set(lockTarget.x, lockTarget.y + lockTarget.radius * 2 + 0.75 + 0.07 * Math.sin(time * 6), lockTarget.z);

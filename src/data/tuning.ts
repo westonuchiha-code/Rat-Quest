@@ -273,6 +273,13 @@ export const TUNING = {
     // 1.4. Since the left stick steers relative to the view, a view that turned by itself changed what the stick meant
     // under the player's thumb: worst in a wall jump, where he turns right round at every kick. The owner, 2026-11-14.)
     autoFollowRate: 0,
+    /**
+     * ON HIS SHIELD ONLY: how fast the view comes round behind the way he is going (0: it does not, as on foot). His
+     * rule is that the view does not turn by itself, and this is 0 for that reason. It is here to be TRIED (the Tweaks
+     * panel, "Camera"): in a skate park, where he turns round at every wall, a view that never follows shows his face
+     * for half of every run. At full riding speed it turns at this rate; slower, in proportion; standing, not at all.
+     */
+    rideFollowRate: 0,
     followRate: 12,
     /** How quickly the view follows him up and down (jumps, landings, lifts). Lower is smoother. */
     heightRate: 5,

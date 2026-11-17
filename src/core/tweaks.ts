@@ -291,6 +291,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Camera', path: 'camera.targetHeight', label: 'Height it looks at', min: 0, max: 2.5, step: 0.05 },
   { group: 'Camera', path: 'camera.turnSpeed', label: 'Turn speed', min: 0.5, max: 6, step: 0.1 },
   { group: 'Camera', path: 'camera.autoFollowRate', label: 'Swings behind him as he moves (0: only the right stick turns it)', min: 0, max: 5, step: 0.1 },
+  { group: 'Camera', path: 'camera.rideFollowRate', label: 'On his shield, swings behind the way he is going (0: it does not)', min: 0, max: 5, step: 0.1 },
   { group: 'Camera', path: 'camera.lookUp', label: 'Looking up: how much further the stick tilts it past its lowest (0: it stops there)', min: 0, max: 1, step: 0.05 },
   { group: 'Camera', path: 'camera.lookUpTilt', label: 'Looking up: how far it tilts up', min: 0, max: 0.8, step: 0.02 },
   { group: 'Camera', path: 'camera.lookAhead', label: 'Looks ahead', min: 0, max: 0.6, step: 0.01 },

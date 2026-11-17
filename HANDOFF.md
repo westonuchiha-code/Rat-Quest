@@ -1466,3 +1466,7 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
    a fast rider is mended in the controller (`rampHead`: a box at the head of his ramp, no higher than the ramp there).
  - Off a pipe's lip he goes straight up and comes back down into it (`Box.vert`, `vertLaunch`); ATTACK on the shield
    swings the sword, and the spin is the roll button in the air. A new mark on a box must be copied in `chamber.ts`.
+ - Camera in a half pipe: it never swung (it does not turn by itself); it was DRAWN IN at the foot of the wall on its
+   own side, because its look point, leaned ahead of him, lay against the slope and no line over the wall was found.
+   The leaned point now keeps over the ground under it (`AHEAD_UP`), a slope is never too tall to rise over, and over a
+   slope it rises fast (`LIFT_HURRY`). 1.3 off before, 2.5 or more now. `camera.rideFollowRate` is a slider, 0.

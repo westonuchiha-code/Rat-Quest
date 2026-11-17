@@ -479,7 +479,7 @@ on."
    wall, the button takes him up onto it).
  - Rolled in off the flush lip and doing nothing, he gets to 3.0 of 3.5 up the far wall (it was 2.7 from a jump).
 
-## THE CAMERA GOING UP A SLOPE (2026-11-17: he found it). Tests `tests/camera.ts` (38)
+## THE CAMERA GOING UP A SLOPE, AND IN A HALF PIPE (2026-11-17: he found it). Tests `tests/camera.ts` (42)
 
 **His words:** "The camera needs to stay behind the character right now **if you're going up ramps at any kind of speed
 whether you're walking or especially while you're riding the board it just like zooms in too far into the back of the
@@ -493,11 +493,31 @@ character or straight up into the wall and you can't see anything**."
    lines of sight are drawn from, is always over that ground. **MEASURED AFTER: 3.5 or more off at every slope (0.42,
    0.5, 1.0), every speed (6, 16, 30), at 60 and 30 frames a second; never under the ramp.** A hop off flat ground is
    as it was (the ground under him has not moved): held by a test.
- - **NOT DONE, and likely still to be seen:** (1) riding UP a curved wall that has a tall side beyond it, he faces the
-   wall: a camera behind him shows the wall. (2) **In a half pipe, when the wall turns him round, the camera swings
-   round behind his new way of going, which is the wall he has just left**: it is squeezed there until he is clear of
-   it. That wants a camera of its own for pipes (one that stays where it was while he comes back down), not built.
-   (3) Nothing was changed about how it follows him DOWN a slope, which he has not complained of.
+ - **IN A HALF PIPE (the same day, after his "Continue"). WHAT WAS WRONG WAS NOT WHAT WAS GUESSED.** The guess, written
+   here before, was that the camera swings round when the wall turns him. It does not: `autoFollowRate` is 0 (his rule),
+   it never turns by itself, and a test now says so in the pipe. What was wrong: the camera is on the side of one wall,
+   and he rides up that wall TOWARDS it every other pass. **MEASURED BEFORE: at the foot of that wall it was drawn in to
+   1.3 from him (it sits 3.5 off), was under the wall's surface by a fifth, and was squeezed again in the air after
+   the launch on that side: under 2 off for 9% of a run.**
+   - **WHY:** the point it looks at is leaned AHEAD of him by his speed (`lookAhead`), at the height of his chest. Up a
+     wall, ahead of him the ground is higher: that point lay against the slope. From a point on the ground nothing sees
+     his "waist" a quarter under it, so `sees()` failed at every pitch, no line over the wall was ever found
+     (`wantLift` stayed 0), and it was pulled in instead of rising.
+   - **NOW:** (1) the leaned point is kept half a unit over the ground UNDER IT (`AHEAD_UP`: a slope no more than 1.2
+     over his chest there). (2) A SLOPE in the way is never "too tall to see over" (`lowThingInTheWay`). (3) Rising
+     over a slope while its line is still blocked, it rises fast (`LIFT_HURRY` 40, never more than `LIFT_HURRY_MOST` 5
+     radians a second); **over a crate it rises as it always did: hurried over everything, it swung 23 degrees in a
+     frame in the Cistern's run-about test.**
+   - **MEASURED AFTER: never nearer than 2.5 (2.56 to 3.34), never under the wall, never turned, with the view on
+     either side of him and cornerwise, pumping gently and hard, at 60 and 30 frames a second, through 72 launches.**
+     Held by a test that uses the real pipe, the game's own solids and the real controller. Film:
+     `film-half-pipe-camera.mp4` (before, then after).
+   - **A SLIDER, OFF: `camera.rideFollowRate`** (Tweaks, Camera: "On his shield, swings behind the way he is going").
+     0 as shipped, because his rule is that the view does not turn by itself. It is there for him to TRY: in a pipe a
+     view that never follows shows his face for half of every run. Do not turn it on without his yes.
+ - **NOT DONE:** (1) with the view on the wall's side, at the top of that wall it looks DOWN over the deck's edge at
+   him, and the deck fills the bottom third of the picture for a moment. (2) Nothing was changed about how it follows
+   him DOWN a slope, which he has not complained of. (3) Nobody has played the pipe by hand with this camera.
 
 ## THE HISS IN THE DREAM, AND THE MUSIC TOO LOUD (2026-11-17). Tests `tests/ambience.ts` (30), `tests/tunes.ts` (20)
 

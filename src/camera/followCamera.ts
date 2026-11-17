@@ -18,7 +18,15 @@ const SEE_DOWN = 0.25;
 const SEE_SIDE = 0.22;
 /** How finely it looks for the lowest line that clears (radians of pitch). */
 /** The point it looks at is kept this far over the ground under him, and comes up to that at this rate when a slope has left it lower. */
+/** On his shield the view follows him round at its full rate at this speed and over (TUNING.camera.rideFollowRate). */
+const RIDE_FOLLOW_FULL = 10;
+/** How fast it rises to a line that clears while the one it is on does not. */
+const LIFT_HURRY = 40;
+/** ...and the most it rises in a second when it hurries (radians): about five degrees in a frame. */
+const LIFT_HURRY_MOST = 5;
 const CHEST_CLEAR = 0.5;
+/** The ground under the point leaned ahead of him counts as the slope he is on if it is no more than this far over his chest. */
+const AHEAD_UP = 1.2;
 const RISE_RATE = 20;
 const LIFT_STEP = 0.07;
 /** Pulled in to less than this much of its distance it starts to go up over his head; at the second, it is all the way up. */
@@ -123,6 +131,8 @@ export class FollowCamera {
   private over = 0;
   /** Up over his head, how far out from the middle of him it keeps (flat); eased. */
   private tuck = 0;
+  /** What `lowThingInTheWay` last found in the way was (in part) a slope. */
+  private slopeInTheWay = false;
   private readonly lifted = new THREE.Vector3();
   private readonly look = new THREE.Vector3();
   private readonly sideA = new THREE.Vector3();
@@ -142,12 +152,17 @@ export class FollowCamera {
     const a = this.sideA;
     const b = this.sideB;
     let blocked = false;
+    this.slopeInTheWay = false;
     for (let ray = 0; ray < 4; ray++) {
       const side = ray === 2 ? -1 : ray === 3 ? 1 : 0;
       a.set(this.target.x + uz * SEE_SIDE * side, this.target.y - (ray === 1 ? SEE_DOWN : 0), this.target.z - ux * SEE_SIDE * side);
       b.set(this.free.x + uz * SEE_SIDE * side, this.free.y, this.free.z - ux * SEE_SIDE * side);
       if (sight(a, b, colliders, CLEAR, this.met) >= 1 || !this.met.box) continue;
-      if (this.met.box.max.y > top) return false;
+      // (A SLOPE is never too tall to look over: what is in the way is its surface, which the view can rise above from
+      // where it is. In a half pipe, with the view on the side of the wall he is riding up, the wall was "a wall": the
+      // view was drawn in to his back at the foot of it, every time he came that way.)
+      if (!this.met.box.ramp && this.met.box.max.y > top) return false;
+      if (this.met.box.ramp) this.slopeInTheWay = true;
       blocked = true;
     }
     return blocked;
@@ -171,6 +186,8 @@ export class FollowCamera {
     pitchInput: number,
     colliders: Aabb[],
     velocity?: { x: number; z: number },
+    /** How fast he is going ON HIS SHIELD (0 if he is not on it): see TUNING.camera.rideFollowRate. */
+    rideSpeed = 0,
   ): void {
     const C = TUNING.camera;
     const fresh = !this.initialized;
@@ -178,6 +195,11 @@ export class FollowCamera {
 
     if (turn !== 0) {
       this.yaw += turn * dt * C.turnSpeed;
+    } else if (C.rideFollowRate > 0 && rideSpeed > 1 && velocity) {
+      // On his shield, if it is asked for: round behind the way he is GOING (not the way he faces: in the air off a
+      // pipe's lip he has turned to face back in, and is going nowhere across the ground).
+      const k = C.rideFollowRate * Math.min(1, rideSpeed / RIDE_FOLLOW_FULL);
+      this.yaw = lerpAngle(this.yaw, Math.atan2(velocity.x, velocity.z) + Math.PI, 1 - Math.exp(-k * dt));
     } else if (moving) {
       // Ease behind the rat's facing direction while he moves.
       this.yaw = lerpAngle(this.yaw, facing + Math.PI, 1 - Math.exp(-C.autoFollowRate * dt));
@@ -217,6 +239,18 @@ export class FollowCamera {
     // (And however fast the ground comes up, what is taken for his chest is over it: lines of sight are drawn from there.)
     this.chest.set(focus.x, Math.max(this.smoothY + C.targetHeight, floorUnder + CHEST_CLEAR * 0.7), focus.z);
     this.target.set(this.chest.x + this.ahead.x, this.chest.y, this.chest.z + this.ahead.z);
+    // LEANED UP A SLOPE, THE POINT IT LOOKS AT GOES UP THE SLOPE. Ahead of him the ground is higher: the point leaned
+    // ahead at the height of his chest was down against the slope (at the foot of a pipe's wall, in it). From a point
+    // lying on the ground nothing sees his "waist", a quarter under it: so no line over the wall was ever found, and
+    // with the view on that side of him it was drawn in to his back instead of rising. It is kept as far over the
+    // ground under IT as his chest is kept over the ground under him.
+    let floorAhead = -Infinity;
+    for (const b of colliders) {
+      if (!b.ramp || this.target.x < b.min.x || this.target.x > b.max.x || this.target.z < b.min.z || this.target.z > b.max.z) continue;
+      const top = topAt(b, this.target.x, this.target.z);
+      if (top <= this.chest.y + AHEAD_UP && top > floorAhead) floorAhead = top;
+    }
+    if (this.target.y < floorAhead + CHEST_CLEAR) this.target.y = floorAhead + CHEST_CLEAR;
     // The lean stops short of anything solid. (Running into a wall, the point it looked at went on into the wall for
     // a quarter of a second, and with nothing to be seen from in there the view shot in to the back of his head.)
     if (C.liftMaxPitch > 0 || C.squeezeRise > 0) {
@@ -225,7 +259,7 @@ export class FollowCamera {
         const keep = Math.max(0, open - 0.02);
         this.ahead.x *= keep;
         this.ahead.z *= keep;
-        this.target.set(this.chest.x + this.ahead.x, this.chest.y, this.chest.z + this.ahead.z);
+        this.target.set(this.chest.x + this.ahead.x, this.chest.y + (this.target.y - this.chest.y) * keep, this.chest.z + this.ahead.z);
       }
     }
     const cp = Math.cos(swing);
@@ -291,7 +325,15 @@ export class FollowCamera {
         wantLift = hi - base + 0.02;
       }
     }
-    this.lift += (wantLift - this.lift) * ease(wantLift > this.lift ? C.liftInRate : C.liftOutRate);
+    // (Rising, and from where it has got to it still cannot see him: it rises FAST. He comes to the foot of a pipe's
+    // wall at twelve a second, and the line that clears the wall is steeper every frame: at its usual rate it was
+    // always a little behind, and so a little inside the wall.)
+    // (Over a SLOPE only, and never faster than `LIFT_HURRY_MOST`: over a crate it rises as it always did. Hurried
+    // over everything, it swung twenty degrees in a frame running about the Cistern.)
+    let liftRate: number = wantLift > this.lift ? C.liftInRate : C.liftOutRate;
+    if (this.slopeInTheWay && wantLift > this.lift + 0.02 && !sees(at(base + this.lift))) liftRate = Math.max(liftRate, LIFT_HURRY);
+    const liftBy = (wantLift - this.lift) * ease(liftRate);
+    this.lift += liftRate > C.liftInRate ? Math.min(liftBy, Math.max(LIFT_HURRY_MOST * dt, (wantLift - this.lift) * ease(C.liftInRate))) : liftBy;
     const end = this.lift > 1e-4 ? at(base + this.lift) : this.free;
 
     // Pull the camera in if a wall lies between the rat and where it wants to be: quickly in, slowly back out.

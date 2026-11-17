@@ -12,6 +12,7 @@ import { LEVELS } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
 import { Aabb, aabbOf, makeAabb, segmentAabbT, topAt } from '../src/world/collision';
 import { TWEAKS } from '../src/core/tweaks';
+import { toyBox, toyBoxPlan, HALF, halfDeck } from '../src/levels/toybox';
 
 const DT = 1 / 60;
 const C = TUNING.camera as { -readonly [K in keyof typeof TUNING.camera]: number };
@@ -360,6 +361,80 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   cam.update(DT, focus, 0, false, 0, 0, flat);
   cam.update(DT, focus, 0, false, 0, 0, flat);
   check('a hop off flat ground does not jolt it: two up in a step, it has risen a fifth of that or less (the ground under him has not moved)', eye.position.y - y0 < 0.45 && eye.position.y - y0 > 0, `${(eye.position.y - y0).toFixed(2)}`);
+}
+
+// ---- IN A HALF PIPE (2026-11-17). The view does not turn by itself, so in a pipe it is on the side of one wall, and he
+// rides up that wall TOWARDS it every other pass. It was drawn in to 1.3 from him at the foot of that wall (it sits 3.5
+// off), was under the wall's surface by a fifth, and was squeezed again in the air after the launch on that side: the
+// point it looks at, leaned ahead of him, lay against the slope, and from there no line over the wall was ever found.
+// The real pipe, the game's own solids, the real controller; the view on each side of him and cornerwise; pumping
+// in the flat and with the stick held the whole way; at sixty frames a second and at thirty. ----
+{
+  const def = toyBox();
+  const cs: Aabb[] = buildChamber({ solids: def.solids, pit: def.pit, water: def.water ?? [], decor: [], movers: def.movers }).colliders;
+  const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filter((b) => x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z).map((b) => topAt(b, x, z)));
+  const deck = halfDeck();
+  const v = (x: number, z: number): THREE.Vector3 => new THREE.Vector3(x, 0, z);
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgeHeld: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const told: string[] = [];
+  let launches = 0;
+  for (const yaw of [Math.PI / 2, -Math.PI / 2, Math.PI / 4]) {
+    for (const hard of [false, true]) {
+      for (const fps of [60, 30]) {
+        const dt = 1 / fps;
+        const p = new PlayerController(new THREE.Vector3(HALF.x + deck.out + 3, deck.y + 0.01, 0));
+        p.rails = toyBoxPlan().rails;
+        p.skateAnywhere = true;
+        const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+        const cam = new FollowCamera(eye);
+        cam.yaw = yaw;
+        for (let i = 0; i < 10; i++) p.update(dt, inp({}), cs);
+        p.update(dt, inp({ move: v(-1, 0), jumpPressed: true, jumpHeld: true }), cs);
+        let nearest = 99;
+        let under = 0;
+        let turned = 0;
+        let wasUp = false;
+        for (let i = 0; i < fps * 14; i++) {
+          const pump = hard || Math.abs(p.position.x - HALF.x) < HALF.flat + 2.5 ? v(Math.sign(p.velocity.x) || -1, 0) : v(0, 0);
+          const move = p.riding ? pump : v(-1, 0);
+          p.update(dt, inp({ move, jumpHeld: !p.riding, attackPressed: !p.riding && !p.grounded && p.velocity.y < 5 }), cs);
+          cam.update(dt, p.position, p.facing, true, 0, 0, cs, p.velocity, p.riding && p.grounded ? Math.hypot(p.velocity.x, p.velocity.z) : 0);
+          const up = p.riding && !p.grounded && p.position.y > deck.y + 1;
+          if (up && !wasUp) launches++;
+          wasUp = up;
+          if (i < fps * 1.5) continue;
+          nearest = Math.min(nearest, Math.hypot(eye.position.x - p.position.x, eye.position.y - (p.position.y + C.targetHeight), eye.position.z - p.position.z));
+          under = Math.max(under, ground(eye.position.x, eye.position.z) - eye.position.y);
+          turned = Math.max(turned, Math.abs(cam.yaw - yaw));
+        }
+        if (nearest < 2.4 || under > 0.05 || turned > 1e-6) told.push(`yaw ${yaw.toFixed(2)}${hard ? ' hard' : ''} ${fps} fps: nearest ${nearest.toFixed(2)}, under by ${under.toFixed(2)}, turned ${turned.toFixed(2)}`);
+      }
+    }
+  }
+  check('in the half pipe (the view on either side of him and cornerwise, pumping gently and hard, at sixty frames a second and thirty) he goes up off the lips and comes back, and through all of it the view is never drawn in to his back (it was, to 1.3), is never under the wall, and never turns by itself', launches >= 24 && told.length === 0, `${launches} launches; ${told.join('; ')}`);
+}
+
+// ---- ON HIS SHIELD, THE VIEW CAN BE ASKED TO COME ROUND BEHIND THE WAY HE IS GOING (TUNING.camera.rideFollowRate): it
+// is 0, his rule ("the camera must not turn by itself"), and is there to be tried in the Tweaks panel. ----
+{
+  const flat: Aabb[] = [aabbOf(extent('floor', -40, 40, -1, 0, -60, 200))];
+  const run = (rate: number, rideSpeed: number): number => {
+    const was = C.rideFollowRate as number;
+    (C as { rideFollowRate: number }).rideFollowRate = rate;
+    const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+    const cam = new FollowCamera(eye);
+    cam.yaw = Math.PI; // behind one going +z... and he is going +x
+    const focus = new THREE.Vector3(0, 0, 0);
+    for (let i = 0; i < 120; i++) {
+      focus.x += 10 * DT;
+      cam.update(DT, focus, Math.PI / 2, true, 0, 0, flat, { x: 10, z: 0 }, rideSpeed);
+    }
+    (C as { rideFollowRate: number }).rideFollowRate = was;
+    return Math.abs(Math.atan2(Math.sin(cam.yaw - -Math.PI / 2), Math.cos(cam.yaw - -Math.PI / 2)));
+  };
+  check('as it is set (0), the view does not come round behind him on his shield: it does not turn by itself', C.rideFollowRate === 0 && Math.abs(run(0, 10) - Math.PI / 2) < 1e-6, `${C.rideFollowRate}, ${run(0, 10).toFixed(2)}`);
+  check('asked to (the Tweaks panel), on his shield it comes round behind the way he is GOING within two seconds; on foot it still does not', run(2, 10) < 0.1 && Math.abs(run(2, 0) - Math.PI / 2) < 1e-6, `riding ${run(2, 10).toFixed(2)} off behind; on foot ${run(2, 0).toFixed(2)}`);
+  check('the Tweaks panel has it', TWEAKS.some((t) => t.path === 'camera.rideFollowRate'));
 }
 
 console.log(failures === 0 ? '\ncamera: all passed' : `\ncamera: ${failures} FAILED`);
