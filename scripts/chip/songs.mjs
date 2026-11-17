@@ -159,6 +159,53 @@ export const SONGS = [
   },
 ];
 
+/**
+ * BOOM BAP, WITH DIZZY DAVE'S OWN VOICE (the owner, 2026-11-17: "at least one or two sample like hip hop or boom bap
+ * style tracks while also sampling in the voice track of dizzy Dave trying to match the beats"). Slow, swung, a kick
+ * that comes late, a snare on two and four, soft keys and a lazy horn; and Dave's recording (recordings/pigeon.m4a:
+ * thirty-five mouth sounds) cut into its sounds and put ON THE BEAT (make.mjs, `dave`): k one of his low thumps, s
+ * one of his snaps, h one of his ticks, a letter a sixteenth, swung as the drums are. A drum `order` may begin with
+ * '-' for bars with no drums in them.
+ */
+SONGS.push(
+  {
+    // (86 to the minute: the Club's own tempo, so that it lies under the scene DIZZY DAVE, LIVE beat for beat.)
+    id: 'bap1', name: 'Pigeon Bap', where: 'Dizzy Dave', bpm: 86,
+    chords: ['Am7', 'Dm7', 'Fmaj7', 'E7', 'Am7', 'Dm7', 'Fmaj7', 'E7'],
+    parts: [
+      { type: 'line', con: 'n64', v: 'trumpet', vol: 0.7, gate: 0.9, bars: [
+        '-:4 E5:2 G5:2 A5:4 G5:2 E5:2', 'F5:6 D5:2 -:4 A4:2 C5:2', '-:4 A5:2 C6:2 E6:4 C6:2 A5:2', 'G#5:6 E5:2 -:8',
+        '-:4 E5:2 G5:2 A5:4 C6:2 A5:2', 'F5:6 A5:2 -:4 D5:2 F5:2', 'E6:4 C6:2 A5:2 G5:4 E5:4', 'D5:4 B4:4 -:8',
+      ] },
+      { type: 'stab', con: 'x68', v: 'epiano', vol: 0.55, oct: 4, rhythm: 'x.....x.....x...', len: 5 },
+      { type: 'bass', con: 'n64', v: 'bass', vol: 1, oct: 2, pat: 'r......r..r...f.' },
+    ],
+    drums: { con: 'oki', swing: 0.55, order: 'AAABAAAB', pats: {
+      A: { kick: 'x......x..x.....', snare: '....x.......x...', chh: 'x.xox.xox.xox.xo' },
+      B: { kick: 'x......x........', snare: '....x...........', chh: 'x.xox.xo........' },
+    } },
+    dave: { vol: 0.75, bars: ['k...s.....k.s...', 'k...s..h..k.s...', 'k...s.....k.s..h', 'k...s...khs.kksh', 'k...s.....k.s...', 'k...s..h..k.s...', 'k...s.....k.s..h', 'k...s...kksh.shs'] },
+  },
+  {
+    id: 'bap2', name: 'Feathers and Dust', where: 'Dizzy Dave', bpm: 92,
+    chords: ['Em7', 'Cmaj7', 'Am7', 'B7', 'Em7', 'Cmaj7', 'Am7', 'B7'],
+    parts: [
+      { type: 'line', con: 'snes', v: 'flute', vol: 0.62, gate: 0.92, bars: [
+        'B5:4 -:4 G5:2 A5:2 B5:4', 'E6:6 D6:2 B5:4 G5:4', 'A5:4 -:4 E5:2 G5:2 A5:4', 'F#5:6 A5:2 B5:4 -:4',
+        'B5:4 -:4 D6:2 E6:2 G6:4', 'E6:6 D6:2 C6:4 B5:4', 'A5:4 C6:4 E6:4 C6:2 A5:2', 'B5:8 -:8',
+      ] },
+      { type: 'stab', con: 'gen', v: 'epiano', vol: 0.5, oct: 4, rhythm: '..x..x....x..x..', len: 2 },
+      { type: 'bass', con: 'snes', v: 'bass', vol: 1, oct: 2, pat: 'r..r......r.R...' },
+    ],
+    // (The first two bars have no kit: Dave is the drums. Then the kit comes in under him.)
+    drums: { con: 'snes', swing: 0.5, order: '--ABAAAB', pats: {
+      A: { kick: 'x.....x...x.....', snare: '....x.......x...', chh: 'xoxoxoxoxoxoxoxo' },
+      B: { kick: 'x.....x...x..x..', snare: '....x.......x.x.', chh: 'xoxoxoxoxoxoxo..' },
+    } },
+    dave: { vol: 0.85, bars: ['k.h.s.hkk.h.s.hh', 'k.h.s.hk.kh.s.sh', '..............sh', '.......s......kh', '..............sh', '.......h....s...', '..............sh', 'k.hsk.hskhskshsh'] },
+  },
+);
+
 /** Two short pieces that are played once (no drums, no loop). */
 export const JINGLES = [
   { id: 'wedge', name: 'A Golden Wedge', bpm: 150, chords: ['G', 'G'], parts: [
@@ -179,7 +226,9 @@ export function toStudio(s) {
   const takes = [];
   for (const p of s.parts) {
     const notes = [];
-    const put = (step, len, m, extra = {}) => notes.push({ t: +(step * six).toFixed(5), d: +(Math.max(0.03, len * six * (p.gate ?? 0.9))).toFixed(5), c: p.con, v: p.v, m, ...extra });
+    // (Swung as the drums are: an odd sixteenth comes late by a third of the swing, or the bass and the kick part company.)
+    const sw = (s.drums?.swing ?? 0) / 3;
+    const put = (step, len, m, extra = {}) => notes.push({ t: +((step + (step % 2 ? sw : 0)) * six).toFixed(5), d: +(Math.max(0.03, len * six * (p.gate ?? 0.9))).toFixed(5), c: p.con, v: p.v, m, ...extra });
     for (let b = 0; b < bars; b++) {
       const ch = chord(s.chords[b]);
       const base = 12 * ((p.oct ?? 4) + 1) + ch.root;

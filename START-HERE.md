@@ -447,9 +447,20 @@ like you to try to use these two tools to create a series of music tracks and al
    and stab patterns a letter a sixteenth; drum bars in the Drum Pad's own `x.o.` writing). `toStudio()` makes the
    Studio's song of one. **`node scripts/chip/make.mjs <folder>`** renders each through BOTH tools (the Studio's notes,
    the Drum Pad's beat), folds what rings past the end back onto the start so the loop meets itself, and mixes.
-     EIGHT TUNES, eight bars each: `title` The Kingdom Below (NES), `club` Dave's Groove (Genesis), `cistern` Still
+     TEN TUNES, eight bars each (the two boom bap ones are below): `title` The Kingdom Below (NES), `club` Dave's Groove (Genesis), `cistern` Still
      Water (SNES), `foundry` Hammer and Bellows (C64), `hollows` No Bottom (N64), `keep` The Long Stair (PS1),
      `dream` Star Slide (Game Boy Color), `boss` Teeth (X68000). TWO JINGLES: `wedge`, `defeat`.
+ - **BOOM BAP WITH DIZZY DAVE'S OWN VOICE** (he asked while the first set was being made: "at least one or two sample
+   like hip hop or boom bap style tracks while also sampling in the voice track of dizzy Dave trying to match the
+   beats"). TWO: `bap1` Pigeon Bap (86, the Club's own tempo: it lies under the scene DIZZY DAVE, LIVE beat for
+   beat, and the scene was sent again cut over it) and `bap2` Feathers and Dust (92; its first two bars have no
+   kit: Dave IS the drums). Slow, swung, a late kick, a snare on two and four, soft keys and a lazy horn or flute.
+   **Dave's voice is `recordings/pigeon.m4a`: eighteen seconds, thirty-five separate mouth sounds, in no time at
+   all.** `make.mjs` (`daveSounds`) cuts it into its sounds, sorts them by brightness into his THUMPS, his SNAPS and
+   his TICKS, and a song's `dave` bars put them on the sixteenths (`k`, `s`, `h`), swung exactly as the drums are,
+   each a different one of his in turn. (Checked: the strong hits fall within a few thousandths of a second of the
+   grid.) The NOTES are swung with the drums too now (`toStudio`): straight notes over swung drums put the bass
+   and the kick apart.
  - **`node scripts/chip/sfx.mjs <folder>`: 27 EFFECTS**, each named for the game's own sound it could stand in for
    (menuMove, menuOk, menuBack, boot, crumb, cap, relic, item, heal, sparkle, clear, jump, doubleJump, land, swing,
    dodge, hurt, block, hit, kill, shock, spit, crate, doorOpen, gate, splash, whoosh): single notes cut short and
