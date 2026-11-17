@@ -27,7 +27,7 @@ import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
-import { isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
+import { isDown, heldTurn, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
 import type { Crate } from './world/crates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
@@ -1143,6 +1143,13 @@ function startGame(): void {
   /** ...or the creature (it is down: world/lifting.ts DOWN_STATES), and how long he has had it. */
   let heldFoe: Foe | null = null;
   let heldFoeTime = 0;
+  /** Creatures drawn turned over in his hands (or tumbling) last frame: their pictures are put straight before the next. */
+  const turnedInHand = new Set<Foe>();
+  /** Seconds to the next scrabble of a carried creature. */
+  let squirmIn = 0.8;
+  const handQ = new THREE.Quaternion();
+  const handAxis = new THREE.Vector3();
+  const handMid = new THREE.Vector3();
   const thrownFoes: Array<Thrown<Foe>> = [];
   /** A creature that is in his hands or in the air does nothing of its own, and is not fought. */
   const inHand = (e: Foe): boolean => e === heldFoe || thrownFoes.some((t) => t.what === e);
@@ -2382,13 +2389,16 @@ function startGame(): void {
       m.set(devWalk[0], 0, devWalk[1]);
       run = true;
     }
-    // (`&autogo=x,z,x,z...`: he runs to each place in turn, hops there, and then stands: for a film of the practice rooms' buttons.)
+    // (`&autogo=x,z,x,z...`: he runs to each place in turn, hops there (or at the stops `&gostow=2,5` names, presses STOW), and then stands: for films.)
     if (devGo && devGo.length >= 2 && !player.dead) {
       const gx = devGo[0] - player.position.x;
       const gz = devGo[1] - player.position.z;
       if (Math.hypot(gx, gz) < 0.4) {
         devGo.splice(0, 2);
-        jumpPressed = player.grounded;
+        devGoStop++;
+        // (At a stop named in `&gostow` he presses STOW there instead of hopping: lifts what is in front of him, or sets it down.)
+        if (devGoStow.includes(devGoStop)) stowPressed = true;
+        else jumpPressed = player.grounded;
       } else m.set(gx, 0, gz).normalize();
     }
     // (`&autojump`: every two seconds he jumps, holds it, and jumps again at the top: for a film of how a place's air feels.)
@@ -2429,6 +2439,18 @@ function startGame(): void {
     }
     // (`&autolift`, for the films: he goes to the nearest crate and lifts it, carries it toward the nearest creature,
     // and throws it from five off; and again.)
+    // (`&carryfoe`, for the films only: a second in, the nearest creature is put in his hands, down or not, once; so how
+    // one looks carried and thrown can be filmed without waiting on a fight to knock one down.)
+    if (devCarryFoe && !devCarried && worldClock > 1.5 && !held && !heldFoe && !player.dead) {
+      const near = enemies.filter((e) => e.alive).sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
+      if (near) {
+        devCarried = true;
+        heldFoe = near;
+        heldFoeTime = 0;
+        heldFrom.set(near.x, near.y, near.z);
+        player.startCarry(true);
+      }
+    }
     if (devLift && !player.dead) {
       const to = (x: number, z: number, stopAt: number): number => {
         const d = Math.hypot(x - player.position.x, z - player.position.z);
@@ -2476,16 +2498,18 @@ function startGame(): void {
       chamber.liftCrate(held);
       player.startCarry(thrownAs(held).light);
       stowPressed = false;
-      audio.play('plank', { vol: 0.55, rate: roll(1.25, 1.4), priority: 6 });
+      audio.play('heave', { vol: 0.75, rate: roll(0.95, 1.08) * (thrownAs(held).light ? 1.2 : 1), priority: 6 });
     } else if (stowPressed && liftableFoe) {
       heldFoe = liftableFoe;
       liftableFoe = null;
       heldFoeTime = 0;
+      squirmIn = 0.8;
       heldFrom.set(heldFoe.x, heldFoe.y, heldFoe.z);
       if (lockTarget === heldFoe) lockTarget = null;
       player.startCarry(true);
       stowPressed = false;
-      audio.play('whoosh', { vol: 0.5, rate: 1.5, priority: 6 });
+      audio.play('heave', { vol: 0.6, rate: 1.15, priority: 6 });
+      audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
     }
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
     /** What a throw would be aimed at: the creature in front of him, or the one he is locked on to (not the one in his hands). */
@@ -2499,14 +2523,14 @@ function startGame(): void {
         // (From over his head, whatever was left of its way up.)
         thrown.push(startThrow(c, c.half, c.aabb, carryPlace(player.position, halfHigh, hands), player.facing, player.velocity, 1, aimNow(), thrownAs(c).speed));
         held = null;
-        audio.play('whoosh', { vol: 0.8, rate: roll(0.9, 1.05) * (thrownAs(c).light ? 1.25 : 1), priority: 7 });
+        audio.play('hurl', { vol: 0.85, rate: roll(0.92, 1.05) * (thrownAs(c).light ? 1.2 : 1), priority: 7 });
       } else if (player.liftEvent === 'down') {
         const spot = putDownSpot(chamber.colliders, player.position, player.facing, c);
         if (spot) {
           chamber.setCrate(c, spot.x, spot.y, spot.z);
           player.endCarry();
           held = null;
-          audio.play('land', { vol: 0.6, rate: 0.8, priority: 5 });
+          audio.play('setDown', { vol: 0.75, rate: roll(0.95, 1.05) * (thrownAs(c).light ? 1.25 : 1), priority: 5 });
         } else audio.play('menuBack', { vol: 0.4, rate: 0.8, priority: 4 });
       } else if (!player.carrying) {
         // Let go of (he was hurt, or is in the water): it falls where he is.
@@ -2517,6 +2541,12 @@ function startGame(): void {
     if (heldFoe) {
       const e = heldFoe;
       heldFoeTime += dt;
+      // (It scrabbles to be let go, now and then, and more often as it nears getting free.)
+      squirmIn -= dt;
+      if (squirmIn <= 0) {
+        audio.play('squirm', { vol: 0.5, rate: roll(0.95, 1.15), priority: 4 });
+        squirmIn = Math.max(0.35, 0.9 * (1 - heldFoeTime / TUNING.lift.foeHold)) + roll(0, 0.25);
+      }
       // (It stands on air over his head: a creature's place is where its feet are.)
       const at = heldPlace(player.position, 0);
       const free = (): void => {
@@ -2534,7 +2564,7 @@ function startGame(): void {
       else if (player.liftEvent === 'throw') {
         thrownFoes.push(startThrow(e, Math.max(0.3, e.radius), null, carryPlace(player.position, 0, hands), player.facing, player.velocity, 1, aimNow(), 1.1));
         heldFoe = null;
-        audio.play('whoosh', { vol: 0.8, rate: roll(1.0, 1.15), priority: 7 });
+        audio.play('hurl', { vol: 0.85, rate: roll(1.0, 1.12), priority: 7 });
       } else if (player.liftEvent === 'down' || !player.carrying || heldFoeTime > TUNING.lift.foeHold) {
         // Set down; or he was hurt; or it has wriggled free.
         if (player.carrying) player.endCarry();
@@ -2673,7 +2703,7 @@ function startGame(): void {
         const hy = (c.aabb.max.y - c.aabb.min.y) / 2;
         const floor = groundUnder(chamber.colliders, thrownWas.x, thrownWas.z, c.half * 0.9, thrownWas.y, c.aabb);
         chamber.setCrate(c, thrownWas.x, (Number.isFinite(floor) ? floor : thrownWas.y - hy) + hy, thrownWas.z);
-        audio.play('land', { vol: 0.8, rate: c.type === 'rock' ? 1.1 : 0.7, priority: 6 });
+        audio.play(c.type === 'rock' ? 'rockKnock' : 'land', { vol: 0.8, rate: c.type === 'rock' ? roll(0.95, 1.08) : 0.7, priority: 6 });
         shake = Math.max(shake, 0.06);
         thrown.splice(i, 1);
         continue;
@@ -2735,7 +2765,7 @@ function startGame(): void {
     if (arrived) for (const spec of arrived) addEnemy({ ...spec, hunt: true });
     goals.update(player.position.x, player.position.y, player.position.z);
     for (const c of events.cratesBroken) {
-      audio.play(c.type === 'barrel' ? 'barrel' : c.type === 'pipe' ? 'pipe' : c.type === 'pot' ? 'pebbles' : 'crate', { vol: 0.9, rate: roll(0.92, 1.1) * (c.type === 'pot' ? 1.5 : 1), priority: 6 });
+      audio.play(c.type === 'barrel' ? 'barrel' : c.type === 'pipe' ? 'pipe' : c.type === 'pot' ? 'potSmash' : 'crate', { vol: 0.9, rate: roll(0.92, 1.1), priority: 6 });
       smashCrate(c);
       rumble.smash();
       shake = Math.max(shake, 0.05);
@@ -3352,6 +3382,11 @@ function startGame(): void {
   const devRail = /[#&]autorail\b/.test(location.hash);
   let devRailTick = 0;
   const devLift = /[#&]autolift\b/.test(location.hash);
+  const devCarryFoe = /[#&]carryfoe\b/.test(location.hash);
+  let devCarried = false;
+  /** `&gostow=2,5`: at those stops (counted from 1) he presses STOW instead of hopping. */
+  const devGoStow = ((w) => (w ? w[1].split(',').map(Number) : []))(/[#&]gostow=([\d,]+)/.exec(location.hash));
+  let devGoStop = 0;
   const devGo = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autogo=([-\d.,]+)/.exec(location.hash));
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
@@ -4348,10 +4383,23 @@ function startGame(): void {
       tip.x += (gx - tip.x) * ease;
       tip.z += (gz - tip.z) * ease;
       const root = enemyModels[i].root;
-      if (tip.on) root.rotation.set(0, 0, 0);
+      if (tip.on || turnedInHand.has(e)) root.rotation.set(0, 0, 0);
       enemyModels[i].setTransform(enemyPos, e.facing);
       tip.on = Math.abs(tip.x) + Math.abs(tip.z) > 0.004;
       if (tip.on) root.quaternion.premultiply(tiltQ.setFromUnitVectors(UP_AXIS, tiltN.set(-tip.x, 1, -tip.z).normalize()));
+      // In his hands it is on its back, legs going; thrown, it goes end over end (world/lifting.ts, heldTurn).
+      turnedInHand.delete(e);
+      if (inHand(e) && e.alive) {
+        const flying = thrownFoes.find((t) => t.what === e);
+        const turn = heldTurn(flying ? flying.age : null, worldClock, e.kind);
+        const mid = e.radius * 0.8;
+        handQ.setFromAxisAngle(handAxis.set(Math.sin(e.facing), 0, Math.cos(e.facing)), turn.roll);
+        handQ.multiply(tiltQ.setFromAxisAngle(handAxis.set(Math.cos(e.facing), 0, -Math.sin(e.facing)), turn.pitch));
+        handMid.set(e.x, e.y + mid, e.z);
+        root.position.sub(handMid).applyQuaternion(handQ).add(handMid);
+        root.quaternion.premultiply(handQ);
+        turnedInHand.add(e);
+      }
       foeTilt.set(e, tip);
       enemyModels[i].tick(animDt, e);
       // (Its shadow is cut where its ground ends, as the knight's is: render/cutShadow.ts.)

@@ -10,7 +10,7 @@ import { aabbOf, type Aabb } from '../src/world/collision';
 import { POT, ROCK, extent, potBox, rockBox } from '../src/world/layout';
 import fs from 'node:fs';
 import { resolveCombat, type CombatEvents } from '../src/combat/combat';
-import { DOWN_STATES, THROWN_AS, isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
+import { DOWN_STATES, HELD_POSE, HELD_ROLL, heldTurn, THROWN_AS, isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
 const read = (p: string): string => fs.readFileSync(p, 'utf8');
 import type { Crate } from '../src/world/crates';
 import { compileCustom, type CustomLevel, type Piece } from '../src/levels/custom';
@@ -288,6 +288,45 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   let met: ReturnType<typeof stepThrown> = { what: 'none' };
   for (let i = 0; i < 300 && met.what === 'none'; i++) met = stepThrown(thrownFoe, DT, [floor], [{ x: 0, y: 0, z: 5.5, r: 0.5, high: 1, alive: true }]);
   check('a thrown creature flies as a crate does, and meets what a crate would meet: another creature in its way', met.what === 'foe' && thrownFoe.what.name === 'a hornet');
+}
+
+// ---- B3 (2026-11-17): a crate on a moving platform; a thrown crate meeting a character; a creature in his hands ----
+{
+  // A platform that slides along x, and a crate set down on it.
+  const ch = buildChamber({ solids: [extent('floor', -20, 20, -1, 0, -20, 20), extent('rubble', -6.5, -5.5, 0, 1, -0.5, 0.5)], pit: null, water: [], decor: [], movers: [{ x: -6, z: 4, y: 0.5, w: 3, d: 3, to: [8, 0, 0], speed: 3, pause: 0.5 }] });
+  const box = ch.crates[0];
+  const plat = ch.movers[0].aabb;
+  ch.liftCrate(box);
+  ch.setCrate(box, -6, plat.max.y + 0.5, 4);
+  let worst = 0;
+  let wentX = 0;
+  for (let i = 0; i < 60 * 6; i++) {
+    ch.stepMovers(DT);
+    worst = Math.max(worst, Math.abs(box.aabb.min.y - plat.max.y), Math.abs(box.x - (plat.min.x + plat.max.x) / 2), Math.abs(box.z - (plat.min.z + plat.max.z) / 2));
+    wentX = Math.max(wentX, box.x + 6);
+  }
+  check('A CRATE SET DOWN ON A MOVING PLATFORM GOES WITH IT: it stays on its top, where it was put, all the way there and back (it does not hang in the air)', worst < 0.01 && wentX > 7.5, `furthest off ${worst.toFixed(3)}; it went ${wentX.toFixed(1)} along`);
+  const rider = { x: box.x, y: plat.max.y, z: box.z - (0.5 + TUNING.rat.radius + 0.1) };
+  check('...and he can lift it again from the platform, standing on it beside it', liftTarget(ch.crates, rider, 0) === box);
+
+  // A character's body is solid as the game makes it (main.ts syncNpcBodies: 0.7 across, 1.2 high).
+  const floor = aabbOf(extent('floor', -60, 60, -1, 0, -60, 60));
+  const body = aabbOf(extent('npc', -0.35, 0.35, 0, 1.2, 4.65, 5.35));
+  for (const kind of ['crate', 'pot', 'rock'] as const) {
+    const c: Crate = { type: kind, index: 0, x: 0, y: 0, z: 0, half: 0.3, alive: true, aabb: aabbOf(extent('rubble', -0.3, 0.3, 0, 0.6, -0.3, 0.3)), mesh: null, lastSwing: -1 };
+    const t = startThrow(c, c.half, c.aabb, carryPlace({ x: 0, y: 0, z: 0 }, 0.3), 0, { x: 0, z: 0 }, 1, null, THROWN_AS[kind].speed);
+    let hit: ReturnType<typeof stepThrown> = { what: 'none' };
+    for (let i = 0; i < 300 && hit.what === 'none'; i++) hit = stepThrown(t, DT, [floor, body], []);
+    check(`A THROWN ${kind.toUpperCase()} MEETS A CHARACTER standing in its way: it stops at him (not through him, not on past him), and he is not a creature, so he is not hurt`, hit.what === 'solid' && (hit as { box: Aabb }).box === body && t.pos.z < 5.35, `${hit.what} at ${t.pos.z.toFixed(2)}`);
+  }
+
+  // A creature in his hands is drawn on its back, legs going; thrown, end over end.
+  const held = [0, 0.1, 0.2, 0.3, 0.4].map((c) => heldTurn(null, c));
+  check('A CREATURE IN HIS HANDS IS ON ITS BACK (turned more than three quarters over, not standing upright on air), wriggling a little', held.every((h) => Math.abs(h.roll) > Math.PI * 0.75 && Math.abs(h.roll) < Math.PI * 1.1) && new Set(held.map((h) => h.roll.toFixed(3))).size > 3);
+  const scorp = heldTurn(null, 0, 'scorpion').roll;
+  check('...but a SCORPION is carried on its side (on its back its tail, which rears up off its back, hung down through him to the floor)', Math.abs(scorp - Math.PI / 2) < 0.3 && HELD_ROLL.scorpion !== undefined);
+  const flying = [0, 0.1, 0.2].map((a) => heldTurn(a, 5).pitch);
+  check('...and thrown, it goes end over end, about one whole turn in its half second in the air', flying[2] > flying[1] && flying[1] > flying[0] && HELD_POSE.tumble * 0.5 > Math.PI && HELD_POSE.tumble * 0.5 < Math.PI * 3);
 }
 
 // ---- Where there is something to throw ----

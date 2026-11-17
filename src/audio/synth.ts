@@ -223,6 +223,10 @@ export const SFX_NAMES = [
   // Gas from a burst pipe: the crack of the seam and the rush of it letting go (heard as a gust begins: the gas is
   // then a couple of seconds from the floor), and the hiss of gas blowing (looped, as loud as the gas is near).
   'gasBurst', 'gasHiss',
+  // Lifting and throwing (BACKLOG B3b, 2026-11-17: it borrowed a plank, a whoosh, a landing and pebbles): a thing
+  // heaved up off the floor, hurled, set down, a clay pot smashing, a rock coming down whole, and a creature in his
+  // hands scrabbling to be let go.
+  'heave', 'hurl', 'setDown', 'potSmash', 'rockKnock', 'squirm',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -463,6 +467,52 @@ const RECIPES: Record<SfxName, () => Sample> = {
   // (What is heard is the recorded one, recordings/chip/rewind.wav: a real scratch. This is what stands in if it is taken out.)
   rewind: () => draw(0.4, RATE_HI, 66, (c) => (t) => saw(c.osc(0, 300 + 1500 * Math.pow(1 - t / 0.4, 2))) * 0.4 * bell(t, 0.4) + (c.lp(0, c.r() * 2 - 1, 0.3) - c.lp(1, c.r() * 2 - 1, 0.05)) * 0.4 * bell(t, 0.4), { bits: 7, gain: 0.6 }),
   whoosh: () => draw(0.3, RATE_HI, 65, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.06 + 0.3 * Math.sin(Math.PI * (t / 0.3))) - c.lp(1, c.r() * 2 - 1, 0.03)) * bell(t, 0.3), { bits: 7, gain: 0.5 }),
+  // Heaved up: a scrape along the floor as it leaves it, then a soft knock as it settles in his hands.
+  heave: () => draw(0.26, RATE_HI, 253, (c) => {
+    const knk = knock(240, RATE_HI, 0.985);
+    return (t) => {
+      const scrape = c.lp(0, c.r() * 2 - 1, 0.12 + 0.25 * (t / 0.26)) * (t < 0.12 ? t / 0.12 : Math.exp(-(t - 0.12) * 30)) * 0.9;
+      const settle = knk(Math.abs(t - 0.13) < 0.003 ? c.r() * 2 - 1 : 0) * 26;
+      return (scrape + settle) * Math.min(1, (0.26 - t) / 0.03);
+    };
+  }, { bits: 7 }),
+  // Hurled: a heavier rush of air than a sword's, low under it, gone quickly.
+  hurl: () => draw(0.34, RATE_HI, 254, (c) => (t) => {
+    const k = t / 0.34;
+    const air = (c.lp(0, c.r() * 2 - 1, 0.05 + 0.35 * Math.sin(Math.PI * k)) - c.lp(1, c.r() * 2 - 1, 0.02)) * bell(t, 0.34);
+    const body = sine(c.osc(0, 150 - 90 * k)) * bell(t, 0.34) * 0.25;
+    return air * 1.2 + body;
+  }, { bits: 7, gain: 0.7 }),
+  // Set down with care: a low, soft knock and a little grit.
+  setDown: () => draw(0.16, RATE_LO, 255, (c) => (t) => (sine(c.osc(0, 95 * Math.exp(-8 * t) + 55)) * Math.exp(-t * 28) + c.lp(0, c.r() * 2 - 1, 0.3) * Math.exp(-t * 45) * 0.5) * Math.min(1, (0.16 - t) / 0.03), { bits: 6 }),
+  // A clay pot smashing: a hollow pop, then bright shards knocking apart and skittering.
+  potSmash: () => draw(0.55, RATE_HI, 256, (c) => {
+    const shards = Array.from({ length: 9 }, (_, i) => ({ at: 0.012 + i * 0.038 + c.r() * 0.03, amp: (1 - i / 11) * (0.6 + c.r() * 0.4), ring: knock(1500 + c.r() * 2600, RATE_HI, 0.993) }));
+    return (t) => {
+      const pop = sine(c.osc(0, 330 * Math.exp(-14 * t) + 140)) * Math.exp(-t * 32) * 0.9 + (c.r() * 2 - 1) * Math.exp(-t * 120) * 0.8;
+      let v = 0;
+      for (const sh of shards) v += sh.ring(Math.abs(t - sh.at) < 0.0018 ? (c.r() * 2 - 1) * sh.amp : 0);
+      return Math.tanh((pop + v * 40) * 1.2) * Math.min(1, (0.55 - t) / 0.06);
+    };
+  }, { bits: 8 }),
+  // A rock coming down whole: a dense low knock, a bounce, and grit.
+  rockKnock: () => draw(0.42, RATE_LO, 257, (c) => {
+    const body = knock(180, RATE_LO, 0.975);
+    const hits: Array<[number, number]> = [[0, 1], [0.16, 0.45], [0.27, 0.2]];
+    return (t) => {
+      let x = 0;
+      for (const [at, amp] of hits) if (t >= at && t < at + 0.004) x += (c.r() * 2 - 1) * amp;
+      const thud = sine(c.osc(0, 120 * Math.exp(-10 * t) + 48)) * Math.exp(-t * 18) * 0.8;
+      const grit = c.lp(0, c.r() * 2 - 1, 0.4) * Math.exp(-t * 22) * 0.35;
+      return Math.tanh(body(x) * 22 + thud + grit) * Math.min(1, (0.42 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // A creature in his hands: its legs scrabbling at the air, quick dry clicks that run down.
+  squirm: () => draw(0.42, RATE_HI, 258, (c) => {
+    const r = rattle(c, RATE_HI, 0.42, 34, 16, 2300, 0.95);
+    // (A little body under the clicks: its shell knocking against his hands.)
+    return (t) => Math.tanh((r(t) * 2.2 + c.lp(0, c.r() * 2 - 1, 0.25) * 0.5) * 1.4) * bell(t, 0.42);
+  }, { bits: 7 }),
   // A footstep for story scenes and memories: a soft pat on stone.
   softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.78 }),
   // ---- The great insects ----

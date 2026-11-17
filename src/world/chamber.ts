@@ -477,9 +477,14 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         const p = rider.position;
         riding = Math.abs(p.y - a.max.y) < 0.12 && p.x > a.min.x - 0.05 && p.x < a.max.x + 0.05 && p.z > a.min.z - 0.05 && p.z < a.max.z + 0.05;
       }
+      // A crate, a pot or a rock standing on it goes with it (one set down on a moving platform does not hang in the
+      // air when the platform goes: BACKLOG B3d, 2026-11-17). (One standing on THAT is not carried: nothing stacks
+      // on a platform in the game's own rooms.)
+      const onIt = crates.filter((c) => c.alive && !c.lifted && Math.abs(c.aabb.min.y - a.max.y) < 0.05 && c.x > a.min.x && c.x < a.max.x && c.z > a.min.z && c.z < a.max.z);
       a.min.set(nx - m.spec.w / 2, ny - thick, nz - m.spec.d / 2);
       a.max.set(nx + m.spec.w / 2, ny, nz + m.spec.d / 2);
       moverMeshes[i].position.set(nx, ny - thick / 2, nz);
+      for (const c of onIt) moveCrate(c, c.x + dx, c.y + dy, c.z + dz, (c.mesh as unknown as THREE.Object3D | null)?.rotation.y ?? 0);
       if (!rider) return;
       const p = rider.position;
       if (riding) {

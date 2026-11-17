@@ -140,6 +140,15 @@ Club's tables and bar (noted long ago). Add them to the kit (`src/levels/custom.
 (it borrows a plank, a whoosh, a landing, pebbles). (c) Films, for the record, of: a rock thrown and thrown again;
 each of the other five creatures picked up (only the bat was seen); an iron-bound crate. (d) Check by test: lifting
 a crate that stands on a moving platform; carrying something through a door; a thrown crate meeting a character.
+[opus] 2026-11-17, MOSTLY DONE. (a) `heldTurn`/`HELD_POSE` in world/lifting.ts: carried, on its back, legs up,
+wriggling; thrown, end over end; the scorpion on its side (`HELD_ROLL`: on its back its tail hung through him to the
+floor). Drawn in main.ts's creature loop. (b) Six new sounds in audio/synth.ts: heave, hurl, setDown, potSmash,
+rockKnock, squirm (a carried creature scrabbles now and then). Unheard by anyone yet. (d) tests/lifting.ts: a crate
+set down on a MOVING PLATFORM now rides it (it hung in the air before: chamber.ts stepMovers); a thrown crate, pot or
+rock meets a character's body and stops there. Through a door: loadLevel already empties his hands and ends the
+carry; filmed (the crate stays behind, he arrives in the Hall empty-handed). (c) Filmed: the roach, scorpion and
+mantis carried (with the film aid `&carryfoe`), a rock thrown and carried again, the door. NOT filmed: the roller,
+hornet and firefly carried, an iron-bound crate. Film aid: `&autogo=..&gostow=2` (STOW at the 2nd stop).
 
 **B4. Tricks polish.** Proper poses for the spin and the grab, a sound for each, the trick's name shown as he lands.
 

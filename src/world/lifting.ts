@@ -115,6 +115,25 @@ export function liftFoe(foes: ReadonlyArray<{ kind: string; state: string; alive
   return best;
 }
 
+/**
+ * HOW A CREATURE LOOKS IN HIS HANDS (BACKLOG B3a, 2026-11-17: before this it stood upright on air over his head).
+ * Carried, it is on its BACK, legs up and going, wriggling to be free; thrown, it goes END OVER END. Turned about its
+ * own middle (`mid`: so high over its feet), so it stays where it was. Angles in radians: `roll` about the way it
+ * faces, `pitch` about its side.
+ */
+export const HELD_POSE = { roll: 2.95, wriggle: 0.18, wriggleRate: 17, tumble: 11 };
+/**
+ * Kinds carried another way: the SCORPION on its side (on its back, its tail, which rears up off its back, hung
+ * straight down through him to the floor: seen in a film, 2026-11-17).
+ */
+export const HELD_ROLL: Readonly<Record<string, number>> = { scorpion: 1.45 };
+export function heldTurn(thrownAge: number | null, clock: number, kind = ''): { roll: number; pitch: number } {
+  const P = HELD_POSE;
+  const roll = HELD_ROLL[kind] ?? P.roll;
+  if (thrownAge !== null) return { roll, pitch: thrownAge * P.tumble };
+  return { roll: roll + Math.sin(clock * P.wriggleRate) * P.wriggle, pitch: Math.sin(clock * P.wriggleRate * 0.63) * P.wriggle * 0.5 };
+}
+
 /** Something in the air: thrown, or let go of. `what`: the thing (a crate, or a creature). */
 export interface Thrown<T = Crate> {
   what: T;

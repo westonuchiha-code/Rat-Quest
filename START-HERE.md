@@ -2140,6 +2140,13 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## [opus] Lifting finished, mostly (2026-11-17)
+
+A creature in his hands is on its back, legs going (the scorpion on its side); thrown, it tumbles end over end
+(world/lifting.ts `heldTurn`). Lifting has its own six sounds (audio/synth.ts: heave, hurl, setDown, potSmash,
+rockKnock, squirm), not yet heard by anyone. A crate set down on a moving platform rides it (chamber.ts). Film aids:
+`&carryfoe` puts the nearest creature in his hands; `&gostow=N` presses STOW at the Nth `&autogo` stop.
+
 ## [opus] Things to throw in every test room (2026-11-17)
 
 `src/levels/throwables.ts`: by each numbered room's way in, two heaps, three pots and two rocks in all. To move a
