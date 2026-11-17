@@ -12,7 +12,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - Every mechanic has been built and tested by machine; the owner has not reported back on the latest builds.
 
 ## The owner's standing rules (follow all of them)
-- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all eleven files it writes.
+- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
   owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
 - No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
@@ -38,7 +38,9 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
    One test: `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`
 
 ## Builds
-- `bash scripts/deliver.sh ../deliver` writes all eleven files:
+- `bash scripts/deliver.sh ../deliver` writes all twelve files (the twelfth, `ratquest-dream.html`, opens on the Big
+  Dipper: the owner, 2026-11-17: "give me a version of the game that starts like in that level so I can kind of mess
+  around and run around in that version of the world and give you notes and ideas"):
   - ratquest.html (with the test pad)
   - ratquest-hub/cistern/foundry/hollows/keep.html (open on that place)
   - ratquest-testroom.html (the Club with every door open)

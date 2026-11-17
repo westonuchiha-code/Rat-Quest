@@ -4,10 +4,11 @@
 #   ratquest-<place>.html      the same, opening on one place: hub, cistern, foundry, hollows, keep
 #   ratquest-testroom.html     the Club with every door open (level=hub&unlockall)
 #   ratquest-garden.html       the Move Garden: a test room for feeling the jump numbers (level=garden)
+#   ratquest-dream.html        the dream: opens on the Big Dipper, its long ride (level=bigdipper), to mess about in
 #   ratquest-nopad.html        no test pad (keyboard / controller; what the Steam build is)
 #   ratquest-editor.html       the level builder
 #   ratquest-source.zip        the project, without node_modules and build output
-# Usage: bash scripts/deliver.sh [outdir]      (then send all eleven files)
+# Usage: bash scripts/deliver.sh [outdir]      (then send all twelve files)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="$(mkdir -p "${1:-../deliver}" && cd "${1:-../deliver}" && pwd)"
@@ -29,6 +30,7 @@ const src = fs.readFileSync(out + "/ratquest.html", "utf8");
 const make = (name, js) => fs.writeFileSync(out + "/" + name, src.replace("<head>", "<head><script>" + js + "</script>"));
 make("ratquest-testroom.html", "location.hash=\"level=hub&unlockall\"");
 make("ratquest-garden.html", "location.hash=\"level=garden&nostory\"");
+make("ratquest-dream.html", "location.hash=\"level=bigdipper&nostory\"");
 for (const l of ["hub", "cistern", "foundry", "hollows", "keep"]) make("ratquest-" + l + ".html", "if(!location.hash)location.hash=\"level=" + l + "\"");
 ' "$OUT"
 
