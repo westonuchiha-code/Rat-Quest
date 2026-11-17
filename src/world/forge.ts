@@ -27,7 +27,12 @@ export const FORGE = {
   /** The bellows: the frame's footprint, and the top of its fixed board. Its nozzle sticks out of the +x end. */
   bellows: { long: 2.5, wide: 1.7, top: 1.78, nozzle: 0.8, period: 3.4, open: [0.1, 0.42] as const },
   /** The ladle: the bucket's size, and its round of work (seconds): rest, tip, pour, tip back. */
-  ladle: { r: 0.86, deep: 1.2, lip: 1.0, period: 9, tipAt: 3, tipTime: 1, pourTime: 2.2, tip: 1.0, cool: 3.4 },
+  /**
+   * (The owner, 2026-11-17, of a pour of two seconds in a round of nine: "it stops and starts pretty quickly probably
+   * too quickly". He was judging it from a film that ran the scenery five times too fast, but it was short all the
+   * same: it pours for four and a half now, in a round of twelve, and tips over and back more slowly.)
+   */
+  ladle: { r: 0.86, deep: 1.2, lip: 1.0, period: 12, tipAt: 3, tipTime: 1.3, pourTime: 4.5, tip: 1.0, cool: 3.6 },
   mould: { w: 1.6, d: 1.0, h: 0.55 },
   ingots: { w: 1.5, d: 1.5, h: 0.76, bar: { long: 1.36, wide: 0.42, top: 0.3, high: 0.22 } },
   /** The cogs: the pitch radius and teeth of each (their teeth are the same size, so they mesh). */

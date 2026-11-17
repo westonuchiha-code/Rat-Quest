@@ -11,7 +11,7 @@ import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { aabbOf, topAt, slopeOf, type Aabb } from '../src/world/collision';
 import { CollectibleTracker } from '../src/world/collectibles';
 import { buildChamber } from '../src/world/chamber';
-import { milkyWay, milkyWayPlan, wayAt, ROAD, LENGTHS, MOON, FALL_DEPTH, WAY_PRIZES, CAP_UP } from '../src/levels/milkyway';
+import { milkyWay, milkyWayPlan, wayAt, ROAD, LENGTHS, MOON, FALL_DEPTH, WAY_PRIZES, CAP_UP, makeAutoRide } from '../src/levels/milkyway';
 import { garden, GARDEN } from '../src/levels/garden';
 import { LEVELS, ARCHIVE, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { STREAMER, RatModel, DREAM_LOOK } from '../src/player/ratModel';
@@ -343,6 +343,26 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
     console.log(String(e));
   }
   check('the place builds with all of it, and its clock runs (flowers nod, butterflies fly, the static winks)', built);
+}
+
+// ---- The rider for the films (`&autoride`): by itself, from the head of the road to the moon ----
+{
+  const d = milkyWay();
+  const plan = milkyWayPlan();
+  const solids = d.solids.map((b) => aabbOf(b));
+  const p = new PlayerController(new THREE.Vector3(d.spawn.x, d.spawn.y + 0.01, d.spawn.z));
+  const auto = makeAutoRide();
+  let rode = false;
+  let fell = false;
+  let frames = 0;
+  for (; frames < 6000; frames++) {
+    const a = auto(p);
+    p.update(DT, inp({ move: new THREE.Vector3(a.x, 0, a.z), run: a.run, jumpPressed: a.jumpPressed, jumpHeld: a.jumpHeld, attackPressed: a.attackPressed }), solids);
+    rode ||= p.riding;
+    if (p.position.y < wayAt(Math.max(0, Math.min(plan.moon.z1, p.position.z))).y - 12) fell = true;
+    if (fell || (rode && p.position.z > plan.moon.z0 + 2 && p.grounded)) break;
+  }
+  check('the films\' rider rides the whole road by itself: on his shield from the lip, over every gap, to the moon', rode && !fell && p.position.z > plan.moon.z0 + 2, `${(frames / 60).toFixed(1)}s, ended at z ${p.position.z.toFixed(1)}`);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

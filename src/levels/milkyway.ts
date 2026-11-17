@@ -203,3 +203,28 @@ export function milkyWay(): LevelDef {
     returnTo: 'garden',
   };
 }
+
+/**
+ * A rider, for the films (the dev aid `&autoride`; tests/milkyway.ts rides with it too): from the head of the road he
+ * walks to the lip, jumps, gets on his shield in the air, and then leans down the middle of each length, toward the
+ * next one's as each ends, and jumps every gap. What it gives each step is what the pad would.
+ */
+export function makeAutoRide(): (p: { position: { x: number; y: number; z: number }; velocity: { x: number; z: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; run: boolean; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean } {
+  const P = milkyWayPlan();
+  let rode = false;
+  const jumped = new Set<number>();
+  return (p) => {
+    rode ||= p.riding;
+    if (!rode) return { x: 0, z: 1, run: false, jumpPressed: p.grounded && p.position.z > -0.6, jumpHeld: false, attackPressed: !p.grounded && p.position.z > 0.3 };
+    const z = p.position.z;
+    const here = P.lengths.find((l) => z >= l.z0 - 0.5 && z <= l.z1);
+    const next = P.lengths.find((l) => l.z0 > z);
+    const aimX = here && next && here.z1 - z < 16 ? (here.x + next.x) / 2 : (here ?? next)?.x ?? 0;
+    const going = Math.atan2(p.velocity.x, p.velocity.z);
+    const want = Math.max(-0.35, Math.min(0.35, (aimX - p.position.x) / 5));
+    const li = here ? P.lengths.indexOf(here) : -1;
+    const lip = !!here && li < LENGTHS.length - 1 && here.z1 - z < 0.7 && here.z1 - z >= 0 && p.grounded && !jumped.has(li);
+    if (lip) jumped.add(li);
+    return { x: p.grounded ? Math.max(-0.8, Math.min(0.8, (want - going) * 4)) : 0, z: 0, run: false, jumpPressed: lip, jumpHeld: !p.grounded, attackPressed: false };
+  };
+}

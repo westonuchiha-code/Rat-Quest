@@ -93,6 +93,7 @@ import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt, inBrazierFire , slimeZones } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
+import { makeAutoRide } from './levels/milkyway';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
 import type { CourseDoorDef } from './levels/types';
@@ -2141,7 +2142,7 @@ function startGame(): void {
     const m = computeMove();
     // He always runs. Holding the sneak button (Shift, or L2 on a pad) slows him to a quiet walk.
     const sneak = keyHeld('sneak') || controlSources.some((s) => s.runHeld);
-    const run = !sneak;
+    let run = !sneak;
     let jumpPressed = keyTap('jump') || consumeAction('jump');
     // Next to someone with something to say, the jump button talks to him instead.
     const nearNpc = npcs.find((n) => n.inRange(player.position.x, player.position.y, player.position.z));
@@ -2222,6 +2223,39 @@ function startGame(): void {
     const vyBefore = player.velocity.y;
     // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
     if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
+    // Development aids for the films: `&autoride` rides the Milky Way by itself; `&autofight` goes for whatever is
+    // nearest and swings at it (with `&god` nothing hurts him).
+    if (devAuto.ride && cur.id === 'milkyway' && !player.dead) {
+      const a = (devAuto.rider ??= makeAutoRide())(player);
+      m.set(a.x, 0, a.z);
+      run = a.run;
+      jumpPressed = a.jumpPressed;
+      jumpHeld = a.jumpHeld;
+      attackPressed = a.attackPressed;
+    }
+    if (devAuto.fight && !player.dead) {
+      let near: (typeof enemies)[number] | null = null;
+      let nd = 26;
+      for (const e of enemies) {
+        const d = Math.hypot(e.x - player.position.x, e.z - player.position.z);
+        if (e.alive && d < nd && Math.abs(e.y - player.position.y) < 4) {
+          nd = d;
+          near = e;
+        }
+      }
+      devAuto.swing -= dt;
+      if (near) {
+        const dx = near.x - player.position.x;
+        const dz = near.z - player.position.z;
+        if (nd > 1.7) m.set(dx / nd, 0, dz / nd);
+        else m.set((dx / nd) * 0.05, 0, (dz / nd) * 0.05);
+        run = nd > 5;
+        if (nd < 2.3 && devAuto.swing <= 0) {
+          attackPressed = true;
+          devAuto.swing = 0.42;
+        }
+      }
+    }
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
     // Locked on, the rat keeps facing the foe while he walks, so he circles him.
     if (lockTarget && player.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(player.state)) player.facing = facingToward(player.position, lockTarget);
@@ -2897,6 +2931,16 @@ function startGame(): void {
   });
   /** Photo mode can open when he is just playing: not in a scene, a room change, a talk, the builder, or dead. */
   const canPhoto = (): boolean => !story.scene && !storyPending && !cutscene.active && !trans.active && !dialog.open && !builder.open && !shop.open && !fly.open && !player.dead && !boot.blocking;
+  // Development aids for the films. `&chase=dx,dy,dz`: the view keeps that far from HIM, looking at him.
+  // `&orbit=x,y,z,r,h,rate`: it goes round that place, `r` out and `h` up, `rate` turns of a radian a second.
+  const devNums = (name: string, n: number): number[] | null => {
+    const v = new RegExp(`[#&]${name}=([-\\d.,]+)`).exec(location.hash)?.[1].split(',').map(Number) ?? [];
+    return v.length === n && v.every((q) => Number.isFinite(q)) ? v : null;
+  };
+  const devChase = devNums('chase', 3);
+  const devOrbit = devNums('orbit', 6);
+  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
+  if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
   const devEye = ((): number[] | null => {
     const e = /[#&]eye=([-\d.,]+)/.exec(location.hash);
@@ -3509,10 +3553,32 @@ function startGame(): void {
   let fps = 0;
 
   let promptsShown = '';
+  let slowClock = 0;
+  // Development aid for the films: `&film=4`. The game goes a sixtieth of a second for every frame, whatever the
+  // clock says; it DRAWS only every 4th, and then WAITS, drawn, until a picture of it has been taken
+  // (`window.__filmReady` says it is waiting, `window.__filmGo()` lets it go on). So a film is even, and true to the
+  // game's speed, however slow the machine that takes it. (Filming in slow motion against the clock was neither.)
+  const filmEvery = Number(/[#&]film=(\d+)/.exec(location.hash)?.[1] ?? 0);
+  const film = { clock: 0, count: 0, hold: false };
+  const filmWindow = window as unknown as { __filmReady?: boolean; __filmGo?: () => void };
+  if (filmEvery) {
+    filmWindow.__filmGo = () => {
+      film.hold = false;
+      filmWindow.__filmReady = false;
+    };
+  }
   function frame(now: number): void {
+    if (filmEvery) {
+      if (film.hold) return void requestAnimationFrame(frame);
+      film.clock = (film.clock || now) + 1000 / 60;
+      now = film.clock;
+    }
     const rawDt = Math.min((now - lastFrame) / 1000, 0.1);
     lastFrame = now;
-    const time = now / 1000;
+    // (In the dev slow motion the scenery's clock is slowed with the rest: it ran on at full speed, and a film taken
+    // in slow motion showed every lamp, bellows and pour five times too fast.)
+    if (DEV.slow !== 1) slowClock = (slowClock || now / 1000) + rawDt * DEV.slow;
+    const time = DEV.slow !== 1 ? slowClock : now / 1000;
     worldClock = time;
 
     pollGamepad();
@@ -4023,8 +4089,17 @@ function startGame(): void {
       camera.position.set(devEye[0], devEye[1], devEye[2]);
       camera.lookAt(devEye[3], devEye[4], devEye[5]);
     }
+    if (devChase) {
+      camera.position.set(renderPos.x + devChase[0], renderPos.y + devChase[1], renderPos.z + devChase[2]);
+      camera.lookAt(renderPos.x, renderPos.y + 0.7, renderPos.z);
+    }
+    if (devOrbit) {
+      const a = time * devOrbit[5];
+      camera.position.set(devOrbit[0] + Math.sin(a) * devOrbit[3], devOrbit[1] + devOrbit[4], devOrbit[2] + Math.cos(a) * devOrbit[3]);
+      camera.lookAt(devOrbit[0], devOrbit[1], devOrbit[2]);
+    }
     sky.follow(camera.position);
-    renderer.render(scene, camera);
+    if (!filmEvery || (film.count + 1) % filmEvery === 0) renderer.render(scene, camera);
     // A picture is read from the canvas straight after it is drawn (before the browser clears it).
     if (photo.wantShot) photo.capture();
 
@@ -4037,6 +4112,10 @@ function startGame(): void {
     }
     if (showDebug || DEV.readout) debugEl.textContent = `${fps} fps  ${player.state}  foes:${aliveCount()}  x:${player.position.x.toFixed(1)} t:${trans.active ? trans.t.toFixed(2) : '-'}  snd:${audio.ready ? 'on' : 'off'} ${audio.stats.played}/${audio.stats.notes}  last: ${audio.recent.join(' ')}`;
 
+    if (filmEvery && ++film.count % filmEvery === 0) {
+      film.hold = true;
+      filmWindow.__filmReady = true;
+    }
     requestAnimationFrame(frame);
   }
 
