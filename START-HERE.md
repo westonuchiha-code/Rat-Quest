@@ -426,6 +426,52 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## FILMS (2026-11-17): he loved the cutscene videos and asked for more. HOW A FILM IS MADE NOW; what was made
+
+His words: "This all looks good and I love the cutscene Video thing you did that was awesome. The only note I have
+is I think maybe the lava bucket pouring thing could probably last longer right now it stops and starts pretty
+quickly probably too quickly. I think I'd like to request a few more cutscene videos Just to like show off different
+parts of the game." And he listed: the main character **sliding on his shield down the Rainbow Road**; **the sleeping
+different looking characters in the wacky Pomo world**; **a few of the other characters talking at the bar, talking at
+the table, drinking alone**; **Dizzy Dave and two other characters dancing with the speakers in the background, zoom in
+and zoom out, a little 10 second music video; if you can do sound, have him talking so it sounds like he's beatboxing
+or rapping**; and **the monsters walking around the different levels: show off all the levels like the Forge film,
+populated with NPCs or monsters, or the main character there doing something.**
+("This all looks good" was said of the Forge and of the Hollows' and Keep's things to find. **It is taken as his yes
+to the Forge's look: re-dressing the Foundry in it is the next job, not yet done.**)
+ - **THE LADLE POURS FOR FOUR AND A HALF SECONDS in a round of twelve** (it was 2.2 in 9). AND THE FILM HE JUDGED IT
+   BY WAS WRONG: slow motion did not slow the scenery's clock, so the first Forge film showed its bellows, cogs and
+   pour FIVE TIMES TOO FAST. The dev slow motion slows the scenery's clock now (`main.ts`, `slowClock`), and films
+   are not taken in slow motion any more (below). He has been told.
+ - **HOW A FILM OF PLAY IS TAKEN: `&film=4` on the address** (`main.ts`). The game goes a sixtieth of a second for
+   every frame whatever the clock says, draws every 4th, and WAITS until a picture of it has been taken
+   (`window.__filmReady`, `window.__filmGo()`). So it is even and true to speed however slow the machine. The script
+   is `film3.mjs` in the scratch folder (out-dir, pictures, address, how many to skip while the level comes in); it
+   films a BUILT copy of the game served on another port (`npx vite build --outDir <scratch>/snap`, then
+   `python3 -m http.server 5198` there), so the source can be worked on while the cameras run. Fifteen pictures a
+   second.
+   **A film of a CUTSCENE** is taken the same way (`film4.mjs`): opened HELD at its start with `&film=4`, the room
+   given twenty frames to come in, then let go with the attack key. (Stepping a held scene with the RIGHT key, as
+   the first four were filmed, draws the room at full speed between steps: eleven minutes for eleven seconds.)
+ - **AIDS FOR THE FILMS, all on the address (`main.ts`):** `&autoride` (the Milky Way ridden by itself:
+   `makeAutoRide` in `levels/milkyway.ts`, and a test rides it to the moon); `&autofight` (he goes for whatever is
+   nearest and swings at it) with `&god` (nothing hurts him); `&chase=dx,dy,dz` (the view keeps that far from him,
+   looking at him); `&orbit=x,y,z,r,h,rate` (the view goes round a place); `&eye=&look=` (a fixed view).
+ - **SOUND ON A FILM: `.testdist2/sound.ts` was the mixer (a scratch file: WRITE IT AGAIN if it is gone; it is
+   sixty lines).** The game's music is notes and sampled instruments (`audio/music.ts` `notesBetween`,
+   `audio/synth.ts` `instrument`), and its voices are samples (`audio/speech.ts`), so a soundtrack is mixed in Node
+   with no browser: the level's track from its first step, as `audio.ts` `playNote` plays a note; and over it
+   **Dizzy Dave said exactly as the game says him** (`speak(..., 'pigeon', ...)`: he IS a beatbox: kicks, snares and
+   hats cut from his recordings, one letter a sixteenth), with shouts from other voices on chosen beats. `ffmpeg`
+   lays it under the pictures. **CLAUDE CANNOT HEAR IT: the levels were checked by number only. He has been told.**
+   `cut.sh` in the scratch folder joins lengths of pictures from several cameras and lays the music under.
+ - **FOUR MORE SCENES** (`cutscene/scenes.ts`, `tests/cutscene.ts`): DIZZY DAVE, LIVE (four bars of the Club's own
+   music, 86 to the minute: `BEAT`; Jinx and Vix dance on the floor, a hop to every beat and a spin now and then
+   (`dancing()` makes a dancer's keys); the view cut on the bar and the half bar, right in on Dave, and away up over
+   the room at the end); A HAND OF CARDS (the foxes); TWO AT THE BAR (Professor Snow and Jinx); THE OLD STAG (Sir
+   Hobnail by the way in, hearing the music). In the game: pause, TOOLS, SCENE.
+ - THE FILMS ARE IN `deliver/pictures/film-*.mp4` and `scene-*.mp4`.
+
 ## THE FORGE: the furnace's look, as a TRY-OUT ROOM (2026-11-17). Tests `tests/forge.ts` (35). **HE HAS NOT SEEN IT YET**
 
 He said "continue" (item 1: the furnace's textures, in a try-out room first). **THE FOUNDRY ITSELF IS NOT TOUCHED**

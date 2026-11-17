@@ -2932,13 +2932,16 @@ function startGame(): void {
   /** Photo mode can open when he is just playing: not in a scene, a room change, a talk, the builder, or dead. */
   const canPhoto = (): boolean => !story.scene && !storyPending && !cutscene.active && !trans.active && !dialog.open && !builder.open && !shop.open && !fly.open && !player.dead && !boot.blocking;
   // Development aids for the films. `&chase=dx,dy,dz`: the view keeps that far from HIM, looking at him.
-  // `&orbit=x,y,z,r,h,rate`: it goes round that place, `r` out and `h` up, `rate` turns of a radian a second.
+  // `&orbit=x,y,z,r,h,rate[,from]`: it goes round that place, `r` out and `h` up, `rate` radians a second.
   const devNums = (name: string, n: number): number[] | null => {
     const v = new RegExp(`[#&]${name}=([-\\d.,]+)`).exec(location.hash)?.[1].split(',').map(Number) ?? [];
     return v.length === n && v.every((q) => Number.isFinite(q)) ? v : null;
   };
   const devChase = devNums('chase', 3);
-  const devOrbit = devNums('orbit', 6);
+  // (A seventh number is the angle it starts from, radians, 0 being south of the place: with a slow rate that is a
+  // sweep through part of a turn, for a place with a wall close on one side.)
+  const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
+  let orbitFrom = -1;
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
@@ -4094,7 +4097,8 @@ function startGame(): void {
       camera.lookAt(renderPos.x, renderPos.y + 0.7, renderPos.z);
     }
     if (devOrbit) {
-      const a = time * devOrbit[5];
+      if (orbitFrom < 0) orbitFrom = time;
+      const a = devOrbit.length > 6 ? devOrbit[6] + (time - orbitFrom) * devOrbit[5] : time * devOrbit[5];
       camera.position.set(devOrbit[0] + Math.sin(a) * devOrbit[3], devOrbit[1] + devOrbit[4], devOrbit[2] + Math.cos(a) * devOrbit[3]);
       camera.lookAt(devOrbit[0], devOrbit[1], devOrbit[2]);
     }
