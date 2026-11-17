@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { climbRise, HANG_DROP } from './controller';
 import type { Gesture } from '../story/scene';
 import { createPs1Material } from '../render/ps1Material';
+import { getTexture } from '../render/textures';
 import type { PlayerState, DodgeKind } from './controller';
 import {
   ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
@@ -51,8 +52,10 @@ const C = {
   white: 0xffffff,
 };
 
-const material = createPs1Material({ lit: true });
-const materialTwoSided = createPs1Material({ lit: true, side: THREE.DoubleSide });
+// (He wears SOFT PAINT, as the friendly characters do: soft painted shading over his own colours and nothing else.
+// The owner, shown him and the Keep Guard plain and painted side by side, 2026-11-17: "all looks great".)
+const material = createPs1Material({ lit: true, tex: getTexture('softPaint') });
+const materialTwoSided = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('softPaint') });
 const S_A = new THREE.Vector3();
 const S_B = new THREE.Vector3();
 const S_C = new THREE.Vector3();
@@ -989,8 +992,8 @@ export class RatModel {
    */
   ownMaterials(): void {
     if (this.mat === material) {
-      this.mat = createPs1Material({ lit: true });
-      this.matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide });
+      this.mat = createPs1Material({ lit: true, tex: getTexture('softPaint') });
+      this.matTwo = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('softPaint') });
     }
     this.root.traverse((o) => {
       const m = o as THREE.Mesh;

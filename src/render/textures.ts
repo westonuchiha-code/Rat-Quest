@@ -2948,7 +2948,9 @@ export function blinkTextures(time: number): void {
   if (!tex || Math.abs(time - winkedAt) < 0.11) return;
   winkedAt = time;
   const data = tex.image.data as Uint8Array;
-  for (const w of winks.splice(0)) data.set(w.was, w.at);
+  // (Put back in the reverse of the order they were taken: a dot picked twice in one lot remembered itself bright
+  // the second time, and put back in order it stayed bright for good.)
+  for (const w of winks.splice(0).reverse()) data.set(w.was, w.at);
   const n = data.length / 4;
   for (let i = 0; i < 46; i++) {
     const at = Math.floor(Math.random() * n) * 4;

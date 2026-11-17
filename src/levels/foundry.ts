@@ -3,7 +3,7 @@
  * The old Furnace is folded into the main hall (lava, braziers, a machine); the old Lift Shaft and Cellars are side areas.
  *
  *   SOUTH  The Gantry. He comes in high on an iron walkway over the dock and sees the whole hall. A cage lift and a stair
- *          go down. Under the gantry, in the dark, a bottle cap. Over the west end of the dock, a hornet lancer.
+ *          go down. Over the west end of the dock, a hornet lancer.
  *   MIDDLE The Crucible: a great iron pot on an island in the lava. Its rim is crawling with beasts (beat them all for a
  *          wedge). Pistons pump up and down its sides; ride them shelf to shelf to the top.
  *          A sliding cart runs from the dock to the island; stepping stones cross from the west bank.
@@ -55,6 +55,41 @@ export const MOUTH = { x0: 26, x1: 30, z0: -8, z1: -4, top: 6.5 };
 /** The Hopper (start of the run) and the Ladle (the end). */
 const HOPPER = { x0: -42, x1: -33, z0: -32, z1: -25 };
 const LADLE = { x0: 22, x1: 30, z0: -31, z1: -24 };
+
+/**
+ * THE FOUNDRY'S THINGS TO FIND, done as the Cistern's were (the owner, 2026-11-15: "There should be less collectibles
+ * and each collectible should be more rewarding to get"; and "We're not using the wall jump enough"). FIVE things where
+ * there were twenty-seven: three bottle caps and two hunks of cheese. None is on a floor or in a crate, and each is at
+ * the end of a piece of movement of its own:
+ *   THE FINS   (cap)  two iron walls standing by themselves on the west bank, 2.2 apart: kicked up from the floor,
+ *                     wall to wall, nine up. The cap is on top of the thicker one (the thin one is taller).
+ *   THE STACK  (cap)  a wall standing 2.2 off the Storehouse's south side: kicked up between it and the Storehouse
+ *                     to the Storehouse's roof, seven up, which nothing else reaches. The cap is across the roof.
+ *   THE HEAPS  (cap)  the Slag Heaps in the north-east corner, as they were: four piles to hop, each higher. (Or,
+ *                     for one who has learned it: kicked up between the last pile and the hall's wall.)
+ *   THE DRIP TRAY (hunk) a tray hung south of the Slag Run's first beam, three and a half higher than the beam: a jump,
+ *                     a second jump and a caught edge, over the lava.
+ *   THE CLINKERS (hunk) three lumps standing in the lava off the east bank, each further out and higher: three jumps
+ *                     over the lava, and back.
+ * tests/foundry.ts plays each with the real controller and takes each one's key piece away.
+ */
+// (The Fins stand NINE from the hall's west wall: a kick carries him across a gap of up to eight, and nearer than
+// that the gap between their end and the wall is a chimney of its own (the checker found it). And the thin one is
+// the taller: he cannot go over it, so the last kick is always off it and onto the thick one.)
+export const FINS = { x0: -39, x1: -36, a: { z0: 4, z1: 5, top: 11.5 }, b: { z0: 7.2, z1: 9.8 }, top: 9 } as const;
+// (It stands off the Storehouse's SOUTH side. Off the north side, where it first stood, its top was a long jump from
+// the Furnace Mouth, the hall's secret ledge, which only the Royal Scarf is meant to reach: tests/secrets.ts found it.)
+export const STACK = { x0: 40, x1: 43, z0: 18.2, z1: 19.2, top: 9.5, roof: 7, face: 16, cap: { x: 44.5, z: 8 } } as const;
+export const HEAPS_TOP = { x: 45, z: -45, top: 6.5 } as const;
+export const TRAY = { x0: -25, x1: -22, z0: -20.6, z1: -17.6, top: 11.5 } as const;
+/** The Clinkers, from the east bank out: [middle x, middle z, top]. Each is 1.8 square. */
+// (The last is further from the bank and from the dock than a wall kick carries (eight and a bit: nearer, the checker
+// took the gap between it and the bank's edge for a chimney), and out of a long jump's reach from the Crucible: where
+// it first stood, a long jump off the Crucible came down on it.)
+export const CLINKERS: ReadonlyArray<readonly [number, number, number]> = [[25.6, 17.6, 1.5], [25.5, 12.2, 3.1], [20.7, 14.7, 4.7]];
+export const CLINKER = 0.9;
+/** What each hunk of cheese is worth: together, what the hall's nineteen crumbs were. */
+export const HUNKS = { tray: 9, clinkers: 10 } as const;
 
 /** The island the Crucible stands on: the Slag Crew are the beasts on it. */
 export const ISLAND = { x0: -12, x1: 12, z0: -17, z1: 5 };
@@ -135,11 +170,11 @@ const hall: CustomLevel = {
     box('pillar', 33, -43, 35, -41, 2), box('pillar', 37, -46, 39, -44, 3.5), box('pillar', 41, -42, 43, -40, 5), box('pillar', 44, -46, 46, -44, 6.5),
 
     // ---- The dock yard: crates and barrels ----
-    // A hornet lancer hangs over the west yard's crates (one has a bottle cap in it): the first he meets, on open
+    // A hornet lancer hangs over the west yard's crates: the first he meets, on open
     // floor. It is no part of the Slag Crew.
     at('hornet', DOCK_HORNET.x, DOCK_HORNET.z, 0, { dir: 'e' }),
-    at('crate', -30, 34), at('crate', -29, 34), at('crate', -30, 34, 1), at('crate', -26, 38, 0, { props: { item: 'cap' } }),
-    at('crate', -25, 38), at('barrel', -36, 30), at('barrel', -37, 30), at('barrel', -36, 31, 0, { props: { item: 'crumb' } }),
+    at('crate', -30, 34), at('crate', -29, 34), at('crate', -30, 34, 1), at('crate', -26, 38),
+    at('crate', -25, 38), at('barrel', -36, 30), at('barrel', -37, 30), at('barrel', -36, 31),
     at('crate', 34, 30), at('crate', 34, 30, 1), at('barrel', 38, 34),
 
     // ---- The Furnace Mouth: a secret ledge over the lava by the east bank, far below and out from the Crucible's top. Only a
@@ -147,19 +182,22 @@ const hall: CustomLevel = {
     box('pillar', MOUTH.x0, MOUTH.z0, MOUTH.x1, MOUTH.z1, MOUTH.top, { bottom: -1.9, skin: 'magmaRock' }),
     at('brazier', MOUTH.x0 + 0.8, MOUTH.z0 + 0.8, MOUTH.top), at('light', MOUTH.x1 - 0.6, MOUTH.z1 - 0.6, MOUTH.top, { props: { color: 'red', flash: 0.5 } }),
 
-    // ---- Bottle caps: eight ----
-    at('cap', -12, 46, 0),
-    at('cap', -7, -4, SHELF1),
-    at('cap', -40, -30, RUN),
-    at('cap', -12, -27.5, RUN),
-    at('cap', -17, -6, 0.3),
-    at('cap', 45, -45, 6.5),
-    at('cap', 44, 7, 0),
-
-    // ---- Cheese: trails along each route ----
-    at('crumb', 0, 30), at('crumb', 22, 36), at('crumb', 0, 3), at('crumb', 6, -15), at('crumb', -6.5, -12.5, SHELF2),
-    at('crumb', -38, 0), at('crumb', -25, -6, 0.3), at('crumb', -37, -20.5, 4.8), at('crumb', -23.5, -27.5, RUN), at('crumb', 0, -27.5, RUN), at('crumb', 12, -27.5, RUN),
-    at('crumb', -10, -40), at('crumb', 20, -40), at('crumb', 34, -42, 2), at('crumb', 36, -10), at('crumb', 36, 20), at('crumb', -40, 40), at('crumb', 40, 40),
+    // ---- Things to find: three caps and two hunks (see FINS, STACK, HEAPS_TOP, TRAY, CLINKERS above) ----
+    // The Fins: two iron walls by themselves on the west bank, to be kicked up between.
+    box('wall', FINS.x0, FINS.a.z0, FINS.x1, FINS.a.z1, FINS.a.top, { skin: 'rustPlate' }),
+    box('wall', FINS.x0, FINS.b.z0, FINS.x1, FINS.b.z1, FINS.top, { skin: 'rustPlate' }),
+    at('cap', (FINS.x0 + FINS.x1) / 2, (FINS.b.z0 + FINS.b.z1) / 2, FINS.top),
+    // The Stack: a wall off the Storehouse's south side; kicked up between the two, he comes out on the roof.
+    box('wall', STACK.x0, STACK.z0, STACK.x1, STACK.z1, STACK.top, { skin: 'rustPlate' }),
+    at('cap', STACK.cap.x, STACK.cap.z, STACK.roof),
+    // The Heaps: on the last and highest pile.
+    at('cap', HEAPS_TOP.x, HEAPS_TOP.z, HEAPS_TOP.top),
+    // The Drip Tray: hung south of the run's first beam and well over it.
+    box('platform', TRAY.x0, TRAY.z0, TRAY.x1, TRAY.z1, TRAY.top, { bottom: TRAY.top - 0.5 }),
+    at('crumb', (TRAY.x0 + TRAY.x1) / 2, (TRAY.z0 + TRAY.z1) / 2, TRAY.top, { props: { worth: HUNKS.tray } }),
+    // The Clinkers: three lumps in the lava off the east bank.
+    ...CLINKERS.map(([x, z, top]) => box('pillar', x - CLINKER, z - CLINKER, x + CLINKER, z + CLINKER, top, { bottom: -1.9, skin: 'magmaRock' })),
+    at('crumb', CLINKERS[2][0], CLINKERS[2][1], CLINKERS[2][2], { props: { worth: HUNKS.clinkers } }),
 
     // ---- People ----
     at('npc', -5, 43, GANTRY, { props: { name: 'Finch', kind: 'bird', lines: [
@@ -171,6 +209,7 @@ const hall: CustomLevel = {
     at('npc', 34, 10, 0, { props: { name: 'Wren', kind: 'bird', lines: [
       'Chirp! The storehouse is shut tight. There is a door to the coal cellars in there.',
       'Hear that hissing? Three steam pipes on the walls. Burst them all and the pressure lifts the gate. I think.',
+      'That wall they stood up beside the storehouse? Nobody knows what it is for. You can nearly touch both at once.',
     ] } }),
 
     // ---- Lights and dressing ----
@@ -198,7 +237,7 @@ export const FOUNDRY_WEDGES: WedgeDef[] = [
   { id: 'run', name: 'The Slag Run', hint: 'From the Hopper, double-jump beam to beam over the lava to the Ladle.', x: 26, y: RUN, z: -27.5, appears: null },
   { id: 'steam', name: 'Let Off Steam', hint: 'Burst the three steam pipes on the walls, then look in the storehouse.', x: 43, y: 0, z: 12, appears: { type: 'burst', count: 'all', label: 'Burst the steam pipes' } },
   { id: 'mouth', name: 'The Furnace Mouth', hint: 'A ledge by the east bank, far out and far below the top of the Crucible. A plain long jump falls short. A royal one might not.', x: 28, y: MOUTH.top, z: -6, appears: null, gear: 'royalScarf' },
-  { id: 'caps', name: 'Eight Bottle Caps', hint: 'Under the gantry, in a crate, on the pot, on the Hopper, on a beam, on a stone, on the heaps, in the store.', x: 6, y: GANTRY, z: 44, appears: collect('cap', 'Find all the caps') },
+  { id: 'caps', name: 'Three Bottle Caps', hint: 'On top of the Fins, the two iron walls on the west bank. On the Storehouse roof, up the Stack beside it. On the highest of the Slag Heaps.', x: 6, y: GANTRY, z: 44, appears: collect('cap', 'Find all the caps') },
 ];
 
 /**

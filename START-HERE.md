@@ -426,6 +426,42 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE FOUNDRY'S THINGS TO FIND, done the Cistern's way; the knight in soft paint (2026-11-17). Tests `tests/foundry.ts` (37)
+
+He said "all looks great, lets continue" to the stills of the knight in soft paint and to the list.
+ - THE KNIGHT AND THE KEEP GUARD WEAR SOFT PAINT (`player/ratModel.ts`: both his materials, and the ones
+   `ownMaterials` makes for the guard). The texture pass is done for every model.
+ - THE FOUNDRY: FIVE THINGS WHERE THERE WERE TWENTY-SEVEN (8 caps and 19 crumbs before): three bottle caps and two
+   hunks of cheese worth 9 and 10 (19 in all, so the shop's prices do not move). None on a floor or in a crate; no two
+   within twelve of each other. In `levels/foundry.ts` (`FINS`, `STACK`, `HEAPS_TOP`, `TRAY`, `CLINKERS`, `HUNKS`):
+     THE FINS (cap): two iron walls by themselves on the west bank, 2.2 apart; kicked up from the floor, nine up. The
+       thin one is taller (11.5) so the last kick is always onto the thick one, where the cap is.
+     THE STACK (cap): a wall 2.2 off the Storehouse's SOUTH side; kicked up between the two onto the Storehouse roof
+       (seven up, which nothing else reaches), and across the roof to the cap.
+     THE HEAPS (cap): the four Slag Heaps, as they were. (The checker knows a second way: with the lower piles gone,
+       a wall kick between the last pile and the hall's wall. Both are movement.)
+     THE DRIP TRAY (hunk, 9): a tray hung south of the Slag Run's first beam, 3.5 over it: a running jump, a second
+       jump and a caught edge, over the lava.
+     THE CLINKERS (hunk, 10): three lumps in the lava off the east bank, each further out and higher.
+   The caps wedge is "Three Bottle Caps" and its hint names the three places. Wren has a line about the Stack.
+   So the Foundry has two wall-kick climbs now (it had none).
+ - WHAT THE CHECKER TAUGHT (use it for the next level; `levels/reach.ts`):
+     A WALL KICK CARRIES HIM ACROSS A GAP OF UP TO EIGHT (`maxChimney()` is 8.14, not the 4.5 the old note says). Any
+     two upright faces nearer than that are a chimney to the checker: a free-standing wall's END and the hall's wall;
+     a lump in the lava and the bank's edge. So a thing meant to be got one way stands MORE THAN 8.2 from every
+     other face. (The Fins were moved from five to nine off the west wall; the last Clinker to 8.4 from bank and dock.)
+     A LONG JUMP FROM A HIGH PLACE GOES A LONG WAY: 18 from 15 up, 13 from 5 up, 11.6 from 3 up. The Stack first stood
+     on the Storehouse's north side, and from its top a long jump reached the FURNACE MOUTH, the secret ledge only the
+     Royal Scarf is meant to reach (tests/secrets.ts caught it). And the last Clinker was first within a long jump of
+     the Crucible's top.
+ - Old saves: the hunks are new ids; `cap:01` to `cap:03` are the Fins, the Stack and the Heaps, so a save that had
+   those three ids has them still, wherever they now are; caps 04 to 08 and the crumbs are gone.
+ - A BUG FOUND BY THE WAY: the dream's winking static put its dots back in the order it took them, and a dot picked
+   twice in one lot stayed bright for good. Put back in reverse now.
+ - STILL NOT DONE of the old list: the furnace's TEXTURES (a try-out room first: he threw out the first tile
+   refreshes), and the LONG DROP'S LOOK during the run. And the other levels' collectibles: the Hollows (17 crumbs)
+   and the Keep (18) are as they were; the Cistern and the Foundry are done.
+
 ## "2, 4, 5, 6" (2026-11-17): the knight's stills and teeth, the dream's second pass, the hearth, the Widows, ice, slime, steam
 
 He picked four items from the list by number. What was done, and what was NOT:

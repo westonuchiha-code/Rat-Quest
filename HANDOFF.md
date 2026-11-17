@@ -1347,3 +1347,14 @@ things are:
   first. `world/layout.ts`: `SlimeZone`, `slimeZones`. `TUNING.slime.walk`.
 - `dev/viewer.ts`: `who=dozer&type=&awake=1&pose=`, `who=hatchling&state=`.
 
+## The Foundry's things to find (2026-11-17; `tests/foundry.ts`)
+
+- `levels/foundry.ts`: `FINS`, `STACK`, `HEAPS_TOP`, `TRAY`, `CLINKERS`, `CLINKER`, `HUNKS`; the pieces are under
+  "Things to find". A hunk is `at('crumb', x, z, top, { props: { worth } })`.
+- `tests/foundry.ts`: `kickUp` (along z), `hopUp`, `leap` (run at a place, jump on frame d, again e later, catch and
+  climb edges), `stand`; `lost(drop, { chimney })` takes pieces away and asks `unreachable`.
+- `maxChimney()` is 8.14: keep single-route things more than 8.2 from any other upright face. `jumpReach(dh)` gives
+  what a (long) jump carries for a height difference.
+- `player/ratModel.ts`: `material`, `materialTwoSided` and `ownMaterials` all take `softPaint`.
+- `render/textures.ts` `blinkTextures`: winks are put back in reverse order.
+
