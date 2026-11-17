@@ -26,7 +26,7 @@ export interface RoomEntry {
   /** What it is for: the kind of game it is to feel like (his words where he has said). */
   like: string;
   /** How it plays, it and its areas (data/feel.ts), if not the waking world's way (the dream's rooms say so by their look). */
-  feel?: 'sewers';
+  feel?: 'sewers' | 'platform';
 }
 
 export const ROOMS: RoomEntry[] = [
@@ -37,7 +37,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 5, id: 'longdrop', door: 'DOWNHILL PIPES', like: 'Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air.' },
   { n: 6, id: 'foundry', door: 'FOUNDRY', like: 'Fire and iron: heat to cross, heavy beasts.' },
   { n: 7, id: 'forge', door: 'FORGE', like: "The Foundry's new look, tried out: furnaces, a ladle that pours." },
-  { n: 8, id: 'hollows', door: 'DEEP CAVES', like: 'A 3D Mario: wall jumps and double jumps over a long fall, weaker beasts.' },
+  { n: 8, id: 'hollows', door: 'DEEP CAVES', feel: 'platform', like: 'A 3D Mario: wall jumps and double jumps over a long fall, weaker beasts.' },
   { n: 9, id: 'keep', door: 'CASTLE', like: 'Ocarina of Time: a keep with guards behind shields.' },
   { n: 10, id: 'garden', door: 'MOVE GYM', like: 'Rulers, ledges and chimneys: for feeling the jump numbers.' },
   { n: 11, id: 'hub', door: 'THE CLUB', like: "Dizzy Dave's hangout, as it was: the first hub." },

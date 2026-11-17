@@ -113,7 +113,8 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
         if (e.deflects?.(p.x, p.z, how, part)) events.glanced = e;
         else {
           events.enemyHit = e;
-          if (e.takeHit(damage * player.feel.fight.dealt, p.x, p.z, how, part)) events.enemyKilled = true;
+          // (This is the ground pound: the dive, or its blast.)
+          if (e.takeHit(damage * player.feel.fight.dealt * player.feel.fight.plunge, p.x, p.z, how, part)) events.enemyKilled = true;
         }
       }
     }

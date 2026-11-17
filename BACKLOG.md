@@ -166,3 +166,4 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 - **A4: the roach and the toad can be grabbed** after a perfect guard (the stun was there already; it is now a grab window). No film: nothing automatic can time a perfect guard.
 - **A3 (part): the camera in the bowl** measured and held by a test. STILL OPEN under A3: (a) the deck edge, (b) knocked against a wall (the view goes overhead: that is how it was designed; his to judge), (c) the long fall, (d) his verdict on the follow slider.
 - **A5: bats to hit while grinding** in the Long Drop (Test Room 5): flutterers beside every rail; the sword swings on a rail and reaches all round. STILL OPEN: a reward for hitting them; his verdict.
+- **A1 (the rest): the platform room's feel** on Test Room 8: blows 1.34, ground pound double. His verdict wanted on the numbers.

@@ -82,6 +82,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The sewers', path: 'sewers.run', label: 'In the sewers he runs this much of his speed', min: 0.6, max: 1, step: 0.02 },
   { group: 'The sewers', path: 'sewers.dealt', label: 'In the sewers his blows do this much', min: 0.33, max: 1, step: 0.01 },
   { group: 'The sewers', path: 'sewers.taken', label: 'In the sewers a blow costs him this many times as much', min: 1, max: 3, step: 0.5 },
+  { group: 'The platform room', path: 'platform.dealt', label: 'In the platform room his blows do this many times as much', min: 1, max: 3, step: 0.02 },
+  { group: 'The platform room', path: 'platform.plunge', label: 'In the platform room his ground pound does this many times as much again', min: 1, max: 4, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckMax', label: 'Top riding speed, tucked (stick forward)', min: 8, max: 40, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckGain', label: 'How fast a tuck builds speed', min: 0.1, max: 3, step: 0.05 },
   { group: 'Riding', path: 'ride.dragFlat', label: 'Slow-down on the flat', min: 0, max: 8, step: 0.1 },
@@ -337,7 +339,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'The sewers', 'Ice', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'The sewers', 'The platform room', 'Ice', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

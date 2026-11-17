@@ -19,7 +19,7 @@
  * harder blows.
  */
 import { TUNING } from './tuning';
-export type FeelId = 'waking' | 'dream' | 'sewers';
+export type FeelId = 'waking' | 'dream' | 'sewers' | 'platform';
 
 export interface Feel {
   id: FeelId;
@@ -36,7 +36,8 @@ export interface Feel {
    * FIGHTING: what his blows (and what he throws) do to a creature is multiplied by `dealt`; what a blow costs HIM is
    * multiplied by `taken` (and rounded to whole hearts, never less than one). 1 and 1 is the waking world.
    */
-  fight: { dealt: number; taken: number };
+  /** (`plunge`: what his GROUND POUND does, the dive and its blast, is multiplied by this as well.) */
+  fight: { dealt: number; taken: number; plunge: number };
   /** On his shield. */
   ride: {
     /** THE TUCK: the stick pushed the way he is going crouches him, pushes him along on the flat, and builds speed past his standing top speed downhill. */
@@ -54,7 +55,7 @@ export const FEELS: Record<FeelId, Feel> = {
     name: 'The waking world',
     like: 'Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that.',
     foot: { run: 1, jump: 1, gravity: 1 },
-    fight: { dealt: 1, taken: 1 },
+    fight: { dealt: 1, taken: 1, plunge: 1 },
     ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
   dream: {
@@ -73,6 +74,15 @@ export const FEELS: Record<FeelId, Feel> = {
     // (The numbers are TUNING.sewers: Tweaks, "The sewers".)
     foot: TUNING.sewers,
     fight: TUNING.sewers,
+    ride: { tuck: false, trickSpeed: false, airTricks: false },
+  },
+  platform: {
+    id: 'platform',
+    name: 'The platform room',
+    like: 'A 3D Mario: wall jumps and double jumps, and weaker enemies he can ground pound his way out of. His blows do a third more, and his ground pound double.',
+    // (The numbers are TUNING.platform: Tweaks, "The platform room".)
+    foot: TUNING.platform,
+    fight: TUNING.platform,
     ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
 };

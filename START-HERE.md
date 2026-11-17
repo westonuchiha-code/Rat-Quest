@@ -249,6 +249,15 @@ game".
  - **NOT DONE / his to judge:** nothing is paid for hitting one (no crumb, no speed, no count); they do not move or
    attack; whether hitting them should be this forgiving; `&autorail` is the film aid.
 
+**THE PLATFORM ROOM HAS ITS FEEL (2026-11-17, the rest of BACKLOG A1; `tests/hall.ts` 54).** His words: "a lot of wall
+jumping and double jumping and the enemies that you fight you can kind of just ground pound your way out of because
+they're weaker enemies and it feels more like a level out of a 3D Mario game". A fourth line in the table, `platform`
+(`TUNING.platform`, sliders "The platform room"), on Test Room 8 and its five areas: his blows do 1.34, and his GROUND
+POUND (the dive and its blast: `fight.plunge`, new in every feel) does double on top: the blast alone ends a roach.
+**His run, jump and gravity are NOT changed there: the room's gaps are measured to them.** No film (nothing moves
+differently; a roach just goes down to one pound). The Sonic room (Test Room 5) has no feel line of its own: it has
+its bats.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The

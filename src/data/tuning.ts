@@ -156,6 +156,7 @@ export const TUNING = {
     // and his throws do to a creature there, times this.)
     dealt: 1.5,
     taken: 1,
+    plunge: 1,
   },
   /**
    * THE SEWERS (data/feel.ts reads these): his "Dark Souls" biome. "You're blocking, you're parrying, you're having
@@ -169,6 +170,22 @@ export const TUNING = {
     gravity: 1,
     dealt: 0.67,
     taken: 2,
+    plunge: 1,
+  },
+  /**
+   * THE PLATFORM ROOM (data/feel.ts reads these): his "3D Mario" biome. "A lot of wall jumping and double jumping and
+   * the enemies that you fight you can kind of just ground pound your way out of because they're weaker enemies."
+   * His blows do a third more, and his GROUND POUND (the air attack: the dive and the blast of its landing) does
+   * double: the blast alone ends a roach. HIS JUMP AND HIS RUN ARE NOT CHANGED: the room's ledges and gaps are
+   * measured to them.
+   */
+  platform: {
+    run: 1,
+    jump: 1,
+    gravity: 1,
+    dealt: 1.34,
+    taken: 1,
+    plunge: 2,
   },
   ride: {
     minSlope: 0.4, // over a slope at least this steep (rise over run) the air attack is the shield under his feet, not the dive

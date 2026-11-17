@@ -117,7 +117,7 @@ export function assetsDoc(read: Read, list: List): string {
   // ---------------------------------------------------------------- how it plays
   say('## 2. How each biome plays (physics)', '');
   say('One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in', `\`src/data/balance.ts\`). ${TWEAKS.length} of those numbers have a slider in the Tweaks panel (\`src/core/tweaks.ts\`).`, '');
-  say(table(['Biome feel', 'Meant to be like', 'Run', 'Jump', 'Gravity', 'His blows', 'A blow costs him', 'Tuck', 'Speed from tricks', 'Spin and grab'], Object.values(FEELS).map((f) => [f.name, f.like, `x${f.foot.run}`, `x${f.foot.jump}`, `x${f.foot.gravity}`, `x${f.fight.dealt}`, `x${f.fight.taken}`, f.ride.tuck ? 'yes' : 'no', f.ride.trickSpeed ? 'yes' : 'no', f.ride.airTricks ? 'yes' : 'no'])), '');
+  say(table(['Biome feel', 'Meant to be like', 'Run', 'Jump', 'Gravity', 'His blows', 'His ground pound', 'A blow costs him', 'Tuck', 'Speed from tricks', 'Spin and grab'], Object.values(FEELS).map((f) => [f.name, f.like, `x${f.foot.run}`, `x${f.foot.jump}`, `x${f.foot.gravity}`, `x${f.fight.dealt}`, `x${f.fight.plunge}`, `x${f.fight.taken}`, f.ride.tuck ? 'yes' : 'no', f.ride.trickSpeed ? 'yes' : 'no', f.ride.airTricks ? 'yes' : 'no'])), '');
 
   // ---------------------------------------------------------------- the hero
   say('## 3. The hero', '');

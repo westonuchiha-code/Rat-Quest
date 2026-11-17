@@ -231,5 +231,37 @@ const hall = levelById(HALL_ID)!;
   check('nothing in the sewers is easier than the waking world', TUNING.sewers.run <= 1 && TUNING.sewers.dealt <= 1 && TUNING.sewers.taken >= 1 && TUNING.sewers.jump <= 1 && TUNING.sewers.gravity >= 1);
 }
 
+// ---- THE PLATFORM ROOM (his "3D Mario" biome: "the enemies that you fight you can kind of just ground pound your
+// way out of because they're weaker enemies"). ----
+{
+  const plat = all.filter((l) => feelOf(l).id === 'platform').map((l) => l.id).sort();
+  check('the Deep Caves and its five side areas play the platform room\'s way, and nowhere else does', plat.join(' ') === 'brood dark faith glimmer hollows webs', plat.join(' '));
+  check('his run, his jump and gravity are NOT changed there (its ledges and gaps are measured to them); a blow costs him what it does elsewhere', TUNING.platform.run === 1 && TUNING.platform.jump === 1 && TUNING.platform.gravity === 1 && TUNING.platform.taken === 1);
+  const floor: Aabb[] = [aabbOf(extent('floor', -200, 200, -1, 0, -200, 200))];
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const DT = 1 / 60;
+  /** A jump and the air attack beside a roach: what the landing's blast leaves it. */
+  const pound = (feel: Feel): { alive: boolean; hp: number } => {
+    const roach = new Scuttler({ x: 0, z: 1.5 });
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    p.feel = feel;
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), floor);
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), floor);
+    for (let i = 0; i < 240; i++) {
+      p.update(DT, inp({ jumpHeld: i < 20, attackPressed: i === 22 }), floor);
+      roach.x = 0;
+      roach.z = 1.5;
+      resolveCombat(p, [roach], events);
+      if (i > 30 && p.grounded && p.plungeStage === 0) break;
+    }
+    return { alive: roach.alive, hp: roach.hp };
+  };
+  const awake = pound(FEELS.waking);
+  const there = pound(FEELS.platform);
+  check('his GROUND POUND landing beside a roach ends it there; elsewhere the same blast only hurts it', awake.alive && awake.hp < TUNING.scuttler.hp && !there.alive, `awake it is left ${awake.hp}; in the platform room ${there.alive ? there.hp : 'beaten'}`);
+  check('the numbers are the table\'s, the others\' ground pound is as it was, and each has its slider', FEELS.platform.fight === TUNING.platform && FEELS.waking.fight.plunge === 1 && TUNING.sewers.plunge === 1 && TUNING.dream.plunge === 1 && ['platform.dealt', 'platform.plunge'].every((path) => TWEAKS.some((t) => t.path === path)));
+}
+
 console.log(failures === 0 ? '\nhall: all passed' : `\nhall: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

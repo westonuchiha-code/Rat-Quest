@@ -56,12 +56,12 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 6B | `shaft` |  | The Lift Shaft | waking | foundry | drift | `src/levels/foundry.ts` |
 | Test Room 6C | `coalcellars` |  | The Coal Cellars | waking | foundry | drift | `src/levels/foundry.ts` |
 | Test Room 7 | `forge` | FORGE | The Forge | waking | foundry | pump | `src/levels/forge.ts` |
-| Test Room 8 | `hollows` | DEEP CAVES | The Hollows | waking | cave | echo | `src/levels/hollows.ts` |
-| Test Room 8B | `webs` |  | Web Hollow | waking | cave | echo | `src/levels/hollows.ts` |
-| Test Room 8C | `brood` |  | The Brood Pit | waking | cave | march | `src/levels/hollows.ts` |
-| Test Room 8D | `faith` |  | Leap of Faith | waking | cave | echo | `src/levels/hollows.ts` |
-| Test Room 8E | `dark` |  | The Lightless Way | waking | cave | echo | `src/levels/hollows.ts` |
-| Test Room 8F | `glimmer` |  | The Glimmer Deep | waking | cave | echo | `src/levels/glimmer.ts` |
+| Test Room 8 | `hollows` | DEEP CAVES | The Hollows | platform | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8B | `webs` |  | Web Hollow | platform | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8C | `brood` |  | The Brood Pit | platform | cave | march | `src/levels/hollows.ts` |
+| Test Room 8D | `faith` |  | Leap of Faith | platform | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8E | `dark` |  | The Lightless Way | platform | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8F | `glimmer` |  | The Glimmer Deep | platform | cave | echo | `src/levels/glimmer.ts` |
 | Test Room 9 | `keep` | CASTLE | Grimsqueak's Keep | waking | keep | march | `src/levels/keep.ts` |
 | Test Room 9B | `lair` |  | Grimsqueak's Throne | waking | keep | march | `src/levels/keep.ts` |
 | Test Room 10 | `garden` | MOVE GYM | The Move Garden | waking | dungeon | drift | `src/levels/garden.ts` |
@@ -76,13 +76,14 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 278 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 280 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
-| Biome feel | Meant to be like | Run | Jump | Gravity | His blows | A blow costs him | Tuck | Speed from tricks | Spin and grab |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | x1 | x1 | no | no | no |
-| The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | x1.5 | x1 | yes | yes | yes |
-| The sewers | Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double. | x0.88 | x1 | x1 | x0.67 | x2 | no | no | no |
+| Biome feel | Meant to be like | Run | Jump | Gravity | His blows | His ground pound | A blow costs him | Tuck | Speed from tricks | Spin and grab |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | x1 | x1 | x1 | no | no | no |
+| The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | x1.5 | x1 | x1 | yes | yes | yes |
+| The sewers | Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double. | x0.88 | x1 | x1 | x0.67 | x1 | x2 | no | no | no |
+| The platform room | A 3D Mario: wall jumps and double jumps, and weaker enemies he can ground pound his way out of. His blows do a third more, and his ground pound double. | x1 | x1 | x1 | x1.34 | x2 | x1 | no | no | no |
 
 ## 3. The hero
 
