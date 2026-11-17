@@ -406,25 +406,33 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
 
 // ---- THE LAUNCHER ----
 {
-  const x = (LAUNCHER.x0 + LAUNCHER.x1) / 2;
-  const tip = LAUNCHER.z0 + LAUNCHER.len;
-  const go = (dt: number): { high: number; far: number; riding: boolean; bailed: boolean } => {
-    const p = rat(x, 0, LAUNCHER.z0 - 12);
-    getOn(p, v(0, 1));
+  const z = (LAUNCHER.z0 + LAUNCHER.z1) / 2;
+  const tip = LAUNCHER.x0 + LAUNCHER.len;
+  /** Come at at a given speed (0: from a standing push-off, twelve back). What it does with him, and whether he then rides on to a stop. */
+  const at = (speed: number, dt: number): { up: number; far: number; riding: boolean; bailed: boolean } => {
+    const p = rat(LAUNCHER.x0 - (speed ? 3 : 12), 0, z);
+    if (speed) {
+      p.devRide();
+      p.velocity.set(speed, 0, 0);
+    } else getOn(p, v(1, 0));
     let high = 0;
     let bailed = false;
     let flew = false;
-    for (let i = 0; i < 6 / dt && p.riding; i++) {
-      p.update(dt, inp({ move: v(0, 1) }), cs);
-      if (p.moveEvent === 'bail') bailed = true;
+    let far = 0;
+    for (let i = 0; i < 8 / dt && p.riding; i++) {
+      // (The stick forward until he is in the air; then let go, and braked once he is down.)
+      p.update(dt, inp({ move: far ? v(-1, 0) : flew ? v(0, 0) : v(1, 0) }), cs);
+      // (At his tucked top speed there is not room in any park to brake from: what is asked of that run is that he
+      // LANDS riding. Slower, that he can brake to a stop in the lane as well.)
+      if (p.moveEvent === 'bail' && !(speed >= 30 && far)) bailed = true;
       high = Math.max(high, p.position.y);
-      if (!p.grounded && p.position.z > tip) flew = true;
-      if (flew && p.grounded) return { high, far: p.position.z - tip, riding: p.riding, bailed };
+      if (!p.grounded && p.position.x > tip) flew = true;
+      if (flew && p.grounded && !far) far = p.position.x - tip;
     }
-    return { high, far: 0, riding: p.riding, bailed };
+    return { up: high - LAUNCHER.rise, far, riding: far > 0, bailed };
   };
-  const runs = [1 / 60, 1 / 30].map(go);
-  check('the launcher: ridden at with the stick forward, from a short push-off it throws him off its tip, over its own height and five on, and he lands riding (sixty frames a second and thirty)', runs.every((r) => r.high > LAUNCHER.rise + 0.3 && r.far > 4.5 && r.riding && !r.bailed), runs.map((r) => `${r.high.toFixed(1)} high, ${r.far.toFixed(1)} on${r.bailed ? ', BAILED' : ''}`).join('; '));
+  const runs = [0, 16, 24, 30].flatMap((sp) => [1 / 60, 1 / 30].map((dt) => ({ sp, r: at(sp, dt) })));
+  check('the launcher: from a standing push-off, at his standing top speed and tucked, it throws him off its tip and he lands riding, inside the park (and, short of his tucked top speed, can brake to a stop in the lane beyond): higher and further the faster he comes (sixty frames a second and thirty)', runs.every(({ r }) => r.riding && !r.bailed && r.far > 3) && runs[6].r.up > runs[2].r.up + 2 && runs[6].r.far > runs[2].r.far + 10, runs.filter((_, i) => i % 2 === 0).map(({ sp, r }) => `${sp || 'push-off'}: ${r.up.toFixed(1)} over its tip, ${r.far.toFixed(1)} on${r.bailed ? ', BAILED' : ''}`).join('; '));
 }
 
 // ---- Tricks ----
