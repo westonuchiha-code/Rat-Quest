@@ -1406,3 +1406,19 @@ things are:
   `dave` bars), `make.mjs` (drum lengths `[{ at, con, order, pats, gain }]`, `daveSounds`, `breakIt`), `sfx.mjs`,
   `embed.mjs`. To change a tune: edit songs.mjs, `node scripts/chip/make.mjs <dir> <id>`, then embed ALL the ids the
   game plays again: `node scripts/chip/embed.mjs <dir> bap2 bap1 cistern foundry hollows keep dream`.
+
+## The sound is hip-hop: nine boom bap tunes, scratches, a third tool for robot voices (2026-11-17)
+
+The owner's brief for all sound (his words are in START-HERE.md, "THE SOUND OF THIS GAME IS HIP-HOP"): boom bap, record
+scratches in music and in effects, loose and gritty and crunchy (Conker, Vectorman, ToeJam and Earl), NOT grand
+fantasy; each place sounding like itself; the dream a kids' cartoon that glitches into a rogue machine. He asked for a
+tailored tune for each film, and sent a third tool, the Robot Voice Box (five speech chips), chiefly for the dream
+world's voices, which he wants worked on hard next.
+ - Tunes `sewer forge cave stone teeth cartoon sheep late rogue` in `scripts/chip/songs.mjs`; `make.mjs` gained
+   `layers` (the game's own sounds, or words said by the Voice Box, on the grid), `scratches`, `crunch`, `crackle`, a
+   modem. Every film re-cut over its own tune. NONE OF THE NEW MUSIC IS IN THE GAME: he has not heard it.
+ - `scripts/chip/lib.mjs`: `tools.voice.say(text, chip, opts)`; `scripts/chip/voices.mjs`: a reel of dream voices.
+ - In the game: a short wedge jingle and the defeat piece (`AudioEngine.jingle`, `tunes.ts` `JINGLES`); six more reel
+   effects (`block splash whoosh swing dodge land`); two scratch effects (`menuBack`, and `rewind` at a fall).
+ - Claude cannot hear: all of it is checked by numbers and by what starts in a real browser, not by ear.
+

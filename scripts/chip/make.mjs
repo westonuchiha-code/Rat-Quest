@@ -5,7 +5,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { openTools, writeWav, rms, peak, ROOT } from './lib.mjs';
+import { openTools, writeWav, rms, peak, ROOT, tuned, scratchSound, crunch } from './lib.mjs';
 import { SONGS, JINGLES, toStudio, midi, chord } from './songs.mjs';
 
 const [out, ...only] = process.argv.slice(2);
@@ -123,6 +123,89 @@ function say(snd, hz) {
   return o;
 }
 const voxCut = new Map();
+
+// ---- SAMPLING, SCRATCHING, CRUNCH (2026-11-17: "the vibe of this game I want it to be hip-hop oriented ... boom bap ...
+// record scratching sounds here and there ... gritty crunchy ... we can layer stuff we can sample stuff") ----
+
+/** A sound to sample: `src/<name>` is one of the game's own (recordings/chip/src), `sfx/<name>` one made with his tools (recordings/chip). */
+const sampleCache = new Map();
+function sample(name, sr) {
+  if (name === 'gen/modem' && !sampleCache.has(name)) sampleCache.set(name, modem(sr));
+  if (!sampleCache.has(name)) {
+    const file = path.join(ROOT, 'recordings', 'chip', name.startsWith('sfx/') ? `${name.slice(4)}.wav` : `${name}.wav`);
+    const tmp = path.join(out, '_s.raw');
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', file, '-ac', '1', '-ar', String(sr), '-f', 'f32le', tmp]);
+    const b = fs.readFileSync(tmp);
+    fs.unlinkSync(tmp);
+    const a = Float32Array.from(new Float32Array(b.buffer, b.byteOffset, b.length / 4));
+    const pk = peak(a) || 1;
+    sampleCache.set(name, a.map((v) => (v * 0.9) / pk));
+  }
+  return sampleCache.get(name);
+}
+/**
+ * WORDS SPOKEN by an old speech chip (the owner's third tool, the Robot Voice Box, 2026-11-17: "for approximating
+ * voices, and it does a bunch of cool old robot voices ... You're allowed to use this for additional sound effects and
+ * music"). `q`: { chip, text, opts }. Said once and kept.
+ */
+const saidCache = new Map();
+async function said(q) {
+  const key = JSON.stringify(q);
+  if (!saidCache.has(key)) {
+    const r = await tools.voice.say(q.text, q.chip ?? 'sns', q.opts ?? {});
+    const pk = peak(r.data) || 1;
+    // (What is before the first sound is taken off, so that the word BEGINS where it is put.)
+    let from = 0;
+    while (from < r.data.length && Math.abs(r.data[from]) < pk * 0.04) from++;
+    saidCache.set(key, r.data.subarray(Math.max(0, from - 40)).map((v) => (v * 0.9) / pk));
+  }
+  return saidCache.get(key);
+}
+/**
+ * A MODEM calling out (the owner, of the dream gone wrong: "rogue AI digital synthesized voices ... screaming like
+ * modem sounds"): the answer tone, two pairs of tones warbling against each other, then the scramble. About a
+ * second and a quarter; `sample('gen/modem')`.
+ */
+function modem(sr) {
+  const n = Math.round(sr * 1.25);
+  const o = new Float32Array(n);
+  let ph = 0, ph2 = 0, a = 12345, held = 0;
+  const rand = () => ((a = (a * 1664525 + 1013904223) >>> 0) / 4294967296);
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    let v;
+    if (t < 0.22) { ph += (2 * Math.PI * 2100) / sr; v = Math.sin(ph); }
+    else if (t < 0.7) {
+      // (Bits at 300 a second: each side of the line has its own pair of tones.)
+      if (i % Math.round(sr / 300) === 0) held = rand();
+      ph += (2 * Math.PI * (held < 0.5 ? 1070 : 1270)) / sr;
+      ph2 += (2 * Math.PI * (held * 7 % 1 < 0.5 ? 2025 : 2225)) / sr;
+      v = Math.sin(ph) * 0.6 + Math.sin(ph2) * 0.5;
+    } else {
+      if (i % 5 === 0) held = rand() * 2 - 1;
+      ph += (2 * Math.PI * 1800) / sr;
+      v = held * 0.7 + Math.sin(ph) * 0.35;
+    }
+    o[i] = v * 0.8 * Math.min(1, i / 200, (n - i) / 1500);
+  }
+  return o;
+}
+/** The dust on a record: a faint hiss and little pops, here and there. */
+function crackle(n, sr, seed, amount) {
+  let a = seed >>> 0;
+  const rand = () => ((a = (a * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const o = new Float32Array(n);
+  let lp = 0;
+  for (let i = 0; i < n; i++) {
+    lp += ((rand() * 2 - 1) * 0.02 - lp) * 0.25;
+    o[i] = lp * amount;
+    if (rand() < 6 / sr) {
+      const p = (rand() * 0.5 + 0.2) * amount * (rand() < 0.5 ? -1 : 1);
+      for (let j = 0; j < 30 && i + j < n; j++) o[i + j] += p * Math.exp(-j / 6);
+    }
+  }
+  return o;
+}
 let daveCut = null;
 
 /**
@@ -274,7 +357,56 @@ for (const s of SONGS.filter((q) => !only.length || only.includes(q.id))) {
     for (let i = 0; i < n; i++) voice[i] += vx[i];
     s.voxNote = `singer: "${V.file}", held sound said at ${held.f0.toFixed(0)} Hz (${held.dur.toFixed(2)}s), ${shorts.length} short sounds for the scat`;
   }
+  // The drums crunched, if the tune asks (an old sampler's grit).
+  if (s.crunch) for (const ch of drums) crunch(ch, s.crunch.bits ?? 8, s.crunch.hold ?? 2);
+  // LAYERS: sampled sounds on the grid (x a hit, o a soft one), each tuned, each with an echo if it asks for one.
+  const swAll = (D0.swing ?? 0) / 3;
+  const place = (snd, step, gain, echo) => {
+    const at = Math.round((step + (Math.round(step) % 2 ? swAll : 0)) * six * sr);
+    for (const [dly, g] of [[0, 1], ...(echo ? [[echo, 0.4], [echo * 2, 0.18]] : [])]) {
+      const o = at + Math.round(dly * six * sr);
+      for (let j = 0; j < snd.length; j++) voice[(o + j) % n] += snd[j] * gain * g;
+    }
+  };
+  for (const L of s.layers ?? []) {
+    let turn = 0;
+    // (A layer is a sampled sound, `src`, or words said by a speech chip, `say`.)
+    const raw = L.say ? await said(L.say) : sample(L.src, sr);
+    for (let b = 0; b < bars; b++) {
+      const pat = Array.isArray(L.bars) ? L.bars[b % L.bars.length] : L.bars;
+      [...pat].forEach((c, i) => {
+        if (c !== 'x' && c !== 'o') return;
+        const ratio = L.tunes ? L.tunes[turn++ % L.tunes.length] : L.tune ?? 1;
+        let snd = tuned(raw, ratio);
+        if (L.crush) { snd = Float32Array.from(snd); crunch(snd, L.crush.bits ?? 6, L.crush.hold ?? 4); }
+        place(snd, b * 16 + i, (L.vol ?? 0.5) * (c === 'o' ? 0.5 : 1), L.echo);
+      });
+    }
+  }
+  // SCRATCHES: b, r, c on the grid (see scratchSound), of a voice saying "ah" unless another sound is named.
+  if (s.scratches) {
+    const K = s.scratches;
+    let src;
+    if (K.say) src = tuned(await said(K.say), K.pitch ?? 1);
+    else if (K.src) src = sample(K.src, sr);
+    else {
+      if (!voxCut.has('wren.m4a')) voxCut.set('wren.m4a', voiceSounds('wren.m4a', sr).filter((q) => q.sure > 0.6 && q.f0 > 90 && q.f0 < 400));
+      const long = [...voxCut.get('wren.m4a')].sort((p, q) => q.dur - p.dur)[0];
+      src = sing(long, long.f0 * (K.pitch ?? 1.5), Math.round(sr * 0.9), sr);
+    }
+    const LEN = { b: 2, r: 4, c: 1 };
+    for (let b = 0; b < bars; b++) {
+      [...K.bars[b % K.bars.length]].forEach((c, i) => {
+        if (LEN[c]) place(scratchSound(src, c, Math.round(LEN[c] * six * sr)), b * 16 + i, K.vol ?? 0.6, 0);
+      });
+    }
+  }
+  if (s.layers || s.scratches) s.voxNote = `${s.voxNote ? `${s.voxNote}; ` : ''}sampled sounds and scratches with any voices: rms ${rms(voice).toFixed(3)}, peak ${peak(voice).toFixed(2)} (music peak ${peak(music[0]).toFixed(2)})`;
   const mix = [0, 1].map((c) => music[c].map((v, i) => v + drums[c][i] * DG + voice[i]));
+  if (s.crackle) {
+    const dust = crackle(n, sr, 11 + s.bpm, s.crackle);
+    for (const ch of mix) for (let i = 0; i < n; i++) ch[i] += dust[i];
+  }
   if (s.glitch) breakIt(mix, sr, six, bars, s.glitch);
   const pk = Math.max(peak(mix[0]), peak(mix[1]));
   const k = 0.89 / pk;
@@ -298,7 +430,31 @@ for (const s of JINGLES.filter((q) => !only.length || only.includes(q.id))) {
   const st = await tools.studio.song(toStudio(s));
   const o = Math.round(LEAD * st.sr);
   const pk = Math.max(peak(st.L), peak(st.R));
-  const ch = [st.L.subarray(o).map((v) => (v * 0.89) / pk), st.R.subarray(o).map((v) => (v * 0.89) / pk)];
+  let ch = [Float32Array.from(st.L.subarray(o)), Float32Array.from(st.R.subarray(o))];
+  const six = 60 / s.bpm / 4;
+  // (A jingle may have a beat under it, a scratch in it, and be cut off short: `tail` seconds after its last bar.)
+  if (s.drums) {
+    const r = await tools.drums.beat({ con: s.drums.con, bpm: s.bpm, swing: s.drums.swing ?? 0, pats: [...s.drums.order].map((k) => s.drums.pats[k]), reps: 1 });
+    for (const [c, src] of [[0, r.L], [1, r.R]]) for (let j = 0; o + j < src.length && j < ch[c].length; j++) ch[c][j] += src[o + j] * (s.drums.gain ?? 0.62);
+  }
+  if (s.scratches) {
+    const K = s.scratches;
+    const src = tuned(await said(K.say), K.pitch ?? 1);
+    const LEN = { b: 2, r: 4, c: 1 };
+    K.bars.forEach((pat, b) => [...pat].forEach((c, i) => {
+      if (!LEN[c]) return;
+      const snd = scratchSound(src, c, Math.round(LEN[c] * six * st.sr));
+      const at = Math.round((b * 16 + i) * six * st.sr);
+      for (const chn of ch) for (let j = 0; j < snd.length && at + j < chn.length; j++) chn[at + j] += snd[j] * (K.vol ?? 0.5);
+    }));
+  }
+  if (s.tail !== undefined) {
+    const end = Math.min(ch[0].length, Math.round((s.chords.length * 16 * six + s.tail) * st.sr));
+    const fade = Math.round(Math.min(s.tail, 0.6) * st.sr);
+    ch = ch.map((c) => c.subarray(0, end).map((v, i) => v * Math.min(1, (end - i) / fade)));
+  }
+  const pk2 = Math.max(peak(ch[0]), peak(ch[1])) || pk;
+  ch = ch.map((c) => c.map((v) => (v * 0.89) / pk2));
   writeWav(path.join(out, `${s.id}.wav`), ch, st.sr);
   mp3(path.join(out, `${s.id}.wav`), path.join(out, `jingle-${s.id}.mp3`));
   console.log(`${s.id.padEnd(8)} "${s.name}" ${(ch[0].length / st.sr).toFixed(1)}s`);

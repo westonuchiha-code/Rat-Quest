@@ -6,9 +6,12 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, writeWav } from './lib.mjs';
-import { SONGS } from './songs.mjs';
+import { SONGS, JINGLES } from './songs.mjs';
 
-const [dir, ...ids] = process.argv.slice(2);
+// (An id written `jingle:<id>` is a short piece played ONCE: it is stored as it is, with nothing put before or after it.)
+const [dir, ...all] = process.argv.slice(2);
+const ids = all.filter((q) => !q.startsWith('jingle:'));
+const jingleIds = all.filter((q) => q.startsWith('jingle:')).map((q) => q.slice(7));
 const ROLL = 0.3;
 const readWav = (file) => {
   const b = fs.readFileSync(file);
@@ -45,6 +48,19 @@ for (const id of ids) {
   lines.push(`  ${id}: { name: ${JSON.stringify(s.name)}, lead: ${ROLL}, length: ${(n / w.rate).toFixed(6)}, bpm: ${s.bpm}, b64: '${b64}' },`);
   console.log(`${id.padEnd(8)} ${(n / w.rate).toFixed(2)}s  ${(b64.length / 1024).toFixed(0)} KB`);
 }
+const jingles = [];
+for (const id of jingleIds) {
+  const s = JINGLES.find((q) => q.id === id);
+  if (!s) throw new Error(`no such jingle: ${id}`);
+  const w = readWav(path.join(dir, `${id}.wav`));
+  const mp3 = path.join(dir, `_${id}.mp3`);
+  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', path.join(dir, `${id}.wav`), '-ar', '32000', '-ac', '2', '-codec:a', 'libmp3lame', '-b:a', '64k', '-joint_stereo', '1', mp3]);
+  const b64 = fs.readFileSync(mp3).toString('base64');
+  fs.unlinkSync(mp3);
+  total += b64.length;
+  jingles.push(`  ${id}: { name: ${JSON.stringify(s.name)}, lead: 0, length: ${(w.chans[0].length / w.rate).toFixed(6)}, bpm: ${s.bpm}, b64: '${b64}' },`);
+  console.log(`${('jingle ' + id).padEnd(14)} ${(w.chans[0].length / w.rate).toFixed(2)}s  ${(b64.length / 1024).toFixed(0)} KB`);
+}
 fs.writeFileSync(path.join(ROOT, 'src', 'audio', 'tunes.ts'), `/** Made by scripts/chip/embed.mjs from tunes rendered through the owner's two sound tools (scripts/chip/songs.mjs). Do not edit by hand. */
 export interface Tune {
   name: string;
@@ -57,6 +73,10 @@ export interface Tune {
 }
 export const TUNES: Record<string, Tune> = {
 ${lines.join('\n')}
+};
+/** Short pieces played once, over the music (AudioEngine.jingle). */
+export const JINGLES: Record<string, Tune> = {
+${jingles.join('\n')}
 };
 `);
 console.log(`src/audio/tunes.ts: ${(total / 1024 / 1024).toFixed(2)} MB of base64`);

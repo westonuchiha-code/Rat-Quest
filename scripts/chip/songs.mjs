@@ -238,6 +238,208 @@ SONGS.push({
   },
 });
 
+/**
+ * THE VIBE (the owner, 2026-11-17, after the first sets; these are his words and they are the brief):
+ * "the vibe of this game I want it to be hip-hop oriented I want it to be boom bap rap kind of beat oriented, I want
+ * to try to see if we can do some like record scratching sounds here and there ... a loose sort of chillaxed hanging
+ * out with your friends beatboxing kind of vibe not necessarily a like super overly serious vibe ... you're making a
+ * lot of stuff that sounds good but it sounds like grand fantasy like something that you would get from like a Legend
+ * of Zelda or ... a Final Fantasy ... I'm more like down to earth gritty crunchy kind of stuff ... Conker's Bad Fur Day
+ * or ... a Sega Genesis platformer ... like a Vectorman ... really grindy and crunchy, maybe something like ToeJam and
+ * Earl kind of with that sort of hip hop flavor."
+ * And of the places: "our main space is in a drippy dark wet sewer tunnel ... it's grungy and drippy and wet and dank
+ * and cold, then when you're in the Foundry it's hot and it's loud and it's clanky and it's industrial, when you're
+ * underground with the mushrooms it's got to breathe it feels like a cave maybe you hear some echoes and some drips
+ * ... bats squeaking or rocks tumbling ... maybe those mushrooms make a little bit of a sound to each other ... glow
+ * bugs flapping their wings ... the glitched out wacky Pomo environment should take a lot of inspiration from like
+ * early 90s kids cartoons and toys ... a Nickelodeon type of vibe and then when it starts glitching out ... Tron ...
+ * Terminator ... rogue AI digital synthesized voices ... modem sounds ... and then you can top all that off with boom
+ * bap you know kick kick beat kind of background hip-hop funkiness to all of it".
+ *
+ * SO, FOR EVERY TUNE FROM HERE: a boom bap beat, swung, on a gritty kit, crunched; a Genesis slap bass with a RIFF (a
+ * bar or two that comes round), not a bass that follows chords about; ONE chord for most of it; short licks and
+ * stabs, not a long tune; scratches at the ends of phrases; and the PLACE'S OWN SOUNDS, sampled out of the game and
+ * put on the beat (`layers`): drips, clanks, squeaks, chains.
+ */
+const rep = (bars, times) => Array.from({ length: times }, () => bars).flat();
+const BOOM = { kick: 'x......x..x.....', snare: '....x.......x...', chh: 'x.xox.xox.xox.xo' };
+const BOOM_FILL = { kick: 'x......x........', snare: '....x.......x.xx', chh: 'x.xox.xo........' };
+SONGS.push(
+  {
+    id: 'sewer', name: 'Drip Tape', where: 'The Cistern: cold, wet, dripping', bpm: 84,
+    chords: ['Em7', 'Em7', 'Em7', 'Cmaj7', 'Em7', 'Em7', 'Am7', 'B7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: [
+        'E2:3 -:1 E2:2 G2:2 -:2 A2:2 B2:2 -:2', 'E2:3 -:1 E2:2 D2:2 -:4 B1:2 D2:2', 'E2:3 -:1 E2:2 G2:2 -:2 A2:2 B2:2 -:2', 'C2:3 -:1 C2:2 E2:2 -:2 G2:2 E2:2 -:2',
+        'E2:3 -:1 E2:2 G2:2 -:2 A2:2 B2:2 -:2', 'E2:3 -:1 E2:2 D2:2 -:4 B1:2 D2:2', 'A1:3 -:1 A1:2 C2:2 -:2 E2:2 C2:2 -:2', 'B1:3 -:1 B1:2 D#2:2 -:4 F#2:2 B1:2',
+      ] },
+      { type: 'stab', con: 'gen', v: 'epiano', vol: 0.42, oct: 4, rhythm: '..x.......x.....', len: 3 },
+      { type: 'line', con: 'snes', v: 'piano', vol: 0.5, gate: 1, bars: ['B4:2 -:6 G4:2 -:6', '-:16', 'A4:2 -:6 E4:2 -:6', '-:8 G4:2 E4:2 -:4', 'B4:2 -:6 G4:2 -:6', '-:16', 'C5:2 -:6 A4:2 -:6', '-:8 F#4:2 D#4:2 -:4'] },
+    ],
+    drums: { con: 'oki', swing: 0.5, order: 'AAABAAAB', pats: {
+      A: { kick: 'x......x..x.....', snare: '....x.......x...', chh: 'o.x.o.x.o.x.o.x.' },
+      B: { kick: 'x......x........', snare: '....x.......x...', chh: 'o.x.o.x.........' },
+    } },
+    layers: [{ src: 'src/drip', bars: ['......x.........', '..............x.', '...x............', '..........x.....'], vol: 0.5, tunes: [1, 0.8, 1.25, 0.9], echo: 3 }],
+    scratches: { vol: 0.5, bars: ['................', '................', '................', '............b.b.', '................', '................', '................', '............r...'] },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.5,
+  },
+  {
+    id: 'forge', name: 'Clank', where: 'The Foundry: hot, loud, clanking', bpm: 96,
+    chords: ['Am7', 'Am7', 'Am7', 'Am7', 'Dm7', 'Dm7', 'Am7', 'E7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.66, gate: 0.8, bars: [
+        'A1:2 -:1 A2:1 -:2 A1:2 C2:2 D2:2 -:2 E2:2', 'A1:2 -:1 A2:1 -:2 G1:2 A1:2 -:2 E2:2 G2:2', 'A1:2 -:1 A2:1 -:2 A1:2 C2:2 D2:2 -:2 E2:2', 'A1:2 -:1 A2:1 -:2 G1:2 A1:2 -:2 E2:2 G2:2',
+        'D2:2 -:1 D3:1 -:2 D2:2 F2:2 G2:2 -:2 A2:2', 'D2:2 -:1 D3:1 -:2 C2:2 D2:2 -:2 A1:2 C2:2', 'A1:2 -:1 A2:1 -:2 A1:2 C2:2 D2:2 -:2 E2:2', 'E2:2 -:1 E3:1 -:2 E2:2 G#2:2 B2:2 -:2 E2:2',
+      ] },
+      { type: 'stab', con: 'gen', v: 'brass', vol: 0.5, oct: 4, rhythm: 'x.......x..x....', len: 2 },
+      { type: 'line', con: 'gen', v: 'lead', vol: 0.55, gate: 0.85, bars: ['-:16', '-:8 E5:2 G5:2 A5:2 -:2', '-:16', '-:8 A5:2 G5:2 E5:2 -:2', '-:16', '-:8 D5:2 F5:2 A5:2 -:2', '-:16', '-:8 G#5:2 B5:2 E5:2 -:2'] },
+    ],
+    drums: { con: 'gen', swing: 0.45, order: 'AAABAAAB', pats: {
+      A: { kick: 'x..x......x..x..', snare: '....x.......x...', clap: '....x.......x...', chh: 'x.x.x.x.x.x.x.x.', bell: '..x...x...x...x.' },
+      B: { kick: 'x..x......x.....', snare: '....x.......x.xx', clap: '....x.......x...', chh: 'x.x.x.x.x.x.....', bell: '..x...x...x.....' },
+    } },
+    layers: [
+      { src: 'src/clank', bars: '....x.......x...', vol: 0.3, tune: 1.3 },
+      { src: 'src/hiss', bars: ['..........x.....', '................'], vol: 0.25 },
+    ],
+    scratches: { vol: 0.5, bars: ['................', '................', '................', '............c.c.', '................', '................', '................', '............b.b.'] },
+    crunch: { bits: 7, hold: 3 },
+  },
+  {
+    id: 'cave', name: 'Spore Breath', where: 'The Hollows: a cave that breathes', bpm: 78,
+    chords: ['Dm7', 'Dm7', 'Dm7', 'Gm7', 'Dm7', 'Dm7', 'Bbmaj7', 'A7'],
+    parts: [
+      { type: 'line', con: 'n64', v: 'bass', vol: 0.5, gate: 0.9, bars: [
+        'D2:4 -:4 F2:2 G2:2 -:4', 'D2:4 -:4 C2:2 A1:2 -:4', 'D2:4 -:4 F2:2 G2:2 -:4', 'G1:4 -:4 Bb1:2 D2:2 -:4',
+        'D2:4 -:4 F2:2 G2:2 -:4', 'D2:4 -:4 C2:2 A1:2 -:4', 'Bb1:4 -:4 D2:2 F2:2 -:4', 'A1:4 -:4 C#2:2 E2:2 -:4',
+      ] },
+      // (The mushrooms, to each other: one says "ooh", another answers it, higher.)
+      { type: 'line', con: 'vtx', v: 'ooh', vol: 0.45, gate: 0.9, bars: rep(['-:4 D4:2 -:10', '-:16', '-:4 F4:2 -:10', '-:16'], 2) },
+      { type: 'line', con: 'snm', v: 'ooh', vol: 0.4, gate: 0.9, bars: ['-:10 A4:2 -:4', '-:16', '-:10 C5:2 -:4', '-:16', '-:10 A4:2 -:4', '-:16', '-:10 D5:2 -:4', '-:16'] },
+      { type: 'arp', con: 'n64', v: 'marimba', vol: 0.38, oct: 5, pat: '0.....2.....1...' },
+    ],
+    drums: { con: 'snes', swing: 0.4, order: 'AAABAAAB', pats: {
+      A: { kick: 'x.........x.....', rim: '....x.......x...', chh: 'o...o...o...o...' },
+      B: { kick: 'x.........x.....', rim: '....x.......x.x.', chh: 'o...o...o.......' },
+    } },
+    layers: [
+      { src: 'src/drip', bars: ['..x.............', '.........x......', '....x...........', '..............x.'], vol: 0.45, tunes: [1, 1.3, 0.7, 1.1], echo: 3 },
+      { src: 'src/batSqueak', bars: ['................', '................', '.............x..', '................', '................', '................', '................', '.........x.x....'], vol: 0.28, tunes: [1, 1.2, 0.9], echo: 2 },
+      { src: 'src/pebbles', bars: ['................', '................', '................', '................', '................', '................', '................', 'x...............'], vol: 0.3 },
+      { src: 'src/flap', bars: ['................', '......xx........', '................', '................'], vol: 0.25 },
+    ],
+    scratches: { vol: 0.4, bars: ['................', '................', '................', '............b...'] },
+    crackle: 0.3,
+  },
+  {
+    id: 'stone', name: 'Cold Stone', where: "Grimsqueak's Keep", bpm: 88,
+    chords: ['Cm7', 'Cm7', 'Cm7', 'Ab', 'Cm7', 'Cm7', 'Fm7', 'G7'],
+    parts: [
+      { type: 'line', con: 'ps1', v: 'piano', vol: 0.8, gate: 1, bars: [
+        'C4:2 Eb4:2 G4:2 -:2 Ab4:2 G4:2 Eb4:2 -:2', 'C4:2 Eb4:2 G4:2 -:2 Bb4:2 Ab4:2 G4:2 -:2', 'C4:2 Eb4:2 G4:2 -:2 Ab4:2 G4:2 Eb4:2 -:2', 'C4:2 Eb4:2 Ab4:2 -:2 C5:2 Ab4:2 Eb4:2 -:2',
+        'C4:2 Eb4:2 G4:2 -:2 Ab4:2 G4:2 Eb4:2 -:2', 'C4:2 Eb4:2 G4:2 -:2 Bb4:2 Ab4:2 G4:2 -:2', 'C4:2 F4:2 Ab4:2 -:2 C5:2 Ab4:2 F4:2 -:2', 'B3:2 D4:2 G4:2 -:2 F4:2 D4:2 B3:2 -:2',
+      ] },
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: [
+        'C2:3 -:3 C2:2 -:2 Eb2:2 -:2 G1:2', 'C2:3 -:3 C2:2 -:2 Eb2:2 -:2 G1:2', 'C2:3 -:3 C2:2 -:2 Eb2:2 -:2 G1:2', 'Ab1:3 -:3 Ab1:2 -:2 C2:2 -:2 Eb2:2',
+        'C2:3 -:3 C2:2 -:2 Eb2:2 -:2 G1:2', 'C2:3 -:3 C2:2 -:2 Eb2:2 -:2 G1:2', 'F1:3 -:3 F1:2 -:2 Ab1:2 -:2 C2:2', 'G1:3 -:3 G1:2 -:2 B1:2 -:2 D2:2',
+      ] },
+      { type: 'stab', con: 'ps1', v: 'strings', vol: 0.32, oct: 3, rhythm: 'x...............', len: 6 },
+    ],
+    drums: { con: 'ps1', swing: 0.5, order: 'AAABAAAB', pats: { A: BOOM, B: BOOM_FILL } },
+    layers: [
+      { src: 'src/chainClink', bars: ['..........x.....', '................'], vol: 0.28, tune: 1.1 },
+      { src: 'src/toll', bars: ['x...............', '................', '................', '................'], vol: 0.2, tune: 1.5 },
+    ],
+    scratches: { vol: 0.5, bars: ['................', '................', '................', '............b.b.', '................', '................', '................', '..........c.b.b.'] },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.4,
+  },
+  {
+    id: 'teeth', name: 'Big Teeth', where: 'A boss', bpm: 100,
+    chords: ['Em7', 'Em7', 'Em7', 'Em7', 'G7', 'G7', 'Em7', 'B7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.66, gate: 0.8, bars: [
+        'E1:2 E2:1 E1:1 -:2 E1:2 G1:2 A1:2 Bb1:2 A1:2', 'E1:2 E2:1 E1:1 -:2 E1:2 D2:2 B1:2 G1:2 -:2', 'E1:2 E2:1 E1:1 -:2 E1:2 G1:2 A1:2 Bb1:2 A1:2', 'E1:2 E2:1 E1:1 -:2 E1:2 D2:2 B1:2 G1:2 -:2',
+        'G1:2 G2:1 G1:1 -:2 G1:2 Bb1:2 C2:2 Db2:2 C2:2', 'G1:2 G2:1 G1:1 -:2 G1:2 F2:2 D2:2 Bb1:2 -:2', 'E1:2 E2:1 E1:1 -:2 E1:2 G1:2 A1:2 Bb1:2 A1:2', 'B1:2 B2:1 B1:1 -:2 B1:2 D#2:2 F#2:2 A2:2 F#2:2',
+      ] },
+      { type: 'stab', con: 'gen', v: 'brass', vol: 0.55, oct: 4, rhythm: 'x..x..x.........', len: 2 },
+      { type: 'line', con: 'gen', v: 'lead', vol: 0.55, gate: 0.8, bars: ['-:16', 'E5:1 -:1 E5:1 -:1 G5:2 E5:2 -:8', '-:16', 'E5:1 -:1 E5:1 -:1 G5:2 E5:2 -:8', '-:16', 'G5:1 -:1 G5:1 -:1 Bb5:2 G5:2 -:8', '-:16', 'F#5:1 -:1 F#5:1 -:1 A5:2 F#5:2 -:8'] },
+      { type: 'hit', con: 'ps1', v: 'hit', vol: 0.5, oct: 4, bars: [0, 4] },
+    ],
+    drums: { con: 'x68', swing: 0.3, order: 'ZAABZAAB', pats: {
+      Z: { kick: 'x..x..x...x..x..', snare: '....x.......x...', chh: 'x.x.x.x.x.x.x.x.', crash: 'x...............' },
+      A: { kick: 'x..x..x...x..x..', snare: '....x.......x...', chh: 'x.x.x.x.x.x.x.x.' },
+      B: { kick: 'x..x..x...x.....', snare: '....x.......xxxx', chh: 'x.x.x.x.x.x.....' },
+    } },
+    layers: [
+      { src: 'src/wyrmRoar', bars: ['................', '................', '................', '................', '................', '................', '................', '........x.......'], vol: 0.3, tune: 1.2 },
+      { src: 'src/roachScreech', bars: ['................', '................', '................', '..............x.'], vol: 0.22 },
+    ],
+    scratches: { vol: 0.55, bars: ['............b.b.', '................', '............c.c.', '........r.......'] },
+    crunch: { bits: 7, hold: 3 },
+  },
+  {
+    id: 'cartoon', name: 'Saturday Morning', where: 'The Milky Way: a kids\' cartoon, a toy box', bpm: 104,
+    chords: ['C7', 'C7', 'F7', 'C7', 'C7', 'C7', 'F7', 'G7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: [
+        'C2:2 -:1 C3:1 -:2 C2:2 Eb2:1 E2:1 G2:2 A2:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Eb2:1 E2:1 G2:2 A2:2 -:2', 'F2:2 -:1 F3:1 -:2 F2:2 Ab2:1 A2:1 C3:2 D3:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Eb2:1 E2:1 G2:2 A2:2 -:2',
+        'C2:2 -:1 C3:1 -:2 C2:2 Eb2:1 E2:1 G2:2 A2:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Eb2:1 E2:1 G2:2 A2:2 -:2', 'F2:2 -:1 F3:1 -:2 F2:2 Ab2:1 A2:1 C3:2 D3:2 -:2', 'G2:2 -:1 G3:1 -:2 G2:2 Bb2:1 B2:1 D3:2 F3:2 -:2',
+      ] },
+      { type: 'line', con: 'gbc', v: 'echo', vol: 0.8, gate: 0.85, bars: [
+        'E5:2 G5:2 A5:2 G5:2 E5:2 C5:2 D5:2 -:2', 'E5:2 G5:2 A5:2 C6:2 A5:4 -:4', 'A5:2 C6:2 D6:2 C6:2 A5:2 F5:2 G5:2 -:2', 'E5:2 G5:2 A5:2 C6:2 A5:4 -:4',
+        'E5:2 G5:2 A5:2 G5:2 E5:2 C5:2 D5:2 -:2', 'E5:2 G5:2 A5:2 C6:2 A5:4 -:4', 'A5:2 C6:2 D6:2 C6:2 A5:2 F5:2 G5:2 -:2', 'B5:2 D6:2 E6:2 D6:2 B5:4 -:4',
+      ] },
+      { type: 'stab', con: 'gen', v: 'epiano', vol: 0.4, oct: 4, rhythm: '..x..x....x..x..', len: 2 },
+    ],
+    drums: { con: 'gen', swing: 0.55, order: 'AAABAAAB', pats: {
+      A: { kick: 'x......x..x.....', snare: '....x.......x...', clap: '....x.......x...', chh: 'x.xox.xox.xox.xo', blip: '......x.........' },
+      B: { kick: 'x......x........', snare: '....x.......x.xx', chh: 'x.xox.xo........', zap: '..........x.....' },
+    } },
+    // (TALKING TOYS, said by the Robot Voice Box's speech chips, on the beat: a Speak & Spell and a Speak & Math.)
+    layers: [
+      { src: 'sfx/sparkle', bars: ['................', '............x...'], vol: 0.3 },
+      { say: { chip: 'sns', text: 'yeah', opts: { pitch: 190, tone: 'lively' } }, bars: ['............x...', '................', '................', '................'], vol: 0.5 },
+      { say: { chip: 'snm', text: 'wow', opts: { pitch: 150, tone: 'lively' } }, bars: ['................', '................', '............x...', '................'], vol: 0.5 },
+      { say: { chip: 'sns', text: "let's play", opts: { pitch: 170, tone: 'lively', speed: 1.15 } }, bars: ['................', '................', '................', '................', '................', '........x.......', '................', '................'], vol: 0.5 },
+    ],
+    scratches: { say: { chip: 'sns', text: 'fresh', opts: { pitch: 170 } }, vol: 0.5, pitch: 1.3, bars: ['................', '............b.b.', '................', '..........c.c.r.'] },
+  },
+  {
+    id: 'sheep', name: 'Counting Sheep', where: 'The dreamers, asleep', bpm: 72,
+    chords: ['Fmaj7', 'Dm7', 'Bbmaj7', 'C7', 'Fmaj7', 'Dm7', 'Bbmaj7', 'C7'],
+    parts: [
+      { type: 'stab', con: 'x68', v: 'epiano', vol: 0.55, oct: 4, rhythm: 'x.......x.......', len: 7 },
+      { type: 'line', con: 'gbc', v: 'bell', vol: 0.55, gate: 1, bars: ['A5:4 C6:4 A5:4 F5:4', 'A5:4 F5:4 D5:8', 'D6:4 Bb5:4 F5:4 D5:4', 'E5:4 G5:4 C6:8', 'A5:4 C6:4 A5:4 F5:4', 'A5:4 F5:4 D5:8', 'D6:4 Bb5:4 F5:4 D5:4', 'E5:4 G5:4 Bb5:4 C6:4'] },
+      { type: 'bass', con: 'n64', v: 'bass', vol: 0.9, oct: 2, pat: 'r.........r.....' },
+      // (A snore, every other bar: a low "ohh".)
+      { type: 'line', con: 'vtx', v: 'ohh', vol: 0.32, gate: 1, bars: rep(['-:16', 'A2:6 -:10', '-:16', 'G2:6 -:10'], 2) },
+    ],
+    drums: { con: 'oki', swing: 0.6, order: 'AAABAAAB', pats: {
+      A: { kick: 'x.........x.....', snare: '....x.......x...', chh: 'o.o.o.o.o.o.o.o.' },
+      B: { kick: 'x.........x..x..', snare: '....x.......x...', chh: 'o.o.o.o.o.o.....' },
+    } },
+    scratches: { vol: 0.32, pitch: 1.2, bars: ['................', '................', '................', '................', '................', '................', '................', '............r...'] },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.6,
+  },
+  {
+    id: 'late', name: 'After Hours', where: 'The Club, late: one at a table by himself', bpm: 76,
+    chords: ['Am7', 'Am7', 'Dm7', 'E7', 'Am7', 'Am7', 'Dm7', 'E7'],
+    parts: [
+      { type: 'stab', con: 'x68', v: 'epiano', vol: 0.55, oct: 4, rhythm: 'x.......x.......', len: 7 },
+      { type: 'line', con: 'n64', v: 'trumpet', vol: 0.6, gate: 0.95, bars: ['-:8 E5:4 D5:2 C5:2', 'A4:8 -:8', '-:8 F5:4 E5:2 D5:2', 'B4:8 -:8', '-:8 E5:4 D5:2 C5:2', 'A4:8 -:8', '-:8 A5:4 F5:2 D5:2', 'G#4:8 -:8'] },
+      { type: 'bass', con: 'n64', v: 'bass', vol: 0.9, oct: 2, pat: 'r.......r...f...' },
+    ],
+    drums: { con: 'oki', swing: 0.55, order: 'AAABAAAB', pats: {
+      A: { kick: 'x.........x.....', rim: '....x.......x...', chh: 'o.o.o.o.o.o.o.o.' },
+      B: { kick: 'x.........x.....', rim: '....x.......x...', chh: 'o.o.o.o.o.......', ohh: '..............x.' },
+    } },
+    // (Dave, half asleep at his decks: a tick now and then.)
+    dave: { vol: 0.45, bars: rep(['..............h.', '.......h........', '..............h.', '..........k.s...'], 2) },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.6,
+  },
+);
+
 /** A line an octave (or more) up or down. */
 const octave = (bars, by) => bars.map((bar) => bar.replace(/([A-G][#b]?)(\d)/g, (_, n, o) => n + (Number(o) + by)));
 
@@ -277,7 +479,7 @@ SONGS.push({
     { from: 0, to: 8, type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: 'r.......r...f...' },
     // ---- 2: the Genesis ----
     { from: 8, to: 16, type: 'line', con: 'gen', v: 'brass', vol: 0.95, gate: 0.85, bars: RIFF },
-    { from: 8, to: 16, type: 'bass', con: 'gen', v: 'fmbass', vol: 1, oct: 2, pat: 'r..R.r..r.R..rf.' },
+    { from: 8, to: 16, type: 'bass', con: 'gen', v: 'fmbass', vol: 0.6, oct: 2, pat: 'r..R.r..r.R..rf.' },
     { from: 8, to: 16, type: 'stab', con: 'gen', v: 'epiano', vol: 0.5, oct: 4, rhythm: '..x...x...x..x..', len: 2 },
     // ---- 3: the C64 ----
     { from: 16, to: 24, type: 'line', con: 'c64', v: 'sync', vol: 1, gate: 0.85, bars: THEME },
@@ -288,7 +490,7 @@ SONGS.push({
     { from: 24, to: 32, type: 'line', con: 'gen', v: 'brass', vol: 0.75, gate: 0.9, bars: THEME },
     { from: 24, to: 32, type: 'line', con: 'c64', v: 'sync', vol: 0.35, gate: 0.85, bars: octave(RIFF, -1) },
     { from: 24, to: 32, type: 'pad', con: 'ps1', v: 'strings', vol: 0.4, oct: 4 },
-    { from: 24, to: 32, type: 'bass', con: 'gen', v: 'fmbass', vol: 1, oct: 2, pat: 'r..R.r..r.R..rf.' },
+    { from: 24, to: 32, type: 'bass', con: 'gen', v: 'fmbass', vol: 0.6, oct: 2, pat: 'r..R.r..r.R..rf.' },
     { from: 24, to: 32, type: 'stab', con: 'gen', v: 'epiano', vol: 0.45, oct: 4, rhythm: '..x...x...x..x..', len: 2 },
     { from: 24, to: 32, type: 'chip', con: 'c64', v: 'arp', vol: 0.28, oct: 5 },
   ],
@@ -334,6 +536,40 @@ SONGS.push({
 });
 
 /**
+ * THE DREAM GLITCHING OUT, as a boom bap (the owner, 2026-11-17: "when it starts glitching out ... a little bit more
+ * like Tron ... Terminator ... rogue AI digital synthesized voices ... screaming like modem sounds ... and then you can
+ * top all that off with boom bap"). NOT the boss's tune (he keeps "Star Slide (Broken)" for that): this is the place
+ * itself going wrong. The toys of "Saturday Morning" are still talking, but lower, flat, and crushed; a modem calls
+ * out at the end of each four bars; and the round is broken after it is made, as the boss's is.
+ * The voices are said by his third tool, the Robot Voice Box (the TI-99's speech chip, the Votrax, the Speak & Spell).
+ */
+SONGS.push({
+  id: 'rogue', name: 'Does Not Compute', where: 'The Milky Way, glitching out', bpm: 92, glitch: 4,
+  chords: ['Cm7', 'Cm7', 'Cm7', 'Cm7', 'Cm7', 'Cm7', 'Ab7', 'G7'],
+  parts: [
+    { type: 'line', con: 'c64', v: 'fbass', vol: 0.8, gate: 0.8, bars: [
+      'C2:2 -:1 C3:1 -:2 C2:2 Eb2:2 F2:1 F#2:1 G2:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Bb1:2 G1:2 Bb1:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Eb2:2 F2:1 F#2:1 G2:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Bb1:2 G1:2 Bb1:2 -:2',
+      'C2:2 -:1 C3:1 -:2 C2:2 Eb2:2 F2:1 F#2:1 G2:2 -:2', 'C2:2 -:1 C3:1 -:2 C2:2 Bb1:2 G1:2 Bb1:2 -:2', 'Ab1:2 -:1 Ab2:1 -:2 Ab1:2 C2:2 Eb2:2 Gb2:2 -:2', 'G1:2 -:1 G2:1 -:2 G1:2 B1:2 D2:2 F2:2 -:2',
+    ] },
+    // (The toy's tune from "Saturday Morning", what is left of it: in the minor, on the Atari's buzz.)
+    { type: 'line', con: 'vcs', v: 'lead', vol: 0.6, gate: 0.8, bars: ['Eb5:2 G5:2 Bb5:2 G5:2 Eb5:2 C5:2 D5:2 -:2', '-:16', 'Eb5:2 G5:2 Bb5:2 C6:2 Bb5:4 -:4', '-:16', 'Eb5:2 G5:2 Bb5:2 G5:2 Eb5:2 C5:2 D5:2 -:2', '-:16', 'Eb5:2 Gb5:2 Ab5:2 C6:2 Ab5:4 -:4', 'D5:2 F5:2 G5:2 B5:2 D6:4 -:4'] },
+    { type: 'stab', con: 'c64', v: 'pad', vol: 0.3, oct: 4, rhythm: '..x.......x.....', len: 3 },
+  ],
+  drums: { con: 'gen', swing: 0.5, order: 'AAABAAAB', pats: {
+    A: { kick: 'x......x..x.....', snare: '....x.......x...', chh: 'x.xox.xox.xox.xo', zap: '..............o.' },
+    B: { kick: 'x......x........', snare: '....x.......x.xx', chh: 'x.xox.xo........' },
+  } },
+  layers: [
+    { say: { chip: 'ti', text: 'error', opts: { pitch: 70, tone: 'flat' } }, bars: ['........x.......', '................'], vol: 0.55, crush: { bits: 6, hold: 4 } },
+    { say: { chip: 'vtx', text: 'I can see you', opts: { clock: 0.7 } }, bars: ['................', '................', '................', '................', '................', 'x...............', '................', '................'], vol: 0.5, crush: { bits: 6, hold: 3 } },
+    { say: { chip: 'sns', text: 'play with me', opts: { pitch: 60, tone: 'flat', speed: 0.8 } }, bars: ['................', 'x...............', '................', '................', '................', '................', '................', '................'], vol: 0.5, crush: { bits: 5, hold: 5 } },
+    { src: 'gen/modem', bars: ['................', '................', '................', '........x.......'], vol: 0.3, crush: { bits: 6, hold: 3 } },
+  ],
+  scratches: { say: { chip: 'ti', text: 'no', opts: { pitch: 80, tone: 'flat' } }, vol: 0.5, pitch: 1, bars: ['................', '............b.b.', '................', '................', '................', '............c.c.', '................', '..........b.b.r.'] },
+  crunch: { bits: 6, hold: 4 },
+});
+
+/**
  * Two short pieces that are played once (no drums, no loop).
  * (The first two were NES pulses, and he said of them: "the jingles were just a little off like the death one sounded
  * happy ... it'll have to be something a little more solemn". So: the wedge is a fanfare for brass and strings that
@@ -341,12 +577,14 @@ SONGS.push({
  * its own keynote and staying there.)
  */
 export const JINGLES = [
-  { id: 'wedge', name: 'A Golden Wedge', bpm: 132, chords: ['G', 'C', 'G'], parts: [
-    { type: 'line', con: 'ps1', v: 'brass', vol: 1, gate: 0.9, bars: ['D5:2 G5:2 B5:2 D6:6 B5:2 D6:2', 'E6:4 C6:4 E6:4 G6:4', 'G6:12 -:4'] },
-    { type: 'pad', con: 'ps1', v: 'strings', vol: 0.5, oct: 4 },
-    { type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: ['r...r...r...r...', 'r...r...r...r...', 'r---------------'] },
-    { type: 'hit', con: 'ps1', v: 'hit', vol: 0.7, oct: 4, bars: [2] },
-  ] },
+  // (The owner, 2026-11-17, of a brass fanfare of three bars: "The jingle wedge sound I think is just too long." And it was
+  // a fantasy fanfare, which is not this game: now ONE bar, a horn riff over a beat with a scratch in its tail.)
+  { id: 'wedge', name: 'A Golden Wedge', bpm: 100, chords: ['G7'], tail: 0.7, parts: [
+    { type: 'line', con: 'gen', v: 'brass', vol: 1, gate: 0.85, bars: ['G4:1 B4:1 D5:2 E5:1 G5:3 -:2 E5:1 G5:1 B5:4'] },
+    { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: ['G2:3 -:1 G2:2 D2:2 -:2 F2:1 F#2:1 G2:4'] },
+    { type: 'stab', con: 'gen', v: 'epiano', vol: 0.45, oct: 4, rhythm: 'x...........x...', len: 3 },
+  ], drums: { con: 'gen', swing: 0.4, order: 'A', pats: { A: { kick: 'x..x......x.x...', snare: '....x.....x.....', clap: '....x.......x...', chh: 'x.x.x.x.x.......', crash: '............x...' } } },
+    scratches: { say: { chip: 'sns', text: 'fresh', opts: { pitch: 150 } }, pitch: 1.2, vol: 0.45, bars: ['..........b.....'] } },
   { id: 'defeat', name: 'Down He Goes', bpm: 66, chords: ['Am', 'E', 'Am'], parts: [
     { type: 'line', con: 'ps1', v: 'piano', vol: 1, gate: 1, bars: ['E5:6 D5:2 C5:8', 'B4:8 G#4:8', 'A4:16'] },
     { type: 'pad', con: 'ps1', v: 'strings', vol: 0.5, oct: 3 },

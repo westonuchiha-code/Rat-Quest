@@ -5,7 +5,7 @@
  */
 import { INSTRUMENT_BASE_HZ, InstrumentName, Sample, SfxName, instrument, midiHz, sfx } from './synth';
 import { CALM, Mood, PLAYLISTS, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
-import { TUNES } from './tunes';
+import { TUNES, JINGLES } from './tunes';
 import { VoicePool } from './voices';
 
 const KEY = 'ratquest.audio.v1';
@@ -128,7 +128,7 @@ export class AudioEngine {
     }
   }
   private applyMusicVolume(): void {
-    if (this.musicBus && this.ctx) this.musicBus.gain.setTargetAtTime(this.musicVol * 0.7 * this.duckLevel, this.ctx.currentTime, 0.15);
+    if (this.musicBus && this.ctx) this.musicBus.gain.setTargetAtTime(this.musicVol * 0.7 * this.duckLevel * this.jingleUnder, this.ctx.currentTime, 0.15);
   }
 
   /** Turns the music down while a menu or a conversation is open (1 = full). */
@@ -374,6 +374,71 @@ export class AudioEngine {
     const bus = m.bus;
     window.setTimeout(() => bus.disconnect(), 2500);
     this.music = null;
+  }
+
+  // ---- Jingles: a short recorded piece played ONCE (a wedge won, a defeat), the music turned down under it ----
+  private jingleRun: { id: string; src: AudioBufferSourceNode | null; gain: GainNode; timer: number } | null = null;
+  private jingleUnder = 1;
+  private readonly jingleBuffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
+
+  /** Which jingle is playing, if one is. */
+  get jingleOn(): string | null {
+    return this.jingleRun?.id ?? null;
+  }
+
+  /**
+   * Plays a jingle (tunes.ts JINGLES) once, at the music's volume, and turns the music down to `under` of itself until
+   * it is over. Another jingle already playing is cut off. Nothing happens if the sound is off or not yet started.
+   */
+  jingle(id: string, o: { vol?: number; under?: number } = {}): void {
+    const ctx = this.ctx;
+    const t = JINGLES[id];
+    if (this.disabled || !ctx || ctx.state !== 'running' || !t || this.jingleBuffers.get(id) === 'failed') return;
+    this.stopJingle(0.05);
+    const gain = ctx.createGain();
+    gain.gain.value = (o.vol ?? 1) * this.musicVol * 0.9;
+    gain.connect(this.master);
+    const run = { id, src: null as AudioBufferSourceNode | null, gain, timer: 0 };
+    this.jingleRun = run;
+    this.jingleUnder = o.under ?? 0.25;
+    this.applyMusicVolume();
+    const begin = (buf: AudioBuffer): void => {
+      if (this.jingleRun !== run) return;
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(gain);
+      src.start();
+      run.src = src;
+      run.timer = window.setTimeout(() => { if (this.jingleRun === run) this.stopJingle(0.4); }, buf.duration * 1000);
+    };
+    const have = this.jingleBuffers.get(id);
+    if (have && typeof have !== 'string') return begin(have);
+    if (have) return;
+    this.jingleBuffers.set(id, 'loading');
+    try {
+      const bin = atob(t.b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      void ctx.decodeAudioData(bytes.buffer, (buf) => { this.jingleBuffers.set(id, buf); begin(buf); }, () => { this.jingleBuffers.set(id, 'failed'); if (this.jingleRun === run) this.stopJingle(0); });
+    } catch {
+      this.jingleBuffers.set(id, 'failed');
+      this.stopJingle(0);
+    }
+  }
+
+  /** Stops the jingle (fading over `fade` seconds) and lets the music back up. */
+  stopJingle(fade = 0.3): void {
+    const run = this.jingleRun;
+    if (!run) return;
+    this.jingleRun = null;
+    window.clearTimeout(run.timer);
+    this.jingleUnder = 1;
+    this.applyMusicVolume();
+    const ctx = this.ctx;
+    if (!ctx) return;
+    run.gain.gain.setTargetAtTime(0, ctx.currentTime, Math.max(0.01, fade / 3));
+    const src = run.src;
+    window.setTimeout(() => { try { src?.stop(); } catch { /* it had ended */ } run.gain.disconnect(); }, fade * 1000 + 80);
   }
 
   /** The recorded tunes, decoded: each once, the first time it is wanted. */

@@ -3,7 +3,7 @@
 // is an MP3 of a sensible length with room either side of its round, that the places he chose them for play them,
 // and that the game has not grown by more than was meant.
 import { PLAYLISTS, TRACK_NAMES, trackNamed, type TrackName } from '../src/audio/music';
-import { TUNES } from '../src/audio/tunes';
+import { TUNES, JINGLES } from '../src/audio/tunes';
 import { ALL_LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 
 let failures = 0;
@@ -24,7 +24,14 @@ for (const [id, t] of Object.entries(TUNES)) {
   const seconds = (b.length * 8) / 80000;
   check(`"${t.name}" (${id}): an MP3; a round of ${t.length.toFixed(1)}s (eight bars at ${t.bpm} to the minute); and the sound is longer than the round by its lead-in before and as much after`, mp3 && Math.abs(t.length - (8 * 4 * 60) / t.bpm) < 0.01 && t.lead >= 0.25 && seconds > t.length + t.lead * 2 - 0.15 && seconds < t.length + t.lead * 2 + 0.4, `${seconds.toFixed(2)}s of sound, ${(t.b64.length / 1024).toFixed(0)} KB`);
 }
-const size = Object.values(TUNES).reduce((s, t) => s + t.b64.length, 0);
+// ---- The jingles: played once each ----
+for (const [id, t] of Object.entries(JINGLES)) {
+  const b = bytesOf(t.b64);
+  check(`the jingle "${t.name}" (${id}) is an MP3 of about its own length (${t.length.toFixed(1)}s), with nothing put before it`, ((b[0] === 0xff && (b[1] & 0xe0) === 0xe0) || (b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33)) && t.lead === 0 && Math.abs((b.length * 8) / 64000 - t.length) < 0.3);
+}
+check('a wedge won is SHORT (the owner: "The jingle wedge sound I think is just too long", of one of eight seconds): under three and a half', !!JINGLES.wedge && JINGLES.wedge.length < 3.5, `${JINGLES.wedge?.length}`);
+check('a defeat has its slow piece', !!JINGLES.defeat && JINGLES.defeat.length > 8);
+const size = [...Object.values(TUNES), ...Object.values(JINGLES)].reduce((s, t) => s + t.b64.length, 0);
 check('all of them together add less than two and a quarter megabytes to the game', size < 2.25 * 1024 * 1024, `${(size / 1024 / 1024).toFixed(2)} MB`);
 
 // ---- What he chose for where ----

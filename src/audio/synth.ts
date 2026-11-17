@@ -168,6 +168,8 @@ export const SFX_NAMES = [
   // The ironback's snort (steam through its nose) and the clang of it going over; the bat's squeak and its wing beat.
   'snort', 'flipClang', 'batSqueak', 'flap',
   'boot', 'villainLaugh',
+  // A record pulled back under a hand and let go: he is put back where he stood, after a fall into the dark.
+  'rewind',
   // Story: a memory opening and closing, cloth, a small found thing, the pang of knowing it, a soft whoosh.
   'memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep',
   // The great insects. A hard foot on stone (both of them, and anything else with feet like that).
@@ -457,6 +459,8 @@ const RECIPES: Record<SfxName, () => Sample> = {
     return (a + b) * Math.min(1, (1.4 - t) / 0.3);
   }, { bits: 7, gain: 0.7 }),
   // A soft rush of air: a jump seen from far off.
+  // (What is heard is the recorded one, recordings/chip/rewind.wav: a real scratch. This is what stands in if it is taken out.)
+  rewind: () => draw(0.4, RATE_HI, 66, (c) => (t) => saw(c.osc(0, 300 + 1500 * Math.pow(1 - t / 0.4, 2))) * 0.4 * bell(t, 0.4) + (c.lp(0, c.r() * 2 - 1, 0.3) - c.lp(1, c.r() * 2 - 1, 0.05)) * 0.4 * bell(t, 0.4), { bits: 7, gain: 0.6 }),
   whoosh: () => draw(0.3, RATE_HI, 65, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.06 + 0.3 * Math.sin(Math.PI * (t / 0.3))) - c.lp(1, c.r() * 2 - 1, 0.03)) * bell(t, 0.3), { bits: 7, gain: 0.5 }),
   // A footstep for story scenes and memories: a soft pat on stone.
   softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.78 }),

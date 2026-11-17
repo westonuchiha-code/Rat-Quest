@@ -1877,6 +1877,8 @@ function startGame(): void {
     if (s === 'plunge' && was !== 'plunge') audio.play('ratAttack', { vol: 0.8, rate: 0.7, priority: 7 });
     if (player.splash) audio.play('splash', { vol: 0.8, rate: roll(0.9, 1.1), verb: 0.3, priority: 6 });
     if (player.hp < heard.hp) audio.play(player.hp <= 0 || player.dead ? 'ratDie' : 'ratHurt', { vol: 1, rate: roll(0.95, 1.05), priority: 9 });
+    // (Down he goes: the slow piano, over what is left of the music. It stops when he is up again.)
+    if (player.hp < heard.hp && (player.hp <= 0 || player.dead)) audio.jingle('defeat', { under: 0.12 });
     // Footsteps by distance covered, quieter when sneaking.
     if (player.grounded && (s === 'walk' || s === 'run')) {
       heard.stepDist += Math.hypot(player.position.x - player.prevPosition.x, player.position.z - player.prevPosition.z);
@@ -2067,6 +2069,8 @@ function startGame(): void {
       if (result === 'hit' || result === 'killed') events.playerResult = result;
       follow.snap();
       audio.play('plunge', { vol: 0.6, rate: 0.6, priority: 7 });
+      // (The record pulled back: he is where he was a moment ago.)
+      audio.play('rewind', { vol: 0.7, priority: 7 });
       return;
     }
     // A fire bowl's fire: it burns him like any fire (the owner, 2026-11-15: "it's fire so you shouldn't be able to just
@@ -3615,6 +3619,7 @@ function startGame(): void {
     dialog.update(rawDt);
     menu.update(rawDt);
     audio.duck(menu.open ? 0.35 : dialog.open ? 0.55 : 1);
+    if (!player.dead && audio.jingleOn === 'defeat') audio.stopJingle(0.5);
 
     // Hit-stop: when a blow lands, everything freezes for a few frames.
     let animDt = frameDt;
@@ -3838,7 +3843,8 @@ function startGame(): void {
           goals.earned.add(w.id);
           // Wedges taken while trying a level in the builder are not kept.
           if (cur.id !== 'custom') discoveries.add(`wedge:${cur.id}:${w.id}`);
-          audio.play('relic', { vol: 1, priority: 9 });
+          // (A wedge won: a bar of horns over a beat, with a scratch in its tail, and the sparkle over it.)
+          audio.jingle('wedge', { under: 0.3 });
           audio.play('sparkle', { vol: 0.9, priority: 8 });
           rumble.wedge();
           shake = Math.max(shake, 0.12);

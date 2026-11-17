@@ -426,6 +426,99 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE SOUND OF THIS GAME IS HIP-HOP (the owner, 2026-11-17). THIS IS THE BRIEF FOR ALL SOUND FROM HERE. Tests `tests/tunes.ts`
+
+**His words (keep them; they are the brief):** "So I like a lot of the sound effects on the sound effects reel I think that
+those could be used where appropriate. The defeat sound is okay I think we can use that for now. The jingle wedge
+sound I think is just too long. The glitch music sounds great for a boss battle so definitely keep that on the back
+burner for me for when we get around to the boss for the glitched out area wacky Pomo area. I don't dislike the
+kingdom music I think it's good it's just I'm not sure it fits the vibe of this game. I'm telling you the vibe of this
+game I want it to be **hip-hop oriented** I want it to be **boom bap rap kind of beat oriented**, I want to try to see if
+we can do some like **record scratching sounds here and there not just in the music but even for certain sound
+effects** I think would be really cool. You know we want things to have like a **loose sort of chillaxed hanging out
+with your friends beatboxing kind of vibe not necessarily a like super overly serious vibe**. ... Think about the kind
+of sound chips we're working with it's the future so we can use those sound chips in a lot of different ways ... **we
+can layer stuff we can sample stuff we can mix stuff around** ... we can sample sounds off the internet ... open source
+stuff ... then maybe we could run them through one of the sound chips to change the sound to fit the game more. I
+think you're making a lot of stuff that sounds good but **it sounds like grand fantasy** like something that you would
+get from like a Legend of Zelda or ... a Final Fantasy ... but **I'm more like down to earth gritty crunchy kind of
+stuff** like I'd much rather something that you might have gotten out of **Conker's Bad Fur Day** or ... a Sega Genesis
+platformer ... like a **Vectorman** ... really grindy and crunchy, maybe something like **ToeJam and Earl** kind of with
+that sort of hip hop flavor."
+**And of each place:** "our main space is in a **drippy dark wet sewer tunnel** ... a cistern ... pipes and cockroaches
+and toads and rats, it's grungy and drippy and wet and dank and cold, then when you're in **the Foundry it's hot and
+it's loud and it's clanky and it's industrial**, when you're **underground with the mushrooms it's got to breathe it
+feels like a cave maybe you hear some echoes and some drips** ... bats squeaking or rocks tumbling ... maybe those
+**mushrooms make a little bit of a sound to each other** ... glow bugs flapping their wings ... **the glitched out wacky
+Pomo environment should take a lot of inspiration from like early 90s kids cartoons and toys ... a Nickelodeon type of
+vibe and then when it starts glitching out ... Tron ... Terminator ... rogue AI digital synthesized voices ... screaming
+like modem sounds** ... top all that off with boom bap you know kick kick beat kind of background hip-hop funkiness to
+all of it and it could sound really f****** crunchy cool. ... what I'd like you to do is look at all those videos you
+made and I'd like you to try to make a **custom tailored song for each one of those videos**."
+**And then he sent a THIRD TOOL, the Robot Voice Box:** "Here's another fun tool we can use this is for approximating
+voices, and it does a bunch of cool old robot voices, I'm sure you could do even more with it by like combining it
+with the other tools. You're allowed to use this for additional sound effects and music if you want to. However **the
+main use for this is I want it to be used for all the voices in the glitched out wacky Pomo world**, I think I want to
+make that a really cool part of the game so **I want to kind of hyper focus on that area biome level variety soon.**"
+
+**THE RULES THAT COME OUT OF IT (for every tune from here):**
+ - **Boom bap, swung, on a gritty kit, crunched** (`crunch: {bits, hold}`). A Genesis slap bass with a **RIFF** (a bar or
+   two that comes round, written as a `line`), not a bass following chords about. **ONE chord for most of it.** Short
+   licks and stabs, not a long tune. Scratches at the ends of phrases. **The place's own sounds, sampled out of the game
+   and put on the beat.** NOT grand fantasy: no fanfares, no string-and-choir swells.
+ - **KEPT ON THE BACK BURNER, BY HIS WORD:** "Star Slide (Broken)" (`glitch`) is **the glitch boss's tune**. "Three
+   Machines" (`kingdom`) is good but "not sure it fits the vibe": not used.
+ - **THE DREAM WORLD (the Milky Way, "the wacky Pomo world") IS WHAT HE WANTS WORKED ON NEXT, HARD**: a kids' cartoon and
+   a toy box that glitches into a rogue machine; **all its voices from the Robot Voice Box.**
+
+**WHAT WAS MADE (nothing of the music below is in the game: HE MUST HEAR IT FIRST; it is all in `deliver/sound/` and under
+the films):**
+ - **Nine new tunes** (`scripts/chip/songs.mjs`, after "THE VIBE"), each eight bars:
+   `sewer` "Drip Tape" (the Cistern: 84, cold electric piano, the game's own DRIP on the beat with an echo);
+   `forge` "Clank" (the Foundry and the Forge: 96, the game's CLANK on the backbeat, steam HISS, brass stabs);
+   `cave` "Spore Breath" (the Hollows: 78, two speech-chip voices saying "ooh" to each other for the mushrooms, drips,
+   a bat's squeak, pebbles, wings); `stone` "Cold Stone" (the Keep: 88, a dark piano loop, chains, a far bell);
+   `teeth` "Big Teeth" (bosses: 100, the Wyrm's roar and the roach's screech in it); `cartoon` "Saturday Morning" (the
+   Milky Way ride: 104, a toy tune, **a Speak & Spell saying "yeah" and "let's play", a Speak & Math saying "wow"**, and
+   the scratches are of a Speak & Spell saying "fresh"); `sheep` "Counting Sheep" (the sleepers: 72, a music box, a low
+   snore); `late` "After Hours" (the Club, late: 76, a lazy trumpet, Dave ticking half asleep);
+   `rogue` "Does Not Compute" (the dream GLITCHING OUT, as a boom bap: the toys low, flat and crushed, saying "error",
+   "I can see you", "play with me"; **a modem** calling out; broken after it is made). No film has `rogue` under it.
+ - **What the music maker learnt** (`scripts/chip/make.mjs`; shared bits in `lib.mjs`): `layers` (a sampled sound on the
+   grid: `src: 'src/<name>'` is one of the GAME'S OWN sounds, exported to `recordings/chip/src/*.wav`; `'sfx/<name>'`
+   one made with his tools; `'gen/modem'` the modem; or `say: {chip, text, opts}` WORDS SPOKEN by the Robot Voice Box;
+   with `tune`/`tunes`, `echo`, `crush`); `scratches` (`b` a baby scratch, `r` a rewind, `c` a chirp, on the grid, of a
+   voice or of `say`); `crunch` (the drums through an old sampler); `crackle` (dust on the record).
+ - **THE ROBOT VOICE BOX** is `recordings/tools/robot-voice-box.html`, driven headless like the other two:
+   `tools.voice.say(text, chip, opts)` in `scripts/chip/lib.mjs`. **Five chips**: `sns` Speak & Spell, `snm` Speak &
+   Math, `ti` TI-99/4A, `vtx` Votrax, `sp0` Intellivoice. `opts`: `{pitch, speed, tone: 'flat'|'talk'|'lively'}` for
+   the first three, `{clock}` (0.6 to 1.6) for the last two. **`node scripts/chip/voices.mjs <dir>`** makes a REEL of
+   voices for the dream: the five chips saying one line; five toys, bright; the same toys gone wrong (low, flat,
+   crushed, stuck). **None of these voices is in the game yet.**
+ - **Every film was cut again over its own tune** (`cut2.sh` in the scratch folder: frames + `<id>.wav` gone round to the
+   film's length and faded): Cistern `sewer`; Foundry and the Forge `forge`; Hollows `cave`; Keep `stone`; bosses
+   `teeth`; the ride `cartoon`; the sleepers `sheep`; the Club's film `bap2`; scenes 1 and 5 `bap1`, 3 and 6 `bap2`,
+   2 and 7 `bap3` (the duet), 4 and 8 `late`.
+
+**WHAT WENT INTO THE GAME (these he asked for outright):**
+ - **A wedge won plays a JINGLE, and it is SHORT**: one bar (3.1 seconds, was 7.9): Genesis horns over a beat with a
+   scratch in its tail. Not a fanfare. (`JINGLES.wedge`; the sparkle still sounds over it.)
+ - **Defeat plays the slow piano piece** ("okay I think we can use that for now"), over the music turned right down, and
+   it stops when he is up again. (His own death groan still sounds.)
+   Both through `AudioEngine.jingle(id, {under})` / `stopJingle` / `jingleOn`; the sound is in `src/audio/tunes.ts`
+   `JINGLES`, packed by `node scripts/chip/embed.mjs <dir> <tunes...> jingle:wedge jingle:defeat`.
+ - **Six more of the reel's effects**: `block`, `splash`, `whoosh`, `swing`, `dodge`, `land` (`recordings/map.json`).
+   **`whoosh` and `land` are also what creatures' lunges and thuds are made of** (played faster or slower): if a fight
+   sounds wrong to him, those two are the first to take back out (delete the entry, run `scripts/make-recorded.py`).
+ - **Two effects that are a RECORD SCRATCHED** (a Speak & Spell saying "fresh" under a hand): **backing out of a menu**
+   (`menuBack`, a baby scratch) and **being put back after a fall into the dark** (`rewind`, a new sound: the record
+   pulled back and let go).
+
+**NOT TESTED / NOT KNOWN:** Claude cannot hear. Everything above was checked by numbers only (loudness, how much of each
+tune is bass, that the scratches sweep in pitch, that the jingles decode and start in a real browser at a fall and a
+defeat). Whether any of it SOUNDS like hip-hop, or good, only he can say. The first render of the new tunes was two
+thirds bass by energy (his favourite, `bap2`, is a half); the bass was turned down to match.
+
 ## VOICES IN THE MUSIC: he wants more of it (2026-11-17)
 
 His words: "I really really liked overlaying the voice track so if you want to try to use one of the more feminine

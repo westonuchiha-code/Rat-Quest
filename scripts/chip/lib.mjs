@@ -1,10 +1,13 @@
-// Drives the owner's two sound tools (recordings/tools/: Chip Drum Pad, Chiptune Pad Studio) in a headless browser, to
+// Drives the owner's sound tools (recordings/tools/: Chip Drum Pad, Chiptune Pad Studio, Robot Voice Box) in a headless browser, to
 // make music and sound effects for the game. Both tools keep their state and their render functions as plain globals,
 // so a page of each is opened and asked for sound directly; nothing is clicked.
 //   studio.song(songObject)            -> { L, R, sr }   a whole song, through the tool's own offline render
 //   studio.note(con, voice, midi, x)   -> { data, rate, loop }   one note of one voice (mono, no room on it)
 //   drums.beat({con, bpm, swing, pats, reps, real}) -> { L, R, sr, len }   a drum loop, the tool's own offline render
 //   drums.hit(con, pad, vel)           -> { data, rate }   one hit of one pad
+//   voice.say(text, chip, opts)        -> { data, rate, marks }   words SPOKEN by an old speech chip (the Robot Voice Box):
+//        chips sns (Speak & Spell), snm (Speak & Math), ti (TI-99/4A), vtx (Votrax), sp0 (Intellivoice);
+//        opts { pitch (Hz), speed, tone: 'flat' | 'talk' | 'lively' } for the first three, { clock (0.6 to 1.6) } for the last two.
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,7 +63,17 @@ export async function openTools() {
     },
     pads: () => dp.evaluate(`ROLES.map((r) => r.id || r[0] || String(r))`),
   };
-  return { studio, drums, close: () => browser.close() };
+  // (The Robot Voice Box, 2026-11-17: opened only when something is to be said, so the other two start as fast as before.)
+  let vp = null;
+  const voice = {
+    async say(text, chip = 'sns', opts = {}) {
+      vp ??= await open('robot-voice-box.html');
+      const r = await vp.evaluate(`(() => { const pack = ${PACK}; if (typeof setOutRate === 'function') setOutRate(44100); const r = speak(${JSON.stringify(text)}, ${JSON.stringify(chip)}, ${JSON.stringify(opts)}); return { data: pack(r.data), marks: r.marks, rate: OUT }; })()`);
+      return { data: unpack(r.data), rate: r.rate, marks: r.marks };
+    },
+    chips: async () => { vp ??= await open('robot-voice-box.html'); return vp.evaluate(`Object.fromEntries(Object.entries(CHIPS).map(([k, c]) => [k, c.name + ' (' + c.chip + ')']))`); },
+  };
+  return { studio, drums, voice, close: () => browser.close() };
 }
 
 /** Writes 16-bit PCM. `chans`: one Float32Array (mono) or two (stereo). */
@@ -88,3 +101,42 @@ export function writeWav(file, chans, rate) {
 export const rms = (a) => Math.sqrt(a.reduce((s, v) => s + v * v, 0) / Math.max(1, a.length));
 export const peak = (a) => a.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
 export { ROOT };
+
+// ---- What the music (make.mjs) and the effects (sfx.mjs) both do to a sound ----
+/** Faster or slower (2 is an octave up). */
+export const tuned = (a, ratio) => {
+  if (ratio === 1) return a;
+  const o = new Float32Array(Math.floor(a.length / ratio));
+  for (let i = 0; i < o.length; i++) {
+    const q = i * ratio;
+    const k = Math.floor(q);
+    o[i] = a[k] + ((a[k + 1] ?? 0) - a[k]) * (q - k);
+  }
+  return o;
+};
+/**
+ * A RECORD SCRATCHED: a sound played by a hand on the record, `len` samples of it. `b` a baby scratch (forward and
+ * back, twice); `r` a rewind (pulled back fast, slowing); `c` a chirp (pushed forward and cut off). The pitch goes
+ * with the speed of the hand, which is what a scratch IS.
+ */
+export function scratchSound(src, kind, len) {
+  const o = new Float32Array(len);
+  const A = Math.min(src.length - 3, Math.round(len * 1.7));
+  let avg = 0;
+  for (let i = 0; i < len; i++) {
+    const u = i / len;
+    const pos = kind === 'b' ? A * 0.25 * (1 - Math.cos(u * Math.PI * 4)) : kind === 'r' ? A * (1 - Math.pow(u, 0.55)) : A * 0.6 * u * u;
+    const k = Math.floor(pos);
+    const v = src[k] + ((src[k + 1] ?? 0) - src[k]) * (pos - k);
+    avg += (v - avg) * 0.002;
+    const cut = kind === 'c' && u > 0.72 ? 0 : 1;
+    o[i] = (v - avg) * cut * Math.min(1, i / 60, (len - i) / 200);
+  }
+  return o;
+}
+/** Crunched: held at a lower rate (`hold` samples at a time) and fewer bits, as an old sampler's memory made it. */
+export const crunch = (a, bits, hold) => {
+  const levels = 2 ** (bits - 1);
+  for (let i = 0; i < a.length; i++) a[i] = Math.round(a[i - (i % hold)] * levels) / levels;
+};
+

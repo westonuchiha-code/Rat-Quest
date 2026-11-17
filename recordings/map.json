@@ -140,7 +140,7 @@
     "rate": 22050,
     "gain": 0.85
   },
-  "_chip": "The entries whose file is in chip/ were made with the owner's two sound tools (scripts/chip/sfx.mjs), 2026-11-17: sounds of the N64's, the PS1's and the SNES's voices and drum kits. Delete one to go back to the made-up sound of that name.",
+  "_chip": "The entries whose file is in chip/ were made with the owner's sound tools (scripts/chip/sfx.mjs), 2026-11-17: sounds of the N64's, the PS1's and the SNES's voices and drum kits; menuBack and rewind are a RECORD SCRATCHED (a Speak & Spell saying \"fresh\", from his Robot Voice Box). Delete one to go back to the made-up sound of that name.",
   "menuOk": {
     "file": "chip/menuOk.wav",
     "start": 0,
@@ -154,7 +154,7 @@
   "menuBack": {
     "file": "chip/menuBack.wav",
     "start": 0,
-    "end": 0.27,
+    "end": 0.18,
     "pitch": 1.0,
     "lowpass": 1.0,
     "bits": 8,
@@ -255,6 +255,76 @@
     "file": "chip/crate.wav",
     "start": 0,
     "end": 0.17,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "block": {
+    "file": "chip/block.wav",
+    "start": 0,
+    "end": 0.292,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 1.0
+  },
+  "splash": {
+    "file": "chip/splash.wav",
+    "start": 0,
+    "end": 0.46,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "whoosh": {
+    "file": "chip/whoosh.wav",
+    "start": 0,
+    "end": 0.34,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "swing": {
+    "file": "chip/swing.wav",
+    "start": 0,
+    "end": 0.18,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "dodge": {
+    "file": "chip/dodge.wav",
+    "start": 0,
+    "end": 0.15,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "land": {
+    "file": "chip/land.wav",
+    "start": 0,
+    "end": 0.14,
+    "pitch": 1.0,
+    "lowpass": 1.0,
+    "bits": 8,
+    "rate": 22050,
+    "gain": 0.8
+  },
+  "rewind": {
+    "file": "chip/rewind.wav",
+    "start": 0,
+    "end": 0.52,
     "pitch": 1.0,
     "lowpass": 1.0,
     "bits": 8,

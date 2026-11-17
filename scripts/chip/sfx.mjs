@@ -5,7 +5,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { openTools, writeWav, peak } from './lib.mjs';
+import { openTools, writeWav, peak, tuned, scratchSound } from './lib.mjs';
 import { midi } from './songs.mjs';
 
 const out = process.argv[2];
@@ -111,7 +111,9 @@ const SFX = {
   swing: async () => cut(tune(await hit('ps1', PAD.sweep), 1.2), 180, 130),
   dodge: async () => cut(tune(await hit('n64', PAD.sweep), 1.5), 150, 110),
   hurt: async () => over([cut(tune(await hit('ps1', PAD.tlo), 1.3), 160, 120)], [cut(await hit('ps1', PAD.snare), 140, 110), 0, 0.6]),
-  block: async () => over([cut(await hit('n64', PAD.rim), 90, 60)], [tune(cut(await hit('ps1', PAD.bell), 240, 190), 1.3), 0, 0.7]),
+  // (A blow caught must be at least as loud as one that lands, tests/audio.ts: the first of these was a tick and a thin ring,
+  // and was not. A knock under it, and the ring longer and as loud as the tick.)
+  block: async () => over([cut(await hit('n64', PAD.rim), 90, 60)], [tune(cut(await hit('ps1', PAD.bell), 380, 300), 1.3), 0, 1], [cut(tune(await hit('ps1', PAD.tlo), 1.6), 110, 80), 0, 0.6]),
   // ---- blows ----
   hit: async () => over([cut(await hit('ps1', PAD.snare), 140, 110)], [cut(tune(await hit('ps1', PAD.kick), 1.4), 90, 70), 0, 0.7]),
   kill: async () => over([cut(await hit('ps1', PAD.crash), 260, 200), 0, 0.5], [cut(tune(await hit('ps1', PAD.tlo), 0.8), 220, 170), 0, 1], [cut(await note('ps1', 'hit', 'C4'), 300, 220), 0, 0.5]),
@@ -124,6 +126,15 @@ const SFX = {
   splash: async () => fadeOut(cut(tune(await hit('snes', PAD.crash), 0.7), 460, 340), 0.2),
   whoosh: async () => cut(tune(await hit('ps1', PAD.sweep), 0.75), 340, 260),
 };
+
+// ---- A HAND ON A RECORD (the owner, 2026-11-17: "see if we can do some like record scratching sounds here and there not
+// just in the music but even for certain sound effects I think would be really cool"). The record is a Speak & Spell
+// saying "fresh" (his third tool, the Robot Voice Box); the scratch is lib.mjs's. Backing out of a menu is a baby
+// scratch; being put back after a fall is the record pulled back, and let go. ----
+let record = null;
+const fresh = async () => (record ??= tuned((await tools.voice.say('fresh', 'sns', { pitch: 150 })).data, 1.2));
+SFX.menuBack = async () => scratchSound(await fresh(), 'b', ms(180));
+SFX.rewind = async () => row(scratchSound(await fresh(), 'r', ms(380)), new Float32Array(ms(30)), scratchSound(await fresh(), 'c', ms(110)));
 
 const order = Object.keys(SFX);
 const made = {};
