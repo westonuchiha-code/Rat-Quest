@@ -60,6 +60,32 @@ const GALLERY_LEDGES = [
   { x0: -48, x1: -34, z0: -28, z1: -14 },
 ];
 
+/**
+ * THE THINGS TO FIND (2026-11-17), the Cistern's way: two caps and two hunks (and the three relics, as they were).
+ * Each stands clear of every other upright face by more than a wall kick carries (levels/reach.ts, maxChimney), and out
+ * of a jump's reach of every high place but its own, so that its own way is the only way.
+ *
+ * The Needle: beside the slider's path (the slider runs z 0..3, at the Root Shelf's height), three and a half over it.
+ */
+export const NEEDLE = { x0: 16, x1: 18.4, z0: 4.6, z1: 7, top: 13.5 };
+/**
+ * The Spire: on the north floor, west of the High Hollow and twelve and a half under it. (Far enough west that the top
+ * mushroom is no way onto it: the leap is from the Hollow itself.)
+ */
+export const SPIRE = { x0: -18, x1: -15.5, z0: -39.5, z1: -37, top: 7.5 };
+/**
+ * The Cleft: two fins of rock out of the dark, hard against the west path's edge, their faces 2.2 apart; the floor of
+ * the slot between them is a spur of the path, three long, and past its end is the chasm.
+ */
+export const CLEFT = { x0: -22, x1: -19, a: { z0: 13, z1: 14, top: 11.5 }, b: { z0: 16.2, z1: 18.8 }, top: 9 };
+/**
+ * The Drip Stone: under the Lip, two back from its tip and half a unit in from either side of it. (Played: stepping off the
+ * Lip's side at a walk he must steer back within about eight frames of leaving it; at a run he is carried clear.)
+ */
+export const DRIP = { x0: -2.5, x1: 2.5, z0: 24, z1: 26.4, top: 7 };
+/** What the two hunks are worth: together, the seventeen crumbs that lay about the cave. */
+export const HUNKS = { drip: 9, spire: 8 };
+
 /** The east bank's hornet, and the north floor's two pikemen with the floor they keep to (its west end). */
 export const BANK_HORNET = { x: 32, z: -16 };
 /** (Well back from the mouth of the west path, so that he is out on the open floor before they see him, clear of the brazier there.) */
@@ -134,13 +160,33 @@ const cave: CustomLevel = {
     box('wall', 30, -34, 48, -33, 6, { skin: 'crystalRock' }),
     box('platform', 30, -48, 48, -33, 6.5, { bottom: 6 }),
 
-    // ---- Relics, caps and cheese ----
+    // ---- The relics (as they were: a roof, the gallery's far end, the spider's larder) ----
     at('relic', 35, -45, 6.5), at('relic', -46, -26, GALLERY), at('relic', 0, 9.8, 3),
-    at('cap', -10, 46, MOUTH), at('cap', 46, 6, SHELF), at('cap', 16, -45, 10), at('cap', -26, -20), at('cap', 44, 44),
-    at('crumb', 0, 42), at('crumb', 20, 36), at('crumb', -20, 36), at('crumb', 0, 26, MOUTH),
-    at('crumb', -26, 10), at('crumb', -26, -10), at('crumb', -40, 20, GALLERY), at('crumb', -41, -4, GALLERY), at('crumb', -41, -22, GALLERY),
-    at('crumb', -10, -36), at('crumb', 16, -34, 3), at('crumb', 9, -41, 13), at('crumb', 28, 0), at('crumb', 28, 20), at('crumb', 40, 2, SHELF),
-    at('crumb', -10, 14), at('crumb', -10, -24),
+
+    // ---- The things to find (2026-11-17), the Cistern's way: two caps and two hunks where there were five caps and
+    // seventeen crumbs, and each at the end of a piece of movement of its own. Nothing is on a floor. ----
+    // The Needle: a spike of rock in the chasm beside the slider's path, its top over the slider's head.
+    box('pillar', NEEDLE.x0, NEEDLE.z0, NEEDLE.x1, NEEDLE.z1, NEEDLE.top, { bottom: DEEP, skin: 'wetRock' }),
+    at('cap', (NEEDLE.x0 + NEEDLE.x1) / 2, (NEEDLE.z0 + NEEDLE.z1) / 2, NEEDLE.top),
+    // The Cleft: kick up between the fins from the spur, the pit past its end; the thin one is the taller, so he
+    // comes out on the thick one.
+    box('pillar', CLEFT.x0, CLEFT.a.z0, CLEFT.x1, CLEFT.a.z1, CLEFT.a.top, { bottom: DEEP, skin: 'wetRock' }),
+    box('pillar', CLEFT.x0, CLEFT.a.z1, CLEFT.x1, CLEFT.b.z0, 0, { bottom: DEEP, skin: 'wetRock' }),
+    box('pillar', CLEFT.x0, CLEFT.b.z0, CLEFT.x1, CLEFT.b.z1, CLEFT.top, { bottom: DEEP, skin: 'wetRock' }),
+    at('cap', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.b.z0 + CLEFT.b.z1) / 2, CLEFT.top),
+    // The Drip Stone: a stone UNDER the Lip, out over the chasm, too high to reach from the shelf. Step off the Lip's
+    // side and steer back in under it.
+    box('pillar', DRIP.x0, DRIP.z0, DRIP.x1, DRIP.z1, DRIP.top, { bottom: DEEP, skin: 'wetRock' }),
+    at('crumb', (DRIP.x0 + DRIP.x1) / 2, (DRIP.z0 + DRIP.z1) / 2, DRIP.top, { props: { worth: HUNKS.drip } }),
+    // The Spire: a stalagmite on the north floor, too tall to climb. The only way onto it is down, from the High Hollow.
+    box('pillar', SPIRE.x0, SPIRE.z0, SPIRE.x1, SPIRE.z1, SPIRE.top, { skin: 'wetRock' }),
+    at('crumb', (SPIRE.x0 + SPIRE.x1) / 2, (SPIRE.z0 + SPIRE.z1) / 2, SPIRE.top, { props: { worth: HUNKS.spire } }),
+    // (The cave is dark and the rock is darker: each of the four has a glow of its own over it, light only, so that
+    // it can be picked out from across the chasm. Nothing is drawn of these and nothing of them is solid.)
+    at('light', (NEEDLE.x0 + NEEDLE.x1) / 2, (NEEDLE.z0 + NEEDLE.z1) / 2, NEEDLE.top + 1.2, { props: { color: 'blue', bare: 1 } }),
+    at('light', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.a.z1 + CLEFT.b.z0) / 2, CLEFT.top - 3, { props: { color: 'purple', bare: 1 } }),
+    at('light', (DRIP.x0 + DRIP.x1) / 2, (DRIP.z0 + DRIP.z1) / 2, DRIP.top + 1.2, { props: { color: 'yellow', bare: 1 } }),
+    at('light', (SPIRE.x0 + SPIRE.x1) / 2, (SPIRE.z0 + SPIRE.z1) / 2, SPIRE.top + 1.2, { props: { color: 'green', bare: 1 } }),
 
     // ---- People ----
     at('npc', -5, 43, MOUTH, { props: { name: 'Finch', kind: 'bird', lines: [
@@ -153,6 +199,7 @@ const cave: CustomLevel = {
       'Chirp! The crystals in that grotto sing if you listen. Well, hum.',
       'There are three golden relics hidden in the Hollows. Find them all and the grotto gives something back.',
       'Someone left a door in there too. It goes to a place with a lot of very small floors.',
+      'Nothing worth having lies on the floor down here. Look up. And look over the edges.',
     ] } }),
 
     // ---- Light and dressing ----

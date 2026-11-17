@@ -5,7 +5,7 @@
  *
  *   SOUTH  The courtyard. Two guards, and a portcullis in the gatehouse wall: stand on both plates and it lifts.
  *          Behind it, the inner ward, a ledge along the wall over the pit, held by two ant pikemen; and over its
- *          west end, where a bottle cap lies, a firefly bomber.
+ *          west end, where the wall walk has fallen away, a firefly bomber.
  *   EAST   The Burning Walk: the ledge along the east wall turns to lava. Stones across it, a double jump apart at the
  *          end, with two toads spitting from the far side.
  *   NORTH  The Broken Stair: steps along the north wall rising west over the pit, some a hop apart, some a double jump.
@@ -60,6 +60,25 @@ export const WARD = { x0: -48, x1: 48, z0: 18, z1: 26 };
 export const WARD_FIREFLY = { x: -28, z: 22 };
 export const WARD_AIR = { x0: -47, x1: -8, z0: 6, z1: 25.4 };
 
+/**
+ * THE THINGS TO FIND (2026-11-17), the Cistern's way: three caps and two hunks.
+ *
+ * Over the Gate: the corbel left on the west wall between the battlements (which end at z 14) and the gatehouse (z 26),
+ * and where the cap lies on the gatehouse, over the portcullis.
+ */
+export const CORBEL = { x0: -48, x1: -45.5, z0: 19.2, z1: 20.8 };
+export const OVER_GATE = { x: 0, z: 27 };
+/** The Cinder: in the lava, three east of the Burning Walk's third stone and four over it. */
+export const CINDER = { x0: 45, x1: 46.4, z0: -9.7, z1: -8.3, top: 4.3 };
+/** The Flue: east of the Engine Stack. */
+export const FLUE = { x0: 12, x1: 14.4, z0: -13.2, z1: -10.8, top: STACK + 3 };
+/** The Buttress: in the north-east ward, its north face 2.2 off the north wall. */
+export const BUTTRESS = { x0: 32, x1: 35, z0: -45.8, z1: -43.2, top: 9 };
+/** The Slider's Hunk: over the middle of the slider's way (the slider runs x -38..-9 at z -13..-10, its top at the wall walk's height). */
+export const RIDE_HUNK = { x: -23.5, z: -11.5, y: WALL + 3.6 };
+/** What the two hunks are worth: together, the eighteen crumbs that lay about the Keep. */
+export const HUNKS = { buttress: 9, ride: 9 };
+
 const keepArea: CustomLevel = {
   name: "Grimsqueak's Keep",
   blurb: 'His castle, over the pit where the Engine turns. Lava, a broken stair, a chimney to climb, and his throne at the top.',
@@ -81,15 +100,16 @@ const keepArea: CustomLevel = {
     at('beetle', -30, 31),
     // And a hornet lancer hangs over the east one: step off the spot it dives at, and its lance sticks in the yard.
     at('hornet', 30, 33, 0, { dir: 's' }),
-    at('crate', -40, 44, 0, { props: { item: 'cap' } }), at('crate', -41, 44), at('crate', -40, 44, 1), at('barrel', 40, 44), at('barrel', 41, 43, 0, { props: { item: 'crumb' } }),
+    at('crate', -40, 44), at('crate', -41, 44), at('crate', -40, 44, 1), at('barrel', 40, 44), at('barrel', 41, 43),
 
     // ---- The inner ward, along the back of the gatehouse wall ----
     box('floor', WARD.x0, WARD.z0, WARD.x1, WARD.z1, 0),
     // Two ant pikemen hold the way east along it. They fight as a pair: one keeps him at pike's length while the
     // other goes round behind him, and the pit is at his elbow.
     at('ant', 22, 22, 0, { dir: 'w' }), at('ant', 26, 22, 0, { dir: 'w' }),
-    // And the other way along it, west, towards the cap at its end: a firefly bomber over the ledge, the wall at his
-    // back and the pit in front of him. (It is not one of the guard: the wedge for beating them does not ask for it.)
+    // And over its west end, where the wall walk between the battlements and the gatehouse has fallen away (one
+    // corbel of it is left: see the things to find), a firefly bomber. (It is not one of the guard: the wedge for
+    // beating them does not ask for it.)
     at('firefly', WARD_FIREFLY.x, WARD_FIREFLY.z, 0, { dir: 'e' }),
 
     // ---- East: the Burning Walk ----
@@ -116,15 +136,24 @@ const keepArea: CustomLevel = {
     box('lift', -38, -13, -35, -10, WALL, { props: { move: 'e', travel: 26, speed: 2.2, pause: 1.5 } }),
     box('pillar', STACK_BOX.x0, STACK_BOX.z0, STACK_BOX.x1, STACK_BOX.z1, STACK, { bottom: DEEP }),
 
-    // ---- Caps: eight ----
-    at('cap', -46, 22), at('cap', 41, -9, 0.3), at('cap', 46, -46), at('cap', 9.5, -44, 4.5), at('cap', -11.5, -44, 9),
-    at('cap', -46, -46, WALL), at('cap', -46, 12, WALL),
-
-    // ---- Cheese ----
-    at('crumb', -20, 40), at('crumb', 20, 40), at('crumb', -20, 22), at('crumb', 20, 22), at('crumb', 43, 14),
-    at('crumb', 45, -2, 0.3), at('crumb', 45, -16, 0.3), at('crumb', 41, -34), at('crumb', 36, -44),
-    at('crumb', 24.5, -44, 1.5), at('crumb', 18.5, -44, 3), at('crumb', 3.5, -44, 6), at('crumb', -5.5, -44, 7.5), at('crumb', -20.5, -44, 10.5),
-    at('crumb', -30, -38, WALL), at('crumb', -43, -20, WALL), at('crumb', -43, 8, WALL),
+    // ---- The things to find (2026-11-17), the Cistern's way: three caps and two hunks where there were eight caps
+    // and eighteen crumbs, and each at the end of a piece of movement of its own. Nothing is on a floor or in a crate. ----
+    // Over the Gate: the wall walk once ran from the battlements to the gatehouse. One corbel of it is left on the
+    // west wall: two jumps over the ward (and under the firefly), then along the top of the gatehouse to the cap.
+    box('platform', CORBEL.x0, CORBEL.z0, CORBEL.x1, CORBEL.z1, WALL, { bottom: WALL - 1 }),
+    at('cap', OVER_GATE.x, OVER_GATE.z, WALL),
+    // The Cinder: a tall clinker in the lava beside the third stone of the Burning Walk. A jump, a second jump and a
+    // caught edge, from a footing two wide.
+    box('pillar', CINDER.x0, CINDER.z0, CINDER.x1, CINDER.z1, CINDER.top, { bottom: -1 }),
+    at('cap', (CINDER.x0 + CINDER.x1) / 2, (CINDER.z0 + CINDER.z1) / 2, CINDER.top),
+    // The Flue: a narrower stack beside the Engine Stack, three higher and six of pit away.
+    box('pillar', FLUE.x0, FLUE.z0, FLUE.x1, FLUE.z1, FLUE.top, { bottom: DEEP }),
+    at('cap', (FLUE.x0 + FLUE.x1) / 2, (FLUE.z0 + FLUE.z1) / 2, FLUE.top),
+    // The Buttress: a pier 2.2 off the north wall, in the ward behind the Burning Walk. Kick up between it and the wall.
+    box('pillar', BUTTRESS.x0, BUTTRESS.z0, BUTTRESS.x1, BUTTRESS.z1, BUTTRESS.top),
+    at('crumb', (BUTTRESS.x0 + BUTTRESS.x1) / 2, (BUTTRESS.z0 + BUTTRESS.z1) / 2, BUTTRESS.top, { props: { worth: HUNKS.buttress } }),
+    // The Slider's Hunk: in the air over the slider's way, half way out. Jump for it as he rides, and come down on the slider.
+    at('crumb', RIDE_HUNK.x, RIDE_HUNK.z, RIDE_HUNK.y, { props: { worth: HUNKS.ride } }),
 
     // ---- People ----
     at('npc', -6, 42, 0, { props: { name: 'Finch', kind: 'bird', lines: [
@@ -175,7 +204,7 @@ export const KEEP_WEDGES: WedgeDef[] = [
   { id: 'chimney', name: 'Up the Chimney', hint: 'Up the Broken Stair to the landing, then wall-kick up the chimney to the Throne Ledge.', x: -24, y: THRONE, z: -46, appears: null },
   { id: 'stack', name: 'The Engine Stack', hint: 'From the battlements, ride the slider out over the pit to the column.', x: 0, y: STACK, z: -12, appears: null },
   { id: 'guard', name: "The Keep's Guard", hint: 'Beat every guard: the courtyard, the two pikemen in the ward behind the gate, the far end of the Burning Walk, the battlements.', x: 0, y: 0, z: 22, appears: { type: 'defeat', label: 'Beat every guard' } },
-  { id: 'caps', name: 'Eight Bottle Caps', hint: 'In a crate, at the end of the ward, on the lava, in the corner, on the stair, on the landing, on the battlements.', x: 8, y: 0, z: 40, appears: collect('cap', 'Find all the caps') },
+  { id: 'caps', name: 'Three Bottle Caps', hint: 'One over the gate: the wall walk to it has fallen in, all but one stone. One on a cinder in the lava. One on the flue beside the Engine Stack.', x: 8, y: 0, z: 40, appears: collect('cap', 'Find all the caps') },
   { id: 'pyre', name: 'The Heart of the Pyre', hint: 'A fire burns in the north-east ward, past the Burning Walk, and something gold stands in the middle of it. Only what was forged in fire walks through fire.', x: (PYRE.x0 + PYRE.x1) / 2, y: 0, z: (PYRE.z0 + PYRE.z1) / 2, appears: null, gear: 'emberHelm' },
 ];
 
