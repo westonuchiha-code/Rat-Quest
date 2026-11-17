@@ -14,6 +14,8 @@
  *   STOW again sets it down in front of him, whole, if there is room.
  *   Hurt, or in water, he lets go: it falls where he is and breaks.
  * An IRON-BOUND crate does not break: thrown, it lands whole and can be thrown again.
+ * ALSO: a clay POT (light: it flies further and hurts less) and a ROCK (it never breaks: thrown again and again); see
+ * `THROWN_AS`. And a CREATURE THAT IS DOWN (`DOWN_STATES`): picked up the same way, thrown the same way.
  *
  * Plain logic (no drawing, no sound): the game moves the crate's picture and its solid box (chamber.ts) as this says.
  */
@@ -30,7 +32,7 @@ export function liftTarget(crates: readonly Crate[], pos: { x: number; y: number
   let best: Crate | null = null;
   let bestD = Infinity;
   for (const c of crates) {
-    if (!c.alive || c.type === 'pipe') continue;
+    if (!c.alive || c.lifted || c.type === 'pipe') continue;
     // (On his floor: its foot no higher than a step above his feet, and not below them by more than that.)
     if (Math.abs(c.aabb.min.y - pos.y) > 0.4) continue;
     const dx = c.x - pos.x;
@@ -52,36 +54,93 @@ export function carryPlace(pos: { x: number; y: number; z: number }, halfHigh: n
   return out.set(pos.x, pos.y + TUNING.rat.height + TUNING.lift.hold + halfHigh, pos.z);
 }
 
-/** Something in the air: thrown, or let go of. */
-export interface Thrown {
-  crate: Crate;
+/**
+ * HOW EACH KIND OF THING IS THROWN. `speed`: of `TUNING.lift.throwSpeed` (a light thing goes faster and so further).
+ * `damage`: to a creature it hits. `breaks`: it breaks on what it meets (else it lands whole, to be thrown again).
+ * `light`: carrying it hardly slows him.
+ */
+export const THROWN_AS: Record<'crate' | 'barrel' | 'pot' | 'rock', { speed: number; damage: number; breaks: boolean; light: boolean }> = {
+  crate: { speed: 1, damage: 2, breaks: true, light: false },
+  barrel: { speed: 1, damage: 2, breaks: true, light: false },
+  // A pot is light: thrown half as far again, it hurts half as much. A sword breaks it too.
+  pot: { speed: 1.35, damage: 1, breaks: true, light: true },
+  // A rock does not break: it hurts as a crate does, every time it is thrown.
+  rock: { speed: 1.2, damage: 2, breaks: false, light: true },
+};
+/** How this one is thrown (an iron-bound crate does not break either). */
+export function thrownAs(c: Crate): { speed: number; damage: number; breaks: boolean; light: boolean } {
+  const as = THROWN_AS[c.type === 'pipe' ? 'crate' : c.type];
+  return c.tough ? { ...as, breaks: false } : as;
+}
+
+/**
+ * A CREATURE THAT IS DOWN CAN BE PICKED UP AND THROWN: one knocked out of the air and lying on the floor, one lying
+ * open on its back, one sprawled, one with its blades stuck in the ground. (Small ones only: not a boss, not a knight
+ * in armour. And not one that is merely flinching from a blow: that is over in a third of a second.)
+ * By kind: the states in which it can be taken up. Carried, it does nothing (its own clock is stopped); after
+ * `TUNING.lift.foeHold` seconds it wriggles free. Thrown, it is hurt where it lands, and hurts what it lands on.
+ */
+export const DOWN_STATES: Readonly<Record<string, readonly string[]>> = {
+  bat: ['grounded'],
+  firefly: ['grounded'],
+  hornet: ['grounded'],
+  roller: ['spilled'],
+  scorpion: ['sprawl'],
+  mantis: ['stuck'],
+};
+/** The nearest creature he could pick up from where he stands (its place in the list), or -1. */
+export function liftFoe(foes: ReadonlyArray<{ kind: string; state: string; alive: boolean; x: number; y: number; z: number; radius: number }>, pos: { x: number; y: number; z: number }, facing: number): number {
+  const L = TUNING.lift;
+  const fx = Math.sin(facing);
+  const fz = Math.cos(facing);
+  let best = -1;
+  let bestD = Infinity;
+  foes.forEach((e, i) => {
+    if (!e.alive || !DOWN_STATES[e.kind]?.includes(e.state) || Math.abs(e.y - pos.y) > 0.6) return;
+    const dx = e.x - pos.x;
+    const dz = e.z - pos.z;
+    const d = Math.hypot(dx, dz);
+    if (d > e.radius + TUNING.rat.radius + L.reach || (d > 1e-6 && (dx * fx + dz * fz) / d < 0.5) || d >= bestD) return;
+    bestD = d;
+    best = i;
+  });
+  return best;
+}
+
+/** Something in the air: thrown, or let go of. `what`: the thing (a crate, or a creature). */
+export interface Thrown<T = Crate> {
+  what: T;
+  /** Half its size, and its own solid box, if it has one (which it does not meet). */
+  half: number;
+  skip: Aabb | null;
   pos: THREE.Vector3;
   vel: THREE.Vector3;
   /** Where it was thrown from (which way a blow from it comes). */
   from: { x: number; z: number };
-  /** It has hit something and only falls now (an iron-bound crate, which does not break). */
+  /** It has hit something and only falls now (a thing that does not break), or was only let go of. */
   spent: boolean;
   age: number;
 }
 
 /**
- * A crate leaving his hands.
+ * A thing leaving his hands.
  * THROWN (`hard` 1): the way he faces, in a low arc; he adds a share of his own speed. With `aim` (a creature in front
  * of him: see `throwAim`), AT it: he has no way to tilt a throw up or down, so one thrown at something goes to it,
- * near or far, on the ground or in the air.
+ * near or far, on the ground or in the air. `speed`: of the usual (a light thing goes faster).
  * LET GO OF (`hard` 0): it only falls.
  */
-export function startThrow(crate: Crate, hands: THREE.Vector3, facing: number, his: { x: number; z: number }, hard = 1, aim: { x: number; y: number; z: number } | null = null): Thrown {
+export function startThrow<T>(what: T, half: number, skip: Aabb | null, hands: THREE.Vector3, facing: number, his: { x: number; z: number }, hard = 1, aim: { x: number; y: number; z: number } | null = null, speed = 1): Thrown<T> {
   const L = TUNING.lift;
-  const vel = new THREE.Vector3(Math.sin(facing) * L.throwSpeed * hard + his.x * 0.5 * hard, L.throwUp * hard, Math.cos(facing) * L.throwSpeed * hard + his.z * 0.5 * hard);
+  const along = L.throwSpeed * speed;
+  const vel = new THREE.Vector3(Math.sin(facing) * along * hard + his.x * 0.5 * hard, L.throwUp * hard, Math.cos(facing) * along * hard + his.z * 0.5 * hard);
   if (aim && hard > 0) {
     const dx = aim.x - hands.x;
     const dz = aim.z - hands.z;
     // (As long in the air as its speed along takes to get there; never so short that it is a blur.)
-    const time = Math.max(0.22, Math.hypot(dx, dz) / L.throwSpeed);
+    const time = Math.max(0.22, Math.hypot(dx, dz) / along);
     vel.set(dx / time, (aim.y - hands.y + 0.5 * L.gravity * time * time) / time, dz / time);
   }
-  return { crate, pos: hands.clone(), vel, from: { x: hands.x, z: hands.z }, spent: hard <= 0, age: 0 };
+  return { what, half, skip, pos: hands.clone(), vel, from: { x: hands.x, z: hands.z }, spent: hard <= 0, age: 0 };
 }
 
 /**
@@ -125,11 +184,11 @@ function inBox(b: Aabb, p: THREE.Vector3, r: number): boolean {
  * which part of a long body, -1 its own); or `lost` (it fell out of the world). It stops where it met it.
  * (It moves in steps no longer than a third of its own size, so it cannot pass through a thin wall or a small beast.)
  */
-export function stepThrown(t: Thrown, dt: number, colliders: readonly Aabb[], targets: readonly Target[]): ThrowHit {
+export function stepThrown(t: Thrown<unknown>, dt: number, colliders: readonly Aabb[], targets: readonly Target[]): ThrowHit {
   const L = TUNING.lift;
-  const r = t.crate.half * 0.85;
+  const r = t.half * 0.85;
   const far = Math.hypot(t.vel.x, t.vel.y, t.vel.z) * dt;
-  const steps = Math.max(1, Math.ceil(far / (t.crate.half * 0.33)));
+  const steps = Math.max(1, Math.ceil(far / (t.half * 0.33)));
   const h = dt / steps;
   for (let s = 0; s < steps; s++) {
     t.vel.y -= L.gravity * h;
@@ -147,7 +206,7 @@ export function stepThrown(t: Thrown, dt: number, colliders: readonly Aabb[], ta
         for (let k = 0; k < parts.length; k++) if (Math.hypot(parts[k].x - t.pos.x, parts[k].z - t.pos.z) < parts[k].r + r) return { what: 'foe', index: i, part: k };
       }
     }
-    for (const b of colliders) if (b !== t.crate.aabb && inBox(b, t.pos, r)) return { what: 'solid', box: b };
+    for (const b of colliders) if (b !== t.skip && inBox(b, t.pos, r)) return { what: 'solid', box: b };
   }
   return { what: 'none' };
 }

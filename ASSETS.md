@@ -148,8 +148,8 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 
 ## 6. Scenery and props
 
-A level asks for a prop by its kind (`decor`, in `src/world/layout.ts`); `src/world/chamber.ts` draws it. There are 54 kinds:
-`arch`, `arena`, `banner`, `bottles`, `bracket`, `brazier`, `bulbs`, `butterflies`, `chain`, `couch`, `crystal`, `dancefloor`, `dartboard`, `engine`, `eyes`, `fall`, `flowers`, `forge`, `gauge`, `grate`, `hole`, `iceSpike`, `icicle`, `jet`, `keg`, `lamp`, `light`, `lightrail`, `machine`, `mark`, `moss`, `mugs`, `mushroom`, `pipe`, `planet`, `portrait`, `post`, `roots`, `rug`, `ruler`, `runnel`, `shelf`, `sign`, `sleepers`, `slime`, `speaker`, `stalactite`, `stool`, `table`, `torch`, `vent`, `web`, `weed`, `window`.
+A level asks for a prop by its kind (`decor`, in `src/world/layout.ts`); `src/world/chamber.ts` draws it. There are 55 kinds:
+`arch`, `arena`, `banner`, `bottles`, `bracket`, `brazier`, `bulbs`, `butterflies`, `chain`, `couch`, `crystal`, `dancefloor`, `dartboard`, `engine`, `eyes`, `fall`, `flowers`, `forge`, `gauge`, `grate`, `hole`, `iceSpike`, `icicle`, `jet`, `keg`, `lamp`, `light`, `lightrail`, `machine`, `mark`, `moss`, `mugs`, `mushroom`, `pipe`, `planet`, `portrait`, `post`, `roots`, `rubble`, `rug`, `ruler`, `runnel`, `shelf`, `sign`, `sleepers`, `slime`, `speaker`, `stalactite`, `stool`, `table`, `torch`, `vent`, `web`, `weed`, `window`.
 
 Props with a model file of their own: `src/world/brazierModel.ts`, `src/world/couchModel.ts`, `src/world/forgeModels.ts`, `src/world/itemModels.ts`, `src/world/tavernModels.ts`. Doors: `src/world/doorway.ts`; their signs:
 `src/world/courseDoors.ts`. The sky and its planets: `src/world/sky.ts`. Things to pick up: `src/world/collectibleMeshes.ts`,

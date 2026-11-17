@@ -288,6 +288,45 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     colliders.push(aabb);
     if (b.hidden) continue; // collider only
 
+    if (b.kind === 'rubble' && b.prop) {
+      // A POT or a ROCK: small things to pick up and throw (world/lifting.ts). Drawn inside its box.
+      const r = Math.min(w, d) / 2;
+      const mesh = new THREE.Group();
+      mesh.position.set(cx, cy, cz);
+      group.add(mesh);
+      if (b.prop === 'pot') {
+        // A clay pot: a round belly drawn in at the foot and at the neck, a rolled rim, a dark mouth. Fired clay,
+        // with a darker band round its shoulder.
+        const profile: Array<[number, number]> = [[0.5, -0.5], [0.78, -0.3], [0.96, 0.02], [0.84, 0.3], [0.54, 0.4], [0.62, 0.5]];
+        const belly = new THREE.LatheGeometry(profile.map(([pr, py]) => new THREE.Vector2(pr * r * 0.98, py * h)), 9);
+        bakeVertexColor(belly, 0xe0b48c, false);
+        const body = new THREE.Mesh(belly, mat('clay'));
+        mesh.add(body);
+        const band = new THREE.CylinderGeometry(r * 0.9, r * 0.97, h * 0.07, 9, 1, true).translate(0, h * 0.2, 0);
+        const mouth = new THREE.CircleGeometry(r * 0.56, 9).rotateX(-Math.PI / 2).translate(0, h * 0.44, 0);
+        const foot = new THREE.CircleGeometry(r * 0.49, 9).rotateX(Math.PI / 2).translate(0, -h / 2, 0);
+        mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([band]), 0x8a4a2c), plainMat));
+        mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([mouth, foot]), 0x2a1a12), plainMat));
+      } else {
+        // A rock: a rough lump, flat underneath, no two sides alike. The cave's own rock.
+        const lump = new THREE.IcosahedronGeometry(1, 1);
+        const lp = lump.attributes.position;
+        for (let i = 0; i < lp.count; i++) {
+          const x = lp.getX(i);
+          const y = lp.getY(i);
+          const z = lp.getZ(i);
+          // (Knocked about by a pattern of its own corners, the same every time: it must not change from load to load.)
+          const k = 0.86 + 0.14 * Math.sin(x * 5.1 + z * 3.3) * Math.cos(y * 4.2 + x * 1.7);
+          lp.setXYZ(i, x * k * r * 0.98, Math.max(-1, y * k * 1.05) * (h / 2) * 0.98, z * k * r * 0.98);
+        }
+        lump.computeVertexNormals();
+        bakeVertexColor(lump, 0xffffff, false);
+        mesh.add(new THREE.Mesh(lump, mat('roughRock')));
+      }
+      crates.push({ type: b.prop, index: crates.length, x: cx, y: cy, z: cz, half: r, alive: true, aabb, mesh, lastSwing: -1 });
+      continue;
+    }
+
     if (b.kind === 'barrel') {
       // A barrel: bulging staves, two iron hoops, a lid. Its collider stays the box.
       const r = Math.min(w, d) / 2;

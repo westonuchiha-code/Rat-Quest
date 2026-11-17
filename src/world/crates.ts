@@ -1,7 +1,7 @@
 import type { Aabb } from './collision';
 
-/** What a breakable is: a wooden crate, a barrel, or the joint of a wall pipe. */
-export type BreakableType = 'crate' | 'barrel' | 'pipe';
+/** What a breakable is: a wooden crate, a barrel, the joint of a wall pipe; a clay pot; or a rock (which does not break: it is here because it is lifted and thrown as the others are). */
+export type BreakableType = 'crate' | 'barrel' | 'pipe' | 'pot' | 'rock';
 
 /** A thing that breaks when it is hit. Plain data; the room owns the mesh and the collider. */
 export interface Crate {

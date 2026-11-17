@@ -1500,4 +1500,8 @@ room, a playground for one kind of play; one long hallway hub with everyone in i
    `putDownSpot`), `TUNING.lift`, the controller's `carrying` / `liftEvent`, the chamber's `liftCrate` / `moveCrate` /
    `setCrate`, `Crate.lifted`, `CollectibleVisuals.moveItem`. STOW lifts, ATTACK throws (aimed at what is in front of
    him), STOW sets down. Tests: `tests/lifting.ts` (41).
+ - More to throw (the same day): `Box.prop` 'pot' | 'rock' (`potBox`, `rockBox`; drawn in `chamber.ts`, which also
+   makes each a `Crate` of type 'pot' / 'rock'); `THROWN_AS` / `thrownAs`; `Thrown<T>` is generic (`what`, `half`,
+   `skip`); creatures: `DOWN_STATES`, `liftFoe`, and in `main.ts` `heldFoe`, `thrownFoes`, `inHand` (a creature in
+   hand is not updated and not in the combat list). A rock never breaks (`combat.ts`).
 

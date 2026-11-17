@@ -167,9 +167,22 @@ pick up and throw things for example".
    `PlayerController` (`carrying`, `liftEvent`, `canLift`), `chamber.ts` (`liftCrate`, `moveCrate`, `setCrate`),
    `main.ts` (`held`, `thrown`), `ratModel.ts` (`CARRY_ARMS`, `THROW_ARMS`). Every practice room has six things to
    throw by the way in. `&autolift` is a film aid.
- - **NOT DONE / his to judge:** which button (STOW was the only one free on foot); a crate is as big as he is;
-   creatures cannot be picked up; nothing else can (pots, rocks, bombs); no sound of its own (a plank's creak, the
-   whoosh, a landing); nobody has played it by hand.
+ - **MORE TO THROW (his next pick, the same day; `tests/lifting.ts` is 52 now; film
+   `film-pots-rocks-creatures.mp4`):**
+   - **A POT** (`potBox(x, z)` in `world/layout.ts`; `Box.prop: 'pot'`): clay, small, LIGHT. Carrying it hardly slows
+     him; it is thrown a third faster and so further; it hurts 1 (half a crate); it breaks, to a throw or to his sword.
+   - **A ROCK** (`rockBox`): it NEVER breaks (his sword rings off it): it lands whole and is thrown again. It hurts 2.
+   - How each kind is thrown is one table: `THROWN_AS` in `world/lifting.ts`.
+   - **A CREATURE THAT IS DOWN can be picked up and thrown** (`DOWN_STATES`, `liftFoe`): a bat, a firefly or a hornet
+     knocked out of the air and lying on the floor; a roller lying open; a scorpion sprawled; a mantis with its
+     blades stuck in the floor. Carried, it does nothing (the game does not run it); after 3 seconds it wriggles free.
+     Thrown, it takes 2 where it lands and gives 2 to a creature it lands on; thrown out of the world, it is dead.
+     **NOT the roach or the toad**: all they have is a flinch a third of a second long. Not a boss, a guard, a stag.
+   - Every practice room has four pots and two rocks by the way in, with the crates.
+ - **NOT DONE / his to judge:** which button (STOW was the only one free on foot); a crate is as big as he is; a
+   creature in his hands stands upright on air over his head (no pose of being held); the roach and the toad cannot
+   be picked up; no bombs; no sound of its own (a plank's creak, the whoosh, a landing, pebbles for a pot); nobody
+   has played it by hand.
 
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.

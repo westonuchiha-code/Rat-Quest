@@ -162,6 +162,7 @@ export class PlayerController {
    * `liftEvent`: what he did with it this step, for the game to carry out: threw it, asked to set it down, let it go.
    */
   carrying = false;
+  private carryLight = false;
   carryPose = 0;
   liftEvent: 'throw' | 'down' | 'drop' | null = null;
   private throwTimer = -1;
@@ -174,8 +175,10 @@ export class PlayerController {
     return !this.carrying && this.grounded && !this.riding && !this.sliding && !this.swimming && !this.hang && this.climbT < 0 && this.deadTimer < 0 && this.hurtTimer <= 0 && this.attackTimer < 0 && this.dodgeTimer < 0 && this.plungeStage === 0 && this.throwTimer < 0;
   }
   /** It is in his hands (the game has taken it off the floor). */
-  startCarry(): void {
+  /** (`light`: a pot, a rock, a small creature: it hardly slows him.) */
+  startCarry(light = false): void {
     this.carrying = true;
+    this.carryLight = light;
     this.guarding = false;
   }
   /** It is out of his hands (set down, or the level is gone). */
@@ -913,7 +916,7 @@ export class PlayerController {
       const mul = (this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1) * scrabble;
       // (In slime his feet are held: he wades.)
       const mire = !swimming && this.inSlime ? T.slime.walk : 1;
-      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * this.feel.foot.run * (this.carrying ? T.lift.walk : 1) * mul * mire;
+      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * this.feel.foot.run * (this.carrying ? (this.carryLight ? T.lift.lightWalk : T.lift.walk) : 1) * mul * mire;
       const hasInput = move.lengthSq() > 0.01;
       // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
       const ice = this.onIce;

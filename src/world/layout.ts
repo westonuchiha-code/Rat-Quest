@@ -23,6 +23,12 @@ export interface Box {
   hidden?: boolean;
   /** A crate bound in iron: only a heavy blade (the Cleaver) breaks it. */
   tough?: boolean;
+  /**
+   * A small thing to pick up and throw (world/lifting.ts), in place of a crate: a clay POT (light: it flies further,
+   * hurts less, and breaks, as a crate does, to a sword or a throw) or a ROCK (it does not break: it can be thrown
+   * again and again). Made with `potBox` and `rockBox`, which give them their sizes. `kind` is 'rubble', as a crate's.
+   */
+  prop?: 'pot' | 'rock';
   /** Ice: on its top he keeps his momentum. He glides on a couple of seconds with the stick let go, and turns wide (TUNING.ice). */
 /** The top of a pipe's curved wall: a rider who goes off its high end fast goes straight UP and comes back down on it (TUNING.ride.vertMin). */
   vert?: boolean;
@@ -38,6 +44,18 @@ export interface Box {
   y1: number;
   z0: number;
   z1: number;
+}
+
+/** How big a pot and a rock are: across, and high. */
+export const POT = { wide: 0.56, high: 0.62 } as const;
+export const ROCK = { wide: 0.62, high: 0.44 } as const;
+/** A clay pot standing at (x, z) on a floor at y. */
+export function potBox(x: number, z: number, y = 0): Box {
+  return { kind: 'rubble', prop: 'pot', x0: x - POT.wide / 2, x1: x + POT.wide / 2, y0: y, y1: y + POT.high, z0: z - POT.wide / 2, z1: z + POT.wide / 2 };
+}
+/** A rock lying at (x, z) on a floor at y. */
+export function rockBox(x: number, z: number, y = 0): Box {
+  return { kind: 'rubble', prop: 'rock', x0: x - ROCK.wide / 2, x1: x + ROCK.wide / 2, y0: y, y1: y + ROCK.high, z0: z - ROCK.wide / 2, z1: z + ROCK.wide / 2 };
 }
 
 export const ROOM_HALF = 20; // inner faces of the walls sit at +/-20

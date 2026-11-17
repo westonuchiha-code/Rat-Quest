@@ -12,7 +12,7 @@
  * he steps off, to be pressed again (a level's other floor plates stay down for good).
  */
 import { compileCustom, type CustomLevel, type Piece } from './custom';
-import { extent } from '../world/layout';
+import { extent, potBox, rockBox } from '../world/layout';
 import { ARENA, WIDOW_OUT } from './longdrop';
 import type { PracticeEntry } from './testRooms';
 import type { EnemySpec, LevelDef } from './types';
@@ -30,6 +30,8 @@ export const PRACTICE = {
     { t: 'crate', x: -11, z: 12.5 }, { t: 'crate', x: -9.6, z: 12.5 }, { t: 'barrel', x: -12.4, z: 12.5 },
     { t: 'crate', x: 11, z: 12.5 }, { t: 'barrel', x: 9.6, z: 12.5 }, { t: 'crate', x: 12.4, z: 12.5, tough: true },
   ] as Array<{ t: 'crate' | 'barrel'; x: number; z: number; tough?: boolean }>,
+  pots: [[-7.6, 13.2], [-6.8, 13.2], [-6, 13.2], [6, 13.2]] as Array<[number, number]>,
+  rocks: [[6.8, 13.2], [7.6, 13.2]] as Array<[number, number]>,
 } as const;
 
 export function practiceRoom(e: PracticeEntry): LevelDef {
@@ -63,6 +65,9 @@ export function practiceRoom(e: PracticeEntry): LevelDef {
     goals: [],
     // Each button puts in another like the first, at its own spot, which does NOT come back: he asked for it once.
     plates: PRACTICE.buttons.map((b) => ({ x: b.x, z: b.z, y: 0, most: PRACTICE.most, spawn: { ...first, x: b.to.x, z: b.to.z, respawn: false } })),
+    // Smaller things to throw (world/lifting.ts): clay pots, which are light and break; rocks, which do not break.
+    solids: [...def.solids, ...PRACTICE.pots.map(([x, z]) => potBox(x, z)), ...PRACTICE.rocks.map(([x, z]) => rockBox(x, z))],
+    crateContents: [...def.crateContents, ...PRACTICE.pots.map(() => null), ...PRACTICE.rocks.map(() => null)],
     decor: [
       ...def.decor,
       { kind: 'sign', x: 0, y: 2.2, z: H - 0.05, yaw: Math.PI, w: 3.4, h: 1.5, lines: [e.door, 'FLOOR BUTTON:', 'ONE MORE'], post: 0 },

@@ -127,6 +127,8 @@ export const TUNING = {
     reach: 0.55, // how far past touching it he may be and still lift it
     liftTime: 0.25, // seconds for it to come up over his head
     walk: 0.72, // of his speed while he carries it
+    lightWalk: 0.92, // ...a light thing (a pot, a rock, a small creature)
+    foeHold: 3, // seconds a creature stays still over his head before it wriggles free
     jump: 0.85, // of his jump
     hold: 0.12, // the gap between his head and the thing
     throwSpeed: 11, // how fast it leaves him, the way he faces

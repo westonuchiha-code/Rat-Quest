@@ -7,8 +7,11 @@ import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { buildChamber } from '../src/world/chamber';
 import { aabbOf, type Aabb } from '../src/world/collision';
-import { extent } from '../src/world/layout';
-import { carryPlace, groundUnder, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, type Target, type Thrown } from '../src/world/lifting';
+import { POT, ROCK, extent, potBox, rockBox } from '../src/world/layout';
+import fs from 'node:fs';
+import { resolveCombat, type CombatEvents } from '../src/combat/combat';
+import { DOWN_STATES, THROWN_AS, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
+const read = (p: string): string => fs.readFileSync(p, 'utf8');
 import type { Crate } from '../src/world/crates';
 import { compileCustom, type CustomLevel, type Piece } from '../src/levels/custom';
 import { levelById } from '../src/levels/levels';
@@ -138,9 +141,9 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   const floor = aabbOf(extent('floor', -60, 60, -1, 0, -60, 60));
   const crate = (): Crate => ({ type: 'crate', index: 0, x: 0, y: 0, z: 0, half: 0.5, alive: true, aabb: aabbOf(extent('rubble', -0.5, 0.5, 0, 1, -0.5, 0.5)), mesh: null, lastSwing: -1 });
   /** Thrown from the middle of the floor the way he faces (+z); AT whatever of `targets` he would aim at, as the game does. */
-  const fly = (cs: Aabb[], targets: Target[], fps = 60, his = { x: 0, z: 0 }, facing = 0): { t: Thrown; hit: ReturnType<typeof stepThrown>; secs: number } => {
+  const fly = (cs: Aabb[], targets: Target[], fps = 60, his = { x: 0, z: 0 }, facing = 0, speed = 1): { t: Thrown; hit: ReturnType<typeof stepThrown>; secs: number } => {
     const c = crate();
-    const t = startThrow(c, carryPlace({ x: 0, y: 0, z: 0 }, 0.5), facing, his, 1, throwAim(targets, { x: 0, y: 0, z: 0 }, facing));
+    const t = startThrow(c, c.half, c.aabb, carryPlace({ x: 0, y: 0, z: 0 }, 0.5), facing, his, 1, throwAim(targets, { x: 0, y: 0, z: 0 }, facing), speed);
     let hit: ReturnType<typeof stepThrown> = { what: 'none' };
     let n = 0;
     for (; n < fps * 5 && hit.what === 'none'; n++) hit = stepThrown(t, 1 / fps, cs, targets);
@@ -165,7 +168,8 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   const part = fly([floor], [long]);
   check('...and any part of a long body', part.hit.what === 'foe' && (part.hit as { part: number }).part === 0);
   check('thrown off the edge of the world it is lost', fly([], []).hit.what === 'lost');
-  const dropped = startThrow(crate(), new THREE.Vector3(0, 2, 0), 0, { x: 3, z: 3 }, 0);
+  const dc = crate();
+  const dropped = startThrow(dc, dc.half, dc.aabb, new THREE.Vector3(0, 2, 0), 0, { x: 3, z: 3 }, 0);
   let hit: ReturnType<typeof stepThrown> = { what: 'none' };
   for (let i = 0; i < 200 && hit.what === 'none'; i++) hit = stepThrown(dropped, DT, [floor], [{ x: 0, y: 0, z: 0, r: 1, high: 3, alive: true }]);
   check('LET GO of (he was hurt), it falls straight down where he is, and hurts nobody', hit.what === 'solid' && Math.hypot(dropped.pos.x, dropped.pos.z) < 1e-6 && dropped.spent);
@@ -195,12 +199,80 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   check('a shield or a shell turns it, as it turns a sword: a guard facing it is not hurt; an ironback is, only from behind', (!guard.guarding || guard.deflects(0, 5, 'thrown')) && iron.deflects(0, 5, 'thrown') && !iron.deflects(0, -5, 'thrown'));
 }
 
+// ---- POTS AND ROCKS, AND CREATURES THAT ARE DOWN (the owner picked "more to throw", 2026-11-17) ----
+{
+  const cdef = compileCustom({ name: 'Small things', width: 20, depth: 20, wallHeight: 6, pieces: [{ t: 'floor', x0: -10, z0: -10, x1: 10, z1: 10, top: 0 }, at('spawn', 0, 8), at('exit', 0, 10)] }, 'small');
+  const ch = buildChamber({ solids: [...cdef.solids, potBox(0, 0), rockBox(3, 0)], pit: null, water: [], decor: [], movers: [] });
+  const [pot, rock] = ch.crates;
+  check('a pot and a rock are things of the room as a crate is: solid, each its own kind, the size it is given', ch.crates.length === 2 && pot.type === 'pot' && rock.type === 'rock' && ch.colliders.includes(pot.aabb) && Math.abs(pot.aabb.max.y - POT.high) < 1e-6 && Math.abs(rock.aabb.max.x - rock.aabb.min.x - ROCK.wide) < 1e-6 && !!pot.mesh && !!rock.mesh);
+  check('he can lift either', liftTarget(ch.crates, { x: 0, y: 0, z: 0.7 }, Math.PI) === pot && liftTarget(ch.crates, { x: 3, y: 0, z: 0.75 }, Math.PI) === rock);
+  check('A POT is light: it breaks; it hurts half what a crate does; it is thrown faster. A ROCK does not break and hurts as a crate does. An iron-bound crate does not break either', thrownAs(pot).breaks && thrownAs(pot).damage === 1 && thrownAs(pot).light && thrownAs(pot).speed > 1.2 && !thrownAs(rock).breaks && thrownAs(rock).damage === THROWN_AS.crate.damage && thrownAs(rock).light && !thrownAs({ ...pot, type: 'crate', tough: true }).breaks && thrownAs({ ...pot, type: 'crate' }).breaks && !THROWN_AS.crate.light);
+  const floor = aabbOf(extent('floor', -60, 60, -1, 0, -60, 60));
+  const far = (speed: number): number => {
+    const c: Crate = { type: 'pot', index: 0, x: 0, y: 0, z: 0, half: 0.28, alive: true, aabb: aabbOf(potBox(0, 0)), mesh: null, lastSwing: -1 };
+    const t = startThrow(c, c.half, c.aabb, carryPlace({ x: 0, y: 0, z: 0 }, POT.high / 2), 0, { x: 0, z: 0 }, 1, null, speed);
+    for (let i = 0; i < 300 && stepThrown(t, DT, [floor], []).what === 'none'; i++);
+    return t.pos.z;
+  };
+  check('...so a pot goes further than a crate would from the same hands', far(THROWN_AS.pot.speed) > far(1) * 1.25, `${far(1).toFixed(1)} at a crate's speed, ${far(THROWN_AS.pot.speed).toFixed(1)} at a pot's`);
+  // A sword breaks a pot and rings off a rock.
+  const swing = (c: Crate): { broken: boolean; rang: boolean } => {
+    const p = new PlayerController(new THREE.Vector3(c.x, 0, c.z + 0.9));
+    p.facing = Math.PI;
+    const cs = ch.colliders;
+    for (let i = 0; i < 6; i++) p.update(DT, inp({}), cs);
+    p.facing = Math.PI;
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    p.update(DT, inp({ attackPressed: true }), cs);
+    let broken = false;
+    let rang = false;
+    for (let i = 0; i < 40; i++) {
+      p.update(DT, inp({}), cs);
+      resolveCombat(p, [], events, [c]);
+      broken ||= events.cratesBroken.includes(c);
+      rang ||= events.crateRang === c;
+    }
+    return { broken, rang };
+  };
+  const onPot = swing(pot);
+  const onRock = swing(rock);
+  check('his sword breaks a pot; off a rock it rings, and the rock is as it was', onPot.broken && !pot.alive && !onRock.broken && onRock.rang && rock.alive);
+  const light = (isLight: boolean): number => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    const cs: Aabb[] = [floor];
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), cs);
+    p.startCarry(isLight);
+    for (let i = 0; i < 180; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
+    return Math.hypot(p.velocity.x, p.velocity.z);
+  };
+  check('carrying a light thing hardly slows him', Math.abs(light(true) / TUNING.move.run - L.lightWalk) < 0.02 && light(true) > light(false) * 1.2);
+
+  // Creatures.
+  const foes = [
+    { kind: 'hornet', state: 'grounded', alive: true, x: 0, y: 0, z: 1.2, radius: 0.5 },
+    { kind: 'hornet', state: 'hover', alive: true, x: 0, y: 0, z: 1.2, radius: 0.5 },
+    { kind: 'scuttler', state: 'stagger', alive: true, x: 0, y: 0, z: 1.2, radius: 0.5 },
+    { kind: 'stag', state: 'stuck', alive: true, x: 0, y: 0, z: 1.2, radius: 0.5 },
+  ];
+  const here = { x: 0, y: 0, z: 0 };
+  check('A CREATURE THAT IS DOWN can be picked up: a hornet lying on the floor; not one in the air, not a roach flinching from a blow, not a knight in armour', liftFoe([foes[0]], here, 0) === 0 && liftFoe([foes[1]], here, 0) === -1 && liftFoe([foes[2]], here, 0) === -1 && liftFoe([foes[3]], here, 0) === -1);
+  check('...the kinds, and what "down" is for each: a bat, a firefly or a hornet knocked out of the air; a roller lying open; a scorpion sprawled; a mantis with its blades in the floor', ['bat', 'firefly', 'hornet'].every((k) => DOWN_STATES[k].join() === 'grounded') && DOWN_STATES.roller.join() === 'spilled' && DOWN_STATES.scorpion.join() === 'sprawl' && DOWN_STATES.mantis.join() === 'stuck' && Object.keys(DOWN_STATES).length === 6);
+  check('...from beside it, facing it, on its floor; not a dead one', liftFoe([foes[0]], here, Math.PI) === -1 && liftFoe([{ ...foes[0], z: 4 }], here, 0) === -1 && liftFoe([{ ...foes[0], y: 2 }], here, 0) === -1 && liftFoe([{ ...foes[0], alive: false }], here, 0) === -1 && liftFoe([{ ...foes[0], z: 1.5 }, foes[0]], here, 0) === 1);
+  // The real creatures do have those states (the list is not of names that have drifted).
+  const stateLists: Record<string, string> = { bat: read('src/enemies/bat.ts'), firefly: read('src/enemies/firefly.ts'), hornet: read('src/enemies/hornet.ts'), roller: read('src/enemies/roller.ts'), scorpion: read('src/enemies/scorpion.ts'), mantis: read('src/enemies/mantis.ts') };
+  check('every one of those states is a state that creature really has', Object.entries(DOWN_STATES).every(([k, states]) => states.every((st) => new RegExp(`State = [^;]*'${st}'`).test(stateLists[k]))));
+  const thrownFoe = startThrow({ name: 'a hornet' }, 0.5, null, carryPlace(here, 0), 0, { x: 0, z: 0 }, 1, null, 1.1);
+  let met: ReturnType<typeof stepThrown> = { what: 'none' };
+  for (let i = 0; i < 300 && met.what === 'none'; i++) met = stepThrown(thrownFoe, DT, [floor], [{ x: 0, y: 0, z: 5.5, r: 0.5, high: 1, alive: true }]);
+  check('a thrown creature flies as a crate does, and meets what a crate would meet: another creature in its way', met.what === 'foe' && thrownFoe.what.name === 'a hornet');
+}
+
 // ---- Where there is something to throw ----
 {
   const rooms = PRACTICE_ROOMS.map((p) => levelById(p.id)!);
-  check('every practice room has crates and barrels to throw (six, one of them bound in iron), clear of where he comes in and of the way out', rooms.every((l) => {
+  check('every practice room has things to throw (six crates and barrels, one of them bound in iron; four pots; two rocks), clear of where he comes in and of the way out', rooms.every((l) => {
     const things = l.solids.filter((b) => b.kind === 'rubble' || b.kind === 'barrel');
-    return things.length === PRACTICE.throwables.length && things.filter((b) => b.tough).length === 1 && things.every((b) => Math.hypot((b.x0 + b.x1) / 2 - l.spawn.x, (b.z0 + b.z1) / 2 - l.spawn.z) > 2 && !atDoor(l.exit, (b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2));
+    return things.length === PRACTICE.throwables.length + PRACTICE.pots.length + PRACTICE.rocks.length && things.filter((b) => b.prop === 'pot').length === 4 && things.filter((b) => b.prop === 'rock').length === 2 && l.crateContents.length === things.length && things.filter((b) => b.tough).length === 1 && things.every((b) => Math.hypot((b.x0 + b.x1) / 2 - l.spawn.x, (b.z0 + b.z1) / 2 - l.spawn.z) > 2 && !atDoor(l.exit, (b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2));
   }));
   check('the button is named for both its jobs, and the sliders are there', /LIFT/.test(BIND_NAMES.stow) && ['lift.walk', 'lift.jump', 'lift.throwSpeed', 'lift.throwUp', 'lift.damage'].every((path) => TWEAKS.some((t) => t.path === path)));
 }
