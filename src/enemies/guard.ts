@@ -1,4 +1,5 @@
 import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { flankWay } from './director';
 import type { CanStand, HitHow } from './foe';
 
 /**
@@ -74,6 +75,8 @@ export class Guard {
   readonly events: string[] = [];
   /** Set by the director: whether he may start an attack now. */
   mayAttack = true;
+  /** Where round him to wait while he is locked on to another (director.ts); null for wherever it likes. */
+  flank: number | null = null;
   canStand: CanStand | null = null;
   floorUnder: FloorUnder | null = null;
   /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
@@ -308,6 +311,11 @@ export class Guard {
         if (dist < G.crowdRange) {
           moveX = -Math.sin(toPlayer) * G.backSpeed;
           moveZ = -Math.cos(toPlayer) * G.backSpeed;
+        } else if (this.flank !== null) {
+          // Sent to his side (he is locked on to another): he steps round, shield still on him.
+          const way = flankWay(this.flank, toPlayer);
+          moveX = Math.cos(toPlayer) * G.speed * way;
+          moveZ = -Math.sin(toPlayer) * G.speed * way;
         }
         break;
       case 'windup':

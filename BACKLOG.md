@@ -105,9 +105,12 @@ round him measured from the one he is locked on to (right hand, left hand, behin
 place to whoever is nearest it already. `Foe.flank` carries it. The roach (`scuttler.ts`, circle mode) goes round
 to its place by the short way, hurrying (`TUNING.scuttler.flankHurry`), and waits there. Turns are untouched: the
 same number of attacks, never two at once (tests/combat2.ts). Film aid `&autogo=x,z,x,z` and `#lockon`.
-LEFT FOR OPUS: the same four lines in every other mind that circles on the ground (scorpion `scorpion.ts:348`, and
-the ant, guard, brood, mantis, roller, ironback, which WAIT rather than circle and need a walk to the place). A mind
-opts in by having a `flank: number | null = null` field; nothing else is needed in the director.
+[opus] 2026-11-17: the rest done for the scorpion, guard, mantis and ant. One helper, `flankWay()` in director.ts,
+says which way round and how hard; the roach uses it too. The scorpion sidles (`SCORPION.flankHurry` 1.8), the guard
+steps round with his shield on the rat, the mantis sways to its place, and the ant takes the director's place over
+its mate's. Tests: tests/combat2.ts, two checks per creature (most waiting frames at his sides; turns unchanged).
+LEFT OUT on purpose: the roller (it only walks forward and rolls), the ironback (it only plods where it faces) and
+the brood mother (a boss, alone). Flying creatures (bat, hornet, firefly) are not on the ground and were not asked.
 STILL NOT DONE: the locked one using its bigger moves. Not played by hand.
 
 **A10. Stronger in the dream.**

@@ -27,6 +27,17 @@ export const DIRECTOR = {
 
 const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
 
+/**
+ * Which way round him a creature should step to reach the place the director gave it (`Foe.flank`), and how hard:
+ * from -most to most, 0 when it is there or has no place. `toPlayer` is its bearing to him (atan2(dx, dz)). The sign
+ * is a circle's `circleDir`: the step is (cos(toPlayer), -sin(toPlayer)) times this.
+ */
+export function flankWay(flank: number | null | undefined, toPlayer: number, most = 1): number {
+  if (flank === null || flank === undefined) return 0;
+  const off = wrap(flank - toPlayer - Math.PI);
+  return -Math.max(-most, Math.min(most, off / 0.3));
+}
+
 export class Director {
   private cool = 0;
   private wasAttacking = 0;

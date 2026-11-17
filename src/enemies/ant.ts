@@ -95,6 +95,8 @@ export class Ant {
   /** For sounds: 'alert', 'windup', 'thrust', 'biteWind', 'bite', 'reel', 'hurt', 'spring'. The game empties it. */
   readonly events: string[] = [];
   mayAttack = true;
+  /** Where round him to wait while he is locked on to another (director.ts); null for wherever it likes. */
+  flank: number | null = null;
   canStand: CanStand | null = null;
   floorUnder: FloorUnder | null = null;
   /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
@@ -290,7 +292,8 @@ export class Ant {
      * far side of him from its mate if it is the flank. `turnOff`: how far round him that is from where it is.
      */
     const here = Math.atan2(this.x - playerX, this.z - playerZ);
-    const want = mate && this.role === 'flank' ? Math.atan2(playerX - mate.x, playerZ - mate.z) : here;
+    // (Sent to a place round him by the director, because he is locked on to another: that place, over its mate's.)
+    const want = this.flank !== null ? this.flank : mate && this.role === 'flank' ? Math.atan2(playerX - mate.x, playerZ - mate.z) : here;
     const turnOff = wrap(want - here);
     const placed = Math.abs(turnOff) < 0.3 && Math.abs(dist - N.holdRange) < 0.5;
     /** Goes to its place: round him at pike's length, never through him. */

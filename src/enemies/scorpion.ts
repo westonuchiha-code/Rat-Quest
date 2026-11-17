@@ -1,4 +1,5 @@
 import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { flankWay } from './director';
 import type { BodyPart, CanStand } from './foe';
 
 /**
@@ -34,6 +35,8 @@ export const SCORPION = {
   turnRate: 5,
   standOff: 2.5, // it sidles round him this far off
   circleSpeed: 1.6,
+  /** Sent to wait at his side (he is locked on to another), it sidles round this many times faster. */
+  flankHurry: 1.8,
   wait: [0.7, 1.5] as [number, number],
   // The sting.
   stingMin: 1.3, // the nearest in front of its middle the barb comes down
@@ -99,6 +102,8 @@ export class Scorpion {
   readonly radius: number = SCORPION.radius;
   rng: () => number = Math.random;
   mayAttack = true;
+  /** Where round him to wait while he is locked on to another (director.ts); null for wherever it likes. */
+  flank: number | null = null;
   canStand: CanStand | null = null;
   floorUnder: FloorUnder | null = null;
   /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
@@ -345,8 +350,10 @@ export class Scorpion {
         else {
           // Sidling round him, drifting in or out to keep its distance.
           const drift = Math.max(-1, Math.min(1, (dist - S.standOff) * 1.6));
-          moveX = Math.cos(toPlayer) * S.circleSpeed * this.circleDir + Math.sin(toPlayer) * S.circleSpeed * drift;
-          moveZ = -Math.sin(toPlayer) * S.circleSpeed * this.circleDir + Math.cos(toPlayer) * S.circleSpeed * drift;
+          // Sent to his side (he is locked on to another): round to it by the short way, and hold there.
+          const side = this.flank !== null ? flankWay(this.flank, toPlayer, S.flankHurry) : this.circleDir;
+          moveX = Math.cos(toPlayer) * S.circleSpeed * side + Math.sin(toPlayer) * S.circleSpeed * drift;
+          moveZ = -Math.sin(toPlayer) * S.circleSpeed * side + Math.cos(toPlayer) * S.circleSpeed * drift;
         }
         break;
       }

@@ -1,4 +1,5 @@
 import { SENSES, keepOnFloor, type CanStand, type HitHow, type WallAt, type FloorUnder, sameGround } from './foe';
+import { flankWay } from './director';
 
 /**
  * The Orchid Mantis: a duellist. Tall, pale, two scythes for arms, and no armour at all: what keeps it alive is that
@@ -96,6 +97,8 @@ export class Mantis {
   readonly events: string[] = [];
   /** Set by the director: whether it may start an attack now. */
   mayAttack = true;
+  /** Where round him to wait while he is locked on to another (director.ts); null for wherever it likes. */
+  flank: number | null = null;
   canStand: CanStand | null = null;
   floorUnder: FloorUnder | null = null;
   /** The height it was made at: it goes back to it when it comes back. (Its `y` follows the floor now.) */
@@ -383,13 +386,15 @@ export class Mantis {
           this.side = this.rng() < 0.5 ? -1 : 1;
           this.sideLeft = 1.1 + this.rng() * 1.3;
         }
-        let tx = Math.cos(toPlayer) * this.side;
-        let tz = -Math.sin(toPlayer) * this.side;
+        // Sent to his side (he is locked on to another): it sways round to that place instead, and holds there.
+        const way = this.flank !== null ? flankWay(this.flank, toPlayer, 1.6) : this.side;
+        let tx = Math.cos(toPlayer) * way;
+        let tz = -Math.sin(toPlayer) * way;
         if (!this.floorAt(this.x + tx * 0.6, this.z + tz * 0.6)) {
-          // No floor that way: it turns back.
+          // No floor that way: it turns back (or, sent somewhere, it waits where it is).
           this.side = -this.side;
-          tx = -tx;
-          tz = -tz;
+          tx = this.flank !== null ? 0 : -tx;
+          tz = this.flank !== null ? 0 : -tz;
         }
         const inOut = Math.max(-1, Math.min(1, (dist - M.swayRange) * 2));
         moveX = tx * M.strafe + Math.sin(toPlayer) * inOut * M.strafe;

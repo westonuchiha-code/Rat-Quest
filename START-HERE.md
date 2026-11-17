@@ -2146,7 +2146,8 @@ Asked for when lock-on was built ("enemies moving to your sides when you're lock
 then. Now: `Director.flank()` gives each waiting creature a bearing round the rat (`Foe.flank`, null when he is not
 locked on), counted from the locked one: his right, his left, behind each shoulder, behind. The ROACH obeys it in
 its circle mode. Who may attack and when did not change (tests/combat2.ts: same count of attacks, never two at
-once). Other creatures do not obey it yet: BACKLOG A9. Not played by hand.
+once). [opus] Since then the scorpion, guard, mantis and ant obey it too, through `flankWay()` in director.ts; the
+roller, ironback and brood mother do not (they do not step sideways). Not played by hand.
 
 ## NEXT BIG JOB, asked for by the owner (2026-11-15): slopes, a cave, and riding the shield
 His words, in the order he sent them:

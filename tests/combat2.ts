@@ -5,6 +5,10 @@ import { PlayerController, PlayerInput } from '../src/player/controller';
 import { Scuttler } from '../src/enemies/scuttler';
 import { Toad, TOAD } from '../src/enemies/toad';
 import { Director } from '../src/enemies/director';
+import { Scorpion } from '../src/enemies/scorpion';
+import { Guard } from '../src/enemies/guard';
+import { Mantis } from '../src/enemies/mantis';
+import { Ant } from '../src/enemies/ant';
 import type { Foe } from '../src/enemies/foe';
 import { buildChamber } from '../src/world/chamber';
 import { TUNING } from '../src/data/tuning';
@@ -127,6 +131,50 @@ function check(name: string, ok: boolean, detail = ''): void {
   check('the one already on his right is sent to his right hand and the one on his left to his left', Math.abs(three[1].flank! - Math.PI / 2) < 0.01 && Math.abs(three[2].flank! + Math.PI / 2) < 0.01 && three[0].flank === null);
   d3.update(DT, three, 0, 0, null);
   check('the lock let go, they are free to circle as they like again', three.every((e) => e.flank === null));
+}
+
+// ---- The same for the other creatures that wait their turn round him on foot (2026-11-17, BACKLOG A9's rest) ----
+{
+  type Walker = Foe & { x: number; z: number; flank: number | null; rng: () => number; update(dt: number, x: number, y: number, z: number, alive: boolean): void };
+  const kinds: [string, (x: number, z: number) => Walker][] = [
+    ['scorpion', (x, z) => new Scorpion({ x, z, hunt: true }) as unknown as Walker],
+    ['guard', (x, z) => new Guard({ x, z, hunt: true }) as unknown as Walker],
+    ['mantis', (x, z) => new Mantis({ x, z, hunt: true }) as unknown as Walker],
+    ['ant', (x, z) => new Ant({ x, z, hunt: true }) as unknown as Walker],
+  ];
+  const wrapA = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
+  for (const [kind, make] of kinds) {
+    const fight = (lock: boolean): { side: number; looked: number; attacks: number; atOnce: number } => {
+      // Three, bunched in FRONT of him; he stands still (a test of where they go, not of the fight).
+      const pack = [make(0, 5), make(1.2, 5.5), make(-1.2, 5.5)];
+      let seed = 11;
+      for (const e of pack) e.rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      const d = new Director();
+      const out = { side: 0, looked: 0, attacks: 0, atOnce: 0 };
+      const was = pack.map((e) => e.attacking);
+      for (let i = 0; i < 60 * 40; i++) {
+        d.update(DT, pack, 0, 0, lock ? pack[0] : null);
+        for (const e of pack) e.update(DT, 0, 0, 0, true);
+        pack.forEach((e, k) => {
+          if (e.attacking && !was[k]) out.attacks++;
+          was[k] = !!e.attacking;
+        });
+        out.atOnce = Math.max(out.atOnce, pack.filter((e) => e.attacking).length);
+        if (i < 60 * 5) continue;
+        const front = Math.atan2(pack[0].x, pack[0].z);
+        for (const e of pack.slice(1)) {
+          if (e.attacking) continue;
+          out.looked++;
+          if (Math.abs(Math.abs(wrapA(Math.atan2(e.x, e.z) - front)) - Math.PI / 2) < 0.6) out.side++;
+        }
+      }
+      return out;
+    };
+    const free = fight(false);
+    const duel = fight(true);
+    check(`${kind}: locked on to one of three, the two that wait spend most of their waiting at his SIDES`, duel.side > duel.looked * 0.5 && duel.side > free.side * 1.5, `${duel.side} of ${duel.looked} frames, against ${free.side} of ${free.looked} with no lock`);
+    check(`${kind}: ...and the turns are not changed by it: never more at once than with no lock, and no fewer attacks`, duel.atOnce <= Math.max(1, free.atOnce) && duel.attacks >= free.attacks * 0.9, `${duel.attacks} attacks (${free.attacks} with no lock), at most ${duel.atOnce} at once`);
+  }
 }
 
 // ---- The roach: approaches, circles, picks bite or charge by distance, hops back from a swing ----

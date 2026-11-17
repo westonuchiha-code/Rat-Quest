@@ -1,6 +1,7 @@
 import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
 import type { CanStand } from './foe';
 import { TUNING } from '../data/tuning';
+import { flankWay } from './director';
 
 /**
  * Scuttler: a big sewer roach. Logic only, no graphics, so it runs in tests.
@@ -248,11 +249,8 @@ export class Scuttler {
         const drift = Math.max(-1, Math.min(1, (dist - S.circleRadius) * 1.6));
         // Told where to wait (he is locked on to another): round to that side by the short way, and hold there.
         let side = this.circleDir;
-        if (this.flank !== null) {
-          const off = Math.atan2(Math.sin(this.flank - toPlayer - Math.PI), Math.cos(this.flank - toPlayer - Math.PI));
-          // It hurries: the one he is fighting is circling too, and a place that moves away as fast as it is chased is never reached.
-          side = -Math.max(-S.flankHurry, Math.min(S.flankHurry, off / 0.3));
-        }
+        // It hurries: the one he is fighting is circling too, and a place that moves away as fast as it is chased is never reached.
+        if (this.flank !== null) side = flankWay(this.flank, toPlayer, S.flankHurry);
         moveX = Math.cos(toPlayer) * S.circleSpeed * side + Math.sin(toPlayer) * S.circleSpeed * drift;
         moveZ = -Math.sin(toPlayer) * S.circleSpeed * side + Math.cos(toPlayer) * S.circleSpeed * drift;
         break;
