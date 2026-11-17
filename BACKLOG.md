@@ -17,6 +17,40 @@ done, move it to "Done" at the bottom with the commit; do not delete it. Read ST
 
 ---
 
+## THE SWITCH TO OPUS (written by Fable, 2026-11-17, at 98.8% of the week's Fable)
+
+**Where things stand.** Everything is committed and pushed on `claude/new-session-0uiaps`. The full suite passes:
+3,861 checks, 101 suites, 0 failing. The twelve delivered files are current.
+
+**Opus, before you change anything:**
+1. Read START-HERE.md from the top through "The owner's standing rules". The rules there are his, and all still hold.
+2. Every commit's subject starts with `[opus]`. Fable reviews those next week (Part D).
+3. After any change: the full suite (the loop is in START-HERE under "Tests"; about twelve minutes), then
+   `npm run assets`, then `bash scripts/deliver.sh deliver`, then send him the twelve files and a FILM of anything
+   that moves. Never stop with uncommitted work.
+4. Stills and films: `scripts/film/stills.mjs`, `film.mjs`, `cut.sh` (the header of each says how). Film aids on the
+   address: `&autoride` (and `=pipe`, `=bowl`, `=spine`), `&autorail`, `&autofight`, `&autolift`, `&autowalk=x,z`,
+   `&autojump`, `&god`, `&at=x,y,z,yaw`, `&eye=&look=`, `&chase=dx,dy,dz`.
+5. Claude cannot hear: say so whenever sound is delivered.
+
+**Do NOT, without Fable or without his asking:** change `src/player/controller.ts`, `src/combat/combat.ts` or
+`src/camera/followCamera.ts` beyond what a Part B item plainly needs; weaken, skip or delete a test to get to green;
+change a number in `TUNING` that he has not asked about (add a slider instead); start anything in Part A.
+If a Part B item turns out to need one of those, write what you found under the item and move to the next.
+
+**Start with:** B1 (things to throw in the other rooms), then B3 (finish the lifting), B2 (teach the editor the new
+pieces), B4 (tricks polish). They are the best marked out.
+
+**What is left of Part A after today** (Fable's, next week): A2's rest (banked turns, a launcher, round corners for
+the bowl), A3's rest (the camera at a deck's edge and against a wall: his to judge first), A6 (model files), A7 (the
+glitch), A8 (a cutscene editor), A9 (flanking). Done today: A1, A4, A5, A10, and the first parts of A2 and A3.
+
+**Waiting on HIM (Part C), most wanted first:** a hands-on play of this week's work. Nothing made since the Toy Box
+has been played by hand: the dream's jump, lifting and throwing, the Sewers' and the platform room's numbers, the
+bowl and the spine, the bats on the rails, grabbing a roach after a perfect guard.
+
+---
+
 ## PART A. FOR FABLE FIRST (hardest at the top)
 
 **A1. Each waking biome its own feel, starting with the Sewers (Dark Souls).**
