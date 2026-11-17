@@ -107,6 +107,11 @@ export interface Foe {
   readonly ready?: boolean;
   readonly attacking?: boolean;
   mayAttack?: boolean;
+  /**
+   * Where round the rat it should WAIT, as a bearing from him (atan2(x, z)); null for wherever it likes. The director
+   * sets it while he is locked on to another: the ones waiting go to his sides, where the lock does not look.
+   */
+  flank?: number | null;
   /** It is DOWN for a moment in a way that is not one of its states by name (a roach on its back, a toad winded, after a perfect guard): it can be picked up. */
   readonly down?: boolean;
   takeHit(damage: number, fromX: number, fromZ: number, how?: HitHow, part?: number): boolean;

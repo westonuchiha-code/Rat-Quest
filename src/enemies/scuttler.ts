@@ -47,6 +47,7 @@ export class Scuttler {
   attack: 'bite' | 'charge' = 'bite';
   /** Set by the director: whether it may start an attack now. Alone, it always may. */
   mayAttack = true;
+  flank: number | null = null;
   /** Random numbers, 0..1. Tests swap this for something fixed. */
   rng: () => number = Math.random;
   private circleDir = 1;
@@ -245,8 +246,15 @@ export class Scuttler {
         }
         // Sideways round him, drifting in or out to keep its distance.
         const drift = Math.max(-1, Math.min(1, (dist - S.circleRadius) * 1.6));
-        moveX = Math.cos(toPlayer) * S.circleSpeed * this.circleDir + Math.sin(toPlayer) * S.circleSpeed * drift;
-        moveZ = -Math.sin(toPlayer) * S.circleSpeed * this.circleDir + Math.cos(toPlayer) * S.circleSpeed * drift;
+        // Told where to wait (he is locked on to another): round to that side by the short way, and hold there.
+        let side = this.circleDir;
+        if (this.flank !== null) {
+          const off = Math.atan2(Math.sin(this.flank - toPlayer - Math.PI), Math.cos(this.flank - toPlayer - Math.PI));
+          // It hurries: the one he is fighting is circling too, and a place that moves away as fast as it is chased is never reached.
+          side = -Math.max(-S.flankHurry, Math.min(S.flankHurry, off / 0.3));
+        }
+        moveX = Math.cos(toPlayer) * S.circleSpeed * side + Math.sin(toPlayer) * S.circleSpeed * drift;
+        moveZ = -Math.sin(toPlayer) * S.circleSpeed * side + Math.cos(toPlayer) * S.circleSpeed * drift;
         break;
       }
       case 'windup': {

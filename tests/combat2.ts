@@ -84,6 +84,51 @@ function check(name: string, ok: boolean, detail = ''): void {
   }
 }
 
+// ---- Locked on to one, the others wait at his SIDES ("enemies moving to your sides when you're locked on to one", 2026-11-17) ----
+{
+  const wrapA = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
+  const fight = (lock: boolean): { side: number; front: number; attacks: number; lockedAttacks: number; atOnce: number } => {
+    // Three roaches that start bunched in FRONT of him, the way they arrive down a corridor.
+    const pack = [new Scuttler({ x: 0, z: 5, hunt: true }), new Scuttler({ x: 1.2, z: 5.5, hunt: true }), new Scuttler({ x: -1.2, z: 5.5, hunt: true })];
+    let seed = 7;
+    for (const e of pack) e.rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const d = new Director();
+    const out = { side: 0, front: 0, attacks: 0, lockedAttacks: 0, atOnce: 0 };
+    const was = pack.map((e) => e.state);
+    for (let i = 0; i < 60 * 40; i++) {
+      d.update(DT, pack, 0, 0, lock ? pack[0] : null);
+      for (const e of pack) e.update(DT, 0, 0, 0, true, false);
+      pack.forEach((e, k) => {
+        if (e.state === 'windup' && was[k] !== 'windup') { out.attacks++; if (k === 0) out.lockedAttacks++; }
+        was[k] = e.state;
+      });
+      out.atOnce = Math.max(out.atOnce, pack.filter((e) => e.attacking).length);
+      if (i < 60 * 4) continue; // give them a moment to get there
+      const front = Math.atan2(pack[0].x, pack[0].z);
+      for (const e of pack.slice(1)) {
+        if (e.state !== 'chase' || e.mode !== 'circle') continue;
+        const off = Math.abs(wrapA(Math.atan2(e.x, e.z) - front));
+        if (Math.abs(off - Math.PI / 2) < 0.5) out.side++;
+        if (off < 0.6) out.front++;
+      }
+    }
+    return out;
+  };
+  const free = fight(false);
+  const duel = fight(true);
+  check('locked on to one roach of three, the two that wait spend their waiting at his SIDES, far more than a crowd he is not locked on to does (they also charge through him and back, which is why it is not all of it)', duel.side > free.side * 1.7 && duel.side > 900, `${duel.side} frames against ${free.side}`);
+  check('...and not bunched in front of him with the one he is fighting', duel.front < duel.side * 0.1, `${duel.front} frames in front`);
+  check('they still take their turns from there: the ones at his sides attack too, and never two at once', duel.attacks - duel.lockedAttacks >= 3 && duel.atOnce === 1, `${duel.attacks} attacks, ${duel.lockedAttacks} by the locked one`);
+  check('nothing got easier: there are at least as many attacks in the same time as with no lock', duel.attacks >= free.attacks, `${duel.attacks} against ${free.attacks}`);
+  // Two take a hand each; nobody crosses in front of him to get to his place.
+  const three = [new Scuttler({ x: 0, z: 5, hunt: true }), new Scuttler({ x: 3, z: 2, hunt: true }), new Scuttler({ x: -3, z: 2, hunt: true })];
+  const d3 = new Director();
+  d3.update(DT, three, 0, 0, three[0]);
+  check('the one already on his right is sent to his right hand and the one on his left to his left', Math.abs(three[1].flank! - Math.PI / 2) < 0.01 && Math.abs(three[2].flank! + Math.PI / 2) < 0.01 && three[0].flank === null);
+  d3.update(DT, three, 0, 0, null);
+  check('the lock let go, they are free to circle as they like again', three.every((e) => e.flank === null));
+}
+
 // ---- The roach: approaches, circles, picks bite or charge by distance, hops back from a swing ----
 {
   const e = new Scuttler({ x: 0, z: 6, hunt: true });

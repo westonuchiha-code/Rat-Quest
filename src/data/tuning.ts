@@ -84,6 +84,8 @@ export const TUNING = {
     engageRange: 3.6, // nearer than this it stops running at him and starts to circle
     circleRadius: 2.7, // the distance it tries to keep while circling
     circleSpeed: 2.0,
+    /** Told to wait at his side (he is locked on to another), it goes round this many times faster than it circles. */
+    flankHurry: 1.8,
     circleTime: [0.7, 2.0], // how long it circles before it wants to attack (a random time in this range)
     retaliate: [0.25, 0.7], // after being hit it wants to attack again this soon
     // The quick bite: a short tell, a short snap, a short opening. Used when he is close.

@@ -2140,6 +2140,14 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## Locked on to one, the others go to his sides (2026-11-17)
+
+Asked for when lock-on was built ("enemies moving to your sides when you're locked on to one") and left undone
+then. Now: `Director.flank()` gives each waiting creature a bearing round the rat (`Foe.flank`, null when he is not
+locked on), counted from the locked one: his right, his left, behind each shoulder, behind. The ROACH obeys it in
+its circle mode. Who may attack and when did not change (tests/combat2.ts: same count of attacks, never two at
+once). Other creatures do not obey it yet: BACKLOG A9. Not played by hand.
+
 ## NEXT BIG JOB, asked for by the owner (2026-11-15): slopes, a cave, and riding the shield
 His words, in the order he sent them:
 - "everything right now it VERY angular. I want to introduce some more inclines. we are to do a cave level maybe a

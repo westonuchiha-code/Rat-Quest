@@ -17,7 +17,15 @@ export const DIRECTOR = {
    * its Stalfos "fights harder when it is the one locked on to; ours ignore the lock". 2026-11-16.)
    */
   lockedGap: 0.3,
+  /**
+   * Locked on to one, the others that are waiting go to these places round him, measured from the locked one: his
+   * right and left hands first, then behind each shoulder, then dead behind. ("Enemies moving to your sides when
+   * you're locked on to one", 2026-11-17.) They wait there as before; nobody attacks sooner or more often for it.
+   */
+  flanks: [Math.PI / 2, -Math.PI / 2, 2.5, -2.5, Math.PI],
 };
+
+const wrap = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
 
 export class Director {
   private cool = 0;
@@ -32,6 +40,7 @@ export class Director {
     if (attacking > this.wasAttacking) this.cool = DIRECTOR.gap;
     this.wasAttacking = attacking;
     for (const e of foes) if (e.mayAttack !== undefined) e.mayAttack = false;
+    this.flank(takers, px, pz, locked);
     // Far from the rat nobody is taking turns: an enemy on its own patch does as it likes.
     for (const e of foes) if (e.alive && e.ready !== undefined && !takers.includes(e)) e.mayAttack = true;
     const slots = (takers.length >= DIRECTOR.crowd ? 2 : 1) - attacking;
@@ -45,5 +54,25 @@ export class Director {
     // Otherwise the one who has waited and is nearest.
     const waiting = takers.filter((e) => e.ready).sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz));
     if (waiting[0]) waiting[0].mayAttack = true;
+  }
+
+  /** Hands the waiting ones their places at his sides while he is locked on to another in the fight; takes them away when he is not. */
+  private flank(takers: Foe[], px: number, pz: number, locked: Foe | null): void {
+    const others = takers.filter((e) => e.flank !== undefined && e !== locked);
+    for (const e of others) e.flank = null;
+    if (!locked || !locked.alive || Math.hypot(locked.x - px, locked.z - pz) >= DIRECTOR.range) return;
+    const front = Math.atan2(locked.x - px, locked.z - pz);
+    const free = others.slice();
+    // Each place in turn goes to whoever is nearest it already, so nobody crosses in front of him to get there.
+    for (let i = 0; free.length > 0; i++) {
+      const place = wrap(front + DIRECTOR.flanks[i % DIRECTOR.flanks.length]);
+      let best = 0;
+      let bestOff = Infinity;
+      for (let j = 0; j < free.length; j++) {
+        const off = Math.abs(wrap(Math.atan2(free[j].x - px, free[j].z - pz) - place));
+        if (off < bestOff) { bestOff = off; best = j; }
+      }
+      free.splice(best, 1)[0].flank = place;
+    }
   }
 }

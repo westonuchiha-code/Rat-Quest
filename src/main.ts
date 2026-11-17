@@ -2382,6 +2382,15 @@ function startGame(): void {
       m.set(devWalk[0], 0, devWalk[1]);
       run = true;
     }
+    // (`&autogo=x,z,x,z...`: he runs to each place in turn, hops there, and then stands: for a film of the practice rooms' buttons.)
+    if (devGo && devGo.length >= 2 && !player.dead) {
+      const gx = devGo[0] - player.position.x;
+      const gz = devGo[1] - player.position.z;
+      if (Math.hypot(gx, gz) < 0.4) {
+        devGo.splice(0, 2);
+        jumpPressed = player.grounded;
+      } else m.set(gx, 0, gz).normalize();
+    }
     // (`&autojump`: every two seconds he jumps, holds it, and jumps again at the top: for a film of how a place's air feels.)
     if (devJump && !player.dead) {
       devJumpAt += dt;
@@ -3343,6 +3352,7 @@ function startGame(): void {
   const devRail = /[#&]autorail\b/.test(location.hash);
   let devRailTick = 0;
   const devLift = /[#&]autolift\b/.test(location.hash);
+  const devGo = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autogo=([-\d.,]+)/.exec(location.hash));
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
