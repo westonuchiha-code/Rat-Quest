@@ -15,7 +15,7 @@ import type { CanFly, CanStand, HitHow } from './foe';
  * Its y is the bottom of its body, so the game's "on the same level" test (the sword, its bite) is true only at the
  * bottom of a swoop or on the floor.
  */
-export type BatState = 'roost' | 'wake' | 'hover' | 'swoopWind' | 'swoop' | 'fall' | 'grounded' | 'rise' | 'dead' | 'return';
+export type BatState = 'roost' | 'wake' | 'hover' | 'swoopWind' | 'swoop' | 'fall' | 'grounded' | 'rise' | 'dead' | 'return' | 'flutter';
 
 export const BAT = {
   hp: 2,
@@ -89,7 +89,16 @@ export class Bat {
   private low = { x: 0, y: 0, z: 0 };
   private fallFrom = 0;
 
-  constructor(spec: { x: number; z: number; y?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean }) {
+  /**
+   * A FLUTTERER: it hangs in the air in one place, at the height it is given, and does nothing else: something to hit
+   * from a rail as he goes by. One blow ends it. It does not swoop, does not hurt, and is not woken or moved.
+   * (The owner, 2026-11-17, of a railway level: "you're grinding down the railway on your shield and you're smacking
+   * bats out of the air with your sword while you're grinding down the rail and it's going to feel like you're playing
+   * a Sonic Adventure game".)
+   */
+  readonly flutter: boolean;
+  constructor(spec: { x: number; z: number; y?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean; flutter?: boolean }) {
+    this.flutter = !!spec.flutter;
     this.floorY = spec.y ?? 0;
     this.home = { x: spec.x, z: spec.z };
     this.hunt = !!spec.hunt;
@@ -100,6 +109,11 @@ export class Bat {
     this.y = this.floorY + BAT.roostHeight;
     // A wave bat arrives awake.
     if (this.hunt) this.state = 'hover';
+    if (this.flutter) {
+      this.y = this.floorY;
+      this.hp = 1;
+      this.state = 'flutter';
+    }
   }
 
   get alive(): boolean {
@@ -170,6 +184,7 @@ export class Bat {
       this.enter('dead');
       return true;
     }
+    if (this.flutter) return false;
     if (!this.downed) this.knockDown(false);
     return false;
   }
@@ -181,6 +196,7 @@ export class Bat {
   }
 
   nudge(dx: number, dz: number): void {
+    if (this.flutter) return;
     this.moveTo(this.x + dx, this.y, this.z + dz);
   }
 
@@ -231,6 +247,11 @@ export class Bat {
     const cruiseY = playerY + B.cruise;
 
     switch (this.state) {
+      case 'flutter':
+        // (It bobs where it hangs, and turns to watch him come.)
+        this.y = this.floorY + Math.sin(this.age * 5 + this.home.z) * 0.06;
+        if (dist > 0.5) this.facing = Math.atan2(playerX - this.x, playerZ - this.z);
+        break;
       case 'roost': {
         this.y = this.floorY + B.roostHeight;
         const hear = (SENSES.quiet ? B.hearQuiet : B.hear) * SENSES.notice;
@@ -365,11 +386,11 @@ export class Bat {
         if (this.respawns && this.stateTime >= B.respawn) {
           this.x = this.home.x;
           this.z = this.home.z;
-          this.y = this.floorY + B.roostHeight;
-          this.hp = B.hp;
+          this.y = this.floorY + (this.flutter ? 0 : B.roostHeight);
+          this.hp = this.flutter ? 1 : B.hp;
           this.age = 0;
           this.lastSwing = -1;
-          this.enter('roost');
+          this.enter(this.flutter ? 'flutter' : 'roost');
         }
         break;
     }

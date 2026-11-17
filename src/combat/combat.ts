@@ -57,7 +57,10 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
       const clip = player.attackClip;
       const reached = (cx: number, cz: number, r: number): number => {
         const d = Math.hypot(cx - p.x, cz - p.z);
-        const inArc = d < r + 0.25 || angleBetween(Math.atan2(cx - p.x, cz - p.z), player.facing) <= clip.arc;
+        // (GRINDING A RAIL, his swing takes whatever is in reach all round him: he is going by it at sixteen a second,
+        // and what is ahead of him as the swing begins is beside him or behind before it ends. Measured: with the
+        // swing's own arc a bat beside the rail could be hit for one frame in sixty.)
+        const inArc = player.grinding || d < r + 0.25 || angleBetween(Math.atan2(cx - p.x, cz - p.z), player.facing) <= clip.arc;
         return inArc && d - r <= clip.reach ? d - r : Infinity;
       };
       let part = -1;

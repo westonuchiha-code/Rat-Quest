@@ -64,6 +64,8 @@ export const WEED = { half: 0.22, high: 1.1 } as const;
 export const SHOULDER_KICKER = { x0: 4, x1: 7, len: 3, rise: 1, back: 7 } as const;
 export const BED_KICKER = { len: 3, rise: 0.5 } as const;
 export const RAIL = { x: 1.4, wide: 0.24, high: 0.3 } as const;
+/** Where a rail's bats hang: how far to the side of the rail (toward the middle of the bed), and how far over its top (the bottom of the bat). */
+export const BAT_OFF = { side: 0.9, up: 0.35 } as const;
 /**
  * The giant ramp is a ski jump: a long steep in-run, a short level table at its foot, and a lip that turns up in two
  * pieces, the second steeper. (Climbing costs him speed, and his speed has a top: a lip that climbed far would
@@ -194,6 +196,8 @@ interface Built {
   collectibles: CollectibleDef[];
   launches: Launch[];
   rails: RailRun[];
+  /** Bats hanging in the air beside the rails, to be hit in passing. */
+  bats: Array<{ x: number; y: number; z: number }>;
   /** The crumbs along the line worth riding. */
   lineCrumbs: string[];
   /** Every weed: where its stem is. */
@@ -222,6 +226,7 @@ function build(): Built {
   const collectibles: CollectibleDef[] = [];
   const launches: Launch[] = [];
   const rails: RailRun[] = [];
+  const bats: Array<{ x: number; y: number; z: number }> = [];
   const lineCrumbs: string[] = [];
   const weeds: Array<[number, number, number]> = [];
   const crumb = (x: number, y: number, z: number): string => {
@@ -303,6 +308,10 @@ function build(): Built {
         const ids: string[] = [];
         for (let d = from + 5; d < to - 1; d += 6) ids.push(crumb(x, top(z0 + d) + 0.55, z0 + d));
         rails.push({ x, z0: z0 + from, z1: z0 + to, crumbs: ids });
+        // BATS OVER THE RAILS, to hit with the sword as he grinds by (see enemies/bat.ts, a flutterer): one between
+        // each two of the rail's crumbs, off to the side of it that the middle of the bed is on, at the height of
+        // his sword arm.
+        for (let d = from + 8; d < to - 3; d += 12) bats.push({ x: x - Math.sign(x) * BAT_OFF.side, y: top(z0 + d) + BAT_OFF.up, z: z0 + d });
       }
       if (s.rails?.length) {
         const from = Math.min(...s.rails.map((r) => r[1]));
@@ -374,7 +383,7 @@ function build(): Built {
   const firstRails = placed.find((p) => p.spec?.kind === 'bed' && p.spec.rails?.length);
   if (firstRails) decor.push({ kind: 'sign', x: -HALF + 0.02, y: firstRails.y0 + 2.2, z: firstRails.z0 + 4, yaw: Math.PI / 2, w: 2.8, h: 1.4, lines: ['THE RAILS', 'RIDE NEAR, STOW'] });
 
-  return { placed, solids, decor, collectibles, launches, rails, lineCrumbs, weeds, head, lip, arena, well };
+  return { placed, solids, decor, collectibles, launches, rails, bats, lineCrumbs, weeds, head, lip, arena, well };
 }
 
 /** Everything about how the course lies (built once). */
@@ -419,7 +428,7 @@ export function longDrop(): LevelDef {
     gear: [],
     // The Widows: two of them, one out past the east edge of the light and one past the west, each facing the middle
     // (see enemies/widow.ts). Between them their legs reach the whole floor.
-    enemies: [1, -1].map((side) => ({ type: 'widow' as const, x: B.arena.x + side * (B.arena.r + WIDOW_OUT), y: 0, z: B.arena.z, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } })),
+    enemies: [...B.bats.map((b) => ({ type: 'bat' as const, flutter: true, x: b.x, y: b.y, z: b.z, respawn: true, uncounted: true })), ...[1, -1].map((side) => ({ type: 'widow' as const, x: B.arena.x + side * (B.arena.r + WIDOW_OUT), y: 0, z: B.arena.z, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } }))],
     goals: [{ type: 'defeat', label: 'Beat the Widows' }],
     well: { ...B.well },
     // Its way out stands at the south edge of the arena's light (ahead of him as he lands, between the two of them),

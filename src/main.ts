@@ -565,13 +565,15 @@ function startGame(): void {
     } else if (spec.type === 'bat') {
       const e = new Bat(spec);
       const m = new BatModel({ x: e.home.x, y: e.floorY + BAT.roostHeight, z: e.home.z }, spec.perch ?? 'rock');
+      if (e.flutter) m.noPerch();
       e.canFly = canFly;
       enemies.push(e);
       enemyModels.push({
         root: m.root,
         setTransform: (p, f) => m.setTransform(p, f),
         flash: () => m.flash(),
-        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, swoopU: e.swoopU, floorY: e.floorY, y: e.y }),
+        // (A flutterer is drawn as one hovering; its "floor" for the model is far below, so that it is drawn flying.)
+        tick: (dt) => m.update(dt, { state: e.state === 'flutter' ? 'hover' : e.state, stateTime: e.stateTime, swoopU: e.swoopU, floorY: e.flutter ? e.floorY - 3 : e.floorY, y: e.y }),
       });
       scene.add(m.root);
     } else if (spec.type === 'toad') {
@@ -2335,6 +2337,21 @@ function startGame(): void {
       jumpHeld = a.jumpHeld;
       attackPressed = a.attackPressed;
     }
+    // (`&autorail`, for the films: riding, he takes the nearest rail, and swings at each bat that hangs beside it.)
+    if (devRail && !player.dead) {
+      devRailTick++;
+      if (!player.riding) {
+        // (Onto his shield: a jump, and the air attack over the slope.)
+        m.set(0, 0, 1);
+        jumpPressed = player.grounded && devRailTick % 20 === 0;
+        attackPressed = !player.grounded;
+      } else if (!player.grinding) {
+        // (Over to the rail on his left, and onto it.)
+        const railX = -1.4;
+        m.set(Math.max(-1, Math.min(1, (railX - player.position.x) * 2)), 0, 1).normalize();
+        stowPressed = player.grounded && Math.abs(player.position.x - railX) < 0.6 && devRailTick % 6 === 0;
+      } else attackPressed = player.attackTime <= 0 && enemies.some((e) => e.alive && e.kind === 'bat' && e.z > player.position.z - 0.5 && e.z - player.position.z < 3 && Math.abs(e.x - player.position.x) < 1.5);
+    }
     if (devAuto.ride && cur.id === 'bigdipper' && !player.dead) {
       // (The Big Dipper's rider: rides, jumps, takes the rails, and stops at each pad. With `&autofight` he then fights.)
       // (`&tuck`: he holds the stick forward all the way, crouched for speed.)
@@ -3323,6 +3340,8 @@ function startGame(): void {
   const devJump = /[#&]autojump\b/.test(location.hash);
   let devJumpAt = 1;
   let devJumpTwice = false;
+  const devRail = /[#&]autorail\b/.test(location.hash);
+  let devRailTick = 0;
   const devLift = /[#&]autolift\b/.test(location.hash);
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };

@@ -59,6 +59,10 @@ export class BatModel {
   private readonly shadow: THREE.Mesh;
   private readonly jaw: THREE.Group;
 
+  /** No perch (a bat that hangs in the air: it has no roost). */
+  noPerch(): void {
+    this.perch.visible = false;
+  }
   private time = 0;
   private flap = 0;
   private flashAmount = 0;

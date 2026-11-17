@@ -50,6 +50,8 @@ export interface EnemySpec {
   color?: number;
   /** A roach in all it does, but drawn as one of the Widow's young: a small spider. Only looks. */
   look?: 'hatchling';
+  /** A bat that hangs in the air at `y` to be hit in passing (enemies/bat.ts: a flutterer). One blow; it does nothing. */
+  flutter?: boolean;
   /** A bat: what it hangs from (drawn above its roost). Default rock. */
   perch?: 'rock' | 'chain';
   /**

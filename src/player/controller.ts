@@ -709,6 +709,23 @@ export class PlayerController {
     this.grindAgain = Math.max(0, this.grindAgain - dt);
     if (helpless || !this.riding) this.grind = null;
     if (this.grind) {
+      // THE SWORD SWINGS ON A RAIL TOO. (The owner, 2026-11-17: "you're grinding down the railway on your shield and
+      // you're smacking bats out of the air with your sword while you're grinding down the rail".) A press starts a
+      // swing, or queues the next; it goes on while he grinds. It does not turn him, slow him or take him off.
+      if (input.attackPressed && this.armed) {
+        if (this.attackTimer < 0) this.startSwing(0, NO_INPUT.move);
+        else this.comboQueued = true;
+      }
+      if (this.attackTimer >= 0) {
+        this.attackTimer += dt * this.gear.swing;
+        const clip = ATTACK_CLIPS[this.attackStep];
+        if (this.comboQueued && this.attackStep < ATTACK_CLIPS.length - 1 && this.attackTimer >= clip.chainAt) this.startSwing(this.attackStep + 1, NO_INPUT.move);
+        else if (this.attackTimer >= clip.duration) {
+          this.attackTimer = -1;
+          this.attackStep = 0;
+          this.comboQueued = false;
+        }
+      }
       this.grindStep(dt, input, colliders);
       this.updateState(Math.hypot(this.velocity.x, this.velocity.z), false);
       return;

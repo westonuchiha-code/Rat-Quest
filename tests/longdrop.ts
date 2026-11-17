@@ -6,6 +6,8 @@
 // in the air ... this giant ramp that you fly off of and you catch this huge amount of air but then you fall like
 // into the darkness and you land in a room ... you can't actually go beyond the lit up part of the floor".
 // It is ridden here with the real controller, every way it is meant to be ridden.
+import { Bat } from '../src/enemies/bat';
+import { resolveCombat, type CombatEvents } from '../src/combat/combat';
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
@@ -13,7 +15,7 @@ import { aabbOf, topAt, slopeOf, keepInWell } from '../src/world/collision';
 import { atDoor } from '../src/world/rooms';
 import { buildChamber } from '../src/world/chamber';
 import { CollectibleTracker } from '../src/world/collectibles';
-import { longDrop, longDropPlan, LONGDROP as L, WEED, RAIL, ARENA, dropFloor, dropLine, sectionAt } from '../src/levels/longdrop';
+import { longDrop, longDropPlan, LONGDROP as L, WEED, RAIL, BAT_OFF, ARENA, dropFloor, dropLine, sectionAt } from '../src/levels/longdrop';
 import { garden } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { MAX_WALK_SLOPE, slimeZones } from '../src/world/layout';
@@ -224,6 +226,46 @@ const fromMiddle = (p: PlayerController): number => Math.hypot(p.position.x - B.
     if (!run.events.includes('grind') || run.events.includes('bail') || !run.p.riding || off > 1e-6 || onIt < 40 || missed) bad.push(`rail at ${rail.z0} x ${rail.x}: ${onIt} frames, missed ${missed}, ${run.events.join()}`);
   }
   check('THE RAILS: riding beside any of them, STOW puts his shield on it; he grinds it down its middle to its end, takes every crumb over it, and rides on', B.rails.length >= 8 && bad.length === 0, bad.length ? bad.join('; ') : `${B.rails.length} rails; the shortest grind ${least} frames`);
+  // ---- BATS OVER THE RAILS (the owner, 2026-11-17: "you're grinding down the railway on your shield and you're
+  // smacking bats out of the air with your sword while you're grinding down the rail"). ----
+  {
+    const flutterers = def.enemies.filter((e) => e.type === 'bat' && e.flutter);
+    check('beside every rail hang bats to be hit in passing: one for every twelve of rail or so, at the height of his sword arm over the rail, on the side the middle of the track is on; none of them is a thing the level asks him to beat, and each comes back', flutterers.length === B.bats.length && B.bats.length >= B.rails.length * 2 && flutterers.every((e) => e.uncounted && e.respawn) && B.bats.every((b) => B.rails.some((r) => Math.abs(Math.abs(b.x - r.x) - BAT_OFF.side) < 1e-6 && Math.abs(b.x) < Math.abs(r.x) && b.z > r.z0 && b.z < r.z1 && Math.abs(b.y - (dropFloor(b.z) + RAIL.high + BAT_OFF.up)) < 0.3)), `${B.bats.length} bats on ${B.rails.length} rails`);
+    // Grinding a rail and swinging as he comes to each, he hits them; and it does not slow or stop him.
+    const told: string[] = [];
+    let hitAll = 0;
+    let ofAll = 0;
+    for (const rail of B.rails) {
+      const mine = B.bats.filter((b) => Math.abs(Math.abs(b.x - rail.x) - BAT_OFF.side) < 1e-6 && b.z > rail.z0 && b.z < rail.z1);
+      const bats = mine.map((b) => new Bat({ x: b.x, y: b.y, z: b.z, flutter: true }));
+      const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+      const side = rail.x > 0 ? -1 : 1;
+      let pressed = false;
+      let hp = 0;
+      const run = ride({ x: rail.x + side * 0.5, z: rail.z0 - 7 }, 400, (p) => {
+        hp ||= p.hp;
+        if (!p.grinding) {
+          const press = !pressed && p.grounded && p.position.z > rail.z0 + 1.5;
+          if (press) pressed = true;
+          return { stowPressed: press };
+        }
+        // (A swing as each bat comes within two and a half ahead.)
+        const next = bats.find((b) => b.alive && b.z > p.position.z - 0.5);
+        return { attackPressed: !!next && next.z - p.position.z < 3 && p.state !== 'attack' && p.attackTime <= 0 };
+      }, (p) => p.position.z > rail.z1 + 6, (p) => {
+        for (const b of bats) b.update(DT, p.position.x, p.position.y, p.position.z, true);
+        resolveCombat(p, bats, events);
+      });
+      const hit = bats.filter((b) => !b.alive).length;
+      hitAll += hit;
+      ofAll += bats.length;
+      if (hit < bats.length || !run.p.riding || run.events.includes('bail') || run.p.hp < hp) told.push(`rail at ${rail.z0}: ${hit} of ${bats.length}${run.p.riding ? '' : ', off his shield'}${run.p.hp < hp ? ', HURT' : ''}`);
+    }
+    check('grinding each rail and swinging as he comes to them, he hits every bat beside it, one blow each; he is not hurt, and he grinds on to the rail\'s end', told.length === 0 && ofAll >= 16, told.length ? told.join('; ') : `${hitAll} of ${ofAll}`);
+    const idle = new Bat({ x: 0, y: 1, z: 0, flutter: true });
+    for (let i = 0; i < 300; i++) idle.update(DT, 0.3, 0.7, 0.2, true);
+    check('a bat that hangs there does nothing else: it does not swoop, cannot hurt, stays where it hangs, and one blow ends it', idle.state === 'flutter' && !idle.attackActive && Math.abs(idle.x) < 1e-9 && Math.abs(idle.z) < 1e-9 && Math.abs(idle.y - 1) < 0.1 && idle.takeHit(1, 0, 0) && !idle.alive);
+  }
   check('...a rail is low enough to ride over, and is a rail to grind all the same', RAIL.high <= TUNING.physics.stepHeight && RAIL.high < TUNING.grind.drop);
 }
 

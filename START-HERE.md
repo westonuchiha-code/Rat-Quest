@@ -235,6 +235,20 @@ states in `DOWN_STATES`. NOT SEEN IN THE GAME: no test player can time a perfect
 **The camera in the bowl** was measured the way the half pipe was (`tests/camera.ts`, 43): never drawn in, never under
 a wall, through 60 launches.
 
+**BATS TO HIT WHILE GRINDING, IN THE LONG DROP (2026-11-17, BACKLOG A5; `tests/longdrop.ts` 44; film
+`film-rail-bats.mp4`).** His words: "you're grinding down the railway on your shield and you're smacking bats out of the
+air with your sword while you're grinding down the rail and it's going to feel like you're playing a Sonic Adventure
+game".
+ - **A FLUTTERER** (`flutter: true` on a bat; `src/enemies/bat.ts`): it hangs in the air in one place and does nothing
+   else. One blow ends it; it cannot hurt; it comes back. 25 of them hang beside the Long Drop's nine rails, one every
+   twelve along, on the side toward the middle of the track, at sword height (`BAT_OFF`). None is part of the goal.
+ - **THE SWORD SWINGS WHILE GRINDING** (it did not: the grind returned before the sword was looked at).
+ - **A GRINDING SWING REACHES ALL ROUND HIM** (`combat.ts`): at sixteen a second, with the swing's own arc, a bat
+   beside the rail could be hit for one frame in sixty. Now: press as it comes within about three ahead.
+ - Tested: a rider grinding each of the nine rails and swinging hits all 25, is not hurt, and grinds on.
+ - **NOT DONE / his to judge:** nothing is paid for hitting one (no crumb, no speed, no count); they do not move or
+   attack; whether hitting them should be this forgiving; `&autorail` is the film aid.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
