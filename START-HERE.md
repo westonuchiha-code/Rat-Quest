@@ -214,6 +214,20 @@ have to implement right now."
  - **When it is built (it is in BACKLOG.md, Part B):** a player's version of the panel (plain words, grouped, a way
    back to "as designed", and a mark on a save that says the numbers were changed).
 
+**A BOWL AND A SPINE IN THE TOY BOX (2026-11-17, BACKLOG A2, first part; `tests/toybox.ts` 41; film
+`film-bowl-and-spine.mp4`).**
+ - **THE BOWL** (`BOWL` in `src/levels/toybox.ts`; middle (-8, -32)): a square floor, a curved wall on all four sides
+   (each with a lip: `vert`), a deck all round, solid corners, a ramp up on its north side. Dropped in and pumped, he
+   goes 1.2 over each lip on the first pass and comes back in (60 and 30 fps, all four walls).
+ - **THE SPINE** (`SPINE`; x 8, z -14..-2): two curved walls back to back, no deck. Ridden at, he goes OVER the ridge
+   through the air (4.4 high, down 8 beyond).
+ - **A CHANGE IN THE CONTROLLER FOR IT (`RIDGE_STEEP`, `ridge` in the support search):** a rider going fast up a
+   STEEP ramp (rise over run 0.9 or more) is no longer held down onto a ramp that falls away the way he is going. He
+   was: he crawled over the spine like a bump. Roads' gentle crests hold him as before (every ride test passes).
+ - Film riders: `&autoride=bowl`, `&autoride=spine`.
+ - **NOT DONE:** the bowl's corners are square blocks (ridden into, he stops); no banked turn (ramps here lie along x
+   or z only: a curve wants a new kind of solid), no launcher, no loop of light rail; nobody has ridden either by hand.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The

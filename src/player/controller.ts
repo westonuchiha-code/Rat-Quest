@@ -9,6 +9,8 @@ import type { WaterVolume } from '../world/layout';
 import { NO_GEAR, type GearMods } from '../data/equipment';
 import { ATTACK_CLIPS } from './animations';
 
+/** How steep the ramp a rider is climbing must be (rise over run) for him to fly off its top over one that falls away beyond: a spine's ridge. */
+const RIDGE_STEEP = 0.9;
 export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride' | 'slide';
 /** A move that just happened this step, for sounds and rumble. */
 export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | 'slip' | 'slideHop' | 'slideEnd' | null;
@@ -1888,6 +1890,10 @@ export class PlayerController {
     // who was standing (on a ramp, or stepping onto one) is kept on the slope under his feet, if it is no further
     // down than a ramp can fall away in a step. (Without this he left the ground at every step downhill.)
     const wasOn = this.grounded && this.velocity.y <= 0;
+    // (Is he a rider going fast UP a steep ramp? See `ridge`, below.)
+    const fast = Math.hypot(this.velocity.x, this.velocity.z);
+    const on = this.riding && this.grounded ? this.groundBox : null;
+    const crest = !!on?.ramp && fast > TUNING.ride.bailSpeed && (slopeXZ(on)[0] * this.velocity.x + slopeXZ(on)[1] * this.velocity.z) / fast >= RIDGE_STEEP;
     let support: number | null = null;
     let under: Aabb | null = null;
     for (const b of colliders) {
@@ -1909,7 +1915,11 @@ export class PlayerController {
       // (And where a flat gives way to a steep one, its slope is already his own half-width down by the time his
       // middle is over it: one who runs off a landing onto a chute is put on the chute, he does not sail over it.)
       const hold = b.ramp ? Math.max(RAMP_HOLD, (Math.hypot(this.velocity.x, this.velocity.z) * dt + r) * slopeOf(b) + (this.riding ? 0.15 : 0.05)) : RAMP_HOLD;
-      const held = wasOn && (b.ramp || this.onRamp) && top >= prevY - hold;
+      // (OVER A RIDGE HE FLIES: a rider going fast up a STEEP ramp is not kept on one that falls away the way he is
+      // going. A spine's two walls meet at a ridge; kept on the ground he crawled over it like a bump in a road.
+      // Roads' own crests are gentle, and hold him as they did.)
+      const ridge = crest && !!b.ramp && b !== this.groundBox && slopeXZ(b)[0] * this.velocity.x + slopeXZ(b)[1] * this.velocity.z < 0;
+      const held = wasOn && !ridge && (b.ramp || this.onRamp) && top >= prevY - hold;
       // (The same going up one fast: it has risen under him by as much as he has gone along it.)
       const rise = b.ramp ? Math.hypot(this.velocity.x, this.velocity.z) * dt * slopeOf(b) : 0;
       if (top <= prevY + TUNING.physics.stepHeight + rise + EPS && (p.y <= top + EPS || held)) {

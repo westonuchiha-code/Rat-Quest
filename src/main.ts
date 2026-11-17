@@ -58,7 +58,7 @@ import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { ShadowCuts } from './render/cutShadow';
-import { makeToyRide, makePipeRide } from './levels/toybox';
+import { makeToyRide, makePipeRide, makeBowlRide, makeSpineRide } from './levels/toybox';
 import { makeDipRide } from './levels/bigdipper';
 import { Dozer, dreamify } from './world/dozers';
 import { railCurve } from './world/rails';
@@ -2352,7 +2352,7 @@ function startGame(): void {
     if (devAuto.ride && cur.id === 'toybox' && !player.dead) {
       // (The Toy Box's rider: off the big ramp with a spin, a grab and a kickflip, and into the quarter pipe.)
       // (`&autoride=pipe`: the half pipe's instead, from its east deck.)
-      const a = (devAuto.toyRider ??= /[#&]autoride=pipe\b/.test(location.hash) ? makePipeRide() : makeToyRide())(player);
+      const a = (devAuto.toyRider ??= /[#&]autoride=pipe\b/.test(location.hash) ? makePipeRide() : /[#&]autoride=bowl\b/.test(location.hash) ? makeBowlRide() : /[#&]autoride=spine\b/.test(location.hash) ? makeSpineRide() : makeToyRide())(player);
       m.set(a.x, 0, a.z);
       jumpPressed = a.jumpPressed;
       jumpHeld = a.jumpHeld;

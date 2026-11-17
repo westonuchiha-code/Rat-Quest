@@ -50,6 +50,17 @@ export const BIG = { x0: 20, x1: 28, top: 16, tower: { z0: -56, z1: -48 }, rollI
 export const BOX = { x0: 2, x1: 12, z0: 9, z1: 14, high: 1.2, ramp: 3, rail: { wide: 0.24, high: 0.3 } } as const;
 /** The quarter pipe against the south kerb. */
 export const QUARTER = { x0: -14, x1: 17, radius: 7, facets: 6, turn: 10, deck: 8 } as const;
+/**
+ * THE BOWL (2026-11-17, his "more to ride"): a square of floor with a curved wall on all four sides, each with a lip
+ * he goes up off and comes back down into; a deck all round, level with the lips; its corners are solid blocks.
+ * `way`: the ramp up to its deck, on its north side.
+ */
+export const BOWL = { x: -8, z: -32, flat: 4, radius: 5, facets: 5, turn: 14, deck: 2, way: { x0: -10, x1: -6, len: 6 } } as const;
+/**
+ * THE SPINE: two curved walls back to back with no deck between them, along z. Up one side fast, he goes OVER the top
+ * and comes down the other (its top is not a lip: nothing sends him back).
+ */
+export const SPINE = { x: 8, z0: -14, z1: -2, radius: 4, facets: 5, turn: 12 } as const;
 /** How far over the big ramp's lip its bottle cap hangs (his middle, a jump off the lip at speed). */
 export const BIG_AIR = 5.6;
 /** ...and how far beyond the lip. */
@@ -141,6 +152,41 @@ function build(): Plan {
   qf.forEach((f, i) => solids.push({ ...rainbow(rampBox('stone', Q.x0, Q.x1, qFoot + f.d0, qFoot + f.d1, f.h0, f.h1, 's', 0)), ...(i >= qf.length - 2 ? { vert: true } : {}) }));
   // (A deck behind it, level with its lip, for one who goes over the top: the box's side is beyond that.)
   solids.push(tiles(extent('stone', Q.x0, Q.x1, 0, qf[qf.length - 1].h1 - COPING, T.halfZ - Q.deck, T.halfZ)));
+
+  // ---- The bowl ----
+  {
+    const W = BOWL;
+    const wf = facetsOf(W.radius, W.facets, W.turn);
+    const out = wf[wf.length - 1].d1;
+    const top = wf[wf.length - 1].h1;
+    const lipAt = (i: number): { vert?: boolean } => (i >= wf.length - 2 ? { vert: true } : {});
+    wf.forEach((f, i) => {
+      solids.push({ ...rainbow(rampBox('stone', W.x + W.flat + f.d0, W.x + W.flat + f.d1, W.z - W.flat, W.z + W.flat, f.h0, f.h1, 'e', 0)), ...lipAt(i) });
+      solids.push({ ...rainbow(rampBox('stone', W.x - W.flat - f.d1, W.x - W.flat - f.d0, W.z - W.flat, W.z + W.flat, f.h0, f.h1, 'w', 0)), ...lipAt(i) });
+      solids.push({ ...rainbow(rampBox('stone', W.x - W.flat, W.x + W.flat, W.z + W.flat + f.d0, W.z + W.flat + f.d1, f.h0, f.h1, 's', 0)), ...lipAt(i) });
+      solids.push({ ...rainbow(rampBox('stone', W.x - W.flat, W.x + W.flat, W.z - W.flat - f.d1, W.z - W.flat - f.d0, f.h0, f.h1, 'n', 0)), ...lipAt(i) });
+    });
+    const inner = W.flat + out;
+    const outer = inner + W.deck;
+    // Its corners, and the deck all round: level with the lips.
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) solids.push(tiles(extent('stone', W.x + Math.min(sx * W.flat, sx * inner), W.x + Math.max(sx * W.flat, sx * inner), 0, top, W.z + Math.min(sz * W.flat, sz * inner), W.z + Math.max(sz * W.flat, sz * inner))));
+    solids.push(tiles(extent('stone', W.x - outer, W.x + outer, 0, top, W.z - outer, W.z - inner)));
+    solids.push(tiles(extent('stone', W.x - outer, W.x + outer, 0, top, W.z + inner, W.z + outer)));
+    solids.push(tiles(extent('stone', W.x - outer, W.x - inner, 0, top, W.z - inner, W.z + inner)));
+    solids.push(tiles(extent('stone', W.x + inner, W.x + outer, 0, top, W.z - inner, W.z + inner)));
+    solids.push(tiles(rampBox('stone', W.way.x0, W.way.x1, W.z - outer - W.way.len, W.z - outer, 0, top, 's')));
+  }
+
+  // ---- The spine ----
+  {
+    const P = SPINE;
+    const pf = facetsOf(P.radius, P.facets, P.turn);
+    const out = pf[pf.length - 1].d1;
+    for (const f of pf) {
+      solids.push(rainbow(rampBox('stone', P.x - out + f.d0, P.x - out + f.d1, P.z0, P.z1, f.h0, f.h1, 'e', 0)));
+      solids.push(rainbow(rampBox('stone', P.x + out - f.d1, P.x + out - f.d0, P.z0, P.z1, f.h0, f.h1, 'w', 0)));
+    }
+  }
 
   // ---- The light rails ----
   const lines: Array<Array<[number, number, number]>> = [
@@ -268,3 +314,38 @@ export function makePipeRide(): (p: { position: { x: number }; velocity: { x: nu
     return { ...none, x: onDeck ? -1 : inFlat ? (p.velocity.x < 0 ? -1 : 1) : 0, guardHeld: !p.grounded && p.velocity.y < 6 && p.velocity.y > -4 };
   };
 }
+
+/**
+ * Riders for the films: `&autoride=bowl` (started on the bowl's west deck: onto his shield, in off the lip eastward,
+ * pumping in the flat, up off each lip with a grab) and `&autoride=spine` (started west of the spine: onto his shield
+ * and at it with the stick forward, over the ridge, and back again from the other side).
+ */
+export function makeBowlRide(): ReturnType<typeof makePipeRide> {
+  const f = facetsOf(BOWL.radius, BOWL.facets, BOWL.turn);
+  const inner = BOWL.flat + f[f.length - 1].d1;
+  let tick = 0;
+  return (p) => {
+    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false, dodgePressed: false };
+    if (!p.riding) {
+      tick++;
+      return { ...none, x: 1, jumpPressed: tick === 14, jumpHeld: !p.grounded, attackPressed: tick > 14 && !p.grounded && p.velocity.y < 5 };
+    }
+    const along = p.position.x - BOWL.x;
+    return { ...none, x: along < -(inner - 0.1) ? 1 : Math.abs(along) < BOWL.flat + 1.5 ? (p.velocity.x < 0 ? -1 : 1) : 0, guardHeld: !p.grounded && p.velocity.y < 6 && p.velocity.y > -4 };
+  };
+}
+export function makeSpineRide(): ReturnType<typeof makePipeRide> {
+  let tick = 0;
+  let dir = 1;
+  return (p) => {
+    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false, dodgePressed: false };
+    if (!p.riding) {
+      tick++;
+      return { ...none, x: dir, jumpPressed: tick % 60 === 14, jumpHeld: !p.grounded, attackPressed: tick % 60 > 14 && !p.grounded && p.velocity.y < 5 };
+    }
+    // (Well past it on the far side, he turns and comes back at it.)
+    if ((p.position.x - SPINE.x) * dir > 13 && p.grounded) dir = -dir;
+    return { ...none, x: dir, dodgePressed: !p.grounded && p.velocity.y > 2 && p.velocity.y < 3 };
+  };
+}
+

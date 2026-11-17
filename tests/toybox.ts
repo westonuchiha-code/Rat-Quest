@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
 import { topAt, type Aabb } from '../src/world/collision';
 import { buildChamber } from '../src/world/chamber';
-import { toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
+import { BOWL, SPINE, toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
@@ -220,7 +220,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     }
     check('...and from inside the pipe: going along high on the wall, within reach of the lip, the grind button takes him up onto it', on > 30, `${(on / 60).toFixed(1)}s`);
   }
-  check('the top of each wall of the pipe, and of the quarter pipe, is marked as a lip IN THE GAME\'S OWN SOLIDS (its top two facets: six in all)', cs.filter((b) => b.vert && b.ramp).length === 6);
+  check('the top of each wall of the pipe, and of the quarter pipe, is marked as a lip IN THE GAME\'S OWN SOLIDS (its top two facets: six in all; and the bowl\'s four walls, eight more)', cs.filter((b) => b.vert && b.ramp).length === 14);
   check('its walls curve up to sixty degrees, three and a half high; its decks are FLUSH with the walls\' tops ("the tops of the half pipes should be more flush"), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING === 0 && [-1, 1].every((sd) => Math.abs(ground(HALF.x + sd * (deck.out + 0.05), 0) - ground(HALF.x + sd * (deck.out - 0.02), 0)) < 0.05) && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
 }
 
@@ -340,6 +340,68 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     spun ||= p.rideSpinProgress >= 0;
   }
   check('...and in the air on it: a swing, not the dive and not a spin; he comes down riding', p.swingId === id2 + 1 && hit2 && !spun && p.riding && p.state === 'ride');
+}
+
+// ---- THE BOWL AND THE SPINE (2026-11-17: "more to ride"). The game's own solids, the real controller, at sixty frames
+// a second and at thirty. ----
+{
+  const bf = facetsOf(BOWL.radius, BOWL.facets, BOWL.turn);
+  const top = bf[bf.length - 1].h1;
+  const inner = BOWL.flat + bf[bf.length - 1].d1;
+  check('the bowl: a square floor, a curved wall on each of its four sides rising to one height, a deck all round level with the lips, its corners filled, and a ramp up to the deck', [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (inner - 0.01), BOWL.z + sz * (inner - 0.01)) - top) < 0.05 && Math.abs(ground(BOWL.x + sx * (inner + 1), BOWL.z + sz * (inner + 1)) - top) < 1e-6) && ground(BOWL.x, BOWL.z) === 0 && [[1, 1], [1, -1], [-1, 1], [-1, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (BOWL.flat + 1), BOWL.z + sz * (BOWL.flat + 1)) - top) < 1e-6) && Math.abs(ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - 0.01) - top) < 0.05 && ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - BOWL.way.len + 0.01) < 0.05, `walls ${top.toFixed(2)} high`);
+  /** Dropped in off one deck toward the far wall, pumping in the flat: what he does at that wall's lip. */
+  const across = (dt: number, dx: number, dz: number): { up: number; back: boolean; bailed: boolean; riding: boolean } => {
+    // (Dropped in as into the half pipe: onto his shield on the deck, the stick held until he is over the lip.)
+    const p = rat(BOWL.x - dx * (inner + 1.6), top, BOWL.z - dz * (inner + 1.6));
+    p.update(dt, inp({ move: v(dx, dz), jumpPressed: true, jumpHeld: true }), cs);
+    for (let i = 0; i < 4 / dt && !(p.riding && (p.position.x - BOWL.x) * dx + (p.position.z - BOWL.z) * dz > -(inner - 0.1)); i++) p.update(dt, inp({ move: v(dx, dz), jumpHeld: !p.riding, attackPressed: !p.riding && !p.grounded && p.velocity.y < 5 }), cs);
+    let up = 0;
+    let flew = false;
+    let back = false;
+    let bailed = false;
+    for (let i = 0; i < 7 / dt && !back && p.riding; i++) {
+      const along = (p.position.x - BOWL.x) * dx + (p.position.z - BOWL.z) * dz;
+      const going = p.velocity.x * dx + p.velocity.z * dz;
+      p.update(dt, inp({ move: Math.abs(along) < BOWL.flat + 1.5 ? v(Math.sign(going || 1) * dx, Math.sign(going || 1) * dz) : v(0, 0) }), cs);
+      if (p.moveEvent === 'bail') bailed = true;
+      if (along > BOWL.flat) {
+        up = Math.max(up, p.position.y - top);
+        if (!p.grounded && p.position.y > top + 0.5) flew = true;
+        if (flew && p.grounded && along < inner + 0.1) back = true;
+      }
+    }
+    return { up, back, bailed, riding: p.riding };
+  };
+  const walls: Array<[number, number, string]> = [[1, 0, 'east'], [-1, 0, 'west'], [0, 1, 'south'], [0, -1, 'north']];
+  const runs = walls.flatMap(([dx, dz, name]) => [1 / 60, 1 / 30].map((dt) => ({ name, dt, r: across(dt, dx, dz) })));
+  const bad = runs.filter(({ r }) => !(r.up > 1 && r.back && !r.bailed && r.riding));
+  check('dropped in off a deck and pumped across the floor, at EACH of its four walls he goes up off the lip, more than his own height over it on the first pass, and comes back down into the bowl, still riding (sixty frames a second and thirty)', bad.length === 0, runs.map(({ name, dt, r }) => `${name} ${Math.round(1 / dt)}: ${r.up.toFixed(1)} up${r.back ? '' : ', not back'}${r.bailed ? ', BAILED' : ''}`).join('; '));
+
+  // The spine.
+  const sf = facetsOf(SPINE.radius, SPINE.facets, SPINE.turn);
+  const sOut = sf[sf.length - 1].d1;
+  const sTop = sf[sf.length - 1].h1;
+  const zMid = (SPINE.z0 + SPINE.z1) / 2;
+  check('the spine: two curved walls back to back, a ridge and no deck: as high at its middle as its walls, and floor a little way either side', Math.abs(ground(SPINE.x - 0.01, zMid) - sTop) < 0.05 && Math.abs(ground(SPINE.x + 0.01, zMid) - sTop) < 0.05 && ground(SPINE.x - sOut - 0.5, zMid) === 0 && ground(SPINE.x + sOut + 0.5, zMid) === 0, `${sTop.toFixed(2)} high`);
+  const over = (dt: number, dir: 1 | -1): { over: boolean; high: number; bailed: boolean; riding: boolean; landed: number } => {
+    const p = rat(SPINE.x - dir * (sOut + 9), 0, zMid);
+    getOn(p, v(dir, 0));
+    let high = 0;
+    let bailed = false;
+    let landed = NaN;
+    let crossed = false;
+    for (let i = 0; i < 5 / dt && p.riding && Number.isNaN(landed); i++) {
+      p.update(dt, inp({ move: v(dir, 0) }), cs);
+      if (p.moveEvent === 'bail') bailed = true;
+      high = Math.max(high, p.position.y);
+      if ((p.position.x - SPINE.x) * dir > 0.3) crossed = true;
+      if (crossed && p.grounded) landed = (p.position.x - SPINE.x) * dir;
+    }
+    return { over: crossed, high, bailed, riding: p.riding, landed };
+  };
+  const overs = ([1, -1] as const).flatMap((dir) => [1 / 60, 1 / 30].map((dt) => ({ dir, dt, r: over(dt, dir) })));
+  const badOver = overs.filter(({ r }) => !(r.over && r.high > sTop + 0.5 && !r.bailed && r.riding && r.landed > 0));
+  check('ridden at with the stick forward, he goes up one side, OVER the ridge through the air, and comes down beyond it still riding: from either side, at sixty frames a second and thirty', badOver.length === 0, overs.map(({ dir, dt, r }) => `${dir > 0 ? 'eastward' : 'westward'} ${Math.round(1 / dt)}: ${r.high.toFixed(1)} high, down ${Number.isNaN(r.landed) ? 'nowhere' : r.landed.toFixed(1) + ' beyond'}${r.bailed ? ', BAILED' : ''}`).join('; '));
 }
 
 // ---- Tricks ----
