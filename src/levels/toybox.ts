@@ -61,6 +61,8 @@ export const BOWL = { x: -8, z: -32, flat: 4, radius: 5, facets: 5, turn: 14, de
  * and comes down the other (its top is not a lip: nothing sends him back).
  */
 export const SPINE = { x: 8, z0: -14, z1: -2, radius: 4, facets: 5, turn: 12 } as const;
+/** THE LAUNCHER: a short steep kicker by itself on the floor, pointing south: ridden at, it throws him up and on. */
+export const LAUNCHER = { x0: -18, x1: -14, z0: 24, len: 5, rise: 3 } as const;
 /** How far over the big ramp's lip its bottle cap hangs (his middle, a jump off the lip at speed). */
 export const BIG_AIR = 5.6;
 /** ...and how far beyond the lip. */
@@ -187,6 +189,9 @@ function build(): Plan {
       solids.push(rainbow(rampBox('stone', P.x + out - f.d1, P.x + out - f.d0, P.z0, P.z1, f.h0, f.h1, 'w', 0)));
     }
   }
+
+  // ---- The launcher ----
+  solids.push(rainbow(rampBox('stone', LAUNCHER.x0, LAUNCHER.x1, LAUNCHER.z0, LAUNCHER.z0 + LAUNCHER.len, 0, LAUNCHER.rise, 's', 0)));
 
   // ---- The light rails ----
   const lines: Array<Array<[number, number, number]>> = [

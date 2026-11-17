@@ -201,3 +201,4 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 - **A3 (part): the camera in the bowl** measured and held by a test. STILL OPEN under A3: (a) the deck edge, (b) knocked against a wall (the view goes overhead: that is how it was designed; his to judge), (c) the long fall, (d) his verdict on the follow slider.
 - **A5: bats to hit while grinding** in the Long Drop (Test Room 5): flutterers beside every rail; the sword swings on a rail and reaches all round. STILL OPEN: a reward for hitting them; his verdict.
 - **A1 (the rest): the platform room's feel** on Test Room 8: blows 1.34, ground pound double. His verdict wanted on the numbers.
+- **A2 (more): a launcher in the Toy Box** (`LAUNCHER`: x -18..-14, z 24..29, 3 high). From a twelve-unit push-off it throws him 0.4 over its tip and five on: MODEST. It wants a faster approach, or to be steeper, to be a thrill: his to try. Not filmed.

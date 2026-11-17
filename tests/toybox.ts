@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
 import { topAt, type Aabb } from '../src/world/collision';
 import { buildChamber } from '../src/world/chamber';
-import { BOWL, SPINE, toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
+import { BOWL, SPINE, LAUNCHER, toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
@@ -402,6 +402,29 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const overs = ([1, -1] as const).flatMap((dir) => [1 / 60, 1 / 30].map((dt) => ({ dir, dt, r: over(dt, dir) })));
   const badOver = overs.filter(({ r }) => !(r.over && r.high > sTop + 0.5 && !r.bailed && r.riding && r.landed > 0));
   check('ridden at with the stick forward, he goes up one side, OVER the ridge through the air, and comes down beyond it still riding: from either side, at sixty frames a second and thirty', badOver.length === 0, overs.map(({ dir, dt, r }) => `${dir > 0 ? 'eastward' : 'westward'} ${Math.round(1 / dt)}: ${r.high.toFixed(1)} high, down ${Number.isNaN(r.landed) ? 'nowhere' : r.landed.toFixed(1) + ' beyond'}${r.bailed ? ', BAILED' : ''}`).join('; '));
+}
+
+// ---- THE LAUNCHER ----
+{
+  const x = (LAUNCHER.x0 + LAUNCHER.x1) / 2;
+  const tip = LAUNCHER.z0 + LAUNCHER.len;
+  const go = (dt: number): { high: number; far: number; riding: boolean; bailed: boolean } => {
+    const p = rat(x, 0, LAUNCHER.z0 - 12);
+    getOn(p, v(0, 1));
+    let high = 0;
+    let bailed = false;
+    let flew = false;
+    for (let i = 0; i < 6 / dt && p.riding; i++) {
+      p.update(dt, inp({ move: v(0, 1) }), cs);
+      if (p.moveEvent === 'bail') bailed = true;
+      high = Math.max(high, p.position.y);
+      if (!p.grounded && p.position.z > tip) flew = true;
+      if (flew && p.grounded) return { high, far: p.position.z - tip, riding: p.riding, bailed };
+    }
+    return { high, far: 0, riding: p.riding, bailed };
+  };
+  const runs = [1 / 60, 1 / 30].map(go);
+  check('the launcher: ridden at with the stick forward, from a short push-off it throws him off its tip, over its own height and five on, and he lands riding (sixty frames a second and thirty)', runs.every((r) => r.high > LAUNCHER.rise + 0.3 && r.far > 4.5 && r.riding && !r.bailed), runs.map((r) => `${r.high.toFixed(1)} high, ${r.far.toFixed(1)} on${r.bailed ? ', BAILED' : ''}`).join('; '));
 }
 
 // ---- Tricks ----
