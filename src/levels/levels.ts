@@ -30,6 +30,7 @@ import { coldMain } from './coldmain';
 import { CAMPAIGN } from './campaign';
 import { hall } from './hall';
 import { practiceRoom, widowPit } from './practice';
+import { layThrowables } from './throwables';
 import { HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from './testRooms';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
@@ -285,6 +286,8 @@ function nameTheRooms(all: LevelDef[]): void {
   }
 }
 nameTheRooms([...ALL_LEVELS, ...TEST_ROOMS]);
+// (And a few pots and rocks to throw, by each test room's way in: levels/throwables.ts.)
+layThrowables([...ALL_LEVELS, ...TEST_ROOMS]);
 
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */

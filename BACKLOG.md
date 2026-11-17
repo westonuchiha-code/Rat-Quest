@@ -126,6 +126,11 @@ number and films a fight; after that it is a slider.
 **B1. Things to throw in the other rooms.** Pots, rocks and crates only stand in the practice rooms. Put a few in
 each test room where there is floor for them (`potBox`, `rockBox` in `src/world/layout.ts`; append a `null` to
 `crateContents` for each). The room's own tests and `tests/clipsweep.ts` say when one is in the way.
+[opus] DONE 2026-11-17: `src/levels/throwables.ts` (`LYING`, one line per room; `layThrowables` runs once in
+levels.ts). By each of the eleven numbered rooms' way in: on his right two pots and a rock, on his left a pot and a
+rock. Places found by a probe of each floor; `tests/throwables.ts` (56 checks) keeps them on the floor, inside
+nothing, off characters, doors, pickups and creatures, and clear of where he starts. Not crates or barrels (the
+rooms have their own); side areas (N-B...) and boss rooms have none yet.
 
 **B2. The level editor does not know the new things.** Pots and rocks; the spawn button (`plates[].spawn`); the
 Club's tables and bar (noted long ago). Add them to the kit (`src/levels/custom.ts`) and the palette

@@ -2140,6 +2140,11 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## [opus] Things to throw in every test room (2026-11-17)
+
+`src/levels/throwables.ts`: by each numbered room's way in, two heaps, three pots and two rocks in all. To move a
+heap or add a room, change `LYING` there. `tests/throwables.ts` checks each stands on the floor and in nobody's way.
+
 ## Locked on to one, the others go to his sides (2026-11-17)
 
 Asked for when lock-on was built ("enemies moving to your sides when you're locked on to one") and left undone
