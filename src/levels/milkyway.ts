@@ -10,7 +10,8 @@
  * WHAT IT IS: a pad at the top (the road runs across it to a gate at its lip; a kerb round the rest), then four lengths of road one after another down through the sky, each as steep as
  * the Long Drop's beds, with a GAP between each and the next length set a little to one side: he rides off the end
  * of one, through the air, onto the next. A landing at the bottom (the Moon) with the way out. No walls anywhere:
- * off the side of the road is a long fall, and he is put back on the road where he last was, a heart the poorer.
+ * off the side of the road is a long fall, and he is put back on the road where he last was. (It cost a heart at first; it costs
+ * nothing now: `fallFree`.)
  * Three bottle caps, one in the air over each gap, up where a jump off the board at the lip carries him.
  * SECOND PASS (2026-11-16, his notes): its kerbs are in STATIC that winks (`dreamStatic`); beds of flowers with
  * butterflies stand either side of the head pad and down the Moon; and the waking world's terrors are here in loud
@@ -186,6 +187,7 @@ export function milkyWay(): LevelDef {
     fog: 0x1a0c3a,
     fogRange: [70, 195],
     fallDepth: FALL_DEPTH,
+    fallFree: true,
     solids: P.solids.map((b) => ({ ...b })),
     pit: null,
     water: [],

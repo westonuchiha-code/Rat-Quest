@@ -1451,4 +1451,5 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
    the dream's hub, with doors to its two rides. `ratquest-dream.html` opens on it.
  - A deck beside a curved wall must be lower than the wall's top (`COPING`), or a fast rider comes off at the lip.
  - The Big Dipper lengthened again, its pads longer.
-
+ - `LevelDef.fallFree` (the owner, the same day): in the dream's levels, and any ride downhill, a fall puts him back
+   and costs no heart. `fallCost` in `player/standing.ts`.

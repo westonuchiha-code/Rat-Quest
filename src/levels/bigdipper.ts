@@ -22,7 +22,7 @@
  *               creatures are awake on it. The gate opens when they are beaten; beyond it the next ride begins.
  * At the bottom, the Bowl: a last floor, with the way out.
  * Bottle caps hang where a good line earns them: over the wide gaps, up where the kicker throws him, and on the rails.
- * Off the road is a long fall: he is put back where he last stood, a heart the poorer.
+ * Off the road is a long fall: he is put back where he last stood, and that is all (`fallFree`: it costs no heart).
  */
 import type { EnemySpec, LevelDef } from './types';
 import { extent, rampBox, type Box, type Decor, type GateSpec } from '../world/layout';
@@ -274,6 +274,7 @@ export function bigDipper(): LevelDef {
     fog: 0x1a0c3a,
     fogRange: [70, 195],
     fallDepth: DIP_FALL,
+    fallFree: true,
     solids: P.solids.map((b) => ({ ...b })),
     pit: null,
     water: [],

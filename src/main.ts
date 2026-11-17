@@ -62,7 +62,7 @@ import { railCurve } from './world/rails';
 import { PICTURE, pictureSize } from './render/picture';
 import { autoLayer } from './render/layering';
 import { SkyDome } from './world/sky';
-import { drawnHeight, safeToReturnTo, fallFrom, fellTooFar } from './player/standing';
+import { drawnHeight, safeToReturnTo, fallFrom, fellTooFar, fallCost } from './player/standing';
 import { compileCutscene, sampleCutscene, CUT_FPS, type Cutscene, type CutsceneDef } from './cutscene/cutscene';
 import { CutStage } from './cutscene/stage';
 import { CUTSCENES, cutsceneById } from './cutscene/scenes';
@@ -2098,7 +2098,9 @@ function startGame(): void {
       fallFromY = lastSafe.y;
       p.copy(lastSafe);
       player.prevPosition.copy(lastSafe);
-      const result = player.gear.fireproof ? 'dodged' : player.takeFall(1);
+      // (In the dream, and on any ride downhill, a fall costs nothing: he is only put back.)
+      const cost = fallCost(cur, !!player.gear.fireproof);
+      const result = cost > 0 ? player.takeFall(cost) : 'dodged';
       player.velocity.set(0, 0, 0);
       if (result === 'hit' || result === 'killed') events.playerResult = result;
       follow.snap();

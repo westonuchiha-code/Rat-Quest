@@ -70,3 +70,11 @@ export function fallFrom(from: number, y: number, held: boolean, wasY: number = 
 export function fellTooFar(from: number, y: number, depth: number): boolean {
   return y < from - depth;
 }
+
+/**
+ * What a fall he is put back from costs him, in hearts: one, as a rule (the Hollows' chasms, the Keep's pit); NOTHING
+ * in a level where falls are free (`LevelDef.fallFree`: the dream, and any ride downhill), nor to one in the Ember Helm.
+ */
+export function fallCost(level: { fallFree?: boolean }, fireproof: boolean): number {
+  return level.fallFree || fireproof ? 0 : 1;
+}

@@ -16,6 +16,8 @@ import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
 import { railAt } from '../src/world/rails';
+import { fallCost } from '../src/player/standing';
+import { LEVELS, ARCHIVE } from '../src/levels/levels';
 
 const DT = 1 / 60;
 const R = TUNING.ride;
@@ -272,6 +274,17 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     top = Math.max(top, speedOf(p));
   }
   check('the films\' rider does the whole line by itself: down the roll-in tucked, off the kicker, a spin, a grab and a kickflip in one air, landed on the bank (and fast for it), and braked to a stop short of the box\'s side', ev.includes('trick') && !ev.includes('bail') && !p.riding && p.position.z < TOY.halfZ - 2 && top > R.max + 6, `top speed ${top.toFixed(1)}; ${[...new Set(ev)].join(' ')}; stopped at z ${p.position.z.toFixed(0)}`);
+}
+
+// ---- A fall costs nothing in the dream ----
+// (The owner, 2026-11-17: "adding fall damage to this area really just takes away from the fun there's no upside to it,
+// so maybe we could just make it a flag for the wacky Pomo levels in general and any downhill levels".)
+{
+  const all = [...LEVELS, ...ARCHIVE, ...TEST_ROOMS];
+  const dream = all.filter((l) => l.look === 'dream');
+  check('in every dream level (the Toy Box, the Milky Way, the Big Dipper) a fall costs NOTHING: he is put back, and that is all', dream.length === 3 && dream.every((l) => l.fallFree === true && fallCost(l, false) === 0));
+  const costly = all.filter((l) => l.fallBack || l.fallDepth !== undefined).filter((l) => !l.fallFree).map((l) => l.id);
+  check('in the waking world a fall he is put back from still costs a heart (the Hollows, the Keep), but for one in the Ember Helm', costly.includes('hollows') && costly.includes('keep') && costly.every((id) => fallCost(levelById(id)!, false) === 1 && fallCost(levelById(id)!, true) === 0), costly.join(' '));
 }
 
 // ---- Bottle caps, kerbs ----

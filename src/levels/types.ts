@@ -108,6 +108,14 @@ export interface LevelDef {
   fallDepth?: number;
   /** He wears another look here: 'dream' is the knight in loud colours with a scarf three times as long. Only looks. */
   look?: 'dream';
+  /**
+   * A FALL COSTS NOTHING HERE: he is put back where he last stood, and that is all. (The owner, 2026-11-17, of the dream
+   * and of riding downhill: "the most of the fun comes from going fast and jumping high and doing tricks and stuff so
+   * adding fall damage to this area really just takes away from the fun there's no upside to it, so maybe we could
+   * just make it a flag for the wacky Pomo levels in general and any downhill levels that we make in any world.")
+   * FOR EVERY DREAM LEVEL, AND EVERY LEVEL THAT IS A RIDE DOWNHILL, IN ANY WORLD.
+   */
+  fallFree?: boolean;
   /** A skate park: the air attack puts him on his shield over ANY ground here, not only over a steep slope (and so there is no dive). */
   skate?: boolean;
   /**

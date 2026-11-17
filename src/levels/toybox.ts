@@ -186,6 +186,7 @@ export function toyBox(): LevelDef {
     fog: 0x1a0c3a,
     fogRange: [70, 195],
     fallDepth: 28,
+    fallFree: true,
     solids: P.solids.map((b) => ({ ...b })),
     pit: null,
     water: [],

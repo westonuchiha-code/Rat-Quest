@@ -27,6 +27,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
   Do not pad the "what's next" list with questions; list work, and when told to continue, do the work.
 - Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
 - **The robot voice (the Robot Voice Box) SPEAKS only in the dream world** (the Milky Way, "the wacky Pomo world"). Anywhere else it may only be a sound effect. (2026-11-17; see "THE SOUND OF THIS GAME IS HIP-HOP".)
+- **A fall costs nothing in the dream, nor on any ride downhill in any world**: such a level is `fallFree` (he is put back, no heart lost). The waking world's falls still cost one. (2026-11-17.)
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
@@ -428,6 +429,23 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   handheld), and the chunkier pictures stay as choices. The 32-dot pictures on things are still blocky up close:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
+
+## A FALL COSTS NOTHING IN THE DREAM, NOR ON ANY RIDE DOWNHILL (2026-11-17: A STANDING RULE). Tests `tests/toybox.ts` (27)
+
+**His words:** "I still got fall damage one or two times messing around in this level and I do feel like it takes away
+from the fun so maybe we can turn the sort of like fall damage idea off when we're doing these downhill sections. I
+think it's a good idea in like the normal world and I think it's a good idea for like certain areas but these
+downhill levels I think the most of the fun comes from going fast and jumping high and doing tricks and stuff so
+adding fall damage to this area really just takes away from the fun there's no upside to it, so maybe we could just
+**make it a flag for the wacky Pomo levels in general and any downhill levels that we make in any world.**"
+ - **`LevelDef.fallFree`**: in such a level a fall still puts him back where he last stood (he has to be put somewhere),
+   with the rewind scratch, but **costs no heart** (`fallCost` in `src/player/standing.ts`; `main.ts` `lavaStep`).
+ - **SET ON: the Toy Box, the Milky Way, the Big Dipper.** **EVERY NEW DREAM LEVEL, AND EVERY LEVEL THAT IS A RIDE
+   DOWNHILL IN ANY WORLD, GETS IT.** (The Long Drop has no fall that costs anything, and so no need of it.)
+ - **NOT changed, by his word:** the waking world. In the Hollows and the Keep a fall still costs a heart.
+ - The only thing in these levels that looked like fall damage and is not: coming off the shield into a wall or
+   part-way through a trick ("bail"). That never cost a heart; it costs him his ride and half a second.
+ - Seen in the real game: four walks off the Milky Way's road, four put-backs, no cry of hurt, five hearts.
 
 ## THE DREAM IS A PLAYGROUND: the Toy Box (a skate park), a stronger tuck, a spin and a grab (2026-11-17). Tests `tests/toybox.ts` (25), `tests/ride.ts` (72)
 
