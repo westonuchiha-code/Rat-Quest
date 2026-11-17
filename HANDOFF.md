@@ -1490,4 +1490,10 @@ room, a playground for one kind of play; one long hallway hub with everyone in i
    file it names exists, every level, creature, character, sound, tune, scene and texture is in it, and no font is
    named outside `src/ui/fonts.ts` (five fonts: game, title, label, logo, tools; about thirty places now read them).
    `scripts/film/`: stills.mjs, film.mjs, cut.sh.
+ - Drop-in files (the same day): `assets/{textures,sounds,music}` + `assets/README.md`; `scripts/assets/pack.mjs`
+   (needs ffmpeg) writes `src/assets/dropped.ts`; `src/assets/drop.ts` is asked first by `getTexturePixels`
+   (render/textures.ts), `sfx` (audio/synth.ts) and `playlistFor` / `tuneNamed` / `jingleNamed` (audio/music.ts;
+   `AudioEngine.playTrack(name, room)`). PROVED in the running game with test files, then taken out: a picture on the
+   Hall's walls and floor (the right way up); a 440 Hz "song" named `hall` heard in the Hall and not in the Club; a
+   1760 Hz "jump" heard at a jump (by measurement of what the game plays). Tests: `tests/assets.ts` (20).
 

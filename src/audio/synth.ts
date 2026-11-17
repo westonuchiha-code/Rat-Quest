@@ -5,6 +5,7 @@
  * changes of that era, and the grit comes from the low rate and the coarse steps, not from any effect added afterwards.
  */
 
+import { droppedSound } from '../assets/drop';
 import { RECORDED, type Recorded } from "./recorded";
 
 /** Sample rates in use. Most sounds use the higher one; muffled or rumbling ones use the lower. */
@@ -1290,7 +1291,10 @@ export const QUIET = 0.1;
 export function sfx(name: SfxName): Sample {
   let s = cache.get(name);
   if (!s) {
-    s = RECORDED[name] ? decodeRecorded(RECORDED[name]) : RECIPES[name]();
+    // (A recording dropped into assets/sounds under this name comes first: assets/drop.ts. Whether it goes round and
+    // round is the effect's own to say, so its own recipe is asked.)
+    const dropped = droppedSound(name);
+    s = dropped ? { ...dropped, loop: RECIPES[name]().loop } : RECORDED[name] ? decodeRecorded(RECORDED[name]) : RECIPES[name]();
     if (s.loop) s = { ...s, data: seamless(s.data) };
     cache.set(name, s);
   }

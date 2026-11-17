@@ -2,6 +2,8 @@
  * The music: short looping tracks written as data, played by a small sequencer using the sampled instruments in synth.ts.
  * Like a console soundtrack, it is a handful of voices playing a pattern, not a recording. Pure data, so tests can check it.
  */
+import { droppedJingle, droppedSongFor, droppedTune } from '../assets/drop';
+import { JINGLES, TUNES, type Tune } from './tunes';
 import type { InstrumentName } from './synth';
 
 export type TrackName = 'drift' | 'pump' | 'groove' | 'echo' | 'march' | 'dream';
@@ -315,6 +317,18 @@ export const PLAYLISTS: Partial<Record<TrackName, { tunes: string[]; rounds: num
   march: { tunes: ['keep'], rounds: 1 },
   dream: { tunes: ['dream'], rounds: 1, level: 0.7 },
 };
+/**
+ * WHAT PLAYS IN A PLACE: a song dropped into assets/music for that room, or for the kind of music it asks for
+ * (assets/drop.ts); else the game's own list for that kind; else nothing recorded (the notes made in code).
+ */
+export function playlistFor(name: TrackName, room?: string): { tunes: string[]; rounds: number; level?: number } | undefined {
+  const dropped = droppedSongFor(name, room);
+  return dropped ? { tunes: [dropped], rounds: 1, level: PLAYLISTS[name]?.level } : PLAYLISTS[name];
+}
+/** A tune by its id: one dropped in (`@name`), or one of the game's own. */
+export const tuneNamed = (id: string): Tune | undefined => droppedTune(id) ?? TUNES[id];
+/** A jingle by its id: one dropped in under that name, or the game's own. */
+export const jingleNamed = (id: string): Tune | undefined => droppedJingle(id) ?? JINGLES[id];
 export const trackNamed = (n: TrackName): Track => TRACKS[n];
 export const TRACK_NAMES = Object.keys(TRACKS) as TrackName[];
 

@@ -4,8 +4,7 @@
  * Browsers only allow sound after the player has pressed something, so `unlock()` is called from the first press.
  */
 import { INSTRUMENT_BASE_HZ, InstrumentName, Sample, SfxName, instrument, midiHz, sfx } from './synth';
-import { CALM, Mood, PLAYLISTS, TUNE_LEVEL, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
-import { TUNES, JINGLES } from './tunes';
+import { CALM, Mood, TUNE_LEVEL, Scheduled, TrackName, jingleNamed, layerGain, notesBetween, playlistFor, stepSeconds, trackNamed, tuneNamed, waterCutoff } from './music';
 import { VoicePool } from './voices';
 
 const KEY = 'ratquest.audio.v1';
@@ -79,6 +78,7 @@ export class AudioEngine {
   private music: MusicRun | null = null;
   private readonly slots = new Map<string, number>();
   private wantedTrack: TrackName | null = null;
+  private wantedRoom: string | undefined;
   private duckLevel = 1;
   private sfxVol = 0.8;
   private musicVol = 0.6;
@@ -331,10 +331,15 @@ export class AudioEngine {
   // ---- Music ----
 
   /** Switches to a track (fading), or to silence with null. */
-  playTrack(name: TrackName | null): void {
+  /** (`room`: the level it is for. A song dropped into assets/music under that level's id plays there instead: assets/drop.ts.) */
+  playTrack(name: TrackName | null, room?: string): void {
+    const songs = (n: TrackName | null, r?: string): string => (n ? playlistFor(n, r)?.tunes.join() ?? '' : '');
+    // (The same kind of music, but another song for this room: it changes.)
+    const same = this.music?.name === name && songs(name, room) === songs(this.wantedTrack, this.wantedRoom);
     this.wantedTrack = name;
+    this.wantedRoom = room;
     if (this.disabled || !this.ctx || this.ctx.state !== 'running') return;
-    if (this.music?.name === name) return;
+    if (same) return;
     this.stopMusic();
     if (name) this.startMusic(name);
   }
@@ -392,7 +397,7 @@ export class AudioEngine {
    */
   jingle(id: string, o: { vol?: number; under?: number } = {}): void {
     const ctx = this.ctx;
-    const t = JINGLES[id];
+    const t = jingleNamed(id);
     if (this.disabled || !ctx || ctx.state !== 'running' || !t || this.jingleBuffers.get(id) === 'failed') return;
     this.stopJingle(0.05);
     const gain = ctx.createGain();
@@ -445,7 +450,7 @@ export class AudioEngine {
   private tuneBuffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
   private loadTune(id: string): void {
     const ctx = this.ctx;
-    const t = TUNES[id];
+    const t = tuneNamed(id);
     if (!ctx || this.tuneBuffers.has(id)) return;
     if (!t) return void this.tuneBuffers.set(id, 'failed');
     this.tuneBuffers.set(id, 'loading');
@@ -497,7 +502,7 @@ export class AudioEngine {
       }
       if (!buf || buf === 'loading') return void (nextAt = Math.max(nextAt, ctx.currentTime + 0.12));
       while (nextAt < ctx.currentTime + 0.6) {
-        const t = TUNES[list.tunes[index]];
+        const t = tuneNamed(list.tunes[index])!;
         const b = this.tuneBuffers.get(list.tunes[index]);
         if (!b || b === 'loading' || b === 'failed') break;
         const src = ctx.createBufferSource();
@@ -519,8 +524,8 @@ export class AudioEngine {
   }
 
   private startMusic(name: TrackName): void {
-    const list = PLAYLISTS[name];
-    if (list && list.tunes.every((id) => TUNES[id] && this.tuneBuffers.get(id) !== 'failed')) this.startTunes(name, list);
+    const list = playlistFor(name, this.wantedRoom);
+    if (list && list.tunes.every((id) => tuneNamed(id) && this.tuneBuffers.get(id) !== 'failed')) this.startTunes(name, list);
     else this.startNotes(name);
   }
 

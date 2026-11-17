@@ -16,6 +16,8 @@ OUT="$(mkdir -p "${1:-../deliver}" && cd "${1:-../deliver}" && pwd)"
 HERE="$(pwd)"
 NAME="$(basename "$HERE")"
 
+# Whatever has been dropped into assets/ is packed into the game first (assets/README.md).
+node scripts/assets/pack.mjs >/dev/null
 npm run build:test >/dev/null
 npm run build:editor >/dev/null
 npx vite build --outDir dist-plain >/dev/null

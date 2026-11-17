@@ -1656,7 +1656,7 @@ function startGame(): void {
     heard.foes.clear();
     lockTarget = null;
     audio.stopLoops();
-    audio.playTrack(def.music ?? 'drift');
+    audio.playTrack(def.music ?? 'drift', def.id);
     braziers = def.decor.filter((d) => d.kind === 'brazier').map((d) => ({ x: d.x, y: d.y + 0.8, z: d.z }));
     motes.setTheme(def.motes ?? def.theme, !!def.hub, new THREE.Vector3(def.spawn.x, def.spawn.y, def.spawn.z));
     sky.show(def.sky);
@@ -3181,7 +3181,7 @@ function startGame(): void {
       audio.playSample(`ws:${name}`, { ...sfx(name as SfxName), loop: false }, { rate, vol, priority: 9, verb: 0.05 });
     },
     tracks: () => [...TRACK_NAMES],
-    playTrack: (name) => audio.playTrack((name as TrackName | null) ?? cur.music ?? 'drift'),
+    playTrack: (name) => audio.playTrack((name as TrackName | null) ?? cur.music ?? 'drift', cur.id),
     places: () => {
       // The Club first, then the worlds in the order he meets them (each world's own area before its side areas).
       const order = ['The Club', ...Object.values(WORLD_LABEL), 'Other places'];

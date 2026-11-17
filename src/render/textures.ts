@@ -1,3 +1,4 @@
+import { droppedTexture } from '../assets/drop';
 import * as THREE from 'three';
 
 /**
@@ -3203,10 +3204,15 @@ const textureCache = new Map<TextureName, THREE.DataTexture>();
 export function getTexturePixels(name: TextureName): TexturePixels {
   let px = pixelCache.get(name);
   if (!px) {
-    const def: Def = DEFS[name];
-    const p = new Px(def.size);
-    def.paint(p, mulberry32(def.seed));
-    px = { size: def.size, data: p.data };
+    // (A picture dropped into assets/textures under this name takes the place of the painted one: assets/drop.ts.)
+    const dropped = droppedTexture(name);
+    if (dropped) px = dropped;
+    else {
+      const def: Def = DEFS[name];
+      const p = new Px(def.size);
+      def.paint(p, mulberry32(def.seed));
+      px = { size: def.size, data: p.data };
+    }
     pixelCache.set(name, px);
   }
   return px;

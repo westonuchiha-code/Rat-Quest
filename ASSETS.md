@@ -15,6 +15,25 @@ shapes; textures are painted in code, dot by dot; most sounds are made in code o
 and stored as text inside the game. That is why the whole game is one .html file. So "replace an asset" usually
 means "change the code that makes it", in the file named for it.
 
+## 0. The quick way: drop a file in
+
+**A picture, a sound or a song can replace the game's own WITHOUT editing code.** Put the file in a folder under
+`assets/`, named for what it replaces, and run `npm run assets` (the delivery script does it by itself). Take the file
+out and run it again to go back. The rules are in `assets/README.md`.
+
+| To replace | Put a file in | Named for | Example |
+| --- | --- | --- | --- |
+| a surface's texture | `assets/textures/` | the texture (part 7) | `wetCobbles.png` |
+| a sound effect | `assets/sounds/` | the effect (part 8) | `jump.wav` |
+| a room's music | `assets/music/` | the room's id (part 1) | `cistern.mp3` |
+| a kind of music, everywhere it plays | `assets/music/` | drift, pump, groove, echo, march, dream | `groove.mp3` |
+| a jingle | `assets/music/` | wedge, defeat | `wedge.mp3` |
+
+**Nothing is dropped in now: everything is the game's own.**
+
+NOT YET possible this way: a model (a creature, a character, a prop), a voice, a font file, a cutscene. Those are
+still changed in code, in the files the parts below name.
+
 ## 1. Test rooms (levels)
 
 The list of rooms and what their doors say: `src/levels/testRooms.ts`. A room is opened by `#level=<id>`.
@@ -142,7 +161,7 @@ size of what is solid: the solid boxes are given by the level, not by the model.
 ## 7. Textures and looks
 
 All 101 textures are painted in code, dot by dot: `src/render/textures.ts` (one entry each, by name). To replace
-one, repaint its entry. (The game cannot load a picture FILE as a texture yet: `getTexture` there is where that would be added.) The names:
+one: drop a picture of that name into `assets/textures/` (part 0), or repaint its entry in code. The names:
 `stone`, `floor`, `brick`, `water`, `sewerBrick`, `concreteSlab`, `rustPlate`, `drainGrate`, `pipeBands`, `mossStone`, `wetCobbles`, `sludge`, `sewerWater`, `ceramicTiles`, `archTrim`, `dirt`, `dirtRoots`, `planks`, `beamEnd`, `beamSide`, `rubbleWall`, `gravelRail`, `mineBrick`, `clay`, `roughRock`, `wetRock`, `sandstone`, `crystalRock`, `mudFloor`, `mossRock`, `mushroomPatch`, `stalagmite`, `poolWater`, `magmaRock`, `crate`, `ironDoor`, `ironBars`, `hazardTrim`, `scorpShell`, `scorpTail`, `scorpClaw`, `scorpLamp`, `mushroomCap`, `mushroomStem`, `iceBrick`, `frostCobbles`, `iceSheet`, `iceBlock`, `frostPipe`, `iceClear`, `caveRock`, `caveFloor`, `glowMoss`, `rollerShell`, `rollerUnder`, `stagShell`, `stagBelly`, `stagHorn`, `stagIron`, `ashWood`, `turtleScute`, `turtleScuteMossy`, `turtleSkin`, `turtleBelly`, `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`, `chitin`, `wartSkin`, `leafChitin`, `membrane`, `owlFeathers`, `owlWing`, `softPaint`, `dreamStatic`, `starfield`, `rainbowRoad`, `pomoTiles`, `emberBrick`, `steamVent`, `widowChitin`, `widowHorn`, `widowBack`, `fireBrick`, `deckPlate`, `castIron`, `girder`, `castingSand`, `coalLumps`, `wroughtIron`, `cutStone`, `charred`, `coals`, `couchFabric`, `couchPatch`, `knitBlanket`, `keepStone`, `royalCarpet`.
 
 A level's LOOK is a theme: which texture each kind of surface wears (`src/levels/themes.ts`).
@@ -169,7 +188,10 @@ ears can say whether one is right.
 165 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
 recording, squashed, stored in `src/audio/recorded.ts`); the other 132 are MADE IN CODE (a recipe in `synth.ts`).
 
-**To replace an effect with a recording:** put the sound file in `recordings/`, add or change its entry in
+**To replace an effect, the quick way:** drop a recording of that name into `assets/sounds/` (part 0). It is used whole,
+as it is.
+
+**To replace one with a piece of a longer recording, squashed to the game's grain:** put the sound file in `recordings/`, add or change its entry in
 `recordings/map.json` (which file, from when to when, pitch), run `python3 scripts/make-recorded.py`. To go back to
 the made-up sound, delete the entry and run it again. To change a made-up sound, change its recipe in `synth.ts`.
 
@@ -244,6 +266,8 @@ voice: `src/audio/dreamVoices.ts`.
 `scripts/chip/songs.mjs`, RENDERED through the owner's tools by `node scripts/chip/make.mjs <folder>`, and PUT IN THE
 GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio/tunes.ts`. Which tune plays where:
 `PLAYLISTS` in `src/audio/music.ts`; a level asks for a kind of music by name (`music:` on the level).
+
+**To put a finished song in, the quick way:** drop it into `assets/music/` named for the room or the kind of music (part 0).
 
 | In the game | Name | Tempo | One round |
 | --- | --- | --- | --- |

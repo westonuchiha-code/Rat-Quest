@@ -28,6 +28,7 @@ import { TEXTURE_NAMES } from '../../src/render/textures';
 import { THEMES } from '../../src/levels/themes';
 import { FONTS } from '../../src/ui/fonts';
 import { TWEAKS } from '../../src/core/tweaks';
+import { DROPPED } from '../../src/assets/dropped';
 import type { LevelDef } from '../../src/levels/types';
 
 /** Reads a file of the project (a path from its root) as text; and lists a folder's files. */
@@ -84,6 +85,21 @@ export function assetsDoc(read: Read, list: List): string {
   say('The owner, 2026-11-17: "all of the assets, little cut scenes and videos that we have, all of that kind of stuff, even', 'things like fonts may change in the future so they all need to be well organized, kept track of and easily', 'replaceable."', '');
   say('**Nothing here is final.** Every model, picture, sound, tune, scene, name and number is a placeholder that can be', 'swapped. Each part below says WHERE the thing lives and HOW to replace it.', '');
   say('**How this game holds its assets:** almost nothing is a file that is loaded. Models are built in code from simple', 'shapes; textures are painted in code, dot by dot; most sounds are made in code or squashed from a short recording', 'and stored as text inside the game. That is why the whole game is one .html file. So "replace an asset" usually', 'means "change the code that makes it", in the file named for it.', '');
+
+  // ---------------------------------------------------------------- drop-in files
+  say('## 0. The quick way: drop a file in', '');
+  say('**A picture, a sound or a song can replace the game\'s own WITHOUT editing code.** Put the file in a folder under', '`assets/`, named for what it replaces, and run `npm run assets` (the delivery script does it by itself). Take the file', 'out and run it again to go back. The rules are in `assets/README.md`.', '');
+  say(table(['To replace', 'Put a file in', 'Named for', 'Example'], [
+    ['a surface\'s texture', code('assets/textures/'), 'the texture (part 7)', code('wetCobbles.png')],
+    ['a sound effect', code('assets/sounds/'), 'the effect (part 8)', code('jump.wav')],
+    ['a room\'s music', code('assets/music/'), 'the room\'s id (part 1)', code('cistern.mp3')],
+    ['a kind of music, everywhere it plays', code('assets/music/'), TRACK_NAMES.join(', '), code('groove.mp3')],
+    ['a jingle', code('assets/music/'), Object.keys(JINGLES).join(', '), code('wedge.mp3')],
+  ]), '');
+  const dropped = [...Object.entries(DROPPED.textures).map(([n, d]) => ['texture', code(n), code(`assets/textures/${d.file}`)]), ...Object.entries(DROPPED.sounds).map(([n, d]) => ['sound', code(n), code(`assets/sounds/${d.file}`)]), ...Object.entries(DROPPED.music).map(([n, d]) => [`music (${d.what})`, code(n), code(`assets/music/${d.file}`)])];
+  say(dropped.length ? '**Dropped in now:**' : '**Nothing is dropped in now: everything is the game\'s own.**', '');
+  if (dropped.length) say(table(['What', 'Replaces', 'File'], dropped), '');
+  say('NOT YET possible this way: a model (a creature, a character, a prop), a voice, a font file, a cutscene. Those are', 'still changed in code, in the files the parts below name.', '');
 
   // ---------------------------------------------------------------- levels
   say('## 1. Test rooms (levels)', '');
@@ -147,7 +163,7 @@ export function assetsDoc(read: Read, list: List): string {
 
   // ---------------------------------------------------------------- textures
   say('## 7. Textures and looks', '');
-  say(`All ${TEXTURE_NAMES.length} textures are painted in code, dot by dot: \`src/render/textures.ts\` (one entry each, by name). To replace`, 'one, repaint its entry. (The game cannot load a picture FILE as a texture yet: `getTexture` there is where that would be added.) The names:', TEXTURE_NAMES.map(code).join(', ') + '.', '');
+  say(`All ${TEXTURE_NAMES.length} textures are painted in code, dot by dot: \`src/render/textures.ts\` (one entry each, by name). To replace`, 'one: drop a picture of that name into `assets/textures/` (part 0), or repaint its entry in code. The names:', TEXTURE_NAMES.map(code).join(', ') + '.', '');
   say('A level\'s LOOK is a theme: which texture each kind of surface wears (`src/levels/themes.ts`).', '');
   say(table(['Theme', 'What it is', 'Floor', 'Wall', 'Platform', 'Stone'], THEMES.map((t) => [code(t.id), t.label, t.skins.floor, t.skins.wall, t.skins.platform, t.skins.stone])), '');
   say('How everything is shaded (the PS1 look: wobble, banding, fog): `src/render/ps1Material.ts`. How sharp the picture', 'is: `src/render/picture.ts`.', '');
@@ -158,7 +174,7 @@ export function assetsDoc(read: Read, list: List): string {
   say('### Sound effects', '');
   const map = JSON.parse(read('recordings/map.json')) as Record<string, { file?: string }>;
   const recorded = SFX_NAMES.filter((n) => RECORDED[n]);
-  say(`${SFX_NAMES.length} effects, each known by a name (\`SFX_NAMES\` in \`src/audio/synth.ts\`). ${recorded.length} are RECORDED (a short piece of a`, `recording, squashed, stored in \`src/audio/recorded.ts\`); the other ${SFX_NAMES.length - recorded.length} are MADE IN CODE (a recipe in \`synth.ts\`).`, '', '**To replace an effect with a recording:** put the sound file in `recordings/`, add or change its entry in', '`recordings/map.json` (which file, from when to when, pitch), run `python3 scripts/make-recorded.py`. To go back to', 'the made-up sound, delete the entry and run it again. To change a made-up sound, change its recipe in `synth.ts`.', '');
+  say(`${SFX_NAMES.length} effects, each known by a name (\`SFX_NAMES\` in \`src/audio/synth.ts\`). ${recorded.length} are RECORDED (a short piece of a`, `recording, squashed, stored in \`src/audio/recorded.ts\`); the other ${SFX_NAMES.length - recorded.length} are MADE IN CODE (a recipe in \`synth.ts\`).`, '', '**To replace an effect, the quick way:** drop a recording of that name into `assets/sounds/` (part 0). It is used whole,', 'as it is.', '', '**To replace one with a piece of a longer recording, squashed to the game\'s grain:** put the sound file in `recordings/`, add or change its entry in', '`recordings/map.json` (which file, from when to when, pitch), run `python3 scripts/make-recorded.py`. To go back to', 'the made-up sound, delete the entry and run it again. To change a made-up sound, change its recipe in `synth.ts`.', '');
   say(table(['Effect', 'Comes from'], recorded.map((n) => [code(n), `recorded: ${code('recordings/' + (map[n]?.file ?? '?'))}`])), '');
   say('Made in code: ' + SFX_NAMES.filter((n) => !RECORDED[n]).map(code).join(', ') + '.', '');
   say('The owner\'s three sound tools (kept whole in the project): ' + list('recordings/tools').map((f) => code(`recordings/tools/${f}`)).join(', ') + '. They are driven by', 'the scripts in `scripts/chip/` (`sfx.mjs` for effects, `voices.mjs` and `robot.mjs` for voices, `songs.mjs` and `make.mjs` for music).', '');
@@ -169,7 +185,7 @@ export function assetsDoc(read: Read, list: List): string {
   say(`**Robot voices** (the Robot Voice Box). They SPEAK only in the dream. ${Object.keys(ROBOT_VOICES).length} voices (${Object.keys(ROBOT_VOICES).join(', ')}), each with cries for`, 'attack, hurt and die: `src/audio/robotVoices.ts`, made by `node scripts/chip/robot.mjs`. Which creature has which', 'voice: `src/audio/dreamVoices.ts`.', '');
 
   say('### Music', '');
-  say('**The sound of this game is hip-hop: boom bap, gritty, scratches.** Songs are WRITTEN as notes in', '`scripts/chip/songs.mjs`, RENDERED through the owner\'s tools by `node scripts/chip/make.mjs <folder>`, and PUT IN THE', 'GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio/tunes.ts`. Which tune plays where:', '`PLAYLISTS` in `src/audio/music.ts`; a level asks for a kind of music by name (`music:` on the level).', '');
+  say('**The sound of this game is hip-hop: boom bap, gritty, scratches.** Songs are WRITTEN as notes in', '`scripts/chip/songs.mjs`, RENDERED through the owner\'s tools by `node scripts/chip/make.mjs <folder>`, and PUT IN THE', 'GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio/tunes.ts`. Which tune plays where:', '`PLAYLISTS` in `src/audio/music.ts`; a level asks for a kind of music by name (`music:` on the level).', '', '**To put a finished song in, the quick way:** drop it into `assets/music/` named for the room or the kind of music (part 0).', '');
   say(table(['In the game', 'Name', 'Tempo', 'One round'], [...Object.entries(TUNES).map(([id, t]) => [code(id), t.name, `${t.bpm} bpm`, secs(t.length)]), ...Object.entries(JINGLES).map(([id, t]) => [code(id) + ' (jingle)', t.name, `${t.bpm} bpm`, secs(t.length)])]), '');
   say(table(['A level asks for', 'It gets', 'Levels that ask for it'], TRACK_NAMES.map((n) => [code(n), PLAYLISTS[n] ? PLAYLISTS[n]!.tunes.map(code).join(' then ') : 'the old made-in-code track', String(all.filter((l) => (l.music ?? 'drift') === n).length)])), '');
   const songs = [...read('scripts/chip/songs.mjs').matchAll(/\bid: '([a-z0-9]+)',(?: dream: true,)? name: (?:"([^"]+)"|'([^']+)')/g)].map((m) => ({ id: m[1], name: m[2] ?? m[3] }));

@@ -95,6 +95,15 @@ that is still in the code.)
     them as `var(--rq-font-game)` and the like; a canvas reads `FONTS.game`.
     **The scripts that make stills and films are in `scripts/film/`** (they used to live only in a session's scratch
     folder). The films themselves are not kept in the project.
+    **DROP-IN FILES (`assets/`, built 2026-11-17 after his "3").** A picture, a sound or a song replaces the game's
+    own with NO code edited: put it in `assets/textures/`, `assets/sounds/` or `assets/music/`, NAMED for what it
+    replaces (a texture's name; a sound effect's name; for music a ROOM'S ID, a KIND of music, or a jingle), and run
+    `npm run assets` (`scripts/deliver.sh` does it first by itself). `scripts/assets/pack.mjs` packs the files INTO
+    the game (`src/assets/dropped.ts`: the game is one .html, nothing can be loaded when it runs); `src/assets/drop.ts`
+    is asked first by the three places that make a texture, an effect and a tune. A file named for nothing is
+    REFUSED. Rules for him: `assets/README.md`. **WHEN HE SENDS A FILE IN CHAT to use as a texture, a sound or a
+    song: this is where it goes.** Nothing is dropped in as it stands. **Not this way yet:** a model, a voice, a font
+    file, a cutscene.
  6. The Club, the wedges, the worlds' doors and their prices are still in the code and still work, but they are no
     longer "the game": do not build on them as if they were.
 
@@ -134,8 +143,8 @@ that is still in the code.)
    nothing and puts him back, and he could already jump out from the tower.
  - **NOT DONE:** (1) no triple jump (he said to leave it), and he does not hit harder in the dream ("stronger ... a
    superhero": his words, not built). (2) The inventory is written (`ASSETS.md`,
-   rule 5 above). What it shows: almost every asset is CODE, not a file. There is no way yet to drop in a picture
-   file as a texture, or a model file as a creature.
+   rule 5 above). What it shows: almost every asset is CODE, not a file. A picture, a sound or a song can
+   now be dropped in as a file (`assets/`); a model, a voice, a font file and a cutscene cannot yet.
    (3) The practice rooms and the Hall are plainly dressed. (4) The Club's own doors still ask for Golden Wedges.
    (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
    (6) Nobody has played any of it by hand.

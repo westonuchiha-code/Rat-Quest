@@ -13,7 +13,14 @@ import { FONTS, fontCss } from '../src/ui/fonts';
 import { SFX_NAMES } from '../src/audio/synth';
 import { JINGLES, TUNES } from '../src/audio/tunes';
 import { CUTSCENES } from '../src/cutscene/scenes';
-import { TEXTURE_NAMES } from '../src/render/textures';
+import { TEXTURE_NAMES, getTexturePixels } from '../src/render/textures';
+import crypto from 'node:crypto';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
+import { DROPPED } from '../src/assets/dropped';
+import { levelById } from '../src/levels/levels';
+import { PLAYLISTS, TRACK_NAMES, jingleNamed, playlistFor, tuneNamed } from '../src/audio/music';
+import { sfx } from '../src/audio/synth';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -57,6 +64,80 @@ const walk = (d: string): string[] => fs.readdirSync(path.join(root, d), { withF
   check('every font the game asks for by name is one that file has (and the main ones are really used)', [...used, ...direct].every((k) => k in FONTS) && used.includes('game') && used.includes('title') && direct.includes('game'), `asked for: ${[...used, ...direct].join(' ')}`);
   check('the page is given a variable for each font', (Object.keys(FONTS) as Array<keyof typeof FONTS>).every((k) => fontCss().includes(`--rq-font-${k}: ${FONTS[k]};`)));
   check('the game puts them on the page as it starts', /^import '\.\/ui\/fonts';/m.test(read('src/main.ts')));
+}
+
+// ---- DROP-IN FILES (assets/, assets/README.md): a picture as a texture, a recording as a sound effect or a song,
+// with no code edited. ----
+{
+  // What is packed into the game is what is in the folders now.
+  const sha = (p: string): string => crypto.createHash('sha1').update(fs.readFileSync(path.join(root, p))).digest('hex').slice(0, 16);
+  const stale: string[] = [];
+  for (const [dir, packed] of [['textures', DROPPED.textures], ['sounds', DROPPED.sounds], ['music', DROPPED.music]] as const) {
+    const there = list(`assets/${dir}`).filter((f) => !f.startsWith('.') && !f.endsWith('.md'));
+    for (const f of there) {
+      const d = packed[f.replace(/\.[^.]+$/, '')];
+      if (!d || d.file !== f || d.hash !== sha(`assets/${dir}/${f}`)) stale.push(`assets/${dir}/${f} is not packed as it is now`);
+    }
+    for (const [name, d] of Object.entries(packed)) if (!there.includes(d.file)) stale.push(`${dir} "${name}" is packed but its file is gone`);
+  }
+  check('what is packed into the game (src/assets/dropped.ts) is exactly what is in assets/ now (if not: `npm run assets`)', stale.length === 0, stale.join('; '));
+  check('every dropped file is named for something the game has: a texture, a sound effect, a room, a kind of music or a jingle', Object.keys(DROPPED.textures).every((n) => (TEXTURE_NAMES as readonly string[]).includes(n)) && Object.keys(DROPPED.sounds).every((n) => (SFX_NAMES as readonly string[]).includes(n)) && Object.entries(DROPPED.music).every(([n, d]) => (d.what === 'room' ? !!levelById(n) : d.what === 'kind' ? (TRACK_NAMES as string[]).includes(n) : !!JINGLES[n])));
+
+  // The game uses a dropped file in place of its own. (Put in here by hand, as the packer would, and taken out again.)
+  const b64 = (bytes: number[]): string => Buffer.from(bytes).toString('base64');
+  const own = getTexturePixels('ironBars');
+  DROPPED.textures.keepStone = { file: 'keepStone.png', hash: 'x', size: 2, b64: b64([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 9, 8, 7, 255]) };
+  const got = getTexturePixels('keepStone');
+  delete DROPPED.textures.keepStone;
+  check('a picture dropped in for a texture IS that texture: its size, its dots; and a texture nothing was dropped for is the game\'s own', got.size === 2 && got.data.length === 16 && got.data[0] === 255 && got.data[12] === 9 && own.size >= 16 && own.data.length === own.size * own.size * 4);
+  DROPPED.sounds.pebbles = { file: 'pebbles.wav', hash: 'x', seconds: 3 / 22050, b64: b64([127, 0, 129]) };
+  DROPPED.sounds.rideScrape = { file: 'rideScrape.wav', hash: 'x', seconds: 4000 / 22050, b64: b64(Array.from({ length: 4000 }, (_, i) => (i * 7) % 250)) };
+  const pebbles = sfx('pebbles');
+  const scrape = sfx('rideScrape');
+  delete DROPPED.sounds.pebbles;
+  delete DROPPED.sounds.rideScrape;
+  check('a recording dropped in for a sound effect IS that effect, whole (its samples, 22050 a second); one dropped for an effect that goes round and round still goes round', pebbles.data.length === 3 && Math.abs(pebbles.data[0] - 1) < 1e-6 && Math.abs(pebbles.data[2] + 1) < 1e-6 && pebbles.rate === 22050 && !pebbles.loop && scrape.loop && sfx('jump').data.length > 100, `${pebbles.data.length} samples; the loop ${scrape.loop}`);
+  const song = { file: 'x.mp3', hash: 'x', lead: 0.3, length: 12, b64: 'AAAA' };
+  DROPPED.music.hall = { ...song, what: 'room' };
+  DROPPED.music.groove = { ...song, what: 'kind', length: 20 };
+  DROPPED.music.wedge = { ...song, what: 'jingle', length: 2 };
+  const inHall = playlistFor('groove', 'hall');
+  const inClub = playlistFor('groove', 'hub');
+  const elsewhere = playlistFor('drift', 'cistern');
+  const ok = inHall?.tunes.join() === '@hall' && tuneNamed('@hall')?.length === 12 && tuneNamed('@hall')?.lead === 0.3 && inClub?.tunes.join() === '@groove' && tuneNamed('@groove')?.length === 20 && elsewhere === PLAYLISTS.drift && jingleNamed('wedge')?.length === 2 && jingleNamed('defeat') === JINGLES.defeat;
+  delete DROPPED.music.hall;
+  delete DROPPED.music.groove;
+  delete DROPPED.music.wedge;
+  check('a song dropped in for a ROOM plays in that room; one dropped for a KIND of music, in every room that asks for that kind and has none of its own; a jingle, in place of that jingle; everywhere else the game\'s own', ok && playlistFor('groove', 'hall') === PLAYLISTS.groove && jingleNamed('wedge') === JINGLES.wedge && tuneNamed('bap1') === TUNES.bap1);
+
+  // The packer itself, on a folder made here: a picture, a sound, a song for a room; and a file named for nothing.
+  let ff = true;
+  try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); } catch { ff = false; }
+  if (!ff) check('the packer (not run: this machine has no ffmpeg)', true);
+  else {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rq-drop-'));
+    for (const d of ['textures', 'sounds', 'music']) fs.mkdirSync(path.join(tmp, d));
+    const make = (args: string[]): void => void execFileSync('ffmpeg', ['-y', '-loglevel', 'error', ...args]);
+    make(['-f', 'lavfi', '-i', 'color=c=red:s=16x16', '-frames:v', '1', path.join(tmp, 'textures', 'brick.png')]);
+    make(['-f', 'lavfi', '-i', 'color=c=blue:s=300x200', '-frames:v', '1', path.join(tmp, 'textures', 'floor.png')]);
+    make(['-f', 'lavfi', '-i', 'sine=frequency=880:duration=0.25', path.join(tmp, 'sounds', 'jump.wav')]);
+    make(['-f', 'lavfi', '-i', 'sine=frequency=440:duration=2', path.join(tmp, 'music', 'hall.wav')]);
+    const out = path.join(tmp, 'dropped.ts');
+    const run = (): number => {
+      try { execFileSync('node', ['scripts/assets/pack.mjs'], { cwd: root, env: { ...process.env, RQ_ASSETS: tmp, RQ_DROPPED: out }, stdio: 'ignore' }); return 0; } catch (e) { return (e as { status?: number }).status ?? 1; }
+    };
+    const code = run();
+    const text = fs.existsSync(out) ? fs.readFileSync(out, 'utf8') : '';
+    const size = (n: string): number => Number(new RegExp(`${n}: \\{ file: [^,]+, hash: '[0-9a-f]+', size: (\\d+)`).exec(text)?.[1] ?? 0);
+    const red = Buffer.from(/brick: \{[^}]*b64: '([^']+)'/.exec(text)?.[1] ?? '', 'base64');
+    check('the packer packs a folder: a small square picture as it is, dot for dot (and its colour is its colour); a big oblong one squeezed to 128 square; a sound at its length; a song for a room with a round\'s lead and length', code === 0 && size('brick') === 16 && red.length === 16 * 16 * 4 && red[0] > 200 && red[1] < 60 && red[3] === 255 && size('floor') === 128 && /jump: \{ file: "jump.wav", hash: '[0-9a-f]+', seconds: 0\.25/.test(text) && /hall: \{ file: "hall.wav", hash: '[0-9a-f]+', what: 'room', lead: 0\.3\d*, length: 2\.0/.test(text), `exit ${code}; brick ${size('brick')}, floor ${size('floor')}`);
+    fs.writeFileSync(path.join(tmp, 'sounds', 'notASound.wav'), fs.readFileSync(path.join(tmp, 'sounds', 'jump.wav')));
+    fs.rmSync(out);
+    check('...and a file named for nothing the game has is REFUSED, and nothing is written: it cannot be dropped in and silently do nothing', run() === 1 && !fs.existsSync(out));
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  const readme = read('assets/README.md');
+  check('the folders are there with their instructions, and the delivery script packs before it builds', ['textures', 'sounds', 'music'].every((d) => fs.existsSync(path.join(root, 'assets', d)) && readme.includes(`## ${d}/`)) && /node scripts\/assets\/pack\.mjs/.test(read('scripts/deliver.sh')) && /pack\.mjs/.test(read('package.json')));
 }
 
 console.log(failures === 0 ? '\nassets: all passed' : `\nassets: ${failures} FAILED`);
