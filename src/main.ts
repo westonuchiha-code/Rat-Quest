@@ -91,7 +91,7 @@ import { Equipment } from './player/equipment';
 import { PickupVisuals } from './world/pickups';
 import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
-import { fireAt, inBrazierFire } from './world/layout';
+import { fireAt, inBrazierFire , slimeZones } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
@@ -1674,6 +1674,7 @@ function startGame(): void {
     scene.add(chamber.group);
     player.water = chamber.water;
     player.well = def.well ?? null;
+    player.slime = slimeZones(def.decor);
     collectVisuals = new CollectibleVisuals({ id: def.id, name: def.name, items: def.collectibles }, tracker, { floorAt });
     collectVisuals.hidden = (d) => d.crate !== undefined && !revealedCrates.has(d.crate);
     scene.add(collectVisuals.group);

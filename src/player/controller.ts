@@ -1,4 +1,4 @@
-import { MAX_WALK_SLOPE } from '../world/layout';
+import { MAX_WALK_SLOPE , type SlimeZone } from '../world/layout';
 import { findGrind, grindHeight, type GrindLine } from '../world/grind';
 import * as THREE from 'three';
 import { TUNING } from '../data/tuning';
@@ -230,6 +230,15 @@ export class PlayerController {
   moveEvent: MoveEvent = null;
   /** A round room in the dark he cannot leave (LevelDef.well), or none. Whoever loads the level sets it. */
   well: Well | null = null;
+  /** The slime in this place (world/layout.ts `slimeZones`): the game sets it when a level is loaded. */
+  slime: readonly SlimeZone[] = [];
+  /** He is in slime: on the ground, on a green runnel. On foot it holds him (the shield rides over it as over anything). */
+  get inSlime(): boolean {
+    if (!this.grounded) return false;
+    const p = this.position;
+    for (const z of this.slime) if (p.x > z.x0 && p.x < z.x1 && p.z > z.z0 && p.z < z.z1 && p.y > z.y0 - 0.6 && p.y < z.y1 + 0.6) return true;
+    return false;
+  }
   /** Whether he can catch ledges in this level. */
   allowGrab = true;
   /** Whether the long jump works in this level. */
@@ -794,7 +803,9 @@ export class PlayerController {
       const steepUnder = this.slopeUnder();
       const scrabble = steepUnder && steepUnder.steep > MAX_WALK_SLOPE + 1e-6 ? 1 / (1 + steepUnder.steep) : 1;
       const mul = (this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1) * scrabble;
-      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * mul;
+      // (In slime his feet are held: he wades.)
+      const mire = !swimming && this.inSlime ? T.slime.walk : 1;
+      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * mul * mire;
       const hasInput = move.lengthSq() > 0.01;
       // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
       const ice = this.onIce;
@@ -1626,6 +1637,13 @@ export class PlayerController {
         if (support === null || top > support) {
           support = top;
           under = b;
+        } else if (under && Math.abs(top - support) < 1e-6) {
+          // (Two things with their tops level, one laid on the other: a sheet of ice on a floor, in a level from the
+          // builder. He is on the ice if his MIDDLE is over it, and off it if it is not. Before, it was whichever came
+          // first, and ice laid on a floor was not ice.)
+          const over = (q: Aabb): boolean => p.x >= q.min.x && p.x <= q.max.x && p.z >= q.min.z && p.z <= q.max.z;
+          // (Only where ICE is one of the two: anything else is left as it was, the first found.)
+          if (!b.ramp && !under.ramp && b.slick !== under.slick && over(b) && (b.slick || !over(under))) under = b;
         }
       }
     }

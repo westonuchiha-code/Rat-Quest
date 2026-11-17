@@ -23,6 +23,12 @@ import { extent, type Box, type Decor } from '../world/layout';
 
 const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top, ...extra });
 const box = (t: Piece['t'], x0: number, z0: number, x1: number, z1: number, top: number, extra: Partial<Piece> = {}): Piece => ({ t, x0, z0, x1, z1, top, ...extra });
+/** Where the hall's steam vents are: on the dock, the two banks and the north floor, clear of everything that stands on them. */
+export const STEAM_VENTS: ReadonlyArray<readonly [number, number]> = [
+  [-20, 29], [26, 37], [7, 33], [-42, 40],
+  [-40, 2], [-43, -8], [39, -12], [41, 12],
+  [-12, -42], [22, -40],
+];
 const collect = (kind: 'crumb' | 'cap', label: string): GoalDef => ({ type: 'collect', kind, count: 'all', label });
 
 // ---- Heights ----
@@ -78,6 +84,10 @@ const hall: CustomLevel = {
     box('lava', -30, -34, 30, -17, -0.6),
     box('lava', -30, -17, -12, 5, -0.6),
     box('lava', 12, -17, 30, 5, -0.6),
+
+    // ---- Steam: iron vents let into the floors, blowing every few seconds, no two in step. Scenery. (The owner, of
+    // the furnace: "animations of like steam coming up out of the ground".) ----
+    ...STEAM_VENTS.map(([x, z]) => at('vent', x, z)),
 
     // ---- South: the Gantry, its cage lift and stair ----
     box('platform', -16, 40, 16, 48, GANTRY, { bottom: GANTRY - 1 }),

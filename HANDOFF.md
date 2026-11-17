@@ -1331,3 +1331,19 @@ things are:
 - `npc/npc.ts`: `NpcAct.spell`. `npc/grimsqueakModel.ts`: `spell.plain` (only what is in his claws is shown),
   `spell.reach` (how far the forks run).
 
+## 2026-11-17: dozers, static, flowers, hatchlings, pointer, ice piece, slime, vents
+
+- `world/dozers.ts`: `DozerSpec`, `DOZER`, `dozerSolids`, `dreamColour`, `dreamify`, `class Dozer` (its own model, Z
+  sprites). `LevelDef.dozers`; main.ts makes them on load beside `sky.show`, updates them with the npcs.
+- `render/textures.ts`: `dreamStatic`, `blinkTextures(time)`. `world/chamber.ts`: decor `flowers`, `butterflies`
+  (`nodders`, `flutterers`, `petalMat` = createPs1Material, both sides), decor `vent` (plate in `steamVent` + a jet).
+- `levels/milkyway.ts`: `fuzz` kerbs, beds, `dozers` in the plan; `HEAD.half` 9.
+- `player/ratModel.ts`: teeth are children of the snout mesh (the dream rat is built the same, so `wearColours`
+  still matches part for part).
+- `enemies/widow.ts`: `WIDOW.young`, `WIDOW.youngIn`, `young[]` filled on 'rage'. `widowModel.ts`: `strip` is the
+  pointer. main.ts: `HATCHLING_SIZE`, the hatchling branch of `addEnemy`, the deep voice.
+- `levels/custom.ts`: pieces `'ice'` (in `KIND` and `BOX_TYPES`) and `'vent'`. `ui/builder.ts` lists both.
+- `player/controller.ts`: `slime`, `inSlime`; on a tie of tops he is on the box his middle is over, the slick one
+  first. `world/layout.ts`: `SlimeZone`, `slimeZones`. `TUNING.slime.walk`.
+- `dev/viewer.ts`: `who=dozer&type=&awake=1&pose=`, `who=hatchling&state=`.
+

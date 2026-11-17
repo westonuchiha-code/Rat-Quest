@@ -153,6 +153,12 @@ export const TUNING = {
    */
   ice: { accel: 0.35, decel: 0.1 },
   /**
+   * Slime (the green runnel down the middle of a pipe): ON FOOT it holds him, he goes at this share of his speed.
+   * (ON THE SHIELD it does nothing: it was tried as the fast line, the board's drag cut and its top speed raised, and
+   * the Long Drop, which is tuned to the speed he leaves its lip at, threw him clean over its arena. 2026-11-17.)
+   */
+  slime: { walk: 0.55 },
+  /**
    * Sliding on his own hide down ground too steep to stand on (the owner, 2026-11-15: "he would basically be like
    * tripping and sliding down ... probably a little slower and you have less control"). Compare `ride`.
    */

@@ -169,6 +169,17 @@ export function iceSpikeSolids(x: number, y: number, z: number, size: number): B
   const s = size * ICE_SPIKE.solid;
   return [{ ...extent('stone', x - s, x + s, y, y + size * ICE_SPIKE.tall, z - s, z + s), hidden: true }];
 }
+/** A patch of slime on the ground: where it is, and between what heights its ground lies. */
+export interface SlimeZone { x0: number; x1: number; z0: number; z1: number; y0: number; y1: number }
+/**
+ * Where there is slime to tread in: every runnel (the green strip down a pipe's bed). SLIME DOES SOMETHING: on foot it
+ * holds him back (TUNING.slime). The shield rides over it.
+ */
+export function slimeZones(decor: readonly Decor[]): SlimeZone[] {
+  const out: SlimeZone[] = [];
+  for (const d of decor) if (d.kind === 'runnel') out.push({ x0: d.x - d.w / 2, x1: d.x + d.w / 2, z0: Math.min(d.z0, d.z1), z1: Math.max(d.z0, d.z1), y0: Math.min(d.y0, d.y1), y1: Math.max(d.y0, d.y1) });
+  return out;
+}
 /**
  * A shelf mushroom (decor `bracket`): how thick it is where it joins the wall (of its depth), how much of its outer
  * corners is cut off (of its width and depth: it is drawn eight-cornered, and is solid to the square of that, so the
@@ -327,6 +338,13 @@ export type Decor =
    * nought (so one jet can take up where another ends). `push`: it is a GUST: whoever is in its gas is carried
    * along with it, up to this speed (world/gusts.ts). Without `push` it is only drawn.
    */
+  /**
+   * A steam vent: an iron grille let into the floor at (x, y, z), `size` across, that blows a column of steam `height`
+   * high for `on` seconds in every `every` (always, if `every` is not given). Scenery: it does not hurt or push.
+   * (The owner, 2026-11-15, of the furnace: "animations of like steam coming up out of the ground or something we can
+   * use in different places".)
+   */
+  | { kind: 'vent'; x: number; y: number; z: number; size?: number; height?: number; every?: number; on?: number; delay?: number }
   | { kind: 'jet'; x: number; y: number; z: number; dir: [number, number, number]; length: number; color?: number; width?: number; every?: number; on?: number; delay?: number; push?: number }
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }

@@ -16,7 +16,7 @@ import { CollectibleTracker } from '../src/world/collectibles';
 import { longDrop, longDropPlan, LONGDROP as L, WEED, RAIL, ARENA, dropFloor, dropLine, sectionAt } from '../src/levels/longdrop';
 import { garden } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
-import { MAX_WALK_SLOPE } from '../src/world/layout';
+import { MAX_WALK_SLOPE, slimeZones } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
 
 const DT = 1 / 60;
@@ -88,6 +88,8 @@ function ride(from: From | null, frames: number, at: (p: PlayerController, i: nu
   const start = from ?? { x: -1, z: -3 };
   const p = new PlayerController(new THREE.Vector3(start.x, ground(start.x, start.z), start.z));
   p.well = def.well ?? null;
+  // (As the game sets it: the slime down the pipes' beds is the fast line.)
+  p.slime = slimeZones(def.decor);
   const bag = purse();
   const events: MoveEvent[] = [];
   const got = new Set<string>();

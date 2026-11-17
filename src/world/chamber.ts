@@ -1362,6 +1362,21 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
           m.rotation.set(Math.sin(a) * 0.3, hash(4) * Math.PI, -Math.cos(a) * 0.3);
         }
       }
+    } else if (d.kind === 'vent') {
+      // A steam vent: its grille lies on the floor (painted on after it, as a rug is), and steam comes up out of it.
+      const size = d.size ?? 1.2;
+      const plate = new THREE.PlaneGeometry(size, size);
+      plate.rotateX(-Math.PI / 2);
+      bakeVertexColor(plate, 0xffffff, false);
+      asDecal(addMesh(plate, mat('steamVent'), d.x, d.y + 0.02, d.z), 1);
+      const puffs: THREE.Sprite[] = [];
+      for (let i = 0; i < 7; i++) {
+        const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTexture(), color: 0xf2ece4, opacity: 0, depthWrite: false, transparent: true }));
+        group.add(sp);
+        puffs.push(sp);
+      }
+      const height = d.height ?? 3.2;
+      jets.push({ puffs, from: new THREE.Vector3(d.x, d.y + 0.1, d.z), dir: new THREE.Vector3(0, 1, 0), length: height, width: size * 1.5, color: new THREE.Color(0xf2ece4), every: d.every ?? 0, on: d.on ?? 0, delay: d.delay ?? 0 });
     } else if (d.kind === 'jet') {
       // A jet of gas: a row of soft puffs, each put in its place as time goes (see `update`).
       const dir = new THREE.Vector3(...d.dir).normalize();

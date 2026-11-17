@@ -14,11 +14,11 @@ import type { TextureName } from '../render/textures';
 import { ThemeId, themeById } from './themes';
 
 export type PieceType =
-  | 'floor' | 'tile' | 'grate' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
+  | 'floor' | 'tile' | 'grate' | 'ice' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
   | 'water' | 'river' | 'lava' | 'fire' | 'bridge' | 'crate' | 'barrel'
   | 'crumb' | 'cap' | 'relic'
   | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'scorpion' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
-  | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'speaker' | 'couch' | 'light'
+  | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** The pieces that are enemies (the Broodmother, a boss, among them). */
@@ -127,8 +127,8 @@ export interface CustomLevel {
   fogRange?: [number, number];
 }
 
-export const BOX_TYPES: PieceType[] = ['floor', 'tile', 'grate', 'platform', 'plank', 'stone', 'wall', 'pillar'];
-const KIND: Partial<Record<PieceType, Kind>> = { floor: 'floor', tile: 'floor', grate: 'stone', platform: 'platform', plank: 'plank', stone: 'stone', wall: 'wall', pillar: 'pillar' };
+export const BOX_TYPES: PieceType[] = ['floor', 'tile', 'grate', 'ice', 'platform', 'plank', 'stone', 'wall', 'pillar'];
+const KIND: Partial<Record<PieceType, Kind>> = { floor: 'floor', tile: 'floor', ice: 'floor', grate: 'stone', platform: 'platform', plank: 'plank', stone: 'stone', wall: 'wall', pillar: 'pillar' };
 const FLOW: Record<'n' | 's' | 'e' | 'w', [number, number]> = { n: [0, -1.8], s: [0, 1.8], e: [1.8, 0], w: [-1.8, 0] };
 
 export function emptyCustom(): CustomLevel {
@@ -230,7 +230,10 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       // The sewer is the game's own look, which the box kinds already wear; only the others (and tiles and grating) name a picture.
       const themed = theme.id === 'sewer' ? (p.t === 'tile' ? theme.skins.tile : p.t === 'grate' ? theme.skins.grate : undefined) : theme.skins[p.t as keyof typeof theme.skins];
       const skin = p.skin ?? themed;
-      solids.push(skin ? { ...b, skin } : b);
+      // ICE: a sheet of it to walk on. On its top he keeps his momentum and turns wide (Box.slick), whatever the
+      // place's own look is: it wears the ice's picture unless it was given another.
+      if (p.t === 'ice') solids.push({ ...b, skin: p.skin ?? 'iceSheet', slick: true });
+      else solids.push(skin ? { ...b, skin } : b);
       continue;
     }
     switch (p.t) {
@@ -299,6 +302,11 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         break;
       case 'roots':
         decor.push({ kind: 'roots', x: cx, z: cz, top: c.wallHeight, bottom: p.top });
+        break;
+      case 'vent':
+        // A steam vent in the floor. Each blows for a second and a half in every four or five, no two in step (by
+        // where it is), so a room of them is never all on or all off.
+        decor.push({ kind: 'vent', x: cx, y: p.top, z: cz, every: 4 + (Math.abs(Math.round(cx * 3 + cz * 7)) % 3) * 0.6, on: 1.5, delay: (Math.abs(Math.round(cx * 5 + cz * 11)) % 9) * 0.45 });
         break;
       case 'brazier':
         decor.push({ kind: 'brazier', x: cx, y: p.top, z: cz });

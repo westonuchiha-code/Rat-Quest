@@ -426,6 +426,49 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## "2, 4, 5, 6" (2026-11-17): the knight's stills and teeth, the dream's second pass, the hearth, the Widows, ice, slime, steam
+
+He picked four items from the list by number. What was done, and what was NOT:
+ - (2) THE KNIGHT AND THE KEEP GUARD IN SOFT PAINT: STILLS SENT, NOT IN THE GAME. Waiting for his yes
+   (`deliver/pictures/knight-and-guard-soft-paint-try-out.png`; the viewer puts it on with `&soft=1`). His model has
+   one material for every part, so putting it in is a one-line change in `player/ratModel.ts` once he says so.
+   And, sent while this was going on: "we need to fix the knights teeth like we did with grimsqueak." DONE: they were
+   two white balls hung under his snout; they are small incisors rooted in it (children of the snout mesh). The Keep
+   Guard is made from his model and has them too.
+ - (4) THE DREAM'S SECOND PASS, in the Milky Way try-out (tests in `tests/milkyway.ts`):
+   its kerbs are in STATIC that winks (`dreamStatic`; `blinkTextures(time)` in `render/textures.ts`, called by the
+   room's clock, changes a few dozen dots a few times a second and puts the last lot back);
+   beds of FLOWERS with BUTTERFLIES over them (decor `flowers`, `butterflies`: they nod and fly by the room's clock);
+   and THE WAKING WORLD'S TERRORS IN LOUD COLOURS, DOING NOTHING (`world/dozers.ts`, `LevelDef.dozers`): a mantis and a
+   scorpion asleep in the flowers either side of the head pad, and on the Moon a Stag Knight asleep on its hammer,
+   another standing about, a mantis awake and a scorpion asleep. Each is the creature's own model with its colours
+   turned round the wheel and made loud (`dreamify`; the scorpion's colour is in its pictures, so it is given plain
+   greys and a tint for each part), solid where it is drawn (`dozerSolids`), with Z's rising from the sleepers.
+   The head pad is wider (`HEAD.half` 9) to hold its gardens. HIS TO ACCEPT, CHANGE OR THROW OUT.
+   A THING LEARNED: a plain three.js material comes out PALE in this game (its colours are brightened twice): use
+   `createPs1Material` even for unlit things.
+ - (5) THE HEARTH is 0.3 high (`FIRE.y` in `levels/junction.ts`): he walks up onto it. It was 0.4, over his step.
+   THE WIDOWS (two of them now, one each side, so one is always behind the camera): a POINTER lies on the floor with
+   a blow's ring, a wedge from the ring's edge toward the one striking (`strip` in `enemies/widowModel.ts`); the
+   second Widow has a DEEPER voice for her wind-ups (main.ts `beastSounds`); and HER YOUNG, his own idea ("have her
+   send out baby spiders that make you have to keep moving around"): when a Widow turns angry two come out of the dark
+   beside her (`WIDOW.young`, `Widow.young`). A young one is a ROACH in everything it does, drawn as a small spider
+   (`EnemySpec.look: 'hatchling'`: the Broodmother's model in a holder a quarter her size). They count toward
+   nothing. This makes the second half of that fight HARDER. Viewer: `#view&who=hatchling`.
+ - (6) ICE is a ground piece in the builder (`'ice'`: a slick sheet in `iceSheet`). The controller now takes him to be
+   on the ice when it lies level on another floor and his middle is over it (it took whichever came first, and ice
+   laid on a level's own floor was not ice).
+   SLIME DOES SOMETHING: on foot, on a green runnel, he goes at 0.55 of his speed (`TUNING.slime`, `slimeZones`,
+   `PlayerController.inSlime`). ON THE SHIELD IT DOES NOTHING, AND THAT IS ON PURPOSE: it was tried as the fast line
+   (less drag, a higher top speed) and the Long Drop, which is tuned to the speed he leaves its lip at, threw him
+   clean over its arena. `tests/longdrop.ts` now runs with the slime on, as the game has it.
+   STEAM VENTS: decor `vent` (an iron grille in the floor, steam up out of it in bursts), a builder piece `'vent'`,
+   and ten in the Foundry's hall (`STEAM_VENTS` in `levels/foundry.ts`). Scenery: they do not hurt or push.
+   NOT DONE, of what he listed under 6: the furnace's TEXTURES (he threw out the first tile refreshes: that wants a
+   try-out room, not a swap); THE FOUNDRY'S COLLECTIBLES "the Cistern way" (fewer, each earned by movement); THE LONG
+   DROP'S LOOK during the run. Each is a design job of its own.
+ Tests: `tests/slimeice.ts` (new), and additions to `tests/milkyway.ts` and `tests/widow.ts`.
+
 ## GRIMSQUEAK'S SPELLS ARE IN HIS FIGHT (2026-11-16: he said "continue"). Tests `tests/grimfight.ts`. HIS TO ACCEPT, CHANGE OR THROW OUT
 
 The fight's four attacks keep every number they had (a test holds the table): its first half is exactly what it was.
