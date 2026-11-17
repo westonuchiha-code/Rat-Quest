@@ -1,5 +1,6 @@
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
+import { buildForge, type ForgeMats } from './forgeModels';
 import { buildCouch } from './couchModel';
 import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
@@ -99,6 +100,8 @@ const TILE: Partial<Record<TextureName, number>> = {
   // (The dream's road: one rainbow across its whole width. `ROAD.wide` in levels/milkyway.ts is this.)
   rainbowRoad: 7, pomoTiles: 4, dreamStatic: 4,
   hazardTrim: 1, archTrim: 2, beamSide: 1.5, ironDoor: 3, gravelRail: 2, clay: 2.5, sandstone: 3,
+  // (The furnace's set. A brick is 0.75 long; a sheet of tread plate and a casting are each 1.5 square.)
+  fireBrick: 6, deckPlate: 3, castIron: 3, girder: 2, castingSand: 3, coalLumps: 1.5,
 };
 const MOSS = 0xc8f0a8; // tops of platforms pick up a green tint
 const PIT_BOTTOM = 0x1d2a1d;
@@ -231,6 +234,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** The coals in a fire bowl: their picture, unlit, so the fire between the lumps glows in the dark. */
   const coalMat = (): THREE.ShaderMaterial => (coalMaterial ??= createPs1Material({ tex: getTexture('coals'), lit: false }));
   const darkMat = createPs1Material({});
+  let forgeMaterials: ForgeMats | null = null;
+  /** What the furnace's things are made of (forgeModels.ts). */
+  const forgeMats = (): ForgeMats => (forgeMaterials ??= {
+    brick: mat('fireBrick'), cast: mat('castIron'), iron: ironMat(), wood: mat('planks'), bark: mat('ashWood'), endGrain: mat('beamEnd'),
+    leather: createPs1Material({ tex: getTexture('turtleSkin'), side: THREE.DoubleSide }), sand: mat('castingSand'), coal: mat('coalLumps'), coals: coalMat(), char: charMat(), flame: darkMat, glow: () => createPs1Material({}),
+  });
   /** For things in the sky (a planet): their own colours, unlit, and not faded by the room's fog. */
   const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false });
   const skyMatBoth = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, side: THREE.DoubleSide });
@@ -1362,6 +1371,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
           m.rotation.set(Math.sin(a) * 0.3, hash(4) * Math.PI, -Math.cos(a) * 0.3);
         }
       }
+    } else if (d.kind === 'forge') {
+      // One of the furnace's things (forgeModels.ts): its shapes, its fire with the room's other fires, its lights, its moving parts.
+      const f = buildForge(d, forgeMats(), ceiling ? ceiling.y : d.y + 12);
+      group.add(f.group);
+      for (const fl of f.flames) flames.push({ mesh: fl.mesh, base: fl.base, phase: fl.phase + d.x * 3.1 + d.z * 1.7 });
+      for (const L of f.lights) lightDefs.push(L);
+      if (f.update) animators.push(f.update);
     } else if (d.kind === 'vent') {
       // A steam vent: its grille lies on the floor (painted on after it, as a rug is), and steam comes up out of it.
       const size = d.size ?? 1.2;

@@ -338,6 +338,8 @@ export function garden(): LevelDef {
       { to: 'coldmain', name: 'The Cold Main', need: 0, door: doorOn('south', GARDEN.halfX, 10.5, GARDEN.halfZ, 0) },
       // (And a fifth, in the NORTH wall, on clear floor west of the middle: the Milky Way, the dream's try-out.)
       { to: 'milkyway', name: 'The Milky Way', need: 0, door: doorOn('north', GARDEN.halfX, -7, GARDEN.halfZ, 0) },
+      // (And a sixth, in the north wall's east end, on clear floor: the Forge, the furnace's try-out.)
+      { to: 'forge', name: 'The Forge', need: 0, door: doorOn('north', GARDEN.halfX, 30, GARDEN.halfZ, 0) },
     ],
   };
 }

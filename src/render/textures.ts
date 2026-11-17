@@ -1328,7 +1328,7 @@ const paintHazardTrim: Painter = (p, rand) => {
 // ---------------------------------------------------------------------------
 
 interface Def {
-  size: 32 | 64;
+  size: 32 | 64 | 128;
   seed: number;
   paint: Painter;
 }
@@ -2781,6 +2781,291 @@ function paintSteamVent(p: Px, rand: Rand): void {
   for (const [x, y] of [[2, 2], [S - 3, 2], [2, S - 3], [S - 3, S - 3]]) p.set(x, y, 0xa8b2ba);
 }
 
+// ---------------------------------------------------------------------------
+// The furnace's own set (2026-11-17), for the Forge try-out room (levels/forge.ts): every part of the place has a
+// picture of its own, so that the floor, what stands on it, what he climbs and what he climbs past are four different
+// things to the eye. (The Foundry wore one rusty plate on all four.) NOTHING IN ANY OF THEM GLOWS: fire and hot metal
+// are things in the room, never paint in a tile that comes round every three steps.
+// ---------------------------------------------------------------------------
+
+/**
+ * Firebrick, for a furnace hall's walls: long bricks in running bond, baked every colour from buff to plum, some burnt
+ * black; proud of their mortar (lit along the top, shaded underneath); pitted, chipped, and sooted in runs from above.
+ */
+function paintFireBrick(p: Px, rand: Rand): void {
+  const S = p.size;
+  // (A brick is sixteen by eight, whatever the picture's size: at 128 there are 128 of them before one comes round
+  // again. At 64 the same few burnt bricks came round every three steps and made stripes across a big wall.)
+  const BW = 16;
+  const BH = 8;
+  const cols = S / BW;
+  const f = fbm(S, rand, 16, 3);
+  const soot = fbm(S, rand, 3, 2);
+  const clay = [0x4a2616, 0x5e2f1b, 0x743a21, 0x8a4828, 0x9f5a32, 0xb26e40];
+  const burnt = [0x2a1a16, 0x35211b, 0x432a22, 0x52342a];
+  const buff = [0x80583a, 0x916844, 0xa37a50, 0xb58c5e];
+  const mortar = [0x120d0b, 0x1a130f, 0x231a14];
+  const tone: number[] = [];
+  const kind: number[] = [];
+  for (let i = 0; i < cols * (S / BH); i++) {
+    tone.push(0.34 + rand() * 0.38);
+    const r = rand();
+    kind.push(r < 0.09 ? 1 : r < 0.16 ? 2 : 0);
+  }
+  for (let y = 0; y < S; y++) {
+    const row = Math.floor(y / BH);
+    const off = (row % 2) * (BW / 2) + (row % 4 === 3 ? 3 : 0);
+    const ly = y % BH;
+    for (let x = 0; x < S; x++) {
+      const bx = (x + off) % S;
+      const lx = bx % BW;
+      const id = row * cols + Math.floor(bx / BW);
+      if (ly === BH - 1 || lx === BW - 1) {
+        p.set(x, y, ramp(rand() * 0.7, mortar, x, y, 0.3));
+        continue;
+      }
+      const i = y * S + x;
+      let v = tone[id] + (f[i] - 0.5) * 0.4 - soot[i] * 0.22;
+      if (ly === 0) v += 0.16;
+      else if (ly === BH - 2) v -= 0.16;
+      if (lx === 0) v += 0.07;
+      else if (lx === BW - 2) v -= 0.1;
+      p.set(x, y, ramp(v, kind[id] === 1 ? burnt : kind[id] === 2 ? buff : clay, x, y, 0.22));
+    }
+  }
+  // Pits and chips; a crack through a brick here and there; soot run down from above.
+  const many = (S * S) / 4096;
+  const inBrick = (x: number, y: number): boolean => y % BH < BH - 1 && ((x + (Math.floor(y / BH) % 2) * (BW / 2)) % BW) < BW - 1;
+  for (let k = 0; k < 90 * many; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    if (inBrick(x, y)) p.tint(x, y, rand() < 0.7 ? 0.55 : 1.15);
+  }
+  for (let k = 0; k < 5 * many; k++) {
+    const row = Math.floor(rand() * (S / BH));
+    p.crack(rand, Math.floor(rand() * S), row * BH + 1, 5, Math.PI / 2 + (rand() - 0.5), 0x140e0c, 0.5);
+  }
+  for (let k = 0; k < 7 * many; k++) {
+    const x = Math.floor(rand() * S);
+    const y0 = Math.floor(rand() * S);
+    const len = 10 + Math.floor(rand() * 20);
+    for (let j = 0; j < len; j++) {
+      const t = 1 - j / len;
+      p.tint(x, y0 + j, 1 - 0.34 * t);
+      if (t > 0.5) p.tint(x + 1, y0 + j, 1 - 0.18 * t);
+    }
+  }
+}
+
+/**
+ * Tread plate, for a foundry's floor: dark steel covered in raised lozenges, each a short stroke lying the other way
+ * from its neighbours, worn bright where feet go and black with oil where they do not; in sheets, bolted at the corners.
+ */
+function paintDeckPlate(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 8, 3);
+  const wear = fbm(S, rand, 3, 2);
+  const steel = [0x101317, 0x181c22, 0x232930, 0x313840, 0x434c55, 0x5b656e, 0x7f8a92];
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) p.set(x, y, ramp(0.34 + (f[y * S + x] - 0.5) * 0.3 + (wear[y * S + x] - 0.5) * 0.2, steel, x, y, 0.2));
+  // The lozenges: one to every eight, slanting the other way from the last.
+  for (let cy = 0; cy < S / 8; cy++) {
+    for (let cx = 0; cx < S / 8; cx++) {
+      const slant = (cx + cy) % 2 === 0 ? 1 : -1;
+      const mx = cx * 8 + 4;
+      const my = cy * 8 + 4;
+      const w = wear[my * S + mx];
+      for (let t = -2; t <= 2; t++) {
+        const x = mx + t;
+        const y = my + slant * Math.round(t / 2);
+        p.set(x, y, ramp(0.62 + w * 0.4, steel, x, y, 0.12));
+        p.set(x, y + 1, steel[0]);
+      }
+    }
+  }
+  // The sheets: a seam every half tile, and a bolt in from each corner.
+  const half = S / 2;
+  for (let i = 0; i < S; i++) {
+    for (const s of [0, half]) {
+      p.set(i, s, 0x07080a);
+      p.set(i, s + 1, ramp(0.5 + f[i] * 0.2, steel, i, s, 0.2));
+      p.set(s, i, 0x07080a);
+      p.set(s + 1, i, ramp(0.5 + f[i] * 0.2, steel, s, i, 0.2));
+    }
+  }
+  for (const sx of [0, half]) for (const sy of [0, half]) for (const [dx, dy] of [[3, 3], [half - 4, 3], [3, half - 4], [half - 4, half - 4]]) {
+    const x = sx + dx;
+    const y = sy + dy;
+    p.rect(x, y, 2, 2, steel[5]);
+    p.set(x, y, steel[6]);
+    p.hline(x, y + 2, 2, 0x07080a);
+  }
+  // Oil where nobody walks; a bloom of rust along a seam here and there (small: never the same blot on every sheet).
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const i = y * S + x;
+    if (wear[i] < 0.3) p.tint(x, y, 0.78);
+    const seam = Math.min(x % half, half - (x % half), y % half, half - (y % half));
+    if (seam > 0 && seam < 4 && f[i] > 0.66) p.blend(x, y, 0x6a3418, 0.45);
+  }
+}
+
+/**
+ * Cast iron, for the blocks and stagings he stands on and climbs: square castings, each with a raised frame round a
+ * sunk field, a lozenge boss cast in the middle of the field, a bolt in each corner of the frame. Graphite black,
+ * pitted, with a brown heat-scale in patches.
+ */
+function paintCastIron(p: Px, rand: Rand): void {
+  const S = p.size;
+  const P = S / 2;
+  const f = fbm(S, rand, 16, 2);
+  const g = fbm(S, rand, 3, 2);
+  const iron = [0x141314, 0x201d1f, 0x2e2a2d, 0x3f3a3e, 0x524b50, 0x696166, 0x878085];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const lx = x % P;
+      const ly = y % P;
+      const d = Math.min(lx, ly, P - 1 - lx, P - 1 - ly);
+      let v: number;
+      if (d === 0) v = 0.02;
+      else if (d <= 4) {
+        // The frame: lit on its top and left runs, shaded on its bottom and right.
+        const top = ly === d;
+        const left = lx === d;
+        const bottom = P - 1 - ly === d;
+        v = 0.5 + (top ? 0.2 : bottom ? -0.2 : left ? 0.08 : -0.1) + (f[i] - 0.5) * 0.2;
+        if (d === 1) v -= 0.12;
+      } else if (d === 5) v = ly === 5 || lx === 5 ? 0.1 : 0.46;
+      else {
+        v = 0.3 + (f[i] - 0.5) * 0.36 + (g[i] - 0.5) * 0.14;
+        const m = Math.abs(lx - (P - 1) / 2) + Math.abs(ly - (P - 1) / 2);
+        if (m < 6.6) v += 0.12;
+        else if (m < 7.6) v += lx + ly < P ? 0.26 : -0.2;
+      }
+      p.set(x, y, ramp(v, iron, x, y, 0.18));
+      if (d > 0 && g[i] > 0.62) p.blend(x, y, 0x5a2e1a, (g[i] - 0.62) * 0.9);
+    }
+  }
+  for (const sx of [0, P]) for (const sy of [0, P]) for (const [dx, dy] of [[2, 2], [P - 4, 2], [2, P - 4], [P - 4, P - 4]]) {
+    p.rect(sx + dx, sy + dy, 2, 2, iron[5]);
+    p.set(sx + dx, sy + dy, iron[6]);
+    p.hline(sx + dx, sy + dy + 2, 2, 0x050505);
+  }
+  p.speckle(rand, 70, [0x0a090a, 0x141213]);
+}
+
+/**
+ * A riveted girder, for columns and for the walls he kicks up: a post down each edge of the picture (two pictures
+ * side by side make one post between them), riveted; between the posts, flat bars laced corner to corner over the
+ * dark, a plate where they cross and a strap where each pair ends. In red oxide paint, chipped to the steel.
+ */
+function paintGirder(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 8, 3);
+  const paint = [0x26100c, 0x3a170e, 0x532112, 0x6d2d18, 0x863a20, 0x9d4a2a, 0xb35f38];
+  const dark = [0x050404, 0x0a0808, 0x110e0e];
+  const steel = [0x2a2e33, 0x444a50, 0x666e75];
+  const post = Math.round(S * 0.19);
+  const web = S - post * 2;
+  const bay = S / 2;
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const n = (f[i] - 0.5) * 0.3;
+      if (x < post || x >= S - post) {
+        const edge = x === post - 1 ? -0.2 : x === S - post ? 0.18 : 0;
+        p.set(x, y, ramp(0.5 + n + edge, paint, x, y, 0.2));
+        continue;
+      }
+      const wx = x - post;
+      const wy = y % bay;
+      const a = (wy * web) / bay;
+      const d1 = Math.abs(wx - a);
+      const d2 = Math.abs(wx - (web - a));
+      const strap = wy < 4;
+      const boss = Math.hypot(wx - web / 2, wy - bay / 2) < 5;
+      if (strap) p.set(x, y, ramp(0.52 + n + (wy === 0 ? 0.18 : wy === 3 ? -0.2 : 0), paint, x, y, 0.2));
+      else if (boss) p.set(x, y, ramp(0.56 + n + (wy < bay / 2 - 3 ? 0.14 : wy > bay / 2 + 3 ? -0.16 : 0), paint, x, y, 0.2));
+      else if (d1 < 2.6 || d2 < 2.6) {
+        const d = Math.min(d1, d2);
+        p.set(x, y, ramp(0.44 + n + (d > 1.7 ? (((d1 < d2 ? wx - a : wx - (web - a)) < 0) === d1 < d2 ? 0.16 : -0.18) : 0), paint, x, y, 0.2));
+      } else p.set(x, y, ramp(rand() * 0.6, dark, x, y, 0.3));
+    }
+  }
+  // Rivets: down each post, along each strap, and one in the middle of each crossing plate.
+  const rivet = (x: number, y: number): void => {
+    p.rect(x, y, 2, 2, paint[5]);
+    p.set(x, y, paint[6]);
+    p.hline(x, y + 2, 2, 0x140806);
+    p.tint(x, y + 3, 0.8);
+    p.tint(x, y + 4, 0.88);
+  };
+  for (let y = 3; y < S; y += 8) {
+    rivet(Math.floor(post / 2) - 1, y);
+    rivet(S - Math.floor(post / 2) - 1, y);
+  }
+  for (const y0 of [0, bay]) {
+    for (let x = post + 4; x < S - post - 3; x += 8) rivet(x, y0 + 1);
+    rivet(S / 2 - 1, y0 + bay / 2 - 1);
+  }
+  // Chips through the paint to the steel, mostly on the edges of things.
+  for (let k = 0; k < 60; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    const c = p.get(x, y);
+    if (chR(c) > 60) p.set(x, y, pick(rand, steel));
+  }
+}
+
+/**
+ * Casting sand, for the floor of a moulding bay: black sand, damp and trodden, raked in long wavering furrows, with
+ * bits of slag and flecks of ash in it.
+ */
+function paintCastingSand(p: Px, rand: Rand): void {
+  const S = p.size;
+  const f = fbm(S, rand, 4, 4);
+  const g = fbm(S, rand, 16, 2);
+  const sand = [0x1a1611, 0x26201a, 0x342c22, 0x443a2c, 0x574a38, 0x6c5c46];
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const furrow = (((y + Math.round(2.5 * Math.sin((x / S) * Math.PI * 4) + 1.5 * Math.sin((x / S) * Math.PI * 10))) % 8) + 8) % 8;
+      const v = 0.36 + (f[i] - 0.5) * 0.5 + (g[i] - 0.5) * 0.24 + (furrow === 0 ? 0.2 : furrow === 1 ? -0.18 : 0);
+      p.set(x, y, ramp(v, sand, x, y, 0.3));
+    }
+  }
+  for (let k = 0; k < 22; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.rect(x, y, 2, 2, 0x09090b);
+    p.set(x, y, 0x5c5e66);
+    p.set(x + 1, y + 2, 0x0c0a08);
+  }
+  p.speckle(rand, 46, [0x7c766a, 0x655f54, 0x8e887a]);
+}
+
+/** Coal, heaped: black lumps, each with a face or two that catches the light, and the dark between them. */
+function paintCoalLumps(p: Px, rand: Rand): void {
+  const S = p.size;
+  const cells = voronoi(S, 5, rand);
+  const f = fbm(S, rand, 8, 2);
+  const coal = [0x040405, 0x09090b, 0x101014, 0x191a20, 0x25272f, 0x353843];
+  const tones = Array.from({ length: 64 }, () => 0.2 + rand() * 0.45);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const i = y * S + x;
+      const edge = cells[i].d2 - cells[i].d1;
+      if (edge < 1.3) p.set(x, y, 0x020203);
+      else p.set(x, y, ramp(tones[cells[i].id % 64] + (f[i] - 0.5) * 0.4 + (edge > 3.5 ? 0.14 : 0), coal, x, y, 0.25));
+    }
+  }
+  for (let k = 0; k < 12; k++) {
+    const x = Math.floor(rand() * S);
+    const y = Math.floor(rand() * S);
+    p.set(x, y, 0x8a90a0);
+    p.blend(x + 1, y, 0x4a4e5a, 0.8);
+  }
+}
+
 const DEFS = {
   // legacy (mid-grey / murky green, tinted by vertex colour)
   stone: { size: 32, seed: 11, paint: legacyBlocks(4, 2, 150, 70) },
@@ -2882,6 +3167,13 @@ const DEFS = {
   widowChitin: { size: 32, seed: 701, paint: paintWidowChitin },
   widowHorn: { size: 32, seed: 702, paint: paintWidowHorn },
   widowBack: { size: 32, seed: 703, paint: paintWidowBack },
+  // the furnace's own set (the Forge try-out room)
+  fireBrick: { size: 128, seed: 911, paint: paintFireBrick },
+  deckPlate: { size: 64, seed: 912, paint: paintDeckPlate },
+  castIron: { size: 64, seed: 913, paint: paintCastIron },
+  girder: { size: 64, seed: 914, paint: paintGirder },
+  castingSand: { size: 64, seed: 915, paint: paintCastingSand },
+  coalLumps: { size: 32, seed: 916, paint: paintCoalLumps },
   wroughtIron: { size: 32, seed: 601, paint: paintWroughtIron },
   cutStone: { size: 32, seed: 607, paint: paintCutStone },
   charred: { size: 32, seed: 602, paint: paintCharred },

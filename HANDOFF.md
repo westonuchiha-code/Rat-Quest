@@ -1371,3 +1371,16 @@ things are:
 - Filming a cutscene: open `#level=hub&scene=<id>&t=0&hold`, press ArrowRight once per frame of thirty (the readout
   div whose text has "HELD:" gives "frame N of M"; set its opacity to 0 for the picture), screenshot every second
   frame, then `ffmpeg -framerate 15 -i f-%04d.png -c:v libx264 -pix_fmt yuv420p -crf 20 out.mp4`.
+
+## The Forge: the furnace's try-out room (2026-11-17; `tests/forge.ts`)
+
+- `levels/forge.ts` (`FORGE_ROOM`, `BAY`, `STAGING`, `STEP`, `LADLE_HANG`, `COGS_AT`, `forgeThings()`); in
+  `TEST_ROOMS`; the garden's sixth door (north wall, x 30).
+- `world/forge.ts`: `FORGE` (sizes), `ForgeSpec`, `forgeSolids(spec)` (hidden boxes, quarter turns only), and the
+  clocks `ladleAt`, `bellowsAt`, `cogsAt`. `world/forgeModels.ts`: `buildForge(spec, mats, roof)` gives
+  `{ group, update?, flames, lights }`; `heatColor`, `cogShape`. Decor kind `forge` (`{ kind: 'forge', ...spec }`);
+  `chamber.ts` hands its flames to the room's flicker, its lights to `lightDefs` (the model keeps the object and
+  changes its `power`), its `update` to `animators`.
+- Textures: `fireBrick` (128), `deckPlate`, `castIron`, `girder`, `castingSand` (64), `coalLumps` (32); their world
+  sizes are in `TILE` in chamber.ts. `Def.size` is `32 | 64 | 128`.
+- A dev camera: `&eye=x,y,z&look=x,y,z`. Filming a level: `&slow=0.2`, a screenshot every 333 ms, ffmpeg at 15.

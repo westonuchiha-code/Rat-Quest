@@ -426,6 +426,49 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE FORGE: the furnace's look, as a TRY-OUT ROOM (2026-11-17). Tests `tests/forge.ts` (35). **HE HAS NOT SEEN IT YET**
+
+He said "continue" (item 1: the furnace's textures, in a try-out room first). **THE FOUNDRY ITSELF IS NOT TOUCHED**
+(a test holds it so): this room is the showing, and the Foundry is re-dressed only when he has walked about in it and
+said yes, and to which parts.
+ - **WHERE: `#level=forge&nostory`; a door in the Move Garden's NORTH wall, at its east end** (`ratquest-garden.html`,
+   or Test rooms in the pause menu's level list). `src/levels/forge.ts`. Nothing to fight or find in it.
+ - **WHY: the Foundry wears ONE rusty plate on its floor, its blocks and its columns alike**, and a mine's brick on
+   its walls. Here every part has a picture of its own (`render/textures.ts`, "The furnace's own set"):
+     `deckPlate` the floor: dark tread plate, lozenges, bolted sheets.
+     `fireBrick` the walls: baked brick, buff to plum, some burnt, sooted in runs. **128 square, one picture to SIX
+       of wall**: at 64 the same few burnt bricks came round every three steps and striped a big wall. (`Def.size`
+       takes 128 now.)
+     `castIron` what he stands on and climbs: square castings, a raised frame, a lozenge boss.
+     `girder` what holds things up: riveted posts and laced bars in red oxide.
+     `castingSand` the moulding bay's floor, let into the plate level with it. `coalLumps` for coal.
+   NOTHING IN ANY OF THEM GLOWS (a test looks at every dot).
+ - **SEVEN NEW THINGS, decor `forge` with `what:`** (`world/forge.ts`: sizes, what is solid, the clocks;
+   `world/forgeModels.ts`: the shapes; each a few plain shapes with a picture on):
+     `furnace` brick on an iron footing, an arched mouth with a fire, a stack to the roof. Solid as drawn.
+     `bellows` in a timber frame. **Its DECK is fixed and is the top of what is solid; the board that swings is under
+       it, inside the frame**, so he can stand on it while it works. (A top board that rose and fell could not be
+       stood on truthfully.) It fills slowly and is squeezed quickly.
+     `ladle` + `mould`: the ladle hangs from the roof on a chain, tips, and pours a stream into the mould every nine
+       seconds; the cast in the mould glows and cools till the next. **THE LADLE IS ONLY DRAWN, so it hangs over
+       his head from anything near it** (a test jumps him off the mould and the ingots). The mould is solid.
+     `ingots` a crossed stack on bearers, the top two hot.
+     `cogs` two meshed wheels on a wall, **only drawn, hung above his reach**; they stay in mesh (a test).
+     `bunker` a timber coal bunker, full. `anvil` on a stump. Both solid as drawn.
+   With them: the steam vents and the jet that were already made, pipes, a gauge.
+   Hot metal is drawn with its material's `tint` (so its faces keep their shading), fire as the fire bowl's tongues;
+   each thing that glows lights the room with a light of its own (the model may turn it up and down).
+ - The hall is dim (`ambient` 0.62) so its fires light it.
+ - **NOT DONE, AND SAID SO TO HIM:** the fire, the stream and the hot metal DO NOT BURN him (scenery, like the steam);
+   nothing makes a SOUND; nothing in the level builder places these yet. And the Foundry's lava and its magma rock
+   are as they were.
+ - **THE FILM: `deliver/pictures/forge-tryout.mp4`.** A level is filmed with `&slow=0.2` and a picture every third
+   of a second (so a fifteenth of a second of the game each), from fixed views (`&eye=&look=`); `film2.mjs` in the
+   scratch folder. The slow-motion label at the top is cropped off.
+ - WHEN HE SAYS YES: `levels/themes.ts` `foundry.skins` is where the Foundry's tiles are named (floor, platform and
+   pillar are all `rustPlate` there, wall `mineBrick`); `levels/foundry.ts` names skins on some pieces itself. Its
+   route tests (`tests/foundry.ts`) do not care what a thing wears.
+
 ## THE HOLLOWS' AND THE KEEP'S THINGS TO FIND, done the Cistern's way; the cutscenes FILMED (2026-11-17). Tests `tests/hollows.ts`, `tests/keep.ts`
 
 He said "continue" (item 1 of the list: the Hollows and the Keep, the same way as the Foundry), and, while it was

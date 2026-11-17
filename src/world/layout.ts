@@ -5,6 +5,7 @@
  */
 
 import type { TextureName } from '../render/textures';
+import type { ForgeSpec } from './forge';
 
 /** What a box is. 'rubble' is a breakable crate and 'barrel' a breakable barrel; the rest are solid scenery. */
 export type Kind = 'floor' | 'wall' | 'pillar' | 'platform' | 'rubble' | 'plank' | 'stone' | 'barrel';
@@ -346,6 +347,8 @@ export type Decor =
    */
   | { kind: 'vent'; x: number; y: number; z: number; size?: number; height?: number; every?: number; on?: number; delay?: number }
   | { kind: 'jet'; x: number; y: number; z: number; dir: [number, number, number]; length: number; color?: number; width?: number; every?: number; on?: number; delay?: number; push?: number }
+  /** One of the furnace's things (world/forge.ts): a furnace, bellows, a pouring ladle and its mould, ingots, cogs, a coal bunker, an anvil. What is solid of it is `forgeSolids`. */
+  | ({ kind: 'forge' } & ForgeSpec)
   /** Roots hanging from (x, top, z) down towards `bottom`, swaying a little. */
   | { kind: 'roots'; x: number; z: number; top: number; bottom: number }
   /** The curved underside of an archway (the solid parts are boxes): spans x0..x1 along the wall (or z if `alongZ`). */
