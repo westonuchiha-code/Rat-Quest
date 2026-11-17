@@ -2017,7 +2017,7 @@ function startGame(): void {
     for (const pp of chamber.pipes) if (!pp.alive) gv = Math.max(gv, hearAt(pp.x, pp.z, 16));
     audio.loop('gush', gv * gv * 0.3);
     // The world's own sound: its bed, and now and then something far off.
-    const ws = worldSoundFor(cur.theme, !!cur.hub);
+    const ws = worldSoundFor(cur.theme, !!cur.hub, cur.sky === 'space');
     for (const bed of WORLD_BEDS) audio.loop(bed, bed === ws.bed ? ws.bedVol : 0);
     for (const n of ambience.step(dt, ws)) audio.play(n.name, { vol: n.vol, rate: n.rate, verb: n.verb, priority: 0 });
     // Close to lava: it roils and pops. Close to a brazier: it crackles.
@@ -2061,9 +2061,11 @@ function startGame(): void {
     const rideV = player.riding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.ride.max) : 0;
     // (Sliding on his hide is the same grit, a good deal quieter.)
     const slideV = player.sliding && player.grounded && !player.dead ? Math.min(1, Math.hypot(player.velocity.x, player.velocity.z) / TUNING.slide.max) : 0;
-    audio.loop('rideScrape', player.grinding ? 0 : Math.max(rideV * 0.55 + (rideV > 0 ? 0.08 : 0), slideV * 0.22 + (slideV > 0 ? 0.05 : 0)));
+    // (The scrape of the shield is a hiss, and in the dream he is on it all the time: it was up to 0.63 of full, and
+    // was the other half of his "white noise that permeates in the background everywhere". A third of that now.)
+    audio.loop('rideScrape', player.grinding ? 0 : Math.max(rideV * RIDE_SCRAPE.speed + (rideV > 0 ? RIDE_SCRAPE.least : 0), slideV * 0.22 + (slideV > 0 ? 0.05 : 0)));
     // ...and its rim along an edge: a ringing shriek, higher and louder the faster.
-    audio.loop('grindRing', player.grinding ? rideV * 0.4 + 0.12 : 0);
+    audio.loop('grindRing', player.grinding ? rideV * 0.3 + 0.1 : 0);
     let fv = 0;
     for (const b of braziers) fv = Math.max(fv, nearness(Math.hypot(b.x - player.position.x, b.y - player.position.y, b.z - player.position.z), 6));
     // (A firefly's flames crackle as a brazier does, for as long as they burn.)
@@ -2076,6 +2078,8 @@ function startGame(): void {
   const motes = new MoteField();
   scene.add(motes.points);
   const WORLD_BEDS = ['drain', 'machine', 'wind', 'hall'] as const;
+  /** How loud the shield's scrape is as he rides: at his standing top speed, and the least of it while he is moving at all. */
+  const RIDE_SCRAPE = { speed: 0.18, least: 0.03 } as const;
   /** Where this level's braziers stand (for their crackle). Set when a level loads. */
   let braziers: Array<{ x: number; y: number; z: number }> = [];
   // Lava: touching it hurts and puts him back on the last safe ground he stood on.

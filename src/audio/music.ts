@@ -297,14 +297,23 @@ const TRACKS: Record<TrackName, Track> = { drift: drift(), pump: pump(), groove:
  * Foundry's and the Cistern's "for now". Each name plays its tunes in turn, each `rounds` times round before the next
  * (audio/tunes.ts holds the sound; audio.ts plays it). A name not here plays its notes, as all of them used to.
  */
-export const PLAYLISTS: Partial<Record<TrackName, { tunes: string[]; rounds: number }>> = {
+/**
+ * HOW LOUD A RECORDED TUNE IS PLAYED, of what the music's own volume allows.
+ * (The owner, 2026-11-17: "the music is a little too loud in general I had to go to the settings to turn it down and it
+ * was already pretty low but it was like just way louder than everything else. The energy here is like hyper energetic
+ * ... but it doesn't mean that it needs to like blast to the player's senses for however long we're in here.")
+ * The tunes made with his tools are recorded full: as loud all the time as a sound effect is at its loudest. Half of
+ * that, then; and a list may ask for less still (`level`: the dream's, which is the busiest of them).
+ */
+export const TUNE_LEVEL = 0.5;
+export const PLAYLISTS: Partial<Record<TrackName, { tunes: string[]; rounds: number; level?: number }>> = {
   // (His favourite first.)
   groove: { tunes: ['bap2', 'bap1'], rounds: 2 },
   drift: { tunes: ['cistern'], rounds: 1 },
   pump: { tunes: ['foundry'], rounds: 1 },
   echo: { tunes: ['hollows'], rounds: 1 },
   march: { tunes: ['keep'], rounds: 1 },
-  dream: { tunes: ['dream'], rounds: 1 },
+  dream: { tunes: ['dream'], rounds: 1, level: 0.7 },
 };
 export const trackNamed = (n: TrackName): Track => TRACKS[n];
 export const TRACK_NAMES = Object.keys(TRACKS) as TrackName[];

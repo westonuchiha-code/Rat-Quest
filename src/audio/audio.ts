@@ -4,7 +4,7 @@
  * Browsers only allow sound after the player has pressed something, so `unlock()` is called from the first press.
  */
 import { INSTRUMENT_BASE_HZ, InstrumentName, Sample, SfxName, instrument, midiHz, sfx } from './synth';
-import { CALM, Mood, PLAYLISTS, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
+import { CALM, Mood, PLAYLISTS, TUNE_LEVEL, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
 import { TUNES, JINGLES } from './tunes';
 import { VoicePool } from './voices';
 
@@ -396,7 +396,7 @@ export class AudioEngine {
     if (this.disabled || !ctx || ctx.state !== 'running' || !t || this.jingleBuffers.get(id) === 'failed') return;
     this.stopJingle(0.05);
     const gain = ctx.createGain();
-    gain.gain.value = (o.vol ?? 1) * this.musicVol * 0.9;
+    gain.gain.value = (o.vol ?? 1) * this.musicVol * 0.9 * TUNE_LEVEL;
     gain.connect(this.master);
     const run = { id, src: null as AudioBufferSourceNode | null, gain, timer: 0 };
     this.jingleRun = run;
@@ -465,12 +465,12 @@ export class AudioEngine {
    * (a round is cut out of the middle of its sound, which has its own end before it and its own start after it, so
    * one round runs into the next without a seam). After `rounds` of one, the next in the list.
    */
-  private startTunes(name: TrackName, list: { tunes: string[]; rounds: number }): void {
+  private startTunes(name: TrackName, list: { tunes: string[]; rounds: number; level?: number }): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const bus = ctx.createGain();
     bus.gain.value = 0;
-    bus.gain.setTargetAtTime(1, ctx.currentTime, 0.8);
+    bus.gain.setTargetAtTime(TUNE_LEVEL * (list.level ?? 1), ctx.currentTime, 0.8);
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.Q.value = 0.7;

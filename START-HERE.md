@@ -430,6 +430,33 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE HISS IN THE DREAM, AND THE MUSIC TOO LOUD (2026-11-17). Tests `tests/ambience.ts` (30), `tests/tunes.ts` (20)
+
+**His words:** "I turn the music all the way down and there's just this **white noise that permeates in the background
+everywhere** so I don't know what that is but it's super annoying could you please check the entire game for that ...
+Also **the music is a little too loud in general** I had to go to the settings to turn it down and it was already
+pretty low but it was like just way louder than everything else. The energy here is like hyper energetic ... but it
+doesn't mean that it needs to like **blast to the player's senses** for however long we're in here ... this game is
+going to have some levels that have like a darker Dark Souls type of feel this is supposed to feel the opposite of
+that which is doing really well but I just don't want it to feel annoying."
+ - **THE HISS WAS TWO THINGS.** (1) **The cave's WIND.** Each kind of place has a quiet bed under everything
+   (`src/audio/ambience.ts`): the sewer a rumble, the Foundry a hum, the Keep a drone, **the cave a wind, which is a
+   hiss**. The dream's levels are built with the cave's theme for its looks, and so had the wind under them the whole
+   time. **Now a place under the open sky (`sky: 'space'`) has no bed and no far-off noises at all** (`worldSoundFor`'s
+   third argument). (2) **The shield's SCRAPE**, a hiss too, looped as loud as 0.63 of full whenever he rides: and in
+   the dream he always rides. A third of that now (`RIDE_SCRAPE` in `main.ts`); the grind's ring a little down too.
+ - **The wind is halved in the real caves** (0.1, was 0.2): it is the one bed that is a hiss.
+ - **EVERY LOOPED SOUND WAS MEASURED** for how like noise it is: the hissy ones are the wind, the scrape, the grind's
+   ring, a burst pipe's gush, a gas leak, fire. The last three are only heard beside the thing itself.
+ - **THE MUSIC: a recorded tune is played at HALF its level** (`TUNE_LEVEL` in `src/audio/music.ts`), and the dream's
+   at 0.7 of that (`PLAYLISTS.dream.level`). The tunes made with his tools are recorded full: as loud all the time as
+   an effect is at its loudest. The jingles are halved with them. **His own saved setting is untouched** (it will be
+   quieter still for him until he turns it back up).
+ - **MEASURED IN A REAL BROWSER, standing still, music at nothing: the Toy Box, the Milky Way, the Big Dipper: 0.0000.**
+   The Hollows 0.012 (its wind), the Cistern 0.023 (its rumble). With music at its default: the Toy Box 0.021.
+ - **A RULE: a new place gets a bed because of what it IS, not because of the theme its walls borrow.** And Claude
+   cannot hear: a hiss is found by measuring every loop, as here, not by listening.
+
 ## THE RIDE AT A PHONE'S FRAME RATE; THE SHIELD ON THE RAIL (2026-11-17: two things he found). Tests `tests/toybox.ts` (29)
 
 **His words:** "My first big notes are that when you're grinding on the rails you kind of clip through and I want the

@@ -36,7 +36,8 @@ export const WORLD_SOUND: Record<string, WorldSound> = {
   },
   cave: {
     bed: 'wind',
-    bedVol: 0.2,
+    // (Half what it was: 0.2. It is a hiss, and the one bed that is; he found it "super annoying" where it did not belong.)
+    bedVol: 0.1,
     far: [
       { name: 'drip', every: [3, 8], vol: [0.18, 0.4], rate: [0.55, 0.95], verb: 0.95 },
       { name: 'pebbles', every: [9, 20], vol: [0.08, 0.2], rate: [0.8, 1.2], verb: 0.85 },
@@ -56,8 +57,15 @@ export const WORLD_SOUND: Record<string, WorldSound> = {
   hub: { bed: null, bedVol: 0, far: [] },
 };
 
-export function worldSoundFor(theme: string | undefined, hub: boolean): WorldSound {
-  if (hub) return WORLD_SOUND.hub;
+/**
+ * `open`: a place under the open sky of the dream (`sky: 'space'`). It has NO bed and no far-off noises: there is no
+ * wind among the stars, and nothing drips there.
+ * (The owner, 2026-11-17: "I turn the music all the way down and there's just this white noise that permeates in the
+ * background everywhere ... it is annoying the s*** out of me." The dream's levels are built with the cave's theme, for
+ * its looks, and so had the cave's WIND under them the whole time: a hiss that rises and falls and never stops.)
+ */
+export function worldSoundFor(theme: string | undefined, hub: boolean, open = false): WorldSound {
+  if (hub || open) return WORLD_SOUND.hub;
   return WORLD_SOUND[theme ?? 'sewer'] ?? WORLD_SOUND.sewer;
 }
 

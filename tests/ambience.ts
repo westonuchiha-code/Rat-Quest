@@ -2,7 +2,7 @@
 // sensible level, and the far-off noises come about as often as they should.
 import { sfx, type SfxName } from '../src/audio/synth';
 import { Ambience, WORLD_SOUND, worldSoundFor } from '../src/audio/ambience';
-import { LEVELS } from '../src/levels/levels';
+import { LEVELS, TEST_ROOMS } from '../src/levels/levels';
 import { MOTES, MOTE_RANGE, stepMotes, moteBrightness, type Mote } from '../src/world/motes';
 
 let failures = 0;
@@ -19,6 +19,14 @@ const beds = worlds.map((w) => {
   return worldSoundFor(l.theme, !!l.hub).bed;
 });
 check('each world has its own bed of sound', beds.every(Boolean) && new Set(beds).size === 4, beds.join(', '));
+// (The owner, 2026-11-17: "there's just this white noise that permeates in the background everywhere ... annoying the
+// s*** out of me". The dream's levels are built with the cave's theme and had the cave's wind under them.)
+{
+  const open = [...LEVELS, ...TEST_ROOMS].filter((l) => l.sky === 'space');
+  check('a place under the open sky of the dream (the Toy Box, the Milky Way, the Big Dipper) has NO bed and no far-off noises: no wind among the stars, nothing dripping', open.length === 3 && open.every((l) => { const w = worldSoundFor(l.theme, !!l.hub, l.sky === 'space'); return w.bed === null && w.bedVol === 0 && w.far.length === 0; }), open.map((l) => l.id).join(' '));
+  check('...though they are built with the cave\'s theme, which HAS one (the wind): it is the open sky that takes it away', open.every((l) => worldSoundFor(l.theme, !!l.hub).bed === 'wind'));
+  check('the wind, the one bed that is a hiss, is the quietest of the beds', Object.values(WORLD_SOUND).filter((w) => w.bed).every((w) => w.bed === 'wind' || w.bedVol > WORLD_SOUND.cave.bedVol) && WORLD_SOUND.cave.bedVol <= 0.1);
+}
 check('the Club has none (just its music and the fire)', worldSoundFor('dungeon', true).bed === null && worldSoundFor('dungeon', true).far.length === 0);
 
 // The loops.

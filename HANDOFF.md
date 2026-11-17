@@ -1456,3 +1456,6 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
  - A rider's long frame is stepped in pieces of 1/60 or less (`PlayerController.update` -> `step`): at a phone's 30
    frames a second he was put inside a curved wall near its top. Light rails are drawn under the line he rides
    (`RAIL_TUBE`). No brake on a wall too steep to stand on.
+ - Sound (the owner, the same day): a hiss everywhere in the dream was the cave's wind bed (the dream borrows the cave's
+   theme) and the shield's scrape loop; open-sky levels have no bed now, the scrape is a third as loud. Recorded music
+   is played at half level (`TUNE_LEVEL`), the dream's lower.

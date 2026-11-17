@@ -4,6 +4,7 @@
 // and that the game has not grown by more than was meant.
 import { PLAYLISTS, TRACK_NAMES, trackNamed, type TrackName } from '../src/audio/music';
 import { TUNES, JINGLES } from '../src/audio/tunes';
+import { TUNE_LEVEL } from '../src/audio/music';
 import { ALL_LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 
 let failures = 0;
@@ -40,6 +41,9 @@ check('the Club plays the two boom bap tunes with Dizzy Dave\'s voice, his favou
 check('the Milky Way plays the dream\'s own tune, and no longer the Club\'s', levelById('milkyway')!.music === 'dream' && plays('milkyway').join() === 'dream');
 check('the Cistern, the Foundry, the Hollows and the Keep play theirs', plays('cistern').join() === 'cistern' && plays('foundry').join() === 'foundry' && plays('hollows').join() === 'hollows' && plays('keep').join() === 'keep');
 check('every level of the game and every test room that has music has a name the game knows', [...ALL_LEVELS, ...TEST_ROOMS].every((l) => !l.music || TRACK_NAMES.includes(l.music)));
+
+// (The owner, 2026-11-17: "the music is a little too loud in general ... way louder than everything else".)
+check('a recorded tune is played at half its recorded level or less, and the dream\'s, the busiest, lower still', TUNE_LEVEL <= 0.5 && (PLAYLISTS.dream!.level ?? 1) < 1 && Object.values(PLAYLISTS).every((l) => (l!.level ?? 1) <= 1));
 
 console.log(failures === 0 ? 'tunes: all pass' : `tunes: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);
