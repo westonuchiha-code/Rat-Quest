@@ -17,7 +17,8 @@ check('dry land leaves the sound open, water muffles it', waterCutoff(CALM) > 17
 for (const n of TRACK_NAMES) {
   const t = trackNamed(n);
   const combat = t.lanes.filter((l) => l.layer === 'combat').length;
-  check(`${n}: ${n === 'groove' ? 'the hangout music does not change with fights' : 'has drums that come in with a fight'}`, n === 'groove' ? combat === 0 : combat >= 2);
+  // (`dream` has no notes of its own: it is a recorded tune, with the hangout's notes under its name for when that cannot play.)
+  check(`${n}: ${n === 'groove' || n === 'dream' ? 'the hangout music does not change with fights' : 'has drums that come in with a fight'}`, n === 'groove' || n === 'dream' ? combat === 0 : combat >= 2);
 }
 console.log(failures === 0 ? 'music: all pass' : `music: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);

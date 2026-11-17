@@ -4,7 +4,8 @@
  * Browsers only allow sound after the player has pressed something, so `unlock()` is called from the first press.
  */
 import { INSTRUMENT_BASE_HZ, InstrumentName, Sample, SfxName, instrument, midiHz, sfx } from './synth';
-import { CALM, Mood, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
+import { CALM, Mood, PLAYLISTS, Scheduled, TrackName, layerGain, notesBetween, stepSeconds, trackNamed, waterCutoff } from './music';
+import { TUNES } from './tunes';
 import { VoicePool } from './voices';
 
 const KEY = 'ratquest.audio.v1';
@@ -60,6 +61,8 @@ interface MusicRun {
   start: number;
   nextStep: number;
   timer: number;
+  /** A recorded tune's lengths of sound, as they are set going (so they can be stopped with it). */
+  sources?: AudioBufferSourceNode[];
 }
 
 export class AudioEngine {
@@ -351,7 +354,8 @@ export class AudioEngine {
     if (!ctx) return;
     const t = ctx.currentTime;
     const rate = instant ? 0.001 : 0.5;
-    trackNamed(run.name).lanes.forEach((lane, i) => run.lanes[i].gain.setTargetAtTime(layerGain(lane, this.mood), t, rate));
+    // (A recorded tune has no lanes to bring in and out: it is all there all the time.)
+    trackNamed(run.name).lanes.forEach((lane, i) => run.lanes[i]?.gain.setTargetAtTime(layerGain(lane, this.mood), t, rate));
     run.filter.frequency.setTargetAtTime(waterCutoff(this.mood), t, instant ? 0.001 : 0.25);
   }
 
@@ -360,12 +364,102 @@ export class AudioEngine {
     if (!m || !this.ctx) return;
     window.clearInterval(m.timer);
     m.bus.gain.setTargetAtTime(0, this.ctx.currentTime, 0.4);
+    for (const src of m.sources ?? []) {
+      try {
+        src.stop(this.ctx.currentTime + 1.5);
+      } catch {
+        // already stopped
+      }
+    }
     const bus = m.bus;
     window.setTimeout(() => bus.disconnect(), 2500);
     this.music = null;
   }
 
+  /** The recorded tunes, decoded: each once, the first time it is wanted. */
+  private tuneBuffers = new Map<string, AudioBuffer | 'loading' | 'failed'>();
+  private loadTune(id: string): void {
+    const ctx = this.ctx;
+    const t = TUNES[id];
+    if (!ctx || this.tuneBuffers.has(id)) return;
+    if (!t) return void this.tuneBuffers.set(id, 'failed');
+    this.tuneBuffers.set(id, 'loading');
+    try {
+      const bin = atob(t.b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      // (The old form, with its two callbacks, is the one every browser has.)
+      void ctx.decodeAudioData(bytes.buffer, (buf) => this.tuneBuffers.set(id, buf), () => this.tuneBuffers.set(id, 'failed'));
+    } catch {
+      this.tuneBuffers.set(id, 'failed');
+    }
+  }
+
+  /**
+   * A name that has recorded tunes: each is played a round at a time, the rounds set end to end ahead of the clock
+   * (a round is cut out of the middle of its sound, which has its own end before it and its own start after it, so
+   * one round runs into the next without a seam). After `rounds` of one, the next in the list.
+   */
+  private startTunes(name: TrackName, list: { tunes: string[]; rounds: number }): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const bus = ctx.createGain();
+    bus.gain.value = 0;
+    bus.gain.setTargetAtTime(1, ctx.currentTime, 0.8);
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 0.7;
+    filter.connect(bus);
+    bus.connect(this.musicBus);
+    const run: MusicRun = { name, bus, lanes: [], filter, start: ctx.currentTime + 0.15, nextStep: 0, timer: 0, sources: [] };
+    this.applyMood(run, true);
+    this.music = run;
+    let index = 0;
+    let round = 0;
+    let nextAt = run.start;
+    for (const id of list.tunes) this.loadTune(id);
+    const tick = (): void => {
+      if (this.music !== run) return;
+      const id = list.tunes[index];
+      const buf = this.tuneBuffers.get(id);
+      if (buf === 'failed') {
+        // It cannot be played here: the notes under this name instead.
+        window.clearInterval(run.timer);
+        bus.disconnect();
+        this.music = null;
+        this.startNotes(name);
+        return;
+      }
+      if (!buf || buf === 'loading') return void (nextAt = Math.max(nextAt, ctx.currentTime + 0.12));
+      while (nextAt < ctx.currentTime + 0.6) {
+        const t = TUNES[list.tunes[index]];
+        const b = this.tuneBuffers.get(list.tunes[index]);
+        if (!b || b === 'loading' || b === 'failed') break;
+        const src = ctx.createBufferSource();
+        src.buffer = b;
+        src.connect(filter);
+        src.start(Math.max(nextAt, ctx.currentTime), t.lead, t.length);
+        run.sources!.push(src);
+        if (run.sources!.length > 4) run.sources!.shift();
+        nextAt = Math.max(nextAt, ctx.currentTime) + t.length;
+        this.stats.notes++;
+        if (++round >= list.rounds) {
+          round = 0;
+          index = (index + 1) % list.tunes.length;
+        }
+      }
+    };
+    run.timer = window.setInterval(tick, 100);
+    tick();
+  }
+
   private startMusic(name: TrackName): void {
+    const list = PLAYLISTS[name];
+    if (list && list.tunes.every((id) => TUNES[id] && this.tuneBuffers.get(id) !== 'failed')) this.startTunes(name, list);
+    else this.startNotes(name);
+  }
+
+  private startNotes(name: TrackName): void {
     const ctx = this.ctx;
     if (!ctx) return;
     const bus = ctx.createGain();

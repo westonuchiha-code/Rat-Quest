@@ -180,7 +180,7 @@ export function milkyWay(): LevelDef {
     blurb: 'A try-out of the dream: a rainbow road downhill through the stars, on the shield.',
     theme: 'cave',
     motes: 'stars',
-    music: 'groove',
+    music: 'dream',
     sky: 'space',
     look: 'dream',
     fog: 0x1a0c3a,

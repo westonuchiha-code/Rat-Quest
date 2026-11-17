@@ -4,7 +4,7 @@
  */
 import type { InstrumentName } from './synth';
 
-export type TrackName = 'drift' | 'pump' | 'groove' | 'echo' | 'march';
+export type TrackName = 'drift' | 'pump' | 'groove' | 'echo' | 'march' | 'dream';
 
 export interface Note {
   /** Position in 16th-note steps from the start of the loop. */
@@ -285,7 +285,27 @@ function march(): Track {
   };
 }
 
-const TRACKS: Record<TrackName, Track> = { drift: drift(), pump: pump(), groove: groove(), echo: echo(), march: march() };
+// (`dream` has no notes of its own: it is one of the recorded tunes below. If a recorded tune cannot be played, the notes
+// under its name are what plays instead: for the dream, the Club's old groove.)
+const TRACKS: Record<TrackName, Track> = { drift: drift(), pump: pump(), groove: groove(), echo: echo(), march: march(), dream: groove() };
+
+/**
+ * THE RECORDED TUNES (2026-11-17). The owner gave two sound tools of his own (recordings/tools/: a chip drum pad and a
+ * chiptune studio), tunes were written and rendered through them (scripts/chip/), and these are the ones he chose:
+ * "the boom bap track sound way better than you have for the club track so they should probably just be what plays in
+ * dizzy Dave's hideout, it's his place after all"; the dream's for the Milky Way; the Keep's, the Hollows', the
+ * Foundry's and the Cistern's "for now". Each name plays its tunes in turn, each `rounds` times round before the next
+ * (audio/tunes.ts holds the sound; audio.ts plays it). A name not here plays its notes, as all of them used to.
+ */
+export const PLAYLISTS: Partial<Record<TrackName, { tunes: string[]; rounds: number }>> = {
+  // (His favourite first.)
+  groove: { tunes: ['bap2', 'bap1'], rounds: 2 },
+  drift: { tunes: ['cistern'], rounds: 1 },
+  pump: { tunes: ['foundry'], rounds: 1 },
+  echo: { tunes: ['hollows'], rounds: 1 },
+  march: { tunes: ['keep'], rounds: 1 },
+  dream: { tunes: ['dream'], rounds: 1 },
+};
 export const trackNamed = (n: TrackName): Track => TRACKS[n];
 export const TRACK_NAMES = Object.keys(TRACKS) as TrackName[];
 
