@@ -139,7 +139,7 @@ const CSS = `
    works at 1280x720 and on a small landscape screen. A tall, narrow picture falls back to one column. */
 .rq-menu { position: absolute; inset: 0; z-index: 40; display: none; container-type: size;
   background: radial-gradient(ellipse at 50% -20%, #2a3b2eee 0%, #090d0af6 72%); backdrop-filter: blur(3px);
-  color: #efe9d2; font-family: ui-monospace, Menlo, Consolas, monospace; line-height: 1.35; user-select: none;
+  color: #efe9d2; font-family: var(--rq-font-game); line-height: 1.35; user-select: none;
   -webkit-user-select: none; touch-action: manipulation; box-sizing: border-box; }
 .rq-menu * { box-sizing: border-box; }
 .rq-menu.open { display: block; }

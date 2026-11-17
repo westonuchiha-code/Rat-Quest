@@ -6,6 +6,7 @@
  * (A board is written in the block letters of render/pixelFont.ts, a dot of a letter a dot of the board. Where there
  * is no page to draw on, as in the tests, the ruler is a plain strip.)
  */
+import { FONTS } from '../ui/fonts';
 import * as THREE from 'three';
 import { GLYPH_H, drawText, textWidth } from '../render/pixelFont';
 
@@ -133,7 +134,7 @@ export function rulerStrip(length: number, width: number, bothSides = false): TH
     c.fillRect(W - 3, 0, 3, H);
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    c.font = `bold ${Math.round(Math.min(26, W * 0.5))}px monospace`;
+    c.font = `bold ${Math.round(Math.min(26, W * 0.5))}px ${FONTS.game}`;
     for (let u = 0; u <= n; u++) {
       const y = H - u * PX; // the canvas runs downward; the ruler upward
       // Every fifth unit is marked in red, the rest in black.

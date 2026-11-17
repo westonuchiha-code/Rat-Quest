@@ -7,7 +7,7 @@ export class GoalHud {
     const style = document.createElement('style');
     // Just under the counter (same size of text: readable on a Steam Deck, bigger on bigger screens).
     style.textContent = `.rq-goal { position: absolute; top: calc(12px + 1.5em); right: 8px; z-index: 20; padding: 0.2em 0.6em; text-align: right;
-      border-radius: 0.4em; background: rgba(8, 12, 10, 0.4); color: #e8efe0; font: max(13px, 1.8vh)/1.2 ui-monospace, Menlo, Consolas, monospace;
+      border-radius: 0.4em; background: rgba(8, 12, 10, 0.4); color: #e8efe0; font: max(13px, 1.8vh)/1.2 var(--rq-font-game);
       pointer-events: none; user-select: none; white-space: nowrap; }
       .rq-goal.done { color: #9fe3a8; }`;
     document.head.appendChild(style);

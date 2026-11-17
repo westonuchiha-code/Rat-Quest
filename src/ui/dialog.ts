@@ -13,7 +13,7 @@ const CSS = `
 .rq-talk.k-pigeon { --acc: #6af0d0; --edge: #3aa890; --bg1: #10262a; --bg2: #08121a; --plate: #1a4048; }
 .rq-talk.k-bird { --acc: #ffd84a; --edge: #b89a30; --bg1: #2a2410; --bg2: #14110a; --plate: #4a3e14; }
 .rq-talk.k-mouse { --acc: #ffd2a0; --edge: #a07a58; --bg1: #2a1e16; --bg2: #120c08; --plate: #4a3426; }
-.rq-talk-box { font-size: calc(clamp(11px, 2.4cqw, 28px) * var(--rq-text, 1)); font-family: ui-monospace, Menlo, Consolas, monospace; color: #f4eed8; line-height: 1.45;
+.rq-talk-box { font-size: calc(clamp(11px, 2.4cqw, 28px) * var(--rq-text, 1)); font-family: var(--rq-font-game); color: #f4eed8; line-height: 1.45;
   background: linear-gradient(color-mix(in srgb, var(--bg1) 95%, transparent), color-mix(in srgb, var(--bg2) 96%, transparent)); border: 0.14em solid var(--edge); border-radius: 0.8em; padding: 0.9em 1.2em 1.35em; min-height: 4.8em;
   box-shadow: 0 0.3em 1.2em #000a, inset 0 0 0 0.12em #0008, 0 0 1.4em color-mix(in srgb, var(--edge) 35%, transparent); position: relative;
   text-shadow: 0.08em 0.08em 0 #000a; }

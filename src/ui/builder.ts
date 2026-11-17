@@ -6,6 +6,7 @@
  *
  * The rules of editing (undo, paste, flip, stretching, measuring a jump) live in levels/editOps.ts, where they are tested.
  */
+import { FONTS } from './fonts';
 import { BOX_TYPES, ENEMY_PIECES, CustomGoal, CustomLevel, Piece, PieceType, WEDGE_APPEARS, WedgeAppears, checkCustom, emptyCustom, parseCustom } from '../levels/custom';
 import type { MyLevels } from '../levels/library';
 import { compileCustom } from '../levels/custom';
@@ -187,7 +188,7 @@ const CSS = `
 .rq-bld .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3em; }
 .rq-bld .tile { justify-content: flex-start; text-align: left; white-space: normal; line-height: 1.1; padding: 0.3em 0.4em; min-height: 2.5em; font-size: 0.9em; background: var(--panel2); border-color: var(--line); }
 .rq-bld .tile.on { background: #3a3110; border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
-.rq-bld .sw { flex: none; width: 1.7em; height: 1.7em; border-radius: 0.3em; border: 1px solid #0008; display: flex; align-items: center; justify-content: center; font: 800 0.72em ui-monospace, Menlo, Consolas, monospace; color: #000c; }
+.rq-bld .sw { flex: none; width: 1.7em; height: 1.7em; border-radius: 0.3em; border: 1px solid #0008; display: flex; align-items: center; justify-content: center; font: 800 0.72em var(--rq-font-game); color: #000c; }
 .rq-bld .sw.dot { border-radius: 50%; }
 .rq-bld .mapwrap { position: relative; min-width: 0; min-height: 0; background: #0b0e13; }
 .rq-bld canvas.map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
@@ -212,7 +213,7 @@ const CSS = `
 .rq-bld .field .chk { justify-self: start; }
 .rq-bld .step { display: flex; gap: 0.25em; align-items: center; }
 .rq-bld .step button { min-width: 2.1em; padding: 0.2em 0.3em; }
-.rq-bld .step b { min-width: 3em; text-align: center; font: 700 1.05em ui-monospace, Menlo, Consolas, monospace; color: var(--gold); }
+.rq-bld .step b { min-width: 3em; text-align: center; font: 700 1.05em var(--rq-font-game); color: var(--gold); }
 .rq-bld .chips { display: flex; flex-wrap: wrap; gap: 0.25em; margin: 0.3em 0; }
 .rq-bld .chips button { min-height: 1.8em; padding: 0.1em 0.55em; font-size: 0.88em; border-radius: 1em; }
 .rq-bld .compass { display: grid; grid-template-columns: repeat(3, 2.2em); grid-template-rows: repeat(3, 2.2em); gap: 0.15em; }
@@ -225,14 +226,14 @@ const CSS = `
 .rq-bld .stats div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 0.15em 0; } .rq-bld .stats b { color: var(--gold); }
 .rq-bld .rowitem { display: flex; align-items: center; gap: 0.5em; padding: 0.25em 0.35em; border-radius: 0.4em; cursor: pointer; font-size: 0.92em; }
 .rq-bld .rowitem:hover { background: var(--raise); } .rq-bld .rowitem.on { background: #3a3110; }
-.rq-bld .rowitem small { margin-left: auto; color: var(--faint); font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+.rq-bld .rowitem small { margin-left: auto; color: var(--faint); font-family: var(--rq-font-game); white-space: nowrap; }
 .rq-bld .rowitem .ico { color: #ff9a6a; } .rq-bld .rowitem.trap .ico { color: var(--gold2); } .rq-bld .rowitem.fine .ico { color: var(--go); }
 .rq-bld .goal { display: flex; align-items: center; gap: 0.4em; margin: 0.3em 0; padding: 0.3em 0.45em; background: var(--panel2); border-radius: 0.45em; flex-wrap: wrap; }
 .rq-bld .goal .x { margin-left: auto; }
 .rq-bld .stat { grid-column: 1 / 4; display: flex; gap: 1em; padding: 0.3em 0.7em; background: #11151c; border-top: 1px solid var(--line); min-height: 1.9em; color: var(--dim); font-size: 0.9em; align-items: center; }
 .rq-bld .stat .hint { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rq-bld .stat .hint.say { color: #fff3c4; }
-.rq-bld .stat .read { font-family: ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; }
+.rq-bld .stat .read { font-family: var(--rq-font-game); white-space: nowrap; }
 .rq-bld .menu { position: absolute; z-index: 8; display: none; width: max-content; min-width: 14em; max-width: 22em; padding: 0.3em; background: var(--panel2); border: 1px solid var(--line2); border-radius: 0.6em; box-shadow: 0 0.6em 2em #000a; }
 .rq-bld .menu.on { display: block; }
 .rq-bld .menu button { width: 100%; justify-content: flex-start; border: 0; background: none; border-radius: 0.4em; min-height: 2.1em; }
@@ -2197,7 +2198,7 @@ export class Builder {
     g.fillRect(0, 0, c.width, 16);
     g.fillRect(0, 0, 26, c.height);
     g.fillStyle = '#7d8aa3';
-    g.font = '10px ui-monospace, Menlo, Consolas, monospace';
+    g.font = `10px ${FONTS.game}`;
     g.textAlign = 'center';
     for (let x = Math.ceil(x0 / every) * every; x <= x1; x += every) if (sx(x) > 30) g.fillText(String(x), sx(x), 11);
     g.textAlign = 'right';
@@ -2218,7 +2219,7 @@ export class Builder {
     g.closePath();
     g.fill();
     g.fillStyle = '#c9d1e0';
-    g.font = 'bold 9px ui-monospace, Menlo, Consolas, monospace';
+    g.font = `bold 9px ${FONTS.game}`;
     g.textAlign = 'center';
     g.fillText('N', nx, ny + 12);
     g.textAlign = 'left';
@@ -2227,7 +2228,7 @@ export class Builder {
   /** A small label with a dark plate behind it. */
   private tag(text: string, x: number, y: number, bg = '#171b24'): void {
     const g = this.ctx;
-    g.font = 'bold 12px ui-monospace, Menlo, Consolas, monospace';
+    g.font = `bold 12px ${FONTS.game}`;
     const w = g.measureText(text).width + 10;
     const px = Math.min(this.canvas.width - w - 4, Math.max(30, x));
     const py = Math.min(this.canvas.height - 6, Math.max(34, y));
@@ -2278,7 +2279,7 @@ export class Builder {
       }
       if (s >= 8 && i.glyph) {
         g.fillStyle = '#000000cc';
-        g.font = `bold ${Math.max(8, Math.min(13, s * (i.glyph.length > 1 ? 0.5 : 0.62)))}px ui-monospace, Menlo, Consolas, monospace`;
+        g.font = `bold ${Math.max(8, Math.min(13, s * (i.glyph.length > 1 ? 0.5 : 0.62)))}px ${FONTS.game}`;
         g.textAlign = 'center';
         g.textBaseline = 'middle';
         g.fillText(i.glyph, x, z + 0.5);
@@ -2342,7 +2343,7 @@ export class Builder {
     if (p.dir) arrow(x0 + w / 2, z0 + h / 2, Math.min(18, Math.min(w, h) * 0.35));
     if (this.prefs.labels && s >= 8 && w > 26 && h > 13) {
       g.fillStyle = '#ffffffd0';
-      g.font = `${Math.max(9, Math.min(12, s * 0.55))}px ui-monospace, Menlo, Consolas, monospace`;
+      g.font = `${Math.max(9, Math.min(12, s * 0.55))}px ${FONTS.game}`;
       const name = w > 90 && h > 26 ? `${i.label} ` : '';
       g.fillText(`${name}${p.top.toFixed(1)}`, x0 + 4, z0 + Math.min(13, s * 0.8));
     }

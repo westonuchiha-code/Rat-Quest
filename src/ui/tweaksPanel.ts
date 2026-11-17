@@ -29,7 +29,7 @@ const CSS = `
 .rq-tw .tw label small { display: block; color: var(--faint); font-size: 0.8em; }
 .rq-tw .tw.ch label { color: var(--gold); }
 .rq-tw .tw input[type=range] { width: 100%; height: 2em; touch-action: none; }
-.rq-tw .tw input[type=number] { width: 100%; text-align: right; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.rq-tw .tw input[type=number] { width: 100%; text-align: right; font-family: var(--rq-font-game); }
 .rq-tw .tw.ch input[type=number] { color: var(--gold); border-color: #7a6220; }
 .rq-tw .tw button { padding: 0; min-height: 2em; }
 .rq-tw > footer { display: flex; gap: 0.5em; align-items: center; padding: 0.55em 1em; border-top: 1px solid var(--line); background: #151a24; flex-wrap: wrap; }

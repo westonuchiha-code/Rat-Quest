@@ -87,7 +87,14 @@ that is still in the code.)
     speed), its speed for tricks and its air tricks are the DREAM'S. He can still ride his shield elsewhere, without
     them. Anything new that changes how he moves goes in that table, per biome, never as a global change.
  5. **Everything may be replaced: models, textures, sounds, music, cutscenes, fonts, names.** Keep each in one named
-    place, and keep the list of them current. (An inventory of them is NOT yet written: it is on the list.)
+    place, and keep the list of them current. **THE LIST IS `ASSETS.md`, and it is WRITTEN BY A SCRIPT from the
+    game's own lists: `npm run assets`. Run it whenever something is added, renamed or removed** (a level, a
+    creature, a sound, a tune, a scene, a texture, a font); `tests/assets.ts` fails until it is. Do not edit
+    `ASSETS.md` by hand: change what it says in `scripts/assets/inventory.ts`.
+    **FONTS ARE NAMED IN ONE FILE, `src/ui/fonts.ts`**, and nowhere else (the same test fails if one is). CSS reads
+    them as `var(--rq-font-game)` and the like; a canvas reads `FONTS.game`.
+    **The scripts that make stills and films are in `scripts/film/`** (they used to live only in a session's scratch
+    folder). The films themselves are not kept in the project.
  6. The Club, the wedges, the worlds' doors and their prices are still in the code and still work, but they are no
     longer "the game": do not build on them as if they were.
 
@@ -126,7 +133,9 @@ that is still in the code.)
    **Not weighed:** from the Toy Box's decks a double jump now clears its 12-high wall (7 + 7.5); a fall there costs
    nothing and puts him back, and he could already jump out from the tower.
  - **NOT DONE:** (1) no triple jump (he said to leave it), and he does not hit harder in the dream ("stronger ... a
-   superhero": his words, not built). (2) No inventory of assets yet.
+   superhero": his words, not built). (2) The inventory is written (`ASSETS.md`,
+   rule 5 above). What it shows: almost every asset is CODE, not a file. There is no way yet to drop in a picture
+   file as a texture, or a model file as a creature.
    (3) The practice rooms and the Hall are plainly dressed. (4) The Club's own doors still ask for Golden Wedges.
    (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
    (6) Nobody has played any of it by hand.

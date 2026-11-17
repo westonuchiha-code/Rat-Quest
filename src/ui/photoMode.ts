@@ -11,6 +11,7 @@
  *
  * The camera maths and the colour filters are plain functions, so tests can run them without a browser.
  */
+import { FONTS } from './fonts';
 import * as THREE from 'three';
 import type { Gesture } from '../story/scene';
 
@@ -188,7 +189,7 @@ export function photoScale(w: number, h: number): number {
 
 const CSS = `
 .rq-photo-on>*:not(canvas):not(.rq-photo){visibility:hidden!important}
-.rq-photo{position:absolute;inset:0;z-index:60;display:none;color:#efe9d2;font:clamp(11px,2.2vh,15px)/1.2 ui-monospace,Menlo,Consolas,monospace;user-select:none;-webkit-user-select:none}
+.rq-photo{position:absolute;inset:0;z-index:60;display:none;color:#efe9d2;font:clamp(11px,2.2vh,15px)/1.2 var(--rq-font-game);user-select:none;-webkit-user-select:none}
 .rq-photo.on{display:block}
 .rq-photo .drag{position:absolute;inset:0;touch-action:none;cursor:grab}
 .rq-photo .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.72) 100%);display:none}
@@ -474,7 +475,7 @@ export class PhotoMode {
       ctx.fillRect(0, h - bar, w, bar);
     }
     const s = Math.max(10, Math.round(h / 42));
-    ctx.font = `bold ${s}px monospace`;
+    ctx.font = `bold ${s}px ${FONTS.game}`;
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillText('RATQUEST', w - s * 0.6 + 1, h - s * 0.6 + 1);

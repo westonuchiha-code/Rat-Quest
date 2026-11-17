@@ -16,7 +16,7 @@ body.has-pad { display: flex; flex-direction: column; background: #16171a; }
 #dock { display: flex; flex: none; }
 .half {
   position: relative; container-type: size; flex: 1 1 0; aspect-ratio: 3 / 5;
-  background: linear-gradient(#2b2d33, #1b1c20); color: #cfd2d8; font: 700 4.4cqw monospace;
+  background: linear-gradient(#2b2d33, #1b1c20); color: #cfd2d8; font: 700 4.4cqw var(--rq-font-game);
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .half.left { border-top-left-radius: 8cqw; border-right: 1px solid #0c0c0e; }

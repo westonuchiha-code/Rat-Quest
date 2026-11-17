@@ -1485,4 +1485,9 @@ room, a playground for one kind of play; one long hallway hub with everyone in i
  - The dream on foot (the same day): `TUNING.dream` (run 1.25, jump 1.1, gravity 0.75), read as `FEELS.dream.foot`;
    the controller applies it to his run, his two jumps and the gravity on him while he is NOT on his shield or a rail.
    No triple jump (the owner: leave it for now). Tests in `tests/hall.ts`.
+ - The asset inventory (the same day): `ASSETS.md`, written by `npm run assets` (`scripts/assets/inventory.ts` reads
+   the game's own lists; `scripts/assets/write.ts` writes the file). `tests/assets.ts` (12): the file is current, every
+   file it names exists, every level, creature, character, sound, tune, scene and texture is in it, and no font is
+   named outside `src/ui/fonts.ts` (five fonts: game, title, label, logo, tools; about thirty places now read them).
+   `scripts/film/`: stills.mjs, film.mjs, cut.sh.
 

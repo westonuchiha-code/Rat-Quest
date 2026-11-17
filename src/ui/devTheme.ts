@@ -5,7 +5,7 @@
 export const DEV_CSS = `
 .rqd { --bg: #0f1218; --panel: #171b24; --panel2: #1e2430; --raise: #272e3d; --line: #323b4d; --line2: #4a5672; --text: #e8ebf2; --dim: #9aa4b8; --faint: #6b7488;
   --gold: #ffc94a; --gold2: #ff9d2e; --go: #49c46b; --go2: #1d5a33; --bad: #ff6b6b; --sel: #6ab7ff;
-  color: var(--text); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; font-size: clamp(12px, 1.9vh, 15px); line-height: 1.3;
+  color: var(--text); font-family: var(--rq-font-tools); font-size: clamp(12px, 1.9vh, 15px); line-height: 1.3;
   -webkit-user-select: none; user-select: none; }
 .rqd *, .rqd *::before, .rqd *::after { box-sizing: border-box; }
 .rqd button, .rqd input, .rqd select, .rqd textarea { font: inherit; color: var(--text); }
@@ -28,12 +28,12 @@ export const DEV_CSS = `
 .rqd input:focus, .rqd select:focus, .rqd textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px #ffc94a33; }
 .rqd input[type=checkbox] { width: 1.15em; height: 1.15em; accent-color: var(--gold); }
 .rqd input[type=range] { accent-color: var(--gold); }
-.rqd textarea { width: 100%; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9em; }
+.rqd textarea { width: 100%; resize: vertical; font-family: var(--rq-font-game); font-size: 0.9em; }
 .rqd .seg { display: inline-flex; border: 1px solid var(--line2); border-radius: 0.5em; overflow: hidden; }
 .rqd .seg button { border: 0; border-radius: 0; min-height: 2em; background: var(--panel2); border-right: 1px solid var(--line); }
 .rqd .seg button:last-child { border-right: 0; }
 .rqd .seg button.on { background: #3a3110; color: #fff3c4; }
-.rqd .kbd { display: inline-block; min-width: 1.5em; padding: 0 0.4em; border-radius: 0.3em; border: 1px solid var(--line2); border-bottom-width: 2px; background: var(--panel2); color: var(--dim); font: 0.85em ui-monospace, Menlo, Consolas, monospace; text-align: center; }
+.rqd .kbd { display: inline-block; min-width: 1.5em; padding: 0 0.4em; border-radius: 0.3em; border: 1px solid var(--line2); border-bottom-width: 2px; background: var(--panel2); color: var(--dim); font: 0.85em var(--rq-font-game); text-align: center; }
 .rqd .muted { color: var(--dim); } .rqd .faint { color: var(--faint); }
 .rqd .badge { display: inline-block; min-width: 1.5em; padding: 0 0.4em; border-radius: 1em; background: var(--raise); color: var(--dim); font-size: 0.8em; font-weight: 700; text-align: center; }
 .rqd .badge.bad { background: #5a1f1f; color: #ffd0d0; } .rqd .badge.ok { background: #173d25; color: #b6f0c6; } .rqd .badge.warn { background: #54380c; color: #ffe0a0; }

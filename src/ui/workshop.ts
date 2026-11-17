@@ -57,7 +57,7 @@ const CSS = `
 .rq-ws h3:first-child { margin-top: 0; }
 .rq-ws .row { display: flex; align-items: center; gap: 0.7em; flex-wrap: wrap; margin: 0.5em 0; }
 .rq-ws .row label { display: flex; align-items: center; gap: 0.5em; color: var(--dim); }
-.rq-ws .row output { min-width: 3.2em; color: var(--gold); font-family: ui-monospace, Menlo, Consolas, monospace; }
+.rq-ws .row output { min-width: 3.2em; color: var(--gold); font-family: var(--rq-font-game); }
 .rq-ws .snd { display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5em, 1fr)); gap: 0.35em; }
 .rq-ws .snd button { flex-direction: column; align-items: stretch; gap: 0.2em; padding: 0.4em 0.6em 0.35em; text-align: left; }
 .rq-ws .snd button b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }

@@ -44,7 +44,7 @@ const LOAD_MIN = 1.4;
 
 const CSS = `
 .rq-boot { position: absolute; inset: 0; z-index: 50; display: none; container-type: size; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: manipulation;
-  font-family: Impact, 'Arial Black', 'Trebuchet MS', sans-serif; }
+  font-family: var(--rq-font-title); }
 .rq-boot.on { display: block; }
 .rq-booting .hp-row, .rq-booting .rq-goal, .rq-booting .rq-collect, .rq-booting .rq-hint { display: none !important; }
 .rq-boot > div { position: absolute; inset: 0; display: none; }
@@ -56,9 +56,9 @@ const CSS = `
 .rq-logo .mark { position: absolute; left: 50%; top: 44%; width: 38cqh; height: 45.6cqh; transform: translate(-50%, -50%); opacity: 0; animation: rq-logo-in 1.1s 0.3s ease-out forwards; }
 .rq-logo .mark svg { width: 100%; height: 100%; overflow: visible; }
 .rq-logo .sheen { animation: rq-sheen 0.9s 2.0s ease-in-out both; }
-.rq-logo .name { position: absolute; left: 0; right: 0; top: 72%; text-align: center; font: italic 700 min(8.2cqh, 6.6cqw) Georgia, 'Times New Roman', serif; letter-spacing: 0.22em; color: #2b2f55; opacity: 0; animation: rq-fade 0.8s 1.1s ease-out forwards; }
+.rq-logo .name { position: absolute; left: 0; right: 0; top: 72%; text-align: center; font: italic 700 min(8.2cqh, 6.6cqw) var(--rq-font-logo); letter-spacing: 0.22em; color: #2b2f55; opacity: 0; animation: rq-fade 0.8s 1.1s ease-out forwards; }
 .rq-logo .name i { font-size: 2.4cqh; vertical-align: top; letter-spacing: 0; font-style: normal; }
-.rq-logo .sub { position: absolute; left: 0; right: 0; top: 84%; text-align: center; font: 600 min(3.4cqh, 3.6cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.4em; color: #6a6f96; opacity: 0; animation: rq-fade 0.8s 1.4s ease-out forwards; }
+.rq-logo .sub { position: absolute; left: 0; right: 0; top: 84%; text-align: center; font: 600 min(3.4cqh, 3.6cqw) var(--rq-font-label); letter-spacing: 0.4em; color: #6a6f96; opacity: 0; animation: rq-fade 0.8s 1.4s ease-out forwards; }
 .rq-logo .black { position: absolute; inset: 0; background: #000; opacity: 0; animation: rq-black 0.6s ${LOGO_TIME - 0.6}s linear forwards; }
 @keyframes rq-logo-in { from { opacity: 0; transform: translate(-50%, -50%) scale(0.86); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes rq-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -86,8 +86,8 @@ const CSS = `
 .rq-title .opt.sel::before { content: ''; position: absolute; left: -2.6cqh; top: 50%; margin-top: -1.1cqh; border: 1.1cqh solid #0000; border-left: 1.7cqh solid #ffd24a; animation: rq-nudge 0.7s steps(2) infinite; }
 .rq-title .opt.off { color: #5f5c50; }
 .rq-title .card { position: absolute; right: 4.5%; bottom: 15%; width: min(60cqh, 36cqw); box-sizing: border-box; padding: 2.2cqh 2.6cqh; border-radius: 1.8cqh; background: linear-gradient(#141a22e8, #0b0f15e8); border: 0.3cqh solid #56627a;
-  box-shadow: 0 1cqh 3cqh #000a; font: 600 max(12px, 2.5cqh) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.01em; color: #cfd6e2; line-height: 1.35; }
-.rq-title .card .k { font: min(3.4cqh, 2.2cqw) Impact, 'Arial Black', sans-serif; letter-spacing: 0.16em; color: #ffd24a; margin-bottom: 0.8cqh; }
+  box-shadow: 0 1cqh 3cqh #000a; font: 600 max(12px, 2.5cqh) var(--rq-font-label); letter-spacing: 0.01em; color: #cfd6e2; line-height: 1.35; }
+.rq-title .card .k { font: min(3.4cqh, 2.2cqw) var(--rq-font-title); letter-spacing: 0.16em; color: #ffd24a; margin-bottom: 0.8cqh; }
 .rq-title .card .where { font-weight: 800; font-size: 1.25em; color: #fff6d8; }
 .rq-title .card .wedges { display: flex; align-items: center; gap: 0.4em; font-weight: 800; font-size: 1.2em; color: #ffd24a; margin: 0.5cqh 0; }
 .rq-title .card .wedges svg { width: 1.2em; height: 1.2em; }
@@ -96,8 +96,8 @@ const CSS = `
 .rq-title .card .line:last-child { border-bottom: 0; }
 .rq-title .card .line b { color: #fff6d8; } .rq-title .card .line i { font-style: normal; color: #ffd24a; white-space: nowrap; }
 .rq-title .card .line.none b { color: #7d8698; font-weight: 600; }
-.rq-title .hint { position: absolute; left: 5.5%; bottom: 5%; font: 700 min(3.2cqh, 2.6cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.08em; color: #d9d3b0; text-shadow: 0 0.1em 0 #000; white-space: nowrap; }
-.rq-title .copy { position: absolute; right: 2.5%; bottom: 2.5%; font: 600 min(2.3cqh, 1.9cqw) 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.12em; color: #9a9477; text-shadow: 0 0.1em 0 #000; }
+.rq-title .hint { position: absolute; left: 5.5%; bottom: 5%; font: 700 min(3.2cqh, 2.6cqw) var(--rq-font-label); letter-spacing: 0.08em; color: #d9d3b0; text-shadow: 0 0.1em 0 #000; white-space: nowrap; }
+.rq-title .copy { position: absolute; right: 2.5%; bottom: 2.5%; font: 600 min(2.3cqh, 1.9cqw) var(--rq-font-label); letter-spacing: 0.12em; color: #9a9477; text-shadow: 0 0.1em 0 #000; }
 .rq-title .hint .rqg-pair, .rq-files .help .rqg-pair { margin: 0 1.6em 0 0; }
 .rq-files .help .rqg-pair { margin: 0 0.8em; }
 @keyframes rq-nudge { 0% { transform: translateX(0); } 50% { transform: translateX(0.5cqh); } }
@@ -120,8 +120,8 @@ const CSS = `
 }
 
 /* ---- Save files ---- */
-.rq-files { background: radial-gradient(ellipse at 50% 50%, #0008 20%, #000d 100%), linear-gradient(#000c, #0006 40%, #000c); font-family: 'Trebuchet MS', Arial, sans-serif; color: #e9e2c4; }
-.rq-files .head { position: absolute; left: 0; right: 0; top: 6%; text-align: center; font: min(9cqh, 7cqw) Impact, 'Arial Black', sans-serif; letter-spacing: 0.14em; color: #ffd24a;
+.rq-files { background: radial-gradient(ellipse at 50% 50%, #0008 20%, #000d 100%), linear-gradient(#000c, #0006 40%, #000c); font-family: var(--rq-font-label); color: #e9e2c4; }
+.rq-files .head { position: absolute; left: 0; right: 0; top: 6%; text-align: center; font: min(9cqh, 7cqw) var(--rq-font-title); letter-spacing: 0.14em; color: #ffd24a;
   text-shadow: 0 0.06em 0 #5a2200, 0 0 0.4em #000; }
 .rq-files .cards { position: absolute; left: 4%; right: 4%; top: 22%; height: 52%; display: flex; gap: 2.4%; justify-content: center; }
 .rq-files .card { flex: 0 1 30%; max-width: 46cqh; box-sizing: border-box; padding: 3cqh 2.2cqh; border-radius: 2.2cqh; background: linear-gradient(#2a3324ee, #161c13ee); border: 0.45cqh solid #4b5a40;
@@ -131,12 +131,12 @@ const CSS = `
 .rq-files .card.sel { border-color: #ffe27a; box-shadow: 0 0 3cqh #ffd24a66, inset 0 0 2cqh #ffd24a22; transform: translateY(-1.2cqh); }
 .rq-files .card.target { border-color: #7fd4ff; box-shadow: 0 0 3cqh #7fd4ff66; }
 .rq-files .card.from { border-style: dashed; }
-.rq-files .num { font: min(6cqh, 4.4cqw) Impact, 'Arial Black', sans-serif; letter-spacing: 0.12em; color: #ffe9a0; }
+.rq-files .num { font: min(6cqh, 4.4cqw) var(--rq-font-title); letter-spacing: 0.12em; color: #ffe9a0; }
 .rq-files .where { font-weight: 800; font-size: max(14px, 3.2cqh); color: #fff6d8; min-height: 2.4em; display: flex; align-items: center; }
 .rq-files .wedges { display: flex; align-items: center; gap: 0.4em; font-weight: 800; font-size: max(15px, 3.8cqh); color: #ffd24a; }
 .rq-files .wedges svg { width: 1.2em; height: 1.2em; }
 .rq-files .played, .rq-files .saved { font-size: max(13px, 2.6cqh); color: #cfc8a8; }
-.rq-files .new { margin-top: auto; margin-bottom: auto; font: min(6cqh, 4.4cqw) Impact, 'Arial Black', sans-serif; letter-spacing: 0.1em; color: #9fe08a; }
+.rq-files .new { margin-top: auto; margin-bottom: auto; font: min(6cqh, 4.4cqw) var(--rq-font-title); letter-spacing: 0.1em; color: #9fe08a; }
 .rq-files .card .blurb { font-size: max(13px, 2.6cqh); color: #a9a283; }
 .rq-files .msg { position: absolute; left: 0; right: 0; top: 79%; text-align: center; font-weight: 800; font-size: max(14px, 3.2cqh); color: #ffe9a0; text-shadow: 0 0.1em 0 #000; min-height: 1.3em; }
 .rq-files .help { position: absolute; left: 0; right: 0; bottom: 6%; display: flex; justify-content: center; flex-wrap: wrap; font-weight: 700; font-size: max(13px, 2.9cqh); color: #d9d3b0; text-shadow: 0 0.1em 0 #000; }

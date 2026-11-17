@@ -6,7 +6,7 @@ import type { Count } from '../world/collectibles';
 const CSS = `
 .rq-collect { position: absolute; top: 8px; right: 8px; z-index: 20;
   display: flex; gap: 0.8em; align-items: center; padding: 0.25em 0.6em; border-radius: 0.4em;
-  background: rgba(8, 12, 10, 0.5); color: #e8efe0; font: max(13px, 1.8vh)/1 ui-monospace, Menlo, Consolas, monospace;
+  background: rgba(8, 12, 10, 0.5); color: #e8efe0; font: max(13px, 1.8vh)/1 var(--rq-font-game);
   pointer-events: none; user-select: none; white-space: nowrap; }
 .rq-collect .rq-item { display: flex; align-items: center; gap: 0.35em; transition: transform 0.15s, color 0.15s; }
 .rq-collect .rq-item.rq-bump { transform: scale(1.3); color: #fff2a0; }

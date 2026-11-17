@@ -197,7 +197,7 @@ export function helpLine(items: Array<[PromptAction | PromptAction[], string]>, 
 
 const CSS = `
 .rqg { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 1.7em; min-width: 1.7em; padding: 0 0.4em; margin: 0 0.1em;
-  border-radius: 0.45em; background: #15171c; color: #eef0f4; border: 0.1em solid #646a76; font: 800 max(13px, 0.8em)/1 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.02em;
+  border-radius: 0.45em; background: #15171c; color: #eef0f4; border: 0.1em solid #646a76; font: 800 max(13px, 0.8em)/1 var(--rq-font-label); letter-spacing: 0.02em;
   vertical-align: middle; text-shadow: none; white-space: nowrap; box-shadow: 0 0.08em 0 #000a; }
 .rqg-face, .rqg-stick { width: 1.7em; padding: 0; border-radius: 50%; }
 .rqg-face.rqg-wide { width: auto; padding: 0 0.5em; border-radius: 0.85em; }

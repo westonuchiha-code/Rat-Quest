@@ -45,7 +45,7 @@ const CSS = `
 .rq-fly .piece .pn { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.12; flex: 1; min-width: 0; }
 .rq-fly .piece .pn b { font-weight: 700; } .rq-fly .piece .pn em { font-style: normal; font-size: 0.78em; color: var(--dim); }
 .rq-fly .piece svg { color: var(--dim); }
-.rq-fly .sw { flex: none; width: 1.7em; height: 1.7em; border-radius: 0.3em; border: 1px solid #0008; display: flex; align-items: center; justify-content: center; font: 800 0.72em ui-monospace, Menlo, Consolas, monospace; font-style: normal; color: #000c; }
+.rq-fly .sw { flex: none; width: 1.7em; height: 1.7em; border-radius: 0.3em; border: 1px solid #0008; display: flex; align-items: center; justify-content: center; font: 800 0.72em var(--rq-font-game); font-style: normal; color: #000c; }
 .rq-fly .sw.dot { border-radius: 50%; }
 .rq-fly .step { display: flex; align-items: center; gap: 0.25em; }
 .rq-fly .step label { color: var(--dim); font-size: 0.86em; margin-right: 0.15em; }

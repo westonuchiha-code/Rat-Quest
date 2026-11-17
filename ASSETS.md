@@ -1,0 +1,346 @@
+# ASSETS: everything in the game that can be replaced, and where it is
+
+**This file is written by a script. Do not edit it by hand: run `npm run assets` and it is written again from the
+game's own lists.** A test (`tests/assets.ts`) fails when it is out of date, so it cannot fall behind the game.
+
+The owner, 2026-11-17: "all of the assets, little cut scenes and videos that we have, all of that kind of stuff, even
+things like fonts may change in the future so they all need to be well organized, kept track of and easily
+replaceable."
+
+**Nothing here is final.** Every model, picture, sound, tune, scene, name and number is a placeholder that can be
+swapped. Each part below says WHERE the thing lives and HOW to replace it.
+
+**How this game holds its assets:** almost nothing is a file that is loaded. Models are built in code from simple
+shapes; textures are painted in code, dot by dot; most sounds are made in code or squashed from a short recording
+and stored as text inside the game. That is why the whole game is one .html file. So "replace an asset" usually
+means "change the code that makes it", in the file named for it.
+
+## 1. Test rooms (levels)
+
+The list of rooms and what their doors say: `src/levels/testRooms.ts`. A room is opened by `#level=<id>`.
+To rename a biome, change `door` there. To add a room: build it, add it to `src/levels/levels.ts`, add a line to the list.
+
+| Room | id | Door says | Was called | Plays as | Look | Music | Made in |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Test Room 1 | `toybox` | WACKY POMO DREAM | The Toy Box | dream | cave | dream | `src/levels/toybox.ts` |
+| Test Room 1B | `milkyway` |  | The Milky Way | dream | cave | dream | `src/levels/milkyway.ts` |
+| Test Room 1C | `bigdipper` |  | The Big Dipper | dream | cave | dream | `src/levels/bigdipper.ts` |
+| Test Room 2 | `glowcave` | MUSHROOM CAVE | The Glow Cave | waking | cave | echo | `src/levels/glowcave.ts` |
+| Test Room 3 | `cistern` | THE SEWERS | The Great Cistern | waking | sewer | drift | `src/levels/cistern.ts` |
+| Test Room 3B | `pumpworks` |  | The Pump Room | waking | sewer | pump | `src/levels/pumpworks.ts` |
+| Test Room 3C | `works` |  | The Waterworks | waking | sewer | drift | `src/levels/cisternHalls.ts` |
+| Test Room 3D | `sludgepit` |  | The Sludge Pit | waking | sewer | drift | `src/levels/cisternHalls.ts` |
+| Test Room 3E | `sump` |  | The Sump | waking | sewer | march | `src/levels/cisternHalls.ts` |
+| Test Room 4 | `coldmain` | ICE WORLD | The Cold Main | waking | sewer | echo | `src/levels/coldmain.ts` |
+| Test Room 5 | `longdrop` | DOWNHILL PIPES | The Long Drop | waking | sewer | pump | `src/levels/longdrop.ts` |
+| Test Room 6 | `foundry` | FOUNDRY | The Foundry | waking | foundry | pump | `src/levels/foundry.ts` |
+| Test Room 6B | `shaft` |  | The Lift Shaft | waking | foundry | drift | `src/levels/foundry.ts` |
+| Test Room 6C | `coalcellars` |  | The Coal Cellars | waking | foundry | drift | `src/levels/foundry.ts` |
+| Test Room 7 | `forge` | FORGE | The Forge | waking | foundry | pump | `src/levels/forge.ts` |
+| Test Room 8 | `hollows` | DEEP CAVES | The Hollows | waking | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8B | `webs` |  | Web Hollow | waking | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8C | `brood` |  | The Brood Pit | waking | cave | march | `src/levels/hollows.ts` |
+| Test Room 8D | `faith` |  | Leap of Faith | waking | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8E | `dark` |  | The Lightless Way | waking | cave | echo | `src/levels/hollows.ts` |
+| Test Room 8F | `glimmer` |  | The Glimmer Deep | waking | cave | echo | `src/levels/glimmer.ts` |
+| Test Room 9 | `keep` | CASTLE | Grimsqueak's Keep | waking | keep | march | `src/levels/keep.ts` |
+| Test Room 9B | `lair` |  | Grimsqueak's Throne | waking | keep | march | `src/levels/keep.ts` |
+| Test Room 10 | `garden` | MOVE GYM | The Move Garden | waking | dungeon | drift | `src/levels/garden.ts` |
+| Test Room 11 | `hub` | THE CLUB | The Club | waking | dungeon | groove | `src/levels/junction.ts` |
+
+**The Hall** (`hall`, the hub): `src/levels/hall.ts`. **Boss rooms:** SPIDER BOSS (`widowpit`, `src/levels/practice.ts`); GRIMSQUEAK (`lair`, `src/levels/keep.ts`); SUMP WYRM (`sump`, `src/levels/cisternHalls.ts`); BROOD MOTHER (`brood`, `src/levels/hollows.ts`).
+
+**Practice rooms** (all made by `src/levels/practice.ts`): COCKROACH (`practice_roach`), TOAD (`practice_toad`), BAT (`practice_bat`), MANTIS (`practice_mantis`), ANT PIKEMAN (`practice_ant`), KEEP GUARD (`practice_guard`), HORNET (`practice_hornet`), FIREFLY (`practice_firefly`), SCORPION (`practice_scorpion`), IRONBACK (`practice_beetle`), STAG KNIGHT (`practice_stag`).
+
+**Old levels, kept but not behind any door** (13; open one with `#level=<id>`): Sewer Chamber (`sewer`), Cap Collector (`caps`), Roach Hunt (`hunt`), Endurance (`waves`), Leap of Faith (`leap`), Crate Search (`crates`), Waterworks (`waterworks`), Plank Pit (`plankpit`), Cellars (`cellars`), Lift Shaft (`liftshaft`), Furnace (`furnace`), Web Hollow (`webhollow`), Dizzy Dave's Spot (`davespot`).
+
+## 2. How each biome plays (physics)
+
+One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
+`src/data/balance.ts`). 269 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+
+| Biome feel | Meant to be like | Run | Jump | Gravity | Tuck | Speed from tricks | Spin and grab |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | no | no | no |
+| The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | yes | yes | yes |
+
+## 3. The hero
+
+| What | Where |
+| --- | --- |
+| His body, built from shapes; his scarf, helmet, sword and shield | `src/player/ratModel.ts` |
+| His poses and sword swings | `src/player/animations.ts` |
+| How he moves (running, jumping, riding) | `src/player/controller.ts` |
+| His look in the dream (loud colours, long scarf) | `look: 'dream'` on a level; drawn in `src/player/ratModel.ts` |
+| His gear, by name and colour | `src/data/equipment.ts` |
+
+To replace his model: change `RatModel` in `ratModel.ts` (the game asks it only for a pose each frame).
+
+## 4. Creatures (enemies and bosses)
+
+Each has a MIND (how it fights) and a BODY (how it is drawn) in separate files, so either can be replaced alone.
+Which body goes with which mind is in `addEnemy` in `src/main.ts`. In the dream the same creatures wear loud colours
+(`dreamify`, `src/world/dozers.ts`).
+
+| Creature | Called in a level | Its mind | Its body | Practice room |
+| --- | --- | --- | --- | --- |
+| Giant Cockroach | `scuttler` | `src/enemies/scuttler.ts` | `src/enemies/scuttlerModel.ts` | `practice_roach` |
+| Toad | `toad` | `src/enemies/toad.ts` | `src/enemies/toadModel.ts` | `practice_toad` |
+| Flitter | `bat` | `src/enemies/bat.ts` | `src/enemies/batModel.ts` | `practice_bat` |
+| Orchid Mantis | `mantis` | `src/enemies/mantis.ts` | `src/enemies/mantisModel.ts` | `practice_mantis` |
+| Ant Pikeman | `ant` | `src/enemies/ant.ts` | `src/enemies/antModel.ts` | `practice_ant` |
+| Keep Guard | `guard` | `src/enemies/guard.ts` | `src/enemies/guardModel.ts` | `practice_guard` |
+| Hornet Lancer | `hornet` | `src/enemies/hornet.ts` | `src/enemies/hornetModel.ts` | `practice_hornet` |
+| Firefly Bomber | `firefly` | `src/enemies/firefly.ts` | `src/enemies/fireflyModel.ts` | `practice_firefly` |
+| Lamp Scorpion | `scorpion` | `src/enemies/scorpion.ts` | `src/enemies/scorpionModel.ts` | `practice_scorpion` |
+| Frost Roller | `roller` | `src/enemies/roller.ts` | `src/enemies/rollerModel.ts` |  |
+| Ironback | `ironback` | `src/enemies/ironback.ts` | `src/enemies/ironbackModel.ts` | `practice_beetle` |
+| Stag Knight | `stag` | `src/enemies/stag.ts` | `src/enemies/stagModel.ts` | `practice_stag` |
+| The Sump Wyrm | `wyrm` | `src/enemies/wyrm.ts` | `src/enemies/wyrmModel.ts` | `sump` |
+| The Broodmother | `brood` | `src/enemies/brood.ts` | `src/enemies/broodModel.ts` | `brood` |
+| The Widow | `widow` | `src/enemies/widow.ts` | `src/enemies/widowModel.ts` | `widowpit` |
+| Lord Grimsqueak | `grimsqueak` | `src/enemies/grimsqueak.ts` | `src/npc/grimsqueakModel.ts` | `lair` |
+
+## 5. Characters (friendly)
+
+Who is where and what they say is written in the level that holds them (the Club's cast: `src/levels/junction.ts`;
+the Hall takes that cast whole and stands them about: `src/levels/hall.ts`). Their bodies are built by kind.
+Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voices: part 8.
+
+| Character | Kind | Body built in | Voice | Appears in |
+| --- | --- | --- | --- | --- |
+| ASH | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
+| BISCUIT | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
+| CORPORAL NIB | ant | `src/enemies/antModel.ts` | villain at 1.3 | Test Room 11, The Hall |
+| DIZZY DAVE | pigeon | `src/npc/npc.ts` | pigeon at 1 | Dizzy Dave's Spot, Test Room 11, The Hall |
+| FINCH | bird | `src/npc/npc.ts` | wren at 1.4 | Waterworks, Plank Pit, Lift Shaft, Web Hollow and 11 more |
+| JINX | rat | `src/npc/patrons.ts` | wren at 1.08 | Test Room 11, The Hall |
+| LORD GRIMSQUEAK | villain | `src/npc/grimsqueakModel.ts` | villain at 0.8 | Test Room 9B, Dizzy Dave's Spot, Test Room 11, The Hall |
+| MADAM TAWNY | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 11, The Hall |
+| MELLOW MORT | mouse | `src/npc/npc.ts` | mort at 1.3 | Dizzy Dave's Spot, Test Room 11, The Hall |
+| MOSSBACK MO | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 11, The Hall |
+| PEBBLE | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 11, The Hall |
+| PIP | mouse | `src/npc/npc.ts` | mort at 1.3 | Cellars, Furnace, Dizzy Dave's Spot, Test Room 3B and 3 more |
+| PROFESSOR SNOW | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 11, The Hall |
+| SIR HOBNAIL | stag | `src/enemies/stagModel.ts` | villain at 0.62 | Test Room 11, The Hall |
+| SLINK | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
+| VIX | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
+| WREN | bird | `src/npc/npc.ts` | wren at 1.4 | Dizzy Dave's Spot, Test Room 11, Test Room 6, Test Room 6C and 3 more |
+
+## 6. Scenery and props
+
+A level asks for a prop by its kind (`decor`, in `src/world/layout.ts`); `src/world/chamber.ts` draws it. There are 54 kinds:
+`arch`, `arena`, `banner`, `bottles`, `bracket`, `brazier`, `bulbs`, `butterflies`, `chain`, `couch`, `crystal`, `dancefloor`, `dartboard`, `engine`, `eyes`, `fall`, `flowers`, `forge`, `gauge`, `grate`, `hole`, `iceSpike`, `icicle`, `jet`, `keg`, `lamp`, `light`, `lightrail`, `machine`, `mark`, `moss`, `mugs`, `mushroom`, `pipe`, `planet`, `portrait`, `post`, `roots`, `rug`, `ruler`, `runnel`, `shelf`, `sign`, `sleepers`, `slime`, `speaker`, `stalactite`, `stool`, `table`, `torch`, `vent`, `web`, `weed`, `window`.
+
+Props with a model file of their own: `src/world/brazierModel.ts`, `src/world/couchModel.ts`, `src/world/forgeModels.ts`, `src/world/itemModels.ts`, `src/world/tavernModels.ts`. Doors: `src/world/doorway.ts`; their signs:
+`src/world/courseDoors.ts`. The sky and its planets: `src/world/sky.ts`. Things to pick up: `src/world/collectibleMeshes.ts`,
+`src/world/itemModels.ts`, `src/world/wedges.ts`. The dream's sleeping creatures: `src/world/dozers.ts`.
+
+To replace a prop: change the code under its kind in `chamber.ts` (or its model file). What is drawn must stay the
+size of what is solid: the solid boxes are given by the level, not by the model.
+
+## 7. Textures and looks
+
+All 101 textures are painted in code, dot by dot: `src/render/textures.ts` (one entry each, by name). To replace
+one, repaint its entry. (The game cannot load a picture FILE as a texture yet: `getTexture` there is where that would be added.) The names:
+`stone`, `floor`, `brick`, `water`, `sewerBrick`, `concreteSlab`, `rustPlate`, `drainGrate`, `pipeBands`, `mossStone`, `wetCobbles`, `sludge`, `sewerWater`, `ceramicTiles`, `archTrim`, `dirt`, `dirtRoots`, `planks`, `beamEnd`, `beamSide`, `rubbleWall`, `gravelRail`, `mineBrick`, `clay`, `roughRock`, `wetRock`, `sandstone`, `crystalRock`, `mudFloor`, `mossRock`, `mushroomPatch`, `stalagmite`, `poolWater`, `magmaRock`, `crate`, `ironDoor`, `ironBars`, `hazardTrim`, `scorpShell`, `scorpTail`, `scorpClaw`, `scorpLamp`, `mushroomCap`, `mushroomStem`, `iceBrick`, `frostCobbles`, `iceSheet`, `iceBlock`, `frostPipe`, `iceClear`, `caveRock`, `caveFloor`, `glowMoss`, `rollerShell`, `rollerUnder`, `stagShell`, `stagBelly`, `stagHorn`, `stagIron`, `ashWood`, `turtleScute`, `turtleScuteMossy`, `turtleSkin`, `turtleBelly`, `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`, `chitin`, `wartSkin`, `leafChitin`, `membrane`, `owlFeathers`, `owlWing`, `softPaint`, `dreamStatic`, `starfield`, `rainbowRoad`, `pomoTiles`, `emberBrick`, `steamVent`, `widowChitin`, `widowHorn`, `widowBack`, `fireBrick`, `deckPlate`, `castIron`, `girder`, `castingSand`, `coalLumps`, `wroughtIron`, `cutStone`, `charred`, `coals`, `couchFabric`, `couchPatch`, `knitBlanket`, `keepStone`, `royalCarpet`.
+
+A level's LOOK is a theme: which texture each kind of surface wears (`src/levels/themes.ts`).
+
+| Theme | What it is | Floor | Wall | Platform | Stone |
+| --- | --- | --- | --- | --- | --- |
+| `sewer` | Sewer (green, wet brick) | wetCobbles | sewerBrick | mossStone | concreteSlab |
+| `mine` | Mine (earth and timber) | dirt | mineBrick | dirtRoots | rubbleWall |
+| `cave` | Cave (rock and moss) | mudFloor | roughRock | mossRock | wetRock |
+| `dungeon` | Dungeon (grey stone) | floor | brick | stone | stone |
+| `foundry` | Foundry (iron, soot and magma) | rustPlate | mineBrick | rustPlate | magmaRock |
+| `keep` | Keep (castle stone and royal carpet) | stone | keepStone | keepStone | keepStone |
+
+How everything is shaded (the PS1 look: wobble, banding, fog): `src/render/ps1Material.ts`. How sharp the picture
+is: `src/render/picture.ts`.
+
+## 8. Sound
+
+**Claude cannot hear.** Sounds are made and checked by measurement (how loud, how long, how bright); only the owner's
+ears can say whether one is right.
+
+### Sound effects
+
+165 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
+recording, squashed, stored in `src/audio/recorded.ts`); the other 132 are MADE IN CODE (a recipe in `synth.ts`).
+
+**To replace an effect with a recording:** put the sound file in `recordings/`, add or change its entry in
+`recordings/map.json` (which file, from when to when, pitch), run `python3 scripts/make-recorded.py`. To go back to
+the made-up sound, delete the entry and run it again. To change a made-up sound, change its recipe in `synth.ts`.
+
+| Effect | Comes from |
+| --- | --- |
+| `land` | recorded: `recordings/chip/land.wav` |
+| `step` | recorded: `recordings/voice001.m4a` |
+| `swing` | recorded: `recordings/chip/swing.wav` |
+| `dodge` | recorded: `recordings/chip/dodge.wav` |
+| `block` | recorded: `recordings/chip/block.wav` |
+| `crate` | recorded: `recordings/chip/crate.wav` |
+| `crumb` | recorded: `recordings/chip/crumb.wav` |
+| `cap` | recorded: `recordings/chip/cap.wav` |
+| `relic` | recorded: `recordings/chip/relic.wav` |
+| `item` | recorded: `recordings/react8.m4a` |
+| `heal` | recorded: `recordings/chip/heal.wav` |
+| `splash` | recorded: `recordings/chip/splash.wav` |
+| `toadWind` | recorded: `recordings/react8.m4a` |
+| `menuMove` | recorded: `recordings/voice001.m4a` |
+| `menuOk` | recorded: `recordings/chip/menuOk.wav` |
+| `menuBack` | recorded: `recordings/chip/menuBack.wav` |
+| `talk` | recorded: `recordings/voice001.m4a` |
+| `sparkle` | recorded: `recordings/chip/sparkle.wav` |
+| `doorOpen` | recorded: `recordings/chip/doorOpen.wav` |
+| `clear` | recorded: `recordings/chip/clear.wav` |
+| `gate` | recorded: `recordings/chip/gate.wav` |
+| `drip` | recorded: `recordings/voice001.m4a` |
+| `ratJump` | recorded: `recordings/react8.m4a` |
+| `ratJump2` | recorded: `recordings/react8.m4a` |
+| `ratDouble` | recorded: `recordings/react8.m4a` |
+| `ratAttack` | recorded: `recordings/react8.m4a` |
+| `ratHurt` | recorded: `recordings/react8.m4a` |
+| `ratDie` | recorded: `recordings/react8.m4a` |
+| `roachDie` | recorded: `recordings/react8.m4a` |
+| `boot` | recorded: `recordings/chip/boot.wav` |
+| `villainLaugh` | recorded: `recordings/react8.m4a` |
+| `rewind` | recorded: `recordings/chip/rewind.wav` |
+| `whoosh` | recorded: `recordings/chip/whoosh.wav` |
+
+Made in code: `jump`, `doubleJump`, `hit`, `kill`, `hurt`, `barrel`, `plank`, `pipe`, `plunge`, `shock`, `spit`, `splat`, `croak`, `roachWind`, `lunge`, `rumble`, `water`, `gush`, `drain`, `machine`, `wind`, `hall`, `lavaBubble`, `fire`, `clank`, `hiss`, `pebbles`, `chainClink`, `toll`, `roachScreech`, `snort`, `flipClang`, `batSqueak`, `flap`, `memoryIn`, `memoryOut`, `cloth`, `keepsake`, `recall`, `softStep`, `chitinTap`, `broodScream`, `broodHiss`, `broodRattle`, `spikeHit`, `threadTwang`, `broodHurt`, `broodDie`, `wyrmRoar`, `wyrmHiss`, `wyrmSnap`, `wyrmRattle`, `wyrmRam`, `wyrmLash`, `wyrmCreak`, `wyrmCrunch`, `plateKnock`, `wyrmCry`, `wyrmDie`, `hornetBuzz`, `hornetWhine`, `hornetHurt`, `hornetDie`, `stagBellow`, `stagStep`, `hammerHum`, `hammerSlam`, `stagRattle`, `stagDie`, `mantisHiss`, `scytheRing`, `scytheCut`, `mantisWings`, `mantisCry`, `mantisDie`, `guardBark`, `spearReady`, `guardYelp`, `guardDie`, `antClick`, `pikeReady`, `antSnap`, `antHurt`, `antDie`, `ironScrape`, `ironCharge`, `ironBonk`, `ironToss`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `grimGather`, `grimBolt`, `boltBurst`, `grimSwoop`, `grimSlam`, `orbHum`, `orbStrike`, `grimCry`, `grimRepel`, `grimSag`, `grimDie`, `fireflyHum`, `fireflyBlink`, `emberDrop`, `emberBurst`, `fireflyFade`, `fireflyHurt`, `fireflyDie`, `rideScrape`, `ridePop`, `rideClatter`, `grindRing`, `widowScream`, `widowRear`, `widowBite`, `widowHurt`, `widowDie`, `poisonSlash`, `poisonWave`, `poisonSpit`, `poisonSplash`, `scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`, `scorpDie`, `gasBurst`, `gasHiss`.
+
+The owner's three sound tools (kept whole in the project): `recordings/tools/chip-drum-pad.html`, `recordings/tools/chiptune-pad-studio.html`, `recordings/tools/robot-voice-box.html`. They are driven by
+the scripts in `scripts/chip/` (`sfx.mjs` for effects, `voices.mjs` and `robot.mjs` for voices, `songs.mjs` and `make.mjs` for music).
+
+### Voices
+
+Characters "speak" in syllables cut from one recording each (`recordings/voices.json`, built by
+`scripts/make-recorded.py`); which recording and at what pitch each KIND of character uses: `VOICES` in
+`src/audio/speech.ts`. To give a character a voice of his own, record him, add a bank, point his kind at it.
+
+| Kind of character | Recording used | Pitch |
+| --- | --- | --- |
+| mouse | mort | 1.3 |
+| bird | wren | 1.4 |
+| pigeon | pigeon | 1 |
+| villain | villain | 0.8 |
+| turtle | pigeon | 0.72 |
+| fox | wren | 0.92 |
+| ant | villain | 1.3 |
+| stag | villain | 0.62 |
+| ferret | mort | 1.65 |
+| owl | pigeon | 0.86 |
+| rat | wren | 1.08 |
+
+**Robot voices** (the Robot Voice Box). They SPEAK only in the dream. 4 voices (small, thin, big, plain), each with cries for
+attack, hurt and die: `src/audio/robotVoices.ts`, made by `node scripts/chip/robot.mjs`. Which creature has which
+voice: `src/audio/dreamVoices.ts`.
+
+### Music
+
+**The sound of this game is hip-hop: boom bap, gritty, scratches.** Songs are WRITTEN as notes in
+`scripts/chip/songs.mjs`, RENDERED through the owner's tools by `node scripts/chip/make.mjs <folder>`, and PUT IN THE
+GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio/tunes.ts`. Which tune plays where:
+`PLAYLISTS` in `src/audio/music.ts`; a level asks for a kind of music by name (`music:` on the level).
+
+| In the game | Name | Tempo | One round |
+| --- | --- | --- | --- |
+| `bap2` | Feathers and Dust | 92 bpm | 20.9 s |
+| `bap1` | Pigeon Bap | 86 bpm | 22.3 s |
+| `cistern` | Still Water | 76 bpm | 25.3 s |
+| `foundry` | Hammer and Bellows | 132 bpm | 14.5 s |
+| `hollows` | No Bottom | 68 bpm | 28.2 s |
+| `keep` | The Long Stair | 96 bpm | 20.0 s |
+| `dream` | Star Slide | 140 bpm | 13.7 s |
+| `wedge` (jingle) | A Golden Wedge | 100 bpm | 3.1 s |
+| `defeat` (jingle) | Down He Goes | 66 bpm | 13.4 s |
+
+| A level asks for | It gets | Levels that ask for it |
+| --- | --- | --- |
+| `drift` | `cistern` | 29 |
+| `pump` | `foundry` | 5 |
+| `groove` | `bap2` then `bap1` | 3 |
+| `echo` | `hollows` | 7 |
+| `march` | `keep` | 4 |
+| `dream` | `dream` | 3 |
+
+**Written but NOT in the game** (15): Dave's Groove (`club`), Teeth (`boss`), The Kingdom Below (`title`), Jinx Cuts In (`bap3`), Drip Tape (`sewer`), Clank (`forge`), Spore Breath (`cave`), Cold Stone (`stone`), Big Teeth (`teeth`), Saturday Morning (`cartoon`), Counting Sheep (`sheep`), After Hours (`late`), The Kingdom Below (`kingdom`), Star Slide (Broken) (`glitch`), Does Not Compute (`rogue`).
+
+## 9. Cutscenes
+
+Each is a list of who stands where, what they do and where the camera is, second by second: `src/cutscene/scenes.ts`
+(played by `src/cutscene/cutscene.ts`). To see one: pause, SCENES; or `#level=hub&scene=<id>`. To replace one, rewrite
+its entry; to add one, add an entry.
+
+| Scene | id | Set in | Length |
+| --- | --- | --- | --- |
+| TWO AT A TABLE | `table-talk` | `hub` | 15.0 s |
+| A DRINK FOR A FRIEND | `a-drink-for-a-friend` | `hub` | 17.0 s |
+| A GLASS DOWN THE BAR | `down-the-bar` | `hub` | 11.0 s |
+| THE SOLDIER, ALONE | `the-soldier-alone` | `hub` | 18.0 s |
+| DIZZY DAVE, LIVE | `dizzy-dave-live` | `hub` | 11.2 s |
+| A HAND OF CARDS | `a-hand-of-cards` | `hub` | 13.0 s |
+| TWO AT THE BAR | `two-at-the-bar` | `hub` | 13.0 s |
+| THE OLD STAG | `the-old-stag` | `hub` | 14.0 s |
+
+**The old story** (parked: do not un-park it): 14 levels' scenes in `src/story/scenes.ts`, played by `src/story/scene.ts`.
+
+## 10. Fonts
+
+Every typeface is named in ONE file: `src/ui/fonts.ts`. Change a line there and everything that uses it changes.
+A test fails if a font is named anywhere else.
+
+| Font | Used for | Now |
+| --- | --- | --- |
+| game | the HUD, menus, talk box, shop, photo mode | ui-monospace, Menlo, Consolas, monospace |
+| title | the title screen and the save-file screen | Impact, 'Arial Black', 'Trebuchet MS', sans-serif |
+| label | small print on the title and save-file screens; the letters on button pictures | 'Trebuchet MS', Arial, sans-serif |
+| logo | the name under the studio mark | Georgia, 'Times New Roman', serif |
+| tools | the level builder and Tweaks | system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif |
+
+The block letters on door signs and boards in the world are not a font: they are drawn from the game's own letter
+shapes, `src/render/pixelFont.ts`.
+
+## 11. Pictures in the menus
+
+| What | Where |
+| --- | --- |
+| Little pictures (gear, hearts, tabs, stickers) | `src/ui/icons.ts` (drawn in code) |
+| Button pictures (Xbox, PlayStation, Switch, Steam Deck, keys) | `src/ui/glyphs.ts` |
+| Faces in the talk box | `src/npc/portrait.ts` |
+| The sticker book: 23 stickers (7 Characters, 13 Beasts, 3 Finds) | `src/data/stickers.ts` |
+| The title screen and the studio mark | `src/ui/boot.ts` |
+| The painting on the wall | `src/world/portraitTexture.ts` |
+
+## 12. Words and names
+
+| What | Where |
+| --- | --- |
+| Room numbers and what the doors say | `src/levels/testRooms.ts` |
+| What characters say | in each level's file, on the character (`lines`) |
+| Sign boards in a level | in each level's file (`kind: 'sign'`) |
+| Gear (11) and food (1): names and descriptions | `src/data/equipment.ts`, `src/data/consumables.ts` |
+| Sticker names and blurbs | `src/data/stickers.ts` |
+| Menu words | `src/ui/menu.ts`, `src/ui/boot.ts` |
+
+## 13. Films and pictures of the game
+
+**The films and pictures sent to the owner are NOT kept in the project** (they are large, and are made again from
+the game). What IS kept is how to make them:
+
+| Script | What it does |
+| --- | --- |
+| `scripts/film/cut.sh` | Joins a film's pictures (film.mjs) into an .mp4 at 15 a second, over a tune. |
+| `scripts/film/film.mjs` | A FILM of the running game, as numbered pictures (join them with cut.sh). |
+| `scripts/film/stills.mjs` | Still pictures of the running game, one for each address given. |
+
+Anything that moves is shown as a film, not as stills. A film gets a tune of its own, rendered with
+`scripts/chip/make.mjs`.
+
+## 14. Keeping this list true
+
+- `npm run assets` writes this file again. `tests/assets.ts` fails if it is stale, if a creature or prop file named
+  here is missing, or if a font is named outside `src/ui/fonts.ts`.
+- A new creature goes in `CREATURES` in `scripts/assets/inventory.ts`; everything else is picked up by itself.

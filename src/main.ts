@@ -1,4 +1,5 @@
 // Must be first: turns off color management before any THREE.Color is created.
+import './ui/fonts';
 import './core/colorSetup';
 import * as THREE from 'three';
 import { ps1Uniforms, lyingOn } from './render/ps1Material';
@@ -1434,7 +1435,7 @@ function startGame(): void {
   /** One asked for from another room: it plays when he has been taken to its own. */
   let showPending: CutsceneDef | null = null;
   const showReadout = document.createElement('div');
-  showReadout.style.cssText = 'position:absolute;left:10px;bottom:8px;font:12px monospace;color:#f4e9c8;text-shadow:1px 1px 0 #000;pointer-events:none;display:none;z-index:6';
+  showReadout.style.cssText = 'position:absolute;left:10px;bottom:8px;font:12px var(--rq-font-game);color:#f4e9c8;text-shadow:1px 1px 0 #000;pointer-events:none;display:none;z-index:6';
   gameWrap.appendChild(showReadout);
   function playCutscene(def: CutsceneDef, at = 0, hold = false): void {
     if (cur.id !== def.level) {
@@ -1835,7 +1836,7 @@ function startGame(): void {
     const st = document.createElement('style');
     st.id = 'rq-hint-css';
     st.textContent = `.rq-hint { position: absolute; left: 6%; bottom: 34%; z-index: 20; display: none; align-items: center; gap: 0.5em; pointer-events: none;
-      font: 800 clamp(13px, 3.4vh, 30px)/1 ui-monospace, Menlo, Consolas, monospace; color: #ffe27a; text-shadow: 0.1em 0.1em 0 #000, -0.05em -0.05em 0 #000; letter-spacing: 0.06em; }
+      font: 800 clamp(13px, 3.4vh, 30px)/1 var(--rq-font-game); color: #ffe27a; text-shadow: 0.1em 0.1em 0 #000, -0.05em -0.05em 0 #000; letter-spacing: 0.06em; }
       .rq-hint.on { display: flex; }
       .rq-hint .rqg { font-size: 0.9em; }`;
     document.head.appendChild(st);
@@ -3160,7 +3161,7 @@ function startGame(): void {
   const hitShapes = new HitShapes();
   scene.add(hitShapes.object);
   const devTag = document.createElement('div');
-  devTag.style.cssText = 'position:absolute;left:50%;top:4px;transform:translateX(-50%);z-index:21;pointer-events:none;font:600 11px system-ui,sans-serif;letter-spacing:0.06em;color:#ffc94a;background:#0c0f15cc;border:1px solid #ffc94a66;border-radius:10px;padding:1px 9px;display:none;white-space:nowrap';
+  devTag.style.cssText = 'position:absolute;left:50%;top:4px;transform:translateX(-50%);z-index:21;pointer-events:none;font:600 11px var(--rq-font-tools);letter-spacing:0.06em;color:#ffc94a;background:#0c0f15cc;border:1px solid #ffc94a66;border-radius:10px;padding:1px 9px;display:none;white-space:nowrap';
   gameWrap.appendChild(devTag);
   const workshop: Workshop = new Workshop(gameWrap, {
     openEditor: () => {

@@ -33,7 +33,7 @@ export interface ShopHost {
 }
 
 const CSS = `
-.rq-shop{position:absolute;inset:0;z-index:70;display:none;background:rgba(12,9,6,0.95);color:#f2e8cf;font:clamp(12px,2.4vh,16px)/1.3 ui-monospace,Menlo,Consolas,monospace;
+.rq-shop{position:absolute;inset:0;z-index:70;display:none;background:rgba(12,9,6,0.95);color:#f2e8cf;font:clamp(12px,2.4vh,16px)/1.3 var(--rq-font-game);
   -webkit-user-select:none;user-select:none}
 .rq-shop.on{display:flex}
 .rq-shop .up{color:#9fe08a}.rq-shop .down{color:#f08a7a}
