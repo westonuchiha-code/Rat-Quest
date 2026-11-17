@@ -509,5 +509,34 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   check('stepped off on a slope he can stand on, he walks and runs on down it on his feet', stepped && at.filter((e) => e === 'ride').length === 1 && at.includes('rideEnd') && !p.riding && !p.sliding, at.join());
 }
 
+// ---- THE TUCK (the owner, 2026-11-17, of the Big Dipper: "the sliding seems a little slow ... make it gain momentum as you
+// go down, with a maximum speed obviously ... like a snowboarding game ... push forward on the left analog stick in
+// order to sort of crouch down and go a little faster") ----
+{
+  // A long hill, as steep as the dream's roads: 300 long, falling 126.
+  const cs = hill(300, 126);
+  const speeds = (extra: (i: number, p: PlayerController) => Partial<PlayerInput>, frames: number): { p: PlayerController; at: number[] } => {
+    const at: number[] = [];
+    const r = play(cs, 126, frames, surfOnSlope((i, p) => { at.push(speedOf(p)); return extra(i, p); }));
+    return { p: r.p, at };
+  };
+  const stand = speeds(() => ({}), 60 * 8);
+  check('standing on his shield he tops out where he always did', Math.abs(Math.max(...stand.at) - R.max) < 0.2, `${Math.max(...stand.at).toFixed(1)}`);
+  const tuck = speeds(() => ({ move: WEST }), 60 * 9);
+  const top = Math.max(...tuck.at);
+  check('the stick pushed the way he is going is a TUCK: he goes on gaining speed past his standing top, to a higher one, and no further', Math.abs(top - R.tuckMax) < 0.2 && R.tuckMax > R.max + 4, `${top.toFixed(1)}`);
+  const toMax = tuck.at.findIndex((q) => q >= R.max - 0.1);
+  const toTop = tuck.at.findIndex((q) => q >= R.tuckMax - 0.2);
+  check('...and he BUILDS it: past his standing top speed it comes more slowly (two seconds and more from one top to the other)', toMax > 0 && toTop - toMax > 120, `${((toTop - toMax) / 60).toFixed(1)}s`);
+  check('tucked, he is crouched (`rideTuck`); standing, he is not', tuck.p.rideTuck > 0.9 && stand.p.rideTuck < 0.01);
+  // Tucked up to speed, then the stick let go.
+  const let2 = speeds((i) => (i < 60 * 6 ? { move: WEST } : {}), 60 * 9);
+  const after = let2.at.slice(-175);
+  check('letting the stick go, he keeps his speed for a moment and then loses what he had over his standing top, a little at a time: not at a stroke', after[20] > R.max + 2 && Math.abs(after[after.length - 1] - R.max) < 0.3 && after.every((q, i) => i === 0 || q <= after[i - 1] + 0.2), `${after[20].toFixed(1)} then ${after[after.length - 1].toFixed(1)}`);
+  // Hard over is a carve, not a tuck.
+  const carve = speeds((i, p) => { const h = Math.atan2(p.velocity.x, p.velocity.z); return { move: v(Math.cos(h) * (i % 120 < 60 ? 1 : -1) + Math.sin(h) * 0.3, -Math.sin(h) * (i % 120 < 60 ? 1 : -1) + Math.cos(h) * 0.3) }; }, 60 * 5);
+  check('the stick hard to one side is a carve and not a tuck: it gains nothing', Math.max(...carve.at) <= R.max + 0.1, `${Math.max(...carve.at).toFixed(1)}`);
+}
+
 console.log(failures === 0 ? 'ride: all passed' : `ride: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

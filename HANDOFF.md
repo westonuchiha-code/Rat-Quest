@@ -1435,3 +1435,10 @@ world's voices, which he wants worked on hard next.
    says a word as it attacks, grunts when struck, says one as it goes down. Four voices by kind.
  - A level's creatures are recoloured (`dreamify`) when its `look` is `'dream'`.
 
+## The tuck: stick forward on the shield to crouch and build speed (2026-11-17)
+
+The owner found the Big Dipper's sliding a little slow and asked for momentum with a top speed, and a snowboard-style
+lean forward. `TUNING.ride.tuckMax/tuckGain/tuckShed`; `rideStep`; `rideTuck` (the crouch). Standing top speed is
+unchanged (16); tucked it builds to 24. Everywhere he rides. The Big Dipper lengthened so a fully tucked run is
+still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 24.
+

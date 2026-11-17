@@ -68,7 +68,36 @@ starts.forEach((st, ride) => {
   told.push(`${ride + 1}: ${(rode / 60).toFixed(1)}s${arrived ? '' : ' FELL at z ' + p.position.z.toFixed(0)}`);
 });
 check('all four rides can be ridden end to end: off each lip onto the shield, over every gap, along a rail at every crossing, to a stop on the floor beyond', allArrived, told.join(', '));
-check('"sliding down for like a straight 2 minutes": on his shield for two minutes and more in all, and each ride half a minute or so', riding / 60 >= 120 && told.length === 4, `${(riding / 60).toFixed(1)}s`);
+check('"sliding down for like a straight 2 minutes": standing on his shield it is nearly three minutes in all, each ride forty seconds or so', riding / 60 >= 165 && told.length === 4, `${(riding / 60).toFixed(1)}s`);
+{
+  // TUCKED all the way (the stick held forward: TUNING.ride.tuckMax): faster, and the course still holds.
+  let rode = 0;
+  let ok = true;
+  let top = 0;
+  const caps = new Set<string>();
+  starts.forEach((st, ride) => {
+    const p = new PlayerController(new THREE.Vector3(st.x, st.y + 0.01, st.z));
+    p.rails = P.rails;
+    const auto = makeDipRide(true);
+    const endZ = ride < P.pads.length ? P.pads[ride].z0 : P.bowl.z0;
+    let ground0 = st.y;
+    let arrived = false;
+    for (let f = 0; f < 60 * 90; f++) {
+      const a = auto(p);
+      p.update(DT, inp({ move: new THREE.Vector3(a.x, 0, a.z), jumpPressed: a.jumpPressed, jumpHeld: a.jumpHeld, attackPressed: a.attackPressed, stowPressed: a.stowPressed, dodgePressed: a.dodgePressed }), cs);
+      if (p.riding) rode++;
+      top = Math.max(top, Math.hypot(p.velocity.x, p.velocity.z));
+      for (const c of def.collectibles) if (Math.hypot(c.x - p.position.x, c.y - (p.position.y + TUNING.rat.height / 2), c.z - p.position.z) < 1.2) caps.add(c.id);
+      if (p.grounded && !p.grinding) ground0 = p.position.y;
+      if (!p.grinding && p.position.y < ground0 - 45) break;
+      if (p.position.z > endZ && p.grounded && !p.riding) { arrived = p.position.z < endZ + PAD.long - 2; break; }
+    }
+    ok &&= arrived;
+  });
+  check('TUCKED the whole way (the stick held forward) every ride can still be ridden: every gap, every rail, and a stop on the floor short of the gate', ok);
+  check('...at his tucked top speed, and it is STILL two minutes of sliding', Math.abs(top - TUNING.ride.tuckMax) < 0.2 && rode / 60 >= 120, `${(rode / 60).toFixed(1)}s, top ${top.toFixed(1)}`);
+  check('...and that line takes the bottle caps too', caps.size >= 10, `${caps.size}`);
+}
 
 // ---- The rails ----
 const crossings = COURSE.filter((p) => p.t === 'rail');
@@ -124,7 +153,7 @@ check('the rider crossed every one of them by GRINDING a light rail', railsRidde
 
 // ---- Jumps ----
 const gaps = COURSE.filter((p) => p.t === 'gap');
-check('there are a dozen gaps to jump and more, and the wide ones each follow a kicker', gaps.length >= 12 && COURSE.every((p, i) => !(p.t === 'gap' && p.wide >= 10) || (COURSE[i - 1].t === 'road' && !!(COURSE[i - 1] as { kick?: boolean }).kick)), `${gaps.length} gaps`);
+check('there are twenty gaps to jump and more, and the wide ones each follow a kicker', gaps.length >= 20 && COURSE.every((p, i) => !(p.t === 'gap' && p.wide >= 10) || (COURSE[i - 1].t === 'road' && !!(COURSE[i - 1] as { kick?: boolean }).kick)), `${gaps.length} gaps`);
 check('no jump drops him further than the fall he is put back from', gaps.every((g) => g.t === 'gap' && g.wide * DIP.slope + g.under < DIP_FALL - 8));
 
 // ---- The pads ----

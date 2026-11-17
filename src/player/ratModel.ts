@@ -292,7 +292,7 @@ export interface RatAnimInput {
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
    */
-  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number } | null;
+  ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number; /** 0 to 1: tucked, crouched low for speed. */ tuck?: number } | null;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
@@ -1125,6 +1125,13 @@ export class RatModel {
       pose.tail[0] += Math.abs(r.steer) * 0.25;
       pose.chest[2] = -r.steer * 0.18;
       pose.hipPos[1] -= Math.abs(r.steer) * 0.035;
+      // Tucked: down low over the shield, his chest forward over his front knee, his tail straight out behind.
+      const tk = r.air ? 0 : r.tuck ?? 0;
+      if (tk > 0.01) {
+        pose.hipPos[1] -= 0.09 * tk;
+        pose.chest[0] += 0.5 * tk;
+        pose.tail[0] += 0.35 * tk;
+      }
       // Grinding: the shield is across the edge under him, and he is down low over it, arms wide, tail straight out
       // behind and shivering with the rattle of it; on a ledge he leans a little in from the drop.
       this.rideGrind = ease(this.rideGrind, r.grind ? 1 : 0, dt, 16);

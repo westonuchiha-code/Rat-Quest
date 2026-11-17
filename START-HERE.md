@@ -429,6 +429,30 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE TUCK: push the stick forward on the shield to crouch and go faster (2026-11-17). Tests `tests/ride.ts` (72), `tests/bigdipper.ts` (26)
+
+**His words, after riding the Big Dipper:** "I liked it I thought it was good but **the sliding seems a little slow**. I'm
+wondering if maybe we could either make this sliding faster or **make it gain momentum as you go down? With a maximum
+speed obviously so it doesn't get too out of hand.** We could also make you a little bit like a snowboarding game or
+something where you kind of have to **push forward on the left analog stick in order to sort of crouch down and go a
+little faster or lean forward and go a little faster.**"
+ - **THE TUCK** (`TUNING.ride.tuckMax` 24, `tuckGain` 0.45, `tuckShed` 3; `rideStep` in `player/controller.ts`;
+   `PlayerController.rideTuck`). On his shield, the stick pushed THE WAY HE IS GOING (not hard to one side: that is
+   the carve): he CROUCHES, and a slope goes on speeding him up past his standing top speed (16, unchanged), more
+   slowly (`tuckGain` of the slope's pull: about four seconds from 16 to 24), to the tucked top, 24, and no further.
+   **That is the "gains momentum as you go down", and the "maximum speed".** Standing up again, what he has over 16
+   goes at 3 a second: not at a stroke. In the air he keeps what he has. A landing or a trick no longer takes a
+   tuck's speed away. **A rail carries him as fast as he came onto it** (up to 24): it used to cap him at 16.
+ - **It is everywhere he rides** (the Long Drop, the Milky Way, the garden's pipes), not only the dream: it is a
+   control. A rider who does not push forward goes exactly as before, and every older test rides that way.
+   **NOT KNOWN: whether the Long Drop's kickers and giant ramp, laid out for 16, still land well at 24.** Its launch
+   arcs and crumbs are worked out for 16. If he tucks down it and overshoots, that is why.
+ - **Three sliders in the Tweaks panel** (Riding): standing top speed, tucked top speed, how fast a tuck builds.
+ - **THE BIG DIPPER IS LONGER FOR IT** (a piece or two added to each ride: 22 gaps now), so that it is two minutes even
+   tucked the whole way: **MEASURED: standing, 2 min 55 on the shield; tucked all the way, 2 min 07**, top speed 24,
+   every gap and rail crossed and a stop on each pad short of its gate, twelve caps on either line.
+ - `&autoride&tuck` films a tucked run.
+
 ## THE BIG DIPPER: the dream's long ride; LIGHT RAILS that curve; the dream's creatures SPEAK (2026-11-17). Tests `tests/bigdipper.ts` (23), `tests/dreamvoices.ts` (13)
 
 **His words:** "Yeah let's give the creatures for the glitch world robotic voices. And everything right like their
@@ -454,9 +478,9 @@ to fight between each and the next**, written as a list of pieces (`COURSE`) lai
    lip, and the next ride falls away. Pad 1: three roaches. Pad 2: two mantises and a roach. Pad 3: a Stag Knight and
    a mantis. At the bottom, the Bowl, with the way out.
  - **Twelve bottle caps**, each on a good line: over the kickers' gaps, on the rails.
- - **MEASURED, with the real controller and a rider that does what a player would (`makeDipRide`): the four rides are
+ - **MEASURED, with the real controller and a rider that does what a player would (`makeDipRide`): the four rides were
    35, 35, 36.5 and 38 seconds on the shield: 2 minutes 25 in all**, over 16 gaps and 6 rail crossings, and that line
-   takes all twelve caps. To make it longer or shorter, add or take pieces in `COURSE`; the test re-measures.
+   takes all twelve caps. (LENGTHENED the same day for the tuck: see "THE TUCK" above for what it measures now.) To make it longer or shorter, add or take pieces in `COURSE`; the test re-measures.
  - **A creature on a pad must be told NOT to come back (`respawn: false`)**: a roach comes back five seconds after it is
    beaten unless told not to, and the gate would never open. (The first film showed it: thirty-seven seconds of the
    same three roaches.)

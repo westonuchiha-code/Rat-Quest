@@ -2266,7 +2266,8 @@ function startGame(): void {
     }
     if (devAuto.ride && cur.id === 'bigdipper' && !player.dead) {
       // (The Big Dipper's rider: rides, jumps, takes the rails, and stops at each pad. With `&autofight` he then fights.)
-      const a = (devAuto.dipRider ??= makeDipRide())(player);
+      // (`&tuck`: he holds the stick forward all the way, crouched for speed.)
+      const a = (devAuto.dipRider ??= makeDipRide(/[#&]tuck\b/.test(location.hash)))(player);
       const onPad = !player.riding && enemies.some((e) => e.alive && Math.hypot(e.x - player.position.x, e.z - player.position.z) < 30);
       if (!(devAuto.fight && onPad)) {
         m.set(a.x, 0, a.z);
@@ -3933,7 +3934,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
-      ride: player.riding ? { steer: player.rideSteer, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
+      ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
     // Blink while he is safe after a hit, and flash red at the moment of the hit.

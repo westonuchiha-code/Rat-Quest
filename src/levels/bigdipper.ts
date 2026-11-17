@@ -9,7 +9,7 @@
  * like stop sliding and fight some monsters and then there'll be another area where you jump off and have to slide down
  * some more."
  *
- * WHAT IT IS: the Milky Way's rainbow road (levels/milkyway.ts), nine times as long, in FOUR RIDES with a place to
+ * WHAT IT IS: the Milky Way's rainbow road (levels/milkyway.ts), eleven times as long, in FOUR RIDES with a place to
  * fight between each and the next. It is written as a list of pieces (`COURSE`), laid one after another downhill:
  *   a ROAD      a length of rainbow, as steep as the Milky Way's; some narrow, some wide; some with a KICKER down the
  *               middle of their end (a little ramp that throws him);
@@ -61,19 +61,20 @@ const LEAP = [10, 5] as const;
 export const COURSE: Piece[] = [
   // ---- THE FIRST RIDE: one of each thing ----
   road(70), gap(...HOP, { dx: 2.5, cap: true }), road(60), gap(7, 3.8, { dx: -2.5 }), road(64, { kick: true }), gap(...LEAP, { cap: true }),
-  road(72), rail('braid', 26, 11, { cap: true }), road(70), gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(66),
+  road(72), rail('braid', 26, 11, { cap: true }), road(70), gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(66), gap(7, 3.8, { dx: 2 }), road(74), gap(...HOP, { dx: -2 }),
+  road(40),
   { t: 'pad', name: 'The First Stop', foes: [{ type: 'scuttler', dx: -4, dz: 16 }, { type: 'scuttler', dx: 4, dz: 18 }, { type: 'scuttler', dx: 0, dz: 23 }] },
   // ---- THE SECOND: rails ----
   road(60), rail('ess', 30, 13, { cap: true }), road(64, { kick: true }), gap(...LEAP, { cap: true }), road(80, { wide: 10 }), rail('twist', 34, 16, { cap: true }),
-  road(56), gap(7, 3.8, { dx: 2.5 }), road(60), gap(...HOP, { dx: -2.5 }), road(70),
+  road(56), gap(7, 3.8, { dx: 2.5 }), road(60), gap(...HOP, { dx: -2.5 }), road(70, { kick: true }), gap(...LEAP), road(76),
   { t: 'pad', name: 'The Second Stop', foes: [{ type: 'mantis', dx: -4, dz: 18 }, { type: 'mantis', dx: 4, dz: 21 }, { type: 'scuttler', dx: 0, dz: 15 }] },
   // ---- THE THIRD: big air ----
   road(80, { kick: true }), gap(...LEAP, { cap: true }), road(60, { kick: true }), gap(...LEAP), road(60), rail('ess', 40, 17, { cap: true }), road(50, { wide: 5 }),
-  gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(70, { kick: true }), gap(...LEAP, { cap: true }), road(80),
+  gap(...HOP, { dx: 3 }), road(50, { wide: 5 }), gap(...HOP, { dx: -3 }), road(70, { kick: true }), gap(...LEAP, { cap: true }), road(80), gap(7, 3.8, { dx: -2.5 }), road(60), gap(...HOP, { dx: 2.5 }), road(50),
   { t: 'pad', name: 'The Third Stop', foes: [{ type: 'stag', dx: 0, dz: 21 }, { type: 'mantis', dx: -5, dz: 16 }] },
   // ---- THE LAST: all of it ----
   road(90), rail('braid', 30, 13, { cap: true }), road(60, { kick: true }), gap(...LEAP, { cap: true }), road(70), rail('twist', 36, 17, { cap: true }),
-  road(60), gap(7, 3.8, { dx: 2.5 }), road(60, { kick: true }), gap(...LEAP), road(100),
+  road(60), gap(7, 3.8, { dx: 2.5 }), road(60, { kick: true }), gap(...LEAP), road(80), gap(7, 3.8, { dx: -2.5 }), road(50, { wide: 5 }), gap(...HOP), road(100),
 ];
 
 export interface DipRoad { z0: number; z1: number; y0: number; y1: number; x: number; wide: number; ride: number; kick: boolean; /** What it ends in. */ end: 'gap' | 'rail' | 'pad' | 'bowl'; /** The next road's middle, across. */ nextX: number; /** A rail crossing: where its rails begin, across (he steers for the nearest). */ railX?: number[] }
@@ -294,8 +295,9 @@ export function bigDipper(): LevelDef {
  * A rider, for the tests and the films (`&autoride`): he gets on his shield off the lip he stands by, keeps to the
  * middle of each road, jumps every gap from its lip (from the kicker where there is one), takes the nearest light
  * rail at a crossing, and at a pad or the Bowl brakes and steps off. What it gives each step is what the pad would.
+ * `tuck`: he holds the stick forward the whole way (TUNING.ride.tuckMax).
  */
-export function makeDipRide(): (p: { position: { x: number; y: number; z: number }; velocity: { x: number; z: number }; grounded: boolean; riding: boolean; grinding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; stowPressed: boolean; dodgePressed: boolean } {
+export function makeDipRide(tuck = false): (p: { position: { x: number; y: number; z: number }; velocity: { x: number; z: number }; grounded: boolean; riding: boolean; grinding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; stowPressed: boolean; dodgePressed: boolean } {
   const P = dipperPlan();
   const done = new Set<number>();
   let tick = 0;
@@ -335,7 +337,8 @@ export function makeDipRide(): (p: { position: { x: number; y: number; z: number
     else if (!here && next) aimX = next.x;
     const want = Math.max(-0.35, Math.min(0.35, (aimX - p.position.x) / 5));
     const steer = p.grounded ? Math.max(-0.8, Math.min(0.8, (want - going) * 4)) : 0;
-    const out = { ...none, x: steer, jumpHeld: !p.grounded };
+    // (`tuck`: the stick held forward all the way down, crouched for speed, as a player in a hurry would.)
+    const out = { ...none, x: steer, z: tuck ? 1 : 0, jumpHeld: !p.grounded };
     if (here && p.grounded && !done.has(ri)) {
       if (here.end === 'gap' && toEnd < 0.7) { done.add(ri); return { ...out, jumpPressed: true }; }
       if (here.end === 'rail' && toEnd < 2.2) { done.add(ri); return { ...out, stowPressed: true }; }

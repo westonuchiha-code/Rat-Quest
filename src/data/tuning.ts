@@ -126,7 +126,14 @@ export const TUNING = {
     gravity: 15, // how hard a slope pulls him down it (times how steep it is)
     dragSlope: 0.5, // what slows him on a slope
     dragFlat: 1.6, // ...and on the flat, where he rolls on a long way
-    max: 16, // top speed
+    max: 16, // top speed, standing up on it
+    // THE TUCK (the owner, 2026-11-17, of the Big Dipper: "the sliding seems a little slow ... make it gain momentum as
+    // you go down, with a maximum speed obviously ... like a snowboarding game ... push forward on the left analog
+    // stick in order to sort of crouch down and go a little faster"). The stick pushed the way he is going: he
+    // crouches, and a slope goes on speeding him up past his standing top speed, more slowly, to a higher one.
+    tuckMax: 24, // top speed, tucked
+    tuckGain: 0.45, // above his standing top speed, how much of a slope's pull still speeds him up (tucked)
+    tuckShed: 3, // standing up again (or on the flat), what he has over his standing top speed goes at this rate a second
     stop: 1.4, // slower than this, on ground he can stand on, he steps off
     restSlope: 0.12, // ...if it is flatter than this (or he is braking): a real slope will start him again
     turn: 2.2, // how fast he turns with the stick held to one side (radians a second)

@@ -158,6 +158,8 @@ export class PlayerController {
    */
   riding = false;
   rideSteer = 0;
+  /** How far he is TUCKED on his shield, 0 to 1 (the stick pushed the way he is going): crouched low, and faster for it. */
+  rideTuck = 0;
   private rideHeading = 0;
   private rideAge = 0;
   private rideFlip = -1;
@@ -168,7 +170,7 @@ export class PlayerController {
    * He is still `riding`. `s` is where he is along the line, `h` its height there, `v` his speed along it (+ toward
    * the + end of its axis), `slope` how it is rising that way.
    */
-  private grind: { line: GrindLine; s: number; h: number; v: number; slope: number; off: number; air: number; fall: number } | null = null;
+  private grind: { line: GrindLine; s: number; h: number; v: number; slope: number; off: number; air: number; fall: number; /** As fast as it will carry him: his standing top speed, or what he came onto it with if that was more (a tuck). */ top: number } | null = null;
   private grindAgain = 0;
   /** The level's LIGHT RAILS (world/rails.ts): lines through the air that he can grind, and that are not solid. Set when a level is made. */
   rails: RailCurve[] = [];
@@ -914,7 +916,8 @@ export class PlayerController {
         const along = this.velocity.x * on.dx + this.velocity.z * on.dz;
         const turned = (along - on.steep * fallBefore) / (1 + on.steep * on.steep);
         if (turned > along) {
-          const more = Math.min(turned, T.ride.max) - along;
+          // (No faster for it than his standing top speed, unless he was going faster already: a tuck's speed is not lost on landing.)
+          const more = Math.min(turned, Math.max(T.ride.max, along)) - along;
           this.velocity.x += on.dx * more;
           this.velocity.z += on.dz * more;
         }
@@ -991,7 +994,8 @@ export class PlayerController {
       } else if (this.rideFlipDone) {
         // A kickflip landed: a little speed for it.
         this.rideFlipDone = false;
-        const v = Math.min(T.ride.max, Math.hypot(this.velocity.x, this.velocity.z) + T.ride.trickBoost);
+        const had = Math.hypot(this.velocity.x, this.velocity.z);
+        const v = Math.max(had, Math.min(T.ride.max, had + T.ride.trickBoost));
         this.velocity.x = Math.sin(this.rideHeading) * v;
         this.velocity.z = Math.cos(this.rideHeading) * v;
         this.moveEvent = 'trick';
@@ -1293,7 +1297,7 @@ export class PlayerController {
       const q = railAt(found.line.curve, found.s);
       off = (p.x - q.x) * q.tz - (p.z - q.z) * q.tx;
     }
-    this.grind = { line: found.line, s: found.s, h: found.h, v: found.v, slope: 0, off: drop ? off : 0, air: drop ? above : 0, fall: Math.max(G.dropSpeed, -this.velocity.y) };
+    this.grind = { line: found.line, s: found.s, h: found.h, v: found.v, slope: 0, off: drop ? off : 0, air: drop ? above : 0, fall: Math.max(G.dropSpeed, -this.velocity.y), top: Math.max(TUNING.ride.max, Math.min(TUNING.ride.tuckMax, Math.abs(found.v))) };
     this.placeOnGrind();
     // (A kickflip he was in the middle of is over: his shield is on the rail. He has his air jump again for after.)
     this.rideFlip = -1;
@@ -1410,7 +1414,7 @@ export class PlayerController {
     }
     let v = g.v - ((R.gravity * g.slope) / Math.sqrt(1 + g.slope * g.slope)) * dt;
     const slowed = Math.max(0, Math.abs(v) - G.drag * dt);
-    v = Math.sign(v) * Math.min(R.max, slowed);
+    v = Math.sign(v) * Math.min(g.top, slowed);
     if (Math.abs(v) < G.stop) {
       // Too slow to grind: he is set down where he is, and the ride goes on (or ends) from there.
       this.grind = null;
@@ -1482,13 +1486,22 @@ export class PlayerController {
     const hard = Math.abs(side) > 0.85;
     this.rideHeading += side * R.turn * (hard ? R.carve : 1) * (this.grounded ? 1 : R.airTurn) * dt;
     this.rideSteer += (side * (hard ? 1 : 0.6) - this.rideSteer) * Math.min(1, dt * 10);
+    // THE TUCK: the stick pushed the way he is going (and not hard over in a carve). He crouches.
+    const tuck = fwd > 0.5 && !hard;
+    this.rideTuck += ((tuck ? 1 : 0) - this.rideTuck) * Math.min(1, dt * 8);
     let slow = 0;
     if (this.grounded) {
       slow = under ? R.dragSlope : R.dragFlat;
       if (hard) slow += R.carveDrag;
       else if (fwd < -0.5) slow += R.brake * -fwd;
     }
-    speed = Math.max(0, Math.min(R.max, speed - slow * dt));
+    // Past his standing top speed: only a tuck on a slope gains any more, and gains it more slowly (he builds speed
+    // as he goes down); standing up, what he has over it goes, a little at a time. In the air he keeps what he has.
+    const was = Math.hypot(this.velocity.x, this.velocity.z);
+    const floor = Math.max(R.max, Math.min(was, R.tuckMax));
+    if (speed > floor) speed = floor + (tuck && this.grounded ? (speed - floor) * R.tuckGain : 0);
+    if (this.grounded && !tuck && speed > R.max) speed = Math.max(R.max, speed - R.tuckShed * dt);
+    speed = Math.max(0, Math.min(R.tuckMax, speed - slow * dt));
     this.velocity.x = Math.sin(this.rideHeading) * speed;
     this.velocity.z = Math.cos(this.rideHeading) * speed;
     this.facing = this.rideHeading;
