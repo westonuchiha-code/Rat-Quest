@@ -26,6 +26,7 @@ Golden Wedges in the style of Mario 64, and sword and shield combat in the style
 - **Never offer these again** (the owner said so, firmly, on 2026-11-14): a wave fight, Steam achievements, the story.
   Do not pad the "what's next" list with questions; list work, and when told to continue, do the work.
 - Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
+- **The robot voice (the Robot Voice Box) SPEAKS only in the dream world** (the Milky Way, "the wacky Pomo world"). Anywhere else it may only be a sound effect. (2026-11-17; see "THE SOUND OF THIS GAME IS HIP-HOP".)
 
 ## Setup in a fresh session
 1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
@@ -460,6 +461,21 @@ voices, and it does a bunch of cool old robot voices, I'm sure you could do even
 with the other tools. You're allowed to use this for additional sound effects and music if you want to. However **the
 main use for this is I want it to be used for all the voices in the glitched out wacky Pomo world**, I think I want to
 make that a really cool part of the game so **I want to kind of hyper focus on that area biome level variety soon.**"
+
+**THE ROBOT VOICE SPEAKS ONLY IN THE DREAM (he said so the same day, after hearing the reel; A STANDING RULE):** "Now the
+robot voice isn't going to be very good for doing spoken words in the normal levels I kind of want it to be a thing
+that's **locked to the wacky Pomo levels**, like I said you can use it for sound effects but **I only want it to be used
+for speech in the wacky Pomo world**."
+ - **Words said by the Robot Voice Box: only in the Milky Way and whatever dream levels come after it** (its creatures'
+   voices, its tunes). Nowhere else: not a character, not a sign, not a tune of another place.
+ - **As a SOUND EFFECT it may be used anywhere.** What is in the game outside the dream is only that: the record that is
+   scratched in the wedge jingle, in backing out of a menu and in the put-back after a fall is a Speak & Spell saying
+   "fresh", played back and forth under a hand; no word is said. If he hears a word in any of them, change the record
+   (`fresh()` in `scripts/chip/sfx.mjs`, `scratches.say` of `JINGLES.wedge`) to Dave's or Wren's voice.
+ - **In the music it is held by the file itself**: `scripts/chip/songs.mjs` throws when read if a tune has a `say` layer
+   and is not marked `dream: true` (only `cartoon` and `rogue` are). The Hollows' tune has the STUDIO's speech-chip
+   voices holding "ooh" on two notes for the mushrooms: a sound, not a word, and told to him; his to throw out.
+ - The people of the other levels keep the voices they have: his own recordings (`recordings/*.m4a`).
 
 **THE RULES THAT COME OUT OF IT (for every tune from here):**
  - **Boom bap, swung, on a gritty kit, crunched** (`crunch: {bits, hold}`). A Genesis slap bass with a **RIFF** (a bar or

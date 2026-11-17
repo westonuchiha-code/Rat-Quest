@@ -1421,4 +1421,5 @@ world's voices, which he wants worked on hard next.
  - In the game: a short wedge jingle and the defeat piece (`AudioEngine.jingle`, `tunes.ts` `JINGLES`); six more reel
    effects (`block splash whoosh swing dodge land`); two scratch effects (`menuBack`, and `rewind` at a fall).
  - Claude cannot hear: all of it is checked by numbers and by what starts in a real browser, not by ear.
-
+ - RULE (the owner, the same day): the robot voice SPEAKS only in the dream world; elsewhere it may only be a sound
+   effect (the scratched record). `songs.mjs` refuses a tune with spoken words that is not marked `dream: true`.

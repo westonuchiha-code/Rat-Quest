@@ -379,7 +379,7 @@ SONGS.push(
     crunch: { bits: 7, hold: 3 },
   },
   {
-    id: 'cartoon', name: 'Saturday Morning', where: 'The Milky Way: a kids\' cartoon, a toy box', bpm: 104,
+    id: 'cartoon', dream: true, name: 'Saturday Morning', where: 'The Milky Way: a kids\' cartoon, a toy box', bpm: 104,
     chords: ['C7', 'C7', 'F7', 'C7', 'C7', 'C7', 'F7', 'G7'],
     parts: [
       { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: [
@@ -544,7 +544,7 @@ SONGS.push({
  * The voices are said by his third tool, the Robot Voice Box (the TI-99's speech chip, the Votrax, the Speak & Spell).
  */
 SONGS.push({
-  id: 'rogue', name: 'Does Not Compute', where: 'The Milky Way, glitching out', bpm: 92, glitch: 4,
+  id: 'rogue', dream: true, name: 'Does Not Compute', where: 'The Milky Way, glitching out', bpm: 92, glitch: 4,
   chords: ['Cm7', 'Cm7', 'Cm7', 'Cm7', 'Cm7', 'Cm7', 'Ab7', 'G7'],
   parts: [
     { type: 'line', con: 'c64', v: 'fbass', vol: 0.8, gate: 0.8, bars: [
@@ -592,6 +592,19 @@ export const JINGLES = [
     { type: 'bass', con: 'ps1', v: 'bass', vol: 0.9, oct: 2, pat: 'r---------------' },
   ] },
 ];
+
+/**
+ * THE ROBOT VOICE SPEAKS ONLY IN THE DREAM (the owner, 2026-11-17: "the robot voice isn't going to be very good for doing
+ * spoken words in the normal levels I kind of want it to be a thing that's locked to the wacky Pomo levels, like I said
+ * you can use it for sound effects but I only want it to be used for speech in the wacky Pomo world").
+ * So a tune may have WORDS said by the Robot Voice Box (a layer with `say`) only if it is one of the dream's
+ * (`dream: true`). A record scratched is a sound effect, not speech, whatever is on the record: that is allowed anywhere.
+ * This is checked every time this file is read, so a tune that breaks it cannot be made at all.
+ */
+for (const s of [...SONGS, ...JINGLES]) {
+  const words = (s.layers ?? []).filter((L) => L.say).map((L) => `"${L.say.text}"`);
+  if (words.length && !s.dream) throw new Error(`"${s.name}" (${s.id}) has the robot voice saying ${words.join(', ')}, and is not a tune of the dream: the robot voice speaks only there`);
+}
 
 /** A song (or jingle) as the Studio wants it: takes of notes in seconds. */
 export function toStudio(s) {
