@@ -430,6 +430,33 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE RIDE AT A PHONE'S FRAME RATE; THE SHIELD ON THE RAIL (2026-11-17: two things he found). Tests `tests/toybox.ts` (29)
+
+**His words:** "My first big notes are that when you're grinding on the rails you kind of clip through and I want the
+board to be like sliding on the rail like I wanted to feel like there's friction there and right now **the board is
+like inside the light rail and his feet kind of are too** ... I need that to be redone or relooked at so that it's **a
+tighter fit with the shield on the rail**. Also I'm trying to use the half pipe and it seems like it's okay going down
+but then **when you're trying to go back up the other side your character just like phases through the wall** like the
+physics doesn't seem to be there to get him to go up the ramp."
+ - **THE HALF PIPE WAS A FRAME-RATE FAULT, AND EVERY TEST OF THE RIDE RAN AT SIXTY.** The game's step is as long as
+   the frame took. At sixty a second the pipe worked. **At thirty and under (what his phone gives that level) a rider
+   holding the stick toward the far wall goes half a unit in one step: near the top of a curved wall he was put 0.3
+   INSIDE it, and thrown off.** Now: **on his shield, a long frame is taken in pieces of a sixtieth or less**
+   (`PlayerController.update` -> `step`). A button pressed is pressed in the first piece only.
+   **A RULE: anything fast is to be tested at 30, 24 and 20 frames a second as well as 60** (`tests/toybox.ts` does,
+   for the pipe). It is ONLY the rider that is stepped in pieces: on foot, and the creatures, a long frame is one step
+   as before.
+ - **Also:** on a wall too steep to stand on, the stick held against the way he is going is no longer a BRAKE. One who
+   holds the stick toward the far wall of a pipe has it against him the moment the wall turns him round; it used to
+   brake him there.
+ - **THE LIGHT RAIL IS DRAWN UNDER THE LINE HE RIDES** (`RAIL_TUBE` in `src/world/rails.ts`: a tube 0.15 thick whose top
+   is 0.04 under the line). It was drawn ROUND the line, so the line, his feet and his shield were down its middle.
+   Seen in a close film: the shield rides on its top edge, and the sparks come off there. (Grinding already had
+   sparks and its own ringing sound; nothing new was added for "friction".)
+ - **NOT DONE:** the shield is not turned ACROSS a light rail in any new way, and nothing was changed about solid rails
+   or ledges. If the fit still looks loose to him it is the shield's own place under his feet in the grind pose
+   (`ratModel.ts`, the ride pose) that wants looking at next.
+
 ## A FALL COSTS NOTHING IN THE DREAM, NOR ON ANY RIDE DOWNHILL (2026-11-17: A STANDING RULE). Tests `tests/toybox.ts` (27)
 
 **His words:** "I still got fall damage one or two times messing around in this level and I do feel like it takes away

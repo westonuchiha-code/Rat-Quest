@@ -244,3 +244,18 @@ export function makeToyRide(): (p: { position: { x: number; y: number; z: number
     return { ...none, z: 1 };
   };
 }
+
+/**
+ * A rider for the half pipe, for the films (`&autoride=pipe`, started on its east deck facing west): he walks to the
+ * lip, jumps out over the wall, gets on his shield, and then does nothing: the pipe carries him from wall to wall.
+ */
+export function makePipeRide(): (p: { position: { x: number }; velocity: { y: number }; grounded: boolean; riding: boolean }) => { x: number; z: number; jumpPressed: boolean; jumpHeld: boolean; attackPressed: boolean; guardHeld: boolean } {
+  const lip = HALF.x + halfDeck().out;
+  let rode = false;
+  return (p) => {
+    rode ||= p.riding;
+    const none = { x: 0, z: 0, jumpPressed: false, jumpHeld: false, attackPressed: false, guardHeld: false };
+    if (rode) return none;
+    return { ...none, x: -1, jumpPressed: p.grounded && p.position.x < lip + 0.5, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 };
+  };
+}

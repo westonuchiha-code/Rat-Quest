@@ -15,7 +15,7 @@ import { toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, 
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
-import { railAt } from '../src/world/rails';
+import { railAt, RAIL_TUBE } from '../src/world/rails';
 import { fallCost } from '../src/player/standing';
 import { LEVELS, ARCHIVE } from '../src/levels/levels';
 
@@ -121,6 +121,33 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     }
     check('PUMPED (the stick pushed the way he is going, down in the flat of it), he goes right up the far wall, OVER ITS LIP and onto the deck beyond, still on his shield: he does not come off at the lip (coasting, he got three quarters of the way up)', onDeck && high > wallTop - 0.1 && !bailed && p.riding, `${high.toFixed(1)} up, the lip at ${wallTop.toFixed(1)}`);
   }
+  // AT A PHONE'S FRAME RATE. (The owner, 2026-11-17: "it's okay going down but then when you're trying to go back up the
+  // other side your character just like phases through the wall". At thirty frames a second and under, a rider holding
+  // the stick toward the far wall was put INSIDE it near its top, and thrown off. Every test here ran at sixty.)
+  {
+    const told: string[] = [];
+    let ok = true;
+    for (const fps of [60, 30, 24, 20]) {
+      const dt = 1 / fps;
+      const p = rat(HALF.x + deck.out + 2, deck.y, 0);
+      for (let i = 0; i < 60 && !p.riding; i++) {
+        const lip = p.position.x < HALF.x + deck.out + 0.5;
+        p.update(dt, inp({ move: v(-1, 0), jumpPressed: p.grounded && lip, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.velocity.y < 3 }), cs);
+      }
+      let sunk = 0;
+      let bailed = false;
+      let onDeck = false;
+      for (let i = 0; i < fps * 5 && !onDeck; i++) {
+        p.update(dt, inp({ move: v(-1, 0) }), cs);
+        sunk = Math.max(sunk, ground(p.position.x, p.position.z) - p.position.y);
+        if (p.moveEvent === 'bail') bailed = true;
+        if (p.grounded && p.position.x < HALF.x - deck.out - 0.3) onDeck = true;
+      }
+      told.push(`${fps}: ${sunk.toFixed(2)} in${bailed ? ', THROWN OFF' : ''}`);
+      if (sunk > 0.05 || bailed || !onDeck || !p.riding) ok = false;
+    }
+    check('at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it and over its lip, never inside it, never thrown off', ok, told.join('; '));
+  }
   check('its walls curve up to sixty degrees, three and a half high; its decks are a little lower than the wall\'s top (the coping), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING > 0.3 && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
 }
 
@@ -207,6 +234,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     if (on < 60 * 2 || d > 3) ok = false;
   });
   check('both light rails can be got onto from where they begin (skating along it, the grind button) and ridden to their ends', ok && P.rails.length === 2, told.join('; '));
+  check('a light rail is drawn UNDER the line he rides (a thin tube, its top a hair below his shield): his shield sits on it, not in it', RAIL_TUBE.r <= 0.16 && RAIL_TUBE.under > 0 && RAIL_TUBE.under < 0.1);
   check('each begins on something he can stand on, and curves', P.rails.every((c) => Math.abs(ground(c.x[0], c.z[0]) - c.y[0]) < 0.4 && [0.2, 0.4, 0.6, 0.8].some((t) => Math.abs(railAt(c, c.len * t).tx - railAt(c, c.len * (t + 0.15)).tx) > 0.25)), P.rails.map((c) => `${ground(c.x[0], c.z[0]).toFixed(2)}/${c.y[0].toFixed(2)}`).join(' '));
 }
 

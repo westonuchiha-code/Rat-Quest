@@ -29,6 +29,15 @@ export interface RailCurve {
   len: number;
 }
 
+/**
+ * How a light rail is DRAWN (chamber.ts): a tube this thick, lying UNDER the line he rides by this much, so that its
+ * top is just under his shield and the shield sits ON it.
+ * (The owner, 2026-11-17: "when you're grinding on the rails you kind of clip through ... right now the board is like
+ * inside the light rail and his feet kind of are too ... I need that to be redone ... a tighter fit with the shield on
+ * the rail". The tube was drawn ROUND the line he rides, so the line, his feet and his shield were down its middle.)
+ */
+export const RAIL_TUBE = { r: 0.15, under: 0.04 } as const;
+
 /** How far apart its samples are (about), across the ground. */
 const STEP = 0.5;
 

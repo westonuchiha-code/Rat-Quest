@@ -1453,3 +1453,6 @@ still two minutes (2:07; standing 2:55). The Long Drop has NOT been checked at 2
  - The Big Dipper lengthened again, its pads longer.
  - `LevelDef.fallFree` (the owner, the same day): in the dream's levels, and any ride downhill, a fall puts him back
    and costs no heart. `fallCost` in `player/standing.ts`.
+ - A rider's long frame is stepped in pieces of 1/60 or less (`PlayerController.update` -> `step`): at a phone's 30
+   frames a second he was put inside a curved wall near its top. Light rails are drawn under the line he rides
+   (`RAIL_TUBE`). No brake on a wall too steep to stand on.

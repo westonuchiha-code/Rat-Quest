@@ -1,4 +1,4 @@
-import { railCurve, railAt, type RailCurve } from './rails';
+import { railCurve, railAt, RAIL_TUBE, type RailCurve } from './rails';
 import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildForge, type ForgeMats } from './forgeModels';
@@ -1072,8 +1072,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // itself; and three bright beads that run down it the way he will go, so that it is seen to be a thing that
       // carries, and which way.
       const c = railCurve(d);
-      const SIDES = 5;
-      const R = 0.2;
+      const SIDES = 6;
+      const R = RAIL_TUBE.r;
+      // (Its middle is this far under the line he rides, straight down from it across the rail: its top is under his shield.)
+      const DOWN = RAIL_TUBE.r + RAIL_TUBE.under;
       const n = c.s.length;
       const pos = new Float32Array(n * SIDES * 3);
       const col = new Float32Array(n * SIDES * 3);
@@ -1088,9 +1090,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         for (let j = 0; j < SIDES; j++) {
           const a2 = (j / SIDES) * Math.PI * 2;
           const o = (i * SIDES + j) * 3;
-          pos[o] = c.x[i] + (q.tz * Math.cos(a2) + ux * Math.sin(a2)) * R;
-          pos[o + 1] = c.y[i] + uy * Math.sin(a2) * R;
-          pos[o + 2] = c.z[i] + (-q.tx * Math.cos(a2) + uz * Math.sin(a2)) * R;
+          pos[o] = c.x[i] - ux * DOWN + (q.tz * Math.cos(a2) + ux * Math.sin(a2)) * R;
+          pos[o + 1] = c.y[i] - uy * DOWN + uy * Math.sin(a2) * R;
+          pos[o + 2] = c.z[i] - uz * DOWN + (-q.tx * Math.cos(a2) + uz * Math.sin(a2)) * R;
           col.set([tint.r, tint.g, tint.b], o);
         }
       }
@@ -1106,7 +1108,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       tube.setIndex(idx);
       tube.computeVertexNormals();
       group.add(new THREE.Mesh(tube.toNonIndexed(), skyMatBoth));
-      const bead = new THREE.OctahedronGeometry(0.3, 0);
+      const bead = new THREE.OctahedronGeometry(0.26, 0);
       bakeVertexColor(bead, 0xffffff, false);
       for (let b = 0; b < 3; b++) {
         const m = new THREE.Mesh(bead, skyMat);
@@ -2037,7 +2039,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     for (const sp of spinners) sp.o.rotation.y = time * sp.rate;
     for (const rb of railBeads) {
       const q = railAt(rb.c, ((time * 9 + rb.at * rb.c.len) % rb.c.len + rb.c.len) % rb.c.len);
-      rb.o.position.set(q.x, q.y, q.z);
+      rb.o.position.set(q.x, q.y - RAIL_TUBE.r - RAIL_TUBE.under, q.z);
       rb.o.rotation.y = time * 3;
     }
     blinkTextures(time);

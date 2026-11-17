@@ -530,7 +530,36 @@ export class PlayerController {
   }
 
   /** Advances the controller one simulation step. */
+  /**
+   * One frame of him. ON HIS SHIELD, A LONG FRAME IS TAKEN IN PIECES of a sixtieth of a second or less.
+   * (The owner, 2026-11-17, of the Toy Box's half pipe: "it's okay going down but then when you're trying to go back up
+   * the other side your character just like phases through the wall like the physics doesn't seem to be there". At
+   * sixty frames a second it was there. At thirty, which is what a phone gives this level, a rider at speed goes half
+   * a unit in one step: up a curved wall that is further than the wall's own shape allows for, he is put INSIDE it,
+   * and thrown off. Every test of the ride ran at sixty.)
+   * A button pressed is pressed in the first piece only; what happened in any piece is what happened this frame.
+   */
   update(dt: number, rawInput: PlayerInput, colliders: Aabb[]): void {
+    const pieces = this.riding ? Math.min(6, Math.ceil(dt * 60 - 1e-6)) : 1;
+    if (pieces <= 1) return this.step(dt, rawInput, colliders);
+    const from = this.position.clone();
+    const held: PlayerInput = { ...rawInput, jumpPressed: false, attackPressed: false, dodgePressed: false, stowPressed: false };
+    let event: MoveEvent | null = null;
+    let impact = false;
+    let splash = false;
+    for (let i = 0; i < pieces; i++) {
+      this.step(dt / pieces, i === 0 ? rawInput : held, colliders);
+      event ??= this.moveEvent;
+      impact ||= this.plungeImpact;
+      splash ||= this.splash;
+    }
+    this.moveEvent = event;
+    this.plungeImpact = impact;
+    this.splash = splash;
+    this.prevPosition.copy(from);
+  }
+
+  private step(dt: number, rawInput: PlayerInput, colliders: Aabb[]): void {
     const T = TUNING;
     this.prevPosition.copy(this.position);
 
@@ -1528,7 +1557,9 @@ export class PlayerController {
     if (this.grounded) {
       slow = under ? R.dragSlope : R.dragFlat;
       if (hard) slow += R.carveDrag;
-      else if (fwd < -0.5) slow += R.brake * -fwd;
+      // (Not on a wall too steep to stand on: there the stick held toward the wall he has just come down is no brake.
+      // One who holds the stick at the far wall of a pipe has it against him the moment the wall turns him round.)
+      else if (fwd < -0.5 && !(under && under.steep > MAX_WALK_SLOPE)) slow += R.brake * -fwd;
     }
     // Past his standing top speed: only a tuck on a slope gains any more, and gains it more slowly (he builds speed
     // as he goes down); standing up, what he has over it goes, a little at a time. In the air he keeps what he has.
