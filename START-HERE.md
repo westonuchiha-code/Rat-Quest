@@ -2140,6 +2140,11 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## [opus] The level editor knows the new things (2026-11-17)
+
+Pots, rocks, tables, stools and a bar counter are pieces now (src/levels/custom.ts, palette in src/ui/builder.ts),
+and a floor plate can be a spawn BUTTON (its "Puts in" setting; it faces the way the creature comes in).
+
 ## [opus] Lifting finished, mostly (2026-11-17)
 
 A creature in his hands is on its back, legs going (the scorpion on its side); thrown, it tumbles end over end

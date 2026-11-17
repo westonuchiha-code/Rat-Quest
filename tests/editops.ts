@@ -189,5 +189,38 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   check('(for the record: the sounds it marks as quiet enough to be lost)', quiet.length >= 0, quiet.join(', ') || 'none');
 }
 
+// ---- B2 (2026-11-17): the editor knows the new things: pots, rocks, the spawn button, the Club's tables, stools and bar ----
+{
+  const at = (t: Piece['t'], x: number, z: number, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top: 0, ...extra });
+  const lvl: CustomLevel = {
+    name: 'New things', width: 30, depth: 30, wallHeight: 8,
+    pieces: [
+      { t: 'floor', x0: -15, z0: -15, x1: 15, z1: 15, top: 0 },
+      at('spawn', 0, 10), at('exit', 0, -15),
+      at('pot', -4, 4, { props: { item: 'cap' } }), at('rock', -2, 4), at('crate', 2, 4),
+      at('plate', 0, 0, { dir: 'e', props: { spawns: 'roach' } }), at('plate', 6, 6),
+      at('table', -6, -6, { props: { candle: true, mugs: 3 } }), at('stool', -4.8, -6),
+      { t: 'bar', x0: 10, z0: -6, x1: 11, z1: 0, top: 0 },
+    ],
+  };
+  const def = compileCustom(lvl, 'newthings');
+  const throwable = def.solids.filter((b) => b.kind === 'rubble' || b.kind === 'barrel');
+  check('a POT and a ROCK placed in the editor are things to lift and throw in the level (and a pot can hold a collectible: the crate after it keeps its own)', throwable.some((b) => b.prop === 'pot') && throwable.some((b) => b.prop === 'rock') && def.crateContents.length === throwable.length && !!def.crateContents[throwable.findIndex((b) => b.prop === 'pot')] && !def.crateContents[throwable.findIndex((b) => !b.prop)]);
+  const button = def.plates?.find((q) => q.spawn);
+  const plain = def.plates?.find((q) => !q.spawn);
+  check('a FLOOR PLATE set to put in a roach is a BUTTON: it puts one in six along the way it faces (east), up to six alive, and that one does not come back', !!button && button.spawn!.type === 'scuttler' && Math.abs(button.spawn!.x - 6) < 1e-6 && Math.abs(button.spawn!.z) < 1e-6 && button.most === 6 && button.spawn!.respawn === false, JSON.stringify(button?.spawn ? { x: button.spawn.x, z: button.spawn.z, type: button.spawn.type } : null));
+  check('...a plate with nothing set is a plain plate, as before', !!plain && plain.spawn === undefined && (def.plates?.length ?? 0) === 2);
+  const near = (q: { x: number; z: number }, x: number, z: number): boolean => Math.abs(q.x - x) < 1e-6 && Math.abs(q.z - z) < 1e-6;
+  const table = def.decor.find((d) => d.kind === 'table') as { kind: 'table'; x: number; z: number; candle?: boolean; mugs?: unknown[] } | undefined;
+  check('a TABLE is drawn with its candle and three thimbles, and is solid', !!table && near(table, -6, -6) && table.candle === true && table.mugs?.length === 3 && def.solids.some((b) => b.hidden && b.x0 < -6 && b.x1 > -6 && b.z0 < -6 && b.z1 > -6));
+  check('a STOOL is drawn and solid', def.decor.some((d) => d.kind === 'stool' && near(d as { x: number; z: number }, -4.8, -6)) && def.solids.some((b) => b.hidden && b.x0 < -4.8 && b.x1 > -4.8));
+  const counter = def.solids.find((b) => b.kind === 'plank' && b.x0 === 10 && b.x1 === 11);
+  check('a BAR is a counter over its squares, a counter\'s height, with thimbles along it and a keg on it', !!counter && counter.y1 === 1 && counter.z0 === -6 && counter.z1 === 0 && def.decor.some((d) => d.kind === 'mugs') && def.decor.some((d) => d.kind === 'keg'));
+  check('...and the editor offers all six in its palette, the single ones placed with one click', ['pot', 'rock', 'table', 'stool', 'bar'].every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t))) && ['pot', 'rock', 'table', 'stool'].every((t) => SINGLE.has(t as Piece['t'])) && !SINGLE.has('bar'));
+  check('...and a level with them has nothing the editor\'s checks find wrong with them', checkCustom(lvl).length === 0, checkCustom(lvl).join('; '));
+  const back = parseCustom(JSON.stringify(lvl));
+  check('...and it saves and loads with them in it', !!back && back.pieces.length === lvl.pieces.length && back.pieces.some((q) => q.t === 'plate' && q.props?.spawns === 'roach'));
+}
+
 console.log(failures === 0 ? '\neditops: all passed' : `\neditops: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

@@ -135,6 +135,11 @@ rooms have their own); side areas (N-B...) and boss rooms have none yet.
 **B2. The level editor does not know the new things.** Pots and rocks; the spawn button (`plates[].spawn`); the
 Club's tables and bar (noted long ago). Add them to the kit (`src/levels/custom.ts`) and the palette
 (`src/ui/builder.ts`), following `crate` and `plate`.
+[opus] DONE 2026-11-17. New pieces `pot` (can hold a collectible), `rock`, `table` (thimbles 0-4, candle, cards),
+`stool`, `bar` (an area: a counter 1 high with thimbles and a keg). A floor plate's "Puts in" setting makes it a
+BUTTON: one more of that creature `BUTTON_OUT` (6) along the way the plate faces, up to `BUTTON_MOST` (6) alive. The
+enemy piece's spec is now one function, `enemyOf`, used by both. Checks at the end of tests/editops.ts. Tried in the
+real editor: palette, play, the button puts a roach in. Not yet: the bar's step for a keeper, chairs facing tables.
 
 **B3. Lifting: finish.** (a) A pose for a creature being carried (it stands upright on air). (b) Sounds of its own
 (it borrows a plank, a whoosh, a landing, pebbles). (c) Films, for the record, of: a rock thrown and thrown again;

@@ -7,7 +7,7 @@
  * The rules of editing (undo, paste, flip, stretching, measuring a jump) live in levels/editOps.ts, where they are tested.
  */
 import { FONTS } from './fonts';
-import { BOX_TYPES, ENEMY_PIECES, CustomGoal, CustomLevel, Piece, PieceType, WEDGE_APPEARS, WedgeAppears, checkCustom, emptyCustom, parseCustom } from '../levels/custom';
+import { BOX_TYPES, BUTTON_MOST, BUTTON_OUT, ENEMY_PIECES, CustomGoal, CustomLevel, Piece, PieceType, WEDGE_APPEARS, WedgeAppears, checkCustom, emptyCustom, parseCustom } from '../levels/custom';
 import type { MyLevels } from '../levels/library';
 import { compileCustom } from '../levels/custom';
 import { computeReach, unreachable, ReachProblem } from '../levels/reach';
@@ -63,7 +63,9 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('barrel', 'Barrel', 'B', '#a06a3a', 'things', 'Breaks when hit. It can hold a collectible.'),
     P('pipe', 'Wall pipe', 'Pi', '#9a6a3a', 'things', 'A pipe on a wall that he can burst: a goal, or what opens a gate.'),
     P('gate', 'Gate', '', '#caa84a', 'things', 'Bars that lift when the goals are done, the pipes burst, or the plates are pressed.'),
-    P('plate', 'Floor plate', 'K', '#d8a83a', 'things', 'A plate to stand on. Press them all to open a gate.'),
+    P('plate', 'Floor plate', 'K', '#d8a83a', 'things', 'A plate to stand on. Press them all to open a gate; or set it to put in a creature each time it is stepped on (a button).'),
+    P('pot', 'Clay pot', 'Po', '#c0603a', 'things', 'A pot to pick up and throw (STOW lifts, ATTACK throws). Light; it breaks, and can hold a collectible.'),
+    P('rock', 'Rock', 'Rk', '#8a8a92', 'things', 'A rock to pick up and throw. It does not break: throw it again.'),
   ] },
   { id: 'collect', label: 'Collectibles', items: [
     P('crumb', 'Cheese crumb', 'c', '#ffd23a', 'collect', 'A cheese crumb.'),
@@ -102,6 +104,9 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('vent', 'Steam vent', '#', '#d8d0c8', 'decor', 'An iron vent in the floor that blows steam every few seconds. Scenery: it does not hurt him.'),
     P('speaker', 'Speaker', 'Q', '#5a5a6a', 'decor', 'A speaker stack, for the Club.'),
     P('couch', 'Couch', 'U', '#8a4a4a', 'decor', 'A couch, for the Club.'),
+    P('table', 'Table', 'Tb', '#9a6a3a', 'decor', 'A Club table (a cable drum on its side), with thimbles on it, and a candle or a game of cards if you like. Solid.'),
+    P('stool', 'Stool', 'So', '#c8a070', 'decor', 'A stool (a cork with a bottle cap on it). Solid: he can hop up on it.'),
+    P('bar', 'Bar counter', 'Br', '#7a4a2a', 'decor', 'A bar counter over the squares you drag: a counter\'s height, thimbles along it, a keg at one end. Put stools in front.'),
     P('light', 'Light', 'Z', '#ff5a5a', 'decor', 'A coloured light on a post. It can flash.'),
     P('banner', 'Banner', 'Bn', '#7a3aa8', 'decor', 'A banner on a wall.'),
     P('torch', 'Torch', 'T', '#ffb040', 'decor', 'A torch on a wall.'),
@@ -123,11 +128,11 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['plate', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
-const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate']);
+const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate', 'bar']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };
 /** Ready-made characters: picking one sets the name and the creature. */
 const CHARACTERS: Array<[string, string, 'mouse' | 'bird' | 'pigeon' | 'villain']> = [
@@ -889,6 +894,15 @@ export class Builder {
       else if (ds.pp === 'color') props.color = t.value;
       else if (ds.pp === 'flash') props.flash = Math.max(0, Math.min(8, Number(t.value) || 0));
       else if (ds.pp === 'opens') props.opens = t.value === 'pipes' ? 'pipes' : t.value === 'plates' ? 'plates' : 'goals';
+      else if (ds.pp === 'spawns') {
+        const k = ENEMY_PIECES.find((e) => e === t.value && e !== 'brood' && e !== 'wyrm');
+        if (k) props.spawns = k;
+        else delete props.spawns;
+      } else if (ds.pp === 'mugs') props.mugs = Math.max(0, Math.min(4, Math.round(Number(t.value) || 0)));
+      else if (ds.pp === 'candle' || ds.pp === 'cards') {
+        if (t.checked) props[ds.pp] = true;
+        else delete props[ds.pp];
+      }
       this.sync();
     }
   }
@@ -1031,6 +1045,16 @@ export class Builder {
       h += `<div class="field"><span>Appears</span>${sel('appears', pr.appears ?? 'start', WEDGE_APPEARS)}</div>`;
       if ((pr.appears ?? 'start') === 'reach' && !this.level.pieces.some((q) => q.t === 'mark')) h += '<div class="note warn">Place a goal marker for this.</div>';
       h += '<div class="note">Golden Wedges make this an open course: the first one taken opens the door.</div>';
+    }
+    if (p.t === 'pot') h += `<h4>Inside</h4><div class="field"><span>Holds</span>${sel('item', pr.item ?? '', [['', 'nothing'], ['crumb', 'a cheese crumb'], ['cap', 'a bottle cap'], ['relic', 'a relic']])}</div>`;
+    if (p.t === 'plate') {
+      h += `<h4>The plate</h4><div class="field"><span>Puts in</span>${sel('spawns', pr.spawns ?? '', [['', 'nothing: it opens gates'], ...ENEMY_PIECES.filter((t) => t !== 'brood' && t !== 'wyrm').map((t) => [t, info(t).label] as [string, string])])}</div>`;
+      if (pr.spawns) h += `<div class="note">Each step on it puts in one more, ${BUTTON_OUT} along the way it faces (turn it with R), up to ${BUTTON_MOST} alive at once.</div>`;
+    }
+    if (p.t === 'table') {
+      h += `<h4>On the table</h4><div class="field"><span>Thimbles</span><input type="number" min="0" max="4" step="1" data-pp="mugs" value="${pr.mugs ?? 2}" /></div>`;
+      h += `<div class="field"><span>Candle</span><input class="chk" type="checkbox" data-pp="candle"${pr.candle ? ' checked' : ''} /></div>`;
+      h += `<div class="field"><span>Cards</span><input class="chk" type="checkbox" data-pp="cards"${pr.cards ? ' checked' : ''} /></div>`;
     }
     if (p.t === 'crate' || p.t === 'barrel') {
       h += `<h4>Inside</h4><div class="field"><span>Holds</span>${sel('item', pr.item ?? '', [['', 'nothing'], ['crumb', 'a cheese crumb'], ['cap', 'a bottle cap'], ['relic', 'a relic']])}</div>`;

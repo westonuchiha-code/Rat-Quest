@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { BRAZIER, COUCH, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { BRAZIER, COUCH, potBox, rockBox, stoolSolids, tableSolids, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -15,12 +15,17 @@ import { ThemeId, themeById } from './themes';
 
 export type PieceType =
   | 'floor' | 'tile' | 'grate' | 'ice' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar'
-  | 'water' | 'river' | 'lava' | 'fire' | 'bridge' | 'crate' | 'barrel'
+  | 'water' | 'river' | 'lava' | 'fire' | 'bridge' | 'crate' | 'barrel' | 'pot' | 'rock'
   | 'crumb' | 'cap' | 'relic'
   | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'scorpion' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
-  | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots'
+  | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
+/** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
+export const BUTTON_OUT = 6;
+export const BUTTON_MOST = 6;
+/** A bar counter's height off the floor it stands on (the Club's is 1). */
+export const BAR_TOP = 1;
 /** The pieces that are enemies (the Broodmother, a boss, among them). */
 export const ENEMY_PIECES: PieceType[] = ['roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm'];
 
@@ -54,6 +59,13 @@ export interface PieceProps {
   item?: CollectibleKind;
   /** A crumb: how many it counts as (a hunk of cheese, at the end of a route, in place of a trail of crumbs). */
   worth?: number;
+  /** A floor plate that is a BUTTON: stepping on it puts in another of this creature (an enemy piece's name), at
+   * `dir` from the plate (6 along; north if not set), up to six alive at once. Without it, a plate opens gates. */
+  spawns?: PieceType;
+  /** A table: a candle on it, a game of cards on it, and how many thimbles (0-4). */
+  candle?: boolean;
+  cards?: boolean;
+  mugs?: number;
   /** A crate bound in iron: only a heavy blade breaks it. */
   tough?: boolean;
   /** An enemy that comes back after it is beaten. */
@@ -200,7 +212,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   const npcs: NpcSpec[] = [];
   const enemies: EnemySpec[] = [];
   const waveSpecs: EnemySpec[][] = [];
-  const plates: Array<{ x: number; z: number; y: number }> = [];
+  const plates: NonNullable<LevelDef['plates']> = [];
   const gatePieces: Array<{ spec: GateSpec; opens: string }> = [];
   const contents: Array<string | null> = [];
   const items = new Items(id);
@@ -214,6 +226,24 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
     solids.push(b);
     contents.push(null);
     return contents.length - 1;
+  };
+
+  /** The creature an enemy piece puts in the room (or a floor plate's button, at another place). */
+  const enemyOf = (q: Piece, cx: number, cz: number): EnemySpec => {
+    const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag', hornet: 'hornet', ant: 'ant', firefly: 'firefly', scorpion: 'scorpion', brood: 'brood', wyrm: 'wyrm' } as Partial<Record<PieceType, EnemySpec['type']>>)[q.t] ?? 'scuttler';
+    // A boss has the run of the whole room (a little inside its walls); the others keep to a patch round where they stand.
+    // (The Wyrm's floor runs right to the walls: it is running its head into one that stuns it.)
+    const arena = q.t === 'brood' ? { x0: -c.width / 2 + 2, x1: c.width / 2 - 2, z0: -c.depth / 2 + 2, z1: c.depth / 2 - 2 } : q.t === 'wyrm' ? { x0: -c.width / 2 + 0.1, x1: c.width / 2 - 0.1, z0: -c.depth / 2 + 0.1, z1: c.depth / 2 - 0.1 } : q.t === 'hornet' || q.t === 'firefly'
+      // (A hornet hangs a little way off him and runs on past him, and a firefly flies right over him: they want more air than the others want floor.)
+      ? { x0: Math.max(-c.width / 2 + 0.5, cx - 12), x1: Math.min(c.width / 2 - 0.5, cx + 12), z0: Math.max(-c.depth / 2 + 0.5, cz - 12), z1: Math.min(c.depth / 2 - 0.5, cz + 12) }
+      // (An ant goes round him to get behind him: a little more floor than the others.)
+      // (And a scorpion darts off and comes round him in the dark: the same.)
+      : q.t === 'ant' || q.t === 'scorpion' ? { x0: cx - 9, x1: cx + 9, z0: cz - 9, z1: cz + 9 }
+      : { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 };
+    const spec: EnemySpec = { type, x: cx, z: cz, y: q.top, arena, respawn: q.t === 'brood' || q.t === 'wyrm' ? false : !!q.props?.respawn, ...(q.props?.perch ? { perch: q.props.perch } : {}) };
+    // A guard stands at his post facing the way he is set (north by default: towards whoever comes up the room).
+    if (q.t === 'guard' || q.t === 'mantis' || q.t === 'stag' || q.t === 'hornet' || q.t === 'ant' || q.t === 'firefly' || q.t === 'scorpion' || q.t === 'brood' || q.t === 'wyrm') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[q.dir ?? 's'];
+    return spec;
   };
 
   for (const p of c.pieces) {
@@ -427,19 +457,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'brood':
       case 'wyrm':
         {
-          const type = ({ roach: 'scuttler', toad: 'toad', beetle: 'ironback', bat: 'bat', guard: 'guard', mantis: 'mantis', stag: 'stag', hornet: 'hornet', ant: 'ant', firefly: 'firefly', scorpion: 'scorpion', brood: 'brood', wyrm: 'wyrm' } as const)[p.t];
-          // A boss has the run of the whole room (a little inside its walls); the others keep to a patch round where they stand.
-          // (The Wyrm's floor runs right to the walls: it is running its head into one that stuns it.)
-          const arena = p.t === 'brood' ? { x0: -c.width / 2 + 2, x1: c.width / 2 - 2, z0: -c.depth / 2 + 2, z1: c.depth / 2 - 2 } : p.t === 'wyrm' ? { x0: -c.width / 2 + 0.1, x1: c.width / 2 - 0.1, z0: -c.depth / 2 + 0.1, z1: c.depth / 2 - 0.1 } : p.t === 'hornet' || p.t === 'firefly'
-            // (A hornet hangs a little way off him and runs on past him, and a firefly flies right over him: they want more air than the others want floor.)
-            ? { x0: Math.max(-c.width / 2 + 0.5, cx - 12), x1: Math.min(c.width / 2 - 0.5, cx + 12), z0: Math.max(-c.depth / 2 + 0.5, cz - 12), z1: Math.min(c.depth / 2 - 0.5, cz + 12) }
-            // (An ant goes round him to get behind him: a little more floor than the others.)
-            // (And a scorpion darts off and comes round him in the dark: the same.)
-            : p.t === 'ant' || p.t === 'scorpion' ? { x0: cx - 9, x1: cx + 9, z0: cz - 9, z1: cz + 9 }
-            : { x0: cx - 7, x1: cx + 7, z0: cz - 7, z1: cz + 7 };
-          const spec: EnemySpec = { type, x: cx, z: cz, y: p.top, arena, respawn: p.t === 'brood' || p.t === 'wyrm' ? false : !!p.props?.respawn, ...(p.props?.perch ? { perch: p.props.perch } : {}) };
-          // A guard stands at his post facing the way he is set (north by default: towards whoever comes up the room).
-          if (p.t === 'guard' || p.t === 'mantis' || p.t === 'stag' || p.t === 'hornet' || p.t === 'ant' || p.t === 'firefly' || p.t === 'scorpion' || p.t === 'brood' || p.t === 'wyrm') spec.facing = { n: Math.PI, s: 0, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+          const spec = enemyOf(p, cx, cz);
           const w = Math.round(p.props?.wave ?? 0);
           if (w > 0) (waveSpecs[w - 1] ??= []).push(spec);
           else enemies.push(spec);
@@ -473,9 +491,51 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         gatePieces.push({ spec, opens: p.props?.opens ?? 'goals' });
         break;
       }
-      case 'plate':
-        plates.push({ x: cx, z: cz, y: p.top });
+      case 'plate': {
+        // A BUTTON (it puts in a creature each time it is stepped on, as the practice rooms' do), or a plain plate.
+        const kind = p.props?.spawns;
+        if (kind && ENEMY_PIECES.includes(kind) && kind !== 'brood' && kind !== 'wyrm') {
+          const [ux, uz] = { n: [0, -1], s: [0, 1], e: [1, 0], w: [-1, 0] }[p.dir ?? 'n'];
+          const sx = Math.max(-W + 1, Math.min(W - 1, cx + ux * BUTTON_OUT));
+          const sz = Math.max(-D + 1, Math.min(D - 1, cz + uz * BUTTON_OUT));
+          // (It comes in facing the plate: back the way it was put.)
+          const back = ({ n: 's', s: 'n', e: 'w', w: 'e' } as const)[p.dir ?? 'n'];
+          plates.push({ x: cx, z: cz, y: p.top, most: BUTTON_MOST, spawn: { ...enemyOf({ ...p, t: kind, dir: back }, sx, sz), respawn: false } });
+        } else plates.push({ x: cx, z: cz, y: p.top });
         break;
+      }
+      // A clay pot (light; it breaks, and can hold a collectible) and a rock (it does not break): both to pick up and throw.
+      case 'pot': {
+        const idx = crate(potBox(cx, cz, p.top));
+        if (p.props?.item) contents[idx] = items.add(p.props.item, cx, p.top + 0.3, cz, idx);
+        break;
+      }
+      case 'rock':
+        crate(rockBox(cx, cz, p.top));
+        break;
+      // The Club's furniture: a table (a cable drum) with what is on it, a stool (a cork), and a bar counter.
+      case 'table': {
+        const n = Math.max(0, Math.min(4, Math.round(p.props?.mugs ?? 2)));
+        const mugs = Array.from({ length: n }, (_, i) => [Math.PI / 2 + (i * Math.PI * 2) / Math.max(1, n), 0.6] as [number, number]);
+        decor.push({ kind: 'table', x: cx, y: p.top, z: cz, yaw: 0, mugs, ...(p.props?.candle ? { candle: true } : {}), ...(p.props?.cards ? { cards: true } : {}) });
+        solids.push(...tableSolids(cx, p.top, cz));
+        break;
+      }
+      case 'stool':
+        decor.push({ kind: 'stool', x: cx, y: p.top, z: cz });
+        solids.push(...stoolSolids(cx, p.top, cz));
+        break;
+      case 'bar': {
+        // A plank counter over the squares it covers, a counter's height (BAR_TOP) off the floor it stands on, with a
+        // row of thimbles along it and a keg at one end. (Stools in front are pieces of their own.)
+        const alongZ = z1 - z0 >= x1 - x0;
+        solids.push(extent('plank', x0, x1, p.top, p.top + BAR_TOP, z0, z1));
+        const len = alongZ ? z1 - z0 : x1 - x0;
+        const count = Math.max(1, Math.min(8, Math.floor((len - 1.4) / 0.42)));
+        decor.push({ kind: 'mugs', x: alongZ ? cx : cx - 0.6, y: p.top + BAR_TOP, z: alongZ ? cz - 0.6 : cz, yaw: alongZ ? Math.PI / 2 : 0, count, gap: 0.42 });
+        if (len >= 2) decor.push({ kind: 'keg', x: alongZ ? cx : x1 - 0.7, y: p.top + BAR_TOP, z: alongZ ? z1 - 0.7 : cz, yaw: alongZ ? -Math.PI / 2 : Math.PI });
+        break;
+      }
       case 'spawn':
         spawn = { x: cx, y: p.top, z: cz, facing: Math.PI };
         break;
