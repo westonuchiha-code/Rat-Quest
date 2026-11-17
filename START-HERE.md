@@ -1,5 +1,8 @@
 # START HERE: handoff for the next Claude (written 2026-11-13, updated 2026-11-14)
 
+**WHAT IS LEFT TO DO, HARDEST FIRST, IS IN `BACKLOG.md` (2026-11-17): work from the top of it. If you are Opus,
+Part B is yours, and every commit's subject starts with `[opus]` so that Fable can find and review it.**
+
 Read this first. HANDOFF.md is a log of each feature, oldest first, and PLAN.md is the roadmap with numbered items 1–19.
 Where they disagree with this file (an old test-room hash, "the story is in progress"), this file is right.
 

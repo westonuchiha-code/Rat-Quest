@@ -4238,7 +4238,9 @@ function startGame(): void {
     courseVis?.update(time);
     // (The Hall asks nothing of him and counts nothing: only its name.)
     const gs = noWayOut(cur) ? { label: cur.name, text: '', done: false } : cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
+    // (A room that asks nothing, a practice room, shows its own name: not the line of the room he came from.)
     if (gs) goalHud.set(gs.label, gs.text, goals.mainDone(aliveCount()) || open);
+    else goalHud.set(cur.name, '', false);
     if (builder.live) builder.setPlayer(renderPos.x, renderPos.z, player.facing);
     if (builder.live) builder.info(`hearts ${player.hp}  ${gs ? `${gs.label} ${gs.text}` : ''}${open ? '  DOOR OPEN' : ''}`);
 

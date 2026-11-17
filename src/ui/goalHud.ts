@@ -21,6 +21,8 @@ export class GoalHud {
     if (key === this.last) return;
     this.last = key;
     this.el.textContent = text ? `${label}  ${text}` : label;
+    // (Nothing to say: nothing is shown. A room that asks nothing of him used to keep the last room's line.)
+    this.el.style.display = label || text ? '' : 'none';
     this.el.classList.toggle('done', done);
   }
 }
