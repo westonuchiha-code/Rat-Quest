@@ -426,6 +426,67 @@ and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
   that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
   pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
 
+## THE HOLLOWS' AND THE KEEP'S THINGS TO FIND, done the Cistern's way; the cutscenes FILMED (2026-11-17). Tests `tests/hollows.ts`, `tests/keep.ts`
+
+He said "continue" (item 1 of the list: the Hollows and the Keep, the same way as the Foundry), and, while it was
+being done: **"i see we finished the cutscene maker but i never saw any videos."** He was right: only stills had been sent.
+ - **THE FOUR CUTSCENES ARE NOW VIDEO FILES** (`deliver/pictures/scene-*.mp4`, 15 pictures a second, silent). HOW:
+   the scene is opened held (`#level=hub&scene=<id>&t=0&hold`), stepped with the RIGHT key one frame of thirty at a
+   time (the readout at the foot says which frame it is on; the script reads it, hides it and takes a picture every
+   second frame), and `ffmpeg` joins the pictures. The script is `film.mjs` in the scratch folder (it is short; write
+   it again if the folder is gone). **Whenever a scene is made or changed, film it and send the video: do not send
+   stills of a thing that moves.** Nothing of the scenes themselves was changed this turn.
+ - **THE HOLLOWS: SEVEN THINGS WHERE THERE WERE TWENTY-FIVE** (5 caps, 17 crumbs and 3 relics before): two caps, two
+   hunks worth 9 and 8 (17 in all), and the three relics as they were. In `levels/hollows.ts` (`NEEDLE`, `CLEFT`,
+   `DRIP`, `SPIRE`, `HUNKS`):
+     THE NEEDLE (cap): a spike in the chasm beside the slider's path, 3.5 over the slider. Jumped to FROM THE MOVING
+       SLIDER (a jump, a second jump, a caught edge).
+     THE CLEFT (cap): two fins out of the dark against the west path's edge, 2.2 apart; the slot's floor is a spur
+       of the path three long, and past its end is the chasm. Kicked up, nine.
+     THE DRIP STONE (hunk, 9): a stone UNDER the Lip, seven up over the chasm. He steps off the Lip's SIDE AT A WALK
+       and steers straight back in under it (he has about eight frames to turn back; at a run he is carried clear;
+       off the tip it is too far back). A leap off the Mouth's edge, steered under, is the other way.
+     THE SPIRE (hunk, 8): a stalagmite on the north floor, 7.5 tall. The way onto it is DOWN: a running jump and a
+       second jump off the west end of the High Hollow, 12.5 above. One jump alone lands short.
+   Each has a glow of its own over it (a `light` piece with `bare`: light only, nothing drawn, nothing solid),
+   because the cave is dark and wet rock is darker. Wren has a line ("Look up. And look over the edges.").
+   The Hollows has no caps wedge (it never had); the relics' wedge is as it was.
+ - **THE KEEP: FIVE THINGS WHERE THERE WERE TWENTY-SIX** (8 caps, 18 crumbs): three caps and two hunks of 9. In
+   `levels/keep.ts` (`CORBEL`, `OVER_GATE`, `CINDER`, `FLUE`, `BUTTRESS`, `RIDE_HUNK`, `HUNKS`):
+     OVER THE GATE (cap): on top of the gatehouse, over the portcullis: he sees it from where he comes in. The wall
+       walk to it from the battlements has fallen in, all but ONE CORBEL on the west wall: two jumps of 5.2 over the
+       ward, under the firefly, then along the top of the gatehouse.
+     THE CINDER (cap): a tall clinker in the lava, three from the Burning Walk's third stone and four over it.
+     THE FLUE (cap): a narrower stack east of the Engine Stack, three higher, six of pit between.
+     THE BUTTRESS (hunk): a pier 2.2 off the north wall in the north-east ward. Kicked up, nine.
+     THE SLIDER'S HUNK (hunk): in the air over the middle of the slider's way, 3.6 over it. A jump and a second jump
+       as he rides, and he comes down on the slider again. One jump does not reach.
+   The caps wedge is "Three Bottle Caps", its hint names the three. The crate and the barrel in the yard are empty now.
+ - **A CAMERA FOR PICTURES** (`main.ts`, a dev aid): `&eye=x,y,z&look=x,y,z` on the address puts the view at one
+   place looking at another, whatever he is doing. Use it for stills of a THING IN A LEVEL: aiming the follow camera
+   with `at=` and a yaw cost five rounds of wrong pictures this turn. (He still stands where `at=` puts him.)
+   The Cinder wears the Foundry's `magmaRock`: in the Keep's own brick it could not be told from the wall behind it.
+ - WHAT WAS LEARNED (for the next level):
+     **A FALL IN A `fallBack` LEVEL IS COUNTED AT THREE BELOW ZERO** (`main.ts`: `p.y < -3`), wherever the floor is.
+     So nothing he is meant to stand on can be lower than that in the Hollows or the Keep: a "sill down in the
+     crack, kick your way back out" was the first idea for the Cleft and cannot be built there.
+     HIGH PLACES REACH A LONG WAY DOWN. The Cleft was first put on the last Faith Stone: the top mushroom (16.5 up)
+     reaches it with a plain jump, and so does the Spire when the Spire is taller than the Cleft. And put at the
+     west path's edge level with the middle Faith Stone, its thin fin's top was a way straight onto that stone (the
+     `faith` wedge): it stands four further south for that. Check every new high thing against every wedge's test.
+     A THING IN THE AIR must be within 3.6 of somewhere he can stand, and no more than about 5.3 over it, or the
+     checker calls it out of reach (`reach.ts`, `grabbable`). The slider's whole path counts as somewhere to stand.
+     HE DOES NOT STEER BACK FAR IN A FALL: stepping off an edge at a walk and turning at once, he comes back about
+     1.3 in nine of fall; at a run, not at all.
+ - Old saves: `cap:01` and `cap:02` in the Hollows are now the Needle and the Cleft, `cap:01` to `cap:03` in the Keep
+   the Gate, the Cinder and the Flue: a save that had those ids has them still. The other caps and all the crumbs
+   are gone; the hunks are new ids.
+ - NOBODY HAS PLAYED ANY OF THIS BY HAND. Every route is played by the real controller in the tests, with timing to
+   spare, and each thing's key piece is taken away to show there is no other way.
+ - STILL NOT DONE of the old list: the furnace's TEXTURES (a try-out room first), and the LONG DROP'S LOOK during
+   the run. The side areas' crumbs (Web Hollow 8 with its own wedge, the Lightless Way 6, the throne room 4) are as
+   they were.
+
 ## THE FOUNDRY'S THINGS TO FIND, done the Cistern's way; the knight in soft paint (2026-11-17). Tests `tests/foundry.ts` (37)
 
 He said "all looks great, lets continue" to the stills of the knight in soft paint and to the list.

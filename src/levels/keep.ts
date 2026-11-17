@@ -144,7 +144,7 @@ const keepArea: CustomLevel = {
     at('cap', OVER_GATE.x, OVER_GATE.z, WALL),
     // The Cinder: a tall clinker in the lava beside the third stone of the Burning Walk. A jump, a second jump and a
     // caught edge, from a footing two wide.
-    box('pillar', CINDER.x0, CINDER.z0, CINDER.x1, CINDER.z1, CINDER.top, { bottom: -1 }),
+    box('pillar', CINDER.x0, CINDER.z0, CINDER.x1, CINDER.z1, CINDER.top, { bottom: -1, skin: 'magmaRock' }),
     at('cap', (CINDER.x0 + CINDER.x1) / 2, (CINDER.z0 + CINDER.z1) / 2, CINDER.top),
     // The Flue: a narrower stack beside the Engine Stack, three higher and six of pit away.
     box('pillar', FLUE.x0, FLUE.z0, FLUE.x1, FLUE.z1, FLUE.top, { bottom: DEEP }),

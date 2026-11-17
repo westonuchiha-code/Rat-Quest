@@ -183,10 +183,10 @@ const cave: CustomLevel = {
     at('crumb', (SPIRE.x0 + SPIRE.x1) / 2, (SPIRE.z0 + SPIRE.z1) / 2, SPIRE.top, { props: { worth: HUNKS.spire } }),
     // (The cave is dark and the rock is darker: each of the four has a glow of its own over it, light only, so that
     // it can be picked out from across the chasm. Nothing is drawn of these and nothing of them is solid.)
-    at('light', (NEEDLE.x0 + NEEDLE.x1) / 2, (NEEDLE.z0 + NEEDLE.z1) / 2, NEEDLE.top + 1.2, { props: { color: 'blue', bare: 1 } }),
-    at('light', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.a.z1 + CLEFT.b.z0) / 2, CLEFT.top - 3, { props: { color: 'purple', bare: 1 } }),
-    at('light', (DRIP.x0 + DRIP.x1) / 2, (DRIP.z0 + DRIP.z1) / 2, DRIP.top + 1.2, { props: { color: 'yellow', bare: 1 } }),
-    at('light', (SPIRE.x0 + SPIRE.x1) / 2, (SPIRE.z0 + SPIRE.z1) / 2, SPIRE.top + 1.2, { props: { color: 'green', bare: 1 } }),
+    at('light', (NEEDLE.x0 + NEEDLE.x1) / 2, (NEEDLE.z0 + NEEDLE.z1) / 2, NEEDLE.top + 1.2, { props: { color: 'blue', bare: true } }),
+    at('light', (CLEFT.x0 + CLEFT.x1) / 2, (CLEFT.a.z1 + CLEFT.b.z0) / 2, CLEFT.top - 3, { props: { color: 'purple', bare: true } }),
+    at('light', (DRIP.x0 + DRIP.x1) / 2, (DRIP.z0 + DRIP.z1) / 2, DRIP.top + 1.2, { props: { color: 'yellow', bare: true } }),
+    at('light', (SPIRE.x0 + SPIRE.x1) / 2, (SPIRE.z0 + SPIRE.z1) / 2, SPIRE.top + 1.2, { props: { color: 'green', bare: true } }),
 
     // ---- People ----
     at('npc', -5, 43, MOUTH, { props: { name: 'Finch', kind: 'bird', lines: [

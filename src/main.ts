@@ -2897,6 +2897,13 @@ function startGame(): void {
   });
   /** Photo mode can open when he is just playing: not in a scene, a room change, a talk, the builder, or dead. */
   const canPhoto = (): boolean => !story.scene && !storyPending && !cutscene.active && !trans.active && !dialog.open && !builder.open && !shop.open && !fly.open && !player.dead && !boot.blocking;
+  // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
+  const devEye = ((): number[] | null => {
+    const e = /[#&]eye=([-\d.,]+)/.exec(location.hash);
+    const l = /[#&]look=([-\d.,]+)/.exec(location.hash);
+    const v = e && l ? [...e[1].split(','), ...l[1].split(',')].map(Number) : [];
+    return v.length === 6 && v.every((n) => Number.isFinite(n)) ? v : null;
+  })();
   // Development aid: #photo opens photo mode a moment after the start; #photo=look,pose,frame also picks those.
   const photoHash = /[#&]photo(?:=(\d+),(\d+),(\d+))?/.exec(location.hash);
   if (photoHash) {
@@ -4012,6 +4019,10 @@ function startGame(): void {
     }
     fly.applyCamera();
     photo.applyCamera();
+    if (devEye) {
+      camera.position.set(devEye[0], devEye[1], devEye[2]);
+      camera.lookAt(devEye[3], devEye[4], devEye[5]);
+    }
     sky.follow(camera.position);
     renderer.render(scene, camera);
     // A picture is read from the canvas straight after it is drawn (before the browser clears it).

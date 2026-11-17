@@ -1358,3 +1358,16 @@ things are:
 - `player/ratModel.ts`: `material`, `materialTwoSided` and `ownMaterials` all take `softPaint`.
 - `render/textures.ts` `blinkTextures`: winks are put back in reverse order.
 
+
+## The Hollows' and the Keep's things to find; the cutscenes filmed (2026-11-17; `tests/hollows.ts`, `tests/keep.ts`)
+
+- `levels/hollows.ts`: `NEEDLE`, `CLEFT`, `DRIP`, `SPIRE`, `HUNKS`; `levels/keep.ts`: `CORBEL`, `OVER_GATE`, `CINDER`,
+  `FLUE`, `BUTTRESS`, `RIDE_HUNK`, `HUNKS`. The pieces are under "The things to find" in each.
+- Tests ride a slider with `buildChamber({ solids, pit, water, decor: [], movers })`, `room.stepMovers(DT, p)` and
+  `room.colliders` (the Needle; the Slider's Hunk). `walkTo` takes him across a top to the thing once he has landed:
+  landing on a top does not pick up what is in the middle of it.
+- A `fallBack` level counts a fall at y < -3 (`main.ts`): nothing to stand on below that.
+- A `light` piece with `props: { bare: true }` is light only (nothing drawn, nothing solid).
+- Filming a cutscene: open `#level=hub&scene=<id>&t=0&hold`, press ArrowRight once per frame of thirty (the readout
+  div whose text has "HELD:" gives "frame N of M"; set its opacity to 0 for the picture), screenshot every second
+  frame, then `ffmpeg -framerate 15 -i f-%04d.png -c:v libx264 -pix_fmt yuv420p -crf 20 out.mp4`.
