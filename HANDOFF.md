@@ -1496,4 +1496,8 @@ room, a playground for one kind of play; one long hallway hub with everyone in i
    `AudioEngine.playTrack(name, room)`). PROVED in the running game with test files, then taken out: a picture on the
    Hall's walls and floor (the right way up); a 440 Hz "song" named `hall` heard in the Hall and not in the Club; a
    1760 Hz "jump" heard at a jump (by measurement of what the game plays). Tests: `tests/assets.ts` (20).
+ - Lifting and throwing (the same day): `src/world/lifting.ts` (`liftTarget`, `startThrow`, `throwAim`, `stepThrown`,
+   `putDownSpot`), `TUNING.lift`, the controller's `carrying` / `liftEvent`, the chamber's `liftCrate` / `moveCrate` /
+   `setCrate`, `Crate.lifted`, `CollectibleVisuals.moveItem`. STOW lifts, ATTACK throws (aimed at what is in front of
+   him), STOW sets down. Tests: `tests/lifting.ts` (41).
 

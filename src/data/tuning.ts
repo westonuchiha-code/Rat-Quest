@@ -121,6 +121,24 @@ export const TUNING = {
    * steep to stand on he has no choice. Speeds are along the ground, in units a second.
    */
   /**
+   * PICKING UP AND THROWING (world/lifting.ts): crates and barrels, with STOW (triangle) beside one.
+   */
+  lift: {
+    reach: 0.55, // how far past touching it he may be and still lift it
+    liftTime: 0.25, // seconds for it to come up over his head
+    walk: 0.72, // of his speed while he carries it
+    jump: 0.85, // of his jump
+    hold: 0.12, // the gap between his head and the thing
+    throwSpeed: 11, // how fast it leaves him, the way he faces
+    throwUp: 3.5, // and upward (with nothing to aim at: a low arc, six along)
+    aimRange: 10, // a creature this near, in front of him, is what he throws AT
+    aimArc: 0.5, // ...within this much of the way he faces (radians each side)
+    gravity: 22, // (as crates fall: chamber.ts)
+    throwTime: 0.3, // seconds his arms take to come down after a throw (he cannot swing in them)
+    damage: 2, // to a creature it hits: the last blow of his three
+    down: 0.2, // set down, the gap left between him and it
+  },
+  /**
    * THE DREAM, ON FOOT (data/feel.ts reads these as the dream's `foot`): how much faster he runs, how much harder he
    * jumps, and how much of the world's gravity pulls on him. The owner, 2026-11-17: "the dream world is supposed to
    * be fantastical, it's supposed to feel floatier and more high velocity and hyperactive ... he can jump higher and

@@ -26,6 +26,10 @@ export const PRACTICE = {
   buttons: [{ x: -4, z: 9, to: { x: -7, z: -8 } }, { x: 4, z: 9, to: { x: 7, z: -8 } }],
   /** The most of them alive at once: a button pressed past that does nothing. */
   most: 6,
+  throwables: [
+    { t: 'crate', x: -11, z: 12.5 }, { t: 'crate', x: -9.6, z: 12.5 }, { t: 'barrel', x: -12.4, z: 12.5 },
+    { t: 'crate', x: 11, z: 12.5 }, { t: 'barrel', x: 9.6, z: 12.5 }, { t: 'crate', x: 12.4, z: 12.5, tough: true },
+  ] as Array<{ t: 'crate' | 'barrel'; x: number; z: number; tough?: boolean }>,
 } as const;
 
 export function practiceRoom(e: PracticeEntry): LevelDef {
@@ -41,6 +45,9 @@ export function practiceRoom(e: PracticeEntry): LevelDef {
       at('spawn', 0, 12),
       at('exit', 0, H),
       at(e.piece, PRACTICE.foe.x, PRACTICE.foe.z, 0, { dir: 's', props: { respawn: true } }),
+      // Things to pick up and throw at it (world/lifting.ts): crates and barrels either side of the way in, and one
+      // bound in iron, which does not break and can be thrown again.
+      ...PRACTICE.throwables.map((q) => at(q.t, q.x, q.z, 0, q.tough ? { props: { tough: true } } : {})),
       at('lamp', -8, -8, 7), at('lamp', 8, -8, 7), at('lamp', -8, 8, 7), at('lamp', 8, 8, 7),
       at('torch', -H + 0.3, 0, 3.2, { dir: 'w' }), at('torch', H - 0.3, 0, 3.2, { dir: 'e' }),
     ],
@@ -59,6 +66,7 @@ export function practiceRoom(e: PracticeEntry): LevelDef {
     decor: [
       ...def.decor,
       { kind: 'sign', x: 0, y: 2.2, z: H - 0.05, yaw: Math.PI, w: 3.4, h: 1.5, lines: [e.door, 'FLOOR BUTTON:', 'ONE MORE'], post: 0 },
+      { kind: 'sign', x: -10.5, y: 2.2, z: H - 0.05, yaw: Math.PI, w: 3.4, h: 1.5, lines: ['STOW: LIFT', 'ATTACK: THROW', 'STOW: SET DOWN'], post: 0 },
     ],
     // Its door is open from the start and leads back to the Hall.
     returnTo: 'hall',

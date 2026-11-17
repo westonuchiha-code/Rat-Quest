@@ -8,7 +8,7 @@ export type BindAction = 'jump' | 'attack' | 'dodge' | 'guard' | 'stow' | 'lock'
 
 export const BIND_ACTIONS: BindAction[] = ['jump', 'attack', 'dodge', 'guard', 'stow', 'lock', 'sneak'];
 export const BIND_NAMES: Record<BindAction, string> = {
-  jump: 'JUMP / TALK', attack: 'ATTACK', dodge: 'DODGE', guard: 'GUARD (HOLD)', stow: 'STOW SWORD', lock: 'LOCK ON', sneak: 'SNEAK (HOLD)',
+  jump: 'JUMP / TALK', attack: 'ATTACK', dodge: 'DODGE', guard: 'GUARD (HOLD)', stow: 'STOW SWORD / LIFT', lock: 'LOCK ON', sneak: 'SNEAK (HOLD)',
 };
 
 export interface Binding {

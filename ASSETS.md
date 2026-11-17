@@ -76,7 +76,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 269 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 274 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
 | Biome feel | Meant to be like | Run | Jump | Gravity | Tuck | Speed from tricks | Spin and grab |
 | --- | --- | --- | --- | --- | --- | --- | --- |

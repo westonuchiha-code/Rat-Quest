@@ -9,8 +9,8 @@ export type FloorUnder = (x: number, y: number, z: number, r?: number) => number
 export type WallAt = (x: number, y: number, z: number, r: number) => boolean;
 /** Whether a flier of radius r can be at (x, y, z), its body from y up: nothing solid there. */
 export type CanFly = (x: number, y: number, z: number, r: number) => boolean;
-/** How a hit arrives: the sword, a plunge diving onto it, or the blast of a plunge landing near it. */
-export type HitHow = 'sword' | 'plunge' | 'shock';
+/** How a hit arrives: the sword, a plunge diving onto it, the blast of a plunge landing near it, or a crate THROWN at it (world/lifting.ts: it is taken as a blast is, by whatever is not told otherwise). */
+export type HitHow = 'sword' | 'plunge' | 'shock' | 'thrown';
 
 /**
  * Keeps a creature out of the scenery. It has just moved from (fromX, fromZ); if where it is now is no good,

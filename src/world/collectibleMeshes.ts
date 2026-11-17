@@ -62,6 +62,18 @@ export class CollectibleVisuals {
   private readonly tracker: CollectibleTracker;
   private readonly geometries: Record<CollectibleKind, THREE.BufferGeometry>;
   private readonly material = itemMaterial();
+  /**
+   * Moves an item to another place (it was in a crate that was carried off and broken somewhere else: world/lifting.ts).
+   * Its picture and its shadow go there (`floor`: the ground under it, or null for none); the game moves what is taken.
+   */
+  moveItem(id: string, x: number, y: number, z: number, floor: number | null): void {
+    const e = this.entries.get(id);
+    if (!e) return;
+    e.root.position.set(x, y, z);
+    if (e.shadow) {
+      e.shadow.position.set(x, (floor ?? y - 0.5) + 0.025, z);
+    }
+  }
   /** Items this returns true for are not drawn (still inside a crate). */
   hidden: ((def: CollectibleDef) => boolean) | null = null;
 

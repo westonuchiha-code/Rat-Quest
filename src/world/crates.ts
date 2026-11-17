@@ -22,4 +22,6 @@ export interface Crate {
   lastSwing: number;
   /** Bound in iron: only a heavy blade breaks it (a plain sword, a plunge and its blast all bounce off). */
   tough?: boolean;
+  /** Off the floor: he is carrying it, or it is in the air (world/lifting.ts). It is not solid, and nothing rests on it. */
+  lifted?: boolean;
 }

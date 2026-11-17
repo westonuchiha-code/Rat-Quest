@@ -98,6 +98,11 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Riding', path: 'grind.hopSide', label: 'Grind: how far the stick throws that jump sideways', min: 0, max: 8, step: 0.2 },
   { group: 'Riding', path: 'ride.stop', label: 'He steps off below this speed', min: 0.2, max: 5, step: 0.1 },
 
+  { group: 'Lifting', path: 'lift.walk', label: 'Carrying something, he goes this much of his speed', min: 0.3, max: 1, step: 0.02 },
+  { group: 'Lifting', path: 'lift.jump', label: 'Carrying something, he jumps this much of his jump', min: 0.4, max: 1, step: 0.05 },
+  { group: 'Lifting', path: 'lift.throwSpeed', label: 'How hard he throws (along)', min: 4, max: 22, step: 0.5 },
+  { group: 'Lifting', path: 'lift.throwUp', label: 'How hard he throws (up)', min: 0, max: 12, step: 0.5 },
+  { group: 'Lifting', path: 'lift.damage', label: 'Harm to a creature a thrown crate hits', min: 1, max: 6, step: 1 },
   { group: 'Fighting', path: 'health.max', label: 'Hearts', min: 1, max: 12, step: 1, later: 'after the game restarts' },
   { group: 'Fighting', path: 'health.invulnTime', label: 'Safe time after a hit', min: 0.2, max: 3, step: 0.05 },
   { group: 'Fighting', path: 'health.knockback', label: 'Knockback when hit', min: 0, max: 15, step: 0.5 },
@@ -328,7 +333,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Riding', 'The dream', 'Ice', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'Ice', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

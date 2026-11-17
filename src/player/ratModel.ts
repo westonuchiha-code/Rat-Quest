@@ -293,6 +293,9 @@ export interface RatAnimInput {
    * +x side, -1 the other, 0 on a rail).
    */
   ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number; /** 0 to 1: tucked, crouched low for speed. */ tuck?: number; /** A spin in the air: how far round, 0..1 (-1: none). A grab: 0..1. */ spin?: number; grab?: number } | null;
+  /** Carrying something over his head: how far up his arms are (0..1). `throwT`: how far through a throw (0..1), or -1. */
+  carry?: number;
+  throwT?: number;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
 }
@@ -468,6 +471,17 @@ const RIDE_AIR: Pose = fullPose({
   footS: [-0.015, 0.15, -0.13], footH: [0.015, 0.16, 0.15], toeS: 0.15, toeH: 0.15, tail: [1.0, 0, 0.3], ears: 0.55,
 });
 
+/** Both arms straight up, paws flat under a crate held over his head; and where they come to at the end of a throw. */
+const CARRY_ARMS = fullPose({
+  armS: [-2.95, 0, -0.22], elbowS: -0.15, wrist: [0, 0, 0],
+  armH: [-2.95, 0, 0.22], elbowH: -0.15, shield: [0, 0, 0],
+  chest: [-0.06, 0, 0], head: [-0.2, 0, 0],
+});
+const THROW_ARMS = fullPose({
+  armS: [-1.25, 0, -0.2], elbowS: -0.1, wrist: [0, 0, 0],
+  armH: [-1.25, 0, 0.2], elbowH: -0.1, shield: [0, 0, 0],
+  chest: [0.3, 0, 0], head: [-0.1, 0, 0],
+});
 /** Both hands up behind the shoulders, reaching for the straps. */
 const REACH_ARMS = fullPose({
   armS: [-2.5, -0.1, -0.35], elbowS: -0.6, wrist: [0, 0, 0],
@@ -1264,7 +1278,8 @@ export class RatModel {
 
     // Weapons on his back: arms hang relaxed, and a stow/draw motion reaches over the shoulder.
     // (Hanging and climbing need both paws: sword and shield go on his back for as long as it takes.)
-    const armed = ctx.armed && state !== 'hang' && state !== 'climb';
+    // (And carrying something, or throwing it: his paws are busy.)
+    const armed = ctx.armed && state !== 'hang' && state !== 'climb' && !((ctx.carry ?? 0) > 0.2 || (ctx.throwT ?? -1) >= 0);
     this.sword.visible = armed && this.dress.gear;
     // (Riding, the shield is under his feet: not on his arm, nor on his back.)
     const riding = state === 'ride';
@@ -1313,6 +1328,18 @@ export class RatModel {
       const walkingFree = state === 'walk' || state === 'run';
       mixArms(pose, walkingFree ? unarmedArms(this.phase, this.run) : RELAXED_ARMS, this.relaxed);
       mixArms(pose, REACH_ARMS, reach);
+    }
+    // Carrying a crate over his head, and throwing it (world/lifting.ts): laid over whatever his legs are doing.
+    {
+      const carry = Math.max(0, Math.min(1, ctx.carry ?? 0));
+      const thrown = ctx.throwT ?? -1;
+      // (A pose of his own to change: what he was given may be one that is shared.)
+      if (thrown >= 0 || carry > 0) pose = fullPose(pose);
+      if (thrown >= 0) {
+        // (Up, snapped forward by a third of the way through, and let fall.)
+        mixArms(pose, CARRY_ARMS, 1 - Math.min(1, thrown * 3));
+        mixArms(pose, THROW_ARMS, Math.sin(Math.min(1, thrown * 1.2) * Math.PI));
+      } else if (carry > 0) mixArms(pose, CARRY_ARMS, carry * carry * (3 - 2 * carry));
     }
 
     if (ctx.act) {

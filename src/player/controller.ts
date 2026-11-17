@@ -157,6 +157,32 @@ export class PlayerController {
    * Riding his shield (see `rideStep` and TUNING.ride). While he is: `rideSteer` is how hard he is steering, from -1
    * to 1 (for his lean and his tail), and `rideFlipProgress` how far through a kickflip he is (0..1, -1 when not).
    */
+  /**
+   * CARRYING a crate or a barrel over his head (world/lifting.ts). `carryPose`: how far up his arms are, 0 to 1.
+   * `liftEvent`: what he did with it this step, for the game to carry out: threw it, asked to set it down, let it go.
+   */
+  carrying = false;
+  carryPose = 0;
+  liftEvent: 'throw' | 'down' | 'drop' | null = null;
+  private throwTimer = -1;
+  /** How far through the swing of a throw his arms are (0..1), or -1. */
+  get throwProgress(): number {
+    return this.throwTimer < 0 ? -1 : this.throwTimer / TUNING.lift.throwTime;
+  }
+  /** He could pick something up now: on his feet on the ground, doing nothing else. */
+  get canLift(): boolean {
+    return !this.carrying && this.grounded && !this.riding && !this.sliding && !this.swimming && !this.hang && this.climbT < 0 && this.deadTimer < 0 && this.hurtTimer <= 0 && this.attackTimer < 0 && this.dodgeTimer < 0 && this.plungeStage === 0 && this.throwTimer < 0;
+  }
+  /** It is in his hands (the game has taken it off the floor). */
+  startCarry(): void {
+    this.carrying = true;
+    this.guarding = false;
+  }
+  /** It is out of his hands (set down, or the level is gone). */
+  endCarry(): void {
+    this.carrying = false;
+    this.liftEvent = null;
+  }
   riding = false;
   /**
    * HOW THE PLACE HE IS IN PLAYS (data/feel.ts): the dream's tuck, its speed for tricks and its air tricks are the
@@ -500,6 +526,9 @@ export class PlayerController {
   }
 
   respawn(): void {
+    this.carrying = false;
+    this.carryPose = 0;
+    this.throwTimer = -1;
     this.armed = true;
     this.stowTimer = -1;
     this.plungeStage = 0;
@@ -582,7 +611,30 @@ export class PlayerController {
     this.invulnTimer = Math.max(0, this.invulnTimer - dt);
     this.blockStun = Math.max(0, this.blockStun - dt);
     const helpless = this.deadTimer >= 0 || this.hurtTimer > 0;
-    const input = helpless ? NO_INPUT : rawInput;
+    let input = helpless ? NO_INPUT : rawInput;
+    // CARRYING SOMETHING (world/lifting.ts): his hands are full. ATTACK throws it; STOW sets it down (if the game finds
+    // room: it ends the carry then). Hurt, or in water, or somehow off his feet onto his shield, he lets go.
+    this.liftEvent = null;
+    if (this.carrying) {
+      if (helpless || this.swimming || this.riding || this.sliding) {
+        this.carrying = false;
+        this.liftEvent = 'drop';
+      } else {
+        if (input.attackPressed) {
+          this.carrying = false;
+          this.liftEvent = 'throw';
+          this.throwTimer = 0;
+        } else if (input.stowPressed && this.grounded) this.liftEvent = 'down';
+        input = { ...input, attackPressed: false, guardHeld: false, dodgePressed: false, stowPressed: false };
+      }
+    }
+    // (His arms come down from a throw before he can swing.)
+    if (this.throwTimer >= 0) {
+      this.throwTimer += dt;
+      if (this.throwTimer >= T.lift.throwTime) this.throwTimer = -1;
+      else if (!this.carrying) input = { ...input, attackPressed: false };
+    }
+    this.carryPose += ((this.carrying ? 1 : 0) - this.carryPose) * Math.min(1, (dt / T.lift.liftTime) * 3);
     const move = input.move;
     this.stickHeld = move.lengthSq() > 0.01;
     this.moveEvent = null;
@@ -861,7 +913,7 @@ export class PlayerController {
       const mul = (this.guarding ? Math.min(1, T.guard.moveMultiplier * this.gear.guardMove) : 1) * scrabble;
       // (In slime his feet are held: he wades.)
       const mire = !swimming && this.inSlime ? T.slime.walk : 1;
-      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * this.feel.foot.run * mul * mire;
+      const target = swimming ? (input.run ? T.swim.fast : T.swim.speed) * this.gear.swim : (input.run ? T.move.run * this.gear.run : T.move.walk) * this.feel.foot.run * (this.carrying ? T.lift.walk : 1) * mul * mire;
       const hasInput = move.lengthSq() > 0.01;
       // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
       const ice = this.onIce;
@@ -883,7 +935,7 @@ export class PlayerController {
     // Jumps. Not during a dodge. Ground jump uses coyote time; the air jump is the extra one.
     if (!this.riding && !this.sliding && !this.slideHop && !dodging && !helpless && this.plungeStage === 0 && this.jumpBuffer > 0) {
       const kick = !this.grounded && !swimming && this.coyoteTimer <= 0 && this.wallTimer > 0;
-      const long = this.allowLongJump && this.coyoteTimer > 0 && this.grounded && !swimming && !input.run && this.sinceFast < T.moves.longJumpWindow && this.attackTimer < 0 && !this.guarding;
+      const long = !this.carrying && this.allowLongJump && this.coyoteTimer > 0 && this.grounded && !swimming && !input.run && this.sinceFast < T.moves.longJumpWindow && this.attackTimer < 0 && !this.guarding;
       if (kick) {
         // Wall kick: off the wall he just touched, up and away.
         this.velocity.set(this.wallNX * T.moves.wallKickPush, T.moves.wallKickUp * this.gear.wallKick, this.wallNZ * T.moves.wallKickPush);
@@ -910,7 +962,7 @@ export class PlayerController {
         this.moveEvent = 'longjump';
       } else if (this.coyoteTimer > 0 && !(swimming && this.ceilingOver(colliders, 0.9))) {
         // (Not out of the water with a roof right over his head: there is no room to jump.)
-        this.velocity.y = T.jump.velocity * this.feel.foot.jump;
+        this.velocity.y = T.jump.velocity * this.feel.foot.jump * (this.carrying ? T.lift.jump : 1);
         this.grounded = false;
         this.coyoteTimer = 0;
         if (swimming) {
@@ -919,7 +971,8 @@ export class PlayerController {
         }
         this.jumpBuffer = 0;
         this.jumpCut = false;
-      } else if (!this.grounded && this.airJumpsLeft > 0 && this.kickHold <= 0) {
+      } else if (!this.grounded && this.airJumpsLeft > 0 && this.kickHold <= 0 && !this.carrying) {
+        // (Not with a crate over his head: one jump, and a lower one.)
         this.velocity.y = T.jump.doubleVelocity * this.feel.foot.jump;
         this.airJumpsLeft--;
         this.flipTimer = 0;
@@ -997,7 +1050,7 @@ export class PlayerController {
     // (Of a ramp, only the wall at its high end has an edge to catch: its sides slope, and its low end is no wall.)
     // (A ramp has an edge to catch only at its high end, and only one that is not tipped across as well.)
     const edge = !wb?.ramp || (!wb.ramp.cross && (wb.ramp.axis === 'x' ? this.wallNX === wb.ramp.up : this.wallNZ === wb.ramp.up));
-    if (wb && edge && !this.riding && !this.sliding && !this.slideHop && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
+    if (wb && edge && !this.carrying && !this.riding && !this.sliding && !this.slideHop && this.allowGrab && !this.grounded && !swimming && !helpless && this.velocity.y < 0 && this.hangDrop <= 0 && this.plungeStage === 0 && this.attackTimer < 0 && this.wallTimer > 0) {
       const top = wb.max.y;
       const p = this.position;
       // Pushing toward the wall at all (a stick held at an angle slides him along it, turning him sideways), or facing it.

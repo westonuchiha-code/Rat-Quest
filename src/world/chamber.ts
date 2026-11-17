@@ -59,6 +59,12 @@ export interface Chamber {
   pipes: Crate[];
   /** Removes a broken crate's collider and hides it. For a pipe: breaks the joint and starts it gushing. */
   breakCrate(crate: Crate): void;
+  /** Takes a crate off the floor (he has lifted it: world/lifting.ts): it is solid no longer, and what stood on it falls. */
+  liftCrate(crate: Crate): void;
+  /** Moves a lifted crate (its middle), turned to `yaw`: only where it is and where it is drawn. */
+  moveCrate(crate: Crate, x: number, y: number, z: number, yaw?: number): void;
+  /** Stands a crate at a place (its middle), square to the room and solid again. */
+  setCrate(crate: Crate, x: number, y: number, z: number): void;
   gates: Gate[];
   /** Starts lifting a gate. */
   openGate(gate: Gate): void;
@@ -2172,12 +2178,41 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     dropAbove(crate);
   };
 
+  const liftCrate = (crate: Crate): void => {
+    const i = colliders.indexOf(crate.aabb);
+    if (i >= 0) colliders.splice(i, 1);
+    crate.lifted = true;
+    const k = falling.findIndex((f) => f.crate === crate);
+    if (k >= 0) falling.splice(k, 1);
+    dropAbove(crate);
+  };
+  const moveCrate = (crate: Crate, x: number, y: number, z: number, yaw = 0): void => {
+    const hx = (crate.aabb.max.x - crate.aabb.min.x) / 2;
+    const hy = (crate.aabb.max.y - crate.aabb.min.y) / 2;
+    const hz = (crate.aabb.max.z - crate.aabb.min.z) / 2;
+    crate.x = x;
+    crate.y = y;
+    crate.z = z;
+    crate.aabb.min.set(x - hx, y - hy, z - hz);
+    crate.aabb.max.set(x + hx, y + hy, z + hz);
+    const m = crate.mesh as unknown as THREE.Object3D | null;
+    if (m) {
+      m.position.set(x, y, z);
+      m.rotation.y = yaw;
+    }
+  };
+  const setCrate = (crate: Crate, x: number, y: number, z: number): void => {
+    moveCrate(crate, x, y, z, 0);
+    crate.lifted = false;
+    if (crate.alive && !colliders.includes(crate.aabb)) colliders.push(crate.aabb);
+  };
+
   // Whatever was stacked on a broken crate falls to the next thing below it.
   const falling: Array<{ crate: Crate; vy: number }> = [];
   const dropAbove = (under: Crate): void => {
     const top = under.aabb.max.y;
     for (const c of crates) {
-      if (!c.alive || c === under || falling.some((f) => f.crate === c)) continue;
+      if (!c.alive || c.lifted || c === under || falling.some((f) => f.crate === c)) continue;
       const resting = Math.abs(c.aabb.min.y - top) < 0.06 && c.aabb.min.x < under.aabb.max.x - 0.05 && c.aabb.max.x > under.aabb.min.x + 0.05 && c.aabb.min.z < under.aabb.max.z - 0.05 && c.aabb.max.z > under.aabb.min.z + 0.05;
       if (resting) {
         falling.push({ crate: c, vy: 0 });
@@ -2255,5 +2290,5 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     }
   };
 
-  return { group, colliders, crates, pipes, breakCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  return { group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

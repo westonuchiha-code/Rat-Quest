@@ -149,6 +149,28 @@ that is still in the code.)
    (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
    (6) Nobody has played any of it by hand.
 
+**PICKING THINGS UP AND THROWING THEM (built 2026-11-17, his pick from the list; `tests/lifting.ts`, 41 checks; film
+`film-lift-and-throw.mp4`).** His words, earlier the same day, of what the levels lack: "we still need him to be able to
+pick up and throw things for example".
+ - **WHAT:** crates and barrels. Beside one, facing it, **STOW (triangle) lifts it** over his head (with nothing to lift,
+   the button puts his sword away, as it did). Carrying: he goes at 0.72 of his speed, jumps once and lower, cannot
+   fight, guard, roll or ride. **ATTACK throws it; STOW again sets it down** (if there is room in front of him).
+   Hurt, or in water, he lets go and it breaks at his feet. A small hint says so beside a crate and while he carries.
+ - **A THROW IS AIMED:** at the creature in front of him within ten (or the one he is locked on to); else the way he
+   faces, a low arc, six along. He cannot tilt a throw, so without this a crate sailed over anything low and under
+   anything flying. A flier can be knocked out of the air.
+ - **WHAT IT DOES:** it breaks on what it meets. A creature it meets takes 2 (the last blow of his three; a roach has
+   4), unless a shield or shell turns it (`HitHow` 'thrown'). Another crate, a barrel or a PIPE JOINT it meets breaks
+   too. What was in the crate is left WHERE IT BROKE (the collectible is moved, and put back as the level loads).
+   **An IRON-BOUND crate does not break**: it lands whole and can be thrown again.
+ - **WHERE:** `src/world/lifting.ts` (the logic), `TUNING.lift` (the numbers; five have sliders, "Lifting"),
+   `PlayerController` (`carrying`, `liftEvent`, `canLift`), `chamber.ts` (`liftCrate`, `moveCrate`, `setCrate`),
+   `main.ts` (`held`, `thrown`), `ratModel.ts` (`CARRY_ARMS`, `THROW_ARMS`). Every practice room has six things to
+   throw by the way in. `&autolift` is a film aid.
+ - **NOT DONE / his to judge:** which button (STOW was the only one free on foot); a crate is as big as he is;
+   creatures cannot be picked up; nothing else can (pots, rocks, bombs); no sound of its own (a plank's creak, the
+   whoosh, a landing); nobody has played it by hand.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The

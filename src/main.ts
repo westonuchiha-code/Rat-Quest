@@ -27,6 +27,8 @@ import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
+import { carryPlace, groundUnder, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, type Target, type Thrown } from './world/lifting';
+import type { Crate } from './world/crates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
 import { MantisModel } from './enemies/mantisModel';
@@ -1133,6 +1135,23 @@ function startGame(): void {
   const tracker = new CollectibleTracker([...ALL_LEVELS, ...TEST_ROOMS].map((l) => ({ id: l.id, name: l.name, items: l.collectibles })), files);
   let collectVisuals!: CollectibleVisuals;
   const revealedCrates = new Set<number>(); // crates broken so far, so the things inside show
+  // ---- Picking things up and throwing them (world/lifting.ts) ----
+  /** The crate or barrel over his head, and where it was when he took hold of it (it comes up from there). */
+  let held: Crate | null = null;
+  const heldFrom = new THREE.Vector3();
+  /** What he could lift from where he stands (for the hint). */
+  let liftable: Crate | null = null;
+  const thrown: Thrown[] = [];
+  const hands = new THREE.Vector3();
+  const thrownWas = new THREE.Vector3();
+  /** Things that were in a crate broken somewhere else than it stood, and where they belong (put back as a level loads). */
+  const movedItems = new Map<{ x: number; y: number; z: number }, { x: number; y: number; z: number }>();
+  /** Where the thing over his head is: on its way up from where it stood, or there. */
+  const heldPlace = (at: { x: number; y: number; z: number }, c: Crate): THREE.Vector3 => {
+    carryPlace(at, (c.aabb.max.y - c.aabb.min.y) / 2, hands);
+    const k = Math.min(1, player.carryPose * 1.15);
+    return hands.set(heldFrom.x + (hands.x - heldFrom.x) * k, heldFrom.y + (hands.y - heldFrom.y) * Math.sin((k * Math.PI) / 2), heldFrom.z + (hands.z - heldFrom.z) * k);
+  };
   const collectHud = new CollectHud(gameWrap);
   const goalHud = new GoalHud(gameWrap);
   const preview = new RatPreview();
@@ -1612,6 +1631,13 @@ function startGame(): void {
 
   function loadLevel(def: LevelDef, keep = false): void {
     resting = -1;
+    // (Nothing is carried from one place to the next; and what a carried crate left somewhere else is back where it belongs.)
+    held = null;
+    liftable = null;
+    thrown.length = 0;
+    player.endCarry();
+    for (const [d, was] of movedItems) Object.assign(d, was);
+    movedItems.clear();
     player.allowGrab = !def.noGrab;
     player.allowLongJump = !def.noLongJump;
     discoveries.add(`place:${def.id}`);
@@ -2365,7 +2391,66 @@ function startGame(): void {
         }
       }
     }
+    // (`&autolift`, for the films: he goes to the nearest crate and lifts it, carries it toward the nearest creature,
+    // and throws it from five off; and again.)
+    if (devLift && !player.dead) {
+      const to = (x: number, z: number, stopAt: number): number => {
+        const d = Math.hypot(x - player.position.x, z - player.position.z);
+        const k = d > stopAt ? 1 : 0.05;
+        m.set(((x - player.position.x) / (d || 1)) * k, 0, ((z - player.position.z) / (d || 1)) * k);
+        run = d > 3;
+        return d;
+      };
+      const foe = enemies.filter((e) => e.alive).sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
+      if (!held) {
+        const c = chamber.crates.filter((k) => k.alive && !k.lifted).sort((a, b) => Math.hypot(a.x - player.position.x, a.z - player.position.z) - Math.hypot(b.x - player.position.x, b.z - player.position.z))[0];
+        if (c) {
+          to(c.x, c.z, 0);
+          if (player.canLift && liftTarget(chamber.crates, player.position, player.facing) === c) stowPressed = true;
+        }
+      } else if (foe && player.carryPose > 0.9) {
+        const d = to(foe.x, foe.z, 5);
+        const aim = Math.atan2(foe.x - player.position.x, foe.z - player.position.z);
+        if (d <= 5.5 && Math.abs(Math.atan2(Math.sin(aim - player.facing), Math.cos(aim - player.facing))) < 0.15) attackPressed = true;
+      }
+    }
+    // LIFTING (world/lifting.ts): STOW beside a crate or a barrel takes it up over his head. (With nothing to lift it
+    // puts his sword away, as it did.)
+    liftable = !held && player.canLift && !talkingTo ? liftTarget(chamber.crates, player.position, player.facing) : null;
+    if (stowPressed && liftable) {
+      held = liftable;
+      liftable = null;
+      heldFrom.set(held.x, held.y, held.z);
+      chamber.liftCrate(held);
+      player.startCarry();
+      stowPressed = false;
+      audio.play('plank', { vol: 0.55, rate: roll(1.25, 1.4), priority: 6 });
+    }
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
+    if (held) {
+      const c = held;
+      const at = heldPlace(player.position, c);
+      if (player.liftEvent === 'throw') {
+        // (From over his head, whatever was left of its way up.)
+        const marks: Target[] = enemies.map((e) => ({ x: e.x, y: e.y, z: e.z, r: e.radius, high: Math.max(0.9, e.radius * 2), alive: e.alive, parts: e.parts }));
+        const aim = throwAim(marks, player.position, player.facing, lockTarget ? enemies.indexOf(lockTarget) : null);
+        thrown.push(startThrow(c, carryPlace(player.position, (c.aabb.max.y - c.aabb.min.y) / 2, hands), player.facing, player.velocity, 1, aim));
+        held = null;
+        audio.play('whoosh', { vol: 0.8, rate: roll(0.9, 1.05), priority: 7 });
+      } else if (player.liftEvent === 'down') {
+        const spot = putDownSpot(chamber.colliders, player.position, player.facing, c);
+        if (spot) {
+          chamber.setCrate(c, spot.x, spot.y, spot.z);
+          player.endCarry();
+          held = null;
+          audio.play('land', { vol: 0.6, rate: 0.8, priority: 5 });
+        } else audio.play('menuBack', { vol: 0.4, rate: 0.8, priority: 4 });
+      } else if (!player.carrying) {
+        // Let go of (he was hurt, or is in the water): it falls where he is.
+        thrown.push(startThrow(c, at, player.facing, { x: 0, z: 0 }, 0));
+        held = null;
+      } else chamber.moveCrate(c, at.x, at.y, at.z, player.facing);
+    }
     // Locked on, the rat keeps facing the foe while he walks, so he circles him.
     if (lockTarget && player.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(player.state)) player.facing = facingToward(player.position, lockTarget);
     soundAfterPlayer(sneak, vyBefore);
@@ -2443,6 +2528,70 @@ function startGame(): void {
     soundWorld(dt);
 
     resolveCombat(player, enemies, events, [...chamber.crates, ...chamber.pipes]);
+    // What has been thrown flies on, and breaks on what it meets (world/lifting.ts).
+    for (let i = thrown.length - 1; i >= 0; i--) {
+      const t = thrown[i];
+      const c = t.crate;
+      // (A sword can break it in the air.)
+      if (!c.alive) {
+        thrown.splice(i, 1);
+        continue;
+      }
+      thrownWas.copy(t.pos);
+      const hit = stepThrown(t, dt, chamber.colliders, enemies.map((e) => ({ x: e.x, y: e.y, z: e.z, r: e.radius, high: Math.max(0.9, e.radius * 2), alive: e.alive, parts: e.parts })));
+      chamber.moveCrate(c, t.pos.x, t.pos.y, t.pos.z, t.spent ? 0 : t.age * 5);
+      if (hit.what === 'none') continue;
+      if (hit.what === 'lost') {
+        // Out of the world: gone, with nothing to show for it.
+        c.alive = false;
+        if (c.mesh) c.mesh.visible = false;
+        thrown.splice(i, 1);
+        continue;
+      }
+      if (hit.what === 'foe') {
+        const e = enemies[hit.index];
+        if (e.deflects?.(t.from.x, t.from.z, 'thrown', hit.part)) events.glanced = e;
+        else {
+          events.enemyHit = e;
+          if (e.takeHit(TUNING.lift.damage, t.from.x, t.from.z, 'thrown', hit.part)) events.enemyKilled = true;
+        }
+      }
+      // Another crate, a barrel or a pipe's joint that it met breaks too.
+      if (hit.what === 'solid') {
+        const other = [...chamber.crates, ...chamber.pipes].find((k) => k.aabb === hit.box && k.alive && !k.tough);
+        if (other) events.cratesBroken.push(other);
+      }
+      if (c.tough) {
+        // Bound in iron: it does not break. It stops where it was, falls, and stands where it lands.
+        if (!t.spent) {
+          t.spent = true;
+          t.pos.copy(thrownWas);
+          t.vel.set(0, Math.min(0, t.vel.y), 0);
+          events.crateRang = c;
+          continue;
+        }
+        const hy = (c.aabb.max.y - c.aabb.min.y) / 2;
+        const floor = groundUnder(chamber.colliders, thrownWas.x, thrownWas.z, c.half * 0.9, thrownWas.y, c.aabb);
+        chamber.setCrate(c, thrownWas.x, (Number.isFinite(floor) ? floor : thrownWas.y - hy) + hy, thrownWas.z);
+        audio.play('land', { vol: 0.8, rate: 0.7, priority: 6 });
+        shake = Math.max(shake, 0.06);
+        thrown.splice(i, 1);
+        continue;
+      }
+      // It breaks here; and what was in it is left HERE, not where the crate used to stand.
+      const inside = cur.crateContents[c.index];
+      const item = inside ? cur.collectibles.find((q) => q.id === inside) : undefined;
+      if (item) {
+        const floor = groundBelow(c.x, c.y + 0.3, c.z);
+        if (!movedItems.has(item)) movedItems.set(item, { x: item.x, y: item.y, z: item.z });
+        item.x = c.x;
+        item.y = (floor ?? c.y - c.half) + 0.5;
+        item.z = c.z;
+        collectVisuals.moveItem(item.id, item.x, item.y, item.z, floor);
+      }
+      events.cratesBroken.push(c);
+      thrown.splice(i, 1);
+    }
     lavaStep();
     // A firefly's flames: whoever stands in them is burned (no roll or shield helps). In the Ember Helm he walks through.
     resolveFlames(player, flames, FIREFLY.burn, events);
@@ -3070,6 +3219,7 @@ function startGame(): void {
   const devJump = /[#&]autojump\b/.test(location.hash);
   let devJumpAt = 1;
   let devJumpTwice = false;
+  const devLift = /[#&]autolift\b/.test(location.hash);
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
@@ -4020,6 +4170,8 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
+      carry: player.carryPose,
+      throwT: player.throwProgress,
       ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     });
@@ -4077,12 +4229,20 @@ function startGame(): void {
       n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);
       shadowCuts.cut(n.root, chamber.colliders);
     }
-    const hintWord = nearFire && !npcs.some((n) => n.near) ? 'rest by the fire' : 'talk';
+    // (The same small hint says what STOW would do beside a crate, and what his hands can do with one over his head.)
+    const talkable = npcs.some((n) => n.near) || (nearFire && resting < 0);
+    const hintWord = talkable ? (nearFire && !npcs.some((n) => n.near) ? 'rest by the fire' : 'talk') : held ? 'carry' : liftable ? 'lift' : 'talk';
     if (promptStamp() + hintWord !== talkShown) {
       talkShown = promptStamp() + hintWord;
-      talkHint.innerHTML = `${prompt('jump')}<span>to ${hintWord}</span>`;
+      talkHint.innerHTML = hintWord === 'carry' ? `${prompt('attack')}<span>throw</span>${prompt('stow')}<span>set down</span>` : hintWord === 'lift' ? `${prompt('stow')}<span>to lift</span>` : `${prompt('jump')}<span>to ${hintWord}</span>`;
     }
-    talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (npcs.some((n) => n.near) || (nearFire && resting < 0)) && player.grounded);
+    talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (talkable || !!held || !!liftable) && (player.grounded || !!held));
+    // (And it is drawn where he is drawn, between the game's own steps.)
+    if (held && player.carrying) {
+      const at = heldPlace(renderPos, held);
+      const m = held.mesh as unknown as THREE.Object3D | null;
+      if (m) m.position.set(at.x, at.y, at.z);
+    }
 
     collectVisuals.update(frameDt, time, camera.quaternion);
     // Grinding throws sparks from under the shield, a few at a time, as long as it lasts.
