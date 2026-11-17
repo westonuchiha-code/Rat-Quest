@@ -45,11 +45,11 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 1B | `milkyway` |  | The Milky Way | dream | cave | dream | `src/levels/milkyway.ts` |
 | Test Room 1C | `bigdipper` |  | The Big Dipper | dream | cave | dream | `src/levels/bigdipper.ts` |
 | Test Room 2 | `glowcave` | MUSHROOM CAVE | The Glow Cave | waking | cave | echo | `src/levels/glowcave.ts` |
-| Test Room 3 | `cistern` | THE SEWERS | The Great Cistern | waking | sewer | drift | `src/levels/cistern.ts` |
-| Test Room 3B | `pumpworks` |  | The Pump Room | waking | sewer | pump | `src/levels/pumpworks.ts` |
-| Test Room 3C | `works` |  | The Waterworks | waking | sewer | drift | `src/levels/cisternHalls.ts` |
-| Test Room 3D | `sludgepit` |  | The Sludge Pit | waking | sewer | drift | `src/levels/cisternHalls.ts` |
-| Test Room 3E | `sump` |  | The Sump | waking | sewer | march | `src/levels/cisternHalls.ts` |
+| Test Room 3 | `cistern` | THE SEWERS | The Great Cistern | sewers | sewer | drift | `src/levels/cistern.ts` |
+| Test Room 3B | `pumpworks` |  | The Pump Room | sewers | sewer | pump | `src/levels/pumpworks.ts` |
+| Test Room 3C | `works` |  | The Waterworks | sewers | sewer | drift | `src/levels/cisternHalls.ts` |
+| Test Room 3D | `sludgepit` |  | The Sludge Pit | sewers | sewer | drift | `src/levels/cisternHalls.ts` |
+| Test Room 3E | `sump` |  | The Sump | sewers | sewer | march | `src/levels/cisternHalls.ts` |
 | Test Room 4 | `coldmain` | ICE WORLD | The Cold Main | waking | sewer | echo | `src/levels/coldmain.ts` |
 | Test Room 5 | `longdrop` | DOWNHILL PIPES | The Long Drop | waking | sewer | pump | `src/levels/longdrop.ts` |
 | Test Room 6 | `foundry` | FOUNDRY | The Foundry | waking | foundry | pump | `src/levels/foundry.ts` |
@@ -76,12 +76,13 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 274 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 278 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
-| Biome feel | Meant to be like | Run | Jump | Gravity | Tuck | Speed from tricks | Spin and grab |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | no | no | no |
-| The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | yes | yes | yes |
+| Biome feel | Meant to be like | Run | Jump | Gravity | His blows | A blow costs him | Tuck | Speed from tricks | Spin and grab |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | x1 | x1 | no | no | no |
+| The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | x1.5 | x1 | yes | yes | yes |
+| The sewers | Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double. | x0.88 | x1 | x1 | x0.67 | x2 | no | no | no |
 
 ## 3. The hero
 

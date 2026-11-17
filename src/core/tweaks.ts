@@ -78,6 +78,10 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The dream', path: 'dream.run', label: 'In the dream he runs this many times as fast', min: 1, max: 2, step: 0.05 },
   { group: 'The dream', path: 'dream.jump', label: 'In the dream he jumps this many times as hard', min: 1, max: 1.6, step: 0.02 },
   { group: 'The dream', path: 'dream.gravity', label: 'In the dream this much of gravity pulls on him (on foot; less is floatier)', min: 0.3, max: 1, step: 0.05 },
+  { group: 'The dream', path: 'dream.dealt', label: 'In the dream his blows do this many times as much', min: 1, max: 3, step: 0.1 },
+  { group: 'The sewers', path: 'sewers.run', label: 'In the sewers he runs this much of his speed', min: 0.6, max: 1, step: 0.02 },
+  { group: 'The sewers', path: 'sewers.dealt', label: 'In the sewers his blows do this much', min: 0.33, max: 1, step: 0.01 },
+  { group: 'The sewers', path: 'sewers.taken', label: 'In the sewers a blow costs him this many times as much', min: 1, max: 3, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckMax', label: 'Top riding speed, tucked (stick forward)', min: 8, max: 40, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckGain', label: 'How fast a tuck builds speed', min: 0.1, max: 3, step: 0.05 },
   { group: 'Riding', path: 'ride.dragFlat', label: 'Slow-down on the flat', min: 0, max: 8, step: 0.1 },
@@ -333,7 +337,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'Ice', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'The sewers', 'Ice', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

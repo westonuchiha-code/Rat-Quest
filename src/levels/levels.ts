@@ -272,6 +272,8 @@ function nameTheRooms(all: LevelDef[]): void {
     areas.forEach((a, i) => {
       a.was = a.name;
       a.name = roomName(r.n, i);
+      // (And it plays as its room does.)
+      if (r.feel && !a.feel) a.feel = r.feel;
     });
   }
   for (const l of all) {

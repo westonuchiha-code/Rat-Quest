@@ -156,3 +156,5 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 
 ## Done
 (Move items here, with the commit.)
+- **A1 (first part): the Sewers' feel.** Run 0.88, his blows 0.67, a blow on him costs double. `TUNING.sewers`. STILL OPEN under A1: the Mario room (Test Room 8) and the Sonic room (Test Room 5); and his verdict on the numbers.
+- **A10: stronger in the dream.** His blows do 1.5 there (`TUNING.dream.dealt`). His verdict wanted.

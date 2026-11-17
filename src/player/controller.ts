@@ -429,7 +429,8 @@ export class PlayerController {
         }
       }
     }
-    this.hp = Math.max(0, this.hp - damage);
+    // (What a blow costs him is the place's to say: data/feel.ts. Whole hearts, and never nothing.)
+    this.hp = Math.max(0, this.hp - Math.max(1, Math.round(damage * this.feel.fight.taken)));
     this.plungeStage = 0;
     this.attackTimer = -1;
     this.attackStep = 0;

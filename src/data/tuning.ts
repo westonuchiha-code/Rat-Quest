@@ -152,6 +152,23 @@ export const TUNING = {
     run: 1.25,
     jump: 1.1,
     gravity: 0.75,
+    // ("You're kind of way floatier and stronger in this world so you almost feel like a superhero": what his blows
+    // and his throws do to a creature there, times this.)
+    dealt: 1.5,
+    taken: 1,
+  },
+  /**
+   * THE SEWERS (data/feel.ts reads these): his "Dark Souls" biome. "You're blocking, you're parrying, you're having
+   * more difficult fights, you're moving slower through the level." He runs slower; his blows do two thirds of what
+   * they do elsewhere (so every creature takes half as many again); and what hits him costs double. Nothing here is
+   * easier than the waking world: a guard that stops a blow, and a perfect one that turns it, are worth twice as much.
+   */
+  sewers: {
+    run: 0.88,
+    jump: 1,
+    gravity: 1,
+    dealt: 0.67,
+    taken: 2,
   },
   ride: {
     minSlope: 0.4, // over a slope at least this steep (rise over run) the air attack is the shield under his feet, not the dive

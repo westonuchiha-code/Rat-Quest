@@ -80,7 +80,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
           player.recoil(at.x, at.z);
         } else {
           events.enemyHit = e;
-          if (e.takeHit(clip.damage * player.gear.damage, p.x, p.z, 'sword', part)) events.enemyKilled = true;
+          if (e.takeHit(clip.damage * player.gear.damage * player.feel.fight.dealt, p.x, p.z, 'sword', part)) events.enemyKilled = true;
         }
       }
     }
@@ -110,7 +110,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
         if (e.deflects?.(p.x, p.z, how, part)) events.glanced = e;
         else {
           events.enemyHit = e;
-          if (e.takeHit(damage, p.x, p.z, how, part)) events.enemyKilled = true;
+          if (e.takeHit(damage * player.feel.fight.dealt, p.x, p.z, how, part)) events.enemyKilled = true;
         }
       }
     }

@@ -19,7 +19,7 @@
  * harder blows.
  */
 import { TUNING } from './tuning';
-export type FeelId = 'waking' | 'dream';
+export type FeelId = 'waking' | 'dream' | 'sewers';
 
 export interface Feel {
   id: FeelId;
@@ -32,6 +32,11 @@ export interface Feel {
    * of gravity pulls on him while he is not on his shield. 1, 1, 1 is the waking world.
    */
   foot: { run: number; jump: number; gravity: number };
+  /**
+   * FIGHTING: what his blows (and what he throws) do to a creature is multiplied by `dealt`; what a blow costs HIM is
+   * multiplied by `taken` (and rounded to whole hearts, never less than one). 1 and 1 is the waking world.
+   */
+  fight: { dealt: number; taken: number };
   /** On his shield. */
   ride: {
     /** THE TUCK: the stick pushed the way he is going crouches him, pushes him along on the flat, and builds speed past his standing top speed downhill. */
@@ -49,6 +54,7 @@ export const FEELS: Record<FeelId, Feel> = {
     name: 'The waking world',
     like: 'Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that.',
     foot: { run: 1, jump: 1, gravity: 1 },
+    fight: { dealt: 1, taken: 1 },
     ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
   dream: {
@@ -57,7 +63,17 @@ export const FEELS: Record<FeelId, Feel> = {
     like: 'Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air.',
     // (The numbers are TUNING.dream, so that they can be tried from the Tweaks panel: "The dream".)
     foot: TUNING.dream,
+    fight: TUNING.dream,
     ride: { tuck: true, trickSpeed: true, airTricks: true },
+  },
+  sewers: {
+    id: 'sewers',
+    name: 'The sewers',
+    like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double.',
+    // (The numbers are TUNING.sewers: Tweaks, "The sewers".)
+    foot: TUNING.sewers,
+    fight: TUNING.sewers,
+    ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
 };
 

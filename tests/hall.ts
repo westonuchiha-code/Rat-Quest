@@ -22,6 +22,8 @@ import { aabbOf, type Aabb } from '../src/world/collision';
 import { extent } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
 import { TWEAKS } from '../src/core/tweaks';
+import { Scuttler } from '../src/enemies/scuttler';
+import { resolveCombat, type CombatEvents } from '../src/combat/combat';
 import type { LevelDef } from '../src/levels/types';
 
 let failures = 0;
@@ -169,6 +171,65 @@ const hall = levelById(HALL_ID)!;
   check('the numbers are in one place (TUNING.dream, which the dream\'s line of the table IS), the waking world\'s are all 1, and the Tweaks panel has a slider for each', FEELS.dream.foot === TUNING.dream && FEELS.waking.foot.run === 1 && FEELS.waking.foot.jump === 1 && FEELS.waking.foot.gravity === 1 && ['dream.run', 'dream.jump', 'dream.gravity'].every((path) => TWEAKS.some((t) => t.path === path)));
 }
 
+
+// ---- THE SEWERS PLAY AS THE SEWERS (his "Dark Souls" biome: "you're blocking, you're parrying, you're having more
+// difficult fights, you're moving slower through the level"); and in the dream he is STRONGER. ----
+{
+  const sewer = all.filter((l) => feelOf(l).id === 'sewers').map((l) => l.id).sort();
+  check('the Sewers and its four side areas play the sewers\' way, and nowhere else does', sewer.join(' ') === 'cistern pumpworks sludgepit sump works', sewer.join(' '));
+  const floor: Aabb[] = [aabbOf(extent('floor', -200, 200, -1, 0, -200, 200))];
+  const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  const DT = 1 / 60;
+  const man = (feel: Feel): PlayerController => {
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    p.feel = feel;
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), floor);
+    return p;
+  };
+  const top = (feel: Feel): number => {
+    const p = man(feel);
+    for (let i = 0; i < 180; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), floor);
+    return Math.hypot(p.velocity.x, p.velocity.z);
+  };
+  check('there he moves slower', Math.abs(top(FEELS.sewers) / top(FEELS.waking) - TUNING.sewers.run) < 0.02 && TUNING.sewers.run < 0.95);
+  const cost = (feel: Feel): number => {
+    const p = man(feel);
+    const hp = p.hp;
+    p.takeHit(0, 5, 1);
+    return hp - p.hp;
+  };
+  check('...a blow costs him two hearts where it costs one elsewhere', cost(FEELS.waking) === 1 && cost(FEELS.sewers) === 2 && cost(FEELS.dream) === 1);
+  const guarded = man(FEELS.sewers);
+  guarded.facing = 0;
+  for (let i = 0; i < 30; i++) guarded.update(DT, inp({ guardHeld: true }), floor);
+  const before = guarded.hp;
+  const how = guarded.takeHit(0, 5, 1);
+  check('...and a blow his shield stops costs him nothing there either: blocking is worth twice as much', how === 'blocked' && guarded.hp === before, how);
+  /** How many swings of his sword it takes to beat a roach. */
+  const swings = (feel: Feel): number => {
+    const roach = new Scuttler({ x: 0, z: 1.2 });
+    const p = man(feel);
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    let n = 0;
+    for (let i = 0; i < 60 * 30 && roach.alive; i++) {
+      const press = p.state !== 'attack' && i % 4 === 0;
+      if (press) n++;
+      p.facing = 0;
+      p.update(DT, inp({ attackPressed: press }), floor);
+      // (Kept in front of him: his swings carry him forward.)
+      roach.x = p.position.x;
+      roach.z = p.position.z + 1.2;
+      resolveCombat(p, [roach], events);
+    }
+    return roach.alive ? 99 : n;
+  };
+  const w = swings(FEELS.waking);
+  const sw = swings(FEELS.sewers);
+  const dr = swings(FEELS.dream);
+  check('...and his blows do less: a roach takes more swings in the sewers than elsewhere; and FEWER in the dream, where he is stronger', sw > w && dr < w && w < 20, `${w} swings awake, ${sw} in the sewers, ${dr} in the dream`);
+  check('the numbers are the table\'s (TUNING.sewers, TUNING.dream), the waking world\'s are 1 and 1, and each has its slider', FEELS.sewers.fight === TUNING.sewers && FEELS.sewers.foot === TUNING.sewers && FEELS.dream.fight === TUNING.dream && FEELS.waking.fight.dealt === 1 && FEELS.waking.fight.taken === 1 && TUNING.dream.dealt > 1 && ['sewers.run', 'sewers.dealt', 'sewers.taken', 'dream.dealt'].every((path) => TWEAKS.some((t) => t.path === path)));
+  check('nothing in the sewers is easier than the waking world', TUNING.sewers.run <= 1 && TUNING.sewers.dealt <= 1 && TUNING.sewers.taken >= 1 && TUNING.sewers.jump <= 1 && TUNING.sewers.gravity >= 1);
+}
 
 console.log(failures === 0 ? '\nhall: all passed' : `\nhall: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

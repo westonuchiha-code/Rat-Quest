@@ -25,12 +25,14 @@ export interface RoomEntry {
   door: string | null;
   /** What it is for: the kind of game it is to feel like (his words where he has said). */
   like: string;
+  /** How it plays, it and its areas (data/feel.ts), if not the waking world's way (the dream's rooms say so by their look). */
+  feel?: 'sewers';
 }
 
 export const ROOMS: RoomEntry[] = [
   { n: 1, id: 'toybox', door: 'WACKY POMO DREAM', like: "Tony Hawk's Pro Skater mixed with everything else: a skate park in the dream. Floaty, fast, hyperactive; a superhero." },
   { n: 2, id: 'glowcave', door: 'MUSHROOM CAVE', like: 'A dark cave lit by what glows in it.' },
-  { n: 3, id: 'cistern', door: 'THE SEWERS', like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level.' },
+  { n: 3, id: 'cistern', door: 'THE SEWERS', feel: 'sewers', like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level.' },
   { n: 4, id: 'coldmain', door: 'ICE WORLD', like: 'Ice underfoot: sliding, and things that roll.' },
   { n: 5, id: 'longdrop', door: 'DOWNHILL PIPES', like: 'Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air.' },
   { n: 6, id: 'foundry', door: 'FOUNDRY', like: 'Fire and iron: heat to cross, heavy beasts.' },

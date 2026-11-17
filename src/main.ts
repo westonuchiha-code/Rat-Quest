@@ -2606,7 +2606,7 @@ function startGame(): void {
       if (e.deflects?.(from.x, from.z, 'thrown', part)) events.glanced = e;
       else {
         events.enemyHit = e;
-        if (e.takeHit(damage, from.x, from.z, 'thrown', part)) events.enemyKilled = true;
+        if (e.takeHit(damage * player.feel.fight.dealt, from.x, from.z, 'thrown', part)) events.enemyKilled = true;
       }
     };
     for (let i = thrown.length - 1; i >= 0; i--) {

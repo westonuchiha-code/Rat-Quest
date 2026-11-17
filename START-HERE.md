@@ -187,6 +187,18 @@ pick up and throw things for example".
    be picked up; no bombs; no sound of its own (a plank's creak, the whoosh, a landing, pebbles for a pot); nobody
    has played it by hand.
 
+**THE SEWERS PLAY AS THE SEWERS, AND HE IS STRONGER IN THE DREAM (2026-11-17, BACKLOG A1 and A10; `tests/hall.ts` 50;
+film `film-sewers-feel.mp4`).** His words for the sewers: "more like Dark Souls you're blocking you're parrying you're
+having more difficult fights you're moving slower through the level".
+ - A third line in the table, `sewers` (`src/data/feel.ts`; numbers in `TUNING.sewers`, sliders "The sewers"): he runs
+   at 0.88; his blows (sword, plunge, a thrown thing) do 0.67; a blow that lands on him costs DOUBLE (whole hearts).
+   A blocked or parried blow still costs nothing, so the shield is worth twice as much. Nothing there is easier.
+ - It is set on Test Room 3 and its four areas by one word in the room list (`feel: 'sewers'` in `testRooms.ts`).
+ - `fight: { dealt, taken }` is new in every feel. The dream's `dealt` is 1.5 ("stronger ... a superhero").
+ - Seen in the film: a test fighter that only swings is dead in ten seconds on the Sewers' fort.
+ - **NOT DONE / his to judge:** the three numbers; creatures there are not faster or cleverer, only costlier; the
+   Mario room and the Sonic room have no feel of their own yet.
+
 ## The owner's standing rules (follow all of them)
 - **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
 - When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
