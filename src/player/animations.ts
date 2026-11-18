@@ -39,7 +39,6 @@ export const POSE_KEYS = [
   'hipPos', 'hips', 'chest', 'head', 'armS', 'elbowS', 'wrist', 'armH', 'elbowH', 'shield',
   'footS', 'footH', 'toeS', 'toeH', 'tail', 'ears',
 ] as const;
-export type PoseKey = (typeof POSE_KEYS)[number];
 
 /** Combat-ready stance: shield side leading, knees soft, sword low at the side. */
 export const STANCE: Pose = {

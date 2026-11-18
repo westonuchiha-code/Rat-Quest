@@ -575,5 +575,3 @@ export class BroodModel {
   }
 }
 
-/** For tests: her sizes. */
-export const BROOD_BODY = { upper: UPPER, spike: SPIKE, thigh: THIGH, shin: SHIN, chestKeep: CHEST_KEEP, bellyKeep: BELLY_KEEP };

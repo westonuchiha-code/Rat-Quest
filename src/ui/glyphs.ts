@@ -119,12 +119,6 @@ export function lastDevice(): Device {
   return p > k && gamepadInfo.connected ? 'pad' : 'keyboard';
 }
 
-/** What to call a button in plain on-screen text, matching what the player is holding. */
-export function actionLabel(name: string, key: string, pad: PadButton): string {
-  const d = lastDevice();
-  return d === 'pad' ? padLabel(pad) : d === 'keyboard' ? keyLabel(key) : name;
-}
-
 /** Changes whenever the prompts on screen would change (another device, another pad, another choice in the options). */
 export function promptStamp(): string {
   return `${lastDevice()}|${labelKind()}|${settings.mode}`;

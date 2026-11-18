@@ -4,22 +4,12 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { bakeVertexColor } from '../render/ps1Material';
 import type { CollectibleDef, CollectibleKind, CollectibleTracker, LevelDef } from './collectibles';
 import { Sparks, capGeometry, crumbGeometry, glowMaterial, itemMaterial, relicGeometry, relicRingGeometry, shadowGeometry, shadowMaterial, twinkleGeometry, twinkleSize } from './itemModels';
 
 const POP_TIME = 0.25;
 const POP_SCALE = 1.6;
 const POP_RISE = 0.3;
-
-/** Flat-shaded, colour-baked, non-indexed geometry with only position, normal and color. (For things drawn unlit.) */
-export function prep(geo: THREE.BufferGeometry, color: number, shade = true): THREE.BufferGeometry {
-  let g = geo.index ? geo.toNonIndexed() : geo;
-  g.deleteAttribute('uv');
-  g.computeVertexNormals(); // non-indexed, so every face is flat
-  g = bakeVertexColor(g, color, shade);
-  return g;
-}
 
 export function merge(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   const merged = mergeGeometries(parts);

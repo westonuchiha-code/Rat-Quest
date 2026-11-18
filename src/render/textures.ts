@@ -1334,7 +1334,6 @@ interface Def {
   paint: Painter;
 }
 
-
 // keep (Grimsqueak's castle)
 
 /** Big dressed blocks of dark slate with a purple cast: two courses per tile, offset, bevelled light on top and left. */
@@ -3259,22 +3258,3 @@ export function blinkTextures(time: number): void {
   tex.needsUpdate = true;
 }
 
-/** Large stone blocks for pillars, rubble and platforms. */
-export function stoneTexture(): THREE.Texture | null {
-  return getTexture('stone');
-}
-
-/** Smaller flagstones for the floor. */
-export function floorTexture(): THREE.Texture | null {
-  return getTexture('floor');
-}
-
-/** Brick for the walls. */
-export function brickTexture(): THREE.Texture | null {
-  return getTexture('brick');
-}
-
-/** Murky water with wavy highlight lines. Scrolled every frame for movement. */
-export function waterTexture(): THREE.Texture | null {
-  return getTexture('water');
-}

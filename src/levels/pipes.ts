@@ -64,9 +64,6 @@ export function pipeRun(kind: Kind, s: PipeShape, x: number, z0: number, z1: num
   return out;
 }
 
-/** How high a pipe's floor is at z, on a length from (z0, top) to (z1, bottom). */
-export const floorAlong = (z: number, z0: number, z1: number, top: number, bottom: number): number => top + ((bottom - top) * (z - z0)) / (z1 - z0);
-
 /** How high a pipe's wall stands over its floor, that far out from its middle line (its rim's height, beyond its walls). */
 export function wallAt(s: PipeShape, out: number): number {
   const d = Math.abs(out) - s.flat;

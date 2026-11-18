@@ -13,7 +13,6 @@ interface Actuator {
 
 /** How strong: off, low (half) or full. */
 export type RumbleLevel = 'off' | 'low' | 'full';
-export const RUMBLE_LEVELS: RumbleLevel[] = ['off', 'low', 'full'];
 const STRENGTH: Record<RumbleLevel, number> = { off: 0, low: 0.5, full: 1 };
 
 export class Rumble {

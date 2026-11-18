@@ -463,7 +463,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       if (p.riding && !p.grounded) log.air(DT, !!extra.guardHeld && p.feel.ride.airTricks, R.grabTime);
       else if (p.grounded) log.ground();
       if (p.moveEvent === 'kickflip') log.begin(p.rideSpinProgress >= 0 && p.rideSpinProgress < 0.1 ? 'spin' : 'flip');
-      if (p.moveEvent === 'trick') name = log.landed();
+      if (p.moveEvent === 'trick') { name = log.kinds.join(' '); log.clear(); }
       if (p.moveEvent === 'bail' || p.moveEvent === 'rideLand') log.clear();
       if (lip) t = 0;
       if (p.rideSpinProgress >= 0) spun = true;
@@ -484,10 +484,10 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const three = trick((t) => ({ dodgePressed: t > 0.08 && t < 0.12, guardHeld: t > 0.1 && t < 0.6, jumpPressed: t > 0.62 && t < 0.66 }));
   check('a spin, a grab and a kickflip in one air are THREE tricks: three times the speed (past his standing top speed, up to his tucked one)', three.riding && three.events.includes('trick') && three.after > Math.min(R.tuckMax, three.before + gain + R.trickBoost * 3) - 0.8 && three.after > R.max + 4, `${three.before.toFixed(1)} to ${three.after.toFixed(1)}`);
   // ---- Its NAME as he lands it (B4, 2026-11-18) ----
-  check('THE TRICK\'S NAME AS HE LANDS IT: a spin, a grab and a kickflip in one air are named in the order he did them', three.name === '360 + SHIELD GRAB + KICKFLIP', three.name);
+  check('WHAT HE DID IN THE AIR, AS THE GAME KEEPS IT (for the horn stab): a spin, a grab and a kickflip, in the order he did them', three.name === 'spin grab flip', three.name);
   const twoSpins = trick((t) => ({ dodgePressed: (t > 0.06 && t < 0.09) || (t > 0.56 && t < 0.59) }));
-  check('...two spins one after another are a 720 (if he lands them)', !twoSpins.events.includes('trick') || twoSpins.name === '720', `${twoSpins.name || '(not landed)'}; ${twoSpins.events.join(' ')}`);
-  check('...a jump with nothing in it has no name', plain.name === '');
+  check('...two spins one after another are two (if he lands them)', !twoSpins.events.includes('trick') || twoSpins.name === 'spin spin', `${twoSpins.name || '(not landed)'}; ${twoSpins.events.join(' ')}`);
+  check('...a jump with nothing in it keeps nothing', plain.name === '');
   // Landing half way round a spin: he comes off.
   const p = rat(17.5, 0, -30);
   getOn(p, v(0, 1));

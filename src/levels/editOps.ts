@@ -55,9 +55,6 @@ export class History {
 
 // ---- Shapes ----
 
-/** Pieces that are one spot on the map (a crate, an enemy, a lamp), not a rectangle. Given by the editor. */
-export type IsSingle = (t: PieceType) => boolean;
-
 export function pieceBounds(p: Piece): { x0: number; x1: number; z0: number; z1: number } {
   return { x0: Math.min(p.x0, p.x1), x1: Math.max(p.x0, p.x1), z0: Math.min(p.z0, p.z1), z1: Math.max(p.z0, p.z1) };
 }

@@ -1,13 +1,10 @@
 /**
- * WHAT HE DID IN ONE AIR ON HIS SHIELD, by name (BACKLOG B4, 2026-11-18: "the trick's name shown as he lands").
- * The controller counts tricks only as speed; this keeps what they were, from what the game already sees each frame:
- * a kickflip begun, a spin begun, the guard held long enough in the air for a grab. Landed, `landed()` gives their
- * names joined ("KICKFLIP + 720 + GRAB"); a bail or a ride ended throws them away. Plain logic: tested in node.
+ * WHAT HE DID IN ONE AIR ON HIS SHIELD (BACKLOG B4, 2026-11-18), from what the game already sees each frame: a
+ * kickflip begun, a spin begun, the guard held long enough in the air for a grab. The game uses it for the grab's slap
+ * (the frame it counts) and the horn stab as he lands (higher for each trick). (It named them on the screen for a day;
+ * the owner had the names taken off.) A bail or a ride ended throws them away. Plain logic: tested in node.
  */
 export type TrickKind = 'flip' | 'spin' | 'grab';
-
-/** What each is called. Spins together are one trick, by how far round: 360, 720, 1080... */
-export const TRICK_NAMES = { flip: 'KICKFLIP', grab: 'SHIELD GRAB' } as const;
 
 export class TrickLog {
   private done: TrickKind[] = [];
@@ -33,25 +30,9 @@ export class TrickLog {
     this.grabFor = 0;
     this.grabbed = false;
   }
-  /** What there is to show for this air, in the order he did it ("" if nothing). Clears it. */
-  landed(): string {
-    const out: string[] = [];
-    let spins = 0;
-    const flush = (): void => {
-      if (spins) out.push(String(360 * spins));
-      spins = 0;
-    };
-    for (const k of this.done) {
-      if (k === 'spin') {
-        spins++;
-        continue;
-      }
-      flush();
-      out.push(TRICK_NAMES[k]);
-    }
-    flush();
-    this.clear();
-    return out.join(' + ');
+  /** What he has done in this air, in order. */
+  get kinds(): readonly TrickKind[] {
+    return this.done;
   }
   /** Bailed, or off the shield: nothing to show. */
   clear(): void {

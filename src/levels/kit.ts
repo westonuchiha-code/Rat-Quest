@@ -32,11 +32,6 @@ export function grating(x0: number, x1: number, z0: number, z1: number, top: num
   return skinned(extent('stone', x0, x1, top - thick, top, z0, z1), 'drainGrate');
 }
 
-/** A floor with hazard stripes, for edges that matter. */
-export function hazardFloor(x0: number, x1: number, z0: number, z1: number, top = 0): Box {
-  return skinned(extent('stone', x0, x1, top - 1, top, z0, z1), 'hazardTrim');
-}
-
 // ---- Walls ----
 
 /** A wall along x at depth z (thickness t), from `bottom` to `top`. */
@@ -54,19 +49,6 @@ export function wallZ(z0: number, z1: number, x: number, top: number, style: Sty
 export function hall(cx: number, cz: number, width: number, length: number, wallHeight = 14, style: Style = 'sewer'): Box[] {
   const parts = room(width / 2, true, length / 2, wallHeight).map((b) => ({ ...b, x0: b.x0 + cx, x1: b.x1 + cx, z0: b.z0 + cz, z1: b.z1 + cz }));
   return style === 'sewer' ? parts : parts.map((b) => skinned(b, b.kind === 'floor' ? FLOOR_SKIN[style] : WALL_SKIN[style]));
-}
-
-/** A wall with a doorway cut in it: two jambs and a lintel. The opening is `gap` wide, `height` tall, centred at `at`. */
-export function wallWithGap(x0: number, x1: number, z: number, at: number, gap: number, height: number, top: number, style: Style = 'sewer', t = 1): Box[] {
-  const g0 = at - gap / 2;
-  const g1 = at + gap / 2;
-  return [wallX(x0, g0, z, top, style, t), wallX(g1, x1, z, top, style, t), wallX(g0, g1, z, top, style, t, height)];
-}
-/** The same, in a wall along z. */
-export function wallWithGapZ(z0: number, z1: number, x: number, at: number, gap: number, height: number, top: number, style: Style = 'sewer', t = 1): Box[] {
-  const g0 = at - gap / 2;
-  const g1 = at + gap / 2;
-  return [wallZ(z0, g0, x, top, style, t), wallZ(g1, z1, x, top, style, t), wallZ(g0, g1, x, top, style, t, height)];
 }
 
 // ---- Platforms and walkways ----
@@ -113,13 +95,6 @@ export function staircase(cx: number, width: number, zStart: number, dir: 1 | -1
 /** A round-ish pillar (square column) of `size`, standing from `bottom` to `top`. */
 export function column(x: number, z: number, size: number, top: number, bottom = 0): Box {
   return block('pillar', x, z, size, size, top, bottom);
-}
-
-/** A row of columns along x from x0 to x1 at depth z, every `gap` units. */
-export function colonnade(x0: number, x1: number, z: number, gap: number, size: number, top: number, bottom = 0): Box[] {
-  const out: Box[] = [];
-  for (let x = x0; x <= x1 + 1e-6; x += gap) out.push(column(x, z, size, top, bottom));
-  return out;
 }
 
 /**

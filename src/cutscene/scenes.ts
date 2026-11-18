@@ -17,7 +17,7 @@
  * up; its keeper stands behind it on a step; three stools stand before it. Tables are 0.74 high.
  */
 import { BAR } from '../levels/junction';
-import { STOOL, TABLE } from '../world/layout';
+import { STOOL } from '../world/layout';
 import type { ActorKey, CutsceneDef, V3 } from './cutscene';
 
 const EAST = Math.PI / 2;
@@ -532,5 +532,3 @@ export const CUTSCENES: CutsceneDef[] = [
 ];
 
 export const cutsceneById = (id: string): CutsceneDef | undefined => CUTSCENES.find((c) => c.id === id);
-/** How high a table's top is: where a thing on one stands. */
-export const TABLE_TOP = TABLE.h;

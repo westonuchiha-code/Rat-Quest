@@ -631,22 +631,6 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   };
 }
 
-const KEY = 'ratquest.custom.v1';
-export function loadCustom(storage: { getItem(k: string): string | null }): CustomLevel | null {
-  try {
-    const raw = storage.getItem(KEY);
-    return raw ? parseCustom(raw) : null;
-  } catch {
-    return null;
-  }
-}
-export function saveCustom(storage: { setItem(k: string, v: string): void }, c: CustomLevel): void {
-  try {
-    storage.setItem(KEY, JSON.stringify(c));
-  } catch {
-    // storage unavailable: the level stays in memory only
-  }
-}
 /** Reads a level from text, or returns null if it is not one. */
 export function parseCustom(text: string): CustomLevel | null {
   try {
