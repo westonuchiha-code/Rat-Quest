@@ -31,7 +31,7 @@ import { CAMPAIGN } from './campaign';
 import { hall } from './hall';
 import { practiceRoom, widowPit } from './practice';
 import { layThrowables } from './throwables';
-import { HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from './testRooms';
+import { BOARDS_SAY, HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from './testRooms';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
 
@@ -254,6 +254,20 @@ export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMai
  * they are rooms of the list themselves or already another room's. What a level WAS called is kept in `was`. And every
  * door anywhere that leads to a renamed level says its new name (the Hall's doors say what the list gives them).
  */
+/** A room's own title board (its first line is the name it WAS given) says what `mode` says: see BOARDS_SAY. */
+export function titleBoards(all: LevelDef[], mode: 'old' | 'number'): void {
+  for (const l of new Set(all)) {
+    if (!l.was) continue;
+    for (const d of l.decor) {
+      if (d.kind !== 'sign') continue;
+      const old = l.was.toUpperCase();
+      const now = l.name.toUpperCase();
+      if (mode === 'number' && d.lines[0] === old) d.lines[0] = now;
+      else if (mode === 'old' && d.lines[0] === now) d.lines[0] = old;
+    }
+  }
+}
+
 function nameTheRooms(all: LevelDef[]): void {
   const by = new Map(all.map((l) => [l.id, l]));
   const taken = new Set(ROOMS.map((r) => r.id));
@@ -286,6 +300,8 @@ function nameTheRooms(all: LevelDef[]): void {
   }
 }
 nameTheRooms([...ALL_LEVELS, ...TEST_ROOMS]);
+// (And a room's own title board says its number, if that is what BOARDS_SAY says: testRooms.ts.)
+titleBoards([...ALL_LEVELS, ...TEST_ROOMS], typeof location !== 'undefined' && /[#&]boards=number\b/.test(location.hash) ? 'number' : BOARDS_SAY);
 // (And a few pots and rocks to throw, by each test room's way in: levels/throwables.ts.)
 layThrowables([...ALL_LEVELS, ...TEST_ROOMS]);
 

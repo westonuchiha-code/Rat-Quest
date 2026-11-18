@@ -180,6 +180,10 @@ threshold (8% of the loudest) changed in scripts/assets/pack.mjs `cuts`.
 
 **B6. Old names still on boards.** Sign boards inside rooms still say "THE LONG DROP", "THE MILKY WAY", "THE PIPE";
 wedge hints and characters' lines name the Club and the worlds. Decide with him whether boards say "TEST ROOM 5".
+[opus] 2026-11-18: ONE SWITCH, `BOARDS_SAY` in levels/testRooms.ts ('old' | 'number'), left on 'old' for HIS CALL.
+'number' turns the four rooms' own title boards (THE TOY BOX, THE MILKY WAY, THE BIG DIPPER, THE LONG DROP) into
+"TEST ROOM 1/1B/1C/5"; the rest of each board and boards naming a thing in a room are not touched. `&boards=number`
+shows it. Pictures of both were sent. Wedge hints and characters' lines still name the old places: not touched.
 
 **B7. The Hall and the practice rooms are plainly dressed.** Banners, benches, something at the east end beside
 Dave. The south wall's east end has no doors: room for more. The Club's own doors still ask for Golden Wedges.

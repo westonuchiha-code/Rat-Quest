@@ -5,10 +5,10 @@
  * buttons on the floor that spawn the enemy").
  */
 import './../src/core/colorSetup';
-import { ALL_LEVELS, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
+import { ALL_LEVELS, LEVELS, TEST_ROOMS, levelById, titleBoards } from '../src/levels/levels';
 import { HALL, HALL_FIRE, hallDoors } from '../src/levels/hall';
 import { PRACTICE, WIDOW_PIT } from '../src/levels/practice';
-import { BOSS_ROOMS, HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from '../src/levels/testRooms';
+import { BOARDS_SAY, BOSS_ROOMS, HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from '../src/levels/testRooms';
 import { wayOutOf, type WayOutWorld } from '../src/levels/wayOut';
 import { junction } from '../src/levels/junction';
 import { SIGN, signPixels } from '../src/world/courseDoors';
@@ -47,6 +47,19 @@ const hall = levelById(HALL_ID)!;
   check('no two levels have the same name, and every level of the game (the Club, the worlds and their areas) and every try-out room is a numbered test room', new Set(all.map((l) => l.name)).size === all.length && LEVELS.every((l) => named.includes(l)), LEVELS.filter((l) => !named.includes(l)).map((l) => l.id).join(' '));
   check('a name is made one way only', roomName(3) === 'Test Room 3' && roomName(3, 1) === 'Test Room 3B' && roomName(10, 2) === 'Test Room 10C');
   check('a room, a boss room or a practice room can be opened from the address by its id (letters, digits and _ only)', [...ROOMS, ...BOSS_ROOMS, ...PRACTICE_ROOMS].every((r) => /^\w+$/.test(r.id)));
+}
+
+// ---- A room's own title board (B6, 2026-11-18): the owner's call, and one switch ----
+{
+  const rooms = ['toybox', 'milkyway', 'bigdipper', 'longdrop'].map((id) => levelById(id)!);
+  const titles = (): string[] => rooms.map((l) => (l.decor.find((d) => d.kind === 'sign') as { lines: string[] }).lines[0]);
+  const before = titles();
+  check('the four rooms with a title board say their OLD names as they stand (until the owner says): THE TOY BOX, THE MILKY WAY, THE BIG DIPPER, THE LONG DROP', BOARDS_SAY === 'old' && before.join('|') === 'THE TOY BOX|THE MILKY WAY|THE BIG DIPPER|THE LONG DROP', before.join('|'));
+  titleBoards(rooms, 'number');
+  const after = titles();
+  const pipe = levelById('garden')!.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'THE PIPE');
+  titleBoards(rooms, 'old');
+  check('...with the switch the other way, each says its room\'s number, and the rest of the board is as it was; a board that names a thing IN a room (THE PIPE) is not touched; and back again', after.join('|') === 'TEST ROOM 1|TEST ROOM 1B|TEST ROOM 1C|TEST ROOM 5' && pipe && titles().join('|') === before.join('|'), after.join('|'));
 }
 
 // ---- The Hall ----
