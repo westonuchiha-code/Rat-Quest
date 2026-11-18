@@ -3337,6 +3337,30 @@ function startGame(): void {
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
+  // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
+  (window as unknown as { __cost?: () => unknown }).__cost = () => {
+    let meshes = 0;
+    let tris = 0;
+    let lights = 0;
+    scene.traverse((o) => {
+      if ((o as THREE.Light).isLight && o.visible) lights++;
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || !m.visible || !m.geometry) return;
+      meshes++;
+      const g = m.geometry;
+      tris += (g.index ? g.index.count : g.attributes.position?.count ?? 0) / 3;
+    });
+    // (And which of the scene's own groups holds the meshes: the biggest few.)
+    const by: Record<string, number> = {};
+    for (const c of scene.children) {
+      let n = 0;
+      c.traverse((o) => { if ((o as THREE.Mesh).isMesh && o.visible) n++; });
+      const key = c.name || c.type + (c === chamber.group ? ':chamber' : enemyModels.some((e) => e.root === c) ? ':enemy' : npcs.some((x) => x.root === c) ? ':npc' : '');
+      by[key] = (by[key] ?? 0) + n;
+    }
+    const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    return { level: cur.id, top, calls: renderer.info.render.calls, frameTris: renderer.info.render.triangles, meshes, tris: Math.round(tris), lights, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries };
+  };
   (window as unknown as { __chaos?: () => unknown }).__chaos = () => ({ level: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp });
   const devAuto: { fight: boolean; swing: number } = { fight: /[#&]autofight\b/.test(location.hash), swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;

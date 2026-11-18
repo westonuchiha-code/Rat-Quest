@@ -216,6 +216,17 @@ heard it and said yes. `assets/music/<room id>.mp3` is the quick way to try one 
 settings, ever. Players get the sliders instead. When he asks: a player's version of the Tweaks panel, a way back to
 "as designed", a mark on a save whose numbers were changed. His words are in START-HERE.md.
 
+**B12. What a room asks of the graphics card (measured 2026-11-18 by Opus; not acted on).** `window.__cost()` in a
+built page reports draw calls, triangles and which groups hold the meshes. Draw calls a frame, as each room opens:
+Hall 2,020, Toy Box 1,703, Waterworks 942, Foundry 852, Hollows 835, Club 760, Keep 649, Cistern 599 ... the
+smallest under 150. A phone is comfortable with a few hundred; nobody has measured the frame rate ON his phone.
+WHERE IT IS: the Hall's 30 doors (about 1,000 meshes: each door's arch is 16 stones that move one by one as it opens)
+and its 17 characters (about 830: each is made of many small parts); the Toy Box's dream dressing (about 2,400 meshes in
+the room's own group: flowers, butterflies, lights). TRIED AND TAKEN OUT: joining each room's still walls and floors
+into one mesh per picture (Hall 2,020 to 1,988; the Long Drop drew three times the triangles, as joined pieces can no
+longer be skipped off screen). The real wins are in the door model (one mesh once it has opened) and the dream's
+dressing (instanced flowers): model work, best done with his eyes on the result.
+
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in
 the Hall; "anything you find while playing" and re-running the chaos drive as standing items.
