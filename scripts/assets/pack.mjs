@@ -73,6 +73,76 @@ for (const f of files('music')) {
   music.push({ name, file: f, hash: sha(p), what, lead: roll / rate, length: n / rate, b64: fs.readFileSync(mp3).toString('base64') });
   console.log(`music   ${name.padEnd(16)} ${what}, ${(n / rate).toFixed(1)} s`);
 }
+// FONTS: a font file named for the part of the game it letters (src/ui/fonts.ts: game, title, label, logo, tools).
+// Packed as it is (a font is small and a browser reads the file whole); it goes first in that line of FONTS.
+const fontRoles = [...src('src/ui/fonts.ts').match(/const OWN_FONTS = \{([\s\S]*?)\} as const;/)[1].matchAll(/^  ([a-z]+): /gm)].map((m) => m[1]);
+const FONT_TYPES = { woff2: 'woff2', woff: 'woff', ttf: 'truetype', otf: 'opentype' };
+const fonts = [];
+for (const f of files('fonts')) {
+  const name = stem(f);
+  const ext = f.slice(f.lastIndexOf('.') + 1).toLowerCase();
+  const p = path.join(assetsDir, 'fonts', f);
+  if (!fontRoles.includes(name)) { bad.push(`assets/fonts/${f}: there is no font called "${name}" (the names are ${fontRoles.join(', ')}: ASSETS.md, part 6)`); continue; }
+  if (!FONT_TYPES[ext]) { bad.push(`assets/fonts/${f}: a font must be a .woff2, .woff, .ttf or .otf file`); continue; }
+  const bytes = fs.readFileSync(p);
+  fonts.push({ name, file: f, hash: sha(p), format: FONT_TYPES[ext], mime: ext === 'woff2' ? 'font/woff2' : ext === 'woff' ? 'font/woff' : ext === 'otf' ? 'font/otf' : 'font/ttf', b64: bytes.toString('base64') });
+  console.log(`font    ${name.padEnd(16)} ${f}, ${(bytes.length / 1024).toFixed(0)} KB`);
+}
+// VOICES: a character KIND's own voice (src/audio/speech.ts VOICES: mouse, bird, turtle...), as its 27 syllables
+// (SYLLABLES there). Either a FOLDER, voices/turtle/, of one file per syllable (ah.wav, ba.wav...), or ONE recording,
+// voices/turtle.wav, saying them in that order with a breath between: it is cut where it falls quiet.
+const speechSrc = src('src/audio/speech.ts');
+const voiceKinds = [...speechSrc.match(/export const VOICES: Record<NpcKind, VoiceDef> = \{([\s\S]*?)\n\};/)[1].matchAll(/^  ([a-z]+): \{ bank:/gm)].map((m) => m[1]);
+const syllables = [...speechSrc.match(/export const SYLLABLES = \[([\s\S]*?)\] as const/)[1].matchAll(/'([a-z]+)'/g)].map((m) => m[1]);
+const VR = 22050;
+const pcmOf = (p) => ff(['-i', p, '-ac', '1', '-ar', String(VR), '-f', 's16le', '-']);
+const s8 = (i16) => { const out = Buffer.alloc(i16.length / 2); let peak = 1; for (let i = 0; i < out.length; i++) peak = Math.max(peak, Math.abs(i16.readInt16LE(i * 2))); for (let i = 0; i < out.length; i++) out.writeInt8(Math.round((i16.readInt16LE(i * 2) / peak) * 120), i); return out; };
+/** Where a recording is loud enough to be a sound: [start, end) in samples, in order. */
+function cuts(pcm) {
+  const n = pcm.length / 2;
+  const win = Math.round(VR * 0.01);
+  let peak = 1;
+  for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(pcm.readInt16LE(i * 2)));
+  const loud = [];
+  for (let w = 0; w * win < n; w++) {
+    let e = 0;
+    for (let i = w * win; i < Math.min(n, (w + 1) * win); i++) e = Math.max(e, Math.abs(pcm.readInt16LE(i * 2)));
+    loud.push(e > peak * 0.08);
+  }
+  const out = [];
+  for (let w = 0; w < loud.length; w++) {
+    if (!loud[w]) continue;
+    let e = w;
+    // (A gap shorter than 60 ms is inside one syllable: a stop in "ka" or "ta".)
+    while (e + 1 < loud.length && (loud[e + 1] || loud.slice(e + 1, e + 7).some(Boolean))) e++;
+    if (e - w >= 2) out.push([Math.max(0, (w - 1) * win), Math.min(n, (e + 2) * win)]);
+    w = e;
+  }
+  return out;
+}
+const voices = [];
+for (const f of files('voices')) {
+  const p = path.join(assetsDir, 'voices', f);
+  const isDir = fs.statSync(p).isDirectory();
+  const kind = isDir ? f : stem(f);
+  if (!voiceKinds.includes(kind)) { bad.push(`assets/voices/${f}: there is no kind of character called "${kind}" (the kinds are ${voiceKinds.join(', ')})`); continue; }
+  const got = {};
+  if (isDir) {
+    for (const g of fs.readdirSync(p).filter((x) => !x.startsWith('.')).sort()) {
+      if (!syllables.includes(stem(g))) { bad.push(`assets/voices/${f}/${g}: "${stem(g)}" is not one of the syllables (${syllables.join(' ')})`); continue; }
+      got[stem(g)] = s8(pcmOf(path.join(p, g))).toString('base64');
+    }
+  } else {
+    const pcm = pcmOf(p);
+    const parts = cuts(pcm);
+    if (!parts.length) { bad.push(`assets/voices/${f}: nothing loud enough in it to cut into syllables`); continue; }
+    // In the order said; if there are fewer sounds than syllables, they go round again.
+    syllables.forEach((syl, i) => { const [a, b] = parts[i % parts.length]; got[syl] = s8(pcm.subarray(a * 2, b * 2)).toString('base64'); });
+    console.log(`voice   ${kind.padEnd(16)} ${f}: ${parts.length} sounds cut out of it${parts.length < syllables.length ? ` (fewer than the ${syllables.length} syllables: they go round again)` : ''}`);
+  }
+  if (isDir) console.log(`voice   ${kind.padEnd(16)} ${f}/: ${Object.keys(got).length} syllables`);
+  voices.push({ kind, file: isDir ? `${f}/` : f, hash: isDir ? crypto.createHash('sha1').update(fs.readdirSync(p).filter((x) => !x.startsWith('.')).sort().map((x) => x + sha(path.join(p, x))).join()).digest('hex').slice(0, 16) : sha(p), got });
+}
 fs.rmSync(tmp, { recursive: true, force: true });
 if (bad.length) {
   console.error('\nNOT PACKED: these files are not named for anything the game has.\n  ' + bad.join('\n  '));
@@ -88,7 +158,9 @@ fs.writeFileSync(outFile, `/**
 export interface DroppedTexture { file: string; hash: string; /** Dots a side. */ size: number; /** RGBA, bottom row first, in base64. */ b64: string }
 export interface DroppedSound { file: string; hash: string; seconds: number; /** Mono, 22050 a second, 8 bit signed, in base64. */ b64: string }
 export interface DroppedMusic { file: string; hash: string; /** What its name is: a room's id, a kind of music, or a jingle. */ what: 'room' | 'kind' | 'jingle'; lead: number; length: number; /** MP3, in base64. */ b64: string }
-export const DROPPED: { textures: Record<string, DroppedTexture>; sounds: Record<string, DroppedSound>; music: Record<string, DroppedMusic> } = {
+export interface DroppedVoice { file: string; hash: string; /** Each syllable it has: mono, 22050 a second, 8 bit signed, in base64. */ syllables: Record<string, string> }
+export interface DroppedFont { file: string; hash: string; /** As @font-face's format() names it, and its type. */ format: string; mime: string; /** The file, in base64. */ b64: string }
+export const DROPPED: { textures: Record<string, DroppedTexture>; sounds: Record<string, DroppedSound>; music: Record<string, DroppedMusic>; fonts: Record<string, DroppedFont>; voices: Record<string, DroppedVoice> } = {
   textures: {
 ${textures.map((t) => `    ${t.name}: { file: ${q(t.file)}, hash: '${t.hash}', size: ${t.size}, b64: '${t.b64}' },`).join('\n')}
   },
@@ -98,6 +170,12 @@ ${sounds.map((s) => `    ${s.name}: { file: ${q(s.file)}, hash: '${s.hash}', sec
   music: {
 ${music.map((m) => `    ${m.name}: { file: ${q(m.file)}, hash: '${m.hash}', what: '${m.what}', lead: ${m.lead.toFixed(6)}, length: ${m.length.toFixed(6)}, b64: '${m.b64}' },`).join('\n')}
   },
+  fonts: {
+${fonts.map((f) => `    ${f.name}: { file: ${q(f.file)}, hash: '${f.hash}', format: '${f.format}', mime: '${f.mime}', b64: '${f.b64}' },`).join('\n')}
+  },
+  voices: {
+${voices.map((v) => `    ${v.kind}: { file: ${q(v.file)}, hash: '${v.hash}', syllables: { ${Object.entries(v.got).map(([k, b]) => `${k}: '${b}'`).join(', ')} } },`).join('\n')}
+  },
 };
 `);
-console.log(`${path.relative(root, outFile)}: ${textures.length} textures, ${sounds.length} sounds, ${music.length} songs`);
+console.log(`${path.relative(root, outFile)}: ${textures.length} textures, ${sounds.length} sounds, ${music.length} songs, ${fonts.length} fonts, ${voices.length} voices`);

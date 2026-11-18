@@ -7,6 +7,7 @@
 import { RECORDED } from './recorded';
 import { decodeRecorded, Sample } from './synth';
 import type { NpcKind } from '../npc/npc';
+import { droppedSyllable, hasDroppedVoice } from '../assets/drop';
 
 /** The sounds recorded for each voice, in the order they are said in the recording. */
 export const SYLLABLES = [
@@ -43,6 +44,16 @@ export const VOICES: Record<NpcKind, VoiceDef> = {
   owl: { bank: 'pigeon', pitch: 0.86, wobble: 0.02, vol: 0.65, standIn: 140 },
   rat: { bank: 'wren', pitch: 1.08, wobble: 0.06, vol: 0.6, standIn: 230 },
 };
+
+/**
+ * The voice a kind of character speaks with: its own line in VOICES; or, if a VOICE FILE was dropped in for it
+ * (assets/voices/, assets/README.md), that recording, at its own pitch (it was made for this kind: it is not pitched
+ * up or down to pass for one), with the line's wobble and loudness. Its bank is `@` and the kind.
+ */
+export function voiceOf(kind: NpcKind, has: (k: string) => boolean = hasDroppedVoice): VoiceDef {
+  const v = VOICES[kind] ?? VOICES.mouse;
+  return has(kind) ? { ...v, bank: `@${kind}`, pitch: 1 } : v;
+}
 
 const LETTER: Record<string, Syllable> = {
   a: 'ah', e: 'eh', i: 'ee', o: 'oh', u: 'oo',
@@ -98,15 +109,16 @@ export function syllableSample(bank: string, syl: Syllable, f0: number): Sample 
   const key = `${bank}:${syl}`;
   let s = cache.get(key);
   if (!s) {
+    const dropped = bank.startsWith('@') ? droppedSyllable(bank.slice(1), syl) : null;
     const rec = RECORDED[`voice_${bank}_${syl}`];
-    s = rec ? decodeRecorded(rec) : standIn(syl, f0);
+    s = dropped ? { ...dropped, loop: false } : rec ? decodeRecorded(rec) : standIn(syl, f0);
     cache.set(key, s);
   }
   return s;
 }
 
 /** True if this voice has real recordings. */
-export const hasRecordedVoice = (bank: string): boolean => SYLLABLES.some((s) => !!RECORDED[`voice_${bank}_${s}`]);
+export const hasRecordedVoice = (bank: string): boolean => (bank.startsWith('@') && hasDroppedVoice(bank.slice(1))) || SYLLABLES.some((s) => !!RECORDED[`voice_${bank}_${s}`]);
 
 /** Something that can play a sample (the audio engine). */
 export interface SamplePlayer {
@@ -170,7 +182,7 @@ export function speak(player: SamplePlayer, kind: NpcKind, ch: string, step = 0,
     const slot = GROOVE[step % 16];
     if (slot === '.') return false;
     const syl = grooveSyllable(slot, ch);
-    const v = VOICES.pigeon;
+    const v = voiceOf('pigeon');
     const accent = slot === 'K' || slot === 'S' ? 1 : slot === 'k' ? 0.7 : 0.5;
     player.playSample(`voice:${v.bank}:${syl}`, syllableSample(v.bank, syl, v.standIn), { vol: v.vol * accent, rate: v.pitch * (1 + (roll() * 2 - 1) * v.wobble), verb: 0.1, priority: 3 });
     return true;
@@ -182,7 +194,7 @@ export function speak(player: SamplePlayer, kind: NpcKind, ch: string, step = 0,
   if (j < 0) return false;
   const word = line.slice(w[0], w[1]).toLowerCase();
   const syl = SYLLABLES[(hashWord(word) + j * 11) % SYLLABLES.length];
-  const v = VOICES[kind] ?? VOICES.mouse;
+  const v = voiceOf(kind);
   const sent = sentenceAt(line, idx);
   const lastWord = !/[a-z]/i.test(line.slice(w[1], line.indexOf(sent.end, w[1]) < 0 ? line.length : line.indexOf(sent.end, w[1])));
   const lastSyl = j === starts.length - 1;

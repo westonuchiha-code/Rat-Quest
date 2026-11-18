@@ -96,7 +96,7 @@ export function assetsDoc(read: Read, list: List): string {
     ['a kind of music, everywhere it plays', code('assets/music/'), TRACK_NAMES.join(', '), code('groove.mp3')],
     ['a jingle', code('assets/music/'), Object.keys(JINGLES).join(', '), code('wedge.mp3')],
   ]), '');
-  const dropped = [...Object.entries(DROPPED.textures).map(([n, d]) => ['texture', code(n), code(`assets/textures/${d.file}`)]), ...Object.entries(DROPPED.sounds).map(([n, d]) => ['sound', code(n), code(`assets/sounds/${d.file}`)]), ...Object.entries(DROPPED.music).map(([n, d]) => [`music (${d.what})`, code(n), code(`assets/music/${d.file}`)])];
+  const dropped = [...Object.entries(DROPPED.textures).map(([n, d]) => ['texture', code(n), code(`assets/textures/${d.file}`)]), ...Object.entries(DROPPED.sounds).map(([n, d]) => ['sound', code(n), code(`assets/sounds/${d.file}`)]), ...Object.entries(DROPPED.music).map(([n, d]) => [`music (${d.what})`, code(n), code(`assets/music/${d.file}`)]), ...Object.entries(DROPPED.fonts).map(([n, d]) => ['font', code(n), code(`assets/fonts/${d.file}`)]), ...Object.entries(DROPPED.voices).map(([n, d]) => ['voice', code(n), code(`assets/voices/${d.file}`)])];
   say(dropped.length ? '**Dropped in now:**' : '**Nothing is dropped in now: everything is the game\'s own.**', '');
   if (dropped.length) say(table(['What', 'Replaces', 'File'], dropped), '');
   say('NOT YET possible this way: a model (a creature, a character, a prop), a voice, a font file, a cutscene. Those are', 'still changed in code, in the files the parts below name.', '');

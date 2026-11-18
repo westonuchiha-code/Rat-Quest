@@ -61,3 +61,18 @@ export function droppedJingle(id: string): DropTune | undefined {
   const d = DROPPED.music[id];
   return d?.what === 'jingle' ? { name: d.file, lead: 0, length: d.length, bpm: 0, b64: d.b64 } : undefined;
 }
+
+/**
+ * A VOICE dropped in for a kind of character (assets/voices/turtle/ or turtle.wav): its recording of this syllable
+ * (-1..1, mono, 22050 a second), or null. A kind with a voice of its own is not given another's.
+ */
+export function droppedSyllable(kind: string, syllable: string): { data: Float32Array; rate: number } | null {
+  const b64 = DROPPED.voices[kind]?.syllables[syllable];
+  if (!b64) return null;
+  const b = bytesOf(b64);
+  const data = new Float32Array(b.length);
+  for (let i = 0; i < b.length; i++) data[i] = ((b[i] << 24) >> 24) / 127;
+  return { data, rate: 22050 };
+}
+/** Whether a kind of character has a voice dropped in. */
+export const hasDroppedVoice = (kind: string): boolean => !!DROPPED.voices[kind];

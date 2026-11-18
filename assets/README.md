@@ -32,3 +32,28 @@ Name the file after WHERE it plays:
 - a jingle: `wedge` (a Golden Wedge), `defeat` (he is beaten).
 A room's own file wins over its kind's.
 - Any sound type ffmpeg reads. It is played round and round: a song made to loop will loop without a seam.
+
+## fonts/   a typeface
+
+Name the file after the LINE of lettering it replaces (src/ui/fonts.ts, and ASSETS.md part 6):
+- `game`  the HUD, the menus, the talk box, the shop, the photo mode;
+- `title` the big headings: the title screen, the save-file screen;
+- `label` small print on those screens, and the letters on the button pictures;
+- `logo`  the name under the studio's mark as the game starts;
+- `tools` the level builder and the Tweaks panel.
+- A .woff2 (best: smallest), .woff, .ttf or .otf. It is packed into the game whole: a font of 50 KB adds 70 KB.
+- It goes FIRST in its line; the line's own fonts stay after it, for any letter the file does not have.
+- NOT the block letters on door signs and boards in the world: those are drawn dot by dot (render/pixelFont.ts).
+
+## voices/   a kind of character's voice
+
+Characters talk in made-up syllables, one or more a word (src/audio/speech.ts). Each KIND of character has a voice:
+mouse, bird, pigeon, villain, turtle, fox, ant, stag, ferret, owl, rat. Most borrow one of four recordings, pitched
+up or down. To give a kind its own, either:
+- a FOLDER named for the kind, `voices/turtle/`, with a file for each syllable: `ah.wav`, `eh.wav`, `ee.wav`,
+  `oh.wav`, `oo.wav`, `ba.wav`, `ka.wav`, `da.wav`, `fa.wav`, `ga.wav`, `ha.wav`, `ja.wav`, `la.wav`, `ma.wav`,
+  `na.wav`, `pa.wav`, `ra.wav`, `sa.wav`, `sha.wav`, `cha.wav`, `ta.wav`, `wa.wav`, `ya.wav`, `za.wav`, `eek.wav`,
+  `hup.wav`, `heh.wav` (any of them; one that is missing is the old voice's stand-in); or
+- ONE recording named for the kind, `voices/turtle.wav`, saying those 27 in that order with a short breath between
+  each. It is cut where it falls quiet. Fewer sounds than 27 and they go round again.
+- Any sound type ffmpeg reads; made mono, 22 kHz, 8 bit. It plays at its own pitch: record it as that kind should sound.

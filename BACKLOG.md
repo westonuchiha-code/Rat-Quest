@@ -170,6 +170,13 @@ tests/tricks.ts and new checks in tests/toybox.ts (the names agree with what the
 **B5. Drop-in for voices and font files.** Voices: a folder per character kind, cut into syllables as
 `scripts/make-recorded.py` does. Fonts: a `.woff2` in `assets/fonts/` becomes an `@font-face` in `FONT_FACES`
 (`src/ui/fonts.ts`), packed as base64.
+[opus] DONE 2026-11-18. FONTS: assets/fonts/<line>.woff2|woff|ttf|otf (game, title, label, logo, tools) is packed
+whole and put FIRST in that line (ui/fonts.ts `fontTable`), with an @font-face for it. Tried with a real font: the
+title lettering changed. VOICES: assets/voices/<kind>/ (a file per syllable) or assets/voices/<kind>.wav (one
+recording, cut where it falls quiet, in the order of SYLLABLES) becomes that kind's voice at its own pitch
+(audio/speech.ts `voiceOf`). Both in assets/README.md and checked in tests/assets.ts (packing, refusing a wrong name,
+the game using it). The cutting of one recording has only been tried on beeps: a real voice may want its quiet
+threshold (8% of the loudest) changed in scripts/assets/pack.mjs `cuts`.
 
 **B6. Old names still on boards.** Sign boards inside rooms still say "THE LONG DROP", "THE MILKY WAY", "THE PIPE";
 wedge hints and characters' lines name the Club and the worlds. Decide with him whether boards say "TEST ROOM 5".
