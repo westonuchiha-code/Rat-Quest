@@ -152,8 +152,10 @@ rockKnock, squirm (a carried creature scrabbles now and then). Unheard by anyone
 set down on a MOVING PLATFORM now rides it (it hung in the air before: chamber.ts stepMovers); a thrown crate, pot or
 rock meets a character's body and stops there. Through a door: loadLevel already empties his hands and ends the
 carry; filmed (the crate stays behind, he arrives in the Hall empty-handed). (c) Filmed: the roach, scorpion and
-mantis carried (with the film aid `&carryfoe`), a rock thrown and carried again, the door. NOT filmed: the roller,
-hornet and firefly carried, an iron-bound crate. Film aid: `&autogo=..&gostow=2` (STOW at the 2nd stop).
+mantis carried (with the film aid `&carryfoe`), a rock thrown and carried again, the door. [opus] 2026-11-18: and
+the hornet, firefly and roller carried, and an iron-bound crate thrown, whole, and taken up again. That film found
+the HORNET and FIREFLY drawn round his chest, not on their backs over his head: their models place themselves in
+their own tick, which undid the turn; the turn now comes after the tick (main.ts). Film aid: `&autogo=..&gostow=2` (STOW at the 2nd stop).
 
 **B4. Tricks polish.** Proper poses for the spin and the grab, a sound for each, the trick's name shown as he lands.
 [opus] DONE 2026-11-18. Poses (player/ratModel.ts `GRAB_ARMS`, `SPIN_ARMS`): a grab puts his shield-side paw down

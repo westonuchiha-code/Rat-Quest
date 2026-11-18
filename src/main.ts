@@ -4418,7 +4418,10 @@ function startGame(): void {
       enemyModels[i].setTransform(enemyPos, e.facing);
       tip.on = Math.abs(tip.x) + Math.abs(tip.z) > 0.004;
       if (tip.on) root.quaternion.premultiply(tiltQ.setFromUnitVectors(UP_AXIS, tiltN.set(-tip.x, 1, -tip.z).normalize()));
-      // In his hands it is on its back, legs going; thrown, it goes end over end (world/lifting.ts, heldTurn).
+      foeTilt.set(e, tip);
+      enemyModels[i].tick(animDt, e);
+      // In his hands it is on its back, legs going; thrown, it goes end over end (world/lifting.ts, heldTurn). (After
+      // its tick: some creatures, the fliers among them, place their own models there, and would undo it.)
       turnedInHand.delete(e);
       if (inHand(e) && e.alive) {
         const flying = thrownFoes.find((t) => t.what === e);
@@ -4431,8 +4434,6 @@ function startGame(): void {
         root.quaternion.premultiply(handQ);
         turnedInHand.add(e);
       }
-      foeTilt.set(e, tip);
-      enemyModels[i].tick(animDt, e);
       // (Its shadow is cut where its ground ends, as the knight's is: render/cutShadow.ts.)
       shadowCuts.cut(root, chamber.colliders);
     });
