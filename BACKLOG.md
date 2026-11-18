@@ -215,6 +215,10 @@ heard it and said yes. `assets/music/<room id>.mp3` is the quick way to try one 
 settings, ever. Players get the sliders instead. When he asks: a player's version of the Tweaks panel, a way back to
 "as designed", a mark on a save whose numbers were changed. His words are in START-HERE.md.
 
+**SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
+in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in
+the Hall; "anything you find while playing" and re-running the chaos drive as standing items.
+
 **B10. Small known things.** A 404 for the page's icon in the browser's log (no `favicon`). [opus] FIXED 2026-11-18: an icon drawn in index.html (a wedge of cheese). The Hall's HUD has no
 count of anything. The Toy Box's wall can be cleared by a double jump from a deck (harmless: a fall costs nothing).
 `ASSETS.md` must be rewritten (`npm run assets`) whenever anything is added: the test will say so.
