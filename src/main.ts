@@ -116,6 +116,8 @@ import type { KeepsakeKind } from './story/memory';
 import type { StoryCtx } from './story/scenes';
 import type { EnemySpec, LevelDef } from './levels/types';
 import { GoalHud } from './ui/goalHud';
+import { TrickHud } from './ui/trickHud';
+import { TrickLog } from './player/trickLog';
 import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
@@ -1170,6 +1172,9 @@ function startGame(): void {
   };
   const collectHud = new CollectHud(gameWrap);
   const goalHud = new GoalHud(gameWrap);
+  /** His tricks on the shield in this air, by name, and the name shown as he lands them (B4). */
+  const trickHud = new TrickHud(gameWrap);
+  const trickLog = new TrickLog();
   const preview = new RatPreview();
   const equipment = new Equipment(files);
   const inventory = new Inventory(files);
@@ -1648,6 +1653,7 @@ function startGame(): void {
   function loadLevel(def: LevelDef, keep = false): void {
     resting = -1;
     // (Nothing is carried from one place to the next; and what a carried crate left somewhere else is back where it belongs.)
+    trickLog.clear();
     held = null;
     heldFoe = null;
     thrownFoes.length = 0;
@@ -1922,17 +1928,34 @@ function startGame(): void {
       audio.play('cloth', { vol: 0.5, priority: 4 });
       rideLandIn = RIDE_MOUNT * RIDE_MOUNT_LAND;
     } else if (ev === 'ollie') audio.play('ridePop', { vol: 0.75, rate: roll(1.0, 1.12), priority: 6 });
-    else if (ev === 'kickflip') audio.play('whoosh', { vol: 0.6, rate: 1.7, priority: 5 });
-    else if (ev === 'rideLand') audio.play('ridePop', { vol: 0.6, rate: roll(0.85, 0.95), priority: 5 });
+    else if (ev === 'kickflip') {
+      // (The same event begins a kickflip and a spin: a spin is the one just begun, at nought of the way round.)
+      const spin = player.rideSpinProgress >= 0 && player.rideSpinProgress < 0.1;
+      trickLog.begin(spin ? 'spin' : 'flip');
+      if (spin) audio.play('spinWhirl', { vol: 0.7, rate: roll(0.95, 1.08), priority: 5 });
+      else audio.play('whoosh', { vol: 0.6, rate: 1.7, priority: 5 });
+    }
+    else if (ev === 'rideLand') {
+      trickLog.clear();
+      audio.play('ridePop', { vol: 0.6, rate: roll(0.85, 0.95), priority: 5 });
+    }
     else if (ev === 'trick') {
       audio.play('ridePop', { vol: 0.65, rate: 0.9, priority: 6 });
       audio.play('sparkle', { vol: 0.5, rate: 1.3, priority: 6 });
+      // Its name, as he lands it; and a stab of horns, a step higher for each trick after the first.
+      const did = trickLog.count;
+      trickHud.show(trickLog.landed());
+      audio.play('trickStab', { vol: 0.6, rate: Math.pow(2, (2 * Math.min(4, Math.max(0, did - 1))) / 12), priority: 6 });
       rumble.land(5);
     } else if (ev === 'bail') {
+      trickLog.clear();
       audio.play('rideClatter', { vol: 0.85, priority: 8 });
       audio.play('ratHurt', { vol: 0.55, rate: 1.15, priority: 7 });
       rumble.land(9);
-    } else if (ev === 'rideEnd') audio.play('step', { vol: 0.6, rate: 0.85, priority: 4 });
+    } else if (ev === 'rideEnd') {
+      trickLog.clear();
+      audio.play('step', { vol: 0.6, rate: 0.85, priority: 4 });
+    }
     // Off his feet on ground too steep for him: a yelp and a thump, a grunt for the hop out of it, a scuff getting up.
     else if (ev === 'slip') {
       audio.play('ratHurt', { vol: 0.4, rate: 1.3, priority: 6 });
@@ -1942,6 +1965,8 @@ function startGame(): void {
     else if (ev === 'slideEnd') audio.play('step', { vol: 0.6, rate: 0.8, priority: 4 });
     // Onto an edge with it: iron on stone, a hard knock and a ring.
     else if (ev === 'grind') {
+      // (Onto a rail out of the air: what he was doing up there is over, and not paid for.)
+      trickLog.clear();
       audio.play('ridePop', { vol: 0.7, rate: 1.35, priority: 6 });
       audio.play('clank', { vol: 0.45, rate: 1.5, priority: 5 });
       rumble.land(4);
@@ -2512,6 +2537,11 @@ function startGame(): void {
       audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
     }
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
+    // (His tricks by name, for the name shown as he lands them: a grab is the guard held long enough in the air, as
+    // the controller counts it; and a slap of his paw on the rim when it counts.)
+    if (player.riding && !player.grounded) {
+      if (trickLog.air(dt, guardHeld && player.feel.ride.airTricks, TUNING.ride.grabTime)) audio.play('grabSlap', { vol: 0.7, rate: roll(0.95, 1.1), priority: 5 });
+    } else if (player.grounded) trickLog.ground();
     /** What a throw would be aimed at: the creature in front of him, or the one he is locked on to (not the one in his hands). */
     const marks = (): Target[] => enemies.map((e) => ({ x: e.x, y: e.y, z: e.z, r: e.radius, high: Math.max(0.9, e.radius * 2), alive: e.alive && !inHand(e), parts: e.parts }));
     const aimNow = (): { x: number; y: number; z: number } | null => throwAim(marks(), player.position, player.facing, lockTarget ? enemies.indexOf(lockTarget) : null);
@@ -4303,6 +4333,7 @@ function startGame(): void {
     // (The Hall asks nothing of him and counts nothing: only its name.)
     const gs = noWayOut(cur) ? { label: cur.name, text: '', done: false } : cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
     // (A room that asks nothing, a practice room, shows its own name: not the line of the room he came from.)
+    trickHud.update(frameDt);
     if (gs) goalHud.set(gs.label, gs.text, goals.mainDone(aliveCount()) || open);
     else goalHud.set(cur.name, '', false);
     if (builder.live) builder.setPlayer(renderPos.x, renderPos.z, player.facing);

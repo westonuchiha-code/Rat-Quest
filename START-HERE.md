@@ -2140,6 +2140,12 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## [opus] Tricks named as he lands them (2026-11-18)
+
+Landed tricks are named low on the screen for a moment ("360 + SHIELD GRAB + KICKFLIP"); a grab and a spin have
+poses and sounds of their own. player/trickLog.ts, ui/trickHud.ts. Film: `&autoride&at=24,16,-52,3.1416` in the Toy
+Box (from the big ramp's tower top; add `&chase=-3.2,1.2,0.6` to see him close).
+
 ## [opus] The level editor knows the new things (2026-11-17)
 
 Pots, rocks, tables, stools and a bar counter are pieces now (src/levels/custom.ts, palette in src/ui/builder.ts),

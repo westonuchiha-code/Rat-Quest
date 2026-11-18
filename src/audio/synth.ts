@@ -227,6 +227,9 @@ export const SFX_NAMES = [
   // heaved up off the floor, hurled, set down, a clay pot smashing, a rock coming down whole, and a creature in his
   // hands scrabbling to be let go.
   'heave', 'hurl', 'setDown', 'potSmash', 'rockKnock', 'squirm',
+  // Tricks on the shield (BACKLOG B4, 2026-11-18): the air whirling past in a spin, a paw slapped onto the shield's
+  // rim for a grab, and a short horn stab when tricks are landed (played higher the more there were).
+  'spinWhirl', 'grabSlap', 'trickStab',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -512,6 +515,25 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const r = rattle(c, RATE_HI, 0.42, 34, 16, 2300, 0.95);
     // (A little body under the clicks: its shell knocking against his hands.)
     return (t) => Math.tanh((r(t) * 2.2 + c.lp(0, c.r() * 2 - 1, 0.25) * 0.5) * 1.4) * bell(t, 0.42);
+  }, { bits: 7 }),
+  // A spin: air rushing past, swelling and falling twice a turn as he comes round.
+  spinWhirl: () => draw(0.45, RATE_HI, 259, (c) => (t) => {
+    const k = t / 0.45;
+    const air = c.lp(0, c.r() * 2 - 1, 0.08 + 0.3 * k) - c.lp(1, c.r() * 2 - 1, 0.03);
+    return air * (0.55 + 0.45 * Math.abs(Math.sin(TAU * 2 * k))) * bell(t, 0.45) * 1.6;
+  }, { bits: 7 }),
+  // A grab: a paw slapped flat on wood, a dry knock.
+  grabSlap: () => draw(0.12, RATE_HI, 260, (c) => {
+    const wood = knock(520, RATE_HI, 0.975);
+    // (A little body under the knock, and a pat of the paw, so it is not lost under the ride's scrape.)
+    return (t) => Math.tanh((wood(t < 0.003 ? c.r() * 2 - 1 : 0) * 40 + (c.r() * 2 - 1) * Math.exp(-t * 90) * 0.9 + sine(c.osc(0, 180 * Math.exp(-12 * t) + 90)) * Math.exp(-t * 30) * 0.7) * 1.3) * Math.min(1, (0.12 - t) / 0.03);
+  }, { bits: 7 }),
+  // Tricks landed: a short stab of horns, a fifth over the root, punched and cut off, as on an old record.
+  trickStab: () => draw(0.3, RATE_HI, 261, (c) => (t) => {
+    const env = Math.min(1, t / 0.006) * (t < 0.16 ? 1 : Math.exp(-(t - 0.16) * 40));
+    const f = 392;
+    const horn = sq(c.osc(0, f), 0.3) * 0.5 + sq(c.osc(1, f * 1.5), 0.3) * 0.35 + saw(c.osc(2, f * 2)) * 0.2;
+    return Math.tanh(horn * 1.6) * env;
   }, { bits: 7 }),
   // A footstep for story scenes and memories: a soft pat on stone.
   softStep: () => draw(0.07, RATE_LO, 66, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.3) * 0.8 + sine(c.osc(0, 140 - 500 * t)) * 0.5) * decay(t, 0.05, 0.002), { bits: 6, gain: 0.78 }),

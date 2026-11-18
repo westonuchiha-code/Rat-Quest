@@ -471,6 +471,19 @@ const RIDE_AIR: Pose = fullPose({
   footS: [-0.015, 0.15, -0.13], footH: [0.015, 0.16, 0.15], toeS: 0.15, toeH: 0.15, tail: [1.0, 0, 0.3], ears: 0.55,
 });
 
+/**
+ * TRICKS ON THE SHIELD (BACKLOG B4, 2026-11-18: proper poses). A GRAB: his shield-side paw straight down to the rim
+ * of the shield under him, the sword arm flung up and back for balance (with the deeper crouch the ride already
+ * has). A SPIN: both arms pulled in tight to his chest, as anyone spinning does, to go round faster.
+ */
+const GRAB_ARMS = fullPose({
+  armS: [-2.3, 0, -0.75], elbowS: -0.3, wrist: [0, 0, 0],
+  armH: [0.15, 0, 0.18], elbowH: -0.05, shield: [0, 0, 0],
+});
+const SPIN_ARMS = fullPose({
+  armS: [-0.55, 0, -0.3], elbowS: -1.9, wrist: [0, 0, 0],
+  armH: [-0.55, 0, 0.3], elbowH: -1.9, shield: [0, 0, 0],
+});
 /** Both arms straight up, paws flat under a crate held over his head; and where they come to at the end of a throw. */
 const CARRY_ARMS = fullPose({
   armS: [-2.95, 0, -0.22], elbowS: -0.15, wrist: [0, 0, 0],
@@ -1155,6 +1168,22 @@ export class RatModel {
         pose.hipPos[1] -= 0.09 * tk;
         pose.chest[0] += 0.5 * tk;
         pose.tail[0] += 0.35 * tk;
+      }
+      // A GRAB in the air: a paw down to the shield's rim, the sword arm up; his knees come up to meet it.
+      const gr = r.air ? r.grab ?? 0 : 0;
+      if (gr > 0.01) {
+        mixArms(pose, GRAB_ARMS, gr);
+        pose.footS[1] += 0.06 * gr;
+        pose.footH[1] += 0.06 * gr;
+      }
+      // A SPIN: arms in tight for the middle of it, out again to land; his tail whips out behind as he goes round.
+      const sp = r.spin ?? -1;
+      if (sp >= 0) {
+        const tight = Math.min(1, sp * 6, (1 - sp) * 5);
+        mixArms(pose, SPIN_ARMS, tight);
+        pose.tail[1] = -1.1 * tight;
+        pose.tail[0] -= 0.25 * tight;
+        pose.head[1] -= 0.35 * tight;
       }
       // Grinding: the shield is across the edge under him, and he is down low over it, arms wide, tail straight out
       // behind and shivering with the rattle of it; on a ledge he leans a little in from the drop.

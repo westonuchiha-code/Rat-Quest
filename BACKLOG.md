@@ -156,6 +156,12 @@ mantis carried (with the film aid `&carryfoe`), a rock thrown and carried again,
 hornet and firefly carried, an iron-bound crate. Film aid: `&autogo=..&gostow=2` (STOW at the 2nd stop).
 
 **B4. Tricks polish.** Proper poses for the spin and the grab, a sound for each, the trick's name shown as he lands.
+[opus] DONE 2026-11-18. Poses (player/ratModel.ts `GRAB_ARMS`, `SPIN_ARMS`): a grab puts his shield-side paw down
+to the rim, the sword arm up, knees up; a spin pulls both arms in tight and whips the tail out. Sounds (audio/synth.ts):
+`spinWhirl`, `grabSlap` (when the grab counts), `trickStab` (horns on landing, a step higher per extra trick). The
+NAME: player/trickLog.ts keeps what he did in one air from what main.ts already sees (no controller change);
+ui/trickHud.ts shows it low in the middle for 1.4 s as he lands ("360 + SHIELD GRAB + KICKFLIP", "720").
+tests/tricks.ts and new checks in tests/toybox.ts (the names agree with what the controller counts).
 
 **B5. Drop-in for voices and font files.** Voices: a folder per character kind, cut into syllables as
 `scripts/make-recorded.py` does. Fonts: a `.woff2` in `assets/fonts/` becomes an `@font-face` in `FONT_FACES`

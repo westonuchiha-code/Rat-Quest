@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { PlayerController, type PlayerInput, type MoveEvent } from '../src/player/controller';
 import { topAt, type Aabb } from '../src/world/collision';
 import { buildChamber } from '../src/world/chamber';
+import { TrickLog } from '../src/player/trickLog';
 import { BOWL, SPINE, LAUNCHER, toyBox, toyBoxPlan, makeToyRide, TOY, HALF, BIG, BOX, QUARTER, COPING, halfDeck, facetsOf } from '../src/levels/toybox';
 import { garden } from '../src/levels/garden';
 import { TEST_ROOMS, levelById } from '../src/levels/levels';
@@ -438,7 +439,7 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
 // ---- Tricks ----
 {
   /** Off the big ramp's kicker, doing in the air what `air` says; what happened when he came down. */
-  const trick = (air: (t: number, p: PlayerController) => Partial<PlayerInput>): { events: MoveEvent[]; before: number; after: number; riding: boolean; spun: boolean } => {
+  const trick = (air: (t: number, p: PlayerController) => Partial<PlayerInput>): { events: MoveEvent[]; before: number; after: number; riding: boolean; spun: boolean; name: string } => {
     const x = (BIG.x0 + BIG.x1) / 2;
     // (Far enough up the roll-in that the hop onto his shield, which is higher and longer in the dream, comes down
     // on the slope and not past its foot.)
@@ -449,18 +450,27 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     let t = -1;
     let before = 0;
     let spun = false;
+    // (Its NAME, kept as the game keeps it: main.ts feeds a TrickLog the same way.)
+    const log = new TrickLog();
+    let name = '';
     const k1 = BIG.kick.z0 + BIG.kick.len;
     for (let i = 0; i < 60 * 8; i++) {
       const lip = p.grounded && t < 0 && k1 - p.position.z < 0.4 && p.position.z > BIG.kick.z0;
       const flying = t >= 0 && !p.grounded;
       if (flying) { t += DT; before = speedOf(p); }
-      p.update(DT, inp({ move: v(0, 1), jumpPressed: lip, jumpHeld: lip || !p.grounded, ...(flying ? air(t, p) : {}) }), cs);
+      const extra = flying ? air(t, p) : {};
+      p.update(DT, inp({ move: v(0, 1), jumpPressed: lip, jumpHeld: lip || !p.grounded, ...extra }), cs);
+      if (p.riding && !p.grounded) log.air(DT, !!extra.guardHeld && p.feel.ride.airTricks, R.grabTime);
+      else if (p.grounded) log.ground();
+      if (p.moveEvent === 'kickflip') log.begin(p.rideSpinProgress >= 0 && p.rideSpinProgress < 0.1 ? 'spin' : 'flip');
+      if (p.moveEvent === 'trick') name = log.landed();
+      if (p.moveEvent === 'bail' || p.moveEvent === 'rideLand') log.clear();
       if (lip) t = 0;
       if (p.rideSpinProgress >= 0) spun = true;
       if (p.moveEvent) events.push(p.moveEvent);
-      if (t > 0.2 && p.grounded) return { events, before, after: speedOf(p), riding: p.riding, spun };
+      if (t > 0.2 && p.grounded) return { events, before, after: speedOf(p), riding: p.riding, spun, name };
     }
-    return { events, before, after: speedOf(p), riding: p.riding, spun };
+    return { events, before, after: speedOf(p), riding: p.riding, spun, name };
   };
   const plain = trick(() => ({}));
   check('a jump with nothing done in it is only a landing: no speed for it', plain.riding && plain.events.includes('rideLand') && !plain.events.includes('trick'), `${plain.before.toFixed(1)} to ${plain.after.toFixed(1)}; ${plain.events.join(' ')}`);
@@ -473,6 +483,11 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   check('...a tap of it is not', tap.riding && !tap.events.includes('trick'));
   const three = trick((t) => ({ dodgePressed: t > 0.08 && t < 0.12, guardHeld: t > 0.1 && t < 0.6, jumpPressed: t > 0.62 && t < 0.66 }));
   check('a spin, a grab and a kickflip in one air are THREE tricks: three times the speed (past his standing top speed, up to his tucked one)', three.riding && three.events.includes('trick') && three.after > Math.min(R.tuckMax, three.before + gain + R.trickBoost * 3) - 0.8 && three.after > R.max + 4, `${three.before.toFixed(1)} to ${three.after.toFixed(1)}`);
+  // ---- Its NAME as he lands it (B4, 2026-11-18) ----
+  check('THE TRICK\'S NAME AS HE LANDS IT: a spin, a grab and a kickflip in one air are named in the order he did them', three.name === '360 + SHIELD GRAB + KICKFLIP', three.name);
+  const twoSpins = trick((t) => ({ dodgePressed: (t > 0.06 && t < 0.09) || (t > 0.56 && t < 0.59) }));
+  check('...two spins one after another are a 720 (if he lands them)', !twoSpins.events.includes('trick') || twoSpins.name === '720', `${twoSpins.name || '(not landed)'}; ${twoSpins.events.join(' ')}`);
+  check('...a jump with nothing in it has no name', plain.name === '');
   // Landing half way round a spin: he comes off.
   const p = rat(17.5, 0, -30);
   getOn(p, v(0, 1));
