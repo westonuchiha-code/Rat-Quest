@@ -1,0 +1,2782 @@
+# START HERE: handoff for the next Claude (written 2026-11-13, updated 2026-11-14)
+
+**WHAT IS LEFT TO DO, HARDEST FIRST, IS IN `BACKLOG.md` (2026-11-17): work from the top of it. If you are Opus,
+Part B is yours, and every commit's subject starts with `[opus]` so that Fable can find and review it.**
+
+Read this first. HANDOFF.md is a log of each feature, oldest first, and PLAN.md is the roadmap with numbered items 1–19.
+Where they disagree with this file (an old test-room hash, "the story is in progress"), this file is right.
+
+## The project
+RATQUEST: THE KINGDOM BELOW is a PS1-style 3D action platformer: a rat knight with a sword and a shield. **As of
+2026-11-17 it is a set of TEST ROOMS off one hallway (see "THE VISION CHANGED", next): each room is a playground for
+one kind of play.** (Before that: a hub, the Club, and four worlds of Golden Wedges in the style of Mario 64. All of
+that is still in the code.)
+- Stack: TypeScript (strict, no unused locals or parameters), Three.js 0.187, Vite 8. No other game libraries.
+- The owner tests on a **phone** with single-file HTML builds opened in the Claude app. The real targets are
+  keyboard and mouse, controllers, and **Steam** (Electron wrapper in `steam/`, Steam Deck included).
+- Every mechanic has been built and tested by machine; the owner has not reported back on the latest builds.
+
+## THE VISION CHANGED (the owner, 2026-11-17). READ THIS BEFORE ANYTHING ELSE ABOUT LEVELS
+
+**His words** (spoken, so the punctuation is his dictation's; nothing is left out that says what he wants):
+
+> "At the beginning of this project I was thinking of a Mario 64 Style game or a Zelda Style game where you're going
+> from room to room and you have a big sort of normal space you can run around or whatever but **the vision is slowly
+> changing.** So right now **I want all the levels in the game to be labeled as test rooms and we're basically going
+> to use them all as playgrounds** just like we are currently doing with the dream world the wacky Pomo dream world.
+> We're going to make each different space feel unique. So **each current level we have right now is going to be a
+> representation of I guess a level genre in the game.** None of them are complete yet. **Nothing is officially part
+> of a story or anything**, all of the assets, little cut scenes and videos that we have, all of that kind of stuff,
+> **even things like fonts may change in the future so they all need to be well organized, kept track of and easily
+> replaceable.**"
+
+> "I also want to create **one big Hub world**, it should be pretty simple, it'll just be **a long hallway where NPCs
+> are all hanging out kind of like Dizzy Dave's room already is, except this one's going to be much longer and it's
+> going to have a door to each different test room.** Each test room instead of being labeled how they are now after
+> whatever name we came up with **they will just be labeled test room 1, Test Room 2, test room 3, test room 4 and we
+> can come up with nicknames for them in the future. The doors will be labeled after their sort of like biome type, as
+> placeholder names** so door one could be wacky Pomo dream world, then door two could be Mushroom cave, door three
+> could be the sewers, door four could be the ice world we were working on, etc. Anything that doesn't have a good
+> nickname title yet we can just keep it the number for now and we'll come up with the name later when we're testing
+> that specific level biome out. So **this hallway will have all the NPCs in the game, if we come up with new ones
+> they will join the crowd in the hallway**, then we will have a door for each different world like I just discussed,
+> **I would also like doors to specific boss fights we might want to work out** so like the spider boss fight should
+> have a room that we can use to test it out, the Grimsqueak fight should have its own room that we can work on, and
+> atmosphere, at this point we can tune the atmosphere while we tune the fight, I think that's a better workflow
+> anyways. **I also want each different enemy type to have a room where it spawns that enemy one at a time so you can
+> practice fighting them, maybe those rooms can even have buttons on the floor that spawn the enemy so you can spawn a
+> few of them at a time by jumping on the button** or something."
+
+> "And **certain physics should be kept separate.** So right now we're building the wacky Pomo skateboard type dream
+> world thing. The shield shouldn't work like that [elsewhere], and the surfing part, like **you'll still be able to
+> surf on your shield outside the wacky Pomo world but you shouldn't be able to like lean forward and give yourself
+> momentum and that kind of stuff**, like the dream world is supposed to be fantastical, it's supposed to feel
+> floatier and more high velocity and hyperactive and different than the normal world, so when you're playing the game
+> in the normal levels you want to have different physics. So along with separating the test room biomes, **we also
+> want to keep track of how the physics act in each biome**, or sort of whatever we end up calling it, I'm just going
+> to keep calling them biomes."
+
+**What each kind of level is to FEEL like (his examples; the numbers of the levels are only his for-instances):**
+ - **The sewers: Dark Souls.** "You're blocking, you're parrying, you're having more difficult fights, you're moving
+   slower through the level."
+ - **A platform level: a 3D Mario.** "A lot of wall jumping and double jumping and the enemies that you fight you can
+   kind of just ground pound your way out of because they're weaker enemies."
+ - **A railway: Sonic Adventure.** "A lot of grinding ... you're grinding down the railway on your shield and you're
+   smacking bats out of the air with your sword while you're grinding down the rail."
+ - **The wacky Pomo dream: Tony Hawk's Pro Skater mixed with everything else.** He gets there "after you get knocked
+   out by a bad guy or you eat a weird mushroom or however we end up getting them there". "Everything there is
+   fantastical and crazy and weird colors and his scarf is going crazy and **he can jump higher and move faster and
+   maybe we'll give him a triple jump** and he can like skate around". "You might fight some of the same enemies in
+   the wacky Pomo world that you fight in the sewers but in the wacky world they're not as scary because they have some
+   kind of crazy skin texture and they look funny and even though they fight the same **you're kind of way floatier
+   and stronger in this world so you almost feel like a superhero fighting them.**"
+ - **Then he wakes:** "things will start feeling more like Dark Souls again or like a Legend of Zelda Ocarina of Time
+   and things will start to be a little more scary and dangerous and enemies will be a little harder and **you'll
+   start to miss that feeling of superpowered, just long enough for the game to give it to you again**". "We want to
+   give people a smorgasbord of different kinds of feelings this game can give them even though technically every
+   single level is more or less an action hack and slash souls-like 3D platformer."
+ - And: "Your work on the ramp is looking good."
+
+**WHAT FOLLOWS FROM IT (rules for whoever works here next):**
+ 1. **Every level is a TEST ROOM, a playground for one kind of play.** None is finished, none is part of a story.
+    They are named "Test Room N"; their old names are kept only as notes (`was` in `src/levels/testRooms.ts`).
+ 2. **THE HALL (`hall`, `src/levels/hall.ts`) is the hub**: a long hallway, every NPC in the game standing about in
+    it, a door to every test room, to each boss fight, and to a practice room for each kind of enemy. **A new NPC
+    joins the crowd in the Hall. A new room gets a door in the Hall.** Both are done in ONE list:
+    `src/levels/testRooms.ts`.
+ 3. **A door's sign is its BIOME, a placeholder** ("WACKY POMO DREAM", "THE SEWERS"); a room with no good nickname
+    yet shows only its number.
+ 4. **PHYSICS ARE PER BIOME, and written down in one table: `src/data/feel.ts`.** The dream's tuck (lean forward for
+    speed), its speed for tricks and its air tricks are the DREAM'S. He can still ride his shield elsewhere, without
+    them. Anything new that changes how he moves goes in that table, per biome, never as a global change.
+ 5. **Everything may be replaced: models, textures, sounds, music, cutscenes, fonts, names.** Keep each in one named
+    place, and keep the list of them current. **THE LIST IS `ASSETS.md`, and it is WRITTEN BY A SCRIPT from the
+    game's own lists: `npm run assets`. Run it whenever something is added, renamed or removed** (a level, a
+    creature, a sound, a tune, a scene, a texture, a font); `tests/assets.ts` fails until it is. Do not edit
+    `ASSETS.md` by hand: change what it says in `scripts/assets/inventory.ts`.
+    **FONTS ARE NAMED IN ONE FILE, `src/ui/fonts.ts`**, and nowhere else (the same test fails if one is). CSS reads
+    them as `var(--rq-font-game)` and the like; a canvas reads `FONTS.game`.
+    **The scripts that make stills and films are in `scripts/film/`** (they used to live only in a session's scratch
+    folder). The films themselves are not kept in the project.
+    **DROP-IN FILES (`assets/`, built 2026-11-17 after his "3").** A picture, a sound or a song replaces the game's
+    own with NO code edited: put it in `assets/textures/`, `assets/sounds/` or `assets/music/`, NAMED for what it
+    replaces (a texture's name; a sound effect's name; for music a ROOM'S ID, a KIND of music, or a jingle), and run
+    `npm run assets` (`scripts/deliver.sh` does it first by itself). `scripts/assets/pack.mjs` packs the files INTO
+    the game (`src/assets/dropped.ts`: the game is one .html, nothing can be loaded when it runs); `src/assets/drop.ts`
+    is asked first by the three places that make a texture, an effect and a tune. A file named for nothing is
+    REFUSED. Rules for him: `assets/README.md`. **WHEN HE SENDS A FILE IN CHAT to use as a texture, a sound or a
+    song: this is where it goes.** Nothing is dropped in as it stands. **Not this way yet:** a model, a voice, a font
+    file, a cutscene.
+ 6. The Club, the wedges, the worlds' doors and their prices are still in the code and still work, but they are no
+    longer "the game": do not build on them as if they were.
+
+**WHAT WAS BUILT THE SAME DAY (2026-11-17; `tests/hall.ts`, 38 checks; films `film-the-hall.mp4`, `film-practice-room.mp4`):**
+ - **THE HALL** (`#level=hall`; plain `ratquest.html` opens in it). 125 long, 14 wide. NORTH wall: test rooms 1 to 11
+   from the west end, a gap, then four boss rooms. SOUTH wall: eleven practice rooms. EAST end: Dave and Jinx on a low
+   stage. All seventeen of the Club's cast stand about in it, clear of every door and of the middle (their words are
+   the Club's: placeholders). A fire by the way in to rest at. **The game always STARTS in the Hall now** (it used to
+   pick up in the last level).
+ - **THE LIST: `src/levels/testRooms.ts`** (`ROOMS`, `BOSS_ROOMS`, `PRACTICE_ROOMS`). The Hall's doors and every
+   level's name are made from it (`hall.ts` `hallDoors`, `levels.ts` `nameTheRooms`). As built:
+   1 WACKY POMO DREAM (toybox; 1B milkyway, 1C bigdipper) · 2 MUSHROOM CAVE (glowcave) · 3 THE SEWERS (cistern; 3B to
+   3E its four side areas) · 4 ICE WORLD (coldmain) · 5 DOWNHILL PIPES (longdrop) · 6 FOUNDRY (foundry; 6B, 6C) ·
+   7 FORGE (forge) · 8 DEEP CAVES (hollows; 8B to 8F) · 9 CASTLE (keep; 9B the throne room) · 10 MOVE GYM (garden) ·
+   11 THE CLUB (hub). **These biome names are MINE, as placeholders: he has named only the first four.**
+   Bosses: SPIDER BOSS (`widowpit`, new: the two Widows in their round of light, without the ride down to them),
+   GRIMSQUEAK (`lair`), SUMP WYRM (`sump`), BROOD MOTHER (`brood`).
+ - **A LEVEL'S OLD NAME IS IN `was`**; every door anywhere that leads to a renamed level says its new name. Level IDS
+   DID NOT CHANGE (saves, tests and `#level=` go by id).
+ - **PRACTICE ROOMS** (`src/levels/practice.ts`; `#level=practice_roach`, `_toad`, `_bat`, `_mantis`, `_ant`,
+   `_guard`, `_hornet`, `_firefly`, `_scorpion`, `_beetle`, `_stag`): a plain room, ONE of the creature (it comes
+   back a few seconds after it is beaten), and TWO FLOOR BUTTONS near where he comes in: each press puts in one more
+   (to six alive). A button comes back up when he steps off (`plates[].spawn`, `buttonStep` in `world/plates.ts`).
+ - **WHERE A WAY OUT LEADS** (`src/levels/wayOut.ts`): back to the door he came in by; else the Hall if the Hall has a
+   door to it; else the area it is part of. (The Club is a hub with a way out now: its south door leads to the Hall.)
+ - **PHYSICS PER BIOME: `src/data/feel.ts`** (`FEELS`, `feelOf`), set on the controller as a level loads
+   (`player.feel`). `waking`: no tuck, tricks pay speed only up to his standing top speed (as before the dream), no
+   spin or grab. `dream`: all of them. A level is `dream` if it wears the dream's look (`look: 'dream'`), or says so.
+   **A controller that is not told is in the waking world**: a test of a dream move must set `p.feel = FEELS.dream`.
+ - **THE DREAM ON FOOT (the same day; he said: "continue and forget the triple jump for now").** In the dream he RUNS
+   a quarter faster, JUMPS four high where the waking world's jump is two and a half, and is in the air half as long
+   again (`TUNING.dream`: run 1.25, jump 1.1, gravity 0.75; they are the dream's `foot` in `data/feel.ts`, and three
+   sliders under "The dream" in Tweaks). **ON FOOT ONLY: on his shield the air is as it was**, because the dream's
+   rides are measured to it (gaps, landings, the half pipe's launch); a test holds that. Two jumps still, no third.
+   Film: `film-dream-jump.mp4` (the Hall, then the dream). `&autojump` is a film aid (a double jump every two seconds).
+   **Not weighed:** from the Toy Box's decks a double jump now clears its 12-high wall (7 + 7.5); a fall there costs
+   nothing and puts him back, and he could already jump out from the tower.
+ - **NOT DONE:** (1) no triple jump (he said to leave it), and he does not hit harder in the dream ("stronger ... a
+   superhero": his words, not built). (2) The inventory is written (`ASSETS.md`,
+   rule 5 above). What it shows: almost every asset is CODE, not a file. A picture, a sound or a song can
+   now be dropped in as a file (`assets/`); a model, a voice, a font file and a cutscene cannot yet.
+   (3) The practice rooms and the Hall are plainly dressed. (4) The Club's own doors still ask for Golden Wedges.
+   (5) The level kits' names inside rooms (sign boards that say "THE LONG DROP", a wedge's hint) still use old names.
+   (6) Nobody has played any of it by hand.
+
+**PICKING THINGS UP AND THROWING THEM (built 2026-11-17, his pick from the list; `tests/lifting.ts`, 41 checks; film
+`film-lift-and-throw.mp4`).** His words, earlier the same day, of what the levels lack: "we still need him to be able to
+pick up and throw things for example".
+ - **WHAT:** crates and barrels. Beside one, facing it, **STOW (triangle) lifts it** over his head (with nothing to lift,
+   the button puts his sword away, as it did). Carrying: he goes at 0.72 of his speed, jumps once and lower, cannot
+   fight, guard, roll or ride. **ATTACK throws it; STOW again sets it down** (if there is room in front of him).
+   Hurt, or in water, he lets go and it breaks at his feet. A small hint says so beside a crate and while he carries.
+ - **A THROW IS AIMED:** at the creature in front of him within ten (or the one he is locked on to); else the way he
+   faces, a low arc, six along. He cannot tilt a throw, so without this a crate sailed over anything low and under
+   anything flying. A flier can be knocked out of the air.
+ - **WHAT IT DOES:** it breaks on what it meets. A creature it meets takes 2 (the last blow of his three; a roach has
+   4), unless a shield or shell turns it (`HitHow` 'thrown'). Another crate, a barrel or a PIPE JOINT it meets breaks
+   too. What was in the crate is left WHERE IT BROKE (the collectible is moved, and put back as the level loads).
+   **An IRON-BOUND crate does not break**: it lands whole and can be thrown again.
+ - **WHERE:** `src/world/lifting.ts` (the logic), `TUNING.lift` (the numbers; five have sliders, "Lifting"),
+   `PlayerController` (`carrying`, `liftEvent`, `canLift`), `chamber.ts` (`liftCrate`, `moveCrate`, `setCrate`),
+   `main.ts` (`held`, `thrown`), `ratModel.ts` (`CARRY_ARMS`, `THROW_ARMS`). Every practice room has six things to
+   throw by the way in. `&autolift` is a film aid.
+ - **MORE TO THROW (his next pick, the same day; `tests/lifting.ts` is 52 now; film
+   `film-pots-rocks-creatures.mp4`):**
+   - **A POT** (`potBox(x, z)` in `world/layout.ts`; `Box.prop: 'pot'`): clay, small, LIGHT. Carrying it hardly slows
+     him; it is thrown a third faster and so further; it hurts 1 (half a crate); it breaks, to a throw or to his sword.
+   - **A ROCK** (`rockBox`): it NEVER breaks (his sword rings off it): it lands whole and is thrown again. It hurts 2.
+   - How each kind is thrown is one table: `THROWN_AS` in `world/lifting.ts`.
+   - **A CREATURE THAT IS DOWN can be picked up and thrown** (`DOWN_STATES`, `liftFoe`): a bat, a firefly or a hornet
+     knocked out of the air and lying on the floor; a roller lying open; a scorpion sprawled; a mantis with its
+     blades stuck in the floor. Carried, it does nothing (the game does not run it); after 3 seconds it wriggles free.
+     Thrown, it takes 2 where it lands and gives 2 to a creature it lands on; thrown out of the world, it is dead.
+     **NOT the roach or the toad**: all they have is a flinch a third of a second long. Not a boss, a guard, a stag.
+   - Every practice room has four pots and two rocks by the way in, with the crates.
+ - **NOT DONE / his to judge:** which button (STOW was the only one free on foot); a crate is as big as he is; a
+   creature in his hands stands upright on air over his head (no pose of being held); the roach and the toad cannot
+   be picked up; no bombs; no sound of its own (a plank's creak, the whoosh, a landing, pebbles for a pot); nobody
+   has played it by hand.
+
+**THE SEWERS PLAY AS THE SEWERS, AND HE IS STRONGER IN THE DREAM (2026-11-17, BACKLOG A1 and A10; `tests/hall.ts` 50;
+film `film-sewers-feel.mp4`).** His words for the sewers: "more like Dark Souls you're blocking you're parrying you're
+having more difficult fights you're moving slower through the level".
+ - A third line in the table, `sewers` (`src/data/feel.ts`; numbers in `TUNING.sewers`, sliders "The sewers"): he runs
+   at 0.88; his blows (sword, plunge, a thrown thing) do 0.67; a blow that lands on him costs DOUBLE (whole hearts).
+   A blocked or parried blow still costs nothing, so the shield is worth twice as much. Nothing there is easier.
+ - It is set on Test Room 3 and its four areas by one word in the room list (`feel: 'sewers'` in `testRooms.ts`).
+ - `fight: { dealt, taken }` is new in every feel. The dream's `dealt` is 1.5 ("stronger ... a superhero").
+ - Seen in the film: a test fighter that only swings is dead in ten seconds on the Sewers' fort.
+ - **NOT DONE / his to judge:** the three numbers; creatures there are not faster or cleverer, only costlier; the
+   Mario room and the Sonic room have no feel of their own yet.
+
+## NO DIFFICULTY SETTINGS: THE PLAYER GETS THE SLIDERS (the owner, 2026-11-17: a note for later, NOT to build now)
+
+**His words:** "I don't want this game to have difficulty settings I just want the way we build it to be the way it is,
+however in place of difficulty settings I want people to be able to make their own custom difficulty by giving them
+sliders for a lot of the stuff we do in the game so if they want the game to be hard they can crank up the enemies'
+health, they can decrease their jump height, they can change all sorts of stuff in the game that we already have like
+basically on sliders anyways and then the players can make their own little custom difficulty, we still want to try to
+make it feel balanced but I mean we're basically giving people the ability to break the game if they want to so they
+can either beat the game the way it's originally designed or they can do their own thing." And: "This is nothing you
+have to implement right now."
+ - **So:** never add an Easy / Normal / Hard. The game as built is THE game. The Tweaks panel (`src/core/tweaks.ts`,
+   about 280 sliders) is the seed of what players will get. Keep putting every new number on a slider.
+ - **When it is built (it is in BACKLOG.md, Part B):** a player's version of the panel (plain words, grouped, a way
+   back to "as designed", and a mark on a save that says the numbers were changed).
+
+**A BOWL AND A SPINE IN THE TOY BOX (2026-11-17, BACKLOG A2, first part; `tests/toybox.ts` 41; film
+`film-bowl-and-spine.mp4`).**
+ - **THE BOWL** (`BOWL` in `src/levels/toybox.ts`; middle (-8, -32)): a square floor, a curved wall on all four sides
+   (each with a lip: `vert`), a deck all round, solid corners, a ramp up on its north side. Dropped in and pumped, he
+   goes 1.2 over each lip on the first pass and comes back in (60 and 30 fps, all four walls).
+ - **THE SPINE** (`SPINE`; x 8, z -14..-2): two curved walls back to back, no deck. Ridden at, he goes OVER the ridge
+   through the air (4.4 high, down 8 beyond).
+ - **A CHANGE IN THE CONTROLLER FOR IT (`RIDGE_STEEP`, `ridge` in the support search):** a rider going fast up a
+   STEEP ramp (rise over run 0.9 or more) is no longer held down onto a ramp that falls away the way he is going. He
+   was: he crawled over the spine like a bump. Roads' gentle crests hold him as before (every ride test passes).
+ - Film riders: `&autoride=bowl`, `&autoride=spine`.
+ - **NOT DONE:** the bowl's corners are square blocks (ridden into, he stops); no banked turn (ramps here lie along x
+   or z only: a curve wants a new kind of solid), no launcher, no loop of light rail; nobody has ridden either by hand.
+
+**THE ROACH AND THE TOAD CAN BE GRABBED, AFTER A PERFECT GUARD (2026-11-17, BACKLOG A4; `tests/lifting.ts` 55).**
+A perfect guard already flipped a roach on its back for 2 seconds and winded a toad for 2.1: nothing about their
+fights was changed. Each now says so (`down`, on `Foe`), and `isDown` in `world/lifting.ts` takes that as well as the
+states in `DOWN_STATES`. NOT SEEN IN THE GAME: no test player can time a perfect guard, so there is no film of it.
+**The camera in the bowl** was measured the way the half pipe was (`tests/camera.ts`, 43): never drawn in, never under
+a wall, through 60 launches.
+
+**BATS TO HIT WHILE GRINDING, IN THE LONG DROP (2026-11-17, BACKLOG A5; `tests/longdrop.ts` 44; film
+`film-rail-bats.mp4`).** His words: "you're grinding down the railway on your shield and you're smacking bats out of the
+air with your sword while you're grinding down the rail and it's going to feel like you're playing a Sonic Adventure
+game".
+ - **A FLUTTERER** (`flutter: true` on a bat; `src/enemies/bat.ts`): it hangs in the air in one place and does nothing
+   else. One blow ends it; it cannot hurt; it comes back. 25 of them hang beside the Long Drop's nine rails, one every
+   twelve along, on the side toward the middle of the track, at sword height (`BAT_OFF`). None is part of the goal.
+ - **THE SWORD SWINGS WHILE GRINDING** (it did not: the grind returned before the sword was looked at).
+ - **A GRINDING SWING REACHES ALL ROUND HIM** (`combat.ts`): at sixteen a second, with the swing's own arc, a bat
+   beside the rail could be hit for one frame in sixty. Now: press as it comes within about three ahead.
+ - Tested: a rider grinding each of the nine rails and swinging hits all 25, is not hurt, and grinds on.
+ - **NOT DONE / his to judge:** nothing is paid for hitting one (no crumb, no speed, no count); they do not move or
+   attack; whether hitting them should be this forgiving; `&autorail` is the film aid.
+
+**THE PLATFORM ROOM HAS ITS FEEL (2026-11-17, the rest of BACKLOG A1; `tests/hall.ts` 54).** His words: "a lot of wall
+jumping and double jumping and the enemies that you fight you can kind of just ground pound your way out of because
+they're weaker enemies and it feels more like a level out of a 3D Mario game". A fourth line in the table, `platform`
+(`TUNING.platform`, sliders "The platform room"), on Test Room 8 and its five areas: his blows do 1.34, and his GROUND
+POUND (the dive and its blast: `fight.plunge`, new in every feel) does double on top: the blast alone ends a roach.
+**His run, jump and gravity are NOT changed there: the room's gaps are measured to them.** No film (nothing moves
+differently; a roach just goes down to one pound). The Sonic room (Test Room 5) has no feel line of its own: it has
+its bats.
+
+## The owner's standing rules (follow all of them)
+- **Deliver working files every turn**: run `bash scripts/deliver.sh <outdir>` and send all twelve files it writes.
+- When asked "what's next", give a numbered list. Every turn so far has ended with a short "what's next" list. The
+  owner picks by number ("5 and 6") or says "Continue", which means the next item on the last list.
+- No pop-up banners or alerts unless asked. The UI is wide/landscape-first. The on-screen pad is for testing only.
+- Never auto-equip pickups or purchases. **Don't make the game easier.**
+- **Keep the blocky talk-box portraits as they are.** The owner likes them simple and chunky, as a contrast with the
+  rest of the game. Do not redraw them with more detail (Grimsqueak's was redrawn on 2026-11-14 and put back the same
+  day, along with his sticker and the painting in Web Hollow). New characters get a face in that same plain style.
+- The hero is silent (jump and attack squeaks only). Finch and Pip's sounds are placeholders (their models were
+  reworked on 2026-11-14, along with every enemy's; the owner has not seen them yet).
+- The story is **parked until the game is finished**. Do not offer to un-park it.
+- **Never offer these again** (the owner said so, firmly, on 2026-11-14): a wave fight, Steam achievements, the story.
+  Do not pad the "what's next" list with questions; list work, and when told to continue, do the work.
+- Replies are plain language: what changed, what was tested, what wasn't (say so plainly), then the list.
+- **The robot voice (the Robot Voice Box) SPEAKS only in the dream world** (the Milky Way, "the wacky Pomo world"). Anywhere else it may only be a sound effect. (2026-11-17; see "THE SOUND OF THIS GAME IS HIP-HOP".)
+- **A fall costs nothing in the dream, nor on any ride downhill in any world**: such a level is `fallFree` (he is put back, no heart lost). The waking world's falls still cost one. (2026-11-17.)
+
+## Setup in a fresh session
+1. In the git repo (westonuchiha-code/Rat-Quest) the project is the repo root: `npm install`. From a zip: unzip `ratquest-source.zip`, `cd Rat-Quest`, `npm install`.
+2. `npm run test:sim`: 2,912 checks, about 5 minutes. It must exit 0. (It builds each test into `.testdist`, so do not build a single test there while it runs.)
+3. For screenshots and browser checks you need Chrome (`google-chrome`). `puppeteer-core` is a dev dependency.
+   Headless screenshot:
+   `google-chrome --headless=new --no-sandbox --use-gl=swiftshader --enable-unsafe-swiftshader --window-size=1000,520 --virtual-time-budget=9000 --screenshot=out.png "file:///abs/path/ratquest-nopad.html#level=keep&nostory"`
+4. Build tests inside the project (`--outDir .testdist`). Built elsewhere, they can't find `three`.
+   One test: `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`
+
+## Builds
+- `bash scripts/deliver.sh ../deliver` writes all twelve files (the twelfth, `ratquest-dream.html`, opens on the dream: at first the Big
+  Dipper, now the Toy Box, whose doors lead to both rides: the owner, 2026-11-17: "give me a version of the game that starts like in that level so I can kind of mess
+  around and run around in that version of the world and give you notes and ideas"):
+  - ratquest.html (with the test pad)
+  - ratquest-hub/cistern/foundry/hollows/keep.html (open on that place)
+  - ratquest-testroom.html (the Club with every door open)
+  - ratquest-garden.html (the Move Garden: a test room for the jump numbers; see "The Move Garden" below)
+  - ratquest-nopad.html
+  - ratquest-editor.html
+  - ratquest-source.zip
+- Single builds: `npm run build:test` (test pad), `npm run build:editor`, `npm run build` (the Steam/plain build).
+- Browser checks (need Chrome; build the no-pad file first):
+  - `npm run check:deck`: every screen at Steam Deck size (1280×800), no text under 13px.
+  - `npm run check:files`: plays through the save-file screen with the keyboard.
+- Model sheet (every pose of every beast and every character side by side; needs Chrome):
+  `bash scripts/sheet-shots.sh <outdir> [spin] [only]` builds it and writes pictures: whole rows (`roach`, `toad`,
+  `ironback`, `bat`, `guard`, `npcs`, `npcs2` for Mort and Wren) and close-ups (`roach-a`, `toad-face`, `npcs-pip`...). `only` is a word to match, so
+  `bash scripts/sheet-shots.sh out 0.6 toad-` takes just the toad's close-ups. The page takes `#roach`, `#toad`,
+  `#ironback`, `#bat`, `#npcs`, `#grim` (Grimsqueak's twelve poses), `#faces` (every flat portrait), `#items` (every collectible), `#guard` (the Keep Guard; `&only=N` for one state), `#mantis` (the Orchid Mantis, the same), `#stag` (the Stag Knight, the same), `#hero` or `#moves`, plus `&spin=yaw` and `&cam=x,y,z,tx,ty,tz` (camera and where it
+  looks). On `#hero` and `#moves`, `&only=N` shows one figure and `&settle` lets its springs come to rest.
+  `python3 scripts/contact.py <dir> move 5` joins the single-move pictures into one sheet.
+- Dev hashes:
+  - `#level=<id>`, `#at=x,y,z,yaw` (the camera sits behind him at (sin yaw, cos yaw); yaw 1.5708 looks west).
+  - `#nostory`, `#unlockall`, `#menuN` (open the menu on screen N; 3 is SAVE), `#shop`, `#talk`.
+  - `#photo` (or `#photo=look,pose,frame`), `#boot&title`, `#boot&files`, `#nopad`, `#tweaks`, `#ownall`, `#allstickers`, `#debug`
+    (the readout ends with the last six sounds played), `#wedges=9` (gives him the first nine Golden Wedges, in the
+    order of the worlds: for looking at the doors and the WORLDS page part-way through. They are kept, like anything found).
+
+## The game right now
+| World | Area id | Name | Wedges | Notes |
+|---|---|---|---|---|
+| (home) | hall | The Hall | 0 | THE HUB since 2026-11-17: a door to every test room, boss room and practice room; everyone stands about in it |
+| (hub) | hub | The Club | 0 | Doors to the worlds. Pip's shop, rest at the fire |
+| Cistern (door 0) | cistern | The Great Cistern | 6 | Includes the drain secret (Sludge Scarf) |
+| | pumpworks / works / sludgepit | Pump Room, Waterworks, Sludge Pit | 3 / 4 / 2 | Side areas (returnTo cistern). works: the Fencer's Wedge (three perfect guards; the Buckler makes it fair) |
+| | sump | The Sump | 1 | A boss: the Sump Wyrm, a great centipede. Its door is in the Cistern's north-east corner. Its wedge appears where it lay |
+| Foundry (door 4) | foundry | The Foundry | 6 | Ironback behind the Crucible. Mouth secret (Royal Scarf) |
+| | shaft / coalcellars | Lift Shaft, Coal Cellars | 2 / 4 | Ironback behind the cellar gate. coalcellars: the Coal Bin secret (Cleaver) |
+| Hollows (door 10) | hollows | The Hollows | 5 | Fall-back level. Bats over the gallery |
+| | webs / faith / dark | Web Hollow, Leap of Faith, Lightless Way | 3 / 2 / 1 | webs: the Sleeper's Wedge secret (Moss Scarf). faith: no grab, no long jump. dark: fog 1–5 (the Miner's Helm lamp) |
+| | brood | The Brood Pit | 1 | A boss: the Broodmother. Its door is on the gallery's north ledge. Her wedge appears where she falls |
+| | glimmer | The Glimmer Deep | 2 | The glowing cave as a real level (2026-11-16). Its door is in the Hollows' east wall, on the floor, south of the stair to the Root Shelf. Dark (`ambient` 0.4). The Caps over the Rift; two Lamp Scorpions in the Rift; three coloured glow bugs |
+| Keep (door 20) | keep | Grimsqueak's Keep | 6 | The Pyre secret (Ember Helm). Fall-back level. Two Keep Guards and an Ironback in the courtyard; a guard, and bats on chains, on the battlements |
+| | lair | Grimsqueak's Throne | 1 | The boss; the ending plays back in the Club |
+
+- 49 wedges in all (Cistern 16, Foundry 12, Hollows 14, Keep 7). The Club's doors ask 5 (Foundry), 12 (Hollows) and
+  25 (Keep): about a third, under half and just under two thirds of what is open by then. They were 4, 10 and 20,
+  set when there were 38 wedges, and were raised on 2026-11-15 to the same shares (tests/balance.ts holds the shares:
+  add wedges to a world and it will say the doors want looking at). A door he has already been through stays open
+  whatever it asks now (`doorLetsIn` in `src/levels/junction.ts`), so an old save is not shut out of a world it had
+  reached. Door costs are in `src/data/balance.ts` (BALANCE). Shop prices are there too.
+- 13 retired levels live in ARCHIVE (`levelById` still finds them).
+- **Enemies:**
+  - Roach (`scuttler`): circles, bites, charges.
+  - Toad: spits, pounces.
+  - **Ironback**: iron shell turns the sword (get behind it); rams; flipped by a wall, a perfect guard or a plunge.
+  - **Flitter** (`bat`): roosts and wakes to footsteps but not sneaking; swoops; hittable only at the bottom of the swoop.
+  - **Keep Guard** (`guard`): a rat with a spear and a tall shield. His shield turns to face you too fast to run
+    round; a sword on it clanks and throws your arm back; two blows on it and he stabs back at once. Open after a
+    thrust that missed or was blocked, when a perfect guard or a plunge has knocked his shield wide, or before he
+    has seen you. Three stand in the Keep (two at the courtyard gate, one on the battlements).
+  - **Orchid Mantis** (`mantis`): tall, pale, two scythes, no armour, a body all its own. Swing at it while it sways
+    and it springs back (not twice running), then usually leaps in. Its cuts: a scythe goes up and glints, comes
+    down, and a second usually follows, at once or after a held beat. Its leap: it crouches and flares its wings,
+    jumps to where you stood for two hearts, and if it misses its scythes are stuck in the floor. Open after its
+    cuts, longer when stuck, longest when a perfect guard throws its arms wide. One on the Hollows' Webbed Gallery
+    (middle ledge), one in Web Hollow (the middle floor).
+  - **Stag Knight** (`stag`): a great beetle on its hind legs with a forge hammer. Slow, 10 hits, and it does not
+    flinch: a sword does not stop what it is doing. The slam (hammer up over its head, glowing, a RED glint: nearly
+    a second of warning) is two hearts and a shield does not stop it; then the hammer is stuck in the floor. Close in
+    front it sweeps its whole front (one heart; a shield stops that). It turns slowly, but stay behind it and its
+    wing cases lift and it stomps: a ring along the floor all round (jump it). Five quick blows, or a perfect guard,
+    put it on one knee. The rat cannot shove it. One on the Crucible's island in the Foundry, one in the Coal Cellars.
+  - Grimsqueak (boss).
+  - A director makes them take turns.
+- **Gear:** each item has real effects (`GearFx` in `src/data/equipment.ts`). Gear secrets, proven in
+  `tests/secrets.ts`:
+  - the Sludge Scarf (up the Cistern drain against the current);
+  - the Royal Scarf (a long jump to the Furnace Mouth);
+  - the Miner's Helm (its lamp makes the Lightless Way fair).
+
+  Four more, proven in `tests/gearsecrets.ts`:
+  - the Cleaver (the Coal Bin, Coal Cellars: an iron-bound crate, `Box.tough`, that only `gear.damage >= 2` breaks);
+  - the Ember Helm (the Heart of the Pyre, Keep: a wedge inside a fire, `LevelDef.fire`, only the fireproof cross);
+  - the Moss Scarf (the Sleeper's Wedge, Web Hollow: a shy wedge, goal type `unseen`, there only while its roach is
+    alive, idle and he is outside its notice range; the scarf halves that range);
+  - the Buckler (the Fencer's Wedge, Waterworks: goal type `parry`, three perfect guards in one visit; the Buckler
+    doubles the window. This one is made fair, not gated: a plain shield can do it).
+
+  Every piece of gear Pip sells now has a secret.
+- **Systems:**
+  - Three save files (`src/core/slots.ts`; File 1 is the old keys).
+  - Button prompts that follow the device, including the Steam Deck (`src/ui/glyphs.ts`).
+  - Rumble off/low/full.
+  - Photo mode.
+  - Sticker book.
+  - Level builder with a jump checker and trap finder.
+  - Tweaks sliders (F3 in the test build).
+  - Ambience, music per world, coloured lights.
+
+## Code map
+- `src/main.ts` (2,700 lines): the game loop and all the wiring (levels, enemies, combat events, sounds, menus,
+  saves, files, prompts). Big but linear; search it for the feature name.
+- `src/levels/`:
+  - Each world is a CustomLevel (pieces) built by `compileCustom(level, id)`. The worlds are `cistern.ts`,
+    `foundry.ts`, `hollows.ts`, `keep.ts` and `cisternHalls.ts`; the Club is `junction.ts`.
+  - `levels.ts`: ALL_LEVELS / LEVELS / ARCHIVE.
+  - `reach.ts`: the jump checker, plus trap mode (`computeReach(def, { traps: true })`) for soft-locks.
+  - `goals.ts`: wedge goals.
+- `src/enemies/`: logic classes (no Three.js, so they run in tests) and a separate `*Model.ts` for each.
+  The models and `src/npc/npc.ts` (Pip, Finch, Dave, Grimsqueak) are built from painted shapes with
+  `src/render/modelKit.ts`; `tests/models.ts` plays every pose of each.
+  `foe.ts` is the shared interface (`takeHit(dmg, x, z, how)`, `deflects`, `biteDir`, `SENSES`).
+- `src/combat/combat.ts`: sword, plunge, bites, guard and parry, body push.
+- `src/player/controller.ts`: movement and moves (long jump, wall kick, ledge grab, plunge, dodge, guard, recoil).
+- `src/ui/`: menu, boot (title and save files), HUD, shop, photo mode, glyphs, builder.
+- `src/core/`: input, controls (pads), bindings, rumble, save, slots, tweaks.
+- `src/data/`: tuning, balance, equipment, shop, stickers.
+- `steam/`: Electron main and preload, steamworks.js (achievements, Deck flag, pad type). See `steam/README.md`.
+
+## Habits that caught real bugs (keep them)
+- Every feature gets a test file in `tests/`, added to the `test:sim` list in package.json. Use the **real**
+  PlayerController and `resolveCombat` for fights, not just the enemy class.
+- Every enemy roll goes through `this.rng` (tests fix the dice). A raw `Math.random` in toad.ts once made a test fail
+  about 1 run in 20. footing.ts now checks that the same dice give the same result.
+- Look at it. Screenshots in the game and on the model sheet found the problems the tests missed: invisible banners,
+  the bat flying above the frame, a shell that read as two bubbles, steam drawn as white squares.
+- After a change, run the whole `npm run test:sim` before building.
+
+## Gotchas
+- The game camera sees only about 5–7 units up a wall. Anything hung higher is invisible.
+- A "defeat" wedge counts **every** enemy in its level. Adding an enemy anywhere changes that goal, so put new enemies
+  in the group the hint names, or update the hint.
+- The plain jump checker lets jumps pass through walls (on purpose, so it never cries wolf). Trap mode is strict.
+- The menu remembers its last screen and row. Scripts must navigate by title, not by counting key presses.
+- Enemies remember the last swing number that hit them, and a new test rat counts swings from 1. Use a fresh enemy
+  for each check.
+- Rumble ignores a weaker buzz for 60 ms after a stronger one.
+- Photo mode on a pad: B / ○ means back (leave). Don't put a photo action on the east button.
+- An empty save file means no save and under a second played. The game writes a few things at start-up before a file
+  is chosen.
+- Fall-back levels (Hollows, Keep, Lightless Way) put him back where he was, with 1 damage. Other levels respawn him at
+  the start.
+
+## Not tested on real hardware
+- Steam: the Deck detection and the Steam Input pad-type lookup follow the steamworks.js API but have never run with a
+  real app id or on a Deck.
+- Feel: no human has played the latest combat numbers, the Ironback, the Flitter, the Keep Guard, the Orchid Mantis or the Stag Knight. Tuning sliders exist for all of them.
+- Looks: the reworked models (2026-11-14) were checked on the model sheet and in a few game screenshots, not on a phone.
+
+## The owner on collectibles and wall jumps (2026-11-15: a note for future changes, not yet acted on)
+His words, in short:
+- The collectibles "sometimes feel a little annoying"; he does not like where a lot of them are. Some are too easy.
+  Some have an obvious way he is meant to get them, "but the walls and stuff aren't high enough so I can just jump
+  over stuff".
+- "We're not using the wall jump enough ... a real missed opportunity. The wall jump is a really cool mechanic that
+  we should utilize more."
+- "There should be less collectibles and each collectible should be more rewarding to get." Parkouring round a level
+  (up a wall jump, across platforms that are a little difficult, or moving) for ONE object is fun; running along
+  picking up fifteen in a row "like Pac-Man" is not.
+
+What that means for any work on a level from now on:
+- FEWER things to pick up, each one EARNED by a piece of movement. No trails of crumbs along a floor.
+- Wherever there is one intended way to a thing, CHECK THAT IT IS THE ONLY WAY: a double jump carries about 10 and
+  climbs about 4.75, a jump with a double jump and a grab climbs about 5.8. A wall he is meant to go round has to be
+  higher than that. `src/levels/reach.ts` works out what he can reach; use it, and test the short cut as well as the
+  route.
+- Build wall-jump routes: chimneys (two walls 2 to 2.5 apart) and wall-to-wall kicks across a gap.
+
+How things stood when he said it (counted 2026-11-15): 154 crumbs, 45 bottle caps and 10 relics across the game (24
+crumbs in the Cistern, 19 in the Foundry, 18 in the Keep, 17 in the Hollows), and TWO wall-jump chimneys in the whole
+game: behind the Cistern's tower, and up to the throne in the Keep.
+
+**The Great Cistern is done to this rule (2026-11-15), as the pattern for the rest** (HANDOFF, "The Cistern's things
+to find"). Eight things where there were thirty-two: five caps and three HUNKS of cheese. How to do the next level:
+- A crumb can be WORTH more than one (`props: { worth: 8 }` on the piece): that is a hunk of cheese, drawn big, with
+  an id of its own (`...:hunk:01`). Trade a level's crumbs for a few hunks worth the same in all and the shop's prices
+  do not have to move. Caps are one each; a wedge that asks for "all the caps" follows the count by itself, but its
+  name and hint say the number: change them.
+- For EVERY thing: play its route in the level's test with the real controller (and pick the thing up at the end),
+  and take the route's key piece away and ask `unreachable()` whether it can still be got. tests/cistern.ts is the
+  pattern. That second check found two short cuts in the first hour (a slab reachable from the grand stairs, a roof
+  reachable from one of the Teeth); each was closed by moving something a unit or two.
+- Wall kicks: a chimney 2.2 wide gains about 1.8 a kick, one 4 wide about 2.7 (he is carried across). Give him a
+  landing at the top at least 2.4 thick. Keep a chimney five or more from any other wall, or the other wall makes a
+  second chimney with its end. The jump checker (`reach.ts`) knows chimneys up to 4.5 wide.
+The other fifteen levels are as they were.
+
+## The Club, more alive (the owner, 2026-11-15. FIRST PART BUILT 2026-11-16: see the end of this section)
+His words (dictated, so read past the slips: "busy days" and "dizzy Dave's" are Dizzy Dave's; "conquer" is Conker):
+- "I want the main room you know where dizzy Dave and everybody else hangs out I want it to be a little more
+  populated I'm thinking like I want it to feel almost like the Star Wars Cantina or maybe a better example would be
+  like the bar at the beginning of Conker's Bad Fur Day".
+- "I want to have more props and objects and maybe have the characters have sort of idle animations where ... they're
+  kind of doing something maybe it looks like they're talking to each other you know like have maybe two characters
+  drinking at a table".
+- "you're going to end up having to create more characters but you can do like you did with the others where you just
+  take an animal make it into a cute character and then you can make two of them by changing some textures and a
+  little bit about the model". **"Ideas for animals are turtles, a ferret, maybe an owl, a fox could be cool."**
+- "go crazy with the designs try to make some cool looking stuff ... think about the Legend of Zelda, think about
+  Dark Souls and just the variety of different types of characters and enemies".
+- **Enemies can be regulars too**: "those little things that shoot coconuts or whatever at you [in] Ocarina of Time
+  those things can be friendly once you beat them they ... talk to you like people so maybe one of the ants that's an
+  enemy can also just kind of be a chill dude drinking at dizzy Dave's Bar".
+- **It grows**: "it would be even cooler actually if the room sort of grows over time so the more you clear out areas
+  and maybe some of the little mini bosses will come hang out there or maybe like just once you've beaten enough ants
+  like some of them just start hanging around ... to sort of show growth in the world".
+- **But it is full from the first minute. This is the rule of the whole job**: "I want it to feel pretty alive
+  regardless cuz I don't want people to have to like earn the reward of a world that feels good I don't want to just
+  give them an empty world to have to fill themselves I want it to feel like a full world that gains extras over
+  time."
+What is there now, for whoever starts it: the Club is the hub in `src/levels/kingdom.ts` (level id `hub`), with six
+characters: Dizzy Dave (the pigeon behind the bar), Mellow Mort and Pip (mice), Wren and Finch (birds), and
+Grimsqueak hidden. Characters are `src/npc/npc.ts`: four builds (`NpcKind`: mouse, bird, villain, pigeon), and
+`lookOf(kind, name)` gives two of one build different looks, which is the trick he means. They stand still and talk
+when spoken to: none of them DOES anything. The furniture so far is the couch, the fire bowls, barrels, the speaker.
+What it will take (our notes, nothing decided): new builds (turtle, ferret, owl, fox, and a friendly ant made from
+the Ant Pikeman's own model); a way for a character to be doing something on a loop (drinking, talking in a pair,
+leaning, dozing, playing cards), which is an idle animation plus a prop in the paw; tables, stools, mugs, a card
+table, more of the bar; a table of "who is here once X is done" read from the save (areas cleared, a boss beaten, a
+count of ants beaten), on top of a room that is already busy with nothing done. Each new creature gets the same care
+as an enemy: looked at from all sides on the model sheet before it goes in (see the spear-through-the-head note).
+These are OUR characters in that spirit: not the cantina's or that bar's own people, places or jokes.
+
+**What is built (2026-11-16), the first part:**
+- **Furniture** (`src/world/tavernModels.ts`; decor kinds `table` and `stool`; `TABLE`, `STOOL`, `tableSolids`,
+  `stoolSolids` in layout.ts): a table is a wooden cable drum on its side, with thimbles for mugs, a candle stub in a
+  bottle cap, or a game of cards; a stool is a cork with a bottle cap on it. Solid as drawn.
+- **Three tables in the Club** (`TABLES` and `clubTables()` in junction.ts: a table, the stools round it, and who is
+  on each). They are added to the compiled room in `junction()`; they are NOT builder pieces (the level editor does
+  not offer them yet).
+- **Two new builds, two looks each** (`src/npc/patrons.ts`): TURTLES Mossback Mo (old, mossy, glasses, a beard) and
+  Pebble (young, a flat cap and a kerchief); FOXES Vix (red) and Ash (grey, an eyepatch, a notched ear). The look
+  goes by name (`patronLook`), like the mice and birds.
+- **THE FOX WAS REBUILT THE SAME DAY, and why (a rule for every creature to come).** The owner on the first one:
+  "the turtle is pretty good ... but that fox just needs some more work right away ... I don't know if it's just too
+  many pieces or something or they're all too round I don't know he just looks weird I don't really like it." It
+  was balls strung together: three to a leg, three to the tail, a ball for a head with a cone stuck on. The second
+  is a FEW pieces, each a shape of its own, cut in flat faces (`turned`, `limb`, `faceted` in patrons.ts): one
+  tapered body, one head that is a wedge from the cheeks to the nose, one brush of a tail, thin tapered limbs.
+  **So: build a creature from few shaped pieces, not many round ones.** (The same lesson as the fire bowl: "more
+  detail" and "better" mean a better SHAPE, never more parts.) The round turtle suits a turtle; do not make the
+  ferret or the owl out of balls.
+- **Doing something** (`NpcSpec.doing`: stand, drink, chat, lean, cards; `seated`, `partner`, `turn`): the turtles
+  sit across a table, one drinking and one talking, taking turns (the one listening nods; a turtle's neck comes out
+  when he speaks); the foxes play cards, each looking at his hand and then at the other. One who is busy keeps to
+  his table and turns only his HEAD to the rat (`busy` in `Npc.update`).
+- **An enemy as a regular**: Corporal Nib, an Ant Pikeman off duty (`AntModel.offDuty()`: no pike, a thimble in the
+  claw that held it), standing at the third table.
+- **It grows** (`NpcSpec.when`): Nib is there only once the Hollows are cleared (`#unlockall` shows him). Everyone
+  else is there from the first minute. That is the whole of the growth so far: one regular, one condition.
+- Each has lines, a voice (a borrowed recording at his own pitch: `VOICES` in speech.ts) and a talk-box portrait.
+- `tests/club.ts` checks the furniture is solid as drawn, who is where and doing what, that the room is full
+  without the extras, and every body at everything it does. Each build was looked at from four sides in the model
+  viewer (`#view&who=patron&kind=fox&name=Ash&doing=cards&seated=1&t=2`) and all three tables in the running game.
+**The second part (2026-11-16):**
+- **Two more builds, two looks each**, made the fox's way (a few shaped pieces, flat faces, each face ONE colour:
+  `paintFaces`): FERRETS Slink (sable, a mask, a mustard waistcoat) and Biscuit (cream, a red waistcoat), who
+  cannot keep still (the head darts about, the long back sways, seated the feet swing); OWLS Madam Tawny (brown,
+  tufts, an apron) and Professor Snow (white, a monocle, a bow tie), whose heads turn further than anyone's and tip
+  right over.
+- **A bar** in the south-east corner against the east wall (`BAR`, `clubBar()` in junction.ts): a plank counter, a
+  step behind it, a keg (a tin can on its side, tapped) and a row of thimbles on it (`buildKeg`, `buildMugRow`;
+  decor kinds `keg`, `mugs`), three stools in front. **Madam Tawny keeps it** (`doing: 'tend'`: a mug in one wing, a
+  rag going round it in the other), up on the step so she can be spoken to over the counter. Slink is on a stool.
+- **Someone leaning**: Biscuit, his back to the wall by the Cistern door, arms folded.
+- **It grows, three ways now**: Biscuit once the CISTERN is cleared, Professor Snow (on the far bar stool) once the
+  FOUNDRY is, Corporal Nib once the HOLLOWS are. With nothing done there are six regulars and the six old friends.
+**The third part (2026-11-16):**
+- **Dressing, all of it only drawn** (`clubDressing()` in junction.ts; builders in tavernModels.ts; decor kinds
+  `rug`, `dancefloor`, `bulbs`, `bottles`, `dartboard`): a round rug under each table and a runner in from the door;
+  a dance floor of lit tiles before Dave's stage; four strings of little coloured lights (hung at about five up,
+  LOW on purpose: the view looks down on him, and anything much higher is off the top of the picture); two shelves
+  of bottles on the wall behind the bar; a dartboard on the east wall by the card table.
+- **The save counts creatures beaten**, by kind (`LevelProgress.beaten(kind)`, `noteBeaten(kind)`, in the same
+  saved record as the levels cleared, so it goes with the save file; main.ts counts on every kill). A regular's
+  `when` can ask for a count (`beaten: [kind, count]`) as well as, or in place of, a level cleared; `isHere(when,
+  progress)` in npc.ts is the one place that decides.
+- **Two regulars come for the fighting**: Corporal Nib the ant now arrives after EIGHT Ant Pikemen beaten
+  (`NIB_AFTER`; it was "the Hollows cleared"), and **Sir Hobnail, a Stag Knight, minds the south door** once one
+  Stag Knight has been beaten (the same model as the enemy, standing easy with his hammer: `kind: 'stag'`).
+  So the later regulars are four: Biscuit (Cistern cleared), Professor Snow (Foundry cleared), Nib, Sir Hobnail.
+- **The ant drinks**: its thimble comes up to its jaws every seven seconds or so and its head goes back
+  (`AntAnimInput.sip`), and its head turns to whoever is near (`look`).
+**Not done yet:** voices of their own; the tables, the bar and the dressing are not in the level editor; the dance
+floor's tiles do not flash to the beat; nobody dances on it; Sir Hobnail does not turn his head (he turns his
+whole body, as the old friends do); no rule yet for the bosses (the Broodmother or the Wyrm would not fit through
+the door). The ant's sip and the stag as a doorman were seen in still pictures only. Nobody has spoken to any of them in the running game: their
+lines and portraits are untested by eye. The Conker research's first pass (below) found that game's bar is its
+opening scene and its menu, not a room you walk about in: the owner means its FEEL, a room of people busy with
+their own evening.
+
+## A little cutscene system (the owner, 2026-11-16: FIRST VERSION BUILT the same day; `tests/cutscene.ts`)
+His words: "I want us to try to build a little cutscene system that works with all of our characters where we can
+sort of marionette them around maybe find some common poses online they can nod their head and move around a little
+bit to you know sort of look like they're talking we don't have to actually like animate their mouths or anything.
+And I just want to see how far we can get with like just making a little couple of little cutscenes you know two of
+them talking at a table or at the bar maybe one of them ordering the other one a drink or sliding a glass down the
+bar, you know the soldier and drinking by himself maybe like you can pan around the table like a cool movie scene or
+something just try to build something where we can make scenes like this frame by frame so we can sort of tell a
+better story when we get around to actually telling one."
+**WHAT IS BUILT (first version; nobody has watched one play through by eye, only frames of each):**
+- **A scene is DATA** (`src/cutscene/cutscene.ts`): who is in it, what things are in it, where the view is, and for
+  each a list of KEYS in time. A key says what is true AT its moment; between keys things go smoothly. Words a key
+  can say: `at` (he walks there, facing his way), `hop`, `slide`, `ease`, `face`/`faceAt`, `head`/`headAt`, `lean`,
+  `doing`, `seated`, `hide`, `nod`, `shake`, `talk`. Things (a mug): `at`, `yaw`, `tip`, `hide`, `ease: 'out'` for a
+  slide that comes to rest. The view: `pos` and `look`, or `watch` a named character or thing, or `orbit` round a
+  place (two orbit keys pan round it), `cut` to jump. `sampleCutscene(scene, t)` gives any moment at once.
+- **The marionettes** (`src/cutscene/stage.ts`): the knight, all ten kinds of talking character, and eight creatures
+  that walk (roach, toad, ironback, guard, mantis, stag, ant, scorpion). Each takes its own poses by name; what a
+  model has no pose for it gets as a marionette does (a patron has no walk, so he bobs along; an ant has no nod, so
+  its body dips). **NOT TAUGHT: the fliers (bat, hornet, firefly) and the three great beasts.** It says so if asked.
+- **A scene has its own cast**, fresh models; the room's own people of the same names step out while it plays.
+- **The four first scenes** (`src/cutscene/scenes.ts`), all in the Club: TWO AT A TABLE (Mo and Pebble), A DRINK
+  FOR A FRIEND (Vix buys Slink one; Tawny pushes it along to him), A GLASS DOWN THE BAR (to the knight on the far
+  stool), THE SOLDIER, ALONE (Nib at his table, the view once round him).
+- **To watch one: pause, TOOLS, "SCENE: ...".** From any room (it takes him to the Club first). JUMP ends it.
+- **FRAME BY FRAME: ATTACK holds it; held, LEFT and RIGHT step one frame of thirty back and on** (keep them down to
+  run), and a line at the foot says the time and the frame. That is the "frame by frame" tool so far: a scene is
+  WRITTEN as keys in scenes.ts and LOOKED AT a frame at a time. There is no editor in the game for writing one yet.
+- Dev: `#level=hub&scene=<id>&t=<seconds>&hold`. Sheet tool in the scratch folder: a row of held frames at chosen times.
+- NOT DONE: an in-game editor; sounds in the scenes (the `sounds` list is there, empty); poses "found online" (no
+  site for it could be reached); hands that hold a thing (a prop is put in the world, not in a paw: when Slink
+  "takes" the thimble it is hidden and his own drinking pose brings its own); walking patrons have no legs' walk.
+  The Conker report (`reports/`) has advice for this system: any frame at any time, short, skippable, cut on the beat.
+
+**What he asked for, plainly:**
+- One system that works with EVERY character (the knight, the Club's regulars and patrons, the enemies).
+- Characters moved like marionettes: walk to a place, turn, take a pose, nod, gesture, lean in. No mouths.
+- Scenes made "frame by frame": something to author a scene with, not a one-off animation in code.
+- A few first scenes to see how far it gets: two talking at a table or at the bar; one ordering the other a drink;
+  a glass slid down the bar; "the soldier" drinking by himself with the view panning round his table.
+- It is a TOOL for telling the story later. It is not the story (the story stays parked: do not offer to un-park it).
+**Notes for whoever builds it (these are Claude's reading, not his words):**
+- "The soldier" is most likely the off-duty ant in the Club (the one who drinks there). Ask if it matters.
+- The rule that the view never turns by itself is about PLAY. A cutscene's pan is the thing he asked for here.
+- What is already there to build on: every patron takes `doing` poses (stand, drink, chat, lean, cards, tend) and
+  can sit; the ant has `sip` and `look`; the viewer (`#view&who=patron...&t=`) shows any of them at a set time;
+  the Club has tables, a bar, mugs and stools as real things.
+- A likely shape: a scene is DATA (who is in it, and for each a list of keys in time: place, facing, pose, a nod or
+  a gesture; keys for props such as a mug; keys for the view), played by one player that every character model
+  answers to, with a way to step through it a frame at a time in the dev suite.
+- "Find some common poses online": this session can reach only two sites, so poses would have to come from what is
+  known already or from a computer session where more sites can be allowed.
+
+## What he found walking round the Club (2026-11-16): ten things, and the rules they leave
+He played the build on a PC and sent pictures and a video, one after another, while work was going on. All are fixed
+and held by `tests/clubfixes.ts`. THE RULES THEY LEAVE ARE THE POINT:
+- **"texture clipping top of barrel", "clipping on couch patches", "clipping with the coffee in coffee cups",
+  "clipping rug", "clipping dart board".** Five of ONE fault: a flat thing laid two to five thousandths over another
+  and left to the depth buffer, which cannot tell them apart at a distance, so they flicker through each other.
+  **RULE: A SMALL GAP IS NEVER ENOUGH. A thing that LIES ON another either (a) is built so no two faces share a
+  plane (the barrel's head is set down INSIDE its staves; a mug is an open cup with the drink a finger under its
+  rim), or (b) is drawn in a material made for it: `lyingOn(material, level)` in ps1Material.ts (polygon offset, a
+  layer at a time). In chamber.ts `plainOn(level)` gives one; tavern models take `mats.layer`, the couch `patchOn`
+  and `plainOn`. LOOK FOR THIS in every new prop before it goes in: anything painted, sewn, laid or stuck on a
+  face.** Look at it from across the room, not only close.
+- **"text on signs in game are unreadable".** The door signs were smooth lettering shrunk to a few dots. Now block
+  letters a dot to a dot (`src/render/pixelFont.ts`, 5 by 7) on a board hung big enough that a dot of it is a dot
+  of the screen from fourteen units off (`SIGN` in courseDoors.ts: 5.5 by 2.5 units). **RULE: writing in the
+  world is drawn in the pixel font, and sized by how far off it is read from.** (The garden's boards in signs.ts
+  still use smooth lettering: they are big, but are the next to move over.)
+- **"shadow of player is sometimes larger than floor".** His round shadow stood out in the air past the edge of a
+  post. It is cut now where the ground ends (`src/world/shadow.ts`). Creatures' and patrons' shadows are still
+  plain discs.
+- **"string light decorations ending in mid air".** An end at no wall hangs from the roof by its own wire now
+  (`buildBulbs(..., hang)`, `bulbHang` in chamber.ts). **RULE: everything that hangs, hangs FROM something.**
+- **"light box above fire looks bad".** A warning-light post had been put in the air over the fire only to throw
+  warm light (and was solid up there). A `light` decor can be `bare` now: light only.
+- **"turtle shells should be more octagonal and less like bumps".** `shellGeometry` in patrons.ts: an eight-sided
+  dome of seventeen flat plates with dark seams. (The standing rule again: a few shaped flat-faced pieces.)
+- **"i want to be able to pan up, look up more with the right stick. i dont want to clip the floor with the camera
+  but we could still do something".** Pushed past its lowest place the view now LOOKS UP: it sinks a little, is
+  kept clear of the floor, and tilts up with him at the foot of the picture (`TUNING.camera.lookUp`, `lookUpDrop`,
+  `lookUpTilt`, `floorClear`; two sliders). Dev: `&tilt=-0.4` on an `at=` address.
+- **"weird bug" (a video): he was THROWN from one corner of the hearth to the other.** Pressed against a face of a
+  box exactly at its corner, the least sideways push counted him as overlapping the thing he was only touching, and
+  he was put out at its FAR end. Fixed in `moveAxis` (controller.ts): across the way he is going, touching is not
+  overlapping; and one who really is inside a thing is put out at its NEARER face, never the length of it away.
+  The video was read by pulling frames with ffmpeg and measuring frame-to-frame change to find the jump.
+- **"what resolution is this game ... a lot of the quality seems kind of bad and a little garbled on a pc
+  screen".** It drew 240 rows and stretched them 4.5 times on a 1080 screen: uneven dots. Now EVERY DOT OF THE
+  PICTURE IS A WHOLE NUMBER OF SCREEN DOTS (`src/render/picture.ts`), and there is a setting, PICTURE, in the pause
+  menu's settings: CHUNKY (PS1, at least 240 rows: 270 on a 1080 screen), CRISP (360), SHARP (480: 540 on 1080).
+  And HD (the screen's own dots).
+  **THE DEFAULT IS HD, BY HIS WORD the same day: "honestly lets just go for the hd one, even stretched a little bit
+  makes it look bad. we can get the retro look from overlay options and the like".** So: the game is drawn at the
+  screen's own sharpness; the RETRO LOOK IS NOW THE OVERLAYS' JOB (the FILTER setting: scanlines, old TV, VHS, green
+  handheld), and the chunkier pictures stay as choices. The 32-dot pictures on things are still blocky up close:
+  that is the art, not the stretch. Vertex wobble is all but gone at HD (it goes by the picture's size). All the
+  pictures Claude takes are now HD too. (`#sharp=chunky` on the address for the old look.)
+
+## OFF THE LIP AND BACK INTO THE PIPE; THE SWORD ON THE SHIELD (2026-11-17). Tests `tests/toybox.ts` (37)
+
+**His words:** "You should be able to **swing your sword on attack while you're riding your shield**. When riding up a half
+pipe ramp you should **disconnect up at the top like in Tony Hawk's Pro Skater and come back down into the pipe** and
+you can press buttons to do tricks or different board grabs while you're in the air. Is that possible we don't have to
+include the spinning and stuff I just want to be able to **launch out of the half pipe and come back down into it**."
+ - **THE LIP** (`Box.vert`; `PlayerController.vertLaunch`; `TUNING.ride.vertMin/vertPop/vertTop/vertDrift`). The top two
+   facets of each wall of the Toy Box's half pipe, and of its quarter pipe, are marked. **A rider going up one faster
+   than 2.5 goes STRAIGHT UP off it**: what he had up the wall is all upward (and a little more, never over 20: eleven
+   up over the lip, two seconds in the air); what he had ALONG the pipe he keeps; he drifts back in over the wall and
+   comes down on it riding. **MEASURED: rolled in and pumped, 5.5 over the lip, a second and a half in the air; with the
+   stick held at the wall all the way, 10 over it, two seconds.** Slower than 2.5 he comes to the top and back, as before.
+   **JUMP pressed at the lip adds to it.** To get OUT onto a deck now: grind the lip, or walk up the ramp at its end.
+ - **TWO THINGS THE FILM OF THE REAL GAME CAUGHT THAT THE TESTS HAD NOT (keep both as rules):**
+   (1) **THE GAME MAKES ITS SOLIDS IN `world/chamber.ts`, NOT WITH `aabbOf`.** A new mark on a box (`vert`) has to be
+   copied THERE (as `slick` is), or it works in tests and not in the game. `tests/toybox.ts` now takes its solids
+   from `buildChamber`, as the game does. **A test of a level should.**
+   (2) **AT SOME SPEEDS THE WALL LETS GO OF HIM A MOMENT BEFORE ITS LIP** (13 in the film, 16 in a sweep), and he went
+   out over the deck instead of up. The launch is done wherever the top of a marked wall lets go of him going up, not
+   only at its edge; and it is tested at EVERY speed from 12 to 30 in halves, at 60 and 30 frames a second.
+ - **THE SWORD, ON THE SHIELD:** ATTACK while riding is a swing of the sword (the same swing, it hits as one does), on the
+   ground or in the air; it does not turn him or slow him. In the air on the shield it is a swing, not the dive.
+   His sword arm does the swing over the riding pose. **So the SPIN moved: it is the ROLL button in the air now** (on
+   the ground the roll button still steps him off). In the air on the shield: **JUMP flips, ROLL spins, GUARD grabs,
+   ATTACK swings.** The Toy Box's sign says so.
+ - **ALSO FOUND:** on his shield from a STANDSTILL (in a skate park), the stick pushed forward, he was stepped off it
+   again before the push had got him going. He is not stepped off while he is pushing.
+ - `&autoride=pipe&at=-7,3.5,0,-1.5708` films the pipe: rolls in, pumps, grabs in the air.
+
+## THE HALF PIPE'S DECKS ARE FLUSH, AND ITS LIP IS AN EDGE TO GRIND (2026-11-17). Tests `tests/toybox.ts` (31)
+
+**His words:** "The tops of the half pipes should be more flush and they should also count as an edge that you can grind
+on."
+ - **THE COPING IS GONE** (`COPING` 0 in `src/levels/toybox.ts`): a deck is level with the top of the wall that curves up
+   to it, and the quarter pipe's the same. (It had been 0.4 lower, because level with the wall the deck's side was a
+   wall to a rider coming up fast, and he came off at the lip.)
+ - **THAT FAULT IS MENDED WHERE IT WAS** (`player/controller.ts`, `rampHead`): **a BOX at the head of the ramp he is on,
+   no higher than his ramp comes up to at the box's face, is not a wall to him.** The edge of his body reaches the
+   deck's side while his feet are still down the slope; the ground he is on rises to the deck before his middle is
+   there. **It is only for a RIDER going fast enough that the deck would have thrown him off** (over `bailSpeed`): one who
+   comes up to the lip slowly is stopped by it and comes back down the wall, as always: that is a pipe's to and fro, and
+   the garden's pipe is tested for it. **SO: a deck at the top of any curved wall can be flush with it. No coping is
+   needed again.**
+ - **THE LIP GRINDS** with nothing added: level with the wall's top, the deck's edge is a ledge with the wall falling
+   away beside it, and a ledge is a grind line (world/grind.ts). Tested from the deck (skating along beside the lip, the
+   grind button: five seconds along it, on the lip to the hundredth) and from INSIDE the pipe (going along high on the
+   wall, the button takes him up onto it).
+ - Rolled in off the flush lip and doing nothing, he gets to 3.0 of 3.5 up the far wall (it was 2.7 from a jump).
+
+## THE CAMERA GOING UP A SLOPE, AND IN A HALF PIPE (2026-11-17: he found it). Tests `tests/camera.ts` (42)
+
+**His words:** "The camera needs to stay behind the character right now **if you're going up ramps at any kind of speed
+whether you're walking or especially while you're riding the board it just like zooms in too far into the back of the
+character or straight up into the wall and you can't see anything**."
+ - **WHY:** its height comes after his GENTLY (`heightRate` 5, up to 1.4 behind), so that a hop does not jolt it. Up a
+   slope the ground comes up as fast as he does: the point it looks at, behind his rise, was left INSIDE the slope.
+   Nothing can be seen from in there, so it was drawn in to the back of his head. **MEASURED BEFORE: riding up a road's
+   slope at 16 it came within 0.4 to 0.6 of him (it sits 3.5 off), and under the ramp; walking up a steep one, 0.4.**
+ - **NOW** (`src/camera/followCamera.ts`, `CHEST_CLEAR`, `RISE_RATE`): the point it looks at is never nearer than half a
+   unit to the GROUND UNDER HIM, and comes up to that quickly (not at a stroke); and what is taken for his chest, where
+   lines of sight are drawn from, is always over that ground. **MEASURED AFTER: 3.5 or more off at every slope (0.42,
+   0.5, 1.0), every speed (6, 16, 30), at 60 and 30 frames a second; never under the ramp.** A hop off flat ground is
+   as it was (the ground under him has not moved): held by a test.
+ - **IN A HALF PIPE (the same day, after his "Continue"). WHAT WAS WRONG WAS NOT WHAT WAS GUESSED.** The guess, written
+   here before, was that the camera swings round when the wall turns him. It does not: `autoFollowRate` is 0 (his rule),
+   it never turns by itself, and a test now says so in the pipe. What was wrong: the camera is on the side of one wall,
+   and he rides up that wall TOWARDS it every other pass. **MEASURED BEFORE: at the foot of that wall it was drawn in to
+   1.3 from him (it sits 3.5 off), was under the wall's surface by a fifth, and was squeezed again in the air after
+   the launch on that side: under 2 off for 9% of a run.**
+   - **WHY:** the point it looks at is leaned AHEAD of him by his speed (`lookAhead`), at the height of his chest. Up a
+     wall, ahead of him the ground is higher: that point lay against the slope. From a point on the ground nothing sees
+     his "waist" a quarter under it, so `sees()` failed at every pitch, no line over the wall was ever found
+     (`wantLift` stayed 0), and it was pulled in instead of rising.
+   - **NOW:** (1) the leaned point is kept half a unit over the ground UNDER IT (`AHEAD_UP`: a slope no more than 1.2
+     over his chest there). (2) A SLOPE in the way is never "too tall to see over" (`lowThingInTheWay`). (3) Rising
+     over a slope while its line is still blocked, it rises fast (`LIFT_HURRY` 40, never more than `LIFT_HURRY_MOST` 5
+     radians a second); **over a crate it rises as it always did: hurried over everything, it swung 23 degrees in a
+     frame in the Cistern's run-about test.**
+   - **MEASURED AFTER: never nearer than 2.5 (2.56 to 3.34), never under the wall, never turned, with the view on
+     either side of him and cornerwise, pumping gently and hard, at 60 and 30 frames a second, through 72 launches.**
+     Held by a test that uses the real pipe, the game's own solids and the real controller. Film:
+     `film-half-pipe-camera.mp4` (before, then after).
+   - **A SLIDER, OFF: `camera.rideFollowRate`** (Tweaks, Camera: "On his shield, swings behind the way he is going").
+     0 as shipped, because his rule is that the view does not turn by itself. It is there for him to TRY: in a pipe a
+     view that never follows shows his face for half of every run. Do not turn it on without his yes.
+ - **NOT DONE:** (1) with the view on the wall's side, at the top of that wall it looks DOWN over the deck's edge at
+   him, and the deck fills the bottom third of the picture for a moment. (2) Nothing was changed about how it follows
+   him DOWN a slope, which he has not complained of. (3) Nobody has played the pipe by hand with this camera.
+
+## THE HISS IN THE DREAM, AND THE MUSIC TOO LOUD (2026-11-17). Tests `tests/ambience.ts` (30), `tests/tunes.ts` (20)
+
+**His words:** "I turn the music all the way down and there's just this **white noise that permeates in the background
+everywhere** so I don't know what that is but it's super annoying could you please check the entire game for that ...
+Also **the music is a little too loud in general** I had to go to the settings to turn it down and it was already
+pretty low but it was like just way louder than everything else. The energy here is like hyper energetic ... but it
+doesn't mean that it needs to like **blast to the player's senses** for however long we're in here ... this game is
+going to have some levels that have like a darker Dark Souls type of feel this is supposed to feel the opposite of
+that which is doing really well but I just don't want it to feel annoying."
+ - **THE HISS WAS TWO THINGS.** (1) **The cave's WIND.** Each kind of place has a quiet bed under everything
+   (`src/audio/ambience.ts`): the sewer a rumble, the Foundry a hum, the Keep a drone, **the cave a wind, which is a
+   hiss**. The dream's levels are built with the cave's theme for its looks, and so had the wind under them the whole
+   time. **Now a place under the open sky (`sky: 'space'`) has no bed and no far-off noises at all** (`worldSoundFor`'s
+   third argument). (2) **The shield's SCRAPE**, a hiss too, looped as loud as 0.63 of full whenever he rides: and in
+   the dream he always rides. A third of that now (`RIDE_SCRAPE` in `main.ts`); the grind's ring a little down too.
+ - **AND THEN THE SCRAPE ITSELF WAS REMADE** (he said next: "the sound while you're sliding your shield is also pretty
+   annoying. Like it can make a sound but it shouldn't be such a grating one and it also should be mixed really low so
+   you like barely hear it"). It was "a gritty hiss with a hollow ring under it, catching now and then"; it is **a soft
+   low rush with a faint hum, nothing sharp, nothing that catches** (`rideScrape` in `src/audio/synth.ts`: 6% of it
+   above 2 kHz, where most of it was), and it is **mixed at a ninth of what it first was** (`RIDE_SCRAPE` 0.07 at top
+   speed). The grind's ring on a rail is as it was: he asked for friction there.
+ - **The wind is halved in the real caves** (0.1, was 0.2): it is the one bed that is a hiss.
+ - **EVERY LOOPED SOUND WAS MEASURED** for how like noise it is: the hissy ones are the wind, the scrape, the grind's
+   ring, a burst pipe's gush, a gas leak, fire. The last three are only heard beside the thing itself.
+ - **THE MUSIC: a recorded tune is played at HALF its level** (`TUNE_LEVEL` in `src/audio/music.ts`), and the dream's
+   at 0.7 of that (`PLAYLISTS.dream.level`). The tunes made with his tools are recorded full: as loud all the time as
+   an effect is at its loudest. The jingles are halved with them. **His own saved setting is untouched** (it will be
+   quieter still for him until he turns it back up).
+ - **MEASURED IN A REAL BROWSER, standing still, music at nothing: the Toy Box, the Milky Way, the Big Dipper: 0.0000.**
+   The Hollows 0.012 (its wind), the Cistern 0.023 (its rumble). With music at its default: the Toy Box 0.021.
+ - **A RULE: a new place gets a bed because of what it IS, not because of the theme its walls borrow.** And Claude
+   cannot hear: a hiss is found by measuring every loop, as here, not by listening.
+
+## THE RIDE AT A PHONE'S FRAME RATE; THE SHIELD ON THE RAIL (2026-11-17: two things he found). Tests `tests/toybox.ts` (29)
+
+**His words:** "My first big notes are that when you're grinding on the rails you kind of clip through and I want the
+board to be like sliding on the rail like I wanted to feel like there's friction there and right now **the board is
+like inside the light rail and his feet kind of are too** ... I need that to be redone or relooked at so that it's **a
+tighter fit with the shield on the rail**. Also I'm trying to use the half pipe and it seems like it's okay going down
+but then **when you're trying to go back up the other side your character just like phases through the wall** like the
+physics doesn't seem to be there to get him to go up the ramp."
+ - **THE HALF PIPE WAS A FRAME-RATE FAULT, AND EVERY TEST OF THE RIDE RAN AT SIXTY.** The game's step is as long as
+   the frame took. At sixty a second the pipe worked. **At thirty and under (what his phone gives that level) a rider
+   holding the stick toward the far wall goes half a unit in one step: near the top of a curved wall he was put 0.3
+   INSIDE it, and thrown off.** Now: **on his shield, a long frame is taken in pieces of a sixtieth or less**
+   (`PlayerController.update` -> `step`). A button pressed is pressed in the first piece only.
+   **A RULE: anything fast is to be tested at 30, 24 and 20 frames a second as well as 60** (`tests/toybox.ts` does,
+   for the pipe). It is ONLY the rider that is stepped in pieces: on foot, and the creatures, a long frame is one step
+   as before.
+ - **Also:** on a wall too steep to stand on, the stick held against the way he is going is no longer a BRAKE. One who
+   holds the stick toward the far wall of a pipe has it against him the moment the wall turns him round; it used to
+   brake him there.
+ - **THE LIGHT RAIL IS DRAWN UNDER THE LINE HE RIDES** (`RAIL_TUBE` in `src/world/rails.ts`: a tube 0.15 thick whose top
+   is 0.04 under the line). It was drawn ROUND the line, so the line, his feet and his shield were down its middle.
+   Seen in a close film: the shield rides on its top edge, and the sparks come off there. (Grinding already had
+   sparks and its own ringing sound; nothing new was added for "friction".)
+ - **NOT DONE:** the shield is not turned ACROSS a light rail in any new way, and nothing was changed about solid rails
+   or ledges. If the fit still looks loose to him it is the shield's own place under his feet in the grind pose
+   (`ratModel.ts`, the ride pose) that wants looking at next.
+
+## A FALL COSTS NOTHING IN THE DREAM, NOR ON ANY RIDE DOWNHILL (2026-11-17: A STANDING RULE). Tests `tests/toybox.ts` (27)
+
+**His words:** "I still got fall damage one or two times messing around in this level and I do feel like it takes away
+from the fun so maybe we can turn the sort of like fall damage idea off when we're doing these downhill sections. I
+think it's a good idea in like the normal world and I think it's a good idea for like certain areas but these
+downhill levels I think the most of the fun comes from going fast and jumping high and doing tricks and stuff so
+adding fall damage to this area really just takes away from the fun there's no upside to it, so maybe we could just
+**make it a flag for the wacky Pomo levels in general and any downhill levels that we make in any world.**"
+ - **`LevelDef.fallFree`**: in such a level a fall still puts him back where he last stood (he has to be put somewhere),
+   with the rewind scratch, but **costs no heart** (`fallCost` in `src/player/standing.ts`; `main.ts` `lavaStep`).
+ - **SET ON: the Toy Box, the Milky Way, the Big Dipper.** **EVERY NEW DREAM LEVEL, AND EVERY LEVEL THAT IS A RIDE
+   DOWNHILL IN ANY WORLD, GETS IT.** (The Long Drop has no fall that costs anything, and so no need of it.)
+ - **NOT changed, by his word:** the waking world. In the Hollows and the Keep a fall still costs a heart.
+ - The only thing in these levels that looked like fall damage and is not: coming off the shield into a wall or
+   part-way through a trick ("bail"). That never cost a heart; it costs him his ride and half a second.
+ - Seen in the real game: four walks off the Milky Way's road, four put-backs, no cry of hurt, five hearts.
+
+## THE DREAM IS A PLAYGROUND: the Toy Box (a skate park), a stronger tuck, a spin and a grab (2026-11-17). Tests `tests/toybox.ts` (25), `tests/ride.ts` (72)
+
+**His words (keep them: this is the brief for the dream, and for how levels are to be made fun):** "I also still think the
+leaning forward needs to have more of an effect on his momentum right now it feels like a realistic amount of momentum
+increase for the incline but **this is a video game and it's supposed to ... have fun like going off ramps and doing
+kick flips and spinning around in the air** ... we're going for more of a like a **Mario Sonic style downhill feel** ...
+I guess you can make it like SSX style that would be pretty cool but **I'm more concerned about the environment and
+how fun it is to move around in** ... So I'll leave it up to you but **I want this whole wacky Pomo area to feel like a
+big playground** and I want there to be **a lot of areas where you can just like almost skate around on the shield**
+like in one of the test levels you made like a half pipe and if you do it correctly you can kind of like use it almost
+like an actual half pipe ... if we can get more of that kind of feel like **the rat can really use his shield like a
+skateboard or a snowboard or even a skimboard** or something we can make a lot of really really cool fun levels **that
+don't actually require a lot of design work**. I think **one of our biggest flaws in this game so far is the levels
+aren't extremely fun to run around yet**, we're still trying to build up to that, but **these downhill sections have a
+momentum and an excitement to them that's already pretty fun**, so if we have extra stuff like **things for people to
+jump off and grind on and curved parts and different kinds of ramps and things that send you up high** ... and maybe
+**different things you can do while you're in the air we already have the kick flip so we could do a couple more
+things like that** and just like really enhance [the] playground feeling especially when we're in a wacky Pomo level,
+I mean **if we can't make the downhill level feel fun it's going to be almost impossible to make the normal levels
+feel fun.** And I feel like the game already has some pretty cool movement with the jumping around and the ledge
+grabbing and the wall jumping and stuff so if we can add sort of that kind of movement flavor with the board sliding
+as well we could have a pretty well-rounded character. I still think he needs to be able to do a few more things **we
+still need him to be able to pick up and throw things** for example ... I'll just let you take off with it."
+
+**THE TUCK IS STRONGER** (`TUNING.ride`): tucked top speed **30** (was 24); a tuck gains **1.3 times** the slope's pull
+(was 0.45: "a realistic amount"), so 16 to 30 takes **two seconds** (was four); and **below 16 a tuck PUSHES him along
+on any ground** (`tuckPush` 5): on the flat he skates, up to 16. **The brake is 16** (was 9: at 30 that was fifty units
+to stop in). The Big Dipper's pads are 38 long for it, and each ride has more road: **MEASURED: standing 3 min 48 on
+the shield; tucked all the way 2 min 10, top speed 30.**
+
+**TWO MORE TRICKS, AND TRICKS ARE SPEED.** In the air on his shield: **JUMP is the kickflip** (as it was); **ATTACK is a
+SPIN** (he and his shield go right round, 0.45 s; one after another as the air allows); **GUARD held is a GRAB** (held
+0.3 s it counts, once an air). Landing them: **3.5 of speed for EACH trick done in that air**, past his standing top
+speed, up to 30. Down on the ground part-way round a spin (or a flip), he comes off his shield.
+(`rideSpinProgress`, `rideGrabPose`; the pose is the tuck's crouch, deeper, and a turn of his whole body.)
+
+**THE TOY BOX** (`src/levels/toybox.ts`; `#level=toybox`; a door in the Move Garden, north wall, x 12, where the Big
+Dipper's was for a day: that ride is reached through the Toy Box now;
+**`ratquest-dream.html` opens on it**; its doors lead to the Milky Way and the Big Dipper). A skate park in a box with
+tall sides, its lid off to the stars. **It is a SKATE PARK (`LevelDef.skate`): a jump and ATTACK puts him on his shield
+over ANY ground here** (anywhere else that is the dive, and needs a steep slope). Nothing to fight; nowhere to fall.
+ - **The half pipe** (west): walls that curve up to sixty degrees, 3.5 high, thirty long, decks beyond. Coasting he gets
+   three quarters of the way up the far wall and less each time; PUMPED (the stick pushed the way he is going, down in
+   the flat) he goes over the lip.
+ - **The big ramp** (east): a tower sixteen up, a steep roll-in, a kicker. **Off its lip with a jump he goes twelve up
+   and thirty-eight along, two seconds in the air**: room for a spin, a grab and a kickflip. A bank where he comes
+   down; a clear lane beyond it to stop in. The way up the tower is a long ramp against the east side.
+ - **The funbox** (middle): a table, a ramp at each end, a rail down its top. **The quarter pipe** (south), with a deck
+   behind its lip. **Two light rails**: tower top to the half pipe's deck; that deck out over the funbox to the floor.
+ - Six bottle caps, each where a trick takes him. `&autoride` (from the tower top) does the big ramp's line for films.
+ - **(THE COPING, a deck 0.4 lower than its wall's top, was how the lip was first made to work. IT IS GONE: see "THE HALF
+   PIPE'S DECKS ARE FLUSH" above. The fault it worked round is mended in the controller.)**
+ - **Its sides are tall for a reason:** a rider thrown up a curved wall at speed goes six or more OUT as he goes up, and
+   clears any kerb. A kerb would have meant falls and lost hearts in a place that is for playing.
+
+**WHAT THIS LEAVES, in his order of caring: the ENVIRONMENT first.** More things to ride in the dream (bowls, spines,
+banked turns, loops of light rail, launchers); the same kit carried into the Big Dipper and the Milky Way; **picking
+things up and throwing them** (asked for again here; not begun); and then his real point: **the normal levels are not
+yet fun to run around in.** What works downhill (momentum, lines, something to do in the air) is the thing to bring
+to them.
+
+**NOT DONE, NOT KNOWN:** nobody has played the Toy Box or felt the new tuck: the tests ride every feature with the real
+controller, and a film shows the big ramp's line, but that is not thumbs. The spin and the grab have no sounds of
+their own (the spin uses the kickflip's whoosh) and the grab's pose is only a deeper crouch. The half pipe is sixty
+degrees, not vertical: over its lip he goes OUT onto the deck, not straight up and back in. The Long Drop is still
+not checked at tuck speed (30 now).
+
+## A FALL IS MEASURED FROM WHERE HE LAST HAD SOMETHING UNDER HIM (2026-11-17: a bug he found). Tests `tests/bigdipper.ts` (29)
+
+**His words:** "For some reason if you grind on the edge of the rainbow road while you're going down it then when you
+jump off and land on the next area you get like fall damage or something and then you're off your shield, it doesn't
+matter no matter how high I jump it doesn't happen if I just do the normal way but if I grind on the edge it
+immediately for some reason makes my landing hurt."
+ - **WHY:** in a level with a long fall (`fallDepth`: the dream's two) he is put back, a heart the poorer, when he is that
+   far below... the last SAFE place he stood (`lastSafe`: ground under his middle and round it). An EDGE is not a safe
+   place, so all the way down a road's edge `lastSafe` stayed at the top of it; the road falls twenty-eight in
+   sixty-seven; and the moment he left the edge he had "fallen". (A light rail had the same fault and a patch for it.)
+ - **NOW:** how far he has fallen is measured from where he last had SOMETHING UNDER HIM: the ground, an edge he was
+   grinding, a light rail (`fallFrom`, `fellTooFar` in `src/player/standing.ts`; `main.ts` `lavaStep`). `lastSafe` is
+   still where he is PUT BACK. Moved more than six in one step he was put there, not dropped (a defeat, a door): he
+   starts again from where he is.
+ - **A RULE FOR LATER:** "where to put him back" and "how far has he fallen" are two questions. Do not answer the second
+   with the first.
+ - **NOT CHECKED IN THE RUNNING GAME:** the test drives the real controller down a real road's edge and applies the
+   game's own rule each step; nobody has done it with thumbs since the fix.
+
+## THE TUCK: push the stick forward on the shield to crouch and go faster (2026-11-17). Tests `tests/ride.ts` (72), `tests/bigdipper.ts` (26)
+
+**His words, after riding the Big Dipper:** "I liked it I thought it was good but **the sliding seems a little slow**. I'm
+wondering if maybe we could either make this sliding faster or **make it gain momentum as you go down? With a maximum
+speed obviously so it doesn't get too out of hand.** We could also make you a little bit like a snowboarding game or
+something where you kind of have to **push forward on the left analog stick in order to sort of crouch down and go a
+little faster or lean forward and go a little faster.**"
+ - **THE TUCK** (`TUNING.ride.tuckMax` 24, `tuckGain` 0.45, `tuckShed` 3; `rideStep` in `player/controller.ts`;
+   `PlayerController.rideTuck`). On his shield, the stick pushed THE WAY HE IS GOING (not hard to one side: that is
+   the carve): he CROUCHES, and a slope goes on speeding him up past his standing top speed (16, unchanged), more
+   slowly (`tuckGain` of the slope's pull: about four seconds from 16 to 24), to the tucked top, 24, and no further.
+   **That is the "gains momentum as you go down", and the "maximum speed".** Standing up again, what he has over 16
+   goes at 3 a second: not at a stroke. In the air he keeps what he has. A landing or a trick no longer takes a
+   tuck's speed away. **A rail carries him as fast as he came onto it** (up to 24): it used to cap him at 16.
+ - **It is everywhere he rides** (the Long Drop, the Milky Way, the garden's pipes), not only the dream: it is a
+   control. A rider who does not push forward goes exactly as before, and every older test rides that way.
+   **NOT KNOWN: whether the Long Drop's kickers and giant ramp, laid out for 16, still land well at 24.** Its launch
+   arcs and crumbs are worked out for 16. If he tucks down it and overshoots, that is why.
+ - **Three sliders in the Tweaks panel** (Riding): standing top speed, tucked top speed, how fast a tuck builds.
+ - **THE BIG DIPPER IS LONGER FOR IT** (a piece or two added to each ride: 22 gaps now), so that it is two minutes even
+   tucked the whole way: **MEASURED: standing, 2 min 55 on the shield; tucked all the way, 2 min 07**, top speed 24,
+   every gap and rail crossed and a stop on each pad short of its gate, twelve caps on either line.
+ - `&autoride&tuck` films a tucked run.
+
+## THE BIG DIPPER: the dream's long ride; LIGHT RAILS that curve; the dream's creatures SPEAK (2026-11-17). Tests `tests/bigdipper.ts` (23), `tests/dreamvoices.ts` (13)
+
+**His words:** "Yeah let's give the creatures for the glitch world robotic voices. And everything right like their
+attacks they can say a word, when they die they can say a word, you can even approximate like grunts and stuff like
+that with the speech synthesizer for them. I'd also like to build like a **huge sort of like rainbow road-esque ramp
+level like the one you already made but I want it to be like a really long way that you slide down like I want to be
+sliding down for like a straight 2 minutes.** And I want there to be **lots of like jumps and you can add some rails too
+but obviously wacky Pomo style so you'll have to make a new version of a rail. You can make it curved** you know which
+is going to be different than a lot of the other rails we have in the game but I think it would really fit the wacky
+vibe we have here. I just want it to be like a really long sort of course that you go down, lots of cool jumps, rail
+grinds, and **you can even have areas where you have to like stop sliding and fight some monsters and then there'll be
+another area where you jump off and have to slide down some more.**"
+
+**THE BIG DIPPER** (`src/levels/bigdipper.ts`; a try-out room, `#level=bigdipper`; a door in the Move Garden's north wall
+at x 12; its way out leads back there). The Milky Way's rainbow road, nine times as long: **four rides with a place
+to fight between each and the next**, written as a list of pieces (`COURSE`) laid one after another downhill:
+ - a **road** (some narrow, some wide; some with a **kicker** down the middle of their end);
+ - a **gap** (the narrow ones a rider at speed clears as he is; the wide ones, 10 across, each follow a kicker);
+ - a **rail crossing**: a gap far too wide to jump (26 to 40), crossed on LIGHT RAILS. Three kinds: `ess` (one that
+   snakes), `braid` (three that plait over and under each other), `twist` (one that goes right round, a helter-skelter);
+ - a **pad**: the road eases out onto a floor with a kerb all round and a GATE in its far side; the dream's creatures
+   are awake on it; **the gate opens when THAT pad's creatures are beaten** (`GateSpec.foes`, new); beyond it a level
+   lip, and the next ride falls away. Pad 1: three roaches. Pad 2: two mantises and a roach. Pad 3: a Stag Knight and
+   a mantis. At the bottom, the Bowl, with the way out.
+ - **Twelve bottle caps**, each on a good line: over the kickers' gaps, on the rails.
+ - **MEASURED, with the real controller and a rider that does what a player would (`makeDipRide`): the four rides were
+   35, 35, 36.5 and 38 seconds on the shield: 2 minutes 25 in all**, over 16 gaps and 6 rail crossings, and that line
+   takes all twelve caps. (LENGTHENED the same day for the tuck: see "THE TUCK" above for what it measures now.) To make it longer or shorter, add or take pieces in `COURSE`; the test re-measures.
+ - **A creature on a pad must be told NOT to come back (`respawn: false`)**: a roach comes back five seconds after it is
+   beaten unless told not to, and the gate would never open. (The first film showed it: thirty-seven seconds of the
+   same three roaches.)
+ - **A creature on a pad must NOT be given `hunt`**: a hunter's bounds are five hundred each way from the level's middle
+   (every creature's code), and this level is 2,260 long. They are given the pad as their `arena` instead.
+ - **The dream's creatures are the waking world's in loud colours** (`dreamify`, as the sleepers are): `main.ts` does it
+   to every creature of a level whose `look` is `'dream'`.
+ - `&autoride` rides it for the films (with `&autofight&god` he fights at each pad and rides on).
+
+**LIGHT RAILS** (`src/world/rails.ts`; decor `lightrail`, a few points; `PlayerController.rails`). The game's other
+rails are found in what is solid and run along x or z. A light rail is a LINE through the air of any shape, a ribbon
+of light. **It is NOT SOLID** (light is not): he passes through it unless he is grinding it. On his shield or in the
+air, within 1.6 of it and going along it, the grind button puts him on it (a solid rail's reach is 0.85), and it
+carries him as any rail does: the same speed, drag, hop off, roll off, and off its end with the speed he had. What is
+drawn (a rainbow tube with three beads running down it the way he will go) is the very line that is ridden. A grind
+on one does not count as a fall however far down it carries him (`main.ts`, the put-back).
+
+**THE DREAM'S CREATURES SPEAK** (`src/audio/dreamVoices.ts`, `robotVoices.ts`; made by `node scripts/chip/robot.mjs`
+with his Robot Voice Box). **Only in a level whose look is the dream's** (`speaksRobot`: the Milky Way and the Big
+Dipper; `tests/dreamvoices.ts` holds it to those two). A creature says a word as it begins an attack ("tag", "got
+you", "my turn"), grunts when struck ("ow", "oof", "hey"), and says one as it goes down ("bye bye", "night night").
+Four voices, by what it is: `small` (a roach: the Intellivoice clocked up), `thin` (a mantis: a Speak & Spell, high),
+`big` (a Stag Knight: the TI-99's chip, low and flat), `plain` (anything else: the Votrax). Its own sounds are still
+heard under the voice. 161 KB in the game. **To change a word or a voice: `WORDS` and `VOICES` in `robot.mjs`, run it.**
+
+**NOT DONE, NOT KNOWN:** nobody has PLAYED it: a test rider and a film are not thumbs on a phone. The rail crossings
+may be hard to take by hand (the button must be pressed near the lip; miss it and it is a fall and a heart). The
+creatures' words were not heard by Claude (it cannot hear). The gates are the game's iron ones, not the dream's: they
+want a look of their own. The level's tune is the Milky Way's; "Saturday Morning" was written for exactly this ride
+and is not in the game. Nothing glitches yet: the creatures are toys, not rogue machines.
+
+## THE SOUND OF THIS GAME IS HIP-HOP (the owner, 2026-11-17). THIS IS THE BRIEF FOR ALL SOUND FROM HERE. Tests `tests/tunes.ts`
+
+**His words (keep them; they are the brief):** "So I like a lot of the sound effects on the sound effects reel I think that
+those could be used where appropriate. The defeat sound is okay I think we can use that for now. The jingle wedge
+sound I think is just too long. The glitch music sounds great for a boss battle so definitely keep that on the back
+burner for me for when we get around to the boss for the glitched out area wacky Pomo area. I don't dislike the
+kingdom music I think it's good it's just I'm not sure it fits the vibe of this game. I'm telling you the vibe of this
+game I want it to be **hip-hop oriented** I want it to be **boom bap rap kind of beat oriented**, I want to try to see if
+we can do some like **record scratching sounds here and there not just in the music but even for certain sound
+effects** I think would be really cool. You know we want things to have like a **loose sort of chillaxed hanging out
+with your friends beatboxing kind of vibe not necessarily a like super overly serious vibe**. ... Think about the kind
+of sound chips we're working with it's the future so we can use those sound chips in a lot of different ways ... **we
+can layer stuff we can sample stuff we can mix stuff around** ... we can sample sounds off the internet ... open source
+stuff ... then maybe we could run them through one of the sound chips to change the sound to fit the game more. I
+think you're making a lot of stuff that sounds good but **it sounds like grand fantasy** like something that you would
+get from like a Legend of Zelda or ... a Final Fantasy ... but **I'm more like down to earth gritty crunchy kind of
+stuff** like I'd much rather something that you might have gotten out of **Conker's Bad Fur Day** or ... a Sega Genesis
+platformer ... like a **Vectorman** ... really grindy and crunchy, maybe something like **ToeJam and Earl** kind of with
+that sort of hip hop flavor."
+**And of each place:** "our main space is in a **drippy dark wet sewer tunnel** ... a cistern ... pipes and cockroaches
+and toads and rats, it's grungy and drippy and wet and dank and cold, then when you're in **the Foundry it's hot and
+it's loud and it's clanky and it's industrial**, when you're **underground with the mushrooms it's got to breathe it
+feels like a cave maybe you hear some echoes and some drips** ... bats squeaking or rocks tumbling ... maybe those
+**mushrooms make a little bit of a sound to each other** ... glow bugs flapping their wings ... **the glitched out wacky
+Pomo environment should take a lot of inspiration from like early 90s kids cartoons and toys ... a Nickelodeon type of
+vibe and then when it starts glitching out ... Tron ... Terminator ... rogue AI digital synthesized voices ... screaming
+like modem sounds** ... top all that off with boom bap you know kick kick beat kind of background hip-hop funkiness to
+all of it and it could sound really f****** crunchy cool. ... what I'd like you to do is look at all those videos you
+made and I'd like you to try to make a **custom tailored song for each one of those videos**."
+**And then he sent a THIRD TOOL, the Robot Voice Box:** "Here's another fun tool we can use this is for approximating
+voices, and it does a bunch of cool old robot voices, I'm sure you could do even more with it by like combining it
+with the other tools. You're allowed to use this for additional sound effects and music if you want to. However **the
+main use for this is I want it to be used for all the voices in the glitched out wacky Pomo world**, I think I want to
+make that a really cool part of the game so **I want to kind of hyper focus on that area biome level variety soon.**"
+
+**THE ROBOT VOICE SPEAKS ONLY IN THE DREAM (he said so the same day, after hearing the reel; A STANDING RULE):** "Now the
+robot voice isn't going to be very good for doing spoken words in the normal levels I kind of want it to be a thing
+that's **locked to the wacky Pomo levels**, like I said you can use it for sound effects but **I only want it to be used
+for speech in the wacky Pomo world**."
+ - **Words said by the Robot Voice Box: only in the Milky Way and whatever dream levels come after it** (its creatures'
+   voices, its tunes). Nowhere else: not a character, not a sign, not a tune of another place.
+ - **As a SOUND EFFECT it may be used anywhere.** What is in the game outside the dream is only that: the record that is
+   scratched in the wedge jingle, in backing out of a menu and in the put-back after a fall is a Speak & Spell saying
+   "fresh", played back and forth under a hand; no word is said. If he hears a word in any of them, change the record
+   (`fresh()` in `scripts/chip/sfx.mjs`, `scratches.say` of `JINGLES.wedge`) to Dave's or Wren's voice.
+ - **In the music it is held by the file itself**: `scripts/chip/songs.mjs` throws when read if a tune has a `say` layer
+   and is not marked `dream: true` (only `cartoon` and `rogue` are). The Hollows' tune has the STUDIO's speech-chip
+   voices holding "ooh" on two notes for the mushrooms: a sound, not a word, and told to him; his to throw out.
+ - The people of the other levels keep the voices they have: his own recordings (`recordings/*.m4a`).
+
+**THE RULES THAT COME OUT OF IT (for every tune from here):**
+ - **Boom bap, swung, on a gritty kit, crunched** (`crunch: {bits, hold}`). A Genesis slap bass with a **RIFF** (a bar or
+   two that comes round, written as a `line`), not a bass following chords about. **ONE chord for most of it.** Short
+   licks and stabs, not a long tune. Scratches at the ends of phrases. **The place's own sounds, sampled out of the game
+   and put on the beat.** NOT grand fantasy: no fanfares, no string-and-choir swells.
+ - **KEPT ON THE BACK BURNER, BY HIS WORD:** "Star Slide (Broken)" (`glitch`) is **the glitch boss's tune**. "Three
+   Machines" (`kingdom`) is good but "not sure it fits the vibe": not used.
+ - **THE DREAM WORLD (the Milky Way, "the wacky Pomo world") IS WHAT HE WANTS WORKED ON NEXT, HARD**: a kids' cartoon and
+   a toy box that glitches into a rogue machine; **all its voices from the Robot Voice Box.**
+
+**WHAT WAS MADE (nothing of the music below is in the game: HE MUST HEAR IT FIRST; it is all in `deliver/sound/` and under
+the films):**
+ - **Nine new tunes** (`scripts/chip/songs.mjs`, after "THE VIBE"), each eight bars:
+   `sewer` "Drip Tape" (the Cistern: 84, cold electric piano, the game's own DRIP on the beat with an echo);
+   `forge` "Clank" (the Foundry and the Forge: 96, the game's CLANK on the backbeat, steam HISS, brass stabs);
+   `cave` "Spore Breath" (the Hollows: 78, two speech-chip voices saying "ooh" to each other for the mushrooms, drips,
+   a bat's squeak, pebbles, wings); `stone` "Cold Stone" (the Keep: 88, a dark piano loop, chains, a far bell);
+   `teeth` "Big Teeth" (bosses: 100, the Wyrm's roar and the roach's screech in it); `cartoon` "Saturday Morning" (the
+   Milky Way ride: 104, a toy tune, **a Speak & Spell saying "yeah" and "let's play", a Speak & Math saying "wow"**, and
+   the scratches are of a Speak & Spell saying "fresh"); `sheep` "Counting Sheep" (the sleepers: 72, a music box, a low
+   snore); `late` "After Hours" (the Club, late: 76, a lazy trumpet, Dave ticking half asleep);
+   `rogue` "Does Not Compute" (the dream GLITCHING OUT, as a boom bap: the toys low, flat and crushed, saying "error",
+   "I can see you", "play with me"; **a modem** calling out; broken after it is made). No film has `rogue` under it.
+ - **What the music maker learnt** (`scripts/chip/make.mjs`; shared bits in `lib.mjs`): `layers` (a sampled sound on the
+   grid: `src: 'src/<name>'` is one of the GAME'S OWN sounds, exported to `recordings/chip/src/*.wav`; `'sfx/<name>'`
+   one made with his tools; `'gen/modem'` the modem; or `say: {chip, text, opts}` WORDS SPOKEN by the Robot Voice Box;
+   with `tune`/`tunes`, `echo`, `crush`); `scratches` (`b` a baby scratch, `r` a rewind, `c` a chirp, on the grid, of a
+   voice or of `say`); `crunch` (the drums through an old sampler); `crackle` (dust on the record).
+ - **THE ROBOT VOICE BOX** is `recordings/tools/robot-voice-box.html`, driven headless like the other two:
+   `tools.voice.say(text, chip, opts)` in `scripts/chip/lib.mjs`. **Five chips**: `sns` Speak & Spell, `snm` Speak &
+   Math, `ti` TI-99/4A, `vtx` Votrax, `sp0` Intellivoice. `opts`: `{pitch, speed, tone: 'flat'|'talk'|'lively'}` for
+   the first three, `{clock}` (0.6 to 1.6) for the last two. **`node scripts/chip/voices.mjs <dir>`** makes a REEL of
+   voices for the dream: the five chips saying one line; five toys, bright; the same toys gone wrong (low, flat,
+   crushed, stuck). **None of these voices is in the game yet.**
+ - **Every film was cut again over its own tune** (`cut2.sh` in the scratch folder: frames + `<id>.wav` gone round to the
+   film's length and faded): Cistern `sewer`; Foundry and the Forge `forge`; Hollows `cave`; Keep `stone`; bosses
+   `teeth`; the ride `cartoon`; the sleepers `sheep`; the Club's film `bap2`; scenes 1 and 5 `bap1`, 3 and 6 `bap2`,
+   2 and 7 `bap3` (the duet), 4 and 8 `late`.
+
+**WHAT WENT INTO THE GAME (these he asked for outright):**
+ - **A wedge won plays a JINGLE, and it is SHORT**: one bar (3.1 seconds, was 7.9): Genesis horns over a beat with a
+   scratch in its tail. Not a fanfare. (`JINGLES.wedge`; the sparkle still sounds over it.)
+ - **Defeat plays the slow piano piece** ("okay I think we can use that for now"), over the music turned right down, and
+   it stops when he is up again. (His own death groan still sounds.)
+   Both through `AudioEngine.jingle(id, {under})` / `stopJingle` / `jingleOn`; the sound is in `src/audio/tunes.ts`
+   `JINGLES`, packed by `node scripts/chip/embed.mjs <dir> <tunes...> jingle:wedge jingle:defeat`.
+ - **Six more of the reel's effects**: `block`, `splash`, `whoosh`, `swing`, `dodge`, `land` (`recordings/map.json`).
+   **`whoosh` and `land` are also what creatures' lunges and thuds are made of** (played faster or slower): if a fight
+   sounds wrong to him, those two are the first to take back out (delete the entry, run `scripts/make-recorded.py`).
+ - **Two effects that are a RECORD SCRATCHED** (a Speak & Spell saying "fresh" under a hand): **backing out of a menu**
+   (`menuBack`, a baby scratch) and **being put back after a fall into the dark** (`rewind`, a new sound: the record
+   pulled back and let go).
+
+**NOT TESTED / NOT KNOWN:** Claude cannot hear. Everything above was checked by numbers only (loudness, how much of each
+tune is bass, that the scratches sweep in pitch, that the jingles decode and start in a real browser at a fall and a
+defeat). Whether any of it SOUNDS like hip-hop, or good, only he can say. The first render of the new tunes was two
+thirds bass by energy (his favourite, `bap2`, is a half); the bass was turned down to match.
+
+## VOICES IN THE MUSIC: he wants more of it (2026-11-17)
+
+His words: "I really really liked overlaying the voice track so if you want to try to use one of the more feminine
+voices or if you want [me] to record some different kinds of styles of voices or words for you to use in the music
+we can totally do that as well just again remember the era and that type of vibe we're going for."
+ - **A THIRD BOOM BAP, A DUET: `bap3` "Jinx Cuts In"** (`scripts/chip/songs.mjs`; NOT in the game: he has not heard
+   it). Dave is the drums again; the tune is SUNG by the recording that is Wren's and Jinx's voice
+   (`recordings/wren.m4a`: 37 spoken syllables, all said at about 155 Hz, a man's speaking pitch).
+   **`make.mjs` `vox`:** `voiceSounds()` cuts any voice recording into its sounds and finds the NOTE each is said on;
+   `sing()` plays a sound at the speed that puts it on a wanted note and HOLDS it by going round a few whole waves of
+   its middle (a sampler's way), with a little waver; `say()` plays a short one once on a note (scat). She sings
+   B3 to B4: a fourth to an octave and a half above where it was spoken, which is what makes it a girl's. Checked by
+   frequency: she is on her notes. An echo three and six sixteenths behind.
+ - **WHAT HE WAS ASKED TO RECORD, if he wants to** (told to him in the reply): for a voice to be SUNG, long steady
+   vowels ("ooh", "aah", "la", "na", "hey", a second or more each, on one note); for Dave, more beatbox and a few
+   short words; a crowd "hey!" and "ho!"; a laugh. One take a voice, a gap between sounds, each two or three times.
+   A new recording goes in `recordings/` and is named in the song (`vox.file`, or `daveSounds`).
+
+## HIS VERDICT ON THE SOUND, and what went into the game for it (2026-11-17). Tests `tests/tunes.ts`
+
+**HIS WORDS (keep these: they are the brief for all the sound from here on):**
+ - "I think I like the Dizzy Dave boom bap number 2 the best but the boom bap track sound way better than you have for
+   the club track so they should probably just be what plays in dizzy Dave's hideout, it's his place after all so it
+   makes sense that he would be jamming out to his own vibes."
+ - "I think the dream music fits for that world, we might make a darker version of the same track too cuz I plan on
+   that area like glitching out and having a weird glitch boss or something."
+ - "The music for the keep is pretty epic ... I'm not sure if it'll stay in the keep or if we'll use it somewhere else
+   but for now it could be for the keep." "The music for The Hollows is also pretty good." "I really like the music for
+   The Foundry it might end up being too hyperactive but for now we should just use it." "The one for the cistern is
+   better than what we have already so we can use that."
+ - No opinion on the others (the title, the boss). "The jingles were just a little off like the death one sounded
+   happy ... we already have like a death groaning sound ... it'll have to be something a little more solemn."
+ - The small effects: the old ones "kind of suck", so "it's fine if you replace a lot of that stuff with stuff that
+   you feel like works best".
+ - **THE DIRECTION: "we're aiming for like Nintendo 64 PlayStation 1 era stuff ... we really have to like ramp it up on
+   the music and try to stylize it for this type of game otherwise it's going to feel like we're playing a Nintendo 64
+   game while listening to it through an NES. [Not that] I entirely hate that idea, that's the whole reason I gave
+   you these tools ... I like a lot of the weird sounds you can make with some of those obscure chips. But we got to do
+   it how musicians do it and we have to really try to make some funky chiptune stuff ... you can mix and match chips
+   ... if you're going to mix and match two or three chips you want to try to make a third of the track with one, a
+   third of the track with the other and then a third with the other, then you can put them all together to make one
+   track that'll have a really really super cool unique sound, but ... you want it to sort of go along and match the
+   visuals of the game."**
+
+**WHAT WAS DONE FOR IT:**
+ - **THE CHOSEN TUNES PLAY IN THE GAME.** `audio/music.ts` `PLAYLISTS` says which recorded tunes each track name
+   plays: `groove` (the Club) `bap2` then `bap1`, two rounds each; `drift` the Cistern's; `pump` the Foundry's; `echo`
+   the Hollows'; `march` the Keep's; and a new name `dream` (the Milky Way, which had the Club's). The side areas and
+   boss rooms that share a name share its tune for now (the Forge and the Long Drop have the Foundry's; the boss
+   rooms the Keep's). The old NOTES are still under every name, and play if a recording cannot.
+   **HOW A TUNE IS IN: as MP3 in `src/audio/tunes.ts`, made by `node scripts/chip/embed.mjs <folder of renders> <ids>`**
+   (80 thousand bits a second, stereo; 1.9 MB of text for the seven: the game went from 3 MB to 5). (The notes had
+   said a tune should NOT go in as a recording, for the size. He chose them for how they SOUND, which is the tools'
+   own render: echo, chip arpeggios, Dave's voice. Size was the lesser thing.) Each is stored with 0.3 s of its own
+   end before it and of its own start after it, and `audio.ts` (`startTunes`) plays exactly one round's length out
+   of the middle, the rounds set end to end ahead of the clock: so it does not matter where a browser's MP3 decoder
+   begins. Checked in Chrome: all seven decode, and the game starts the right one in the Club, the dream and the Keep.
+   A recorded tune has no lanes: the drums no longer come in with a fight (the under-water muffle still works).
+ - **TWELVE EFFECTS REPLACED** (`recordings/chip/*.wav`, lines in `recordings/map.json` with a `chip/` file, then
+   `python3 scripts/make-recorded.py`): menuOk, menuBack, boot, crumb, cap, relic, heal, sparkle, clear, doorOpen,
+   gate, crate. Delete a line to go back to the made-up sound. THE WHOLE SET WAS RE-VOICED FIRST for the N64/PS1 era
+   (`scripts/chip/sfx.mjs`): mallets, piano, flute, choir, brass, strings, the orchestra hit, and those machines'
+   drum kits; the first set was NES pulses. The fights' and creatures' sounds were left alone.
+ - **THE JINGLES REWRITTEN** (not in the game: nothing plays a jingle yet): the wedge is a brass fanfare over
+   strings that comes home on its last chord; the defeat is slow (66), minor, a piano over low strings and a choir.
+ - **A TUNE THE WAY HE DESCRIBED: `kingdom`, "The Kingdom Below", 32 bars** (`scripts/chip/songs.mjs`, where his words
+   are quoted). One theme in four eights: the PlayStation states it (flute, strings, piano); the Genesis answers it
+   funky (slap bass, off-beat electric piano, a brass riff made of the theme); the C64 takes it apart (its buzzing
+   lead, pumping filter bass, a flickering chord); then all three at once. A part can now cover only some bars
+   (`from`, `to`), and a tune can have several lengths of drums, each on its own machine (`drums: [{ at, ... }]`).
+   **THIS IS THE PATTERN FOR NEW TUNES.** Not in the game: he has not heard it.
+ - **THE DREAM, BROKEN: `glitch`** (not in the game: there is no glitch boss yet). The dream's tune bar for bar in the
+   minor, slower, the Atari's buzz for the tune; then broken after it is made (`make.mjs` `breakIt`): bits stuck and
+   repeating, bits crushed, a beat backwards, the end of each round running down like a tape.
+ - CLAUDE STILL CANNOT HEAR. All of it is checked by number only.
+
+## HIS TWO SOUND TOOLS, and the first tunes and effects made with them (2026-11-17). **NOT IN THE GAME YET: HE MUST HEAR THEM FIRST**
+
+He sent two of his own tools in the middle of the film work and said: "When you're done with the video stuff I would
+like you to try to use these two tools to create a series of music tracks and also sound effects to use for the game."
+ - **THE TOOLS ARE IN THE PROJECT NOW: `recordings/tools/chip-drum-pad.html` and `recordings/tools/chiptune-pad-studio.html`**
+   (his files, copied as they came). Both are one page each, and both make every sound by working out the chip
+   itself, sample by sample, for 27 old machines (Game Boy, NES, SNES, N64, PS1, Genesis, C64, X68000 ...).
+     CHIP DRUM PAD: sixteen pads a machine (kick, snare, hats, toms, clap, rim, bell, crash, ride, ZAP, BLIP, SWEEP,
+       BOOM), four bars of sixteen steps, swing.
+     CHIPTUNE PAD STUDIO: each machine's own voices (NES pulses and triangle; SNES flute, strings, piano; Genesis
+       brass and slap bass; C64 sync lead ...), songs as takes of notes in seconds, a chip's own arpeggio chords.
+   Neither can save a WAV, and the Studio's save button only works inside Claude's own app. But everything in both
+   is a plain global, so a script asks them directly:
+ - **`scripts/chip/lib.mjs` DRIVES THEM in a headless browser** (nothing is clicked): `studio.song(song)` and
+   `drums.beat({...})` are the tools' own offline renders; `studio.note(machine, voice, note)` and
+   `drums.hit(machine, pad)` are one note and one hit. (Both must be told the same rate: `setOutRate(44100)`.
+   The Studio fetches an MP3 coder from the net: it is not needed and the request is refused.)
+ - **`scripts/chip/songs.mjs`: THE TUNES, written as bars** (a chord a bar; the tune as `'E5:2 G5:2 -:4'`; bass, arp
+   and stab patterns a letter a sixteenth; drum bars in the Drum Pad's own `x.o.` writing). `toStudio()` makes the
+   Studio's song of one. **`node scripts/chip/make.mjs <folder>`** renders each through BOTH tools (the Studio's notes,
+   the Drum Pad's beat), folds what rings past the end back onto the start so the loop meets itself, and mixes.
+     TEN TUNES, eight bars each (the two boom bap ones are below): `title` The Kingdom Below (NES), `club` Dave's Groove (Genesis), `cistern` Still
+     Water (SNES), `foundry` Hammer and Bellows (C64), `hollows` No Bottom (N64), `keep` The Long Stair (PS1),
+     `dream` Star Slide (Game Boy Color), `boss` Teeth (X68000). TWO JINGLES: `wedge`, `defeat`.
+ - **BOOM BAP WITH DIZZY DAVE'S OWN VOICE** (he asked while the first set was being made: "at least one or two sample
+   like hip hop or boom bap style tracks while also sampling in the voice track of dizzy Dave trying to match the
+   beats"). TWO: `bap1` Pigeon Bap (86, the Club's own tempo: it lies under the scene DIZZY DAVE, LIVE beat for
+   beat, and the scene was sent again cut over it) and `bap2` Feathers and Dust (92; its first two bars have no
+   kit: Dave IS the drums). Slow, swung, a late kick, a snare on two and four, soft keys and a lazy horn or flute.
+   **Dave's voice is `recordings/pigeon.m4a`: eighteen seconds, thirty-five separate mouth sounds, in no time at
+   all.** `make.mjs` (`daveSounds`) cuts it into its sounds, sorts them by brightness into his THUMPS, his SNAPS and
+   his TICKS, and a song's `dave` bars put them on the sixteenths (`k`, `s`, `h`), swung exactly as the drums are,
+   each a different one of his in turn. (Checked: the strong hits fall within a few thousandths of a second of the
+   grid.) The NOTES are swung with the drums too now (`toStudio`): straight notes over swung drums put the bass
+   and the kick apart.
+ - **`node scripts/chip/sfx.mjs <folder>`: 27 EFFECTS**, each named for the game's own sound it could stand in for
+   (menuMove, menuOk, menuBack, boot, crumb, cap, relic, item, heal, sparkle, clear, jump, doubleJump, land, swing,
+   dodge, hurt, block, hit, kill, shock, spit, crate, doorOpen, gate, splash, whoosh): single notes cut short and
+   run up or down in steps as a chip slides, and single drum hits cut, tuned and laid over each other.
+ - **CLAUDE CANNOT HEAR. They were written by the rules and checked by number only** (the right notes sound at the
+   right pitch, nothing is silent, levels). Whether they are any GOOD is his to say. He was sent each tune twice
+   round, the jingles, and a reel of the effects in the order above.
+ - **HOW THEY WOULD GO IN, when he has chosen:** an EFFECT is a file in `recordings/` and a line in
+   `recordings/map.json` (then `python3 scripts/make-recorded.py`): that is how the fourteen recorded ones are in,
+   and it replaces the made-up sound of that name. A TUNE should NOT go in as a recording (half a megabyte each, in
+   a game that is one file of three): the game's music is notes played on short sampled instruments
+   (`audio/music.ts`, `audio/synth.ts` `instrument`), and it fades its drum and lead lanes with the fighting. So:
+   take each voice from his tools as ONE short sample (a held voice's loop is given by the tool; a drum is one hit),
+   and write the tune's bars out as a `Track`. `songs.mjs` is already notes, so that is a translation.
+
+## FILMS (2026-11-17): he loved the cutscene videos and asked for more. HOW A FILM IS MADE NOW; what was made
+
+His words: "This all looks good and I love the cutscene Video thing you did that was awesome. The only note I have
+is I think maybe the lava bucket pouring thing could probably last longer right now it stops and starts pretty
+quickly probably too quickly. I think I'd like to request a few more cutscene videos Just to like show off different
+parts of the game." And he listed: the main character **sliding on his shield down the Rainbow Road**; **the sleeping
+different looking characters in the wacky Pomo world**; **a few of the other characters talking at the bar, talking at
+the table, drinking alone**; **Dizzy Dave and two other characters dancing with the speakers in the background, zoom in
+and zoom out, a little 10 second music video; if you can do sound, have him talking so it sounds like he's beatboxing
+or rapping**; and **the monsters walking around the different levels: show off all the levels like the Forge film,
+populated with NPCs or monsters, or the main character there doing something.**
+("This all looks good" was said of the Forge and of the Hollows' and Keep's things to find. **It is taken as his yes
+to the Forge's look: re-dressing the Foundry in it is the next job, not yet done.**)
+ - **THE LADLE POURS FOR FOUR AND A HALF SECONDS in a round of twelve** (it was 2.2 in 9). AND THE FILM HE JUDGED IT
+   BY WAS WRONG: slow motion did not slow the scenery's clock, so the first Forge film showed its bellows, cogs and
+   pour FIVE TIMES TOO FAST. The dev slow motion slows the scenery's clock now (`main.ts`, `slowClock`), and films
+   are not taken in slow motion any more (below). He has been told.
+ - **HOW A FILM OF PLAY IS TAKEN: `&film=4` on the address** (`main.ts`). The game goes a sixtieth of a second for
+   every frame whatever the clock says, draws every 4th, and WAITS until a picture of it has been taken
+   (`window.__filmReady`, `window.__filmGo()`). So it is even and true to speed however slow the machine. The script
+   is `film3.mjs` in the scratch folder (out-dir, pictures, address, how many to skip while the level comes in); it
+   films a BUILT copy of the game served on another port (`npx vite build --outDir <scratch>/snap`, then
+   `python3 -m http.server 5198` there), so the source can be worked on while the cameras run. Fifteen pictures a
+   second.
+   **A film of a CUTSCENE** is taken the same way (`film4.mjs`): opened HELD at its start with `&film=4`, the room
+   given twenty frames to come in, then let go with the attack key. (Stepping a held scene with the RIGHT key, as
+   the first four were filmed, draws the room at full speed between steps: eleven minutes for eleven seconds.)
+ - **AIDS FOR THE FILMS, all on the address (`main.ts`):** `&autoride` (the Milky Way ridden by itself:
+   `makeAutoRide` in `levels/milkyway.ts`, and a test rides it to the moon); `&autofight` (he goes for whatever is
+   nearest and swings at it) with `&god` (nothing hurts him); `&chase=dx,dy,dz` (the view keeps that far from him,
+   looking at him); `&orbit=x,y,z,r,h,rate` (the view goes round a place); `&eye=&look=` (a fixed view).
+ - **SOUND ON A FILM: `.testdist2/sound.ts` was the mixer (a scratch file: WRITE IT AGAIN if it is gone; it is
+   sixty lines).** The game's music is notes and sampled instruments (`audio/music.ts` `notesBetween`,
+   `audio/synth.ts` `instrument`), and its voices are samples (`audio/speech.ts`), so a soundtrack is mixed in Node
+   with no browser: the level's track from its first step, as `audio.ts` `playNote` plays a note; and over it
+   **Dizzy Dave said exactly as the game says him** (`speak(..., 'pigeon', ...)`: he IS a beatbox: kicks, snares and
+   hats cut from his recordings, one letter a sixteenth), with shouts from other voices on chosen beats. `ffmpeg`
+   lays it under the pictures. **CLAUDE CANNOT HEAR IT: the levels were checked by number only. He has been told.**
+   `cut.sh` in the scratch folder joins lengths of pictures from several cameras and lays the music under.
+ - **FOUR MORE SCENES** (`cutscene/scenes.ts`, `tests/cutscene.ts`): DIZZY DAVE, LIVE (four bars of the Club's own
+   music, 86 to the minute: `BEAT`; Jinx and Vix dance on the floor, a hop to every beat and a spin now and then
+   (`dancing()` makes a dancer's keys); the view cut on the bar and the half bar, right in on Dave, and away up over
+   the room at the end); A HAND OF CARDS (the foxes); TWO AT THE BAR (Professor Snow and Jinx); THE OLD STAG (Sir
+   Hobnail by the way in, hearing the music). In the game: pause, TOOLS, SCENE.
+ - THE FILMS ARE IN `deliver/pictures/film-*.mp4` and `scene-*.mp4`.
+
+## THE FORGE: the furnace's look, as a TRY-OUT ROOM (2026-11-17). Tests `tests/forge.ts` (35). **HE HAS NOT SEEN IT YET**
+
+He said "continue" (item 1: the furnace's textures, in a try-out room first). **THE FOUNDRY ITSELF IS NOT TOUCHED**
+(a test holds it so): this room is the showing, and the Foundry is re-dressed only when he has walked about in it and
+said yes, and to which parts.
+ - **WHERE: `#level=forge&nostory`; a door in the Move Garden's NORTH wall, at its east end** (`ratquest-garden.html`,
+   or Test rooms in the pause menu's level list). `src/levels/forge.ts`. Nothing to fight or find in it.
+ - **WHY: the Foundry wears ONE rusty plate on its floor, its blocks and its columns alike**, and a mine's brick on
+   its walls. Here every part has a picture of its own (`render/textures.ts`, "The furnace's own set"):
+     `deckPlate` the floor: dark tread plate, lozenges, bolted sheets.
+     `fireBrick` the walls: baked brick, buff to plum, some burnt, sooted in runs. **128 square, one picture to SIX
+       of wall**: at 64 the same few burnt bricks came round every three steps and striped a big wall. (`Def.size`
+       takes 128 now.)
+     `castIron` what he stands on and climbs: square castings, a raised frame, a lozenge boss.
+     `girder` what holds things up: riveted posts and laced bars in red oxide.
+     `castingSand` the moulding bay's floor, let into the plate level with it. `coalLumps` for coal.
+   NOTHING IN ANY OF THEM GLOWS (a test looks at every dot).
+ - **SEVEN NEW THINGS, decor `forge` with `what:`** (`world/forge.ts`: sizes, what is solid, the clocks;
+   `world/forgeModels.ts`: the shapes; each a few plain shapes with a picture on):
+     `furnace` brick on an iron footing, an arched mouth with a fire, a stack to the roof. Solid as drawn.
+     `bellows` in a timber frame. **Its DECK is fixed and is the top of what is solid; the board that swings is under
+       it, inside the frame**, so he can stand on it while it works. (A top board that rose and fell could not be
+       stood on truthfully.) It fills slowly and is squeezed quickly.
+     `ladle` + `mould`: the ladle hangs from the roof on a chain, tips, and pours a stream into the mould every nine
+       seconds; the cast in the mould glows and cools till the next. **THE LADLE IS ONLY DRAWN, so it hangs over
+       his head from anything near it** (a test jumps him off the mould and the ingots). The mould is solid.
+     `ingots` a crossed stack on bearers, the top two hot.
+     `cogs` two meshed wheels on a wall, **only drawn, hung above his reach**; they stay in mesh (a test).
+     `bunker` a timber coal bunker, full. `anvil` on a stump. Both solid as drawn.
+   With them: the steam vents and the jet that were already made, pipes, a gauge.
+   Hot metal is drawn with its material's `tint` (so its faces keep their shading), fire as the fire bowl's tongues;
+   each thing that glows lights the room with a light of its own (the model may turn it up and down).
+ - The hall is dim (`ambient` 0.62) so its fires light it.
+ - **NOT DONE, AND SAID SO TO HIM:** the fire, the stream and the hot metal DO NOT BURN him (scenery, like the steam);
+   nothing makes a SOUND; nothing in the level builder places these yet. And the Foundry's lava and its magma rock
+   are as they were.
+ - **THE FILM: `deliver/pictures/forge-tryout.mp4`.** A level is filmed with `&slow=0.2` and a picture every third
+   of a second (so a fifteenth of a second of the game each), from fixed views (`&eye=&look=`); `film2.mjs` in the
+   scratch folder. The slow-motion label at the top is cropped off.
+ - WHEN HE SAYS YES: `levels/themes.ts` `foundry.skins` is where the Foundry's tiles are named (floor, platform and
+   pillar are all `rustPlate` there, wall `mineBrick`); `levels/foundry.ts` names skins on some pieces itself. Its
+   route tests (`tests/foundry.ts`) do not care what a thing wears.
+
+## THE HOLLOWS' AND THE KEEP'S THINGS TO FIND, done the Cistern's way; the cutscenes FILMED (2026-11-17). Tests `tests/hollows.ts`, `tests/keep.ts`
+
+He said "continue" (item 1 of the list: the Hollows and the Keep, the same way as the Foundry), and, while it was
+being done: **"i see we finished the cutscene maker but i never saw any videos."** He was right: only stills had been sent.
+ - **THE FOUR CUTSCENES ARE NOW VIDEO FILES** (`deliver/pictures/scene-*.mp4`, 15 pictures a second, silent). HOW:
+   the scene is opened held (`#level=hub&scene=<id>&t=0&hold`), stepped with the RIGHT key one frame of thirty at a
+   time (the readout at the foot says which frame it is on; the script reads it, hides it and takes a picture every
+   second frame), and `ffmpeg` joins the pictures. The script is `film.mjs` in the scratch folder (it is short; write
+   it again if the folder is gone). **Whenever a scene is made or changed, film it and send the video: do not send
+   stills of a thing that moves.** Nothing of the scenes themselves was changed this turn.
+ - **THE HOLLOWS: SEVEN THINGS WHERE THERE WERE TWENTY-FIVE** (5 caps, 17 crumbs and 3 relics before): two caps, two
+   hunks worth 9 and 8 (17 in all), and the three relics as they were. In `levels/hollows.ts` (`NEEDLE`, `CLEFT`,
+   `DRIP`, `SPIRE`, `HUNKS`):
+     THE NEEDLE (cap): a spike in the chasm beside the slider's path, 3.5 over the slider. Jumped to FROM THE MOVING
+       SLIDER (a jump, a second jump, a caught edge).
+     THE CLEFT (cap): two fins out of the dark against the west path's edge, 2.2 apart; the slot's floor is a spur
+       of the path three long, and past its end is the chasm. Kicked up, nine.
+     THE DRIP STONE (hunk, 9): a stone UNDER the Lip, seven up over the chasm. He steps off the Lip's SIDE AT A WALK
+       and steers straight back in under it (he has about eight frames to turn back; at a run he is carried clear;
+       off the tip it is too far back). A leap off the Mouth's edge, steered under, is the other way.
+     THE SPIRE (hunk, 8): a stalagmite on the north floor, 7.5 tall. The way onto it is DOWN: a running jump and a
+       second jump off the west end of the High Hollow, 12.5 above. One jump alone lands short.
+   Each has a glow of its own over it (a `light` piece with `bare`: light only, nothing drawn, nothing solid),
+   because the cave is dark and wet rock is darker. Wren has a line ("Look up. And look over the edges.").
+   The Hollows has no caps wedge (it never had); the relics' wedge is as it was.
+ - **THE KEEP: FIVE THINGS WHERE THERE WERE TWENTY-SIX** (8 caps, 18 crumbs): three caps and two hunks of 9. In
+   `levels/keep.ts` (`CORBEL`, `OVER_GATE`, `CINDER`, `FLUE`, `BUTTRESS`, `RIDE_HUNK`, `HUNKS`):
+     OVER THE GATE (cap): on top of the gatehouse, over the portcullis: he sees it from where he comes in. The wall
+       walk to it from the battlements has fallen in, all but ONE CORBEL on the west wall: two jumps of 5.2 over the
+       ward, under the firefly, then along the top of the gatehouse.
+     THE CINDER (cap): a tall clinker in the lava, three from the Burning Walk's third stone and four over it.
+     THE FLUE (cap): a narrower stack east of the Engine Stack, three higher, six of pit between.
+     THE BUTTRESS (hunk): a pier 2.2 off the north wall in the north-east ward. Kicked up, nine.
+     THE SLIDER'S HUNK (hunk): in the air over the middle of the slider's way, 3.6 over it. A jump and a second jump
+       as he rides, and he comes down on the slider again. One jump does not reach.
+   The caps wedge is "Three Bottle Caps", its hint names the three. The crate and the barrel in the yard are empty now.
+ - **A CAMERA FOR PICTURES** (`main.ts`, a dev aid): `&eye=x,y,z&look=x,y,z` on the address puts the view at one
+   place looking at another, whatever he is doing. Use it for stills of a THING IN A LEVEL: aiming the follow camera
+   with `at=` and a yaw cost five rounds of wrong pictures this turn. (He still stands where `at=` puts him.)
+   The Cinder wears the Foundry's `magmaRock`: in the Keep's own brick it could not be told from the wall behind it.
+ - WHAT WAS LEARNED (for the next level):
+     **A FALL IN A `fallBack` LEVEL IS COUNTED AT THREE BELOW ZERO** (`main.ts`: `p.y < -3`), wherever the floor is.
+     So nothing he is meant to stand on can be lower than that in the Hollows or the Keep: a "sill down in the
+     crack, kick your way back out" was the first idea for the Cleft and cannot be built there.
+     HIGH PLACES REACH A LONG WAY DOWN. The Cleft was first put on the last Faith Stone: the top mushroom (16.5 up)
+     reaches it with a plain jump, and so does the Spire when the Spire is taller than the Cleft. And put at the
+     west path's edge level with the middle Faith Stone, its thin fin's top was a way straight onto that stone (the
+     `faith` wedge): it stands four further south for that. Check every new high thing against every wedge's test.
+     A THING IN THE AIR must be within 3.6 of somewhere he can stand, and no more than about 5.3 over it, or the
+     checker calls it out of reach (`reach.ts`, `grabbable`). The slider's whole path counts as somewhere to stand.
+     HE DOES NOT STEER BACK FAR IN A FALL: stepping off an edge at a walk and turning at once, he comes back about
+     1.3 in nine of fall; at a run, not at all.
+ - Old saves: `cap:01` and `cap:02` in the Hollows are now the Needle and the Cleft, `cap:01` to `cap:03` in the Keep
+   the Gate, the Cinder and the Flue: a save that had those ids has them still. The other caps and all the crumbs
+   are gone; the hunks are new ids.
+ - NOBODY HAS PLAYED ANY OF THIS BY HAND. Every route is played by the real controller in the tests, with timing to
+   spare, and each thing's key piece is taken away to show there is no other way.
+ - STILL NOT DONE of the old list: the furnace's TEXTURES (a try-out room first), and the LONG DROP'S LOOK during
+   the run. The side areas' crumbs (Web Hollow 8 with its own wedge, the Lightless Way 6, the throne room 4) are as
+   they were.
+
+## THE FOUNDRY'S THINGS TO FIND, done the Cistern's way; the knight in soft paint (2026-11-17). Tests `tests/foundry.ts` (37)
+
+He said "all looks great, lets continue" to the stills of the knight in soft paint and to the list.
+ - THE KNIGHT AND THE KEEP GUARD WEAR SOFT PAINT (`player/ratModel.ts`: both his materials, and the ones
+   `ownMaterials` makes for the guard). The texture pass is done for every model.
+ - THE FOUNDRY: FIVE THINGS WHERE THERE WERE TWENTY-SEVEN (8 caps and 19 crumbs before): three bottle caps and two
+   hunks of cheese worth 9 and 10 (19 in all, so the shop's prices do not move). None on a floor or in a crate; no two
+   within twelve of each other. In `levels/foundry.ts` (`FINS`, `STACK`, `HEAPS_TOP`, `TRAY`, `CLINKERS`, `HUNKS`):
+     THE FINS (cap): two iron walls by themselves on the west bank, 2.2 apart; kicked up from the floor, nine up. The
+       thin one is taller (11.5) so the last kick is always onto the thick one, where the cap is.
+     THE STACK (cap): a wall 2.2 off the Storehouse's SOUTH side; kicked up between the two onto the Storehouse roof
+       (seven up, which nothing else reaches), and across the roof to the cap.
+     THE HEAPS (cap): the four Slag Heaps, as they were. (The checker knows a second way: with the lower piles gone,
+       a wall kick between the last pile and the hall's wall. Both are movement.)
+     THE DRIP TRAY (hunk, 9): a tray hung south of the Slag Run's first beam, 3.5 over it: a running jump, a second
+       jump and a caught edge, over the lava.
+     THE CLINKERS (hunk, 10): three lumps in the lava off the east bank, each further out and higher.
+   The caps wedge is "Three Bottle Caps" and its hint names the three places. Wren has a line about the Stack.
+   So the Foundry has two wall-kick climbs now (it had none).
+ - WHAT THE CHECKER TAUGHT (use it for the next level; `levels/reach.ts`):
+     A WALL KICK CARRIES HIM ACROSS A GAP OF UP TO EIGHT (`maxChimney()` is 8.14, not the 4.5 the old note says). Any
+     two upright faces nearer than that are a chimney to the checker: a free-standing wall's END and the hall's wall;
+     a lump in the lava and the bank's edge. So a thing meant to be got one way stands MORE THAN 8.2 from every
+     other face. (The Fins were moved from five to nine off the west wall; the last Clinker to 8.4 from bank and dock.)
+     A LONG JUMP FROM A HIGH PLACE GOES A LONG WAY: 18 from 15 up, 13 from 5 up, 11.6 from 3 up. The Stack first stood
+     on the Storehouse's north side, and from its top a long jump reached the FURNACE MOUTH, the secret ledge only the
+     Royal Scarf is meant to reach (tests/secrets.ts caught it). And the last Clinker was first within a long jump of
+     the Crucible's top.
+ - Old saves: the hunks are new ids; `cap:01` to `cap:03` are the Fins, the Stack and the Heaps, so a save that had
+   those three ids has them still, wherever they now are; caps 04 to 08 and the crumbs are gone.
+ - A BUG FOUND BY THE WAY: the dream's winking static put its dots back in the order it took them, and a dot picked
+   twice in one lot stayed bright for good. Put back in reverse now.
+ - STILL NOT DONE of the old list: the furnace's TEXTURES (a try-out room first: he threw out the first tile
+   refreshes), and the LONG DROP'S LOOK during the run. And the other levels' collectibles: the Hollows (17 crumbs)
+   and the Keep (18) are as they were; the Cistern and the Foundry are done.
+
+## "2, 4, 5, 6" (2026-11-17): the knight's stills and teeth, the dream's second pass, the hearth, the Widows, ice, slime, steam
+
+He picked four items from the list by number. What was done, and what was NOT:
+ - (2) THE KNIGHT AND THE KEEP GUARD IN SOFT PAINT: STILLS SENT, NOT IN THE GAME. Waiting for his yes
+   (`deliver/pictures/knight-and-guard-soft-paint-try-out.png`; the viewer puts it on with `&soft=1`). His model has
+   one material for every part, so putting it in is a one-line change in `player/ratModel.ts` once he says so.
+   And, sent while this was going on: "we need to fix the knights teeth like we did with grimsqueak." DONE: they were
+   two white balls hung under his snout; they are small incisors rooted in it (children of the snout mesh). The Keep
+   Guard is made from his model and has them too.
+ - (4) THE DREAM'S SECOND PASS, in the Milky Way try-out (tests in `tests/milkyway.ts`):
+   its kerbs are in STATIC that winks (`dreamStatic`; `blinkTextures(time)` in `render/textures.ts`, called by the
+   room's clock, changes a few dozen dots a few times a second and puts the last lot back);
+   beds of FLOWERS with BUTTERFLIES over them (decor `flowers`, `butterflies`: they nod and fly by the room's clock);
+   and THE WAKING WORLD'S TERRORS IN LOUD COLOURS, DOING NOTHING (`world/dozers.ts`, `LevelDef.dozers`): a mantis and a
+   scorpion asleep in the flowers either side of the head pad, and on the Moon a Stag Knight asleep on its hammer,
+   another standing about, a mantis awake and a scorpion asleep. Each is the creature's own model with its colours
+   turned round the wheel and made loud (`dreamify`; the scorpion's colour is in its pictures, so it is given plain
+   greys and a tint for each part), solid where it is drawn (`dozerSolids`), with Z's rising from the sleepers.
+   The head pad is wider (`HEAD.half` 9) to hold its gardens. HIS TO ACCEPT, CHANGE OR THROW OUT.
+   A THING LEARNED: a plain three.js material comes out PALE in this game (its colours are brightened twice): use
+   `createPs1Material` even for unlit things.
+ - (5) THE HEARTH is 0.3 high (`FIRE.y` in `levels/junction.ts`): he walks up onto it. It was 0.4, over his step.
+   THE WIDOWS (two of them now, one each side, so one is always behind the camera): a POINTER lies on the floor with
+   a blow's ring, a wedge from the ring's edge toward the one striking (`strip` in `enemies/widowModel.ts`); the
+   second Widow has a DEEPER voice for her wind-ups (main.ts `beastSounds`); and HER YOUNG, his own idea ("have her
+   send out baby spiders that make you have to keep moving around"): when a Widow turns angry two come out of the dark
+   beside her (`WIDOW.young`, `Widow.young`). A young one is a ROACH in everything it does, drawn as a small spider
+   (`EnemySpec.look: 'hatchling'`: the Broodmother's model in a holder a quarter her size). They count toward
+   nothing. This makes the second half of that fight HARDER. Viewer: `#view&who=hatchling`.
+ - (6) ICE is a ground piece in the builder (`'ice'`: a slick sheet in `iceSheet`). The controller now takes him to be
+   on the ice when it lies level on another floor and his middle is over it (it took whichever came first, and ice
+   laid on a level's own floor was not ice).
+   SLIME DOES SOMETHING: on foot, on a green runnel, he goes at 0.55 of his speed (`TUNING.slime`, `slimeZones`,
+   `PlayerController.inSlime`). ON THE SHIELD IT DOES NOTHING, AND THAT IS ON PURPOSE: it was tried as the fast line
+   (less drag, a higher top speed) and the Long Drop, which is tuned to the speed he leaves its lip at, threw him
+   clean over its arena. `tests/longdrop.ts` now runs with the slime on, as the game has it.
+   STEAM VENTS: decor `vent` (an iron grille in the floor, steam up out of it in bursts), a builder piece `'vent'`,
+   and ten in the Foundry's hall (`STEAM_VENTS` in `levels/foundry.ts`). Scenery: they do not hurt or push.
+   NOT DONE, of what he listed under 6: the furnace's TEXTURES (he threw out the first tile refreshes: that wants a
+   try-out room, not a swap); THE FOUNDRY'S COLLECTIBLES "the Cistern way" (fewer, each earned by movement); THE LONG
+   DROP'S LOOK during the run. Each is a design job of its own.
+ Tests: `tests/slimeice.ts` (new), and additions to `tests/milkyway.ts` and `tests/widow.ts`.
+
+## GRIMSQUEAK'S SPELLS ARE IN HIS FIGHT (2026-11-16: he said "continue"). Tests `tests/grimfight.ts`. HIS TO ACCEPT, CHANGE OR THROW OUT
+
+The fight's four attacks keep every number they had (a test holds the table): its first half is exactly what it was.
+What changed, in `enemies/grimsqueak.ts` and main.ts (`grimSpell`):
+ - DRESSED, NOT CHANGED: the volley is FIREBALLS (each bolt thrown from a cupped claw with the fireball's throw; the
+   bolts are balls of fire, `Spit.kind: 'fire'`); the slam is a BLAST (gathered in as he rises, burst open as he lands;
+   its ring along the floor is the fight's own, as before).
+ - NEW, AND ONLY AFTER HE HAS RAGED (half health):
+   THE SUMMONING, once, as his rage ends: a gate opens in the floor before him and two roaches crawl out and hunt the
+   rat. They count toward nothing (`uncounted`). `GRIM.summon`; the game makes them from `boss.summons`.
+   THE STORM, a fifth attack: he sets his claws on a line through where the rat stands (he follows him for the first
+   six tenths of the tell, then the line is fixed) and rakes it with lightning: 13 long, about a step to either side.
+   Get off the line, or raise the shield; a roll goes through it. Then he is spent, as after his others.
+   `GRIM.storm`, `stormAtRat`, `stormTaken`.
+   THE MENDING, once, when he is at three tenths of his health or less: instead of rising from an opening he stays
+   DOWN, claws over his shard, for a little over two seconds. Strike him and it is broken (he loses the blow and is
+   left open); leave him and he has three hearts back. `GRIM.heal`.
+ - So the second half of the fight is HARDER than it was (two roaches, a fifth attack, three hearts to take off him
+   again if the mending is let finish). Nothing was made easier. It has not been played by hand: the numbers are a
+   first guess and are in one table, `GRIM`.
+ - To look at one part by itself, over and over: `#level=lair&bossdo=storm` (or volley, slam, summon, heal).
+
+## SOFT PAINT CHOSEN; PIP, THE OWL AND GRIMSQUEAK WORKED OVER; GRIMSQUEAK'S SPELLS (2026-11-16). Tests `tests/grimspells.ts`
+
+His words, in the order they came, and what was done:
+ - "deeper soft paint i like best." `softPaint` (the deeper of the two shown) is what the friendly characters wear
+   now: the mice, the birds, Dave (`npc/npc.ts`: the one material every part of them is made of), and Lord
+   Grimsqueak (both his materials). Slow soft clouds of lighter and darker over their painted colours; no marks.
+ - "backpack straps are pretty messed up on mouse": Pip's straps were two stiff boxes stood off his front, ending in
+   the air. Each is a band LAID ON HIM now (`strapOn` in `npc/npc.ts`): from the pack up over his shoulder, down his
+   front, round under his arm and back to the pack; every point of it found on his body's own shape. And the flap's
+   two straps and buckles were on the side of the pack that is against his back: they are on its outside.
+ - "corners of backpack could be rounded more as well": the pack, its flap and its side pockets are `rounded` boxes.
+ - "mouse toes are kind of weird, need fixed, maybe just shoes?": Pip is in stout brown shoes with a dark sole. (He
+   had bare pink feet with three toe-balls stuck on in front.) Mort keeps his slippers.
+ - "owl has a lot of problems to fix in the model square belly, bad eyes, odd shapes, he could also benefit from a
+   more detailed texture": THE OWL IS MADE AGAIN (`class Owl` in `npc/patrons.ts`). A plump twelve-sided body and a
+   big round head; a pale heart of a FACE laid on the head with a dark rim; great round eyes (a ring, an iris, a
+   pupil, a glint) under a stern brow; a hooked beak; long barred wings; three-toed feet; a fan of a tail. The
+   barkeeper's apron is LAID ON her front and curves as she does (`laidOn`: it was a square card stood in front of
+   her); the other one's bow tie is a bow. His pictures: `owlFeathers` (large soft feathers, painted not inked: the
+   third try at feathers and the first that is neither bricks nor dirt) and `owlWing` (barred flight feathers).
+ - "grimsqueak needs his teeth fixed. and model in general looked over": his two front teeth were flat square cards
+   hung in the air under his snout, touching nothing. They are a rat's incisors now, long and tapered, ROOTED in the
+   underside of his snout (children of the snout, so they go where it goes). Looked over from all sides: nothing
+   else found broken. (His whiskers are as long and heavy as they were made to be; say if they should be lighter.)
+ - "give him some magic casting animations (casting one hand fireball, summoning minions from the underworld,
+   lightning hands, healing himself, casting aoe attack)": FIVE SPELLS (`GRIM_SPELLS`, `spellStance`, `lightSpells`
+   in `npc/grimsqueakModel.ts`). Each is a run of stances at set moments, with its own light: `fireball` (a flame
+   gathered in one claw, drawn back, thrown), `summon` (a gate opens on the ground before him and pale hands rise
+   from it as his arms rise), `lightning` (forks from both claws, remade many times a second), `heal` (claws
+   folded over his shard, a ring climbing him, motes rising), `blast` (gathered in, flung open, a ring bursting out
+   over the ground). Played by handing the model `spell: { kind, t }`.
+   THE FIGHT DOES NOT USE THEM YET: `enemies/grimsqueak.ts` has its own attacks and gestures, and which attack gets
+   which spell (and what each does to the knight) is a design to settle with him. The summoning shows hands of light
+   and a gate; no minions are made by it. Viewer: `#view&who=grim&spell=summon&st=1.4`.
+
+## HIS VERDICT ON THE SOFT CHARACTERS' TEXTURES (2026-11-16): TAKEN OFF. READ THIS BEFORE TEXTURING ANYONE FRIENDLY
+
+"okay so the mice an birds look wayaaaaaayyyyyy worse than before. same with the rat king, its like you just threw a
+bunch of shit all over them."
+ - TAKEN OFF AT ONCE, back to exactly what they were: the mice (Pip, Mort), the birds (Finch, Wren), Dave, the owl,
+   Lord Grimsqueak. The picture `plumage` is gone; `shortFur` is back at the strength he had seen on the fox, the
+   ferret and Jinx. (`npc/npc.ts` and `npc/grimsqueakModel.ts` are as they were before the second sitting.)
+ - KEPT, because he did not speak against them (ask if in doubt): the ten creatures (roach, toad, ironback, mantis,
+   ant, bat, hornet, glow bug, broodmother, wyrm), and from before: the stag, the turtles, the fox, the ferret, Jinx.
+ - THE RULE IT LEAVES: MARKS SCATTERED OVER A SMOOTH CARTOON CHARACTER READ AS DIRT. Strokes of fur, flecks of
+   feather, noise of any kind: no. What he liked on the stag was STRUCTURE THAT FOLLOWS THE FORM and says what a thing
+   is made of: grooves down a wing case, plates down a belly, iron with rivets. A soft friendly character has no such
+   thing on his fur or feathers; if he gets any picture at all it belongs on what he WEARS AND CARRIES (a knitted
+   jumper's rows, a leather pack's stitching, a scarf's weave, a gold chain), drawn to fit that one thing.
+ - WHAT HE SAID NEXT, with six pictures of old games' characters (flat colour with soft painted shading, a few
+   painted folds, strands in hair; nothing gritty): "Their texture doesn't have to be intense remember we're going for
+   an old school game"; and: "its hard to capture that feeling all over especially when we can cheat, and want to
+   cheat when it makes the game better, but some stuff needs to be thought about carefully." So: GENTLE, and thought
+   about one character at a time; not a pass over everybody.
+ - A TRY-OUT WAS SHOWN HIM AS STILLS ONLY: `softPaint` and `softPaintStrong` (slow clouds of a little lighter and
+   darker, nothing else), worn by nobody in the game; the viewer puts them on anything with `&soft=1` or `&soft=2`.
+   Waiting on his word: A plain, B soft, C deeper, or something else.
+ - AND THE WAY OF WORKING: this is a contested look now. Stills first, in the model viewer, of ONE character; his
+   yes; then the rest. Nothing of the kind goes into the game unseen again. The same holds for the knight.
+
+## The texture pass, second sitting (2026-11-16): ten creatures KEPT; six characters TAKEN OFF AGAIN (see above)
+
+He said "Continue" to: carry on the texture pass. Everything below is a SURFACE PICTURE IN GREYS laid over the model's
+own painted colours, as the stag's is. Before-and-after sheets went to him.
+ - New pictures (`render/textures.ts`): `chitin` (an insect's shell: streaks, wavering growth lines, pits),
+   `wartSkin` (blotches and warts of every size), `leafChitin` (fine veins the long way), `membrane` (a wing's veins,
+   forking), `plumage` (flecks scattered on a soft ground). `shortFur` was made bolder.
+ - Who wears what: the roach `chitin`; the toad `wartSkin`; the ironback `stagShell` (beaten steel: the best of
+   them); the mantis `leafChitin`, its wings `membrane`; the ant `chitin`, its limbs `stagHorn`, its metal
+   `stagShell`; the bat `shortFur` and `membrane`; the hornet and the glow bug `chitin`, `stagHorn`, `membrane`;
+   the broodmother `chitin` and `shortFur`; the wyrm `chitin` and `stagHorn`. The mice `shortFur`; the birds, Dave
+   and the owl `plumage`.
+ - TWO THINGS LEARNED. (1) A picture goes ONCE round a ball and only half way over it, so on a ball everything in it
+   comes out twice as wide as it was painted: the toad's warts are painted as tall ovals to come out round. (2) On a
+   body as big and round as a mouse's, one turn of a 32-dot picture makes a hair as thick as a finger: `npc/npc.ts`
+   lays its coat's picture several times round each part (it multiplies the `uv` of every part made of the coat).
+ - In `npc/npc.ts` round things are of the coat and boxes and cones are plain (straps, buckles, a lantern, a beak).
+ - Lord Grimsqueak (his own model, `npc/grimsqueakModel.ts`): `shortFur`, and `knit` for his robes.
+ - STILL PLAIN, AND WHY: the knight himself, and with him the Keep Guard, who is made from his model
+   (`player/ratModel.ts`: one material for every part of him, so fur, cloth, leather and steel want sorting by
+   part; his hit flash, his dream colours and `ownMaterials` all hang on that one material). He is the one model that
+   must not be got wrong: do him by himself, and show stills before it goes in.
+ - Viewer: `#view&who=foe&type=toad` (any creature), `#view&who=npc&kind=mouse&name=Mort` (any talking character).
+
+## What he said of the last lot, and Jinx (2026-11-16, later the same day). Tests `tests/glimmer.ts`, `tests/milkyway.ts`, `tests/club.ts`
+
+ - "Dude see that Beetle looks so much more ... cool now! We've got to think about all the models in the game that
+   don't have textures we need to do this with them!" THE TEXTURE PASS IS WANTED FOR EVERY MODEL. The way of it is
+   settled (a surface picture in greys over the model's own painted colours). Done so far: the stag, the turtles, the
+   fox and the ferret (`shortFur`), Jinx; and since, everything but the knight and the guard (see the section
+   above). In `npc/patrons.ts` `turned` and `limb` take a material, and make their shapes of `ink`
+   when not told (a constructor sets `ink` to its coat and back).
+ - THE TURTLE, AGAIN. "you use like a brick texture for his skin ... the skin shouldn't look like bricks": his skin
+   is pebbled leather now (scales of no two sizes, in no rows: `paintTurtleSkin`). "the turtle shell looks okay but
+   not as good as the other things": a plate is repainted as a low hill of horn, its growth ridges STEPS with a lit
+   side and a shaded side, dark rays out from a pale boss (`paintTurtleScuteAs`). "one of the turtles seems to still
+   have the remnants of like the bubbles": those were three balls of moss stuck on Mo's shell; gone, and his moss is
+   in his shell's picture (`turtleScuteMossy`). RULE HE KEEPS COMING BACK TO: NOTHING ORGANIC IN ROWS OF OBLONGS.
+ - THE CAVE'S STEPS, AGAIN. Pale cut stone "may have been over correcting ... now they feel out of place". He gave
+   two ways and both are used. The Glow Cave's two steps wear the FLOOR's rock, glowing lichen on the corners of their
+   tops. The Glimmer Deep's way out of the Rift is SHELF MUSHROOMS growing out of its walls (decor `bracket`,
+   `bracketSolids` in `world/layout.ts`; `SHELVES_HOME` amber to the door, `SHELVES_BANK` pink to the Far Bank): each
+   glows, each is one jump above the last. The picture `caveStep` is gone.
+ - THE MILKY WAY FELT LIKE A SOFT LOCK: "I can't really figure out what to do ... I walked off every ledge I just fall
+   down ... there's no door to go back". From its start pad the road could not be seen (it falls away below the lip)
+   and nearly half the lip had nothing under it. Now the road's rainbow runs back across the pad under his feet, a
+   kerb stands round every edge but the road's width, a gate stands over the lip, and the board says JUMP, THEN
+   ATTACK / TO RIDE THE SHIELD. AND IN EVERY PLACE BUT THE CLUB the pause menu has LEAVE: BACK TO (the place he came
+   from): `host.leave` in main.ts, a row on the SAVE screen. He keeps what he has found.
+ - HIS SCARF IN THE DREAM: "it just sort of looks like he's got a second tail coming out of his neck ... some sort of
+   like fake wind that makes it constantly flowing behind him". It is THE STREAMER now (`STREAMER`, `flowStreamer` in
+   `player/ratModel.ts`): a flat forked ribbon, a chain of points kept in the room and blown out behind him, up and
+   a little to one side (the game looks at him from behind and above: flying level it would be hidden by his body),
+   a wave running down it. `setScarfLong(k > 1)` turns it on.
+ - JINX, a new character: "a girl rat ... a more feminine version of the main character but also sort of punk rock
+   ... a notch cut out of one of her ears ... emo hair ... dresses really feminine but ... Punk goth rocker style
+   and her tail is longer and usually up or curling around and she wears a skirt. She also just hangs out in Dave's
+   area for now." Built as a Club regular of a new kind, `rat` (`class Jinx` in `npc/patrons.ts`), on Dave's stage
+   (`levels/junction.ts`), with three lines, a voice and a talk-box portrait. Dark fur, a notched ear with two gold
+   rings, a fringe over one eye dyed black to hot pink, a studded collar, a knit top, striped arm warmers and
+   stockings, a tartan skirt, heavy boots, a long ringed tail that stands up and curls, a bow on it. She nods and
+   taps a boot to the beat. Her pictures: `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`.
+   Viewer: `#view&who=patron&kind=rat&name=Jinx`. HIS TO ACCEPT, CHANGE OR THROW OUT: her name and her lines are
+   mine, and the pictures he sent were for the mood only.
+
+## The dream world's next pass: what the owner wants in it (2026-11-16. NOT BUILT: his notes, kept here)
+
+He sent two pictures (of another game, as a mood only: nothing of it is to be copied) "for when you're working on the
+like psychedelic like weird wacky Pomo kind of world". In his words: "some of the digital textures look kind of cool
+and also the little bit of blinking, I also think like butterflies and flowers would fit really good here and maybe
+like a couple of the normal enemies we already have like maybe some of the scarier ones but have them have like wacky
+Pomo sort of psychedelic versions that are just kind of chilled out here and sleeping and hanging out and stuff."
+What the pictures showed: (1) a hall whose walls, floor and stairs are all one fine, busy, many-coloured static, like a
+broken picture, some of it winking; (2) a sunny bed of yellow flowers with butterflies over it and a big toothy plant
+fast asleep in the middle, a bubble at its nose.
+So, for the Milky Way (levels/milkyway.ts) or the level that grows from it:
+ - Surfaces of busy "digital" static, some of whose dots BLINK. (A picture that changes is not a repeating tile with a
+   glow painted in: but keep the rule that a light is a thing put on, and try it in the running game first.)
+ - Butterflies, and flowers in beds.
+ - Two or three of the creatures he already has, the frightening ones (the mantis, the scorpion, the stag, the Widow
+   are the candidates), in loud dream colours, NOT fighting: asleep, sitting about, harmless. They are scenery with
+   manners, and a joke on what they are elsewhere. (`RatModel.wearColours` is how the knight got his dream colours;
+   the creatures' pictures are surface greys over painted colours since 2026-11-16, so new colours are cheap.)
+ - His rules stand: shown in the running game, he says yes before it is built up; a new model is not done until it
+   is textured; better means a better shape and a good picture, never more parts.
+
+## Sign boards, textures for the stag and the turtles, the cave's steps, shadows, and the old screens (2026-11-16)
+
+Five things from his list and three he sent while they were being done. Tests: `tests/signs.ts`,
+`tests/shadowcut.ts`, `tests/screens.ts` (and the models' own).
+ - THE WOODEN SIGN BOARDS (the garden's, the Long Drop's, the Milky Way's) are written in the block letters of
+   `render/pixelFont.ts`, as the door signs are: `boardPixels(lines, w, h)` in `world/signs.ts`. A dot of a letter is a
+   square dot of the board, the first line twice the size where there is room, nothing shrunk to fit. The font got a
+   comma and a colon. The ramps' boards were reworded shorter (GENTLE, A HILL, STEEPEST) so their letters are big
+   enough. The rulers' figures are as they were.
+ - "I like this Beetle that he needs a texture" (the stag at the Club) and "The turtles are also fairly texturless".
+   Both have pictures now, and the way of it is new: a SURFACE PICTURE IN GREYS laid over the colours already painted
+   on the model (the material multiplies the two). So nothing of their colours changed and one picture of beaten steel
+   does for the stag's blued shell and its copper rim. Pictures (`render/textures.ts`): `stagShell` (a wing case:
+   grooves, pits, rubbed ridges), `stagBelly` (plates down his front; the bands are in the picture now, not painted),
+   `stagHorn` (limbs, antlers, claws), `stagIron` (a plate of the hammer's head), `ashWood` (its shaft);
+   `turtleScute` (ONE plate of the shell, its growth rings: `shellGeometry` gives every plate the whole picture),
+   `turtleSkin` (soft scales), `turtleBelly` (the shield of his front, its seams). Viewer: `#view&who=stag`.
+   STILL PLAIN: the fox, the ferret, the owl, the mouse, the birds; and of the creatures the roach, the toad, the
+   firefly, the ironback, the guard, the mantis, the ant, the bat, the hornet. The same way will do for each.
+ - "I genuinely couldn't see these stairs because they use the same texture as the wall" (the steps out of the Rift
+   in the Glimmer Deep). The steps are in pale cut stone now, `caveStep`, and a small amber mushroom stands at the
+   back of each to light it; the two steps in the Glow Cave try-out wear the same. RULE: what he climbs is not what
+   he climbs past.
+ - EVERY ROUND SHADOW IS CUT WHERE ITS GROUND ENDS, as the knight's is: `render/cutShadow.ts` (`ShadowCuts`), over
+   `cutOutline` in `world/shadow.ts`. It finds a model's shadow by what it is (a flat black see-through disc), so no
+   model had to be told; main.ts calls it for every creature, every talking character and a scene's cast. A creature
+   in the air over a drop keeps its whole shadow, as before. Worked out again only when the shadow has moved.
+   Viewer: `&post=0.5` stands anything on a small post to see it.
+ - THE OLD SCREENS (the FILTER setting) were drawn for a small stretched picture: lines one screen dot thick, too fine
+   to see on the sharp picture he chose. Now each is measured from the screen (`screenMeasures` in `ui/display.ts`):
+   a television's 240 lines down it and a handheld's 144 dots, each a whole number of the screen's own dots.
+   SCANLINES: soft-edged lines, the picture brightened to make up. OLD TV: lines, the glass's red-green-blue stripes,
+   dark round corners, a little glow. VHS: the colours pulled apart sideways and smeared, washed, a tracking band, a
+   torn strip along the bottom. GREEN HANDHELD: four greens and no more (the hearts and menus too) under a grid of
+   dots. They use SVG filters on the picture: NOT TRIED ON HIS PHONE for speed. His to judge from the stills.
+
+## The Frost Roller: a cold creature for the Cold Main (the owner's list, 2026-11-16. BUILT; `tests/roller.ts`)
+**He has not seen it. Its look and its fight are Claude's, and his to accept, change or throw out.**
+`src/enemies/roller.ts` (rules, the `ROLLER` table), `src/enemies/rollerModel.ts`. Two live on the Cold Main's ice.
+- **The idea in one line: IT IS A BALL ON THE ICE, AND IT CANNOT STOP EITHER.** (The Cold Main's floor keeps what
+  moves on it moving: this is the creature of that floor.) A great pill bug.
+- **Its turn:** it walks toward him, slowly. It TUCKS (0.6 s, the tell: rocks back and rolls itself up; its line is
+  set for the last part of that). It BOWLS in a straight line at where he was, half as fast again as he runs. It
+  cannot steer or stop: it comes off two things it meets, and the third SPILLS it open on its back for two seconds.
+- **Curled, its shell turns the sword** (the clank, his arm thrown back). **Spilled it is open:** three blows.
+- **What he can do about it:** step aside after its line is set; JUMP it (it runs along the floor); hold his SHIELD
+  up (it stops dead on it and lies open longer: 2.5 s, 3.2 off a perfect guard); DIVE on it (cracks it open at once).
+- **Off the ice it does not roll far:** a stone floor drags it to a stop in under eight units and it spills there
+  (the game tells it which floor is `slick`).
+- **How it is drawn:** six plates, each one arch of four flat faces, set along a strip that is BENT as far as the
+  rules say it is rolled up (nearly straight walking, a ring when a ball: the ball drawn is as big as the body the
+  rules give it); a pair of legs to a plate; a head shield and two feelers. Under 300 faces, all textured
+  (`rollerShell`: one plate, rimed at its hind lip; `rollerUnder`). Seen from all sides: `#view&who=roller&state=
+  walk|tuck|roll|spilled&yaw=`.
+- NOT DONE: sounds of its own (it borrows the ant's click, the plate knock and others); a sticker (none until a
+  real level has one, as with the scorpion); a piece in the level builder; a cutscene puppet. Nobody has fought it
+  by hand. Two of them at once on the ice with the gusts blowing has not been tried.
+
+## What he found playing, sent while other work was going on (2026-11-16, second lot): FIXED; `tests/falls.ts`
+- **"if it's a long fall it's a jittery ... towards the end of the Fall".** He is DRAWN eased toward where he stands
+  (that easing is what walks him up stairs instead of popping). It was applied in the air too: in a fast fall he was
+  drawn lagging a third of a unit behind, then snapped down whenever the lag passed the limit, dozens of times in
+  one long fall. **In the air, riding or sliding he is now drawn exactly where he is** (`drawnHeight` in
+  `src/player/standing.ts`). The rules of the fall itself were always smooth. **RULE: an ease that is for one thing
+  (stairs) must say when it applies; "always" will find a case it was never meant for.**
+- **"When coming back up from falling down you can sometimes be standing Off the ledge".** He counts as standing
+  with his middle past an edge (his round foot overlaps it), and that was taken as "the last ground he stood on".
+  A place is now only taken as safe with ground under his middle and for 0.45 round it (`safeToReturnTo`).
+- **The sign over the door to Leap of Faith** (two pictures: "fixing this [sign's] stuff inside of it [overlapping]
+  above this door"). Under the grotto's low roof the sign's name line was up inside the roof (and stuck out of the
+  floor above). **A door's sign now fits the room over the door** (`roomOverDoor`, `signFit` in courseDoors.ts):
+  full size a unit over the arch where there is room; under a low roof, just over the opening, out in front of the
+  arch's top stones, and as much smaller as it must be (never under half). A test holds EVERY door in every level
+  to it (two were short: this one and the Coal Cellars'). And the dark block on top of that arch was the cave
+  doorways' keystone, made of the cave's dark wall stone: it is the arch's own stone now.
+
+## The Milky Way: the dream, as a try-out room (the owner's list, 2026-11-16. BUILT; `tests/milkyway.ts`)
+His words are under "A look-over of old things, and new themes" (the dream level). Built as a TRY-OUT, his rule for
+themes. **He has not seen it. All of it is his to accept, change or throw out.** `src/levels/milkyway.ts`.
+- **How he gets there:** a door in the Move Garden's NORTH wall (`ratquest-garden.html`). `#level=milkyway&nostory`.
+- **What it is:** a pad at the top; four lengths of rainbow road down through the sky, each as steep as the Long
+  Drop's beds, with a GAP after each and the next length set to one side; a landing at the bottom (the Moon) with
+  the way out. A hop off the pad and ATTACK, and he rides. About eighteen seconds top to bottom.
+  - Ridden at the road's speed he crosses each gap without jumping. A SLOW rider falls short unless he jumps.
+  - **Three bottle caps, one over each gap, up where a JUMP OFF THE BOARD at the lip carries him**, over the strip
+    the two lengths share. Rolled off the end he passes under them.
+  - No walls. Off the side is a fall: `LevelDef.fallDepth` (28) puts him back on the last ground he stood on, a
+    heart the poorer. (`fallBack` is the same thing for a level whose floor is at zero.)
+- **The sky:** `LevelDef.sky: 'space'` is a dome of stars round the view (`src/world/sky.ts`, painted once on a
+  canvas: clouds of colour, the Milky Way as a band, four colours of star). `motes: 'stars'`. Decor `planet` (a
+  banded ball, some with a ring, turning slowly). The view reaches 200: nothing further off is drawn.
+- **The road's picture** (`rainbowRoad`, repainted at 64): ONE rainbow across the road, the same either side of its
+  middle (the tile is as wide as the road, `TILE.rainbowRoad` 7, and its seam is the road's middle line). The pads
+  wear `pomoTiles` (repainted: dots, squiggles, triangles, a grid, in four loud colours).
+- **THE DREAM KNIGHT:** `LevelDef.look: 'dream'`. He wears the paint of a second rat built in loud colours
+  (`DREAM_LOOK`, `RatModel.wearColours`): pink fur, green tunic, a yellow belly, blue-green ears and tail, an orange
+  helmet; and his scarf is 3.2 times as long and held out behind him (`setScarfLong`). ONLY LOOKS: nothing else
+  about him changes, and it comes off when he leaves. (A helmet put on anew is a new part of the model: both rats
+  are dressed alike before the paint is taken, or parts stop pairing up. One ear stayed brown until that was done.)
+- NOT DONE: it is short, and has nothing on it but the road (no rails, no kickers, no creatures, no music of its
+  own: it plays `groove`). No stars to collect along the road. The planets cannot be reached. Nobody has ridden it
+  by hand; the gaps were sized by the test's ride. Whether falling off should cost a heart here is his call.
+
+## The Glimmer Deep: the glowing cave as a real level (the owner's list, 2026-11-16. BUILT; `tests/glimmer.ts`)
+His list said "a real level for the glowing cave (it is only a try-out room)". **He had not yet said what he thinks
+of the try-out room or of the Lamp Scorpion when this was built on them: its look and its fights are still his to
+accept, change or throw out.** `src/levels/glimmer.ts`, id `glimmer`, a side area of the Hollows.
+- **How he gets there:** a door in the Hollows' east wall, on the floor (`courseDoors` in hollows.ts), open from the
+  start. `#level=glimmer&nostory`.
+- **Its shape:** he comes in on the Landing. The cave is split wall to wall by the RIFT, ten across and seven deep.
+  Beyond is the Far Bank (two and a half higher than the Landing); down the east side stands the High Shelf, nine
+  and a half over the Landing, which cannot be climbed to from any ground (a test tries every place near it).
+  - **The Caps:** four great yellow mushrooms growing up out of the Rift, each a running jump from the last and
+    nearly two higher: the only way to the High Shelf. Wedge: THE HIGH SHELF.
+  - **The Rift's floor:** two Lamp Scorpions. Wedge: LAMPS OUT (beat both; they are the only creatures that count).
+    Three steps of rock at its west end are the way out; its sides are too high to climb.
+  - **Over the Far Bank:** three glow bugs, each its own colour, counting toward nothing.
+  - **Three finds:** a bottle cap in the air on the hop from the third Cap to the fourth; one at the bottom of the
+    Rift behind the last Cap's foot; a relic on the Spire, the tall pink mushroom of the Far Bank (the second jump
+    and a caught edge).
+- **THE LEVEL'S ZERO IS THE RIFT'S FLOOR** and the Landing is seven up (`LANDING`). He is sent back to where he
+  started from six below zero (`TUNING.pit.respawnY`), in every level: the first lay-out had the Rift's floor at
+  seven under, and he could not stand on it. **Nothing he is meant to walk on may be below minus six.**
+- The Lamp Scorpion has its sticker now (`foe:scorpion`, with an icon).
+- The world has 49 wedges now (the Hollows 14). The Keep's door still asks 25: tests/balance.ts is content.
+- NOT DONE: nobody has played it. It has no talking character and no secret. The fireflies' fire over the Far Bank
+  and a scorpion fight at the bottom of a rift with four great stems in it have not been tried by hand. The
+  creatures in the Rift cannot follow him up the steps (no way-finding), which is as it should be for a den.
+
+## Creatures on slopes (the owner's list, 2026-11-16: "enemies walking on ramps". DONE; `tests/foeramps.ts`)
+- **A slope the knight can walk is GROUND to a creature now** (`src/enemies/footing.ts`): solid only UNDER its
+  surface, floor ON it, a wall from the side where it is higher than a step. Steeper than he can walk
+  (`MAX_WALK_SLOPE`): still a wall.
+- **A creature's height follows the floor.** Until now each kept the `y` it was made at for good. After every step
+  `keepOnFloor` (foe.ts) sets its feet to the floor under it. So each walker has a `homeY` and goes back to it
+  when it comes back after being beaten. The game gives each creature `floorUnder` beside `canStand` (main.ts).
+- **"Can I reach him" goes by the ground, not by height** (`sameGround` in foe.ts): it walks the straight line to
+  him a pace at a time with its feet on the floor. By height alone (within 0.9) it lost him two steps up any slope.
+- **Its body is tipped to the slope** it stands on, eased, and its shadow with it (main.ts, where models are placed).
+- **The mantis leaps up and down slopes** (its leap was planned at one height). The ironback's ram and the leap ask
+  `wallOver`, which knows a slope from its foot is not a wall.
+- **Who walks slopes:** roach, guard, ironback, stag, mantis, ant, scorpion. **Who does not: the toad** (it HOPS, and
+  plans each hop at one height: it stays on the level it is on and spits from there). Fliers never cared. The
+  bosses (Grimsqueak, broodmother, wyrm, Widow) are not taught: their rooms are flat.
+- **They still never fall:** at an edge higher than a step a creature stops, as it always has.
+- **To see it: the Move Garden's three ramps** have a roach whose home is the landing and a guard at the foot of the
+  hill (`RAMP_FOES`, `RAMP_PATCH` in garden.ts; they count toward nothing and keep to the ramps).
+- **KNOWN: creatures have no way-finding.** They go straight at him, as they always have. One that circles off the
+  foot of a slope and ends up on the floor BESIDE it (the slope's side is a wall there) does not go round to the
+  foot: it gives up, as at any wall. A level that wants a creature to use a slope should give it a wide foot.
+- NOT DONE: no real level has a creature on a slope yet (the Long Drop's one-hit creatures are the place for it).
+  Nobody has fought one on a slope by hand: a sword swing up or down a hill at a creature has not been looked at.
+  The toad could be taught (plan the hop's landing by the floor there) if it is wanted on slopes.
+
+## The clipping sweep (the owner, 2026-11-16: "do the clipping sweep". DONE; held by `tests/clipsweep.ts`)
+After his five clipping finds in the Club, the whole game was gone over for the same fault, by a tool, not by eye.
+- **What the fault is:** two flat faces that are parallel, face the same way, lie within three hundredths of each
+  other and overlap. At a distance the depth buffer cannot tell them apart and they flicker through each other.
+- **The tool: `src/render/layering.ts`.** `sweep(root)` finds every such pair in a built thing. `autoLayer(root)`
+  cures each one. **THE RULE IT GOES BY: THE SMALLER THING LIES ON THE BIGGER** (a patch on a cushion, a cap on a
+  post, a rug on a floor), and is a layer up from it.
+- **THE CURE: WHAT LIES ON SOMETHING IS PAINTED ON AFTERWARDS.** It is drawn after the room, writes nothing to the
+  depth buffer, and is pulled a hair toward the eye so it passes over what it lies on; what lies on THAT is drawn
+  after it again (`renderOrder` = its layer). The ORDER decides, not a contest of depth.
+  - A FLAT thing (a rug, a patch, a mark on a wall) is drawn that way itself (`asDecal`).
+  - A SOLID thing with one face flush against another's (a cap on a post, a block let into a wall) keeps its own
+    honest depth and is given a SKIN: itself again, painted on afterwards.
+- **WHY NOT a bigger pull for each layer, written to depth** (how the Club's rugs were first cured, and how this
+  sweep was first written): **because then the depth buffer lies about where the floor is.** A rug three layers up
+  stood nearer the eye than the knight's shadow: HIS SHADOW VANISHED ON THE LONG RUGS AND ON THE DANCE FLOOR. That
+  was caught only by looking at the built game; the sweep cannot see it, because a shadow moves. With the cure
+  above the buffer holds the true floor, and a shadow, a warning ring, water, a glow meet it as they always did.
+  **RULE: a flat thing that lies on something NEVER writes depth.** The test holds every room to it. Things made
+  by hand with `lyingOn` materials (a rug's layers, the dance floor) are made over the same way as the room loads.
+- **The game runs `autoLayer` on every room as it loads** (main.ts, straight after `buildChamber`). So a prop added
+  next year that lies on something is covered without anyone thinking of it. 943 pairs were found in the 33 rooms;
+  about 750 things are cured as rooms load (some 530 of them by a skin); nothing is left.
+- **It was made cheap on purpose** (it runs on a phone at every door): about a tenth of a second for the biggest
+  room on this machine. A room over `LAYER_BUDGET` faces (only the Long Drop, 360 thousand) is NOT swept as it loads
+  and must be clean AS BUILT: the test holds it to that.
+- **What layering cannot cure: two faces of ONE mesh** (one mesh is drawn all at once). Those were fixed where they
+  are made: a thin pipe's joint bands now stand well proud of it; the cave's glowing moss (lobes on lobes, threads
+  on lobes, one mesh) is painted on afterwards, so its faces go down in the order they were made; the Long Drop's
+  rails stand ON the bed instead of sunk in it (a sunk rail's end lay in the plane of the bed's end); its runnels
+  of slime are made painted-on by hand.
+- **Characters:** every black shadow disc, warning ring and floor mark is drawn `lyingOn` the floor (they were a
+  fiftieth over it and left to luck). The off-duty ant and the beaten stag in the Club HAD TWO SHADOWS, one on the
+  other (their creature model's and the one every character is given): now one.
+- **What the sweep does NOT judge:** rounded body parts of a creature that pass through one another (a wyrm's
+  rings, a hornet's legs). Those are not this fault and it lets them be. **Nor a MOVING thing against the room (a
+  shadow on a rug): look at those in the running game.**
+- **To run it:** `npx vite build --ssr tests/clipsweep.ts --outDir .testdist --emptyOutDir && node
+  .testdist/clipsweep.js` (`SWEEP_ONLY=<level>` for one room). A failure names the room, where, and the two things.
+  **If it fails on a new prop: it is two faces of one mesh. Build it so they are not in one plane, or split it.**
+- NOT DONE: nobody has LOOKED for flicker with the game moving; stills cannot show it. The tool says there is none
+  left of this kind. If the owner still sees a flicker somewhere, it is a different kind (most likely a moving
+  thing, or two things further apart than three hundredths seen from very far): ask where, and widen `GAP`.
+- Known and left: a skin or a painted-on thing is pulled two dots of the screen toward the eye, so it can show over
+  the bottom dot or two of something standing just in front of it. A painted-on thing that hangs past the edge of
+  what it lies on writes no depth there, so a glow behind that overhang would show through it. Neither has been seen.
+
+## A look-over of old things, and new themes (the owner, 2026-11-16: TRY-OUTS ONLY SO FAR, NOTHING REPLACED)
+His words, in short: "you've been on a roll with the textures so I'm wondering if you could also just do a texture
+pass especially through stuff that we haven't really touched in a while early characters ... go over [their] models
+go over [their] textures ... Don't go too overboard and don't override anything yet just maybe give me a few
+mock-ups of a few different characters or objects or tile sets that we could do something to improve." And new
+THEMES for levels ("variety is the spice of life ... right now we have sort of the green theme"):
+- **Ice:** "a frozen over area maybe it's got like some bursted CO2 pipes on the walls and there's [icicles] coming
+  off the ceiling and coming out of the ground".
+- **A glowing cave:** "blue glowing Moss or ... pink or orange glowing mushrooms", fought in by "glow bugs that glow
+  all different colors" (the Firefly Bomber, recoloured), and other creepy crawlies that glow.
+- **The furnace again:** "a little texture [pass] over there and maybe create some new objects and environmental
+  scenery ... animations of like steam coming up out of the ground or something we can use in different places".
+- **A dream level:** "he's like surfing on the Milky Way in outer space like some kind of downhill like rainbow road
+  ... slide down on his shield ... a full sliding level ... everything could be like crazy colors ... stars and
+  planets ... he could be like neon pink and green ... a wacky Pomo palette kind of version of himself and maybe his
+  scarf is like crazy exaggerated like [Viewtiful] Joe ... a Trippy psychedelic dream level."
+**HIS VERDICT ON THE FIRST SHEET OF MOCK-UP TILES (2026-11-16):** "I actually don't like your refreshment of the
+cobbles or the brick also a lot of this seems a little low effort compared to your other work". So: THE SEWER'S TILES
+STAY AS THEY ARE (the two "refreshes" are deleted), and A SHEET OF SWATCHES IS NOT HOW TO SHOW HIM A THEME. A theme
+is shown IN THE RUNNING GAME, in a small try-out room he can walk about in, done properly.
+**The Glow Cave, done that way (2026-11-16): `#level=glowcave&nostory`, a TEST ROOM** (`src/levels/glowcave.ts`,
+tests `tests/glowcave.ts`). **How he gets there: a door in the Move Garden's south wall, just west of the way out**
+(`ratquest-garden.html`, or Test rooms in the pause menu's level list); its own door leads back to the garden. What it took, and the lessons:
+- **A dark place is made with `LevelDef.ambient`** (0.4 there; 1 everywhere else: `ps1Uniforms.ambient`, the plain
+  light, turned down). Its rock is MID-grey, not black: black rock shows no coloured light on it. What is seen is
+  what the coloured lights fall on and what glows of itself.
+- **Nothing that glows is painted into a tile.** The first try had moss in the wall's picture: it came round every
+  few steps, like wallpaper. `caveRock` (walls, ledges) and `caveFloor` are bare rock (a test holds them to it). The
+  glow is PUT ON the rock, each piece in its own place:
+  - decor `moss`: a ragged clump on a wall face (`yaw`: the way it faces) or lying on the ground (`flat`), with
+    `threads` hanging from it, each ending in a bead; `light: true` on a few (only the nearest 8 lights are drawn).
+    Its picture `glowMoss` is in greys; the clump gives the colour.
+  - decor `mushroom` (size, colour): a stem and a nearly flat cap, with a soft halo round it. **One as tall as he
+    is (`MUSHROOM.solid`, 1.0) or taller is SOLID: a level adds `mushroomSolids(x, y, z, size)` for each** (an unseen
+    stem box and cap box), so its stem stops him and ITS CAP IS A THING TO STAND ON. Smaller ones he brushes
+    through. Those of 1.5 and up light the rock round them.
+  - decor `stalactite` (hangs from the roof; only drawn, so its point must be above a double jump from the highest
+    thing within six of it: a test checks).
+- **Its glow bugs (2026-11-16): three Firefly Bombers, each a colour of its own (pink, blue, green).** His ask: "we
+  already have the glow bug so we can use those and maybe give them different colors ... fight a bunch of glow bugs
+  that glow all different colors". `EnemySpec.color` on a firefly is ONLY LOOKS: its lantern and hood, its drops,
+  the rings they mark on the floor, the flames and their light take the colour; it flies, bombs and burns exactly
+  as a plain one (a test runs the same fight both ways, step for step). Coloured flames are drawn unlit in their
+  own colour and light less of the room than real fire (reach 5 not 7), so a dark place stays dark: plain orange
+  fire at full reach is what drowned the first try. They are there to be fought; beating them is not a goal.
+  See one: `#view&who=firefly&color=ff4aa8` (`&light=0` puts its lantern out).
+- **The Cap Walk (2026-11-16): `CAP_WALK` in glowcave.ts.** Five tall YELLOW mushrooms, each cap a jump from the
+  last and higher (tops 3.0, 4.9, 6.8, 8.7, 10.1), from the low step by the east wall round the south of the cave
+  to the north-west. Three things on it, and nothing else to find in the cave: a bottle cap on the fourth, a bottle
+  cap in the air over the long gap, a relic on the fifth. What the tests hold it to: the first four hops are each a
+  RUNNING jump (not one from a standstill), the last gap is crossed only by the second jump, and none of the three
+  can be had from the floor or from anything else in the cave.
+  **HE JUMPS FURTHER THAN IT LOOKS (measured for this, cap to cap, middle to middle): one running jump lands 8 off
+  at 2 up (9 on the level); the double jump 13 to 14; from the floor a double jump and a caught edge get him up
+  6.05.** The first lay-out, spaced by eye at 4 apart, was no course at all: every hop landed at any timing.
+  A mushroom's cap (`cap`) and stem (`stem`) can now be sized apart from its height; its cap's shape goes by its
+  own width. (And every cap had been coloured upside down, dark on top, since the first try: fixed.)
+- **THE LAMP SCORPION (2026-11-16): a new creature, `src/enemies/scorpion.ts` and `scorpionModel.ts`, tests
+  `tests/scorpion.ts`. Two live on the cave's floor (one its own blue-green, one amber). HE HAS NOT SEEN IT YET: it
+  was built on a "Continue" for "another glowing creature ... such as a glowing millipede or scorpion", so its look
+  and its fight are Claude's and are his to accept, change or throw out.** (A millipede was not made: the Sump Wyrm
+  is already a great centipede with a tail lash and a coil.) The idea, in one line: ITS STING IS ITS LAMP, AND THE
+  LIGHT IS THE TELL. It strikes only with its lamp lit.
+  - It stalks him at a little over a sword's length. The sting: its tail rears, the lamp flares, and a ring on the
+    floor (as a firefly's drop marks its landing) shows where the barb will come down: on him, for the first part of
+    the tell, then set. One heart; a shield stops it. Then the barb is stuck in the floor: the opening.
+  - Stand close in front of it and its claws open and snap (one heart, a shield stops it). They are its front
+    only, and it does not turn as they open: beside it or behind it is safe.
+  - Two blows close together and its lamp goes OUT: it darts away and comes round him unlit, doing nothing until
+    its lamp is lit again. (So it is not cut down in one opening: five blows, three stings or so.)
+  - A perfect guard of the sting or the claws throws it down sprawled, helpless, and it does not run from that.
+  - Built by the rule (few shaped flat-faced pieces): one shell, five tail joints and the sting, two arms each a
+    hand and a finger, eight one-piece legs. Its tail is bent to put the barb's POINT where the rules have it
+    (`tailJoints`: every link turned the same). Seen from all sides in every pose before it went in:
+    `#view&who=scorpion&state=stalk|stingWind|sting|stuck|snapWind|snap|dark|sprawl` (`&color=ffb03a`, `&walk=1`).
+  - **Textured (2026-11-16, his ask: "do a texture pass also the Scorpion and the more recent models ... I haven't
+    seen this scorpion with a texture yet"):** `scorpShell` (seven plates and the head shield, keels, grains, a
+    banded belly), `scorpTail` (keeled joints with a pale collar; the legs wear it too), `scorpClaw` (a grained palm,
+    horn-brown fingers with a row of teeth), `scorpLamp` (veined glass, in greys). **The same pass gave the
+    mushrooms pictures: `mushroomCap` (fibres, warts, gills underneath; in greys, the mushroom gives the colour) and
+    `mushroomStem` (fibres, a skirt, earth at the foot).** A NEW MODEL IS NOT DONE UNTIL IT IS TEXTURED: he was
+    shown the scorpion in plain colours first and asked for this.
+  - It has sounds of its own now (`scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`,
+    `scorpDie`) and is a piece in the level builder ('scorpion').
+  - NOT DONE for it: a sticker (left out on purpose: it lives only in a test room, and a sticker nobody can earn in
+    the game would leave the book unfinishable; add `foe:scorpion` when a real level has one), Tweaks sliders.
+    Nobody has fought it by hand, and nobody has heard its sounds.
+- **Everything in the cave starts further from the door than it notices him from** (a test): he comes in to a
+  quiet cave. With three bombers and two scorpions awake at once the floor is very busy: if he finds it too much
+  for looking at one creature at a time, take bugs out before changing any creature's rules.
+- Not in it yet: any other glowing creature (ideas given him: glow-worm threads, railroad worms, headlight
+  beetles).
+**The Cold Main (2026-11-16): the ICE theme, done the same way. `#level=coldmain&nostory`, a TEST ROOM**
+(`src/levels/coldmain.ts`, tests `tests/coldmain.ts`). **How he gets there: a door in the Move Garden's south wall,
+east of the way out, between the low stone and the foot of the slope.** His ask: "a frozen over area maybe it's got
+like some bursted CO2 pipes on the walls and there's [icicles] coming off the ceiling and coming out of the ground".
+- A length of the sewer, frozen: walls `iceBrick` (the sewer's own brick, painted over its picture, gone cold),
+  banks `frostCobbles`, and down the middle a sheet of ICE (`iceSheet`).
+- **ON ICE HE KEEPS HIS MOMENTUM: `Box.slick` (it goes to the collider), `TUNING.ice { accel 0.35, decel 0.1 }`,
+  `player.onIce`, `player.gliding`.** HIS WORDS FOR IT (2026-11-16, said before he had been told it was in): "floor
+  texture patterns could also add another mechanic of sliding on the ice. Not necessarily sliding the same way you
+  do on a steep slope but like a slower loss of momentum than you would normally have so you might maintain a
+  little bit of your momentum for a few seconds longer while you're on ice." So: the stick let go at a run, he
+  glides on for about two and a half seconds (seven units); he turns wide; he is always on his feet and steering
+  (it is NOT the slide down a steep slope). The first tuning had him slow to get going as well (accel 0.2): that
+  was more than he asked, and is now a third of his push, not a fifth. Gliding with the stick let go he is drawn
+  braced, knees bent (the landing pose, held), not running on the spot. Two sliders, group 'Ice', in Tweaks.
+  AND THE WIDER IDEA IN HIS WORDS: A FLOOR'S PICTURE CAN STAND FOR A MECHANIC. Ice is the first; a floor that
+  looks different should be allowed to play different.
+- Put on the tiles as things: steel pipes along the long walls, BURST in two places each, with a JET of gas in
+  gusts (decor `jet`: soft white puffs running out along a direction; made to be used again as STEAM, which he
+  also asked for: give it a warm colour and point it up); icicles under the pipes and from the roof (decor
+  `icicle`); spikes of ice standing from the floor (decor `iceSpike`, SOLID: `iceSpikeSolids`); little cold lamps;
+  fine snow (`LevelDef.motes: 'ice'`).
+- To do in it: two bottle caps out on the ice, each in a pocket of spikes; a relic on the last of four BLOCKS of
+  ice in the channel, each higher than the last, their tops ice too: land with speed and he slides off. The tests
+  hop them with a rat who brakes in the air, and check that one who does not, slides off.
+- **HIS TWO CORRECTIONS, made while it was being built (he watches the pictures as they are taken):**
+  - **"The platform block and the floor that the platform block is on are using the same texture and it looks
+    wrong."** The blocks wore the sheet's dark picture. They have their own now, `iceBlock`, pale and milky. THE
+    RULE: A THING STANDING ON A FLOOR NEVER WEARS THE FLOOR'S PICTURE.
+  - **"Your early rendering of the [frost] texture I think looked better than your current one."** The first
+    `frostCobbles` (small stones, a lace of rime in every joint) had been swapped for bigger stones with frost in
+    soft drifts, "to be calmer". He preferred the first. It is back, and a comment in its painter says to leave it.
+    THE LESSON: he LIKES a busy, detailed tile; do not smooth one out on a guess that it is too much.
+- Lessons of building it: a jet is fog (white puffs with soft see-through edges, drawn over what is behind), not
+  light; added as light it was a beam ("rays of light" is what he threw out of the Widow). And the camera, close
+  to a wall, does not look as high as a pipe at 5: a jet must come down to where he is to be seen.
+- **THE GUSTS PUSH (2026-11-16, on a "Continue").** From the foot of each fall of gas a second jet runs LOW across
+  the ice to the far bank, and that one is a gust (a `jet` decor with `push`; rules in `src/world/gusts.ts`):
+  whoever is on the ice in its gas is carried across with it, up to the speed it blows. On the cobbles he stands
+  against it (his own stopping is stronger than its push); between gusts, and beside one, nothing moves him. What
+  is drawn is what pushes: the puffs and the push go by the same rule (`gasAt`) on the same clock. Four gusts,
+  each on its own beat (5 to 7 seconds), none crossing a block of ice. THEY ARE HEARD: the pipe cracks and rushes
+  as it lets go (`gasBurst`), which is two seconds and more before its gas is on the ice, and gas blowing hisses
+  (`gasHiss`, looped, as loud as the nearest gas is near). Both caps can still be had whenever he sets out (a test):
+  the gusts are a matter for CROSSING the channel, not for the pockets. He has not seen, felt or heard any of it.
+- NOT in it: any creature; the walls have no frost in
+  patches or icicle curtains of their own (a patch painted into the brick came round like wallpaper, so it is
+  plain); nobody has slid on the ice by hand.
+**The other mock-up textures still in `src/render/textures.ts`, used by NO level:** `starfield`, `rainbowRoad`,
+`pomoTiles`; `emberBrick`, `steamVent`. (The four ice mock-ups are gone: the Cold Main's tiles replace them. Sheet
+tool: `TEX_FOCUS=name,name node .testdist/textureSheet.js` after building `tests/textureSheet.ts`, writes
+`/tmp/texture-focus.png`.) Treat them as rough notes, not as art he has seen and liked: each theme, when its turn
+comes, is done in a try-out room.
+**Not done:** no character or object mock-ups yet (he asked for a few: the earliest are the roach, the toad, the
+crate and barrel); the furnace refresh (the `jet` is ready for its steam). (The dream theme and the dream knight:
+BUILT as a try-out, 2026-11-16: see "The Milky Way".)
+
+## Research the owner has asked for (2026-11-15: ALL FIVE HAVE REPORTS in `reports/`, notes in `research_notes/`)
+**CONKER AND RAYMAN 2: REPORTS WRITTEN 2026-11-16, FROM WHAT COULD BE REACHED.** He put the research back on his list
+that day ("lets do 14, 19, ..."). The sites with the makers' own interviews are still refused, and the request to
+allow them still cannot be shown on his phone, so a second pass read everything reachable (Wikipedia and Game
+Developer again, more widely: one new first-hand piece on Rayman 2, a 2002 book excerpt with Michel Ancel; nothing
+first-hand from the Conker team) and the two reports were written, each saying near its top what was read in full,
+what is second-hand, and what was not read at all. **Read them as that: roughly half of each rests on pages read in
+full, and for Conker that is mostly Wikipedia reporting the makers.** If he opens a session on a computer and
+allows GamesRadar, Nintendo Life, RareGamer, Kotaku, RayWiki, the Conker wiki and web.archive.org, a third pass can
+check the second-hand parts. What they say that matters most is at the end of each report ("All the suggestions at
+a glance").
+**The first pass (2026-11-16), for the record:** The owner, when the sites could not
+be allowed from his phone: "if you can't do the research that's fine we can save it for later". So: one researcher a
+game read what could be reached (Wikipedia and Game Developer in full; everything else only as search summaries,
+each finding marked READ or SEARCH SUMMARY) and left notes in `research_notes/Conker's Bad Fur Day design research/`
+and `research_notes/Rayman 2 design research/` (three files each). The Rayman 2 researcher was cut off by a usage
+limit as it finished: its three files are there but it never reported back, so READ THEM CRITICALLY and check the
+last one is complete. **To finish:** the makers' own interviews are on sites this environment refuses (GamesRadar,
+Nintendo Life, RareGamer, Kotaku, the Rayman 2 press kit, RayWiki, the Conker wiki, web.archive.org). Allowing them
+needs the session opened at claude.ai on a computer, or a newer Claude app: the phone app could not show the
+request. Then a second pass that reads those pages, then the two reports.
+What the Conker pass says that matters at once: its bar (the Cock and Plucker) is the opening scene, the main menu
+and the epilogue, not a walk-about hub; its only change is from full to EMPTY at the end; the walk-about hub is
+another place, whose residents are gates and job-givers; three people voiced everyone; enemy kinds double as
+talking individuals; many characters are objects (a box, a paint pot, a barrel).
+The first ask, in his words: "Conker's Bad Fur Day from the Nintendo 64 is probably a really good
+thing for you to research or add to your research for this game specifically because I think they're going to end up
+being very similar in a lot of ways. Also Rayman 2 the one that was on the Nintendo 64 the 3D one that one is also a
+good game to reference for this game." Same shape as the others: real sources (the makers' own interviews and
+postmortems first), written up in `reports/` with the notes in `research_notes/`, each ending in what it means for
+THIS game. For Conker, look hardest at its opening bar and hub (how a small room is made to feel full: who is in
+it, what they are doing, how it changes), its context-sensitive pads, and how its humour is carried by animation;
+for Rayman 2, its movement and its linear, set-piece levels (the slides and the rides are the nearest thing to our
+downhill level). Do the Conker one BEFORE building the Club job above: it is the reference he named for it.
+He asked for these to be added to the list. Each is in-depth research from real sources (interviews with the people
+who made the games, postmortems, design analyses), written up in the repo with its sources, and each write-up ends
+with what it means for THIS game: things to do, not just things learned. Home: notes in `research_notes/<title>/`, reports in `reports/`.
+**Where it stands:** done in two passes. The first could open no site; for the second, twelve sites were allowed and
+the pages themselves were read (the 1996 Mario 64 team interviews, Iwata Asks and the 1998 interviews on Ocarina,
+the Dark Souls Design Works interview, the Kingdom Hearts 2 Ultimania numbers, and the public source of Mario 64 and
+Ocarina). `research_notes/README.md` says what was read, what could not be, and how to read more. Three reports:
+`reports/Super Mario 64 design research.md`, `reports/Dark Souls and Kingdom Hearts 2 design.md`,
+`reports/Ocarina of Time design research.md`. **Read each report's last section before designing a level, an enemy or
+a move.** Nothing in the game has been changed on the strength of them yet.
+**What they say, in brief** (the reports give the sources and how firm each is):
+- *Mario 64* (from its own source code): every one of Mario's high jumps is EARNED (by speed, by a second jump within
+  0.17 s of landing, by a crouch or a turn, or by a wall), and one wall kick (3.0 of his heights) out-climbs his
+  second jump (2.8). Our knight is the reverse: a double jump anywhere reaches 4.3 of his heights, a wall kick 2.5.
+  That is a large part of "I can just jump over stuff" and of the wall jump having little to do. Its team spent half
+  the project on movement in a room of blocks, and changed the levels midway so a jump "close enough" lands.
+- *Dark Souls with Kingdom Hearts 2*: Dark Souls is fair because it is READABLE (a shown wind-up, a committed blow, an
+  opening after), not because it is slow; its makers' faster games kept those rules. Kingdom Hearts 2 gets fast by
+  letting the hero grow over the game, and keeps its best fights fair by having the boss break out after a fixed
+  number of hits (a hidden count, which its critics fault for being hidden). Our game already has this blend: the
+  knight swings faster than any enemy warns, and several enemies already refuse to be mashed. What is missing is
+  shortcuts that fold a world back on itself (wall-kick climbs are the natural ones) and showing those counts.
+- *Ocarina of Time*: its lock-on came from a staged sword fight (one attacks, the rest wait), and its Stalfos
+  fights harder when it is the one locked on to; ours ignore the lock. Its dungeon designer's ramp: one idea a room,
+  then whole places built on one idea, then everything together; fewer enemies near a puzzle; no reward where it is
+  useless. The Water Temple had to be rebuilt late because the hero's numbers changed after its maps were made:
+  SETTLE THE JUMP NUMBERS BEFORE REBUILDING MORE LEVELS.
+- *Found in our own code while writing them:* the wait before the next roll (0.5 s) started when a roll STARTED and
+  a roll lasts 0.5 s, so rolls chained back to back. **Mended 2026-11-15** (see "Rolling" below).
+- **LOCK-ON, DONE 2026-11-16 (on his list as "lock-on"):** (1) when the locked-on enemy dies the lock LETS GO; it
+  used to move to another by itself (`keepTarget`), which turned the view with nobody asking. He presses again for
+  the next. (2) THE ONE HE IS LOCKED ON TO FIGHTS HARDER: the director (`enemies/director.ts`) gives it first claim
+  on the next attack however near the others are, and it waits a shorter breath before it comes again (0.3 s
+  against 0.7). Never easier. Not done: the others moving to his flanks; the locked one using its bigger moves
+  more (that is each creature's own rules). Nobody has fought with it by hand.
+1. **Super Mario 64**: how it was made; its level design choices; the philosophy behind the character's movement,
+   the level layouts and the variety of levels; and anything else on 3D platforming and how it was built.
+2. **Dark Souls**: how it builds its worlds; its philosophy of level design; how it does combat and character
+   control.
+3. **Kingdom Hearts 2**: movement and combat only (he does not care about its menus). This goes WITH the Dark Souls
+   research, as its counterweight. His words on why, in short: he wants "more of a Dark Souls philosophy" but "faster,
+   more sort of flashing movement". Do not get "locked down on the slowness" of Dark Souls: lean too far that way and
+   "we're going to sort of ruin the Mario 64 vibe". If Mario 64 had the combat of a modern action RPG it would be
+   nearer Kingdom Hearts 2, which is very fast, most of all late in the game as the character grows. Take from Dark
+   Souls how it APPROACHES combat (he thinks the game already does this "pretty well"), not its pace.
+4. **The Legend of Zelda: Ocarina of Time**: its combat, level design and platforming. He sees "a lot of parallels
+   with the game we're making" and expects it to be useful for "basically everything".
+The first bears on the level work now under way (the Cistern is done; the Foundry, the Hollows and the Keep are
+not): do it before the next level is reworked.
+
+## The Move Garden and the jump sets (2026-11-15)
+**THE OWNER HAS PLAYED IT AND DECIDED (2026-11-15): the jump numbers stay as they are.** His words: "it feels good
+the way you've got it"; the wall jump "was pretty satisfying"; "the height was basically perfect to do a double jump
+and then have to grab on the ledge"; "it required skill and I appreciate it". One change asked for: "the distance
+between the walls for the wall jump could be a tiny bit more lenient". Done: a kick's push across went from 7 to 7.5
+(`moves.wallKickPush`), so he reaches the far wall a little sooner and a little higher across a wide gap; a kick's
+HEIGHT is untouched. (That is our reading of "distance between the walls"; if he meant the timing of the press, that
+is `wallKickWindow`, 0.16 s, unchanged.) He added later the same day: "I'll do some more testing here in the future with
+the sliders", so the numbers are settled for now, not for ever: if he sends slider text ("Copy settings"), make it
+the default and re-run every level test. So:
+- Do NOT lower the double jump or raise the wall kick on the strength of the Mario 64 report. The sets stay in the
+  Tweaks panel for comparing, no more.
+- "He can just jump over stuff" is therefore a matter for the LEVELS: anything meant to be earned stands higher than
+  5.7 (a double jump and a grab) from wherever he can stand, as in the Cistern.
+- **The pattern he praised, to build with:** a wall kick, then a double jump, then a catch of the ledge, with nothing
+  to spare. From the height of the kick that is about 2.8 (the kick) + 2.2 (the double jump) + 1 (the catch): a ledge
+  some 6 above where he kicks from, across a gap of about 3.5. The garden's "one kick" ledge is the plain kick and
+  catch; chained after a first kick up a chimney is where he met the harder one.
+
+All three research reports say the same thing about order: settle the hero's numbers BEFORE building more levels to
+them. So there is now a test room for feeling them, `src/levels/garden.ts` (`#level=garden`, the file
+`ratquest-garden.html`, or the Workshop's list of places under "Test rooms"). It is no part of the game: not in
+LEVELS, ALL_LEVELS or the archive, nothing to collect, its door leads back to the Club.
+- **What is in it:** four steps on the west wall (2.3, 3.4, 4.5 and 5.6 up: what one jump, a jump and a grab, a double
+  jump, and a double jump and a grab get him onto, from the floor, as the game is); four chimneys on the north wall
+  (2.2, 4 and 6 wide, and a "one kick" ledge 6 up across a 3.5 gap from a tall wall), each with a ruler up the wall
+  behind it; a ruler on a pole in the open to jump beside (not solid); and a ruler on the floor to jump along. Every
+  thing has a board saying what it is (new decor kinds `sign` and `ruler`, `src/world/signs.ts`: only drawn).
+  Whatever he could kick between is joined on or nine or more apart, so no climb is there by accident.
+- **The jump sets:** at the top of "Jumping" and "Moves" in the Tweaks panel, five buttons that move the jump
+  sliders together (`JUMP_SETS` in `src/core/tweaks.ts`): As it is; Stronger wall kick (`wallKickUp` 12); Smaller
+  double jump (`doubleVelocity` 6); Both; Mario's proportions (11 and 4.5). They are sliders like any other: kept on
+  the device, and they change the WHOLE game until "As it is" is pressed, so levels built for the present numbers
+  will break under them.
+- **What they measure to** (`tests/garden.ts` plays the room with the real controller under each set and prints
+  this; a jump is 2.43 up in all of them):
+
+  | Set | Double jump reaches | One wall kick lifts | Steps he can still jump onto | Kicks up the 4-wide chimney |
+  |---|---|---|---|---|
+  | As it is | 4.60 | 2.83 | all four | 3 |
+  | Stronger wall kick | 4.60 | 3.90 | all four | 2 |
+  | Smaller double jump | 3.38 | 2.83 | 2.3, 3.4, and 4.5 with a grab | 3 |
+  | Both | 3.38 | 3.90 | 2.3, 3.4, and 4.5 with a grab | 2 |
+  | Mario's proportions | 2.95 | 3.35 | 2.3 and 3.4 only | 3 |
+
+  (The game's notes have long said "2.5 and 4.75": that is the arithmetic; played at sixty steps a second he gets
+  2.43 and 4.6.) As the game is, a six-wide chimney can be climbed too (three kicks to 8 up): a kick carries him
+  a little over eight across before he is back down to where he kicked from (8.3, with the push at 7.5). `reach.ts`
+  only knows chimneys up to 4.5 wide, so two walls five to eight apart are a climb the checker DOES NOT SEE: the
+  Cistern's "five or more from any other wall" was the checker's rule, not the knight's. Until the checker is
+  taught, keep walls that are not meant as a chimney NINE or more apart, or joined.
+- The room's own chimneys stand nine clear of one another (`CHIMNEY_CLEAR`), further than a kick carries.
+
+## Rolling (the owner, 2026-11-15)
+His words: "You can add like a pause between the rolls, that's okay ... but don't completely take away the player's
+ability to roll around, cuz even in Dark Souls people do that and it's pretty fun to be able to kind of roll around
+your enemies." So: `dodge.cooldown` is now the pause from one roll (or backstep) ENDING to the next starting, 0.25 s
+(slider: Fighting, "Pause between rolls"). Mashing the button gives a roll every 0.75 s; a press made during the
+pause is kept and comes out when it is over. Hits pass through him 44% of the time while he does that (it was 66%),
+and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
+slow the roll without asking: rolling round an enemy is meant to stay.
+
+## [opus] A room's title board says its old name AND its number (2026-11-18)
+
+The owner: "Toy Box, Long Drop is fine, but let it keep its room number". THE TOY BOX / TEST ROOM 1, THE MILKY WAY /
+TEST ROOM 1B, THE BIG DIPPER / TEST ROOM 1C, THE LONG DROP / TEST ROOM 5. One switch: `BOARDS_SAY` in testRooms.ts.
+
+## [opus] Tricks: poses and sounds (2026-11-18)
+
+A grab and a spin have poses and sounds of their own; a horn stab as tricks land. (Their NAMES were shown on landing
+for a day; the owner: "I'd actually like to remove the trick names I don't think they're really that useful". Gone.)
+player/trickLog.ts counts them. Film: `&autoride&at=24,16,-52,3.1416` in the Toy
+Box (from the big ramp's tower top; add `&chase=-3.2,1.2,0.6` to see him close).
+
+## [opus] The level editor knows the new things (2026-11-17)
+
+Pots, rocks, tables, stools and a bar counter are pieces now (src/levels/custom.ts, palette in src/ui/builder.ts),
+and a floor plate can be a spawn BUTTON (its "Puts in" setting; it faces the way the creature comes in).
+
+## [opus] Lifting finished, mostly (2026-11-17)
+
+A creature in his hands is on its back, legs going (the scorpion on its side); thrown, it tumbles end over end
+(world/lifting.ts `heldTurn`). Lifting has its own six sounds (audio/synth.ts: heave, hurl, setDown, potSmash,
+rockKnock, squirm), not yet heard by anyone. A crate set down on a moving platform rides it (chamber.ts). Film aids:
+`&carryfoe` puts the nearest creature in his hands; `&gostow=N` presses STOW at the Nth `&autogo` stop.
+
+## [opus] Things to throw in every test room (2026-11-17)
+
+`src/levels/throwables.ts`: by each numbered room's way in, two heaps, three pots and two rocks in all. To move a
+heap or add a room, change `LYING` there. `tests/throwables.ts` checks each stands on the floor and in nobody's way.
+[opus] 2026-11-18: the side areas and boss rooms have heaps too, but the Leap of Faith (8D) and the Sump Wyrm's (3E).
+
+## Locked on to one, the others go to his sides (2026-11-17)
+
+Asked for when lock-on was built ("enemies moving to your sides when you're locked on to one") and left undone
+then. Now: `Director.flank()` gives each waiting creature a bearing round the rat (`Foe.flank`, null when he is not
+locked on), counted from the locked one: his right, his left, behind each shoulder, behind. The ROACH obeys it in
+its circle mode. Who may attack and when did not change (tests/combat2.ts: same count of attacks, never two at
+once). [opus] Since then the scorpion, guard, mantis and ant obey it too, through `flankWay()` in director.ts; the
+roller, ironback and brood mother do not (they do not step sideways). Not played by hand.
+
+## NEXT BIG JOB, asked for by the owner (2026-11-15): slopes, a cave, and riding the shield
+His words, in the order he sent them:
+- "everything right now it VERY angular. I want to introduce some more inclines. we are to do a cave level maybe a
+  part of the sewer that eroded and met with a cave system. we can have inclined surfaces like the hill in Mario 64
+  and zelda, we can introduce a sliding mechanic, perhaps a shield surf? maybe a butt slide like mario does. this will
+  require a lot of effort because it will be working with angles and stuff we have not addressed before so be extra
+  meticulous about it."
+- "i was thinking for the slide, he could shield surf but he rides it like a skateboard, we could even give him a kick
+  flip, his shield is not super long so he rides it like a much smaller board but he uses his tail to balance and make
+  hard curves."
+What that means for the code (our notes, nothing built yet): every solid in the game is a box square to the axes
+(`Box`, `Aabb`); the controller's ground is the top of a box (`moveVertical`), its walls a box's sides (`moveAxis`);
+the jump checker, the camera's `sight`, the enemies' footing and the level builder all assume the same. A slope is a
+new kind of ground for ALL of them, so do it in this order and test each step with the real controller before the
+next: (1) a ramp solid (a box whose top runs from one height to another along one axis) that he can stand, walk and
+jump on, with the camera, shadows and `reach.ts` taught about it (done: see below; enemies are not taught yet); (2) the slide (too steep to stand: he
+slides; and the shield ride as a move of its own: speed from the slope, the tail steering, a jump and a kickflip off
+it: done, see below); (3) the cave area built for it, where the sewer has broken through. The Move Garden is the place to try (1)
+and (2) first. Do not start it as a side task: it is a job for a turn of its own.
+
+### Step one is DONE (2026-11-15): ramps
+A ramp is a box whose top is a slope: `Box.ramp` / `Aabb.ramp` (`{ axis, up, low }`: its top runs from `low` at one
+end up to the box's own top at the other). `rampBox(kind, x0, x1, z0, z1, low, high, toward)` in layout.ts makes one;
+the level piece is `'ramp'` (like `'stairs'`: `box('ramp', x0, z0, x1, z1, top, { bottom, dir })`), and it is in the
+level builder's pieces and stamps. `topAt(b, x, z)` in collision.ts is the height of any solid's top at a place.
+**Who knows about ramps:**
+- The knight (controller.ts): its slope is his ground (`moveVertical`); it is a wall only at its high end and along
+  its sides (`moveAxis`); he is HELD to it going downhill (`RAMP_HOLD`: the slope falls away under him faster than he
+  falls, so without that he left the ground at every step); only its high end has an edge to catch. He walks slopes
+  up to one up for one along (`MAX_WALK_SLOPE`); a steeper one stops him at its foot, and on it he slides (step two).
+- Shadows and where he is drawn (`groundBelow`, `feetGround`, `floorAt` in main.ts), falling embers (`groundFrom`),
+  the camera's line of sight (`sight`: a ramp is its wedge, so standing on one he is not "inside" it), how it is
+  drawn (chamber.ts: the box pressed down under its slope), the jump checker (reach.ts takes it a column at a time).
+- **Enemies: DONE 2026-11-16, see "Creatures on slopes" below.** (Until then a ramp was its whole box to every
+  creature: an obstacle they would not walk onto.)
+- The Move Garden has three in its south-east corner (one up in 4, in 2 and in 1) to a landing three up.
+- `tests/ramps.ts` plays all of it with the real controller. Nobody has walked one by hand yet.
+
+### Step two is DONE (2026-11-15): the slide and the shield ride
+He rides his shield like a small skateboard. All of it is `TUNING.ride`, and a 'Riding' group of sliders in the
+tweaks panel; the controller's part is `rideStep`, `startRideIfHeShould`, `endRide`, `bail` in controller.ts.
+- **Getting on** (CHANGED the same day, see "How he gets on, and the slide on his hide" below): in the air over a
+  slope at least `minSlope` steep (two up in five), ATTACK puts the shield under his feet and he comes down riding.
+  SNEAK no longer does anything of the kind. Weapons out or on his back, either.
+- **On it.** The slope pulls him (`gravity`), the flat slows him (`dragFlat`), top speed `max` (16; a run is 6.2). The
+  stick ACROSS his heading steers; hard over is a carve (sharper, and it costs speed); the stick BACK brakes. He
+  cannot guard, swing, roll or stow while riding. He steps off by himself below `stop`, or at once on the ROLL button.
+- **Jump** is an ollie (`ollie`; tap for a short one, as on foot). **Jump again in the air** is the kickflip: it uses
+  his air jump, takes `flipTime`, and landing it gives `trickBoost` of speed. Landing before it is finished, or riding
+  into a wall at speed (`bailSpeed`), throws him off: no hearts lost, a moment on the floor (`bailTime`).
+- **A ramp throws a rider**: leaving the top of a ramp he keeps the rise it was giving him (`rideClimb`), so a kicker
+  is a kicker, and a jump at its lip adds the two together. On foot nothing has changed: a walker is not thrown.
+- **How it is drawn** (ratModel.ts): poses `RIDE` and `RIDE_AIR`; the shield is a copy lying flat under his feet
+  (`board`), hidden from his arm and back meanwhile; he leans into turns, his tail swings out the other way, and both
+  he and the shield tip to the slope under them (`rideGround`: the shield all the way, his body six tenths of it).
+- **Sounds**: `rideScrape` (a loop, louder the faster he goes), `ridePop`, `rideClatter`.
+- **The Move Garden has THE RUN** along its south wall (`RUN` in garden.ts): a platform eight up in the south-east
+  corner, a ramp to walk up to it, the run itself (one up in two) west down to the floor, a kicker on the roll-out
+  (before the door, so a rider is in the air past it), and the CHUTE north off the platform (two up for one along).
+- `tests/ride.ts` plays every rule above with the real controller; `tests/garden.ts` rides the run, the kicker (with
+  and without a kickflip) and the chute. It has been watched in the running game with the keyboard from behind and
+  from the side: the ride, a carve, the jump, the flip, the chute. **Nobody has ridden it with a controller in hand.**
+**Three faults the running game showed that the tests had not** (worth knowing, they were all in step one's code):
+- A slope too steep to stand on threw him back to its TOP every step: `moveAxis` judged it by the uphill edge of his
+  footprint whichever way he was going. It is now a wall only to one going UP it; and one who cannot climb it is given
+  his step back, not put at its foot.
+- Running off a landing onto a steep slope he sailed clear over it: the slope is his own half-width down already when
+  his middle crosses the edge. The hold on a ramp now grows with its steepness (`moveVertical`).
+- The kicker did not throw him: grounded, his upward speed is nothing, and the short-hop rule then cut what he was
+  given. See `rideLift` in `update`.
+**Not done, and known:**
+- Down the chute the camera loses him for a moment: it is still up behind the platform's lip, looking over it, while
+  he is at the foot of a slope too steep to see down (he is at the bottom edge of the picture, or under it, for a
+  few frames; then it catches up). The same is true of running off any high ledge. The camera may not turn by itself
+  (the owner's rule), so the cure, if he wants one, is in how fast it comes forward and down, not in swinging round.
+- Enemies walk ramps now (see "Creatures on slopes") but still know nothing of a rider. Nothing hurts or is hurt by a rider differently.
+- A roll-out from top speed is about sixty units on the flat (`dragFlat` 1.6): longer than the garden. He can brake.
+- No level but the garden has a slope in it yet. **Next, step three: the cave.**
+
+### Getting on the shield is a hop, not a snap (2026-11-15)
+The owner: "Even if you have to use like smear frame kind of things or whatever you need to do just try to make the
+animation better for whenever he hops on his shield right now it just seems like it's like an instant snap".
+- It is DRAWN only (ratModel.ts): by the rules he is riding from the first frame, as before. Nothing about how the
+  ride plays has changed.
+- **Getting on** (`RIDE_MOUNT`, 0.36 s): he hops (`hopY`, stretched going up and squashed landing, `hopStretch`), the
+  pose is `RIDE_HOP_POSE` then `RIDE_AIR` then the ride; the shield leaves his arm (or his back) from exactly where
+  it was (`placeOf`), is thrown down and out in front of him tipping onto its face, and is flat under his feet two thirds of
+  the way through (`RIDE_MOUNT_UNDER`); he comes down on it at `RIDE_MOUNT_LAND`. The SMEARS are two pale copies of
+  it trailing where it was a moment before (`boardGhosts`), and it is stretched a little along its length mid-swing.
+- **Stepping off** (`RIDE_DISMOUNT`, 0.22 s): the same swing backwards, from the ground up onto his arm. Thrown off
+  (hurt), nothing is played.
+- Sound: the whoosh as it swings, the crack when he lands on it (`rideLandIn` in main.ts).
+- To LOOK at it: the model viewer, `#view&state=ride&speed=7&t=0.15&yaw=1.1&dist=3` (t is seconds into the ride;
+  `&after=idle&t2=0.1` for stepping off), or the game in slow motion: `&slow=0.25` on the address (new; the Workshop's
+  own switch).
+- `tests/ride.ts` checks it: the shield starts where it was, only ever goes down, the smears show, he hops and lands.
+- Seen frame by frame in the viewer and at quarter speed in the running game. **Not seen at full speed by a person.**
+
+### The pipe: a floor that curves across his way (2026-11-15, the first step toward the downhill level)
+The Move Garden has a half-pipe down its middle (`PIPE`, `pipeFacets`, `pipeDeck` in garden.ts): the room's own floor
+three wide, and either side a wall curving up a quarter circle (radius four) to a deck three up, with a ramp up to
+each deck at the south end. **A curve here is FACETS**: five ramps side by side to a wall, each steeper than the
+last (0.13, 0.42, 0.77, 1.31, 2.41 up for one along). Nothing new was added to what the ground can be: it is still
+boxes and ramps along x or z. That is the answer, for now, to "decide how a pipe is made": facets work, and
+everything that knows ramps knows them.
+**He drops in**: stands at the lip, a small hop out over the wall, ATTACK. (A running jump clears the whole wall
+and lands on the floor: he gets no speed from the wall that way.) He comes down on the wall riding, crosses the
+floor, climbs the far wall most of the way to its deck, and swings to and fro, lower each time, till he is on the
+floor and steps off. Leaning along the pipe turns him down it.
+**What the pipe showed in the controller, all fixed (each has a check; all were wrong for ANY ramp, not only here):**
+- At the top of a climb he hung for ever: his speed was pointed up the wall each step and the slope took it off
+  again. He now goes the way he is moving (`rideStep`, `reversed`).
+- At the top of a climb he was stepped off the shield (slowest there). He steps off slow only on ground flatter
+  than `ride.restSlope` (0.12), or when braking.
+- Landing threw his falling speed away. A rider coming down on a slope now keeps what the slope turns along itself
+  (`fallBefore` in `update`): the drop-in is where his speed comes from.
+- A ramp already under him (or under his edge) was taken for a WALL by a move across it, and he was put out at the
+  far end of the box (eleven units, at the pipe). A ramp is a wall only to one who comes to it from outside
+  (`moveAxis`).
+- The foot of the next facet up held him before he reached it: a shelf at every join. A ramp's LOW edge no longer
+  holds one whose middle has not reached it (`moveVertical`).
+- A fast rider up a steep facet rose more than a step in a step and met it as a wall. The step-up allowed on a
+  ramp grows with how far he went along it.
+**Not done (as it stood then; since DONE, see "Ramps tipped two ways" below):** the pipe is LEVEL. One that runs downhill needs ground that slopes two ways at once (down along it,
+and up across it), and a ramp here slopes one way. That is the next thing to decide for the level: either a ramp
+that can tilt both ways (`Aabb.ramp` gets a second slope: collision, drawing, the camera's `sight`, the jump
+checker and shadows all read `topAt`, so it is mostly one function), or a pipe that goes down in level lengths
+joined by straight drops. He cannot yet fly out over the lip and come back in (he rides onto the deck instead).
+Nobody has ridden it with a controller: the drop-in asks for a slow approach, which may or may not feel right.
+For pictures: `&riding` on the address starts him on his shield where `at=` puts him (new).
+
+### Ramps tipped two ways, and the downhill pipe (2026-11-16)
+The decision the level pipe left open is made: **a ramp can be tipped two ways.** `Ramp.cross` (collision.ts): as
+well as its first slope (`axis`, `up`, `low`), its top rises by `cross` across its OTHER axis (toward that axis's +
+side, or its - side if negative). It is still one flat plane. The box's own top (`y1`, `max.y`) is the top of its
+highest corner; the first slope runs from `low` to the box's top LESS the cross rise. `rampBox(..., bottom, cross)`
+makes one (`high` there is still the first slope's top on its low side). Without `cross`, nothing is different.
+**Who was taught** (each asks `topAt`, `slopeXZ` or `slopeOf`, so most of it was one function):
+- collision.ts: `topAt` (the plane), `slopeXZ` (its rise per unit toward +x and +z: NEW, and what to ask for a
+  direction), `slopeOf` (how steep straight up it, whichever way that is), `topUnder` (its uphill CORNER).
+- The knight: the way down a slope is now straight down the plane (`slopeUnder`), so the shield's pull, the slide,
+  the lean of his body and "too steep to stand" all follow the two slopes together; the step-up allowed on a ramp is
+  by how it climbs the way he is going; "beyond its low edge" (the shelf rule) is asked of either slope.
+- The camera's `sight`, the jump checker (reach.ts), drawing (chamber.ts), shadows and grinding already went
+  through `topAt`, and needed nothing or one line.
+- NOT taught: the level editor's ramp piece (it makes ramps with no cross), and the ledge grab (a ramp tipped
+  across has no edge to catch). (Enemies: see "Creatures on slopes"; none are on the two-way ramps.)
+**The downhill pipe** in the Move Garden (`DROP`, `dropFacets`, `dropHalf` in garden.ts), by the north wall east of
+the strip: twelve long, falling five (0.42 in one: just over `ride.minSlope`, so the air attack is the shield
+anywhere over it), a platform at its top with a ramp up to it from the west. Nine planes side by side: a floor
+level across, and four facets a side, each tipped down the pipe AND up across it. He drops in from the platform,
+rides it to its foot on it the whole way (no jolt at any join), and leaves it at about twelve a second (a run is
+6.2); dropped in off its middle, the wall turns him back across. He must brake at its end: the room is not long
+enough. `tests/ramps.ts` holds a tipped ramp to everything (he walks it six ways); `tests/garden.ts` rides the pipe.
+**What this means for the level:** a long pipe is now only many of these lengths end to end, each with its own
+fall, and turns are still to be worked out (a pipe that bends needs lengths at angles: ramps run along x or z
+only, so a bend is a corner piece, or the pipe turns in right angles through a chamber). Not tried yet: two
+lengths joined at different falls, a kicker or a rail inside a pipe, and the water in its bottom.
+
+### The Long Drop: a minute and a half downhill, a giant ramp, and a fall into a dark arena (2026-11-16)
+The level the owner asked for on 2026-11-15 (his words are under "What the owner asked for after riding it"), and
+then, the next day, after riding its first version (178 long, eleven seconds):
+"I'm loving this tunnel kind of it's almost like a Sonic the Hedgehog type of level ... I want to see a level built
+like this that's like a minute and a half of like flying down through the sewer surfing on your Shield jumping on
+ramps collecting collectibles in the air and you're like flying down doing kickflips and s*** and then at the end of
+the tunnel there's this giant ramp that you fly off of and you catch this huge amount of air but then you fall like
+into the darkness and you land in a room it's like a boss room where like the floor is lit for a certain amount of
+radius but then it's like total darkness beyond that and the Darkness is filled with like little twinkling white
+eyes but you can't actually go beyond the lit up part of the floor and there's a boss that comes out".
+**All of that is built, and the boss too (the next section).** `src/levels/longdrop.ts`, id `longdrop`, a TEST ROOM
+(in `TEST_ROOMS` with the garden; in none of the game's lists). **Way in:** the door in the Move Garden's west wall
+(z -15.6), or `#level=longdrop&nostory`. Its way out is at the east edge of the arena's light, appears when the
+Widow is beaten, and leads back.
+**What it is:** 1,386 long, 656 down, dead straight south. The line worth riding takes 91 seconds, all of it on the
+shield, about 14 of them in the air. It is a LIST OF SECTIONS (`COURSE` in longdrop.ts), laid end to end:
+- a PIPE: a trough (slime down its middle, weeds on its walls) with a shoulder either side, falling;
+- a FLAT: the same trough run level for 14, a kicker on each shoulder;
+- a BED: the whole width one slope: rails to grind (`rails`), kickers (`kickers`), or a field of weeds;
+- a LEDGE: the floor steps down 4 to 6 and he flies off it. Three beds with a kicker at the end of each and a
+  ledge after are "the steps": jump, land, jump.
+To change the level, edit `COURSE`: everything else (heights, walls, torches, crumbs, the arena's place) follows.
+**Rules the builder keeps (each is tested):**
+- Every falling section is at least `ride.minSlope` steep, so one thrown off can hop and ATTACK back onto the
+  shield wherever he stands.
+- Nothing ever stands across his way but a weed. Where a bed meets a trough, the trough is cut DOWN into the bed
+  (its shoulders carry on level with the bed); where a trough meets a bed, the bed is at the trough's floor.
+- After a ledge he is in the air and cannot steer: the first weeds, rails and line crumbs of the next section are
+  well in (see the slalom's and the field's first gate, and the rails after the steps).
+- Each section has a `lane`: the line that misses every weed (`dropLine(z)`). Crumbs on the ground are hung along
+  it, so in a slalom the crumbs show the way through.
+- Crumbs in the air are hung along the way each kicker really throws him: `flight()` in longdrop.ts repeats the
+  game's own fall, frame for frame, and the test rides every kicker and takes every crumb. 235 crumbs: 108 on the
+  line, 74 in the air, 53 over rails. None is anywhere he does not ride.
+**The giant ramp** (`LIP`) is a ski jump: the last bed is its in-run (64 long, the steepest), then a short table
+and a lip that turns up in two pieces. He leaves it at 12.7 going up at 9.5, rises 2.4, and falls 49 into the dark:
+2.9 seconds in the air. WHY IT IS NOT A BIG CLIMBING RAMP: climbing costs him speed and his speed has a top (16), so
+a lip that climbs far throws him LESS. A pop (jump) on the lip throws him much higher.
+**The arena** (`ARENA`, `LevelDef.well`): a round floor 13 across its radius, 36 past the lip, at y 0. Decor `arena`
+draws its floor (lit in the middle, fading to nothing at the edge) and decor `eyes` the pairs of white eyes out in
+the dark, which blink. **He cannot leave the light:** `well` (collision.ts `keepInWell`, applied by the knight) keeps
+him within its radius; there is nothing drawn there and nothing solid, by the owner's own asking. High above the
+floor the well is a FUNNEL (wider the higher he is), so however he leaves the lip, even walking off it, he is brought
+down inside the light. On the floor, jumping does not get him past the edge (`clear`).
+**Built from `src/levels/pipes.ts`:** `pipeRun(kind, shape, x, z0, z1, top, bottom, shoulder, base)`, `wallAt`.
+**Weeds** are a hidden solid 0.44 square and 1.1 high (`WEED`): a WALL to a rider. (Half that high, on a falling
+floor, he rode up onto them like kickers.) **Rails** are thin ramps 0.3 high; `RAIL_DROP` in grind.ts lets a rail
+that low be ground.
+- `tests/longdrop.ts` (34 checks) rides it every way: the whole line from the head to the arena, every kicker,
+  every rail, the giant ramp three ways, getting back on in every section, and the arena's edge.
+- **NOT done:** turns (the view may not turn by itself); one-hit enemies to swing at while riding (his
+  back-burner idea); the slime doing anything; sounds of its own (it plays the 'pump' music); branches or more
+  than one route; a second look to the tunnel (it is one sewer theme for the whole length). The in-run does not
+  yet LOOK like a giant ramp from above: it is a steep plain bed. And nobody has PLAYED it by hand: it was ridden
+  by tests and looked at in still pictures of the running game.
+
+### The Widow: the boss in the Long Drop's arena (asked for by the owner 2026-11-16; BUILT the same day)
+His words: "there's a boss that comes out he's in the room he's in the darkness he comes out and he's like a I don't
+like a giant spider or something that you got to fight. It could be one of those fights too or like it's actually so
+big that he doesn't even really fit in the arena it's just like a giant spider's head connected to a body that goes
+into the darkness and then you have to deal with like his front four legs and his like I don't know just spiders
+have a mandibles he has mandibles and his front four legs and he'll like slam down one side of the field and sweep
+across and then slam down the other side of the field and sweep across or he'll like bite down on certain parts of
+the field and you have to like Dodge all his attacks."
+**What was built** (`src/enemies/widow.ts` the rules, `src/enemies/widowModel.ts` the look, kind `widow`).
+THIS IS THE THIRD VERSION, AND THE RULE FOR HER IS: **EVERYTHING SHE DOES IS DONE WITH A LEG OR HER HEAD, AND IS SEEN
+TO BE. NO RAYS, NO BEAMS, NO POISON FLUNG ACROSS THE ROOM. AND THERE IS NO BACK OF THE ROOM TO SIT IN.**
+- Version one: her legs reached right across the floor. The owner: "it's like a big pillar that comes out but it
+  doesn't really look like one of the legs ... you kind of have to see the leg move ... you don't have to like make
+  the spiders leg gigantic". (He also said: if a leg is not long enough, poison or an "energy slash" could cover
+  the area. That was tried next, and he hated it.)
+- Version two: short legs that flung poison (a green slash along a line, a crescent wave to jump, gobs). The owner:
+  "Do you just have her shooting rays of light no I don't want that's ugly that's horrible no I was asking you to
+  make animations with the legs like just pull the leg forward and slam it down on the ground like you're going to
+  have to move it around a little bit ... it's a stationary boss but you can still slam its legs down and move it
+  around and stuff you can't just like sit in the back and have the main character jump over a raise of light
+  that's not fun at all".
+- **Version three (now):** her legs are a spider's legs (two bones, a knuckle at the knee, a claw; reach 11.5), and
+  SHE MOVES. She stays out past the edge of the light, but CRAWLS ROUND THE RIM in the dark to whichever side he is
+  on (0.7 radians a second: faster than he can run round the edge), and LEANS IN over the edge (up to 3.6) to reach
+  him. Wherever he stands and waits, the middle and the far edge included, she is beside him in a few seconds and a
+  leg comes down on him (tested at eight places).
+**VERSION THREE WAS THROWN OUT TOO (the owner, 2026-11-16, with a screenshot of the leg laid flat and swept).**
+His words: "this looks goofy as hell ... I'm telling you to use the ... models arms to attack and you're like
+inventing [things]. ... what is that coming out ... I guess it's supposed to be his leg cuz it's the same color but
+it looks totally detached from him and if this was attached to him in some way what is he a freaking Scorpion or a
+snake or something like he's supposed to be a spider the legs that are standing right there in front are the legs
+that should be attacking you know the imaginary back legs that are in the shadows or whatever ... we can use our
+imagination that those are holding up the spider and the legs that are in the light where you can see are the ones
+being used to attack ... Don't invent imaginary limbs that don't make any sense and stick them out into the middle
+of the Arena that's not an attack ... please think about what you're doing think about it don't just jump into
+developing something".
+**What that means (Claude's reading; a plan was put to him, NOT YET BUILT, and what is in the game is still version
+three):**
+- The same mistake three times: trying to make her blows reach the whole room, and inventing something to cross the
+  distance each time (legs as long as the room; rays; a limb laid flat at full stretch from a hip dropped to the
+  floor out in the dark, which is what his screenshot shows and why it looks like a tail with nothing joining it).
+- What he asked for from the start: THE FOUR LEGS THAT STAND IN THE LIGHT IN FRONT OF HER ARE THE ONES THAT ATTACK,
+  from where they stand, as a spider's legs move: lifted with the knee up and still joined to her, brought down on a
+  place; raked sideways across the floor still arched. Nothing lies flat, nothing reaches past what that leg could.
+- For that to read, the JOIN must be seen: her head and the roots of those legs lit at the edge of the light, not
+  black. (In every version her body was black and only loose limbs showed.)
+- She reaches only what her legs reach, so either the arena is made smaller (she fills one side; recommended), or
+  the far side is simply out of her reach. Her crawling round the rim was also an invention he did not ask for.
+- Show him still pictures of the poses for a yes or no BEFORE rebuilding the fight.
+
+**His answer to that plan (2026-11-16): DO NOT SHRINK THE ARENA.** "This character moves too fast and jumps too high
+and far for you to shrink the arena. ... it has to be a big arena ... you don't need to shrink the arena you can make
+the spider bigger it never had to be that size ... you can make their two spiders so it's like one on each side of
+the arena and you have to take out both of them ... have her send out baby spiders that make you have to keep moving
+around ... make more baby spiders come out of the back of the Arena so they want to get her close ... there's all
+sorts of different ways gameplay wise that you can fix this problem without just shrinking the game and putting the
+player in a little box". (He also offered, if wanted: build the whole spider and make it a Dark Souls fight, take
+out two or three legs, she limps, falls, he stabs her; or a boss like the big spider in the first dungeon of
+Ocarina of Time. But: "My imagination for this battle though was how I was describing it".)
+**So the direction is: THE SAME ARENA, A MUCH BIGGER SPIDER** whose own standing front legs are big enough to reach
+well into it, her front LIT so the legs are seen to join her, and (next) baby spiders from the far side to keep him
+moving and bring him toward her; perhaps a second spider on the other side.
+**VERSION FOUR IS BUILT (2026-11-16). He was shown stills of the bigger spider and said "Good continue".**
+**THEN, having played it (2026-11-16):** "Her feet are clipping through the ground ... it looks pretty bad. Also she's
+a little too big now because you can't even really see [her] face, this is less Dark Souls and more like Shadow of
+the Colossus kind of big ... why don't you make her like 70% [as] big and make [there] like two of them or something
+then maybe that could cover the whole field instead of making her gigantic?" DONE THE SAME DAY:
+- **70% of that size** (head 3.2 in radius, legs reaching 15: `SIZE` is 1.3 times the first model), and she carries
+  her head LOW (`HEAD_UP`), so her eyes, jaws and fangs are in the picture in play.
+- **TWO OF THEM**, one out past the EAST edge of the light and one past the WEST, facing each other. Each reaches
+  to the middle; between them they reach the whole floor (tested). THEY TAKE TURNS: one does not start a blow while
+  the other is anywhere in the middle of one (`PACK`, `sisterStriking` in widow.ts), and neither strikes at what
+  she cannot reach. 32 health each; the bar along the bottom is "The Widows", what is left of both. The goal is
+  "Beat the Widows" (both); the way out is at the SOUTH edge, between them, and appears when both are beaten.
+- **Her feet:** a claw's point IS the foot, and the claw runs back up the leg from it; the shin stops where the claw
+  begins. Nothing of a leg goes under the floor (it did: the claw was centred on the foot and half of it was sunk).
+THE RULE: she is big (numbers above), she STAYS WHERE SHE IS at the edge
+with her face and the roots of her legs IN THE LIGHT, and IT IS THE FOUR LEGS SHE STANDS ON THAT STRIKE, from
+where they stand, still arched and joined to her. Nothing lies flat, nothing is flung, she does not crawl or lean
+(`crawl` and `lean` are 0; the code for them is still there and does nothing). Do not shrink the arena.
+She wakes when he stands on the floor (a scream, 1.9 s). Then, in a round that repeats: slams, stabs, a bite,
+slams, a bite, stabs.
+- **The slam.** An outer leg lifts from where it stands; a red RING on the floor marks where it will come down,
+  follows him, then holds (brighter once it has stopped following). The leg comes down on it: 2 hearts, no shield
+  stops it, a jump does not get him out of it: GET OUT OF THE RING. Its foot is stuck 0.8 s (hit it).
+- **The rake.** That foot is pulled free and RAKES the floor round its hip across her front, the leg still arched
+  over it: 1 heart, no shield: JUMP THE FOOT, or be out of its way (under the arch of the leg, nearer her, he is
+  not touched: only the foot strikes; and it cannot strike in the instant it starts). Where it stops, the foot
+  rests a moment (hit it). Then the other leg does the same from the other side.
+- **The stab.** An inner leg spikes down on a small RING marked on him: 1 heart; a shield stops it; or step away.
+  Two, one from each side (but strike at a stuck foot while another stab is coming and that one catches him).
+- **The bite**, when he is within 8.5 of her place: her head rears, a big RING marks the place, and it comes down on
+  it: 2 hearts, no shield. Her head then LIES ON THE FLOOR for 1.6 s: the great opening.
+- **Her face is armoured:** while her head is up, a sword only glances off it (`deflects`). It can be hurt only
+  when it lies on the floor (after a bite, or thrown down by a perfect guard: 2.4 s).
+- **Harm to her:** a blow on a foot counts HALF, on her head DOUBLE. 32 health each. Angry below half: leg wind-ups a
+  fifth shorter, each rake comes BACK as well, four stabs, three bites, less rest.
+- **How far she reaches:** each reaches her own half of the room, to its middle (tested); with two of them there is
+  nowhere on the floor out of reach. (Her young, baby spiders to keep him moving, were his other idea: not built.)
+- Against ONE of them (the tests fight one at a time), a rat who keeps to the rules, strikes what is on the floor
+  and is not greedy wins in 70 to 80 seconds, unhurt; one who stays in her reach and does nothing dies in seconds.
+  A whole fight against BOTH has not been run by a test, only forty seconds of keeping out of both's blows.
+**Her look was made better (the owner, 2026-11-16: "improve the textures and quality of the spider model especially
+her legs and claws"), BY SHAPE AND PICTURE, NOT BY MORE PIECES:**
+- Two pictures of her own in `src/render/textures.ts`: `widowChitin` (dark plum shell with a sheen down its ridge,
+  bristles lying along it, and once in its length a JOINT: a crease, a blood-red ring, a pale lip) and `widowHorn`
+  (ivory, blackened at the point, dark at the root, grained). Both run ALONG a limb.
+- A leg's two bones are shaped (`limb()` in widowModel.ts: a profile of thicknesses along it): a stout thigh that
+  narrows and flares into the knee; a shin thick out of the knee and long and fine to the wrist. The chitin is laid
+  three times along the thigh and four along the shin, so the red rings make it a leg of SEGMENTS.
+- A claw is a hooked talon (`horn()`: its point at the foot, bowed outward, its root in the wrist), not a cone; her
+  fangs are the same shape, seated in the ends of her jaws. Her head, brow, jaws and body wear the chitin too.
+- Then her head and body ("looks good continue"): her head is ONE shaped carapace (`loft()`: narrow at her body,
+  domed behind her eyes, drawn in to a blunt face) where it was a faceted lump with a plate on it; her eight eyes
+  are lenses (dark at the rim, burning at the middle, each face one colour), unlit so they glow; her back wears
+  `widowBack`: the shell with a blood-red HOURGLASS edged in bone down its ridge, repeated going back into the dark.
+  (`limb()` is a `loft()` of round sections. The picture's edge, x = 0, is the TOP ridge of anything lofted; an
+  end cap takes its colour from a little way into the shell, or it samples the dark crease and looks like a hole.)
+- (Both new shapes were wound inside-out at first: drawn from within, they looked hollow and were lit dark. If a
+  hand-built shape looks hollow, check which way its faces look.)
+**How she is drawn:** a few big flat-faced pieces: one faceted head with a brow plate, two jaws with a pale fang
+each, eight red eyes, a broad body tapering back into the dark, four legs of two bones with a knuckle at the knee
+and a claw. Everything goes by one number (`SIZE`, from `legReach`). The light in
+the room is a pool on the floor, but it reaches well past the floor's edge and up (`lightAt`): her face and where
+her legs join her are SEEN, and she fades back into the dark behind. She is drawn in the world's own places exactly where the rules have
+her (tested: a stuck foot is where the rules have it, a sweeping leg lies on the line it strikes along from hip to
+tip, the ring on the floor is where each blow will land, her head is where the sword meets it).
+**In the game:** her name and health show along the bottom; the level's goal is "Beat the Widow"; the WAY OUT is at
+the EAST edge of the light and is not there until she is beaten (then the game's own door scene shows it). Once he
+has stood on the arena's floor, that is where he comes back to if he dies: he is not sent up to ride the whole way
+down again. She keeps the health she had.
+**Three things that were wrong the first time she was put in the game (each has a test or a note now):**
+- She never attacked: the game's turn-taking (`director.ts`) only gives a turn to a beast that has a `ready`.
+- Standing straight in front of her was safe from both slams (each leg could only aim to its own side).
+- He could walk out of the door past her: a level with `returnTo` had its way out open from the start. Now only if
+  it has no goals (main.ts, where the level is loaded).
+**NOT done, and said plainly:**
+- Nobody has fought her by hand. Her numbers are first guesses, tested only by a rat that plays by rule.
+- Beating her and the door appearing has NOT been seen in the running game (the tests beat her; the game's door
+  scene is the same one every level uses, but it has not been watched here).
+- Her sounds are her own now (below), but NOBODY HAS HEARD THEM: they are drawn by sums and checked for loudness,
+  pitch and length, not by ear. Tell me which are wrong.
+- The game's view looks down at him, so what shows of her in play is her legs coming down from the top of the
+  picture; her head and body are mostly above it (she is far bigger now, so this matters more). What he must read is on the floor (the line, the rings, the legs and head when down), and
+  that is all in view. A view that pulls back in this room would show her better; the owner's rule is that the
+  view does not TURN by itself, so that is his to ask for.
+- Her legs are plain bars with a knuckle and a claw: they could do with hair or markings.
+- Not in the level editor. No story scene.
+**Her sounds and her sliders (2026-11-16).** Five sounds of her own in `src/audio/synth.ts`, played from
+`beastSounds` in main.ts by what she does: `widowScream` (waking; played a little slower when she turns angry),
+`widowRear` (a leg pulled up, a leg laid out, or her head rearing: stretched to the length of the wind-up),
+`widowBite`, `widowHurt` (struck; slowed when she is thrown down, quicker for her head), `widowDie`. Her feet tap as
+she goes round the rim (`chitinTap`, low). She borrows `shock`, `spikeHit`, `whoosh` and `rumble`. (Four `poison*`
+sounds from version two are still in synth.ts and are played by nothing: they may do for the slime.) Her numbers are
+on 22 sliders in the tweaks panel under Bosses, "The Widow". Health takes effect from the next time the level is
+loaded; the rest at once.
+
+See her: `#view&who=widow&t=<seconds>&yaw=..&pitch=..&dist=46&h=3&lz=9` (`&rage=1`, `&die=<seconds>`, `&px=&pz=` for
+where the rat stands). In the game: `#level=longdrop&nostory&at=2,0.5,1419,3.1416`.
+
+### How he gets on, and the slide on his hide (the owner, 2026-11-15: this REPLACED the first way on)
+His words: "Instead of having to push the sneak button I think he should go into his shield surfing if he presses the
+downward attack when the slope below him is beyond a certain incline. Also there should be surfaces that are too
+steep for him to walk up so he will automatically start sliding down them if he gets too far up like how Mario does
+... maybe you should make an animation for him just sliding rather than board sliding, since he would basically be
+like tripping and sliding down ... So that would mean he would have two ways to slide down something, one that's
+probably a little slower and you have less control where he's not on his shield ... and then the other one that
+would be when you jump and then push the attack button above an incline". And, sent while that was being built:
+"if you're jumping above a rail and you push triangle your character should jump onto his board and grind along
+the rail ... kind of snap to the rail and slide down it, as long as you have enough speed otherwise you just hop
+off if you're below a certain speed threshold."
+What is built (controller.ts; numbers in `TUNING.ride`, `TUNING.slide`, `TUNING.grind`; sliders in the Riding group):
+- **The shield: the air attack over a slope.** In the air, with a slope straight below him at least `ride.minSlope`
+  steep (0.4: two up in five) and no more than `ride.surfDrop` (10) down, ATTACK is not the dive: `beginRide`, and he
+  lands riding. Over the flat, or a gentler slope, it is the dive as ever. **We chose 0.4**, not "too steep to
+  stand": a slope he can walk (up to one in one) can be ridden, as the garden's run is; and the dive is still his on
+  gentle ramps. It is one slider if the owner wants the mark elsewhere.
+- **The slide on his hide: ground too steep to stand on** (over `MAX_WALK_SLOPE`, one in one). `slipIfTooSteep`: going
+  UP it he has `slide.grip` (0.3 s) of scrabbling, slowly, and gets a little way (under two units up a two-in-one);
+  any other way he is on it he is off his feet at once. `slideStep`: pulled less than a shield (10 against 15),
+  slower at his fastest (9.5 against 16), steers far less (0.8 against 2.2), cannot swing, guard or roll. On ground
+  he can stand on he scrapes to a stop and gets up. Jump there is a small hop with NO second jump (so a steep slope
+  is never a way to climb higher than a jump does), but it is enough to press ATTACK in the air: out of a slide,
+  onto the shield. A rider on his shield stays on it down such ground: only one on his feet slips.
+- **A slope too steep is no longer a wall at its foot** (`moveAxis`): he steps onto it. That is what lets him "get
+  too far up", and lets a rider go up one (a pipe's far wall). One so steep that a single step is more than a step
+  up still stops him, and gives him his step back.
+- **Drawn** (ratModel.ts, state 'slide'): `SLIDE_SIT`, on his seat feet first, arms flung out; and `SLIDE_BELLY`
+  (`slideBack`), on his belly going down backwards, clawing at the slope he was climbing. He lies all the way to
+  the slope. Sounds: a yelp and a thump at the slip, the ride's scrape very quiet while he slides.
+- **Triangle in the air: onto a rail from his own feet.** STOW in the air, on foot, with a grind line in reach
+  (`grind.reach` to the side, `grind.down` 2.6 below: a jump's height) that he is going along at `grind.minSpeed`
+  (3.5; a walk is 3.2, a run 6.2) or more: the shield goes under him and he comes DOWN onto the line over a few
+  frames, drawn in over it (`grind.air`, `off`, `dropSpeed`, `dropPull`, `dropIn`): not put on it at a stroke.
+  Too slow: nothing happens. **It works on ledges as well as rails** (they are one thing in the code): say so to
+  the owner; if he wants rails only, it is the `side === 0` lines in `findGrind`.
+- The garden's boards now say 'JUMP, ATTACK' (the run) and 'JUMP, THEN STOW' (the rail).
+- Tests: `tests/ride.ts` (getting on; the slide; out of a slide onto the shield), `tests/grind.ts` (from his own
+  feet), `tests/garden.ts` (the run, the chute both ways, the rail from his feet). Watched in the running game at
+  slow speed: the air attack over the run, the slide down the chute, the scrabble up it and the slide back.
+- **Not done / to know**: the camera still loses him down the chute. Enemies know nothing of any of it. `ride.again`
+  and `rideAgain` are left over from the SNEAK start and do nothing now. The Move Garden's "1 UP IN 1" ramp is the
+  steepest he can stand on: anything steeper anywhere is now a slide.
+
+### Which way up the shield lies (the owner, 2026-11-15)
+"I think the wood should be the part that he's standing on and the curved part of The Shield is where he should be
+sliding on ... I think he's on it upside down." And then: "we should turn the shield around as well ... it makes
+more sense to have the top of the shield facing forward, just because of the way that you would want to stand on it
+and if you threw it down in front of you you probably wouldn't throw it and spin it upside down". So: its painted,
+curved FACE is down on the ground, its flat wooden BACK up under his feet, its TOP forward and its point behind
+(`BOARD_LIES` and `BOARD_Y` in ratModel.ts; `tests/ride.ts` checks which way it faces, that its boss is just clear
+of the ground, and that getting on never shows its face upward). That is the shield as he holds it tipped straight
+forward onto its face, so the hop no longer turns it over on the way down: it is thrown down in front of him.
+Do not turn it back, and do not put the spin back.
+
+### Grinding is DONE (2026-11-15; asked for by the owner the same day, his words are in the next section)
+Riding, **STOW** (triangle / north on a pad, H on the keyboard: it has nothing else to do while the shield is under
+his feet) puts the shield across the nearest edge he is going along, and he slides along it throwing sparks.
+- **What can be ground** is found in the solids, nothing is marked (`world/grind.ts`): a LEDGE is the top edge of any
+  solid with a drop of `grind.drop` (0.4) or more beside it; a RAIL is any solid under half a unit across, down its
+  middle. Lines run along x or z. On a ramp they slope with it: the side of a ramp is a ledge going downhill, a thin
+  ramp a rail going downhill. A line carries on from one solid to the next at the same height.
+- **Getting on**: within `reach` (0.85) to his side, no more than `up` (0.75) above his feet (he hops onto it) or
+  `down` (2.6) below (he comes down onto it out of a jump), going `minSpeed` or more, and mostly ALONG it. Riding
+  already, or (since the same day) in the air on his own feet.
+- **On it**: the line carries him, the stick does nothing. A level line slows him less than the floor (`drag`), a
+  sloping one pulls him as a slope does. JUMP hops off (the stick throws the hop to a side); ROLL steps off rail
+  and shield; at its end he flies off still riding; too slow and he is set down; something across it at speed
+  throws him off (`bail`, no hearts).
+- **In the controller** it is `grind` (still `riding`, state still 'ride'), `startGrind`, `grindStep`, `leaveGrind`.
+  While grinding nothing else moves him: `update` returns after `grindStep`, as it does for hanging from a ledge.
+- **Drawn**: the shield turns across the way he goes (`board.rotation.y`), he crouches lower with his arms wide and
+  his tail shivering; sparks (`grindSparks` in main.ts); sound `grindRing` (a loop) over a knock as he gets on.
+- **The garden** has a RAIL and a KERB on the roll-out past the kicker (`RUN.rail`, `RUN.kerb`), and the run's own
+  sides are ledges going downhill. Six 'Grind:' sliders are in the Riding group.
+- `tests/grind.ts` plays every rule with the real controller; `tests/garden.ts` grinds the rail and the kerb. Watched
+  in the running game on the rail (from behind) and down the edge of the run (from the side).
+- **Not done**: no trick or score for it; he cannot kickflip ONTO a rail and have it count; a rail's end met head-on
+  on the ground is a wall (he must be beside it, or jump and come down on it); lines do not turn corners or curve;
+  enemies know nothing of it. Nobody has done it with a controller in hand.
+
+### What the owner asked for after riding it (2026-11-15, his words)
+- **Grinding** (asked for now; done, see above): "it would also be cool if you added in being able to grind a Ledge like so if you're
+  board sliding down you can actually go to the edge and maybe like press triangle and he'll ... grind alongside that
+  edge."
+- **A whole downhill level, LATER**: "later we need to add a level that's just like a really long steep decline that's
+  like a sewer pipe going down through some tunnels or something you could even have it break off into like an
+  underground Railway and you can grind along the railroad tracks or just like slide down alongside them ... to sort
+  of test out the limits of that sort of gameplay, I'm thinking like Sonic Adventure 2 level 1 Escape From the City
+  kind of totally downhill and you're just on the board the whole time ... potentially with the grinding mechanic and
+  some clever railroads and stuff but it's just a whole level where you're on the shield board sliding the whole
+  time." (That is the KIND of level he means: all downhill, never off the board. Ours is our own place, the sewer
+  pipe and the railway: not a copy of that level's layout, look or music.)
+- **In that level**: "when you're sliding down the pipes ... there should be like a little bit of liquid in the bottom
+  to give a sense that it's not in use anymore but it still carries some like slimy water and they'll be natural
+  obstacles like maybe little plants growing out of cracks in the pipe ... it'll be sort of a circular level design
+  with an interesting curved slope through the entire level or at least through the entire pipe sections so it'll be
+  interesting to see how the board slide mechanics deal with that".
+  What that needs that is NOT there: a ground that curves ACROSS his path (a pipe's bowl). Every slope now is a flat
+  ramp along x or z. A pipe wants either many narrow ramps side by side (cheap, faceted, works with everything that
+  knows ramps) or a new kind of ground. Decide that before building the level; try it in the garden first.
+- **BACK BURNER, his word**: "maybe we can even add some like easy one hit enemies that are in the level so while
+  you're bored sliding you can swing your sword at them and just kill them in one [hit] but put that on the back
+  burner as an idea." (Now he cannot swing while riding at all.)
+
+## Drawn and solid, again (2026-11-15: what the owner found walking round the Club)
+He sent pictures of the knight standing inside things. The rule is old (what is DRAWN must match what is SOLID); these
+were the places it was broken, and how each is held now:
+- **Door frames** were only drawn. `doorFrameBoxes` (rooms.ts) gives a door's two jambs and its step from the same
+  numbers `doorway.ts` draws them with (`DOOR_FRAME`); main.ts makes them solid, a course door's at once and the exit
+  door's when it has grown out of the wall (and not while he stands where a jamb will be). tests/rooms.ts.
+- **A couch's arms and cushion**, and **a beacon's bulb**, were not solid; **a barrel** was drawn a little wider than
+  its box. custom.ts, chamber.ts; tests/wedges.ts (whose furniture checks stood after the file's `process.exit` and
+  had never run: they run now).
+- **Stairs:** the rules stand him on the highest thing any part of his round footprint is over, so coming up to a step
+  he was lifted onto it while his feet were still over the tread below. He is now DRAWN on what is under his feet
+  (`feetGround` and `drawnY` in main.ts), eased, so he walks up and down steps. The rules themselves are unchanged.
+- **The fire bowl** (`brazier`) is a new model (`src/world/brazierModel.ts`), made twice. The first had a tripod of
+  scrolled feet, a band and ring handles; the owner: "almost too much ... something maybe in between, a little less
+  detailed with a nice texture like everything else in the game". So it is now a few plain shapes (a wide stone foot,
+  a plain iron stem with one knuckle, a wide bowl with a rolled rim, three tongues of flame) and the pictures on them
+  do the work (`cutStone` for the foot, one block with no joints: the room's own stone made it look like a piece of the floor; `wroughtIron`, repainted quiet; `charred`; `coals`). Its inside is drawn on both faces: it was seen
+  through. Its sizes are `BRAZIER` in layout.ts, and custom.ts builds its two solid boxes from them. **When he asks
+  for "more detail" on a thing, he means a better shape and a good texture, not more parts.**
+- **Its fire burns** (the owner: "it's fire so you shouldn't be able to just stand in it"): `inBrazierFire`
+  (layout.ts); in `lavaStep` (main.ts) it costs a heart and throws him up and off the bowl, in the Club as anywhere.
+  The Ember Helm keeps him safe from it, as from any fire. Rest is offered beside the fire, on the floor it stands
+  on, never up on the bowl.
+- **The couch** (the owner: "a better texture, give it some rips and stains and stuff, it's like a sewer couch but
+  still make it seem cozy") is a new model, `src/world/couchModel.ts`: two seat cushions and two back cushions on a
+  low frame, rolled arms, piping, worn rust-red cloth with damp stains, a patch on the seat and another on the back,
+  a rip with the stuffing coming out, a tear sewn up with big stitches, a plaid pillow, a knitted blanket thrown over
+  one arm, and one foot that is a brick. Its sizes are `COUCH` in layout.ts; custom.ts builds its five solid boxes
+  from them. Three more textures (`couchFabric`, `couchPatch`, `knitBlanket`). `tests/furniture.ts` holds the couch
+  and the fire bowl to their solids.
+- **Lamps** were a bright block floating in the air. Each is now a lantern (iron cap and frame, panes of light) hung
+  on a rod from whatever is over it (`roofOver` in chamber.ts), which is usually the ceiling.
+- **Ceilings:** over the walls there was nothing but the dark. Every level with walls round it now has one
+  (`ceilingOf` in layout.ts): on top of the outer walls, or higher where something inside stands tall (then the walls
+  are carried on up to it). It is only drawn, wears the walls' picture, and is seen from underneath only, so the
+  level builder's view from above is as it was. tests/rooms.ts.
+
+## The pause menu's SAVE screen, and the tweaks panel on a controller (2026-11-15)
+- "settings need to be organized better in menu": the SAVE screen was one list of seventeen rows. It is now a short
+  main list (save, load, the quick and auto saves, SETTINGS, TOOLS, photo mode, quit); SETTINGS opens a page in two
+  columns under the headings SOUND, CONTROLS and PICTURE; TOOLS opens the editor, the tweaks, the workshop and the
+  restart. Back leaves a page for the main list. From the title, OPTIONS opens straight onto SETTINGS. A setting the
+  game adds (`extras` in main.ts) says which heading it goes under with `group`. tests/menu.ts.
+- "game tweak menu can not be navigated via controller": `TweaksPanel.press` (bumpers: group; up and down: slider;
+  left and right: change it, faster while held; the bottom button uses a jump set; the top one puts a slider back;
+  the right one plays). main.ts feeds it from the controller and the touch pad while the panel is open. The keyboard
+  is still the panel's own (its boxes are typed into). tests/menu.ts.
+
+## What the owner wants next (his own list, 2026-11-14)
+He gave this list himself; work through it, do not ask about it again:
+1. **Hero animations must match his actions.** Audited 2026-11-14 on the model sheet's `#moves` page (25 moves, played
+   by the real controller) and `#hero` (the ledge). Fixed: ledge grab, hang, pull-up; the plunge (hang, dive, landing);
+   wall brace and wall kick (he had no pose for either). Looked right and left alone: idle, walk, run, jump, air jump,
+   fall, land, long jump, roll, backstep, guard, guard walk, the three swings, hurt, dead, treading water, swimming,
+   running with weapons stowed. All of this was judged from stopped frames, not in motion.
+2. **A new look for Grimsqueak's evil form.** Built 2026-11-14 (`src/npc/grimsqueakModel.ts`): the gaunt king, in the
+   hero's own style so he reads as the old friend stretched thin; long drooping whiskers; real arms with a gesture
+   for every tell of the fight. The owner has NOT seen it yet: he disliked the old one (the whiskers most), so
+   expect notes. The earlier form (the 'friend' in story/memory.ts) was not touched.
+3. **Redo every collectible's model and look.** Done 2026-11-14 for the crumb, cap, relic, Golden Wedge and nacho can
+   (`src/world/itemModels.ts`; see HANDOFF). Not touched: gear pickups (they are the hero's own helmet and scarf
+   models, and only old levels have them) and the story's keepsakes. The owner has not seen them yet.
+4. **A few more enemies.** IN PROGRESS. Built 2026-11-14: the **Keep Guard** and the **Orchid Mantis** (see HANDOFF).
+   What the owner said about them (2026-11-14), which sets the direction:
+   - He likes the Keep Guard, and likes how the fight against him looks: "getting closer to the Dark Souls feel that
+     I'm aiming for". Keep going that way: enemies with tells, commitments and openings, that punish mashing.
+   - But the guard is "basically exactly the same as the main character". New enemies must be **as detailed as the
+     guard but NOT rats or mice**. Most of the game's enemies are insects, so make them insects, each with a body of
+     its own. The mantis is the first built to that.
+   - He saw an early sheet picture of the guard with the spear standing up through his own head and was rightly
+     angry: the fight tests all passed because none of them looked at the model. So for every new creature: look at
+     EVERY state, alone and large, from three sides, and give it looks checks in tests/models.ts (its weapons
+     ray-tested against its own body on every frame of every move) before saying it is done.
+   Built to that so far: the Orchid Mantis, the **Stag Knight**, the **Hornet Lancer** (a flyer: one over the west
+   end of the Foundry's dock, the first he meets; one over the east bank of the Hollows; one over the east plate of
+   the Keep's courtyard) and the **Ant Pikeman** (fights in pairs: two on the north floor of the Hollows, two in the
+   Keep's inner ward) and the **Firefly Bomber** (a flyer that never comes at him: it drops fire where he is GOING,
+   and hangs low and dark when its light is spent; one over the west end of the Hollows' Undershelf, one over the
+   Foundry's north floor, one over the west end of the Keep's inner ward). HANDOFF has a
+   section on each, and one on where they were placed and why they do not count towards the older "beat every
+   beast" wedges.
+   (A spider was on the earlier list; the owner asked for insects.)
+   Lessons from building these, for the next: (1) give a weapon-holder its WEAPON's place first and lay the arms to
+   it (the stag), or pose by directions not joint angles (the mantis); (2) before any picture, measure every frame of
+   every move: weapon against own body, hands on the weapon, nothing under the floor; (3) a head that sticks out in
+   front, or horns over it, will be in the way of anything held in two hands: decide where the weapon lives first.
+5. **Two boss battles: both built, neither played by the owner yet.** **The Broodmother**, a giant spider, in the
+   Brood Pit off the Hollows (HANDOFF, "Boss: the Broodmother"), and **the Sump Wyrm**, a great centipede with a long
+   body every piece of which is solid and can be hit, in the Sump off the Cistern (HANDOFF, "Boss: the Sump Wyrm").
+   A boss gets its name and health along the bottom of the screen (`src/ui/bossBar.ts`: give the creature a
+   `bossName`, `maxHp` and `awake` and add it to the loop in main.ts that feeds the bar; Grimsqueak has it too).
+   A third idea, not built and not asked for: a Great Ironback / forge beetle in the Foundry over the lava.
+
+**The development suite (rebuilt 2026-11-14 at the owner's asking; HANDOFF, "The development suite").** Three things,
+one look (`src/ui/devTheme.ts`): the **level editor** (`src/ui/builder.ts`, rewritten; its rules are in
+`src/levels/editOps.ts`), **Game feel** (the tweaks panel) and the **Workshop** (`src/ui/workshop.ts`: a hub for
+those two plus a sound test, go-to-any-place, and test switches: no damage, slow motion, hit shapes, creatures
+still, every door open). The Workshop is on the title screen, in the pause menu, on F4 and at `#...&workshop`.
+The 3D editor (`src/ui/flyEdit.ts`, the level editor's cube button) was given the same look on 2026-11-15, with
+copy, move, redo and the full palette. The title screen (`src/ui/boot.ts`) was rebuilt the same day as the suite: CONTINUE, NEW GAME, LOAD GAME, LEVEL EDITOR, WORKSHOP,
+OPTIONS, with a card saying what the chosen one does. The owner has seen none of it yet: expect notes.
+
+**The owner plays the builds and sends screenshots of what looks wrong.** On 2026-11-14 he sent seven from the
+Cistern in one sitting, all fixed the same turn (HANDOFF, "Fixes from the owner's Cistern playthrough"). What they had
+in common: something DRAWN did not match what was SOLID or where it was PUT (a capital wider than its pillar, hangings
+half a unit off their walls, a lift whose body was in the floor, two faces in one plane). When adding anything, check
+that. tests/fit.ts is where such checks live.
+
+**Camera and wall jumps (the owner, 2026-11-14).** The view no longer swings round behind him as he moves: only the
+right stick turns it (`camera.autoFollowRate` is 0; the slider "Swings behind him" turns it back on). Do not bring
+that back by another road: the left stick steers relative to the view, so a view that turns itself changes what the
+stick means. Lock-on pressed with nobody near brings the view round behind him. After a wall kick he is carried
+straight across to the opposite wall and can kick again without the stick (HANDOFF, "Camera and wall-to-wall kicks").
+**The view with something behind him (2026-11-15).** It no longer ends up inside his head. Something LOW in the way (a
+brazier, a barrel, a crate or two) does not pull it in: it rises to look over it from its usual distance. A wall still
+pulls it in, but pulled in close it goes up over his head and looks down ahead of him. Neither turns it: only its
+height changes. Two sliders under Camera turn each off (HANDOFF, "The view when something is behind him").
+
+Also open: fire and iron-bound crates in the level builder;
+playtest the Ironback, Flitter, Keep Guard, Orchid Mantis, Stag Knight, Hornet Lancer, Ant Pikemen, Firefly Bomber, the Broodmother and the Sump Wyrm (none of them has been played by hand; both bosses' numbers are first guesses, all on sliders). (The plunge wind-up the owner asked about is done: the sword is raised
+over his head, blade up, before he dives.)
