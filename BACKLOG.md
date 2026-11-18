@@ -224,8 +224,9 @@ WHERE IT IS: the Hall's 30 doors (about 1,000 meshes: each door's arch is 16 sto
 and its 17 characters (about 830: each is made of many small parts); the Toy Box's dream dressing (about 2,400 meshes in
 the room's own group: flowers, butterflies, lights). TRIED AND TAKEN OUT: joining each room's still walls and floors
 into one mesh per picture (Hall 2,020 to 1,988; the Long Drop drew three times the triangles, as joined pieces can no
-longer be skipped off screen). The real wins are in the door model (one mesh once it has opened) and the dream's
-dressing (instanced flowers): model work, best done with his eyes on the result.
+longer be skipped off screen). DONE: a door's frame is one mesh once it has opened (world/doorway.ts; Hall 2,020 to
+1,674, the same picture: compared side by side; tests/rooms.ts). LEFT: the dream's dressing (instanced flowers) and
+the characters (many small parts each): model work, best done with his eyes on the result.
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in

@@ -7,6 +7,7 @@
  * The stone, timber and iron follow the level's theme, so it looks like it belongs to the room.
  */
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bakeVertexColor, createPs1Material } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import type { TextureName } from '../render/textures';
@@ -90,6 +91,9 @@ export class Doorway {
   /** False: a shut door with no light round its edge (a locked course door). */
   lit = true;
   private readonly blocks: Block[] = [];
+  /** The frame's stones joined, shown once all of them are out; and how far through the reveal that is. */
+  private readonly settled: THREE.Mesh[] = [];
+  private blocksIn = 1;
   private readonly leaf = new THREE.Group();
   private readonly crack: THREE.Mesh;
   private readonly crackMat: THREE.MeshBasicMaterial;
@@ -144,6 +148,30 @@ export class Doorway {
       const len = ((mid * Math.PI) / wedges) * 1.04;
       const geo = new THREE.BoxGeometry(key ? t * 1.35 : t, key ? len * 1.15 : len, key ? DEPTH + 0.18 : DEPTH);
       addBlock(geo, key ? keyMat : frameMat, Math.cos(theta) * (mid + (key ? t * 0.17 : 0)), straight + Math.sin(theta) * (mid + (key ? t * 0.17 : 0)), key ? 0.24 : 0.15, theta, 0.44 + (i / wedges) * 0.3, jitter(i + 7));
+    }
+
+    // ---- The frame once it is out: the same stones as ONE mesh per material (2026-11-18). A door stands open in
+    // the Hall from the start, thirty of them, and each stone was its own draw call: a thousand a frame. The stones
+    // are drawn one by one only while they move. ----
+    this.blocksIn = Math.max(...this.blocks.map((b) => b.start)) + 0.26;
+    const place = new THREE.Object3D();
+    const byMat = new Map<THREE.Material, THREE.BufferGeometry[]>();
+    for (const b of this.blocks) {
+      place.position.set(b.x, b.y, b.z);
+      place.rotation.set(0, 0, b.mesh.rotation.z);
+      place.updateMatrix();
+      const g = (b.mesh.geometry.index ? b.mesh.geometry.toNonIndexed() : b.mesh.geometry.clone()).applyMatrix4(place.matrix);
+      const k = b.mesh.material as THREE.Material;
+      byMat.set(k, [...(byMat.get(k) ?? []), g]);
+    }
+    for (const [material, geos] of byMat) {
+      const joined = mergeGeometries(geos, false);
+      for (const g of geos) g.dispose();
+      if (!joined) continue;
+      const m = new THREE.Mesh(joined, material);
+      m.visible = false;
+      this.settled.push(m);
+      this.group.add(m);
     }
 
     // ---- The crack of light round the outline, on the flat wall, before anything moves. ----
@@ -253,7 +281,13 @@ export class Doorway {
     this.crack.visible = this.crackMat.opacity > 0.01;
 
     // Stones push out one after another (the ones with a smaller `start` first), each easing out and settling.
+    const allOut = fade >= this.blocksIn;
+    for (const m of this.settled) m.visible = allOut;
     for (const b of this.blocks) {
+      if (allOut) {
+        b.mesh.visible = false;
+        continue;
+      }
       const p = smooth(b.start, b.start + 0.26, fade);
       b.mesh.visible = p > 0;
       const back = (DEPTH + 0.1) * (1 - p);

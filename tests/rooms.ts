@@ -1,4 +1,7 @@
 // The door scene timing, level progress, and doors.
+import './../src/core/colorSetup';
+import * as THREE from 'three';
+import { Doorway } from '../src/world/doorway';
 import { REVEAL, revealFrame } from '../src/core/revealCutscene';
 import { LEVELS_KEY, LevelProgress } from '../src/core/levelProgress';
 import { atDoor, doorCamera, doorOn, doorFrameBoxes, DOOR_FRAME, DOOR_REACH } from '../src/world/rooms';
@@ -116,6 +119,25 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   const c = ceilingOf(hub.solids)!;
   check('the Club\'s sits right on top of its walls', c.y === c.wallTop && c.y > 8, `${c.y} up`);
   check('a place with no walls round it has none', ceilingOf(hub.solids.filter((b) => b.kind !== 'wall')) === null);
+}
+
+// A door's frame: stone by stone while it comes out of the wall, then the same stones as one mesh (2026-11-18, for the
+// Hall's thirty open doors: a thousand draw calls). Drawn in the same place, either way.
+{
+  const d = new Doorway(doorOn('north', 10, 0, 10, 0), 'dungeon');
+  const g = d.group as THREE.Group;
+  const shown = (): THREE.Mesh[] => { const out: THREE.Mesh[] = []; g.traverse((o) => { if ((o as THREE.Mesh).isMesh && o.visible && o.parent === g) out.push(o as THREE.Mesh); }); return out; };
+  const box = (ms: THREE.Mesh[]): THREE.Box3 => { const b = new THREE.Box3(); g.updateMatrixWorld(true); for (const m of ms) b.expandByObject(m); return b; };
+  d.setReveal(1, 0.999 * 0.5, 0);
+  const halfWay = shown().length;
+  // (A hair before the last stone is home: all of them out, still drawn one by one.)
+  d.setReveal(1, (d as unknown as { blocksIn: number }).blocksIn - 1e-4, 0);
+  const stones = shown().filter((m) => !(m.material as THREE.Material).transparent);
+  const before = box(stones);
+  d.setReveal(0, 1, 0);
+  const after = shown().filter((m) => !(m.material as THREE.Material).transparent);
+  const joined = box(after);
+  check('A DOOR\'S FRAME is drawn stone by stone while it comes out, and once it is out as a few joined meshes, in the very same place', halfWay > 8 && after.length <= 3 && stones.length > 12 && joined.min.distanceTo(before.min) < 0.02 && joined.max.distanceTo(before.max) < 0.02, `${stones.length} stones, then ${after.length} meshes`);
 }
 
 console.log(failures === 0 ? '\nRoom checks passed.' : `\n${failures} room check(s) failed.`);
