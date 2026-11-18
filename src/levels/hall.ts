@@ -184,6 +184,13 @@ function dressing(): Piece[] {
     out.push(at('table', x, 4.4, 0, { props: { mugs: 2, candle: true } }));
     for (const a of [Math.PI / 2, -Math.PI / 2, Math.PI]) out.push(at('stool', x + Math.sin(a) * 1.3, 4.4 + Math.cos(a) * 1.3));
   }
+  // Odds and ends: a candle stub and a matchbox on the bar, a wheel of cheese and a sardine tin between the tables, a cotton reel by the first.
+  out.push(at('candle', bx0 + 0.6, HZ - D.bar.out + D.bar.deep / 2, 1));
+  out.push(at('matchbox', bx0 + 1.6, HZ - D.bar.out + D.bar.deep / 2, 1, { dir: 'e' }));
+  const between = (placeX(D.tables[0]) + placeX(D.tables[1])) / 2;
+  out.push(at('cheese', between, 4.4));
+  out.push(at('sardines', between, 6.4));
+  out.push(at('spool', placeX(D.tables[0]) - 2.4, 6.4));
   return out;
 }
 

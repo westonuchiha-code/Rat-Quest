@@ -157,6 +157,32 @@ export const STOOL = { r: 0.24, h: 0.44, solid: 0.2 } as const;
 export function tableSolids(x: number, y: number, z: number): Box[] {
   return [{ ...extent('plank', x - TABLE.solid, x + TABLE.solid, y, y + TABLE.h, z - TABLE.solid, z + TABLE.solid), hidden: true }];
 }
+/**
+ * HOUSEHOLD JUNK, AT A RAT'S SIZE (2026-11-18, the owner: "making some new objects for the game"): what a big folk's
+ * house leaves lying about, as tall to him as furniture. As drawn (junkModels.ts) and as solid (`junkSolids`): each a
+ * box he can stand on, a little inside what is drawn. `w` across, `d` deep (along its yaw), `h` high.
+ */
+export type JunkKind = 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines';
+export const JUNK: Record<JunkKind, { w: number; d: number; h: number }> = {
+  /** A candle stub stood in a bottle cap. It lights the room round it. */
+  candle: { w: 0.5, d: 0.5, h: 1.05 },
+  /** A wooden cotton reel on its end, thread still on it. */
+  spool: { w: 0.9, d: 0.9, h: 1.0 },
+  /** A matchbox lying flat, its drawer half out and matches in it. */
+  matchbox: { w: 1.5, d: 0.95, h: 0.5 },
+  /** A wheel of cheese with a wedge cut out of it. */
+  cheese: { w: 1.7, d: 1.7, h: 0.62 },
+  /** A sardine tin, opened: its lid rolled back on its key. */
+  sardines: { w: 1.7, d: 0.95, h: 0.32 },
+};
+/** The solid of a piece of junk at (x, y, z) turned `yaw` (a quarter turn or none: it is a box). */
+export function junkSolids(what: JunkKind, x: number, y: number, z: number, yaw = 0): Box[] {
+  const J = JUNK[what];
+  const across = Math.abs(Math.round(Math.sin(yaw))) === 1;
+  const hw = ((across ? J.d : J.w) / 2) * 0.9;
+  const hd = ((across ? J.w : J.d) / 2) * 0.9;
+  return [{ ...extent('plank', x - hw, x + hw, y, y + J.h, z - hd, z + hd), hidden: true }];
+}
 export function stoolSolids(x: number, y: number, z: number): Box[] {
   return [{ ...extent('plank', x - STOOL.solid, x + STOOL.solid, y, y + STOOL.h, z - STOOL.solid, z + STOOL.solid), hidden: true }];
 }
@@ -274,6 +300,8 @@ export type Decor =
   | { kind: 'mugs'; x: number; y: number; z: number; yaw: number; count: number; gap: number }
   /** A keg (a tin can on its side, tapped), its tap facing `yaw`. */
   | { kind: 'keg'; x: number; y: number; z: number; yaw: number }
+  /** Household junk at a rat's size (junkModels.ts): what, where, which way. */
+  | { kind: 'junk'; what: JunkKind; x: number; y: number; z: number; yaw: number }
   /** A rug on the floor (drawn only): round (`r`), or a runner `w` by `d`. `colors`: its edge, its middle, its marks. */
   | { kind: 'rug'; x: number; y: number; z: number; yaw: number; r?: number; w?: number; d?: number; colors: [number, number, number] }
   /** A dance floor of lit tiles (drawn only), `nx` by `nz` of them, each `tile` across. */

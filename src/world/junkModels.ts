@@ -1,0 +1,120 @@
+/**
+ * HOUSEHOLD JUNK AT A RAT'S SIZE (2026-11-18; the owner: "making some new objects for the game"). What a big folk's
+ * house leaves lying about, as tall to the knight as furniture, in the same spirit as the Club's (a cable drum for a
+ * table, a cork for a stool, a thimble for a mug). Sizes, and what is solid of each, are `JUNK` in layout.ts. Each is
+ * built standing on y = 0 facing +z, and textured all over (cheese, card, wax, thread, tin, wood).
+ */
+import * as THREE from 'three';
+import { bakeVertexColor } from '../render/ps1Material';
+import { JUNK, type JunkKind } from './layout';
+
+export interface JunkMats {
+  tin: THREE.Material;
+  wood: THREE.Material;
+  card: THREE.Material;
+  /** (Seen from both sides: the cut faces of the wheel are single planes.) */
+  cheese: THREE.Material;
+  wax: THREE.Material;
+  thread: THREE.Material;
+  /** Plain colour: small bits (a wick, match heads, the oil in a tin). */
+  plain: THREE.Material;
+  /** Unlit: a flame. */
+  glow: THREE.Material;
+}
+
+const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh => {
+  bakeVertexColor(geo, color);
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(x, y, z);
+  return m;
+};
+
+/** The model; and, for a candle, its flame (to flicker, and the place its light comes from). */
+export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh } {
+  const g = new THREE.Group();
+  const J = JUNK[what];
+  if (what === 'candle') {
+    // A bottle cap for a dish, a pool of wax in it, the stub, its wick, its flame.
+    g.add(part(new THREE.CylinderGeometry(0.25, 0.27, 0.08, 12, 1), 0xd85a4a, mats.tin, 0, 0.04, 0));
+    g.add(part(new THREE.CylinderGeometry(0.21, 0.21, 0.02, 10, 1), 0xf4ecd8, mats.wax, 0, 0.085, 0));
+    g.add(part(new THREE.CylinderGeometry(0.15, 0.17, 0.82, 9, 1), 0xffffff, mats.wax, 0, 0.5, 0));
+    // A drip that ran down one side and set.
+    g.add(part(new THREE.CylinderGeometry(0.035, 0.05, 0.4, 5, 1), 0xfaf4e4, mats.wax, 0.15, 0.62, 0.04));
+    g.add(part(new THREE.CylinderGeometry(0.012, 0.012, 0.09, 4, 1), 0x1a1612, mats.plain, 0, 0.955, 0));
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 6), mats.glow);
+    flame.position.set(0, 1.08, 0);
+    g.add(flame);
+    return { group: g, flame };
+  }
+  if (what === 'spool') {
+    // Two wooden cheeks and the thread wound between them; a loose end trailing down to the floor.
+    for (const y of [0.05, J.h - 0.05]) g.add(part(new THREE.CylinderGeometry(J.w / 2, J.w / 2, 0.1, 14, 1), 0xd8c0a0, mats.wood, 0, y, 0));
+    g.add(part(new THREE.CylinderGeometry(J.w / 2 - 0.08, J.w / 2 - 0.08, J.h - 0.2, 14, 1, true), 0x4a7ab0, mats.thread, 0, J.h / 2, 0));
+    g.add(part(new THREE.CylinderGeometry(0.08, 0.08, 0.012, 8, 1), 0x6a4a2c, mats.wood, 0, J.h + 0.006, 0));
+    const end = new THREE.CylinderGeometry(0.012, 0.012, 0.6, 4, 1);
+    const tail = part(end, 0x4a7ab0, mats.thread, J.w / 2 - 0.06, 0.35, 0.1);
+    tail.rotation.z = 0.5;
+    g.add(tail);
+    return { group: g };
+  }
+  if (what === 'matchbox') {
+    // The sleeve (a label on its top, a striking strip down its side) and the drawer pushed half out of it, matches in it.
+    const sleeve = J.w * 0.7;
+    g.add(part(new THREE.BoxGeometry(sleeve, J.h, J.d), 0xf0e0c8, mats.card, -(J.w - sleeve) / 2, J.h / 2, 0));
+    g.add(part(new THREE.PlaneGeometry(sleeve * 0.7, J.d * 0.62).rotateX(-Math.PI / 2), 0xc8402e, mats.card, -(J.w - sleeve) / 2, J.h + 0.004, 0));
+    g.add(part(new THREE.PlaneGeometry(sleeve * 0.9, J.h * 0.6), 0x4a2a1a, mats.card, -(J.w - sleeve) / 2, J.h / 2, J.d / 2 + 0.004));
+    // The drawer: a tray, open on top, out of the sleeve's east end.
+    const tray = J.w * 0.55;
+    const tx = J.w / 2 - tray / 2;
+    g.add(part(new THREE.BoxGeometry(tray, 0.04, J.d * 0.92), 0xe8d8bc, mats.card, tx, 0.02, 0));
+    for (const z of [-1, 1]) g.add(part(new THREE.BoxGeometry(tray, J.h * 0.8, 0.03), 0xe8d8bc, mats.card, tx, J.h * 0.4, z * J.d * 0.45));
+    g.add(part(new THREE.BoxGeometry(0.03, J.h * 0.8, J.d * 0.92), 0xe8d8bc, mats.card, J.w / 2 - 0.015, J.h * 0.4, 0));
+    // Matches lying along it, red heads at the open end.
+    for (let i = 0; i < 6; i++) {
+      const z = -J.d * 0.34 + i * J.d * 0.135;
+      const y = 0.07 + (i % 2) * 0.03;
+      g.add(part(new THREE.BoxGeometry(J.w * 0.62, 0.04, 0.05), 0xf0dcb0, mats.wood, J.w * 0.12, y, z));
+      g.add(part(new THREE.BoxGeometry(0.08, 0.06, 0.07), i === 2 ? 0x2a2420 : 0xb83a2a, mats.plain, J.w * 0.12 + J.w * 0.31 + 0.03, y, z));
+    }
+    return { group: g };
+  }
+  if (what === 'cheese') {
+    // A wheel with a wedge out of it: the rind round its side, the cut faces paler, the holes showing.
+    const R = J.w / 2;
+    const gap = 0.9;
+    const wheel = new THREE.CylinderGeometry(R, R, J.h, 20, 1, false, gap / 2, Math.PI * 2 - gap);
+    g.add(part(wheel, 0xf2c87a, mats.cheese, 0, J.h / 2, 0));
+    // The two cut faces of the wedge's gap.
+    for (const a of [gap / 2, -gap / 2]) {
+      const face = new THREE.PlaneGeometry(R, J.h);
+      face.translate(R / 2, 0, 0);
+      const m = part(face, 0xffffff, mats.cheese, 0, J.h / 2, 0);
+      // (Each turned to lie along one edge of the gap, facing out of it.)
+      m.rotation.y = a - Math.PI / 2 + (a > 0 ? 0 : Math.PI);
+      m.scale.z = a > 0 ? 1 : -1;
+      g.add(m);
+    }
+    // The wedge itself, cut and lying beside the wheel.
+    const wedge = new THREE.CylinderGeometry(R * 0.6, R * 0.6, J.h * 0.5, 4, 1, false, 0, gap);
+    const w = part(wedge, 0xfff0c8, mats.cheese, R * 0.2, J.h * 0.25, R + 0.25);
+    w.rotation.y = 0.6;
+    g.add(w);
+    return { group: g };
+  }
+  // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.
+  g.add(part(new THREE.BoxGeometry(J.w * 0.8, J.h * 0.8, J.d), 0xe0dccf, mats.tin, -J.w * 0.1, J.h * 0.4, 0));
+  g.add(part(new THREE.PlaneGeometry(J.w * 0.76, J.d * 0.92).rotateX(-Math.PI / 2), 0x6a5a2a, mats.plain, -J.w * 0.1, J.h * 0.7, 0));
+  for (let i = 0; i < 3; i++) {
+    const fish = new THREE.SphereGeometry(0.1, 8, 5);
+    fish.scale(J.w * 3.2, 0.9, 1.1);
+    const f = part(fish, i % 2 ? 0xc0ccd8 : 0xa8b8c8, mats.tin, -J.w * 0.1 + (i % 2 ? 0.08 : -0.08), J.h * 0.74, (i - 1) * J.d * 0.27);
+    g.add(f);
+  }
+  // The lid: rolled up into a curl at the east end, and the key through it.
+  const curl = new THREE.CylinderGeometry(0.12, 0.12, J.d * 0.96, 10, 1);
+  curl.rotateX(Math.PI / 2);
+  g.add(part(curl, 0xe8e4d8, mats.tin, J.w * 0.33, J.h * 0.55, 0));
+  const key = new THREE.TorusGeometry(0.09, 0.022, 4, 8);
+  g.add(part(key, 0xc8c4b8, mats.tin, J.w * 0.33, J.h * 0.55, J.d * 0.5 + 0.1));
+  return { group: g };
+}

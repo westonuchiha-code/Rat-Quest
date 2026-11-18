@@ -2,7 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
-import { BRAZIER, COUCH, potBox, rockBox, stoolSolids, tableSolids, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
+import { BRAZIER, COUCH, junkSolids, potBox, rockBox, stoolSolids, tableSolids, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
 import { doorOn } from '../world/rooms';
@@ -20,6 +20,7 @@ export type PieceType =
   | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'scorpion' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
+  | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
@@ -519,6 +520,17 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         const mugs = Array.from({ length: n }, (_, i) => [Math.PI / 2 + (i * Math.PI * 2) / Math.max(1, n), 0.6] as [number, number]);
         decor.push({ kind: 'table', x: cx, y: p.top, z: cz, yaw: 0, mugs, ...(p.props?.candle ? { candle: true } : {}), ...(p.props?.cards ? { cards: true } : {}) });
         solids.push(...tableSolids(cx, p.top, cz));
+        break;
+      }
+      // Household junk at a rat's size (world/junkModels.ts): drawn, and solid to stand on.
+      case 'candle':
+      case 'spool':
+      case 'matchbox':
+      case 'cheese':
+      case 'sardines': {
+        const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+        decor.push({ kind: 'junk', what: p.t, x: cx, y: p.top, z: cz, yaw });
+        solids.push(...junkSolids(p.t, cx, p.top, cz, yaw));
         break;
       }
       case 'stool':

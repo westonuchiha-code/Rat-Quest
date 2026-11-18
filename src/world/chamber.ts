@@ -3,6 +3,7 @@ import { rulerStrip, signBoard } from './signs';
 import { buildBrazier } from './brazierModel';
 import { buildForge, type ForgeMats } from './forgeModels';
 import { buildCouch } from './couchModel';
+import { buildJunk } from './junkModels';
 import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
@@ -260,6 +261,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   let petalMat: THREE.ShaderMaterial | null = null;
   /** Cloth seen from both sides (banners). */
   const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('weave') });
+  let cheeseMat: THREE.ShaderMaterial | null = null;
   /** Lit by the room and textured (2026-11-18: the torch's stick, the banner's rod, the shelves were flat colour). */
   const litMats = new Map<TextureName, THREE.ShaderMaterial>();
   const lit = (name: TextureName): THREE.ShaderMaterial => {
@@ -1635,6 +1637,20 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       piece.traverse((o) => {
         if (o.userData.flame) swayers.push({ obj: o, axis: 'z', amount: 0.22, speed: 7, phase: d.x + d.z });
       });
+    } else if (d.kind === 'junk') {
+      // Household junk at a rat's size (junkModels.ts). A candle lights the room round it, and its flame shivers.
+      const built = buildJunk(d.what, {
+        tin: mat('tin'), wood: lit('ashWood'), card: lit('card'), wax: lit('wax'), thread: lit('thread'),
+        cheese: (cheeseMat ??= createPs1Material({ lit: true, tex: getTexture('cheese'), side: THREE.DoubleSide })),
+        plain: plainMat, glow: new THREE.MeshBasicMaterial({ color: 0xffd36a }),
+      });
+      built.group.position.set(d.x, d.y, d.z);
+      built.group.rotation.y = d.yaw;
+      group.add(built.group);
+      if (built.flame) {
+        swayers.push({ obj: built.flame, axis: 'z', amount: 0.25, speed: 7, phase: d.x + d.z });
+        lightDefs.push({ x: d.x, y: d.y + 1.2, z: d.z, r: 6, color: new THREE.Color(0xffb060), power: 0.7, flash: 0, flicker: 0.2, phase: d.x * 1.7 + d.z });
+      }
     } else if (d.kind === 'rug' || d.kind === 'dancefloor' || d.kind === 'bulbs' || d.kind === 'bottles' || d.kind === 'dartboard') {
       // More of the Club's dressing (tavernModels.ts): all of it only drawn.
       const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat, layer: plainOn, cork: mat('cork'), tin: mat('tin') };

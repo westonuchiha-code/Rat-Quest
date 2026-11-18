@@ -1178,6 +1178,60 @@ const paintWeave: Painter = (p, rand) => {
   }
 };
 
+/** CHEESE (2026-11-18, for the wheel of it): pale yellow paste, holes of every size, each shaded on its upper lip. */
+const paintCheese: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 3, 2);
+  const paste = [0xe8c050, 0xf0cc5c, 0xf6d86c, 0xfae27e, 0xfcea92];
+  p.each((x, y) => ramp(0.4 + f[y * s + x] * 0.45, paste, x, y, 0.2));
+  for (let k = 0; k < 9; k++) {
+    const cx = rand() * s, cy = rand() * s, r = 1 + rand() * 3;
+    for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+      const d = Math.hypot(x, y) / r;
+      if (d > 1) continue;
+      p.blend(cx + x, cy + y, y < 0 ? 0xa87a20 : 0xc89a34, 0.75 * (1 - d * 0.4));
+    }
+  }
+};
+
+/** CARDBOARD (2026-11-18, the matchbox): brown card, its fibres running one way, a crease or two and a scuffed corner. */
+const paintCard: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 4, 2);
+  const card = [0x9a7448, 0xa8804e, 0xb48c58, 0xc09862, 0xcaa46c];
+  p.each((x, y) => ramp(0.4 + f[y * s + x] * 0.4 + (Math.sin(y * 2.3 + f[y * s + x] * 4) * 0.04), card, x, y, 0.2));
+  for (let k = 0; k < 2; k++) {
+    const y = Math.floor(rand() * s);
+    for (let x = 0; x < s; x++) p.blend(x, y, 0x7a5834, 0.35);
+  }
+  p.speckle(rand, 14, [0x6a4a2a, 0xd8b480]);
+};
+
+/** WAX (2026-11-18, the candle): cream, smooth, with runs of wax down it from the top. */
+const paintWax: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 2, 2);
+  const wax = [0xd8ccb0, 0xe2d6ba, 0xece2c8, 0xf4ead4, 0xfaf2e0];
+  p.each((x, y) => ramp(0.45 + f[y * s + x] * 0.35, wax, x, y, 0.12));
+  for (let k = 0; k < 5; k++) {
+    const x = Math.floor(rand() * s);
+    const len = 4 + Math.floor(rand() * (s / 2));
+    for (let y = 0; y < len; y++) {
+      p.blend(x, y, 0xfffbf0, 0.5);
+      p.blend(x + 1, y, 0xc8bca0, 0.35);
+    }
+  }
+};
+
+/** THREAD wound on a reel (2026-11-18): turns of thread round and round, near white (its colour is laid over it). */
+const paintThread: Painter = (p, rand) => {
+  p.each((x, y) => {
+    const turn = Math.sin((y + x * 0.12) * 2.4);
+    return mix(0xb8b4ac, 0xf6f2ea, 0.5 + turn * 0.45);
+  });
+  p.speckle(rand, 10, 0x8a8680);
+};
+
 /**
  * TIN (2026-11-18: the thimble mugs and the keg were plain colour): a dull grey metal, pressed all over with the little
  * round dimples a thimble has, each lit on one side and shaded on the other, and a few fine scratches.
@@ -3248,6 +3302,10 @@ const DEFS = {
   cork: { size: 32, seed: 607, paint: paintCork },
   tin: { size: 32, seed: 608, paint: paintTin },
   weave: { size: 32, seed: 609, paint: paintWeave },
+  cheese: { size: 32, seed: 610, paint: paintCheese },
+  card: { size: 32, seed: 611, paint: paintCard },
+  wax: { size: 32, seed: 612, paint: paintWax },
+  thread: { size: 32, seed: 613, paint: paintThread },
   couchFabric: { size: 64, seed: 604, paint: paintCouchFabric },
   couchPatch: { size: 32, seed: 605, paint: paintCouchPatch },
   knitBlanket: { size: 32, seed: 606, paint: paintKnitBlanket },
