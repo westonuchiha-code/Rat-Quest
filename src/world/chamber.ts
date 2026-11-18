@@ -269,6 +269,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     if (!m) litMats.set(name, (m = createPs1Material({ lit: true, tex: getTexture(name) })));
     return m;
   };
+  /** Repeat a shape's own UVs this many times across and along (a long pipe's picture is not one stretched smear). */
+  const tiled = <G extends THREE.BufferGeometry>(g: G, su: number, sv: number): G => {
+    const uv = g.attributes.uv;
+    if (uv) for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+    return g;
+  };
   /** A colour lifted toward white, for a texture that carries its own darks under it. */
   const lifted = (c: number, k = 0.55): number => new THREE.Color(c).lerp(new THREE.Color(0xffffff), k).getHex();
   // Falling and gushing sludge scroll their own texture, fast.
@@ -651,18 +657,18 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const from = new THREE.Vector3(...d.a);
       const to = new THREE.Vector3(...d.b);
       const len = from.distanceTo(to);
-      const parts: THREE.BufferGeometry[] = [new THREE.CylinderGeometry(d.r, d.r, len, 8, 1)];
-      bakeVertexColor(parts[0], d.color ?? 0x8a5a3c);
+      const parts: THREE.BufferGeometry[] = [tiled(new THREE.CylinderGeometry(d.r, d.r, len, 8, 1), Math.max(1, Math.round(d.r * 4)), Math.max(1, Math.round(len / 1.5)))];
+      bakeVertexColor(parts[0], lifted(d.color ?? 0x8a5a3c, 0.15));
       // Bands every few units, like the joints of a real pipe.
       for (let t = 2; t < len; t += 5) {
         // (Proud of the pipe by more than a hair, however thin the pipe: a band a hair proud flickers through it.)
         const br = Math.max(d.r * 1.25, d.r + 0.04);
         const band = new THREE.CylinderGeometry(br, br, 0.25, 8, 1);
         band.translate(0, t - len / 2, 0);
-        bakeVertexColor(band, 0x4a3a30);
+        bakeVertexColor(band, lifted(0x4a3a30, 0.15));
         parts.push(band);
       }
-      const m = new THREE.Mesh(mergeAll(parts), plainMat);
+      const m = new THREE.Mesh(mergeAll(parts), lit('tin'));
       m.position.copy(from).lerp(to, 0.5);
       m.quaternion.setFromUnitVectors(UP, to.clone().sub(from).normalize());
       group.add(m);
@@ -936,7 +942,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) piece(new THREE.BoxGeometry(0.05, 0.42, 0.05), sx * 0.22, -0.02, sz * 0.22);
       piece(new THREE.BoxGeometry(0.52, 0.06, 0.52), 0, -0.25, 0); // the floor of it
       piece(new THREE.BoxGeometry(0.1, 0.1, 0.1), 0, -0.32, 0); // a knob underneath
-      addMesh(bakeVertexColor(mergeAll(parts), iron), plainMat, d.x, d.y, d.z);
+      addMesh(bakeVertexColor(mergeAll(parts), lifted(iron, 0.45)), lit('wroughtIron'), d.x, d.y, d.z);
       // The light itself: the panes, a little inside the frame.
       const panes = new THREE.BoxGeometry(0.4, 0.4, 0.4);
       bakeVertexColor(panes, 0xfff0b0, false);
@@ -947,11 +953,11 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // (A bare one is only its light.)
       if (!d.bare) {
         const post = new THREE.BoxGeometry(0.16, 0.5, 0.16);
-        bakeVertexColor(post, 0x3a3a42);
-        addMesh(post, plainMat, d.x, d.y + 0.25, d.z);
+        bakeVertexColor(post, lifted(0x3a3a42, 0.45));
+        addMesh(post, lit('wroughtIron'), d.x, d.y + 0.25, d.z);
         const cap = new THREE.BoxGeometry(0.34, 0.1, 0.34);
-        bakeVertexColor(cap, 0x4a4a54);
-        addMesh(cap, plainMat, d.x, d.y + 0.53, d.z);
+        bakeVertexColor(cap, lifted(0x4a4a54, 0.45));
+        addMesh(cap, lit('wroughtIron'), d.x, d.y + 0.53, d.z);
         const bright = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
         bakeVertexColor(bright, d.color, false);
         const dim = new THREE.CylinderGeometry(0.15, 0.17, 0.3, 7, 1);
@@ -1076,8 +1082,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(g);
       const rim = new THREE.CylinderGeometry(d.r / 2, d.r / 2, 0.12, 10, 1);
       rim.rotateX(Math.PI / 2);
-      bakeVertexColor(rim, 0xb08a3a);
-      g.add(new THREE.Mesh(rim, plainMat));
+      bakeVertexColor(rim, lifted(0xb08a3a, 0.3));
+      g.add(new THREE.Mesh(rim, lit('tin')));
       const face = new THREE.CircleGeometry(d.r * 0.42, 10);
       bakeVertexColor(face, 0xe8e2c8, false);
       const fm = new THREE.Mesh(face, darkMat);
@@ -1584,8 +1590,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
           const sl = l / segs;
           const r0 = 0.07 * (1 - k / segs) + 0.015;
           const geo = new THREE.CylinderGeometry(r0 * 0.7, r0, sl, 4, 1);
-          bakeVertexColor(geo, k % 2 ? 0x5a3d24 : 0x4a3220);
-          const m = new THREE.Mesh(geo, plainMat);
+          bakeVertexColor(geo, lifted(k % 2 ? 0x5a3d24 : 0x4a3220, 0.4));
+          const m = new THREE.Mesh(geo, lit('ashWood'));
           const nx = x + Math.sin(a * 3 + k * 1.7) * 0.18;
           const nz = z + Math.cos(a * 2 + k * 2.1) * 0.18;
           m.position.set((x + nx) / 2, y - sl / 2, (z + nz) / 2);
@@ -1601,20 +1607,20 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // Parts are laid out facing +z, then turned about the piece's centre.
       const cs = Math.cos(d.yaw);
       const sn = Math.sin(d.yaw);
-      const part = (geo: THREE.BufferGeometry, color: number, lx: number, ly: number, lz: number): THREE.Mesh => {
-        bakeVertexColor(geo, color);
-        const m = addMesh(geo, plainMat, d.x + lx * cs + lz * sn, d.y + ly, d.z - lx * sn + lz * cs);
+      const part = (geo: THREE.BufferGeometry, color: number, lx: number, ly: number, lz: number, skin: THREE.Material = plainMat, lift = 0.4): THREE.Mesh => {
+        bakeVertexColor(geo, skin === plainMat ? color : lifted(color, lift));
+        const m = addMesh(geo, skin, d.x + lx * cs + lz * sn, d.y + ly, d.z - lx * sn + lz * cs);
         m.rotation.y = d.yaw;
         return m;
       };
       if (d.kind === 'speaker') {
-        part(new THREE.BoxGeometry(1.7, 2.8, 1.2), 0x4a4a56, 0, 1.4, 0); // the cabinet
-        part(new THREE.BoxGeometry(1.5, 0.12, 1.0), 0x5a5a68, 0, 2.86, 0); // a dented top
-        const woofer = part(new THREE.CylinderGeometry(0.62, 0.5, 0.25, 10, 1), 0x8a6a4a, 0, 0.95, 0.66);
+        part(tiled(new THREE.BoxGeometry(1.7, 2.8, 1.2), 3, 4), 0x4a4a56, 0, 1.4, 0, lit('weave'), 0); // the cabinet, its grille cloth
+        part(new THREE.BoxGeometry(1.5, 0.12, 1.0), 0x5a5a68, 0, 2.86, 0, lit('tin')); // a dented top
+        const woofer = part(new THREE.CylinderGeometry(0.62, 0.5, 0.25, 10, 1), 0x8a6a4a, 0, 0.95, 0.66, lit('card')); // a paper cone
         woofer.rotation.x = Math.PI / 2;
         const dust = part(new THREE.CylinderGeometry(0.2, 0.2, 0.3, 8, 1), 0x1a1a1e, 0, 0.95, 0.74);
         dust.rotation.x = Math.PI / 2;
-        const tweet = part(new THREE.CylinderGeometry(0.28, 0.24, 0.16, 8, 1), 0x4a4a54, 0, 2.2, 0.62);
+        const tweet = part(new THREE.CylinderGeometry(0.28, 0.24, 0.16, 8, 1), 0x4a4a54, 0, 2.2, 0.62, lit('tin'));
         tweet.rotation.x = Math.PI / 2;
         part(new THREE.BoxGeometry(0.08, 1.1, 0.04), 0x101014, -0.45, 1.8, 0.62).rotation.z = 0.5; // a crack
         part(new THREE.BoxGeometry(0.05, 0.9, 0.05), 0xc84a3a, 0.9, 0.5, 0.3); // a dangling wire
@@ -1777,7 +1783,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         link.translate(0, y - d.top, 0);
         parts.push(link);
       }
-      if (parts.length) addMesh(bakeVertexColor(mergeAll(parts), 0x5a5a62), plainMat, d.x, d.top, d.z); // a chain with no length draws nothing
+      if (parts.length) addMesh(bakeVertexColor(mergeAll(parts), lifted(0x5a5a62, 0.45)), lit('wroughtIron'), d.x, d.top, d.z); // a chain with no length draws nothing
     } else if (d.kind === 'post') {
       const post = new THREE.BoxGeometry(0.5, d.top - d.y, 0.5);
       applyWorldUvs(post, 1.5);

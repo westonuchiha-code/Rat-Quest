@@ -353,7 +353,7 @@ export function buildDartboard(mats: TavernMats): THREE.Group {
   const g = new THREE.Group();
   // (The cork, and its rings painted on it one over another: each ring a layer up from the one it lies on.)
   const disc = (r: number, color: number, z: number, level: number): THREE.Mesh => colored(new THREE.CylinderGeometry(r, r, 0.03, 12, 1).rotateX(Math.PI / 2), color, level ? mats.layer?.(level) ?? mats.plain : mats.plain, 0, 0, z);
-  g.add(disc(0.5, 0x8f6a40, 0.03, 0));
+  g.add(mats.cork ? colored(new THREE.CylinderGeometry(0.5, 0.5, 0.03, 12, 1).rotateX(Math.PI / 2), 0xd8c0a0, mats.cork, 0, 0, 0.03) : disc(0.5, 0x8f6a40, 0.03, 0)); // the cork
   g.add(disc(0.44, 0x2a2a30, 0.04, 1));
   g.add(disc(0.34, 0xe2d8bc, 0.046, 2));
   g.add(disc(0.22, 0x8f2a2a, 0.052, 3));
