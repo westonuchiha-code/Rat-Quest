@@ -166,6 +166,9 @@ to the rim, the sword arm up, knees up; a spin pulls both arms in tight and whip
 NAME: player/trickLog.ts keeps what he did in one air from what main.ts already sees (no controller change);
 ui/trickHud.ts shows it low in the middle for 1.4 s as he lands ("360 + SHIELD GRAB + KICKFLIP", "720").
 tests/tricks.ts and new checks in tests/toybox.ts (the names agree with what the controller counts).
+THE NAMES TAKEN OFF THE SCREEN (the owner, 2026-11-18: "I'd actually like to remove the trick names I don't think
+they're really that useful"): ui/trickHud.ts deleted. The poses and sounds stay. TrickLog still counts the tricks (the
+horn stab, the grab's slap); its `landed()` naming is no longer shown anywhere.
 
 **B5. Drop-in for voices and font files.** Voices: a folder per character kind, cut into syllables as
 `scripts/make-recorded.py` does. Fonts: a `.woff2` in `assets/fonts/` becomes an `@font-face` in `FONT_FACES`

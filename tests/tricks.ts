@@ -1,7 +1,8 @@
-// The names of his tricks on the shield (BACKLOG B4, 2026-11-18): player/trickLog.ts, and the name shown as he lands.
+// His tricks on the shield (BACKLOG B4, 2026-11-18): player/trickLog.ts keeps what he did in one air (for the horn stab
+// and the grab's slap). Their names were shown as he landed for a day, then taken off the screen at the owner's word.
+import fs from 'node:fs';
 import { TrickLog, TRICK_NAMES } from '../src/player/trickLog';
 import { SFX_NAMES, sfx } from '../src/audio/synth';
-import { TRICK_SHOW } from '../src/ui/trickHud';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -40,7 +41,7 @@ const DT = 1 / 60;
 }
 {
   check('the trick sounds are made: a whirl for a spin, a slap for a grab, a stab of horns for tricks landed', (['spinWhirl', 'grabSlap', 'trickStab'] as const).every((n) => SFX_NAMES.includes(n) && sfx(n).data.length > 0 && [...sfx(n).data].every(Number.isFinite)));
-  check('the name stays up long enough to read, and goes by itself', TRICK_SHOW >= 1 && TRICK_SHOW <= 2.5);
+  check('the names are not shown on the screen (the owner, 2026-11-18: "remove the trick names")', !fs.existsSync('src/ui/trickHud.ts') && !/trickHud|TrickHud/.test(fs.readFileSync('src/main.ts', 'utf8')));
 }
 console.log(failures ? `tricks: ${failures} FAIL` : 'tricks: all pass');
 if (failures) process.exitCode = 1;

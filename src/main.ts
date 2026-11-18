@@ -116,7 +116,6 @@ import type { KeepsakeKind } from './story/memory';
 import type { StoryCtx } from './story/scenes';
 import type { EnemySpec, LevelDef } from './levels/types';
 import { GoalHud } from './ui/goalHud';
-import { TrickHud } from './ui/trickHud';
 import { TrickLog } from './player/trickLog';
 import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
@@ -1172,8 +1171,8 @@ function startGame(): void {
   };
   const collectHud = new CollectHud(gameWrap);
   const goalHud = new GoalHud(gameWrap);
-  /** His tricks on the shield in this air, by name, and the name shown as he lands them (B4). */
-  const trickHud = new TrickHud(gameWrap);
+  /** His tricks on the shield in this air (B4): how many, for the horn stab as he lands them, and when a grab counts. (Their
+   * NAMES were shown on landing for a day; the owner, 2026-11-18: "I'd actually like to remove the trick names".) */
   const trickLog = new TrickLog();
   const preview = new RatPreview();
   const equipment = new Equipment(files);
@@ -1942,9 +1941,9 @@ function startGame(): void {
     else if (ev === 'trick') {
       audio.play('ridePop', { vol: 0.65, rate: 0.9, priority: 6 });
       audio.play('sparkle', { vol: 0.5, rate: 1.3, priority: 6 });
-      // Its name, as he lands it; and a stab of horns, a step higher for each trick after the first.
+      // A stab of horns, a step higher for each trick after the first.
       const did = trickLog.count;
-      trickHud.show(trickLog.landed());
+      trickLog.clear();
       audio.play('trickStab', { vol: 0.6, rate: Math.pow(2, (2 * Math.min(4, Math.max(0, did - 1))) / 12), priority: 6 });
       rumble.land(5);
     } else if (ev === 'bail') {
@@ -4333,7 +4332,6 @@ function startGame(): void {
     // (The Hall asks nothing of him and counts nothing: only its name.)
     const gs = noWayOut(cur) ? { label: cur.name, text: '', done: false } : cur.hub ? { label: 'Golden Wedges', text: `${wedgeTotal()}/${allWedges()}`, done: false } : goals.current(aliveCount());
     // (A room that asks nothing, a practice room, shows its own name: not the line of the room he came from.)
-    trickHud.update(frameDt);
     if (gs) goalHud.set(gs.label, gs.text, goals.mainDone(aliveCount()) || open);
     else goalHud.set(cur.name, '', false);
     if (builder.live) builder.setPlayer(renderPos.x, renderPos.z, player.facing);

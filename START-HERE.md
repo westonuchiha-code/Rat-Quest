@@ -2145,10 +2145,11 @@ slow the roll without asking: rolling round an enemy is meant to stay.
 The owner: "Toy Box, Long Drop is fine, but let it keep its room number". THE TOY BOX / TEST ROOM 1, THE MILKY WAY /
 TEST ROOM 1B, THE BIG DIPPER / TEST ROOM 1C, THE LONG DROP / TEST ROOM 5. One switch: `BOARDS_SAY` in testRooms.ts.
 
-## [opus] Tricks named as he lands them (2026-11-18)
+## [opus] Tricks: poses and sounds (2026-11-18)
 
-Landed tricks are named low on the screen for a moment ("360 + SHIELD GRAB + KICKFLIP"); a grab and a spin have
-poses and sounds of their own. player/trickLog.ts, ui/trickHud.ts. Film: `&autoride&at=24,16,-52,3.1416` in the Toy
+A grab and a spin have poses and sounds of their own; a horn stab as tricks land. (Their NAMES were shown on landing
+for a day; the owner: "I'd actually like to remove the trick names I don't think they're really that useful". Gone.)
+player/trickLog.ts counts them. Film: `&autoride&at=24,16,-52,3.1416` in the Toy
 Box (from the big ramp's tower top; add `&chase=-3.2,1.2,0.6` to see him close).
 
 ## [opus] The level editor knows the new things (2026-11-17)
