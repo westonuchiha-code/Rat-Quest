@@ -59,7 +59,7 @@ export function hallDoors(): CourseDoorDef[] {
  * `slot`: between door places `slot` and `slot + 1`. `side`: -1 the north half of the hall, 1 the south.
  * `with`: whom he is turned to (another name in this list); nobody, and he faces across the hall.
  */
-interface Standing { name: string; slot: number; side: -1 | 1; with?: string; lean?: boolean; /** Not between doors: just here, facing this way. */ at?: [number, number, number] }
+interface Standing { name: string; slot: number; side: -1 | 1; with?: string; lean?: boolean; /** Not between doors: just here, facing this way. */ at?: [number, number, number]; /** At the Hall's bar: keeping it, or on a stool before it (`barPlace`). */ bar?: 'keep' | 'stool' }
 const CROWD: Standing[] = [
   // (The doorman: against the end wall by the way in, looking down the hall.)
   { name: 'Sir Hobnail', slot: 0, side: -1, at: [-HX + 1.3, -4.2, Math.PI / 2] },
@@ -72,8 +72,9 @@ const CROWD: Standing[] = [
   { name: 'Vix', slot: 5, side: 1, with: 'Ash' },
   { name: 'Ash', slot: 5, side: 1, with: 'Vix' },
   { name: 'Biscuit', slot: 6, side: -1, lean: true },
-  { name: 'Madam Tawny', slot: 8, side: 1, with: 'Slink' },
-  { name: 'Slink', slot: 8, side: 1, with: 'Madam Tawny' },
+  // (At the Hall's bar, 2026-11-18: she keeps it, as she keeps the Club's; he is on a stool before it, with a thimble.)
+  { name: 'Madam Tawny', slot: 0, side: 1, bar: 'keep' },
+  { name: 'Slink', slot: 0, side: 1, bar: 'stool' },
   { name: 'Professor Snow', slot: 9, side: -1, with: 'Corporal Nib' },
   { name: 'Corporal Nib', slot: 9, side: -1, with: 'Professor Snow' },
   // (He stands by his own door, the second of the boss rooms.)
@@ -83,10 +84,30 @@ const CROWD: Standing[] = [
 const ROW = 3;
 const APART = 0.9;
 
+/** Where the bar's keeper stands (behind its middle, between it and the wall) and where its middle stool is. */
+function barPlace(who: 'keep' | 'stool'): [number, number] {
+  const D = HALL_DRESS.bar;
+  const bx0 = placeX(D.from) - 1;
+  const bx1 = placeX(D.to) + 1;
+  if (who === 'keep') return [(bx0 + bx1) / 2, HZ - D.out + D.deep + 0.7];
+  const stools = barStools();
+  return stools[Math.floor(stools.length / 2)];
+}
+/** The stools before the bar, every two along it. */
+function barStools(): Array<[number, number]> {
+  const D = HALL_DRESS.bar;
+  const bx0 = placeX(D.from) - 1;
+  const bx1 = placeX(D.to) + 1;
+  const out: Array<[number, number]> = [];
+  for (let x = bx0 + 1; x <= bx1 - 0.9; x += 2) out.push([x, HZ - D.out - 0.8]);
+  return out;
+}
+
 function crowd(): NpcSpec[] {
   // (By name, whatever its letters' case: those the Club's kit places are written in capitals.)
   const cast = new Map((junction().npcs ?? []).map((n) => [n.name.toUpperCase(), n]));
   const where = (s: Standing): [number, number] => {
+    if (s.bar) return barPlace(s.bar);
     if (s.at) return [s.at[0], s.at[1]];
     const mid = placeX(s.slot) + STEP / 2;
     if (s.lean) return [mid, s.side * (HZ - 0.55)];
@@ -103,14 +124,17 @@ function crowd(): NpcSpec[] {
     const other = s.with ? CROWD.find((c) => c.name === s.with) : undefined;
     const partner = other ? where(other) : undefined;
     // He is turned to whoever he is with; leaning, his back is to the wall; alone, he looks across the hall.
-    const facing = s.at ? s.at[2] : partner ? Math.atan2(partner[0] - x, partner[1] - z) : s.side < 0 ? 0 : Math.PI;
+    const keeper = barPlace('keep');
+    // (Behind the bar she faces the hall; on his stool he faces her.)
+    const facing = s.bar === 'keep' ? Math.PI : s.bar === 'stool' ? Math.atan2(keeper[0] - x, keeper[1] - z) : s.at ? s.at[2] : partner ? Math.atan2(partner[0] - x, partner[1] - z) : s.side < 0 ? 0 : Math.PI;
     const patron = from.doing !== undefined;
-    // (Everyone is here from the start: the Hall is where the whole cast is LOOKED AT, earned or not. Nobody is sitting.)
+    // (Everyone is here from the start: the Hall is where the whole cast is LOOKED AT, earned or not. Nobody is sitting
+    // but the one on a stool at the bar.)
     const { when: _when, hidden: _hidden, seated: _seated, partner: _partner, turn: _turn, doing: _doing, auto: _auto, ...rest } = from;
     out.push({
-      ...rest, x, z, y: 0, facing,
+      ...rest, x, z, y: s.bar === 'keep' ? HALL_DRESS.bar.step : 0, facing,
       lines: from.lines.length ? from.lines : ['...'],
-      ...(patron ? { doing: s.lean ? 'lean' : partner ? 'chat' : 'stand', ...(partner ? { partner, turn: where(s)[0] < partner[0] ? 0 : 1 } : {}) } : {}),
+      ...(patron && s.bar === 'keep' ? { doing: 'tend' } : patron && s.bar === 'stool' ? { doing: 'drink', seated: true, partner: keeper } : patron ? { doing: s.lean ? 'lean' : partner ? 'chat' : 'stand', ...(partner ? { partner, turn: where(s)[0] < partner[0] ? 0 : 1 } : {}) } : {}),
     } as NpcSpec);
   }
   return out;
@@ -127,7 +151,7 @@ function crowd(): NpcSpec[] {
 export const HALL_DRESS = {
   bench: { len: 2.4, deep: 0.6, high: 0.45 },
   /** The bar: along the south wall from this door place to that one, its front this far from the wall. */
-  bar: { from: 13, to: 15, out: 2.4, deep: 1 },
+  bar: { from: 13, to: 15, out: 2.4, deep: 1, /** The step behind it, from it to the wall, that its keeper stands on to see over (as in the Club). */ step: 0.45 },
   tables: [11.5, 12.6],
 } as const;
 const BANNER_TURN = ['purple', 'red', 'gold', 'blue', 'green'] as const;
@@ -152,7 +176,8 @@ function dressing(): Piece[] {
   const bx0 = placeX(D.bar.from) - 1;
   const bx1 = placeX(D.bar.to) + 1;
   out.push(box('bar', bx0, HZ - D.bar.out, bx1, HZ - D.bar.out + D.bar.deep, 0));
-  for (let x = bx0 + 1; x <= bx1 - 0.9; x += 2) out.push(at('stool', x, HZ - D.bar.out - 0.8));
+  out.push(box('platform', bx0, HZ - D.bar.out + D.bar.deep, bx1, HZ, D.bar.step, { bottom: 0 }));
+  for (const [x, z] of barStools()) out.push(at('stool', x, z));
   // Two tables, each with three stools round it.
   for (const t of D.tables) {
     const x = placeX(t);

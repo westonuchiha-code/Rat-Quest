@@ -81,8 +81,14 @@ const hall = levelById(HALL_ID)!;
     check('THE HALL IS DRESSED: banners over the torches, benches between the doors, a bar along the empty east end of the south wall with stools, and two tables', hall.decor.filter((d) => d.kind === 'banner').length >= 20 && hall.decor.some((d) => d.kind === 'keg') && hall.decor.filter((d) => d.kind === 'table').length === 2 && hall.decor.filter((d) => d.kind === 'stool').length >= 10 && things.filter((b) => b.kind === 'plank' && !b.hidden).length >= 15, `${things.length} pieces`);
     check('...and none of it stands in or before a doorway', inDoor.length === 0, inDoor.map((b) => `${b.x0.toFixed(1)},${b.z0.toFixed(1)}`).join('; '));
     check('...nor in the middle of the hall, which is left clear to run down', things.every((b) => b.z0 > 1.6 || b.z1 < -1.6));
-    const onSomeone = (hall.npcs ?? []).filter((n) => things.some((b) => near(b, n.x, n.z, 0.35)));
+    // (Standing ON a thing is standing: the bar's keeper on the step behind it.)
+    const onSomeone = (hall.npcs ?? []).filter((n) => !n.seated && things.some((b) => near(b, n.x, n.z, 0.35) && (n.y ?? 0) < b.y1 - 0.01));
     check('...nor where anyone stands', onSomeone.length === 0, onSomeone.map((n) => n.name).join(', '));
+    const tawny = hall.npcs!.find((n) => n.name === 'Madam Tawny')!;
+    const slink = hall.npcs!.find((n) => n.name === 'Slink')!;
+    const bar = things.find((b) => b.kind === 'plank' && b.y1 === 1 && b.z0 > 0 && b.x1 - b.x0 > 5)!;
+    const stool = things.find((b) => b.hidden && near(b, slink.x, slink.z, 0.01));
+    check('MADAM TAWNY KEEPS THE HALL\'S BAR (behind it, between it and the wall, facing the hall, at her work) and SLINK SITS ON A STOOL BEFORE IT, with a thimble, turned to her', !!bar && tawny.z > bar.z1 && tawny.z < HALL.halfZ - 0.3 && tawny.x > bar.x0 && tawny.x < bar.x1 && tawny.doing === 'tend' && Math.abs(tawny.facing - Math.PI) < 1e-6 && !!stool && !!slink.seated && slink.doing === 'drink' && slink.z < bar.z0 && Math.abs(Math.atan2(tawny.x - slink.x, tawny.z - slink.z) - slink.facing) < 1e-6);
   }
   const south = doors.filter((d) => d.door.z > 0);
   check('the rooms and the bosses are along one wall (the rooms first, in the order of their numbers, then a gap, then the bosses); the practice rooms along the other', north.length === ROOMS.length + BOSS_ROOMS.length && south.length === PRACTICE_ROOMS.length && ROOMS.every((r, i) => north[i].to === r.id && (i === 0 || north[i].door.x > north[i - 1].door.x)) && north[ROOMS.length].door.x - north[ROOMS.length - 1].door.x > HALL.step * 1.5);
@@ -99,7 +105,7 @@ const hall = levelById(HALL_ID)!;
   // The crowd.
   const club = (junction().npcs ?? []).map((n) => n.name.toUpperCase());
   const here = (hall.npcs ?? []).map((n) => n.name.toUpperCase());
-  check('EVERYONE in the Club is in the Hall (all seventeen), each once, and nobody is waiting to be earned or hidden', club.length >= 17 && club.every((n) => here.filter((h) => h === n).length === 1) && (hall.npcs ?? []).every((n) => !n.when && !n.hidden && !n.seated), club.filter((n) => !here.includes(n)).join(', '));
+  check('EVERYONE in the Club is in the Hall (all seventeen), each once, and nobody is waiting to be earned or hidden (nor sitting, but Slink on his stool at the bar)', club.length >= 17 && club.every((n) => here.filter((h) => h === n).length === 1) && (hall.npcs ?? []).every((n) => !n.when && !n.hidden && (!n.seated || n.name === 'Slink')), club.filter((n) => !here.includes(n)).join(', '));
   const npcs = hall.npcs ?? [];
   const blocked = npcs.filter((n) => doors.some((d) => Math.hypot(n.x - d.door.x, n.z - d.door.z) < DOOR_REACH + 1.2 || atDoor(d.door, n.x, n.z)));
   check('nobody stands in a doorway, or near enough one to be in the way of it', blocked.length === 0, blocked.map((n) => n.name).join(', '));

@@ -196,7 +196,8 @@ Dave. The south wall's east end has no doors: room for more. The Club's own door
 turn), a bench between each two doors where nobody leans, a BAR along the empty east end of the south wall (door
 places 13-15) with stools, and two tables with candles and stools. Practice rooms: banners on three walls. Checks in
 tests/hall.ts (none of it in a doorway, the middle lane, or where anyone stands). NOT done: the Club's own doors
-still ask for wedges; nobody keeps the Hall's bar.
+still ask for wedges. [opus] 2026-11-18: Madam Tawny keeps the Hall's bar (on a step behind it, as in the Club) and
+Slink sits on its middle stool with a thimble (hall.ts CROWD `bar`).
 
 **B8. The Foundry in the Forge's look.** Waiting on his yes to the Forge (Test Room 7). Then: the furnace's fire and
 its pour should burn him (noted NOT DONE), and the Forge wants sounds.
