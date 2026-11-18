@@ -17,6 +17,9 @@ export interface TavernMats {
   wood: THREE.Material;
   /** Plain colour: everything else. */
   plain: THREE.Material;
+  /** Textured (2026-11-18; without them, plain as before): cork for the stools and the dartboard, tin for the thimbles and the keg. */
+  cork?: THREE.Material;
+  tin?: THREE.Material;
   /** Unlit: the candle's flame. */
   glow: THREE.Material;
   /**
@@ -71,12 +74,16 @@ export function buildMug(mats: TavernMats, full = true): THREE.Group {
     return colored(geo, color, mats.plain, 0, y, 0);
   };
   // Its wall, open at the top, and its foot.
-  g.add(colored(new THREE.CylinderGeometry(0.075, 0.058, 0.15, 7, 1, true), TIN, mats.plain, 0, 0.075, 0));
+  const tin = mats.tin ?? mats.plain;
+  // (On the tin texture the colour is a tint over its own grey: a little lighter, so the two together come out as before.)
+  const T = mats.tin ? 0xe4e2d8 : TIN;
+  const R = mats.tin ? 0xf2f0e6 : RIM;
+  g.add(colored(new THREE.CylinderGeometry(0.075, 0.058, 0.15, 7, 1, true), T, tin, 0, 0.075, 0));
   const foot = new THREE.CircleGeometry(0.058, 7, START);
   foot.rotateX(Math.PI / 2);
-  g.add(colored(foot, TIN, mats.plain, 0, 0, 0));
+  g.add(colored(foot, T, tin, 0, 0, 0));
   // Its rim: a band round the mouth, and the flat of it on top, a ring with the mouth open in its middle.
-  g.add(colored(new THREE.CylinderGeometry(0.082, 0.082, 0.022, 7, 1, true), RIM, mats.plain, 0, TOP - 0.011, 0));
+  g.add(colored(new THREE.CylinderGeometry(0.082, 0.082, 0.022, 7, 1, true), R, tin, 0, TOP - 0.011, 0));
   g.add(up(new THREE.RingGeometry(0.064, 0.082, 7, 1, START), TOP, RIM));
   const lip = new THREE.RingGeometry(0.075, 0.082, 7, 1, START);
   lip.rotateX(Math.PI / 2);
@@ -105,7 +112,7 @@ export function buildTable(mats: TavernMats, top: TableTop = {}): THREE.Group {
     g.add(colored(new THREE.CylinderGeometry(R + 0.012, R + 0.012, 0.035, 12, 1, true), 0x3c3a40, mats.plain, 0, y, 0));
   }
   // The core, with bolts through the top cheek and a turn or two of old cable still on it.
-  g.add(colored(new THREE.CylinderGeometry(R * 0.42, R * 0.42, H - 0.2, 9, 1), 0x7a5a38, mats.plain, 0, H / 2, 0));
+  g.add(colored(new THREE.CylinderGeometry(R * 0.42, R * 0.42, H - 0.2, 9, 1), mats.cork ? 0xb89a78 : 0x7a5a38, mats.cork ? mats.wood : mats.plain, 0, H / 2, 0));
   for (const y of [0.24, 0.31, 0.38]) {
     const turn = new THREE.TorusGeometry(R * 0.46, 0.035, 4, 10);
     turn.rotateX(Math.PI / 2);
@@ -149,9 +156,10 @@ export function buildTable(mats: TavernMats, top: TableTop = {}): THREE.Group {
 export function buildStool(mats: TavernMats): THREE.Group {
   const g = new THREE.Group();
   // A cork, a little wider at its foot, and a bottle cap pressed down on it for a seat.
-  g.add(colored(new THREE.CylinderGeometry(STOOL.r * 0.78, STOOL.r * 0.9, STOOL.h - 0.05, 8, 1), 0xb98d5a, mats.plain, 0, (STOOL.h - 0.05) / 2, 0));
+  g.add(colored(new THREE.CylinderGeometry(STOOL.r * 0.78, STOOL.r * 0.9, STOOL.h - 0.05, 8, 1), mats.cork ? 0xf4ece0 : 0xb98d5a, mats.cork ?? mats.plain, 0, (STOOL.h - 0.05) / 2, 0));
   g.add(colored(new THREE.CylinderGeometry(STOOL.r * 0.8, STOOL.r * 0.8, 0.02, 8, 1), 0x8f6a40, mats.plain, 0, 0.16, 0));
-  g.add(colored(new THREE.CylinderGeometry(STOOL.r, STOOL.r * 1.06, 0.06, 10, 1), 0x9a3a2e, mats.plain, 0, STOOL.h - 0.03, 0));
+  // (The cap: red paint on tin, its dimples showing through.)
+  g.add(colored(new THREE.CylinderGeometry(STOOL.r, STOOL.r * 1.06, 0.06, 10, 1), mats.tin ? 0xc85a4a : 0x9a3a2e, mats.tin ?? mats.plain, 0, STOOL.h - 0.03, 0));
   // (The cap's liner, standing well proud of it: a hair proud, the two tops flickered.)
   g.add(colored(new THREE.CylinderGeometry(STOOL.r * 0.74, STOOL.r * 0.8, 0.03, 10, 1), 0xc8584a, mats.plain, 0, STOOL.h + 0.012, 0));
   return g;
@@ -177,7 +185,7 @@ export function buildKeg(mats: TavernMats): THREE.Group {
   const g = new THREE.Group();
   const can = new THREE.CylinderGeometry(0.3, 0.3, 0.62, 10, 1);
   can.rotateX(Math.PI / 2);
-  g.add(colored(can, 0x8f8a78, mats.plain, 0, 0.36, 0));
+  g.add(colored(can, mats.tin ? 0xd6d0bc : 0x8f8a78, mats.tin ?? mats.plain, 0, 0.36, 0));
   for (const z of [-0.26, 0, 0.26]) {
     const hoop = new THREE.CylinderGeometry(0.325, 0.325, 0.03, 10, 1, true);
     hoop.rotateX(Math.PI / 2);

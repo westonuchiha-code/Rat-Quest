@@ -1617,7 +1617,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       }
     } else if (d.kind === 'table' || d.kind === 'stool' || d.kind === 'mugs' || d.kind === 'keg') {
       // The Club's tables, stools and bar things (tavernModels.ts).
-      const mats = { wood: mat('planks'), plain: plainMat, glow: new THREE.MeshBasicMaterial({ color: 0xffd36a }) };
+      const mats = { wood: mat('planks'), plain: plainMat, glow: new THREE.MeshBasicMaterial({ color: 0xffd36a }), cork: mat('cork'), tin: mat('tin') };
       const piece = d.kind === 'table' ? buildTable(mats, { mugs: d.mugs, candle: d.candle, cards: d.cards }) : d.kind === 'stool' ? buildStool(mats) : d.kind === 'mugs' ? buildMugRow(mats, d.count, d.gap) : buildKeg(mats);
       piece.position.set(d.x, d.y, d.z);
       if (d.kind !== 'stool') piece.rotation.y = d.yaw;
@@ -1628,7 +1628,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       });
     } else if (d.kind === 'rug' || d.kind === 'dancefloor' || d.kind === 'bulbs' || d.kind === 'bottles' || d.kind === 'dartboard') {
       // More of the Club's dressing (tavernModels.ts): all of it only drawn.
-      const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat, layer: plainOn };
+      const mats = { wood: mat('planks'), plain: plainMat, glow: plainMat, layer: plainOn, cork: mat('cork'), tin: mat('tin') };
       const piece = d.kind === 'rug' ? buildRug(mats, { r: d.r, w: d.w, d: d.d, colors: d.colors })
         : d.kind === 'dancefloor' ? buildDanceFloor(d.nx, d.nz, d.tile, d.colors)
         : d.kind === 'bulbs' ? buildBulbs(d.x1 - d.x, d.z1 - d.z, d.sag, d.count, [bulbHang(d.x, d.y, d.z), bulbHang(d.x1, d.y, d.z1)])

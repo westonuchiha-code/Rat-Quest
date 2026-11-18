@@ -1135,6 +1135,52 @@ const paintCouchFabric: Painter = (p, rand) => {
   p.speckle(rand, 16, [0x2a1810, 0xd8c080]);
 };
 
+/**
+ * CORK (2026-11-18: the Club's stools were plain colour): pale tan, packed with small dark pores of every size and the
+ * odd lighter fleck, the way the end of a wine cork looks close up.
+ */
+const paintCork: Painter = (p, rand) => {
+  const s = p.size;
+  const grain = fbm(s, rand, 6, 3);
+  const cork = [0x9a6e42, 0xb08050, 0xc4945e, 0xd2a46c, 0xdcb27a];
+  p.each((x, y) => ramp(0.3 + grain[y * s + x] * 0.55, cork, x, y, 0.3));
+  // Pores: little dark holes, a few bigger ones, each with a darker heart.
+  for (let k = 0; k < 70; k++) {
+    const x = Math.floor(rand() * s), y = Math.floor(rand() * s);
+    const big = rand() < 0.2;
+    p.blend(x, y, 0x5a3a1e, 0.75);
+    if (big) {
+      p.blend(x + 1, y, 0x6a4626, 0.6);
+      p.blend(x, y + 1, 0x6a4626, 0.6);
+      p.blend(x + 1, y + 1, 0x7a5430, 0.4);
+    }
+  }
+  p.speckle(rand, 30, [0xe8c690, 0x7a5434]);
+};
+
+/**
+ * TIN (2026-11-18: the thimble mugs and the keg were plain colour): a dull grey metal, pressed all over with the little
+ * round dimples a thimble has, each lit on one side and shaded on the other, and a few fine scratches.
+ */
+const paintTin: Painter = (p, rand) => {
+  const s = p.size;
+  const wear = fbm(s, rand, 3, 2);
+  const tin = [0x8a8a86, 0x9c9c96, 0xaeaea6, 0xc0c0b6, 0xd0d0c6];
+  p.each((x, y) => ramp(0.35 + wear[y * s + x] * 0.4, tin, x, y, 0.2));
+  // Dimples in rows, every other row shifted: a light dot up and left, a shadow down and right.
+  const step = 4;
+  for (let y = 1; y < s; y += step) {
+    for (let x = (y / step) % 2 ? 3 : 1; x < s; x += step) {
+      p.blend(x, y, 0xe6e6dc, 0.45);
+      p.blend(x + 1, y + 1, 0x5e5e5a, 0.5);
+    }
+  }
+  for (let k = 0; k < 6; k++) {
+    const x = rand() * s, y = rand() * s, a = rand() * Math.PI;
+    p.line(x, y, x + Math.cos(a) * 5, y + Math.sin(a) * 5, 0xdedcd0);
+  }
+};
+
 /** A patch sewn onto it: a square of somebody's old plaid, the stitches showing all round its edge. */
 const paintCouchPatch: Painter = (p, rand) => {
   const s = p.size;
@@ -3178,6 +3224,9 @@ const DEFS = {
   cutStone: { size: 32, seed: 607, paint: paintCutStone },
   charred: { size: 32, seed: 602, paint: paintCharred },
   coals: { size: 32, seed: 603, paint: paintCoals },
+  // The Club's furniture (2026-11-18): it was plain colour.
+  cork: { size: 32, seed: 607, paint: paintCork },
+  tin: { size: 32, seed: 608, paint: paintTin },
   couchFabric: { size: 64, seed: 604, paint: paintCouchFabric },
   couchPatch: { size: 32, seed: 605, paint: paintCouchPatch },
   knitBlanket: { size: 32, seed: 606, paint: paintKnitBlanket },
