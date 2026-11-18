@@ -3438,7 +3438,7 @@ function startGame(): void {
   let devGoStop = 0;
   const devGo = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autogo=([-\d.,]+)/.exec(location.hash));
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
-  const devChaos = ((w) => (w ? { seed: Math.max(1, Number(w[1]) || 1), lowest: undefined as number | undefined, t: 0, next: 0, dir: [0, 1] as [number, number], last: { x: 0, z: 0, t: 0 }, said: new Map<string, number>() } : null))(/[#&]chaos=(\d+)/.exec(location.hash));
+  const devChaos = ((w) => (w ? { seed: Math.max(1, Number(w[1]) || 1), lowest: undefined as number | undefined, room: '', t: 0, next: 0, dir: [0, 1] as [number, number], last: { x: 0, z: 0, t: 0 }, said: new Map<string, number>() } : null))(/[#&]chaos=(\d+)/.exec(location.hash));
   /** The chaos drive's watch: what looks wrong, written once a second at most for each kind of wrong. */
   const chaosWatch = (): void => {
     if (!devChaos) return;
@@ -3458,7 +3458,11 @@ function startGame(): void {
       say('INSIDE', `box ${b.min.x.toFixed(1)},${b.min.y.toFixed(1)},${b.min.z.toFixed(1)}..${b.max.x.toFixed(1)},${b.max.y.toFixed(1)},${b.max.z.toFixed(1)}`);
       break;
     }
-    if (devChaos.lowest === undefined) devChaos.lowest = Math.min(...chamber.colliders.map((b) => b.min.y));
+    // (Measured again in each room he comes to: he can walk out of one into another.)
+    if (devChaos.lowest === undefined || devChaos.room !== cur.id) {
+      devChaos.lowest = Math.min(...chamber.colliders.map((b) => b.min.y));
+      devChaos.room = cur.id;
+    }
     if (p.y < (devChaos.lowest as number) - 15) say('FELL-OUT', `below everything (${(devChaos.lowest as number).toFixed(1)})`);
     if (Math.hypot(p.x - devChaos.last.x, p.z - devChaos.last.z) > 0.6) devChaos.last = { x: p.x, z: p.z, t: devChaos.t };
     else if (devChaos.t - devChaos.last.t > 6 && !player.dead && !dialog.open) say('STUCK', `for ${(devChaos.t - devChaos.last.t).toFixed(1)} s`);
