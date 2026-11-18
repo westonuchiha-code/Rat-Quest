@@ -1,7 +1,7 @@
 // Things to throw in every test room (BACKLOG B1, 2026-11-17): the heaps of pots and rocks by each room's way in.
 import './../src/core/colorSetup';
-import { levelById } from '../src/levels/levels';
-import { ROOMS } from '../src/levels/testRooms';
+import { levelById, LEVELS, TEST_ROOMS, ARCHIVE } from '../src/levels/levels';
+import { ROOMS, BOSS_ROOMS } from '../src/levels/testRooms';
 import { LYING, lyingIn } from '../src/levels/throwables';
 import { buildChamber } from '../src/world/chamber';
 import { groundUnder } from '../src/world/lifting';
@@ -13,7 +13,8 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 
 check('every numbered test room has its two heaps', ROOMS.every((r) => LYING[r.id]), ROOMS.filter((r) => !LYING[r.id]).map((r) => r.id).join(', '));
-for (const r of ROOMS) {
+check('...and every side area of a numbered room (but the Leap of Faith, which starts on a narrow ledge), and every boss room (but the Sump Wyrm room, whose floor is kept clear for its charges), has them too', [...TEST_ROOMS, ...LEVELS, ...ARCHIVE].filter((l) => /^Test Room \d+[A-Z]$/.test(l.name)).every((l) => LYING[l.id] || l.id === 'faith' || l.id === 'sump') && BOSS_ROOMS.every((b) => LYING[b.id] || b.id === 'sump'));
+for (const r of Object.keys(LYING).map((id) => ({ id }))) {
   const def = levelById(r.id)!;
   const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water ?? [], decor: [], movers: def.movers });
   const mine = ch.crates.filter((c) => (c.type === 'pot' || c.type === 'rock') && lyingIn(def).some(([, x, z]) => Math.abs(c.x - x) < 0.01 && Math.abs(c.z - z) < 0.01));

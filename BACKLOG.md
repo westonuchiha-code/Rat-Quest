@@ -130,7 +130,9 @@ each test room where there is floor for them (`potBox`, `rockBox` in `src/world/
 levels.ts). By each of the eleven numbered rooms' way in: on his right two pots and a rock, on his left a pot and a
 rock. Places found by a probe of each floor; `tests/throwables.ts` (56 checks) keeps them on the floor, inside
 nothing, off characters, doors, pickups and creatures, and clear of where he starts. Not crates or barrels (the
-rooms have their own); side areas (N-B...) and boss rooms have none yet.
+rooms have their own). [opus] 2026-11-18: and the side areas (1B, 1C, 3B-3D, 6B, 6C, 8B, 8C, 8E, 8F, 9B) and
+the boss rooms. NOT the Leap of Faith (8D: he starts on a ledge too narrow) nor the Sump Wyrm's room (3E: its floor
+is kept clear to the walls for its charges, tests/wyrm.ts).
 
 **B2. The level editor does not know the new things.** Pots and rocks; the spawn button (`plates[].spawn`); the
 Club's tables and bar (noted long ago). Add them to the kit (`src/levels/custom.ts`) and the palette

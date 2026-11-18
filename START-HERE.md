@@ -2162,6 +2162,7 @@ rockKnock, squirm), not yet heard by anyone. A crate set down on a moving platfo
 
 `src/levels/throwables.ts`: by each numbered room's way in, two heaps, three pots and two rocks in all. To move a
 heap or add a room, change `LYING` there. `tests/throwables.ts` checks each stands on the floor and in nobody's way.
+[opus] 2026-11-18: the side areas and boss rooms have heaps too, but the Leap of Faith (8D) and the Sump Wyrm's (3E).
 
 ## Locked on to one, the others go to his sides (2026-11-17)
 
