@@ -2408,6 +2408,25 @@ function startGame(): void {
       guardHeld = a.guardHeld;
       dodgePressed = a.dodgePressed;
     }
+    // (`&chaos=N`, a test drive for finding bugs: he runs about at random from seed N, mostly into walls, jumping,
+    // jumping again, swinging, rolling, swinging in the air; and what looks wrong is written to the console as
+    // "CHAOS ...": a number that is not a number, his body inside something solid, a fall out of the world, stuck.)
+    if (devChaos && !player.dead) {
+      devChaos.t += dt;
+      const r = (): number => ((devChaos.seed = (devChaos.seed * 16807) % 2147483647) / 2147483647);
+      if (devChaos.t > devChaos.next) {
+        devChaos.next = devChaos.t + 0.5 + r() * 1.2;
+        const a = r() * Math.PI * 2;
+        devChaos.dir = [Math.sin(a), Math.cos(a)];
+      }
+      m.set(devChaos.dir[0], 0, devChaos.dir[1]);
+      run = true;
+      const k = r();
+      jumpPressed = k < 0.035 || (!player.grounded && k < 0.05);
+      jumpHeld = jumpPressed || r() < 0.7;
+      attackPressed = r() < 0.03;
+      dodgePressed = r() < 0.012;
+    }
     // (`&autowalk=x,z`: he runs steadily that way across the floor, for a film of a place: the Hall, end to end.)
     if (devWalk && !player.dead) {
       m.set(devWalk[0], 0, devWalk[1]);
@@ -2608,6 +2627,7 @@ function startGame(): void {
     // Locked on, the rat keeps facing the foe while he walks, so he circles him.
     if (lockTarget && player.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(player.state)) player.facing = facingToward(player.position, lockTarget);
     soundAfterPlayer(sneak, vyBefore);
+    chaosWatch();
     // Jumping off a moving platform keeps some of its motion.
     if (wasGrounded && !player.grounded && player.velocity.y > 1 && chamber.carry.lengthSq() > 0) {
       player.velocity.x += chamber.carry.x;
@@ -3418,6 +3438,32 @@ function startGame(): void {
   let devGoStop = 0;
   const devGo = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autogo=([-\d.,]+)/.exec(location.hash));
   const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
+  const devChaos = ((w) => (w ? { seed: Math.max(1, Number(w[1]) || 1), lowest: undefined as number | undefined, t: 0, next: 0, dir: [0, 1] as [number, number], last: { x: 0, z: 0, t: 0 }, said: new Map<string, number>() } : null))(/[#&]chaos=(\d+)/.exec(location.hash));
+  /** The chaos drive's watch: what looks wrong, written once a second at most for each kind of wrong. */
+  const chaosWatch = (): void => {
+    if (!devChaos) return;
+    const p = player.position;
+    const v = player.velocity;
+    const say = (what: string, detail: string): void => {
+      const at = devChaos.said.get(what) ?? -9;
+      if (devChaos.t - at < 1) return;
+      devChaos.said.set(what, devChaos.t);
+      console.warn(`CHAOS ${what} ${cur.id} t=${devChaos.t.toFixed(1)} at ${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)} state=${player.state} ${detail}`);
+    };
+    if (![p.x, p.y, p.z, v.x, v.y, v.z].every(Number.isFinite)) say('NAN', '');
+    const r = TUNING.rat.radius * 0.8;
+    const h = TUNING.rat.height;
+    for (const b of chamber.colliders) {
+      if (b.ramp || !(p.x + r > b.min.x + 0.05 && p.x - r < b.max.x - 0.05 && p.z + r > b.min.z + 0.05 && p.z - r < b.max.z - 0.05 && p.y + h * 0.8 > b.min.y + 0.05 && p.y + 0.15 < b.max.y - 0.05)) continue;
+      say('INSIDE', `box ${b.min.x.toFixed(1)},${b.min.y.toFixed(1)},${b.min.z.toFixed(1)}..${b.max.x.toFixed(1)},${b.max.y.toFixed(1)},${b.max.z.toFixed(1)}`);
+      break;
+    }
+    if (devChaos.lowest === undefined) devChaos.lowest = Math.min(...chamber.colliders.map((b) => b.min.y));
+    if (p.y < (devChaos.lowest as number) - 15) say('FELL-OUT', `below everything (${(devChaos.lowest as number).toFixed(1)})`);
+    if (Math.hypot(p.x - devChaos.last.x, p.z - devChaos.last.z) > 0.6) devChaos.last = { x: p.x, z: p.z, t: devChaos.t };
+    else if (devChaos.t - devChaos.last.t > 6 && !player.dead && !dialog.open) say('STUCK', `for ${(devChaos.t - devChaos.last.t).toFixed(1)} s`);
+  };
+  (window as unknown as { __chaos?: () => unknown }).__chaos = () => ({ level: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp });
   const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
