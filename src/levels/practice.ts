@@ -52,6 +52,9 @@ export function practiceRoom(e: PracticeEntry): LevelDef {
       ...PRACTICE.throwables.map((q) => at(q.t, q.x, q.z, 0, q.tough ? { props: { tough: true } } : {})),
       at('lamp', -8, -8, 7), at('lamp', 8, -8, 7), at('lamp', -8, 8, 7), at('lamp', 8, 8, 7),
       at('torch', -H + 0.3, 0, 3.2, { dir: 'w' }), at('torch', H - 0.3, 0, 3.2, { dir: 'e' }),
+      // (Dressed a little, B7 2026-11-18: banners on the side walls either side of the torches, and two on the far wall.)
+      ...[-7, 7].flatMap((z) => [at('banner', -H + 0.08, z, 7, { dir: 'w', props: { color: 'red' } }), at('banner', H - 0.08, z, 7, { dir: 'e', props: { color: 'red' } })]),
+      at('banner', -6, -H + 0.08, 7, { dir: 'n', props: { color: 'gold' } }), at('banner', 6, -H + 0.08, 7, { dir: 'n', props: { color: 'gold' } }),
     ],
   };
   const def = compileCustom(room, e.id);

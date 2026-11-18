@@ -55,6 +55,17 @@ const hall = levelById(HALL_ID)!;
   check('the Hall is home: a hub with nothing asked of him, a fire to rest at by the way in, and he comes in at its west end looking down it', !!hall.hub && hall.goals.length === 0 && hall.enemies.length === 0 && hall.restSpot === HALL_FIRE && hall.spawn.x < -HALL.halfX + 4 && Math.abs(hall.spawn.facing - Math.PI / 2) < 1e-9);
   check('it has a door to every test room, every boss room and every practice room, and each leads somewhere real; none asks for anything', doors.length === ROOMS.length + BOSS_ROOMS.length + PRACTICE_ROOMS.length && [...ROOMS, ...BOSS_ROOMS, ...PRACTICE_ROOMS].every((r) => doors.some((d) => d.to === r.id && !!levelById(r.id))) && doors.every((d) => d.need === 0) && hall.courseDoors!.length === doors.length);
   const north = doors.filter((d) => d.door.z < 0);
+  // ---- Its dressing (B7, 2026-11-18): banners, benches, a bar, tables. Out of everyone's way. ----
+  {
+    const things = hall.solids.filter((b) => b.y0 >= -0.01 && b.y1 <= 2 && b.y1 > 0.2 && Math.abs(b.x0) < HALL.halfX && Math.abs(b.z0) <= HALL.halfZ && !(b.x0 > HALL.stageX - 4));
+    const near = (b: (typeof things)[number], x: number, z: number, r: number): boolean => x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r;
+    const inDoor = things.filter((b) => doors.some((d) => near(b, d.door.x, d.door.z, DOOR_REACH + 0.6)));
+    check('THE HALL IS DRESSED: banners over the torches, benches between the doors, a bar along the empty east end of the south wall with stools, and two tables', hall.decor.filter((d) => d.kind === 'banner').length >= 20 && hall.decor.some((d) => d.kind === 'keg') && hall.decor.filter((d) => d.kind === 'table').length === 2 && hall.decor.filter((d) => d.kind === 'stool').length >= 10 && things.filter((b) => b.kind === 'plank' && !b.hidden).length >= 15, `${things.length} pieces`);
+    check('...and none of it stands in or before a doorway', inDoor.length === 0, inDoor.map((b) => `${b.x0.toFixed(1)},${b.z0.toFixed(1)}`).join('; '));
+    check('...nor in the middle of the hall, which is left clear to run down', things.every((b) => b.z0 > 1.6 || b.z1 < -1.6));
+    const onSomeone = (hall.npcs ?? []).filter((n) => things.some((b) => near(b, n.x, n.z, 0.35)));
+    check('...nor where anyone stands', onSomeone.length === 0, onSomeone.map((n) => n.name).join(', '));
+  }
   const south = doors.filter((d) => d.door.z > 0);
   check('the rooms and the bosses are along one wall (the rooms first, in the order of their numbers, then a gap, then the bosses); the practice rooms along the other', north.length === ROOMS.length + BOSS_ROOMS.length && south.length === PRACTICE_ROOMS.length && ROOMS.every((r, i) => north[i].to === r.id && (i === 0 || north[i].door.x > north[i - 1].door.x)) && north[ROOMS.length].door.x - north[ROOMS.length - 1].door.x > HALL.step * 1.5);
   // Signs.

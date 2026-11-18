@@ -116,6 +116,52 @@ function crowd(): NpcSpec[] {
   return out;
 }
 
+/**
+ * WHAT DRESSES THE HALL (BACKLOG B7, 2026-11-18: "banners, benches, something at the east end beside Dave"; the south
+ * wall's east end has no doors). All of it from the editor's own pieces, so it is moved here and nowhere else:
+ *  - a BANNER over each torch, both walls, colours in turn;
+ *  - a BENCH against the wall between each two doors where nobody leans (a plank seat, knee high: he can hop up);
+ *  - along the empty east end of the south wall, by the dance floor and Dave's stage, a BAR with stools before it;
+ *  - and two TABLES with stools between the bar and the last practice door.
+ */
+export const HALL_DRESS = {
+  bench: { len: 2.4, deep: 0.6, high: 0.45 },
+  /** The bar: along the south wall from this door place to that one, its front this far from the wall. */
+  bar: { from: 13, to: 15, out: 2.4, deep: 1 },
+  tables: [11.5, 12.6],
+} as const;
+const BANNER_TURN = ['purple', 'red', 'gold', 'blue', 'green'] as const;
+function dressing(): Piece[] {
+  const D = HALL_DRESS;
+  const out: Piece[] = [];
+  // (A slot is the wall between door places i and i + 1; those with someone leaning there are left bare.)
+  const leaning = new Set(CROWD.filter((c) => c.lean).map((c) => `${c.slot}:${c.side}`));
+  for (let i = 0; i < PLACES - 1; i++) {
+    const mid = placeX(i) + STEP / 2;
+    for (const side of [-1, 1] as const) {
+      out.push(at('banner', mid, side * (HZ - 0.08), 7.6, { dir: side < 0 ? 'n' : 's', props: { color: BANNER_TURN[(i + (side > 0 ? 2 : 0)) % BANNER_TURN.length] } }));
+      // (No bench along the bar, nor where someone leans.)
+      const underBar = side > 0 && mid > placeX(D.bar.from) - 1.5 && mid < placeX(D.bar.to) + 1.5;
+      if (leaning.has(`${i}:${side}`) || underBar) continue;
+      const z0 = side * (HZ - 0.1);
+      const z1 = side * (HZ - 0.1 - D.bench.deep);
+      out.push(box('plank', mid - D.bench.len / 2, Math.min(z0, z1), mid + D.bench.len / 2, Math.max(z0, z1), D.bench.high, { bottom: 0 }));
+    }
+  }
+  // The bar, and a stool before it every two along.
+  const bx0 = placeX(D.bar.from) - 1;
+  const bx1 = placeX(D.bar.to) + 1;
+  out.push(box('bar', bx0, HZ - D.bar.out, bx1, HZ - D.bar.out + D.bar.deep, 0));
+  for (let x = bx0 + 1; x <= bx1 - 0.9; x += 2) out.push(at('stool', x, HZ - D.bar.out - 0.8));
+  // Two tables, each with three stools round it.
+  for (const t of D.tables) {
+    const x = placeX(t);
+    out.push(at('table', x, 4.4, 0, { props: { mugs: 2, candle: true } }));
+    for (const a of [Math.PI / 2, -Math.PI / 2, Math.PI]) out.push(at('stool', x + Math.sin(a) * 1.3, 4.4 + Math.cos(a) * 1.3));
+  }
+  return out;
+}
+
 export function hall(): LevelDef {
   const dave = junction().npcs?.find((n) => n.name.toUpperCase() === 'DIZZY DAVE');
   const jinx = junction().npcs?.find((n) => n.name.toUpperCase() === 'JINX');
@@ -140,6 +186,7 @@ export function hall(): LevelDef {
       // A torch on the wall between each two doors, both sides; lamps down the middle.
       ...Array.from({ length: PLACES - 1 }, (_, i) => [at('torch', placeX(i) + STEP / 2, -HZ + 0.3, 3.2, { dir: 'n' }), at('torch', placeX(i) + STEP / 2, HZ - 0.3, 3.2, { dir: 's' })]).flat(),
       ...Array.from({ length: Math.floor(PLACES / 2) }, (_, i) => at('lamp', placeX(i * 2) + STEP, 0, 6.5)),
+      ...dressing(),
     ],
   };
   const base = compileCustom(room, HALL_ID);
