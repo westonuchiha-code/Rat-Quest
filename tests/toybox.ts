@@ -533,5 +533,19 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
 check('six bottle caps, each where a trick takes him', def.collectibles.length === 6 && def.collectibles.every((c) => c.kind === 'cap' && c.y > 2));
 check('tall sides stand all round it (a box): there is nowhere to fall off, and a curved wall cannot throw him out', [[0, TOY.halfZ + 0.5], [0, -TOY.halfZ - 0.5], [TOY.half + 0.5, 0], [-TOY.half - 0.5, 0]].every(([x, z]) => ground(x, z) >= TOY.wall));
 
+{
+  // (The old note in BACKLOG B10: "a double jump from a deck clears the wall". The walls are as tall as the tower and
+  // more now: from the tower top, 16 up, against the south wall, every timing of a double jump stays in. 2026-11-18.)
+  let outs = 0;
+  for (const z0 of [-49, -51, -53, -55]) for (const second of [6, 15, 24, 33, 42]) for (const x of [21, 24, 27]) {
+    const p = new PlayerController(new THREE.Vector3(x, BIG.top, z0));
+    p.feel = FEELS.dream;
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), cs);
+    for (let i = 0; i < 200; i++) p.update(DT, inp({ move: v(0, -1), jumpPressed: i === 0 || i === second, jumpHeld: i < 70 }), cs);
+    if (Math.abs(p.position.z) > TOY.halfZ || Math.abs(p.position.x) > TOY.half) outs++;
+  }
+  check('...and no double jump from the highest place in it, the tower top, takes him over its wall, at any timing', outs === 0, `${outs} of 60 got out`);
+}
+
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 if (failures) process.exit(1);

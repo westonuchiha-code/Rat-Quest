@@ -220,22 +220,17 @@ in wedge hints and characters' lines; the Club's own doors asking for Golden Wed
 the Hall; "anything you find while playing" and re-running the chaos drive as standing items.
 
 **B10. Small known things.** A 404 for the page's icon in the browser's log (no `favicon`). [opus] FIXED 2026-11-18: an icon drawn in index.html (a wedge of cheese). The Hall's HUD has no
-count of anything. The Toy Box's wall can be cleared by a double jump from a deck (harmless: a fall costs nothing).
+count of anything. [opus] 2026-11-18: right as it is: there is nothing in the Hall to collect or do but its doors; its corner says "The Hall". [opus] 2026-11-18: NOT SO ANY MORE: its walls are 20 high (the tower's 16 and more); 60 timed double jumps from the tower top all stay in (tests/toybox.ts).
 `ASSETS.md` must be rewritten (`npm run assets`) whenever anything is added: the test will say so.
 
 ---
 
-## PART C. ONLY HE, OR A HAND ON THE CONTROLS, CAN SETTLE
+## PART C. WHAT ONLY HE CAN SETTLE: MOVED TO PLAYTEST.md (2026-11-18)
 
-Nobody has played any of this week's work by hand. Each of these is a question for him, in the order it matters:
-1. The dream on foot: are run x1.25, jump x1.1, gravity x0.75 right? (Tweaks, "The dream".)
-2. Lifting: is STOW (triangle) the right button? Is a crate too big over his head? Is 2 the right harm? (Tweaks, "Lifting".)
-3. The half-pipe camera; and whether he wants the view to follow behind him on the shield (Tweaks, "Camera").
-4. The Hall: the door names past the first four are Claude's placeholders.
-5. Sound, all of it: Claude cannot hear. The shield's scrape, the music's level, every effect made this week.
-6. The tuck's strength, the launch height off a pipe's lip, the buttons for tricks.
-7. A long song dropped into `assets/music`: does the game still load quickly on his phone?
-8. Thirty frames a second on his phone: the riding was tested at 30, 24 and 20, but not on the phone itself.
+He: "set everything that needs me directly aside because I'm going to do my own play testing ... I don't want each
+thing you want me to play test as a separate item on the list because I'm eventually going to have to play test
+everything". So it is one short note, PLAYTEST.md, grouped (things Claude could not check; numbers that were guessed;
+decisions only he makes), not one line per thing. Add to it only what is NEW and guessed; never one item per feature.
 
 ---
 
