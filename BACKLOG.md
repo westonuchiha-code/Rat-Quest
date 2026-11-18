@@ -25,7 +25,8 @@ done, move it to "Done" at the bottom with the commit; do not delete it. Read ST
 **Opus, before you change anything:**
 1. Read START-HERE.md from the top through "The owner's standing rules". The rules there are his, and all still hold.
 2. Every commit's subject starts with `[opus]`. Fable reviews those next week (Part D).
-3. After any change: the full suite (the loop is in START-HERE under "Tests"; about twelve minutes), then
+3. After any change: the full suite, `npm run test:all` (one build, four at a time: about a minute and a half;
+   the old loop in START-HERE took twelve), then
    `npm run assets`, then `bash scripts/deliver.sh deliver`, then send him the twelve files and a FILM of anything
    that moves. Never stop with uncommitted work.
 4. Stills and films: `scripts/film/stills.mjs`, `film.mjs`, `cut.sh` (the header of each says how). Film aids on the

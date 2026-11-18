@@ -886,8 +886,13 @@ const at = new THREE.Vector3(0, 0, 0);
   let lowUp = 9;
   let lowDown = 9;
   const hands: Record<string, THREE.Vector3[]> = {};
+  /** Each pose's shoulders' height, measured with its hands: so a hand is over or under HIS shoulder, wherever his bob has him. */
+  const shoulders: Record<string, number[]> = {};
   for (const g of gestures) {
     const m = new GrimsqueakModel();
+    // (His bob starts at a random point in the game, so no two of him float in step. Here every pose is measured from
+    // the same point of it: the claw heights below were a little different every run, and once in a while, failed.)
+    (m as unknown as { time: number }).time = 0;
     settle(m, { gesture: g });
     const up = measure(m.root);
     ok &&= up.finite && up.meshes > 60;
@@ -897,6 +902,7 @@ const at = new THREE.Vector3(0, 0, 0);
       if (i % 6 === 0) lowUp = Math.min(lowUp, measure(m.root).box.min.y);
     }
     hands[g] = parts(m).arms.map((a) => m.root.worldToLocal(world(a.hand, 0, -0.08, 0)));
+    shoulders[g] = parts(m).arms.map((a) => m.root.worldToLocal(world((a as unknown as { shoulder: THREE.Object3D }).shoulder)).y);
     settle(m, { gesture: g, low: 1 });
     const down = measure(m.root);
     ok &&= down.finite;
@@ -934,7 +940,7 @@ const at = new THREE.Vector3(0, 0, 0);
   const L = (g: string): THREE.Vector3 => hands[g][0];
   const shoulderY = GRIM_FIGHT_FLOAT + (0.82 + 0.6) * 0.94; // how high he floats, then his waist, then his shoulder
   check('Grimsqueak: the volley has both claws out in front of him', R('cast').z > 0.4 && L('cast').z > 0.4);
-  check('Grimsqueak: the orb has one claw high over his head and the other on his chest', R('conjure').y > shoulderY + 0.4 && L('conjure').y < shoulderY);
+  check('Grimsqueak: the orb has one claw high over his head and the other on his chest', R('conjure').y > shoulders.conjure[1] + 0.4 && L('conjure').y < shoulders.conjure[0], `right ${R('conjure').y.toFixed(3)} left ${L('conjure').y.toFixed(3)} shoulders ${shoulders.conjure.map((y) => y.toFixed(3)).join(' ')}`);
   check('Grimsqueak: rearing for the swoop, his arms are spread wide like wings', R('rear').x > 0.75 && L('rear').x < -0.75);
   check('Grimsqueak: diving, they are flung back behind him', R('sweep').z < -0.3 && L('sweep').z < -0.3);
   check('Grimsqueak: rising for the slam, both claws are over his head', R('raise').y > shoulderY + 0.4 && L('raise').y > shoulderY + 0.4);
