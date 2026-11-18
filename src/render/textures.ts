@@ -1159,6 +1159,26 @@ const paintCork: Painter = (p, rand) => {
 };
 
 /**
+ * WOVEN CLOTH, near white (2026-11-18: the banners were flat colour): the over-and-under of a plain weave and a slub
+ * here and there. Its colour comes from the thing it is on (a vertex colour over it), so one picture does every banner.
+ */
+const paintWeave: Painter = (p, rand) => {
+  const s = p.size;
+  const wear = fbm(s, rand, 3, 2);
+  const cloth = [0xb8b4ac, 0xcac6be, 0xdad6ce, 0xe8e4dc, 0xf4f0e8];
+  p.each((x, y) => {
+    const over = (x + y) & 1 ? 0.08 : -0.06;
+    const warp = x % 2 === 0 ? 0.04 : 0;
+    return ramp(0.45 + wear[y * s + x] * 0.35 + over + warp, cloth, x, y, 0.15);
+  });
+  // Slubs: a thicker bit of thread, a short pale run along the weft.
+  for (let k = 0; k < 10; k++) {
+    const x = Math.floor(rand() * s), y = Math.floor(rand() * s);
+    for (let i = 0; i < 3; i++) p.blend(x + i, y, 0xffffff, 0.35);
+  }
+};
+
+/**
  * TIN (2026-11-18: the thimble mugs and the keg were plain colour): a dull grey metal, pressed all over with the little
  * round dimples a thimble has, each lit on one side and shaded on the other, and a few fine scratches.
  */
@@ -3227,6 +3247,7 @@ const DEFS = {
   // The Club's furniture (2026-11-18): it was plain colour.
   cork: { size: 32, seed: 607, paint: paintCork },
   tin: { size: 32, seed: 608, paint: paintTin },
+  weave: { size: 32, seed: 609, paint: paintWeave },
   couchFabric: { size: 64, seed: 604, paint: paintCouchFabric },
   couchPatch: { size: 32, seed: 605, paint: paintCouchPatch },
   knitBlanket: { size: 32, seed: 606, paint: paintKnitBlanket },

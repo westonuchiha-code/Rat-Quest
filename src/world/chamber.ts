@@ -259,7 +259,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   // (The game's own material, unlit: a plain three.js one comes out pale here, its colours brightened twice.)
   let petalMat: THREE.ShaderMaterial | null = null;
   /** Cloth seen from both sides (banners). */
-  const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide });
+  const clothMat = createPs1Material({ lit: true, side: THREE.DoubleSide, tex: getTexture('weave') });
+  /** Lit by the room and textured (2026-11-18: the torch's stick, the banner's rod, the shelves were flat colour). */
+  const litMats = new Map<TextureName, THREE.ShaderMaterial>();
+  const lit = (name: TextureName): THREE.ShaderMaterial => {
+    let m = litMats.get(name);
+    if (!m) litMats.set(name, (m = createPs1Material({ lit: true, tex: getTexture(name) })));
+    return m;
+  };
+  /** A colour lifted toward white, for a texture that carries its own darks under it. */
+  const lifted = (c: number, k = 0.55): number => new THREE.Color(c).lerp(new THREE.Color(0xffffff), k).getHex();
   // Falling and gushing sludge scroll their own texture, fast.
   const fallMat = createPs1Material({ tex: getTexture('sludge'), side: THREE.DoubleSide });
   const fallOffset = fallMat.uniforms.uvOffset.value as THREE.Vector2;
@@ -732,8 +741,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const sh = new THREE.Group();
       const plank = (w: number, h: number, dp: number, x: number, y: number, color: number): void => {
         const g = new THREE.BoxGeometry(w, h, dp);
-        bakeVertexColor(g, color, false);
-        const m = new THREE.Mesh(g, darkMat);
+        bakeVertexColor(g, lifted(color, 0.6), false);
+        const m = new THREE.Mesh(g, mat('planks'));
         m.position.set(x, y, 0.22);
         sh.add(m);
       };
@@ -994,8 +1003,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(pivot);
       const rod = new THREE.CylinderGeometry(0.05, 0.05, d.w + 0.5, 5, 1);
       rod.rotateZ(Math.PI / 2);
-      bakeVertexColor(rod, 0x6b5a3a);
-      pivot.add(new THREE.Mesh(rod, plainMat));
+      bakeVertexColor(rod, lifted(0x6b5a3a));
+      pivot.add(new THREE.Mesh(rod, lit('ashWood')));
       for (const s of [-1, 1]) {
         const knob = new THREE.SphereGeometry(0.09, 5, 4);
         bakeVertexColor(knob, 0xc9a23a);
@@ -1032,19 +1041,19 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // An iron bracket out from the wall, a stick tilted out, and the flame.
       const out = (k: number): [number, number] => [d.x + Math.sin(d.yaw) * k, d.z + Math.cos(d.yaw) * k];
       const plate = new THREE.BoxGeometry(0.28, 0.4, 0.06);
-      bakeVertexColor(plate, 0x2e2a30);
+      bakeVertexColor(plate, 0xbfbcc4);
       const [px, pz] = out(0.04);
-      const pm = addMesh(plate, plainMat, px, d.y - 0.1, pz);
+      const pm = addMesh(plate, lit('wroughtIron'), px, d.y - 0.1, pz);
       pm.rotation.y = d.yaw;
       const arm = new THREE.BoxGeometry(0.08, 0.08, 0.36);
-      bakeVertexColor(arm, 0x3a3540);
+      bakeVertexColor(arm, 0xc8c4cc);
       const [ax, az] = out(0.2);
-      const am = addMesh(arm, plainMat, ax, d.y - 0.1, az);
+      const am = addMesh(arm, lit('wroughtIron'), ax, d.y - 0.1, az);
       am.rotation.y = d.yaw;
       const stick = new THREE.CylinderGeometry(0.06, 0.045, 0.6, 5, 1);
-      bakeVertexColor(stick, 0x5a4028);
+      bakeVertexColor(stick, lifted(0x5a4028));
       const [sx, sz] = out(0.36);
-      const sm = addMesh(stick, plainMat, sx, d.y + 0.15, sz);
+      const sm = addMesh(stick, lit('ashWood'), sx, d.y + 0.15, sz);
       sm.rotation.set(Math.cos(d.yaw) * 0.25, 0, -Math.sin(d.yaw) * 0.25);
       const flame = new THREE.ConeGeometry(0.17, 0.5, 6, 1);
       bakeVertexColor(flame, 0xffb030, false);
