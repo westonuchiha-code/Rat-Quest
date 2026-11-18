@@ -21,8 +21,8 @@ check('there are boards to check, and the garden has most of them', boards.lengt
 const noGlyph = boards.filter((b) => !b.d.lines.every((l) => [...l.toUpperCase()].every(hasGlyph)));
 check('every letter and mark on every board is one the block letters have (a comma and a colon were added for them)', noGlyph.length === 0 && hasGlyph(',') && hasGlyph(':'), noGlyph.map(says).join('; '));
 
-const tooMany = boards.filter((b) => b.d.lines.length > 3 || b.d.lines.length === 0);
-check('a board has one, two or three lines', tooMany.length === 0, tooMany.map(says).join('; '));
+const tooMany = boards.filter((b) => b.d.lines.length > 4 || b.d.lines.length === 0);
+check('a board has one to four lines (four since a room\'s title board says its number too, 2026-11-18), and every one of them is drawn', tooMany.length === 0 && boards.every((b) => boardPixels(b.d.lines, b.d.w, b.d.h).lines.length === b.d.lines.length), tooMany.map(says).join('; '));
 
 // The picture: its shape, its dots, its ink.
 const INK_FIRST = [0xff, 0xf0, 0xc0];

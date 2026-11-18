@@ -48,7 +48,7 @@ const B_MARGIN = 5;
 const B_GAP = 4;
 
 /**
- * A board's picture, in the block letters of render/pixelFont.ts: up to three lines, the first written twice the
+ * A board's picture, in the block letters of render/pixelFont.ts: up to four lines, the first written twice the
  * size where there is room for that. `w` and `h` are the board's size in the room; the picture has as many dots as
  * its writing needs and the board's own shape, so a dot of a letter is a square dot of the board.
  * (The owner, 2026-11-16, of the door signs: "text on signs in game are unreadable": smooth lettering shrunk to a few
@@ -56,7 +56,7 @@ const B_GAP = 4;
  * Its top row first; four numbers a dot. `big`: how many times its own size the first line is written (1 or 2).
  */
 export function boardPixels(lines: string[], w: number, h: number): { w: number; h: number; data: Uint8Array; big: number; lines: string[] } {
-  const shown = lines.slice(0, 3).map((l) => l.toUpperCase());
+  const shown = lines.slice(0, 4).map((l) => l.toUpperCase());
   const rest = shown.slice(1);
   const need = (big: number): { wide: number; high: number } => ({
     wide: Math.max(textWidth(shown[0] ?? '') * big, ...rest.map((l) => textWidth(l)), 1) + B_MARGIN * 2,

@@ -94,6 +94,9 @@ export function roomName(n: number, area = 0): string {
  * come in, written before the rooms were numbered: THE TOY BOX (1), THE MILKY WAY (1B), THE BIG DIPPER (1C), THE LONG
  * DROP (5). 'old' leaves them so; 'number' makes each say its room's number ("TEST ROOM 5"). The rest of each board
  * (what to press) is not changed, nor boards that name a thing in a room (THE PIPE, THE RAILS). THE OWNER'S CALL:
- * left as it was until he says. (`&boards=number` on the address shows the other, for a look.)
+ * he chose 'both'. (`&boards=old` or `&boards=number` on the address shows the others, for a look.)
  */
-export const BOARDS_SAY: 'old' | 'number' = 'old';
+export const BOARDS_SAY: BoardsSay = 'both';
+/** 'both' (the owner, 2026-11-18: "Toy Box, Long Drop is fine, but let it keep its room number"): the old name, and
+ * under it, on a line of its own, the room's number; the board is made a line taller for it. */
+export type BoardsSay = 'old' | 'number' | 'both';

@@ -2140,6 +2140,11 @@ pause is kept and comes out when it is over. Hits pass through him 44% of the ti
 and rolling everywhere is about 9% faster than running (it was 13%, with no gap). Do not lengthen the pause much or
 slow the roll without asking: rolling round an enemy is meant to stay.
 
+## [opus] A room's title board says its old name AND its number (2026-11-18)
+
+The owner: "Toy Box, Long Drop is fine, but let it keep its room number". THE TOY BOX / TEST ROOM 1, THE MILKY WAY /
+TEST ROOM 1B, THE BIG DIPPER / TEST ROOM 1C, THE LONG DROP / TEST ROOM 5. One switch: `BOARDS_SAY` in testRooms.ts.
+
 ## [opus] Tricks named as he lands them (2026-11-18)
 
 Landed tricks are named low on the screen for a moment ("360 + SHIELD GRAB + KICKFLIP"); a grab and a spin have

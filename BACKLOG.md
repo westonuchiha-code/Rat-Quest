@@ -184,6 +184,8 @@ wedge hints and characters' lines name the Club and the worlds. Decide with him 
 'number' turns the four rooms' own title boards (THE TOY BOX, THE MILKY WAY, THE BIG DIPPER, THE LONG DROP) into
 "TEST ROOM 1/1B/1C/5"; the rest of each board and boards naming a thing in a room are not touched. `&boards=number`
 shows it. Pictures of both were sent. Wedge hints and characters' lines still name the old places: not touched.
+HIS ANSWER (2026-11-18): "Toy Box, Long Drop is fine, but let it keep its room number". So `BOARDS_SAY = 'both'`: the
+old name, and under it TEST ROOM N. Boards can now take four lines (world/signs.ts).
 
 **B7. The Hall and the practice rooms are plainly dressed.** Banners, benches, something at the east end beside
 Dave. The south wall's east end has no doors: room for more. The Club's own doors still ask for Golden Wedges.

@@ -49,17 +49,22 @@ const hall = levelById(HALL_ID)!;
   check('a room, a boss room or a practice room can be opened from the address by its id (letters, digits and _ only)', [...ROOMS, ...BOSS_ROOMS, ...PRACTICE_ROOMS].every((r) => /^\w+$/.test(r.id)));
 }
 
-// ---- A room's own title board (B6, 2026-11-18): the owner's call, and one switch ----
+// ---- A room's own title board (B6, 2026-11-18): the owner chose BOTH, the old name and the number ----
 {
   const rooms = ['toybox', 'milkyway', 'bigdipper', 'longdrop'].map((id) => levelById(id)!);
-  const titles = (): string[] => rooms.map((l) => (l.decor.find((d) => d.kind === 'sign') as { lines: string[] }).lines[0]);
-  const before = titles();
-  check('the four rooms with a title board say their OLD names as they stand (until the owner says): THE TOY BOX, THE MILKY WAY, THE BIG DIPPER, THE LONG DROP', BOARDS_SAY === 'old' && before.join('|') === 'THE TOY BOX|THE MILKY WAY|THE BIG DIPPER|THE LONG DROP', before.join('|'));
+  const boards = (): Array<{ lines: string[]; h: number }> => rooms.map((l) => l.decor.find((d) => d.kind === 'sign') as unknown as { lines: string[]; h: number });
+  const read = (): string => boards().map((b) => b.lines.slice(0, 2).join(' / ')).join(' | ');
+  const was = read();
+  const heights = boards().map((b) => b.h);
+  check('THE FOUR ROOMS\' TITLE BOARDS SAY THEIR OLD NAME AND, UNDER IT, THEIR NUMBER (the owner: "Toy Box, Long Drop is fine, but let it keep its room number"), the rest of the board under that', BOARDS_SAY === 'both' && was === 'THE TOY BOX / TEST ROOM 1 | THE MILKY WAY / TEST ROOM 1B | THE BIG DIPPER / TEST ROOM 1C | THE LONG DROP / TEST ROOM 5' && boards()[0].lines[2] === 'JUMP, THEN ATTACK: SKATE', was);
   titleBoards(rooms, 'number');
-  const after = titles();
-  const pipe = levelById('garden')!.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'THE PIPE');
+  const num = boards().map((b) => b.lines[0]).join('|');
+  const lines = boards().map((b) => b.lines.length).join(',');
   titleBoards(rooms, 'old');
-  check('...with the switch the other way, each says its room\'s number, and the rest of the board is as it was; a board that names a thing IN a room (THE PIPE) is not touched; and back again', after.join('|') === 'TEST ROOM 1|TEST ROOM 1B|TEST ROOM 1C|TEST ROOM 5' && pipe && titles().join('|') === before.join('|'), after.join('|'));
+  const old = boards().map((b) => b.lines[0]).join('|');
+  const pipe = levelById('garden')!.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'THE PIPE');
+  titleBoards(rooms, 'both');
+  check('...the switch can say the number only or the old name only (a line shorter), a board naming a thing IN a room (THE PIPE) is not touched, and back to both, as tall as it was', num === 'TEST ROOM 1|TEST ROOM 1B|TEST ROOM 1C|TEST ROOM 5' && lines === '3,3,3,2' && old === 'THE TOY BOX|THE MILKY WAY|THE BIG DIPPER|THE LONG DROP' && pipe && read() === was && boards().every((b, k) => Math.abs(b.h - heights[k]) < 1e-9), `${num}; ${lines}`);
 }
 
 // ---- The Hall ----
