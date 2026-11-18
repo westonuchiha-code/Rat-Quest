@@ -2,7 +2,7 @@
 
 RATQUEST: THE KINGDOM BELOW. Rewritten 2026-11-18 as the CURRENT state, short enough to read whole. Everything that
 happened before, day by day and in the owner's words, is kept unchanged in `docs/history/START-HERE-to-2026-11-18.md`
-(and the older feature log in `HANDOFF.md`). Search those when you need why something is the way it is.
+(and the older feature log and roadmap, `docs/history/HANDOFF.md` and `PLAN.md`). Search those when you need why something is the way it is.
 
 **Read in this order:** this file; then `BACKLOG.md` (what is left, hardest first: Part A is Fable's, Part B Opus's,
 every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on the owner's own play).

@@ -98,7 +98,7 @@ TEXTURE_NAMES.forEach((name, idx) => {
   if ((rH > 1.6 && seamH > maxH * 1.6) || (rV > 1.6 && seamV > maxV * 1.6)) seamReports.push(`${name}: horizontal seam ${seamH.toFixed(1)} vs interior ${inH.toFixed(1)} (x${rH.toFixed(2)}), vertical seam ${seamV.toFixed(1)} vs interior ${inV.toFixed(1)} (x${rV.toFixed(2)})`);
 });
 
-writeFileSync(focus ? '/tmp/texture-focus.png' : '/home/claude/ratquest/texture-sheet.png', encodePng(W, H, img));
+writeFileSync(focus ? '/tmp/texture-focus.png' : 'docs/texture-sheet.png', encodePng(W, H, img));
 console.log(`texture-sheet.png ${W}x${H}, ${COLS} columns`);
 for (let r = 0; r < rows; r++) console.log(`row ${r + 1}: ` + TEXTURE_NAMES.slice(r * COLS, r * COLS + COLS).join(', '));
 console.log(seamReports.length ? 'SEAM WARNINGS:\n' + seamReports.join('\n') : 'seam check: all textures OK');
