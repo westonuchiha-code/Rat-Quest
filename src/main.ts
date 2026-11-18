@@ -58,8 +58,6 @@ import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
 import { ShadowCuts } from './render/cutShadow';
-import { makeToyRide, makePipeRide, makeBowlRide, makeSpineRide } from './levels/toybox';
-import { makeDipRide } from './levels/bigdipper';
 import { Dozer, dreamify } from './world/dozers';
 import { railCurve } from './world/rails';
 import { PICTURE, pictureSize } from './render/picture';
@@ -102,7 +100,6 @@ import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } fr
 import { feelOf } from './data/feel';
 import { HALL_ID } from './levels/testRooms';
 import { wayOutOf } from './levels/wayOut';
-import { makeAutoRide } from './levels/milkyway';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
 import type { CourseDoorDef } from './levels/types';
@@ -117,6 +114,7 @@ import type { StoryCtx } from './story/scenes';
 import type { EnemySpec, LevelDef } from './levels/types';
 import { GoalHud } from './ui/goalHud';
 import { TrickLog } from './player/trickLog';
+import { FilmDrive, type Seen } from './dev/filmDrive';
 import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
@@ -2358,104 +2356,12 @@ function startGame(): void {
     const vyBefore = player.velocity.y;
     // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
     if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
-    // Development aids for the films: `&autoride` rides the Milky Way by itself; `&autofight` goes for whatever is
-    // nearest and swings at it (with `&god` nothing hurts him).
-    if (devAuto.ride && cur.id === 'milkyway' && !player.dead) {
-      const a = (devAuto.rider ??= makeAutoRide())(player);
-      m.set(a.x, 0, a.z);
-      run = a.run;
-      jumpPressed = a.jumpPressed;
-      jumpHeld = a.jumpHeld;
-      attackPressed = a.attackPressed;
-    }
-    // (`&autorail`, for the films: riding, he takes the nearest rail, and swings at each bat that hangs beside it.)
-    if (devRail && !player.dead) {
-      devRailTick++;
-      if (!player.riding) {
-        // (Onto his shield: a jump, and the air attack over the slope.)
-        m.set(0, 0, 1);
-        jumpPressed = player.grounded && devRailTick % 20 === 0;
-        attackPressed = !player.grounded;
-      } else if (!player.grinding) {
-        // (Over to the rail on his left, and onto it.)
-        const railX = -1.4;
-        m.set(Math.max(-1, Math.min(1, (railX - player.position.x) * 2)), 0, 1).normalize();
-        stowPressed = player.grounded && Math.abs(player.position.x - railX) < 0.6 && devRailTick % 6 === 0;
-      } else attackPressed = player.attackTime <= 0 && enemies.some((e) => e.alive && e.kind === 'bat' && e.z > player.position.z - 0.5 && e.z - player.position.z < 3 && Math.abs(e.x - player.position.x) < 1.5);
-    }
-    if (devAuto.ride && cur.id === 'bigdipper' && !player.dead) {
-      // (The Big Dipper's rider: rides, jumps, takes the rails, and stops at each pad. With `&autofight` he then fights.)
-      // (`&tuck`: he holds the stick forward all the way, crouched for speed.)
-      const a = (devAuto.dipRider ??= makeDipRide(/[#&]tuck\b/.test(location.hash)))(player);
-      const onPad = !player.riding && enemies.some((e) => e.alive && Math.hypot(e.x - player.position.x, e.z - player.position.z) < 30);
-      if (!(devAuto.fight && onPad)) {
-        m.set(a.x, 0, a.z);
-        jumpPressed = a.jumpPressed;
-        jumpHeld = a.jumpHeld;
-        attackPressed = a.attackPressed;
-        stowPressed = a.stowPressed;
-        dodgePressed = a.dodgePressed;
-      }
-    }
-    if (devAuto.ride && cur.id === 'toybox' && !player.dead) {
-      // (The Toy Box's rider: off the big ramp with a spin, a grab and a kickflip, and into the quarter pipe.)
-      // (`&autoride=pipe`: the half pipe's instead, from its east deck.)
-      const a = (devAuto.toyRider ??= /[#&]autoride=pipe\b/.test(location.hash) ? makePipeRide() : /[#&]autoride=bowl\b/.test(location.hash) ? makeBowlRide() : /[#&]autoride=spine\b/.test(location.hash) ? makeSpineRide() : makeToyRide())(player);
-      m.set(a.x, 0, a.z);
-      jumpPressed = a.jumpPressed;
-      jumpHeld = a.jumpHeld;
-      attackPressed = a.attackPressed;
-      guardHeld = a.guardHeld;
-      dodgePressed = a.dodgePressed;
-    }
-    // (`&chaos=N`, a test drive for finding bugs: he runs about at random from seed N, mostly into walls, jumping,
-    // jumping again, swinging, rolling, swinging in the air; and what looks wrong is written to the console as
-    // "CHAOS ...": a number that is not a number, his body inside something solid, a fall out of the world, stuck.)
-    if (devChaos && !player.dead) {
-      devChaos.t += dt;
-      const r = (): number => ((devChaos.seed = (devChaos.seed * 16807) % 2147483647) / 2147483647);
-      if (devChaos.t > devChaos.next) {
-        devChaos.next = devChaos.t + 0.5 + r() * 1.2;
-        const a = r() * Math.PI * 2;
-        devChaos.dir = [Math.sin(a), Math.cos(a)];
-      }
-      m.set(devChaos.dir[0], 0, devChaos.dir[1]);
-      run = true;
-      const k = r();
-      jumpPressed = k < 0.035 || (!player.grounded && k < 0.05);
-      jumpHeld = jumpPressed || r() < 0.7;
-      attackPressed = r() < 0.03;
-      dodgePressed = r() < 0.012;
-    }
-    // (`&autowalk=x,z`: he runs steadily that way across the floor, for a film of a place: the Hall, end to end.)
-    if (devWalk && !player.dead) {
-      m.set(devWalk[0], 0, devWalk[1]);
-      run = true;
-    }
-    // (`&autogo=x,z,x,z...`: he runs to each place in turn, hops there (or at the stops `&gostow=2,5` names, presses STOW), and then stands: for films.)
-    if (devGo && devGo.length >= 2 && !player.dead) {
-      const gx = devGo[0] - player.position.x;
-      const gz = devGo[1] - player.position.z;
-      if (Math.hypot(gx, gz) < 0.4) {
-        devGo.splice(0, 2);
-        devGoStop++;
-        // (At a stop named in `&gostow` he presses STOW there instead of hopping: lifts what is in front of him, or sets it down.)
-        if (devGoStow.includes(devGoStop)) stowPressed = true;
-        else jumpPressed = player.grounded;
-      } else m.set(gx, 0, gz).normalize();
-    }
-    // (`&autojump`: every two seconds he jumps, holds it, and jumps again at the top: for a film of how a place's air feels.)
-    if (devJump && !player.dead) {
-      devJumpAt += dt;
-      if (devJumpAt > 2 && player.grounded) {
-        devJumpAt = 0;
-        jumpPressed = true;
-        devJumpTwice = true;
-      } else if (devJumpTwice && !player.grounded && player.velocity.y <= 0) {
-        devJumpTwice = false;
-        jumpPressed = true;
-      }
-      jumpHeld = jumpHeld || !player.grounded || jumpPressed;
+    // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`.
+    // (`&autofight`, `&autolift` and `&carryfoe`, which reach into the fight and his hands, are below.)
+    if (filmDrive) {
+      const pad = { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed };
+      filmDrive.drive(dt, pad, filmSeen());
+      ({ run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed } = pad);
     }
     if (devAuto.fight && !player.dead) {
       let near: (typeof enemies)[number] | null = null;
@@ -2627,7 +2533,7 @@ function startGame(): void {
     // Locked on, the rat keeps facing the foe while he walks, so he circles him.
     if (lockTarget && player.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(player.state)) player.facing = facingToward(player.position, lockTarget);
     soundAfterPlayer(sneak, vyBefore);
-    chaosWatch();
+    filmDrive?.watch(filmSeen(), chamber.colliders, dialog.open);
     // Jumping off a moving platform keeps some of its motion.
     if (wasGrounded && !player.grounded && player.velocity.y > 1 && chamber.carry.lengthSq() > 0) {
       player.velocity.x += chamber.carry.x;
@@ -3425,50 +3331,14 @@ function startGame(): void {
   // sweep through part of a turn, for a place with a wall close on one side.)
   const devOrbit = devNums('orbit', 7) ?? devNums('orbit', 6);
   let orbitFrom = -1;
-  const devJump = /[#&]autojump\b/.test(location.hash);
-  let devJumpAt = 1;
-  let devJumpTwice = false;
-  const devRail = /[#&]autorail\b/.test(location.hash);
-  let devRailTick = 0;
   const devLift = /[#&]autolift\b/.test(location.hash);
   const devCarryFoe = /[#&]carryfoe\b/.test(location.hash);
   let devCarried = false;
-  /** `&gostow=2,5`: at those stops (counted from 1) he presses STOW instead of hopping. */
-  const devGoStow = ((w) => (w ? w[1].split(',').map(Number) : []))(/[#&]gostow=([\d,]+)/.exec(location.hash));
-  let devGoStop = 0;
-  const devGo = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autogo=([-\d.,]+)/.exec(location.hash));
-  const devWalk = ((w) => (w ? w[1].split(',').map(Number) : null))(/[#&]autowalk=([-\d.,]+)/.exec(location.hash));
-  const devChaos = ((w) => (w ? { seed: Math.max(1, Number(w[1]) || 1), lowest: undefined as number | undefined, room: '', t: 0, next: 0, dir: [0, 1] as [number, number], last: { x: 0, z: 0, t: 0 }, said: new Map<string, number>() } : null))(/[#&]chaos=(\d+)/.exec(location.hash));
-  /** The chaos drive's watch: what looks wrong, written once a second at most for each kind of wrong. */
-  const chaosWatch = (): void => {
-    if (!devChaos) return;
-    const p = player.position;
-    const v = player.velocity;
-    const say = (what: string, detail: string): void => {
-      const at = devChaos.said.get(what) ?? -9;
-      if (devChaos.t - at < 1) return;
-      devChaos.said.set(what, devChaos.t);
-      console.warn(`CHAOS ${what} ${cur.id} t=${devChaos.t.toFixed(1)} at ${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)} state=${player.state} ${detail}`);
-    };
-    if (![p.x, p.y, p.z, v.x, v.y, v.z].every(Number.isFinite)) say('NAN', '');
-    const r = TUNING.rat.radius * 0.8;
-    const h = TUNING.rat.height;
-    for (const b of chamber.colliders) {
-      if (b.ramp || !(p.x + r > b.min.x + 0.05 && p.x - r < b.max.x - 0.05 && p.z + r > b.min.z + 0.05 && p.z - r < b.max.z - 0.05 && p.y + h * 0.8 > b.min.y + 0.05 && p.y + 0.15 < b.max.y - 0.05)) continue;
-      say('INSIDE', `box ${b.min.x.toFixed(1)},${b.min.y.toFixed(1)},${b.min.z.toFixed(1)}..${b.max.x.toFixed(1)},${b.max.y.toFixed(1)},${b.max.z.toFixed(1)}`);
-      break;
-    }
-    // (Measured again in each room he comes to: he can walk out of one into another.)
-    if (devChaos.lowest === undefined || devChaos.room !== cur.id) {
-      devChaos.lowest = Math.min(...chamber.colliders.map((b) => b.min.y));
-      devChaos.room = cur.id;
-    }
-    if (p.y < (devChaos.lowest as number) - 15) say('FELL-OUT', `below everything (${(devChaos.lowest as number).toFixed(1)})`);
-    if (Math.hypot(p.x - devChaos.last.x, p.z - devChaos.last.z) > 0.6) devChaos.last = { x: p.x, z: p.z, t: devChaos.t };
-    else if (devChaos.t - devChaos.last.t > 6 && !player.dead && !dialog.open) say('STUCK', `for ${(devChaos.t - devChaos.last.t).toFixed(1)} s`);
-  };
+  /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
+  const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
+  const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   (window as unknown as { __chaos?: () => unknown }).__chaos = () => ({ level: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp });
-  const devAuto: { ride: boolean; fight: boolean; rider: ReturnType<typeof makeAutoRide> | null; dipRider?: ReturnType<typeof makeDipRide> | null; toyRider?: ReturnType<typeof makeToyRide> | null; swing: number } = { ride: /[#&]autoride\b/.test(location.hash), fight: /[#&]autofight\b/.test(location.hash), rider: null, swing: 0 };
+  const devAuto: { fight: boolean; swing: number } = { fight: /[#&]autofight\b/.test(location.hash), swing: 0 };
   if (/[#&]god\b/.test(location.hash)) DEV.god = true;
   // Development aid, for pictures of a place: `&eye=x,y,z&look=x,y,z` puts the view there, looking there, whatever he is doing.
   const devEye = ((): number[] | null => {
