@@ -110,7 +110,13 @@ says which way round and how hard; the roach uses it too. The scorpion sidles (`
 steps round with his shield on the rat, the mantis sways to its place, and the ant takes the director's place over
 its mate's. Tests: tests/combat2.ts, two checks per creature (most waiting frames at his sides; turns unchanged).
 LEFT OUT on purpose: the roller (it only walks forward and rolls), the ironback (it only plods where it faces) and
-the brood mother (a boss, alone). Flying creatures (bat, hornet, firefly) are not on the ground and were not asked.
+the brood mother (a boss, alone).
+[opus] 2026-11-18, TRIED AND TAKEN OUT AGAIN: walking the roller and the ironback round to their places (turn, walk
+there, turn back to him). Measured in tests/combat2.ts's three-of-a-kind fight, 40 s: the IRONBACK reached its place
+(4083 of 4200 waiting frames at his sides) but made 8 to 15 attacks where it makes 52 with no lock, in every way tried
+(walking only between attacks, only while it was not its turn, asking for a turn as it walked): its fight is plodding
+at him and attacking, and going round costs it that. That is easier, so it is not in. The ROLLER spends little of its
+time waiting (it rolls, and comes back), and its time at his sides did not change (385 against 360). Left as they were. Flying creatures (bat, hornet, firefly) are not on the ground and were not asked.
 STILL NOT DONE: the locked one using its bigger moves. Not played by hand.
 
 **A10. Stronger in the dream.**
