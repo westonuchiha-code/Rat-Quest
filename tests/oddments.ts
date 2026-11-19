@@ -3,6 +3,7 @@
 import './../src/core/colorSetup';
 import { levelById } from '../src/levels/levels';
 import { ODDMENTS, oddmentsIn } from '../src/levels/oddments';
+import * as THREE from 'three';
 import { buildChamber } from '../src/world/chamber';
 import { groundUnder } from '../src/world/lifting';
 import { JUNK, junkSolids } from '../src/world/layout';
@@ -65,6 +66,35 @@ for (const id of Object.keys(ODDMENTS)) {
   check(`${id}: he starts clear of them`, close > 4, `${close.toFixed(1)} m`);
 }
 check('in all, a few dozen about the levels', count >= 40, `${count}`);
+
+// ---- What they do (2026-11-19) ----
+{
+  const ch = buildChamber({ solids: [], pit: null, water: [], movers: [], decor: [
+    { kind: 'junk', what: 'matchbox', x: 0, y: 0, z: 0, yaw: 0 },
+    { kind: 'junk', what: 'battery', x: 10, y: 0, z: 0, yaw: 0 },
+  ] } as never);
+  const moving: THREE.Object3D[] = [];
+  ch.group.traverse((o) => { if (o.userData.moves) moving.push(o); });
+  const matches = moving.filter((o) => o.type === 'Group');
+  // (Rounded to a ten-thousandth, and never a minus nought: a rattle that has died away leaves a millionth or less.)
+  const r4 = (v: number): number => Math.round(v * 1e4) / 1e4 + 0;
+  const where = (): string => matches.map((m) => `${r4(m.position.y)},${r4(m.rotation.y)}`).join(' ');
+  ch.update(1);
+  const still = where();
+  check('a thump far off is not felt', ch.thump(8, 0, 8, 1) === 0);
+  check('...one beside a matchbox is', ch.thump(1, 0, 0.5, 1) === 1);
+  ch.update(1.05);
+  const shaken = where();
+  ch.update(4);
+  check('a matchbox\'s six matches rattle when he lands beside it, then settle as they were', matches.length === 6 && shaken !== still && where() === still, `${matches.length} matches`);
+  const spark = moving.find((o) => (o as THREE.Mesh).isMesh && (o as THREE.Mesh).geometry.type === 'OctahedronGeometry');
+  let shown = 0;
+  for (let t = 0; t < 20; t += 0.02) {
+    ch.update(t);
+    if (spark?.visible) shown++;
+  }
+  check('a battery sparks now and then: seen, but not for long', !!spark && shown > 0 && shown < 100, `${shown} of 1000 moments`);
+}
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 if (failures) process.exit(1);

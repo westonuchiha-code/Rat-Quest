@@ -81,6 +81,8 @@ export interface Chamber {
    * after layering (render/layering.ts autoLayer): what was put a layer up is left as it is, so nothing flickers.
    */
   gather(): void;
+  /** He landed at (x, y, z), this hard (0..1): odds and ends within reach answer it (a matchbox's matches rattle). How many did. */
+  thump(x: number, y: number, z: number, strength: number): number;
 }
 
 /** The picture each kind wears unless the box says otherwise. */
@@ -709,6 +711,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const needles: Array<{ obj: THREE.Object3D; base: number; phase: number }> = [];
   /** Story machinery that moves: each is called every frame with the time. */
   const animators: Array<(time: number) => void> = [];
+  /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
+  const knockables: Array<{ x: number; y: number; z: number; knock: (strength: number, time: number) => void }> = [];
+  let clock = 0;
   const foam: Array<{ mesh: THREE.Mesh; phase: number }> = [];
   // Wall hangings are stood flat against their walls and kept clear of the floor first (see hangings.ts).
   // (The still dressing is noted as it is built, to be gathered at the end: see `gatherStill`.)
@@ -1720,6 +1725,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(built.group);
       if (built.sway) swayers.push({ obj: built.sway, axis: 'x', amount: 0.14, speed: 1.3, phase: d.x * 0.9 + d.z });
       if (built.tick) animators.push(built.tick);
+      if (built.knock) knockables.push({ x: d.x, y: d.y, z: d.z, knock: built.knock });
       if (built.flame) {
         swayers.push({ obj: built.flame, axis: 'z', amount: 0.25, speed: 7, phase: d.x + d.z });
         lightDefs.push({ x: d.x, y: d.y + 1.2, z: d.z, r: 6, color: new THREE.Color(0xffb060), power: 0.7, flash: 0, flicker: 0.2, phase: d.x * 1.7 + d.z });
@@ -2187,6 +2193,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   let lastTime = -1;
 
   const update = (time: number): void => {
+    clock = time;
     for (const sp of spinners) sp.o.rotation.y = time * sp.rate;
     for (const rb of railBeads) {
       const q = railAt(rb.c, ((time * 9 + rb.at * rb.c.len) % rb.c.len + rb.c.len) % rb.c.len);
@@ -2455,5 +2462,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     gatherStill(group, stillRoots, moving);
     stillRoots.length = 0;
   };
-  return { gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  /** He landed at (x, y, z), this hard (0..1): whatever answers a thump within reach does. How many did. */
+  const thump = (x: number, y: number, z: number, strength: number): number => {
+    let n = 0;
+    for (const k of knockables) {
+      const d = Math.hypot(k.x - x, k.z - z);
+      if (d > 2.5 || Math.abs(k.y - y) > 1.5) continue;
+      k.knock(strength * (1 - d / 2.5), clock);
+      n++;
+    }
+    return n;
+  };
+  return { thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

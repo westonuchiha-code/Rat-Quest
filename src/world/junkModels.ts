@@ -36,7 +36,7 @@ const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x =
  * steam (wisps that rise and fade), a candle's drop of wax running down, a marble's glint. Whatever `tick` moves is
  * tagged (userData.moves), so that the room leaves it out when it gathers its still dressing (world/chamber.ts).
  */
-export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; tick?: (time: number) => void } {
+export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; tick?: (time: number) => void; knock?: (strength: number, time: number) => void } {
   const g = new THREE.Group();
   const J = JUNK[what];
   if (what === 'candle') {
@@ -93,14 +93,32 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(new THREE.BoxGeometry(tray, 0.04, J.d * 0.92), 0xe8d8bc, mats.card, tx, 0.02, 0));
     for (const z of [-1, 1]) g.add(part(new THREE.BoxGeometry(tray, J.h * 0.8, 0.03), 0xe8d8bc, mats.card, tx, J.h * 0.4, z * J.d * 0.45));
     g.add(part(new THREE.BoxGeometry(0.03, J.h * 0.8, J.d * 0.92), 0xe8d8bc, mats.card, J.w / 2 - 0.015, J.h * 0.4, 0));
-    // Matches lying along it, red heads at the open end.
+    // Matches lying along it, red heads at the open end. (Each a little group, head and stick: they rattle when he
+    // lands close by, `knock`, and settle again.)
+    const matches: Array<{ o: THREE.Group; y: number; i: number }> = [];
     for (let i = 0; i < 6; i++) {
       const z = -J.d * 0.34 + i * J.d * 0.135;
       const y = 0.07 + (i % 2) * 0.03;
-      g.add(part(new THREE.BoxGeometry(J.w * 0.62, 0.04, 0.05), 0xf0dcb0, mats.wood, J.w * 0.12, y, z));
-      g.add(part(new THREE.BoxGeometry(0.08, 0.06, 0.07), i === 2 ? 0x2a2420 : 0xb83a2a, mats.plain, J.w * 0.12 + J.w * 0.31 + 0.03, y, z));
+      const m = new THREE.Group();
+      m.position.set(J.w * 0.12, y, z);
+      m.userData.moves = true;
+      m.add(part(new THREE.BoxGeometry(J.w * 0.62, 0.04, 0.05), 0xf0dcb0, mats.wood));
+      m.add(part(new THREE.BoxGeometry(0.08, 0.06, 0.07), i === 2 ? 0x2a2420 : 0xb83a2a, mats.plain, J.w * 0.31 + 0.03, 0, 0));
+      g.add(m);
+      matches.push({ o: m, y, i });
     }
-    return { group: g };
+    let hit = { at: -99, by: 0 };
+    const knock = (strength: number, time: number): void => {
+      hit = { at: time, by: Math.max(strength, hit.by * Math.exp(-(time - hit.at) * 5)) };
+    };
+    const tick = (time: number): void => {
+      const a = hit.by * Math.exp(-Math.max(0, time - hit.at) * 5);
+      for (const m of matches) {
+        m.o.position.y = m.y + a * 0.11 * Math.abs(Math.sin(time * 38 + m.i * 1.7));
+        m.o.rotation.y = a * 0.3 * Math.sin(time * 31 + m.i * 2.3);
+      }
+    };
+    return { group: g, tick, knock };
   }
   if (what === 'cheese') {
     // A wheel with a wedge out of it: the rind round its side, the cut faces paler, the holes showing.
@@ -202,7 +220,23 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(new THREE.CylinderGeometry(r * 0.32, r * 0.32, 0.12, 8, 1).rotateZ(Math.PI / 2), 0xc8c4b8, mats.tin, J.w / 2 - 0.06, r, 0));
     // A white stripe of writing round the black.
     g.add(part(new THREE.CylinderGeometry(r * 1.01, r * 1.01, 0.12, 12, 1, true).rotateZ(Math.PI / 2), 0xe8e4d8, mats.plain, x0 + body * 0.4, r, 0));
-    return { group: g };
+    // Not quite flat: now and then a tiny spark jumps off its knob.
+    const spark = new THREE.Mesh(new THREE.OctahedronGeometry(0.07, 0), new THREE.MeshBasicMaterial({ color: 0xfff4a0 }));
+    spark.userData.moves = true;
+    g.add(spark);
+    const tick = (time: number): void => {
+      const u = (time * 0.23 + x0 * 3.1) % 1; // about one every four seconds
+      const on = u > 0.96;
+      spark.visible = on;
+      if (on) {
+        const k = (u - 0.96) / 0.04;
+        spark.position.set(J.w / 2 + 0.05 + k * 0.12, r + 0.05 + Math.sin(k * 9) * 0.06, Math.cos(k * 7) * 0.06);
+        spark.scale.setScalar(1.2 - k);
+        spark.rotation.set(k * 5, k * 3, 0);
+      }
+    };
+    tick(0);
+    return { group: g, tick };
   }
   if (what === 'teacup') {
     // The saucer, the cup on it (a blue band round it, tea in it), and its handle.

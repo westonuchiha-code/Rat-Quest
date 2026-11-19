@@ -1979,6 +1979,8 @@ function startGame(): void {
     if (!heard.grounded && player.grounded && !inWater) {
       audio.play('land', { vol: Math.min(1, 0.35 + Math.abs(vyBefore) / 12), rate: roll(0.9, 1.1) });
       rumble.land(Math.abs(vyBefore));
+      // Odds and ends close by answer it: a matchbox's matches rattle (world/chamber.ts thump). Unheard by Claude.
+      if (chamber.thump(player.position.x, player.position.y, player.position.z, Math.min(1, Math.abs(vyBefore) / 10)) > 0) audio.play('rockKnock', { vol: 0.2, rate: 2.4, priority: 3 });
     }
     if ((s === 'attack' || (player.riding && player.attackTime > 0)) && player.swingId !== heard.swing) {
       audio.play('swing', { vol: 0.7, rate: roll(0.95, 1.12), priority: 6 });

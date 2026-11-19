@@ -4,8 +4,8 @@
 390 out. The suite went from 3,839 checks in 101 suites to 4,155 in 107, all passing, types clean.
 
 **The four files where a small change breaks something far away.** `src/player/controller.ts`, `src/combat/combat.ts`
-and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 11 commits, listed under the group each
-belongs to below (marked *main.ts*). Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
+and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 12 commits, listed under the group each
+belongs to below (marked *main.ts*), and a twelfth: on landing it calls `chamber.thump` (a matchbox's matches rattle). Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
 
 ## 1. Changes to how the game PLAYS (review these first)
 
