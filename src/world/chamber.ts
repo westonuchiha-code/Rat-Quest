@@ -76,6 +76,11 @@ export interface Chamber {
   updateLights(time: number, focus: THREE.Vector3, extra?: ReadonlyArray<{ x: number; y: number; z: number; r: number; color: THREE.Color; power: number; flash: number; flicker: number; phase: number }>): void;
   /** Advances water, falls, gushing pipes and gates. Call once per rendered frame with seconds since start. */
   update(time: number): void;
+  /**
+   * Gathers the room's still dressing into a mesh per material (fewer draw calls, the same picture). Call it once,
+   * after layering (render/layering.ts autoLayer): what was put a layer up is left as it is, so nothing flickers.
+   */
+  gather(): void;
 }
 
 /** The picture each kind wears unless the box says otherwise. */
@@ -158,6 +163,62 @@ function tintUpFaces(geo: THREE.BufferGeometry, color: number): void {
       const k = 0.75 + 0.25 * ((i * 37) % 7) / 6;
       col.setXYZ(i, c.r * k, c.g * k, c.b * k);
     }
+  }
+}
+
+/** Switches for how a room is built (`&nogather` turns the gathering off, to compare). */
+export const CHAMBER_OPTIONS = { gatherStill: true };
+/** Dressing that never moves of itself (its flames and candle flames excepted: they are on the room's clocks). Not a
+ * row of thimbles on a bar: their feet lie a hair over the counter, and gathered they would flicker into it. */
+const STILL_KINDS = new Set<string>(['torch', 'stool', 'table', 'rug', 'junk', 'keg', 'bottles', 'dartboard', 'couch', 'lamp', 'speaker', 'brazier', 'sign']);
+/**
+ * THE STILL DRESSING GATHERED (2026-11-19: the Hall drew its 30 torches, 14 stools and the rest as 700-odd meshes,
+ * each a draw call): every still mesh of the dressing in `roots` is put, where it stands in the room, into one mesh
+ * per material. Left as they are: what is `moving` (on one of the room's clocks) or under something that is, what is
+ * tagged (userData: whatever layering put a layer up is), hidden, see-through or of more than one material.
+ * tests/gather.ts: the same picture; tests/clipsweep.ts: nothing flickers.
+ */
+function gatherStill(group: THREE.Group, roots: THREE.Object3D[], moving: Set<THREE.Object3D>): void {
+  group.updateMatrixWorld(true);
+  const toGroup = group.matrixWorld.clone().invert();
+  // (By material, and by what each corner carries: only shapes alike in that can be joined.)
+  const sig = (g: THREE.BufferGeometry): string => Object.keys(g.attributes).sort().map((k) => `${k}${g.attributes[k].itemSize}`).join();
+  const byMat = new Map<string, { mat: THREE.Material; geos: THREE.BufferGeometry[]; meshes: THREE.Mesh[]; order: number }>();
+  const under = (o: THREE.Object3D): boolean => {
+    for (let q: THREE.Object3D | null = o; q && q !== group; q = q.parent) if (moving.has(q) || !q.visible || Object.keys(q.userData).length) return true;
+    return false;
+  };
+  for (const root of roots) {
+    root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh || Array.isArray(m.material) || m.children.length || under(m)) return;
+      const mat = m.material as THREE.Material;
+      // (A cylinder's side and caps are kept as parts of its shape, but with one material they are drawn as one: no matter.)
+      if (mat.transparent || (m as unknown as { isInstancedMesh?: boolean }).isInstancedMesh || Object.keys(m.geometry.morphAttributes).length) return;
+      const g = (m.geometry.index ? m.geometry.toNonIndexed() : m.geometry.clone()).applyMatrix4(m.matrixWorld.clone().premultiply(toGroup));
+      g.clearGroups();
+      if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+      if (!g.attributes.color) return void g.dispose();
+      const key = `${mat.uuid}|${m.renderOrder}|${sig(g)}`;
+      const e = byMat.get(key) ?? { mat, geos: [], meshes: [], order: m.renderOrder };
+      e.geos.push(g);
+      e.meshes.push(m);
+      byMat.set(key, e);
+    });
+  }
+  for (const e of byMat.values()) {
+    if (e.meshes.length < 2) {
+      for (const g of e.geos) g.dispose();
+      continue;
+    }
+    const joined = mergeGeometries(e.geos);
+    for (const g of e.geos) g.dispose();
+    if (!joined) continue;
+    const one = new THREE.Mesh(joined, e.mat);
+    one.renderOrder = e.order;
+    one.name = 'gathered';
+    group.add(one);
+    for (const m of e.meshes) m.parent?.remove(m);
   }
 }
 
@@ -650,7 +711,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const animators: Array<(time: number) => void> = [];
   const foam: Array<{ mesh: THREE.Mesh; phase: number }> = [];
   // Wall hangings are stood flat against their walls and kept clear of the floor first (see hangings.ts).
-  for (const d of layout.decor ?? []) buildDecor(mount(d, colliders));
+  // (The still dressing is noted as it is built, to be gathered at the end: see `gatherStill`.)
+  const stillRoots: THREE.Object3D[] = [];
+  for (const d of layout.decor ?? []) {
+    const n0 = group.children.length;
+    buildDecor(mount(d, colliders));
+    if (STILL_KINDS.has(d.kind)) stillRoots.push(...group.children.slice(n0));
+  }
 
   function buildDecor(d: Decor): void {
     if (d.kind === 'pipe') {
@@ -1013,12 +1080,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       rod.rotateZ(Math.PI / 2);
       bakeVertexColor(rod, lifted(0x6b5a3a));
       pivot.add(new THREE.Mesh(rod, lit('ashWood')));
+      // (Its gold, knobs, trim and diamond, all one mesh, 2026-11-19: it was five, in each of the Hall's thirty banners.)
+      const gold: THREE.BufferGeometry[] = [];
       for (const s of [-1, 1]) {
         const knob = new THREE.SphereGeometry(0.09, 5, 4);
         bakeVertexColor(knob, 0xc9a23a);
-        const k = new THREE.Mesh(knob, plainMat);
-        k.position.set(s * (d.w / 2 + 0.25), 0, 0);
-        pivot.add(k);
+        gold.push(knob.translate(s * (d.w / 2 + 0.25), 0, 0));
       }
       const shape = new THREE.Shape();
       const hw = d.w / 2;
@@ -1034,16 +1101,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       for (const s of [-1, 1]) {
         const trim = new THREE.PlaneGeometry(d.w * 0.08, d.h * 0.86);
         bakeVertexColor(trim, 0xc9a23a);
-        const t = new THREE.Mesh(trim, plainMat);
-        t.position.set(s * hw * 0.78, -d.h * 0.43, 0.01);
-        pivot.add(t);
+        gold.push(trim.translate(s * hw * 0.78, -d.h * 0.43, 0.01));
       }
       const diamond = new THREE.PlaneGeometry(d.w * 0.34, d.w * 0.34);
       diamond.rotateZ(Math.PI / 4);
       bakeVertexColor(diamond, 0xe3b93f);
-      const dm = new THREE.Mesh(diamond, plainMat);
-      dm.position.set(0, -d.h * 0.4, 0.015);
-      pivot.add(dm);
+      gold.push(diamond.translate(0, -d.h * 0.4, 0.015));
+      pivot.add(new THREE.Mesh(mergeAll(gold), plainMat));
       swayers.push({ obj: pivot, axis: 'x', amount: 0.035, speed: 0.9, phase: d.x * 0.7 + d.z * 1.3 });
     } else if (d.kind === 'torch') {
       // An iron bracket out from the wall, a stick tilted out, and the flame.
@@ -2368,5 +2432,26 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     }
   };
 
-  return { group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  /** Gathers the still dressing (`gatherStill`): called by the game AFTER the room is layered (render/layering.ts). */
+  const gather = (): void => {
+    if (!CHAMBER_OPTIONS.gatherStill || stillRoots.length === 0) return;
+    // Whatever any of the room's own clocks moves, shows or hides is left as it is.
+    const moving = new Set<THREE.Object3D>();
+    const add = (o: THREE.Object3D | null | undefined): void => void (o && moving.add(o));
+    for (const x of spinners) add(x.o);
+    for (const x of railBeads) add(x.o);
+    for (const x of nodders) add(x.o);
+    for (const x of flutterers) { add(x.o); x.wings.forEach(add); }
+    for (const x of cones) add(x.mesh);
+    for (const x of bulbs) { add(x.on); add(x.off); }
+    for (const x of flames) add(x.mesh);
+    for (const x of swayers) add(x.obj);
+    for (const x of blinkers) add(x.obj);
+    for (const x of needles) add(x.obj);
+    for (const x of foam) add(x.mesh);
+    for (const x of pyres) add(x.mesh);
+    gatherStill(group, stillRoots, moving);
+    stillRoots.length = 0;
+  };
+  return { gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

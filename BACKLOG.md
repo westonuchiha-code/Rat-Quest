@@ -161,9 +161,14 @@ each is put through what it does, and what never moved is joined per joint and m
 step by step (proven to catch a wrong join). Not more without rebuilding the models: nearly every joint sways a
 little, so a limb's parts join only with each other. Grimsqueak (162 meshes) and a cutscene's own cast are left as
 they were. A door's ironwork (bands, post, ring, stud) is one mesh (world/doorway.ts): the Hall 1,552 to 1,528.
-`__cost()` also lists each of the scene's other groups by size (him, the doors). Where the Hall's 1,528 calls are now:
-the room itself about 760, the characters about 620, the doors under 200. LEFT: models built with fewer joints (his
-eyes wanted); the room's own pieces (walls, benches, banners) by kind.
+`__cost()` also lists each of the scene's other groups by size (him, the doors).
+DONE 2026-11-19: the room's STILL DRESSING GATHERED (world/chamber.ts gatherStill, `chamber.gather()` after layering;
+`&nogather` to compare): torches, stools, tables, rugs, junk, kegs, bottles, dartboards, couches, lamps, speakers, fire
+bowls and signs, one mesh per material, all but what moves (flames, cones, swaying things) and what layering put a
+layer up. Not the thimble rows on a bar (their feet would flicker into the counter). A banner's gold is one mesh.
+The Hall 1,528 to 1,199 draw calls (1,717 this morning), the Club 712 to 529. tests/gather.ts: all 38 rooms draw the
+same as their clocks run (proven to catch frozen flames); tests/clipsweep.ts now gathers too: nothing flickers.
+LEFT: models built with fewer joints (his eyes wanted); walls and floors (tried 2026-11-18: no gain, see above).
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in

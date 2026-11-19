@@ -183,6 +183,8 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
     const inside = (p: THREE.Vector3): boolean => ch.colliders.some((b) => !b.ramp && p.x > b.min.x + 1e-3 && p.x < b.max.x - 1e-3 && p.y > b.min.y + 1e-3 && p.y < b.max.y - 1e-3 && p.z > b.min.z + 1e-3 && p.z < b.max.z - 1e-3);
     // (As the game does when it loads the level: what lies on something is put a layer up. Then: what is left?)
     const done = autoLayer(ch.group, inside);
+    // (And, as the game does next, its still dressing gathered: world/chamber.ts gatherStill.)
+    ch.gather();
     const after = sweep(scene, L.id, inside);
     levels++;
     cured += done.layeredMeshes;

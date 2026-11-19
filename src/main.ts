@@ -6,7 +6,7 @@ import { ps1Uniforms, lyingOn } from './render/ps1Material';
 import { SwordTrail } from './render/swordTrail';
 import { input } from './core/input';
 import { TUNING } from './data/tuning';
-import { Chamber, buildChamber, storyPower } from './world/chamber';
+import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -1348,6 +1348,8 @@ function startGame(): void {
   const unlockAll = location.hash.includes('unlockall');
   /** dev: `&nojoin` keeps every character's parts apart (npc/stillParts.ts), to compare the joined ones with. */
   const noJoin = location.hash.includes('nojoin');
+  /** dev: `&nogather` keeps the room's still dressing as it was built (world/chamber.ts gatherStill), to compare. */
+  if (location.hash.includes('nogather')) CHAMBER_OPTIONS.gatherStill = false;
   // dev: `&slow=0.25` starts the game in slow motion (the Workshop's own switch), for pictures of quick things.
   const slowHash = /[#&]slow=([\d.]+)/.exec(location.hash);
   if (slowHash) DEV.slow = Math.min(1, Math.max(0.05, Number(slowHash[1])));
@@ -1748,6 +1750,8 @@ function startGame(): void {
     {
       const cs = chamber.colliders;
       autoLayer(chamber.group, (p) => cs.some((b) => !b.ramp && p.x > b.min.x + 1e-3 && p.x < b.max.x - 1e-3 && p.y > b.min.y + 1e-3 && p.y < b.max.y - 1e-3 && p.z > b.min.z + 1e-3 && p.z < b.max.z - 1e-3));
+      // Then its still dressing is gathered into fewer meshes (what was layered is left as it is).
+      chamber.gather();
     }
     scene.add(chamber.group);
     player.water = chamber.water;
