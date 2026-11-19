@@ -1746,38 +1746,6 @@ function paintIceBlock(p: Px, rand: Rand): void {
 }
 
 /**
- * Ice: a steel pipe in the cold. Across is round it, its top at the picture's edge; down is along it. Dull steel,
- * a seam, rivets at its bands; white rime lying thick along its top and thinning down its sides. (Whole: a pipe that
- * has burst is a thing of its own, a jet of gas and frost round it.)
- */
-function paintFrostPipe(p: Px, rand: Rand): void {
-  const S = p.size;
-  const steel = [0x1a222a, 0x2a343e, 0x3e4a56, 0x56646f, 0x72828c, 0x94a4ad];
-  const f = fbm(S, rand, 4, 3);
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const u = x / S;
-      const round = 0.5 + 0.5 * Math.cos(u * Math.PI * 2);
-      p.set(x, y, ramp(0.2 + 0.5 * round ** 1.5 + (f[y * S + x] - 0.5) * 0.16, steel, x, y, 0.16));
-      // (Rime: on its top, in a ragged edge.)
-      const top = Math.min(u, 1 - u);
-      if (top < 0.1 + f[y * S + x] * 0.12) p.blend(x, y, rand() < 0.8 ? 0xe8f4fb : 0xbcd4e2, 0.9 - top * 3);
-    }
-  }
-  // A band, with rivets, and the seam along the pipe's side.
-  for (let x = 0; x < S; x++) {
-    p.blend(x, 2, 0x10161c, 0.7);
-    p.blend(x, 3, 0x94a4ad, 0.5);
-    p.blend(x, 6, 0x10161c, 0.6);
-    if (x % 5 === 2) {
-      p.set(x, 4, 0xb4c2ca);
-      p.blend(x, 5, 0x10161c, 0.6);
-    }
-  }
-  for (let y = 0; y < S; y++) p.blend(Math.round(S * 0.3), y, 0x10161c, 0.45);
-}
-
-/**
  * Clear ice, for icicles and for the spikes of it that stand up from the floor. Across is round it; down is along
  * it, from its root to its point. Pale blue, a white core running its length where the light goes through, a bright
  * edge, milky at the root and clearest at the point; faint rings where it grew.
@@ -2777,26 +2745,6 @@ function paintDreamStatic(p: Px, rand: Rand): void {
   }
 }
 
-/** Dream: the sky he rides through. Deep space, a drift of coloured cloud, and stars. */
-function paintStarfield(p: Px, rand: Rand): void {
-  const S = p.size;
-  const a = fbm(S, rand, 3, 3);
-  const b = fbm(S, rand, 3, 3);
-  for (let y = 0; y < S; y++) {
-    for (let x = 0; x < S; x++) {
-      const base = ramp(a[y * S + x] * 0.6, [0x05030f, 0x0c0822, 0x1a1040, 0x2c1860], x, y, 0.25);
-      p.set(x, y, base);
-      if (a[y * S + x] > 0.55) p.blend(x, y, b[y * S + x] > 0.5 ? 0xff3ac0 : 0x20d8e8, (a[y * S + x] - 0.55) * 1.6);
-    }
-  }
-  for (let k = 0; k < 40; k++) p.set(rand() * S, rand() * S, pick(rand, [0xffffff, 0xfff4b0, 0xa8f0ff, 0xffb0e8]));
-  for (let k = 0; k < 4; k++) {
-    const x = Math.floor(rand() * S);
-    const y = Math.floor(rand() * S);
-    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) p.set(x + dx, y + dy, dx || dy ? 0xfff4b0 : 0xffffff);
-  }
-}
-
 /**
  * Dream: the road. ONE rainbow across its whole width, the same either side of its middle line (a tile is as wide as
  * the road, and the road's middle is the tile's seam: so the picture is laid out from the seam outward). Red at its
@@ -2867,24 +2815,6 @@ function paintPomoTiles(p: Px, rand: Rand): void {
   }
   for (let y = 1; y < 8; y++) for (let x = 1; x < 8; x++) p.set(H + 8 + x, H + 16 + y, 0x3ee8c0);
   for (let k = 0; k < 10; k++) p.blend(rand() * S, rand() * S, 0xffffff, 0.8);
-}
-
-/** Furnace, refreshed: soot-black brick with the heat showing in its joints. */
-function paintEmberBrick(p: Px, rand: Rand): void {
-  const S = p.size;
-  const f = fbm(S, rand, 4, 2);
-  for (let y = 0; y < S; y++) {
-    const row = Math.floor(y / 8);
-    for (let x = 0; x < S; x++) {
-      const lx = (x + (row % 2) * 8) % 16;
-      const ly = y % 8;
-      const joint = lx === 0 || ly === 0;
-      const heat = f[y * S + x];
-      if (joint) p.set(x, y, ramp(heat * 1.2 - 0.1, [0x180806, 0x5a1408, 0xc23a0c, 0xff8a1e, 0xffe08a], x, y, 0.3));
-      else p.set(x, y, ramp(0.2 + (ly === 1 || lx === 1 ? 0.25 : 0) + (rand() - 0.5) * 0.2 + (heat > 0.6 ? 0.2 : 0), [0x0c0a0a, 0x1a1514, 0x2a2220, 0x40302a, 0x5a3a2a], x, y, 0.2));
-    }
-  }
-  for (let k = 0; k < 6; k++) p.set(rand() * S, rand() * S, 0xffc04a);
 }
 
 /** Furnace, refreshed: an iron vent in the floor, the glow below showing through its slots. */
@@ -3243,7 +3173,6 @@ const DEFS = {
   frostCobbles: { size: 64, seed: 802, paint: paintFrostCobbles },
   iceSheet: { size: 64, seed: 805, paint: paintIceSheet },
   iceBlock: { size: 64, seed: 807, paint: paintIceBlock },
-  frostPipe: { size: 32, seed: 803, paint: paintFrostPipe },
   iceClear: { size: 32, seed: 806, paint: paintIceClear },
   caveRock: { size: 64, seed: 811, paint: paintCaveRock },
   caveFloor: { size: 64, seed: 814, paint: paintCaveFloor },
@@ -3278,10 +3207,8 @@ const DEFS = {
   // Soft painted shading: what the friendly characters wear.
   softPaint: { size: 64, seed: 871, paint: paintSoftPaint },
   dreamStatic: { size: 64, seed: 881, paint: paintDreamStatic },
-  starfield: { size: 32, seed: 821, paint: paintStarfield },
   rainbowRoad: { size: 64, seed: 822, paint: paintRainbowRoad },
   pomoTiles: { size: 64, seed: 823, paint: paintPomoTiles },
-  emberBrick: { size: 32, seed: 831, paint: paintEmberBrick },
   steamVent: { size: 32, seed: 832, paint: paintSteamVent },
   // The Widow (enemies/widowModel.ts): her shell, and the horn of her claws and fangs. Both run ALONG a limb (v).
   widowChitin: { size: 32, seed: 701, paint: paintWidowChitin },

@@ -389,7 +389,7 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 
 // ---- The tiles ----
 {
-  for (const name of ['iceBrick', 'frostCobbles', 'iceSheet', 'iceBlock', 'frostPipe', 'iceClear'] as const) {
+  for (const name of ['iceBrick', 'frostCobbles', 'iceSheet', 'iceBlock', 'iceClear'] as const) {
     const px = getTexturePixels(name);
     let cold = 0;
     for (let i = 0; i < px.size * px.size; i++) if (px.data[i * 4 + 2] >= px.data[i * 4]) cold++;

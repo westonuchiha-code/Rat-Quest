@@ -34,11 +34,6 @@ export function grating(x0: number, x1: number, z0: number, z1: number, top: num
 
 // ---- Walls ----
 
-/** A wall along x at depth z (thickness t), from `bottom` to `top`. */
-export function wallX(x0: number, x1: number, z: number, top: number, style: Style = 'sewer', t = 1, bottom = 0): Box {
-  const b = extent('wall', x0, x1, bottom, top, z, z + t);
-  return style === 'sewer' ? b : skinned(b, WALL_SKIN[style]);
-}
 /** A wall along z at x (thickness t). */
 export function wallZ(z0: number, z1: number, x: number, top: number, style: Style = 'sewer', t = 1, bottom = 0): Box {
   const b = extent('wall', x, x + t, bottom, top, z0, z1);

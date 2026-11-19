@@ -45,5 +45,7 @@ for (const r of results) {
   if (r.code !== 0 || fails.length) broken.push(`${r.n} (exit ${r.code})\n  ${(fails.length ? fails : r.text.trim().split('\n').slice(-6)).join('\n  ')}`);
 }
 if (broken.length) console.log(`FAILED SUITES:\n${broken.join('\n')}`);
-console.log(`${names.length} suites: ${pass} pass, ${fail} fail (built in ${((built - t0) / 1000).toFixed(0)} s, ran in ${((Date.now() - built) / 1000).toFixed(0)} s)`);
+const stopped = results.filter((r) => r.code !== 0 && !(r.text.match(/^FAIL/gm) ?? []).length).length;
+// (A suite that STOPPED, thrown out part way, has no FAIL line to count: said on the last line too, so it is never read as all passing.)
+console.log(`${names.length} suites: ${pass} pass, ${fail} fail${stopped ? `, ${stopped} STOPPED PART WAY (see above)` : ''} (built in ${((built - t0) / 1000).toFixed(0)} s, ran in ${((Date.now() - built) / 1000).toFixed(0)} s)`);
 process.exit(broken.length ? 1 : 0);

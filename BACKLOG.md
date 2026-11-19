@@ -130,81 +130,8 @@ number and films a fight; after that it is a slider.
 
 ## PART B. FOR OPUS (well marked out; hardest at the top)
 
-**B1. Things to throw in the other rooms.** Pots, rocks and crates only stand in the practice rooms. Put a few in
-each test room where there is floor for them (`potBox`, `rockBox` in `src/world/layout.ts`; append a `null` to
-`crateContents` for each). The room's own tests and `tests/clipsweep.ts` say when one is in the way.
-[opus] DONE 2026-11-17: `src/levels/throwables.ts` (`LYING`, one line per room; `layThrowables` runs once in
-levels.ts). By each of the eleven numbered rooms' way in: on his right two pots and a rock, on his left a pot and a
-rock. Places found by a probe of each floor; `tests/throwables.ts` (56 checks) keeps them on the floor, inside
-nothing, off characters, doors, pickups and creatures, and clear of where he starts. Not crates or barrels (the
-rooms have their own). [opus] 2026-11-18: and the side areas (1B, 1C, 3B-3D, 6B, 6C, 8B, 8C, 8E, 8F, 9B) and
-the boss rooms. NOT the Leap of Faith (8D: he starts on a ledge too narrow) nor the Sump Wyrm's room (3E: its floor
-is kept clear to the walls for its charges, tests/wyrm.ts).
-
-**B2. The level editor does not know the new things.** Pots and rocks; the spawn button (`plates[].spawn`); the
-Club's tables and bar (noted long ago). Add them to the kit (`src/levels/custom.ts`) and the palette
-(`src/ui/builder.ts`), following `crate` and `plate`.
-[opus] DONE 2026-11-17. New pieces `pot` (can hold a collectible), `rock`, `table` (thimbles 0-4, candle, cards),
-`stool`, `bar` (an area: a counter 1 high with thimbles and a keg). A floor plate's "Puts in" setting makes it a
-BUTTON: one more of that creature `BUTTON_OUT` (6) along the way the plate faces, up to `BUTTON_MOST` (6) alive. The
-enemy piece's spec is now one function, `enemyOf`, used by both. Checks at the end of tests/editops.ts. Tried in the
-real editor: palette, play, the button puts a roach in. Not yet: the bar's step for a keeper, chairs facing tables.
-
-**B3. Lifting: finish.** (a) A pose for a creature being carried (it stands upright on air). (b) Sounds of its own
-(it borrows a plank, a whoosh, a landing, pebbles). (c) Films, for the record, of: a rock thrown and thrown again;
-each of the other five creatures picked up (only the bat was seen); an iron-bound crate. (d) Check by test: lifting
-a crate that stands on a moving platform; carrying something through a door; a thrown crate meeting a character.
-[opus] 2026-11-17, MOSTLY DONE. (a) `heldTurn`/`HELD_POSE` in world/lifting.ts: carried, on its back, legs up,
-wriggling; thrown, end over end; the scorpion on its side (`HELD_ROLL`: on its back its tail hung through him to the
-floor). Drawn in main.ts's creature loop. (b) Six new sounds in audio/synth.ts: heave, hurl, setDown, potSmash,
-rockKnock, squirm (a carried creature scrabbles now and then). Unheard by anyone yet. (d) tests/lifting.ts: a crate
-set down on a MOVING PLATFORM now rides it (it hung in the air before: chamber.ts stepMovers); a thrown crate, pot or
-rock meets a character's body and stops there. Through a door: loadLevel already empties his hands and ends the
-carry; filmed (the crate stays behind, he arrives in the Hall empty-handed). (c) Filmed: the roach, scorpion and
-mantis carried (with the film aid `&carryfoe`), a rock thrown and carried again, the door. [opus] 2026-11-18: and
-the hornet, firefly and roller carried, and an iron-bound crate thrown, whole, and taken up again. That film found
-the HORNET and FIREFLY drawn round his chest, not on their backs over his head: their models place themselves in
-their own tick, which undid the turn; the turn now comes after the tick (main.ts). Film aid: `&autogo=..&gostow=2` (STOW at the 2nd stop).
-
-**B4. Tricks polish.** Proper poses for the spin and the grab, a sound for each, the trick's name shown as he lands.
-[opus] DONE 2026-11-18. Poses (player/ratModel.ts `GRAB_ARMS`, `SPIN_ARMS`): a grab puts his shield-side paw down
-to the rim, the sword arm up, knees up; a spin pulls both arms in tight and whips the tail out. Sounds (audio/synth.ts):
-`spinWhirl`, `grabSlap` (when the grab counts), `trickStab` (horns on landing, a step higher per extra trick). The
-NAME: player/trickLog.ts keeps what he did in one air from what main.ts already sees (no controller change);
-ui/trickHud.ts shows it low in the middle for 1.4 s as he lands ("360 + SHIELD GRAB + KICKFLIP", "720").
-tests/tricks.ts and new checks in tests/toybox.ts (the names agree with what the controller counts).
-THE NAMES TAKEN OFF THE SCREEN (the owner, 2026-11-18: "I'd actually like to remove the trick names I don't think
-they're really that useful"): ui/trickHud.ts deleted. The poses and sounds stay. TrickLog still counts the tricks (the
-horn stab, the grab's slap); its `landed()` naming is no longer shown anywhere.
-
-**B5. Drop-in for voices and font files.** Voices: a folder per character kind, cut into syllables as
-`scripts/make-recorded.py` does. Fonts: a `.woff2` in `assets/fonts/` becomes an `@font-face` in `FONT_FACES`
-(`src/ui/fonts.ts`), packed as base64.
-[opus] DONE 2026-11-18. FONTS: assets/fonts/<line>.woff2|woff|ttf|otf (game, title, label, logo, tools) is packed
-whole and put FIRST in that line (ui/fonts.ts `fontTable`), with an @font-face for it. Tried with a real font: the
-title lettering changed. VOICES: assets/voices/<kind>/ (a file per syllable) or assets/voices/<kind>.wav (one
-recording, cut where it falls quiet, in the order of SYLLABLES) becomes that kind's voice at its own pitch
-(audio/speech.ts `voiceOf`). Both in assets/README.md and checked in tests/assets.ts (packing, refusing a wrong name,
-the game using it). The cutting of one recording has only been tried on beeps: a real voice may want its quiet
-threshold (8% of the loudest) changed in scripts/assets/pack.mjs `cuts`.
-
-**B6. Old names still on boards.** Sign boards inside rooms still say "THE LONG DROP", "THE MILKY WAY", "THE PIPE";
-wedge hints and characters' lines name the Club and the worlds. Decide with him whether boards say "TEST ROOM 5".
-[opus] 2026-11-18: ONE SWITCH, `BOARDS_SAY` in levels/testRooms.ts ('old' | 'number'), left on 'old' for HIS CALL.
-'number' turns the four rooms' own title boards (THE TOY BOX, THE MILKY WAY, THE BIG DIPPER, THE LONG DROP) into
-"TEST ROOM 1/1B/1C/5"; the rest of each board and boards naming a thing in a room are not touched. `&boards=number`
-shows it. Pictures of both were sent. Wedge hints and characters' lines still name the old places: not touched.
-HIS ANSWER (2026-11-18): "Toy Box, Long Drop is fine, but let it keep its room number". So `BOARDS_SAY = 'both'`: the
-old name, and under it TEST ROOM N. Boards can now take four lines (world/signs.ts).
-
-**B7. The Hall and the practice rooms are plainly dressed.** Banners, benches, something at the east end beside
-Dave. The south wall's east end has no doors: room for more. The Club's own doors still ask for Golden Wedges.
-[opus] MOSTLY DONE 2026-11-18. levels/hall.ts `dressing()` / `HALL_DRESS`: a banner over every torch (colours in
-turn), a bench between each two doors where nobody leans, a BAR along the empty east end of the south wall (door
-places 13-15) with stools, and two tables with candles and stools. Practice rooms: banners on three walls. Checks in
-tests/hall.ts (none of it in a doorway, the middle lane, or where anyone stands). NOT done: the Club's own doors
-still ask for wedges. [opus] 2026-11-18: Madam Tawny keeps the Hall's bar (on a step behind it, as in the Club) and
-Slink sits on its middle stool with a thimble (hall.ts CROWD `bar`).
+B1-B7 and B10 are done: one line each under Done at the bottom (their full notes are in `git log`, and in
+this file's history before 2026-11-19).
 
 **B8. The Foundry in the Forge's look.** Waiting on his yes to the Forge (Test Room 7). Then: the furnace's fire and
 its pour should burn him (noted NOT DONE), and the Forge wants sounds.
@@ -232,8 +159,6 @@ the characters (many small parts each): model work, best done with his eyes on t
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in
 the Hall; "anything you find while playing" and re-running the chaos drive as standing items.
 
-**B10. Small known things.** A 404 for the page's icon in the browser's log (no `favicon`). [opus] FIXED 2026-11-18: an icon drawn in index.html (a wedge of cheese). The Hall's HUD has no
-count of anything. [opus] 2026-11-18: right as it is: there is nothing in the Hall to collect or do but its doors; its corner says "The Hall". [opus] 2026-11-18: NOT SO ANY MORE: its walls are 20 high (the tower's 16 and more); 60 timed double jumps from the tower top all stay in (tests/toybox.ts).
 `ASSETS.md` must be rewritten (`npm run assets`) whenever anything is added: the test will say so.
 
 ---
@@ -282,3 +207,14 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 - **A5: bats to hit while grinding** in the Long Drop (Test Room 5): flutterers beside every rail; the sword swings on a rail and reaches all round. STILL OPEN: a reward for hitting them; his verdict.
 - **A1 (the rest): the platform room's feel** on Test Room 8: blows 1.34, ground pound double. His verdict wanted on the numbers.
 - **A2 (more): a launcher in the Toy Box** (`LAUNCHER`: x -22..-17, z 26..30, 2 high, pointing EAST down the lane south of the half pipe). Measured: from a push-off 0.3 over its tip and 5 on; at 16, 1.0 and 14; at 24, 2.1 and 25; at 30, 3.5 and 39. It pointed south and was 3 high at first: at tucked speed he met the wall. At 30 he lands with 14 left before the east kerb: he must turn. Not filmed.
+- **B1: things to throw** in every test room, side area and boss room but the Leap of Faith and the Sump Wyrm's (`levels/throwables.ts`, tests/throwables.ts).
+- **B2: the editor knows** pots, rocks, tables, stools, the bar, and a floor plate that puts creatures in (a button). tests/editops.ts.
+- **B3: lifting finished**: a carried creature on its back (`HELD_POSE`, the scorpion on its side), six sounds (unheard), a crate rides a moving platform, all six creatures and an iron-bound crate filmed.
+- **B4: tricks**: poses and sounds for the spin and the grab. The names on screen were taken off again at his word.
+- **B5: drop-in fonts and voices** (`assets/fonts`, `assets/voices`; assets/README.md). The cutting of one voice recording tried on beeps only.
+- **B6: boards** say the old name and TEST ROOM N under it (`BOARDS_SAY = 'both'`, his answer).
+- **B7: the Hall dressed**: banners, benches, a bar with Tawny behind it and Slink on a stool, two tables. Practice rooms: banners.
+- **B10: small things**: the page's icon (a wedge of cheese); the Toy Box's walls raised so no jump leaves it.
+- **Odds and ends (2026-11-18/19, his "making some new objects")**: a candle stub (it gives light), cotton reel, matchbox, wheel of cheese, sardine tin, coat button, pencil stub, die. `world/junkModels.ts`, sizes and solids `JUNK` in world/layout.ts, all eight in the editor. Some in the Hall and the Club.
+- **Textures on plain props (2026-11-18)**: the Club's furniture, banners, torches, shelves; then pipes, chains, lamps, light posts, gauges, roots, the speaker, the dartboard. Counted by `tests/proptextures.ts` (not a test: a count). Left plain on purpose: painted faces, rings, bulbs, flowers, rugs, crystals, marks.
+- **Dead code (2026-11-18/19)**: 19 unused exports and three textures nothing used (frostPipe, starfield, emberBrick) taken out. Nothing else is unused: the build refuses unused names, and every file is imported.
