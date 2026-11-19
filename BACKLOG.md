@@ -155,7 +155,12 @@ longer be skipped off screen). DONE: a door's frame is one mesh once it has open
 1,674, the same picture: compared side by side; tests/rooms.ts). DONE 2026-11-19: each flower is one mesh, not four (world/chamber.ts; the same flower, compared side by side): Toy Box
 1,706 to 617 draw calls, the Milky Way 215 to 132. A chain's links are a quarter lighter (three-sided bars; four-sided
 rings were tried and read as diamonds): the Lair's triangles 37,920 to 36,128, the Waterworks 71,390 to 68,936.
-LEFT: the characters (many small parts each): model work, best done with his eyes on the result.
+DONE 2026-11-19: the characters' still parts joined (npc/stillParts.ts, Npc.settle; `&nojoin` to compare): a twin of
+each is put through what it does, and what never moved is joined per joint and material. 832 meshes to 622; the Hall
+1,717 to 1,552 draw calls, the Club 754 to 716. tests/stillparts.ts: each of 32 characters draws EXACTLY the same,
+step by step (proven to catch a wrong join). Not more without rebuilding the models: nearly every joint sways a
+little, so a limb's parts join only with each other. Grimsqueak (162 meshes) and a cutscene's own cast are left as
+they were. LEFT: the doors' arch stones while they move; models built with fewer joints (his eyes wanted).
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in

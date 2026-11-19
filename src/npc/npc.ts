@@ -3,6 +3,7 @@ import { createPs1Material, lyingOn } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture , type GrimInput } from './grimsqueakModel';
+import { joinStill, movingMeshes } from './stillParts';
 import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
 import { AntModel } from '../enemies/antModel';
 import { StagModel } from '../enemies/stagModel';
@@ -734,6 +735,42 @@ export class Npc {
     }
     this.blink = Math.max(0, this.blink - dt);
     for (const e of this.eyes) e.scale.y = this.blink > 0 ? 0.12 : this.eyeOpen;
+  }
+
+  /**
+   * Joins his still parts into fewer meshes (npc/stillParts.ts): for a character standing in a room. A twin of him is
+   * put through what he does there, and what a story scene can ask of him (look elsewhere, shrug, be nodded and turned
+   * on its strings); whatever of it moved stays apart. Not the villain (his spells and gestures are many), and not a
+   * cutscene's own cast (a scene changes what they are doing).
+   */
+  settle(): { before: number; after: number } {
+    if (this.grim) return { before: 0, after: 0 };
+    const twin = new Npc({ ...this.spec, hidden: false });
+    const x = this.spec.x;
+    const z = this.spec.z;
+    const y = this.spec.y ?? 0;
+    const DT = 1 / 30;
+    const moving = movingMeshes(twin.root, (looked) => {
+      const run = (frames: number, away: number, talking: boolean): void => {
+        for (let i = 0; i < frames; i++) {
+          if (talking && i % 6 === 0) twin.pulse();
+          twin.update(DT, x + away, y, z + away * 0.3, talking);
+          looked();
+        }
+      };
+      run(600, 20, false);
+      run(240, 1.5, true);
+      twin.act = { lookAt: [x + 4, z - 3], shrug: 1 };
+      run(60, 1.5, true);
+      twin.act = { lookAt: null, shrug: 0 };
+      run(30, 1.5, false);
+      twin.puppet = { facing: 1.2, headYaw: 0.6, nod: 0.4, talking: true };
+      run(60, 1.5, true);
+      twin.puppet = null;
+      run(120, 1.5, false);
+      run(60, 20, false);
+    });
+    return joinStill(this.root, moving);
   }
 
   /** Puts him somewhere else in the room. */

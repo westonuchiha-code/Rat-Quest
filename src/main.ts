@@ -1346,6 +1346,8 @@ function startGame(): void {
   /** Where a cutscene has the view. */
   const showCam = { pos: new THREE.Vector3(), look: new THREE.Vector3() };
   const unlockAll = location.hash.includes('unlockall');
+  /** dev: `&nojoin` keeps every character's parts apart (npc/stillParts.ts), to compare the joined ones with. */
+  const noJoin = location.hash.includes('nojoin');
   // dev: `&slow=0.25` starts the game in slow motion (the Workshop's own switch), for pictures of quick things.
   const slowHash = /[#&]slow=([\d.]+)/.exec(location.hash);
   if (slowHash) DEV.slow = Math.min(1, Math.max(0.05, Number(slowHash[1])));
@@ -1803,6 +1805,8 @@ function startGame(): void {
     for (const spec of def.npcs ?? []) {
       // A copy, because a story scene may move him about.
       const n = new Npc({ ...spec });
+      // (His still parts joined: fewer draw calls. `&nojoin` keeps them apart, to compare.)
+      if (!noJoin) n.settle();
       // One of the Club's later regulars: not here until what brings him has been done. (`#unlockall` shows them all.)
       if (!isHere(spec.when, levelProgress) && !unlockAll) n.gone = true;
       npcs.push(n);
