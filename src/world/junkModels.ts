@@ -307,7 +307,9 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     }
     // A glint: a bright spot high on the glass that flares now and then, as if the light caught it.
     const glint = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    glint.position.set(-R * 0.45, R * 1.6, R * 0.55);
+    // (On the glass near its top, where the camera, from above, nearly always sees it: a radius out, a hair proud.)
+    const toward = new THREE.Vector3(0.15, 0.95, 0.2).normalize().multiplyScalar(R * 1.02);
+    glint.position.set(toward.x, R + toward.y, toward.z);
     glint.userData.moves = true;
     g.add(glint);
     const tick = (time: number): void => {
