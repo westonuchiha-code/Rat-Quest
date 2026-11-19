@@ -284,8 +284,8 @@ bunch of shit all over them."
   It type-checks the game AND the tests first (`tests/tsconfig.json`; alone: `npm run typecheck:tests`): its last line
   says "types clean" or "TYPE ERRORS", and a suite thrown out part way is said there too ("STOPPED PART WAY").
   A new suite goes in the `test:sim` list in package.json (that list is what test:all runs). One suite by hand:
-  `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`. `tsc -p .` does not
-  type-check tests; their build does.
+  `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`. `tsc -p .` checks the
+  game only; `tsc -p tests` checks the game and the tests (the build alone checks no types at all).
 - **The asset list:** `npm run assets` packs the drop-in folder (`assets/`) and rewrites `ASSETS.md`. Run it whenever
   anything is added, renamed or removed; `tests/assets.ts` fails until you do. Never edit ASSETS.md by hand.
 - **Deliver:** `bash scripts/deliver.sh deliver` (it runs the asset pack first). Twelve files: `ratquest.html` (opens in
