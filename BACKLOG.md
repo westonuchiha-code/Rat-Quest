@@ -168,6 +168,8 @@ bowls and signs, one mesh per material, all but what moves (flames, cones, swayi
 layer up. Not the thimble rows on a bar (their feet would flicker into the counter). A banner's gold is one mesh.
 The Hall 1,528 to 1,199 draw calls (1,717 this morning), the Club 712 to 529. tests/gather.ts: all 38 rooms draw the
 same as their clocks run (proven to catch frozen flames); tests/clipsweep.ts now gathers too: nothing flickers.
+Measured in the test browser (it draws on the CPU, so only the ratio means anything): each frame's own work, the
+Hall 9.6 ms to 8.0, the Club 5.5 to 4.6 (a fifth less), with `&nojoin&nogather` as before. Not measured on his phone.
 LEFT: models built with fewer joints (his eyes wanted); walls and floors (tried 2026-11-18: no gain, see above).
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
