@@ -204,13 +204,29 @@ check('the cursor stops at the last row', quits === 1);
   m.show();
   for (let i = 0; i < 3; i++) m.press('tabNext'); // SAVE
   const main = labels(page());
-  check('the main list is short: saving, then SETTINGS and TOOLS, then leaving', main.join(' | ') === 'SAVE GAME | LOAD SAVED GAME | LOAD QUICKSAVE | SETTINGS | TOOLS | PHOTO MODE | SAVE AND QUIT TO TITLE | QUIT GAME', main.join(' | '));
-  check('...with no setting and no tool in it', !main.some((l) => /SOUND|MUSIC|RUMBLE|FULLSCREEN|SCREEN:|FILTER|CONTROLS|BUTTON|EDITOR|TWEAKS|WORKSHOP|RESTART/.test(l)));
+  check(
+    'the main list is short: saving, then SETTINGS and TOOLS, then leaving',
+    main.join(' | ') === 'SAVE GAME | LOAD SAVED GAME | LOAD QUICKSAVE | SETTINGS | TOOLS | PHOTO MODE | SAVE AND QUIT TO TITLE | QUIT GAME',
+    main.join(' | ')
+  );
+  check(
+    '...with no setting and no tool in it',
+    !main.some((l) => /SOUND|MUSIC|RUMBLE|FULLSCREEN|SCREEN:|FILTER|CONTROLS|BUTTON|EDITOR|TWEAKS|WORKSHOP|RESTART/.test(l))
+  );
   for (let i = 0; i < 3; i++) m.press('down'); // SETTINGS
   m.press('confirm');
   const set = labels(page());
-  check('SETTINGS opens a page of its own: sound, then controls, then the picture, each under its heading, and BACK', heads(page()).join() === 'SOUND,CONTROLS,PICTURE' && set.join(' | ') === 'SOUND: 50% | MUSIC: 50% | RUMBLE: FULL | CONTROLS | BUTTON ICONS: AUTO | FULLSCREEN: OFF | SCREEN: WIDE | FILTER: OFF | BACK', `${heads(page()).join()} / ${set.join(' | ')}`);
-  check('...in two columns, sound and controls in one and the picture in the other, so nothing has to scroll', (page().match(/rq-col rq-acts/g) ?? []).length === 2 && page().indexOf('PICTURE') > page().lastIndexOf('rq-col rq-acts'));
+  check(
+    'SETTINGS opens a page of its own: sound, then controls, then the picture, each under its heading, and BACK',
+    heads(page()).join() === 'SOUND,CONTROLS,PICTURE'
+      && set.join(' | ') === 'SOUND: 50% | MUSIC: 50% | RUMBLE: FULL | CONTROLS | BUTTON ICONS: AUTO | FULLSCREEN: OFF | SCREEN: WIDE | FILTER: OFF | BACK',
+    `${heads(page()).join()} / ${set.join(' | ')}`
+  );
+  check(
+    '...in two columns, sound and controls in one and the picture in the other, so nothing has to scroll',
+    (page().match(/rq-col rq-acts/g) ?? []).length === 2
+      && page().indexOf('PICTURE') > page().lastIndexOf('rq-col rq-acts')
+  );
   m.press('right');
   check('left and right change the setting the cursor is on', sfx === 0.75 && /SOUND: 75%/.test(page()));
   for (let i = 0; i < 6; i++) m.press('down'); // SCREEN
@@ -220,7 +236,11 @@ check('the cursor stops at the last row', quits === 1);
   check('back goes to the main list with the cursor on SETTINGS; the menu stays up', m.open && /rq-btn sel[^>]*>SETTINGS</.test(page()));
   m.press('down'); // TOOLS
   m.press('confirm');
-  check('TOOLS opens the editor, the tweaks, the workshop and the restart, and BACK', labels(page()).join(' | ') === 'LEVEL EDITOR | TWEAKS (GAME FEEL) | WORKSHOP (ALL TOOLS) | RESTART (TESTING) | BACK', labels(page()).join(' | '));
+  check(
+    'TOOLS opens the editor, the tweaks, the workshop and the restart, and BACK',
+    labels(page()).join(' | ') === 'LEVEL EDITOR | TWEAKS (GAME FEEL) | WORKSHOP (ALL TOOLS) | RESTART (TESTING) | BACK',
+    labels(page()).join(' | ')
+  );
   m.press('down');
   m.press('confirm');
   check('...and choosing one opens it and closes the menu', opened === 'tweaks' && !m.open);
@@ -240,14 +260,43 @@ check('the cursor stops at the last row', quits === 1);
   // A door's state from what he holds.
   const F = { name: 'The Foundry', need: 5 };
   const shut = doorState(F, 3, false);
-  check('a door he is short of is shut, and says how many he has of how many', !shut.open && shut.have === 3 && shut.need === 5 && doorWords(shut) === 'It wants 5 Golden Wedges. You have 3: 2 more to go.', doorWords(shut));
+  check(
+    'a door he is short of is shut, and says how many he has of how many',
+    !shut.open
+      && shut.have === 3
+      && shut.need === 5
+      && doorWords(shut) === 'It wants 5 Golden Wedges. You have 3: 2 more to go.',
+    doorWords(shut)
+  );
   const open = doorState(F, 9, false);
   check('with enough it is open, and says what it wanted', open.open && doorWords(open) === 'Open. It wanted 5 Golden Wedges; you have 9.', doorWords(open));
   const been = doorState(F, 3, true);
-  check('a door he has been through stays open though he is short of what it asks now, and says so', been.open && doorLetsIn(5, 3, true) && /been through it/.test(doorWords(been)) && /asks 5 Golden Wedges now; you have 3/.test(doorWords(been)), doorWords(been));
-  check('a door that asks nothing has no lock; one that asks for one says "Wedge", not "Wedges"', doorState({ name: 'The Great Cistern', need: 0 }, 0, false).open && doorWords(doorState({ name: 'x', need: 0 }, 0, false)) === 'No lock on this door: it is always open.' && /1 Golden Wedge\./.test(doorWords(doorState({ name: 'x', need: 1 }, 0, false))));
-  check('the development switch that opens every door shows them open, with what he really holds', doorState(F, 0, false, true).open && doorState(F, 0, false, true).have === 0);
-  check('the Club\'s own doors ask what the balance sheet says', HUB_DOORS.find((d) => d.to === 'foundry')!.need === BALANCE.doors.foundry && HUB_DOORS.find((d) => d.to === 'hollows')!.need === BALANCE.doors.hollows && HUB_DOORS.find((d) => d.to === 'keep')!.need === BALANCE.doors.keep && HUB_DOORS.find((d) => d.to === 'cistern')!.need === 0);
+  check(
+    'a door he has been through stays open though he is short of what it asks now, and says so',
+    been.open
+      && doorLetsIn(5, 3, true)
+      && /been through it/.test(doorWords(been))
+      && /asks 5 Golden Wedges now; you have 3/.test(doorWords(been)),
+    doorWords(been)
+  );
+  check(
+    'a door that asks nothing has no lock; one that asks for one says "Wedge", not "Wedges"',
+    doorState({ name: 'The Great Cistern', need: 0 }, 0, false).open
+      && doorWords(doorState({ name: 'x', need: 0 }, 0, false)) === 'No lock on this door: it is always open.'
+      && /1 Golden Wedge\./.test(doorWords(doorState({ name: 'x', need: 1 }, 0, false)))
+  );
+  check(
+    'the development switch that opens every door shows them open, with what he really holds',
+    doorState(F, 0, false, true).open
+      && doorState(F, 0, false, true).have === 0
+  );
+  check(
+    'the Club\'s own doors ask what the balance sheet says',
+    HUB_DOORS.find((d) => d.to === 'foundry')!.need === BALANCE.doors.foundry
+      && HUB_DOORS.find((d) => d.to === 'hollows')!.need === BALANCE.doors.hollows
+      && HUB_DOORS.find((d) => d.to === 'keep')!.need === BALANCE.doors.keep
+      && HUB_DOORS.find((d) => d.to === 'cistern')!.need === 0
+  );
 
   // The page itself, with nine wedges in his purse.
   const have = 9;
@@ -280,19 +329,45 @@ check('the cursor stops at the last row', quits === 1);
   for (let i = 0; i < 4; i++) m.press('tabNext'); // WORLDS
   check('(the WORLDS page is up, with the Club chosen)', page().includes('WORLDS') && /class="rq-lv sel[^"]*home/.test(page()));
   const club = text(details());
-  check('with the Club chosen, the page lists every one of its doors: its name, and what it asks or that it is open', ['The Great Cistern open', 'The Foundry ✓ 5', 'The Hollows 9 / 12', "Grimsqueak's Keep 9 / 25"].every((want) => club.includes(want)) && club.includes('THE DOORS') && club.includes('9 in your purse'), club);
-  check('...the doors come before the rest of what is said about the Club, so on a small screen it is never they that are cut off', details().indexOf('THE DOORS') < details().indexOf('About The Club.') && details().indexOf('THE DOORS') > 0);
+  check(
+    'with the Club chosen, the page lists every one of its doors: its name, and what it asks or that it is open',
+    ['The Great Cistern open', 'The Foundry ✓ 5', 'The Hollows 9 / 12', "Grimsqueak's Keep 9 / 25"].every((want) => club.includes(want))
+      && club.includes('THE DOORS')
+      && club.includes('9 in your purse'),
+    club
+  );
+  check(
+    '...the doors come before the rest of what is said about the Club, so on a small screen it is never they that are cut off',
+    details().indexOf('THE DOORS') < details().indexOf('About The Club.')
+      && details().indexOf('THE DOORS') > 0
+  );
   const widths = [...details().matchAll(/rq-door row (open|shut)[\s\S]*?width:(\d+)%/g)].map((x) => `${x[1]} ${x[2]}`);
-  check('...each with a bar: full for an open door, and for a shut one as far along as he is', widths.join() === 'open 100,open 100,shut 75,shut 36', widths.join());
+  check(
+    '...each with a bar: full for an open door, and for a shut one as far along as he is',
+    widths.join() === 'open 100,open 100,shut 75,shut 36',
+    widths.join()
+  );
   const list = page().split('DETAILS</div>')[0];
   check('in the list, the Club shows how many of its doors are open, and a world behind a shut door shows how near he is', /home[\s\S]*?2\/4/.test(list) && /The Hollows[\s\S]*?9\/12/.test(list) && /Grimsqueak's Keep[\s\S]*?9\/25/.test(list) && /The Foundry[\s\S]*?0\/12/.test(list), text(list));
   m.press('down');
   m.press('down'); // The Foundry: open
   const foundry = text(details());
-  check('a world whose door is open says so in a small tag by its name, with what it asked, and still shows its wedges', foundry.includes('The Foundry door open · 5') && foundry.includes('Top of the Crucible') && !details().includes('rq-door '), foundry);
+  check(
+    'a world whose door is open says so in a small tag by its name, with what it asked, and still shows its wedges',
+    foundry.includes('The Foundry door open · 5')
+      && foundry.includes('Top of the Crucible')
+      && !details().includes('rq-door '),
+    foundry
+  );
   m.press('down'); // The Hollows: shut
   const hollows = text(details());
-  check('a world behind a shut door shows the door, what it asks, a bar, and the same in plain words', hollows.includes('Its door 9 / 12') && hollows.includes('The door is in the Club. It wants 12 Golden Wedges. You have 9: 3 more to go.') && /rq-door shut[\s\S]*?width:75%/.test(details()), hollows);
+  check(
+    'a world behind a shut door shows the door, what it asks, a bar, and the same in plain words',
+    hollows.includes('Its door 9 / 12')
+      && hollows.includes('The door is in the Club. It wants 12 Golden Wedges. You have 9: 3 more to go.')
+      && /rq-door shut[\s\S]*?width:75%/.test(details()),
+    hollows
+  );
   m.press('confirm');
   check('choosing it does not go there: it stays shut', gone.length === 0 && m.open);
   m.press('up');
@@ -316,15 +391,41 @@ check('the cursor stops at the last row', quits === 1);
   m.show();
   check('a card with more in it than fits says there is more below, and nothing above', m.more().below && !m.more().above);
   m.scroll(0.5);
-  check('the right stick moves it: half a card\'s height is half a card\'s height', card.scrollTop === 100 && m.more().below && m.more().above, `${card.scrollTop}`);
-  check('...and the markers show: more below, more above, and how to read on', !marks['.rq-more'].hidden && !marks['.rq-less'].hidden && !marks['.rq-readon'].hidden);
+  check(
+    'the right stick moves it: half a card\'s height is half a card\'s height',
+    card.scrollTop === 100
+      && m.more().below
+      && m.more().above,
+    `${card.scrollTop}`
+  );
+  check(
+    '...and the markers show: more below, more above, and how to read on',
+    !marks['.rq-more'].hidden
+      && !marks['.rq-less'].hidden
+      && !marks['.rq-readon'].hidden
+  );
   m.scroll(5);
-  check('it stops at the end of what is written, and the "more" marker goes', card.scrollTop === 300 && !m.more().below && m.more().above && marks['.rq-more'].hidden && !marks['.rq-less'].hidden, `${card.scrollTop}`);
+  check(
+    'it stops at the end of what is written, and the "more" marker goes',
+    card.scrollTop === 300
+      && !m.more().below
+      && m.more().above
+      && marks['.rq-more'].hidden
+      && !marks['.rq-less'].hidden,
+    `${card.scrollTop}`
+  );
   m.scroll(-9);
   check('and back up it stops at the top', card.scrollTop === 0 && m.more().below && !m.more().above && marks['.rq-less'].hidden);
   card.scrollHeight = 200;
   m.scroll(1);
-  check('a card that fits is not moved, and has no markers', card.scrollTop === 0 && !m.more().below && !m.more().above && marks['.rq-more'].hidden && marks['.rq-readon'].hidden);
+  check(
+    'a card that fits is not moved, and has no markers',
+    card.scrollTop === 0
+      && !m.more().below
+      && !m.more().above
+      && marks['.rq-more'].hidden
+      && marks['.rq-readon'].hidden
+  );
 }
 
 // ---- The tweaks (Game Feel) panel worked from a controller ----
@@ -355,7 +456,12 @@ check('the cursor stops at the last row', quits === 1);
   const was = t.get(x.path);
   panel.press('right');
   panel.press('right');
-  check('right raises the slider under the cursor a step at a time', Math.abs(t.get(x.path) - (was + 2 * x.step)) < 1e-6 && t.isChanged(x.path), `${x.label}: ${was} to ${t.get(x.path)}`);
+  check(
+    'right raises the slider under the cursor a step at a time',
+    Math.abs(t.get(x.path) - (was + 2 * x.step)) < 1e-6
+      && t.isChanged(x.path),
+    `${x.label}: ${was} to ${t.get(x.path)}`
+  );
   panel.press('left');
   check('left lowers it', Math.abs(t.get(x.path) - (was + x.step)) < 1e-6);
   panel.press('reset');
@@ -371,7 +477,13 @@ check('the cursor stops at the last row', quits === 1);
   check('the left bumper goes back, and round from the first group to the last', panel.cursor().group === TWEAK_GROUPS[TWEAK_GROUPS.length - 1]);
   // The jump sets: a row of their own at the top of Jumping.
   while (panel.cursor().group !== 'Jumping') panel.press('tabNext');
-  check('in Jumping the cursor starts on the row of jump sets, on the one in use', panel.cursor().row === 0 && panel.cursor().set === 0 && /class="sets cur"/.test(html()) && /class="on cur"/.test(html()));
+  check(
+    'in Jumping the cursor starts on the row of jump sets, on the one in use',
+    panel.cursor().row === 0
+      && panel.cursor().set === 0
+      && /class="sets cur"/.test(html())
+      && /class="on cur"/.test(html())
+  );
   panel.press('right');
   panel.press('right');
   panel.press('right');

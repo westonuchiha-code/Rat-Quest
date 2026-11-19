@@ -60,7 +60,13 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   }
   const before = p.velocity.y;
   p.update(DT, inp({ move: north, jumpPressed: true, jumpHeld: true }), cs);
-  check('jumping on touching a wall kicks off it', p.moveEvent === 'wallkick' && p.velocity.z > 4 && p.velocity.y > before + 3, `vz ${p.velocity.z.toFixed(1)} vy ${p.velocity.y.toFixed(1)}`);
+  check(
+    'jumping on touching a wall kicks off it',
+    p.moveEvent === 'wallkick'
+      && p.velocity.z > 4
+      && p.velocity.y > before + 3,
+    `vz ${p.velocity.z.toFixed(1)} vy ${p.velocity.y.toFixed(1)}`
+  );
   for (let t = 0; t < 8; t++) p.update(DT, inp({ move: north, jumpHeld: true }), cs);
   check('...and he flies out from it before the stick can pull him back', p.position.z > 0.8, p.position.z.toFixed(2));
 }
@@ -99,11 +105,23 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
     const kicked = firstKicked;
     const y0 = p.position.y;
     const got = across(p, none, true);
-    check('after a wall kick he is carried straight across to the wall opposite, with no stick at all', kicked && got && !p.grounded && Math.abs(p.position.x) < 0.01, `reached z ${p.position.z.toFixed(2)} at height ${p.position.y.toFixed(2)} (kicked from ${y0.toFixed(2)})`);
+    check(
+      'after a wall kick he is carried straight across to the wall opposite, with no stick at all',
+      kicked
+        && got
+        && !p.grounded
+        && Math.abs(p.position.x) < 0.01,
+      `reached z ${p.position.z.toFixed(2)} at height ${p.position.y.toFixed(2)} (kicked from ${y0.toFixed(2)})`
+    );
     // Against it, he can kick again, for as long as the flight lasts: not only in the instant he arrives.
     for (let t = 0; t < 12; t++) p.update(DT, inp({ jumpHeld: true }), cs);
     p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
-    check('pressed against it by the kick, he can kick off it a fifth of a second after he arrives', p.moveEvent === 'wallkick' && p.velocity.z < -4, `vz ${p.velocity.z.toFixed(1)}`);
+    check(
+      'pressed against it by the kick, he can kick off it a fifth of a second after he arrives',
+      p.moveEvent === 'wallkick'
+        && p.velocity.z < -4,
+      `vz ${p.velocity.z.toFixed(1)}`
+    );
     // And on up the shaft: four more kicks, never touching the stick.
     let kicks = 2;
     let south = false;
@@ -119,14 +137,25 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
       if (kicked) kicks++;
       south = !south;
     }
-    check('and so on up the shaft: six kicks from wall to wall without touching the stick', kicks === 6 && p.position.y > 12, `${kicks} kicks, ${p.position.y.toFixed(1)} up`);
+    check(
+      'and so on up the shaft: six kicks from wall to wall without touching the stick',
+      kicks === 6
+        && p.position.y > 12,
+      `${kicks} kicks, ${p.position.y.toFixed(1)} up`
+    );
   }
   {
     // The stick held well off line: he still goes across square, trimmed a little sideways.
     const p = firstKick();
     const skew = new THREE.Vector3(1, 0, 1).normalize();
     const got = across(p, skew, true);
-    check('with the stick held 45 degrees off, he still crosses to the far wall, drifting only a little', got && Math.abs(p.position.x) < 1.6 && Math.abs(p.position.x) > 0.2, `drifted ${p.position.x.toFixed(2)} (flat out sideways it would be ${(TUNING.move.run * 0.5).toFixed(1)} or more)`);
+    check(
+      'with the stick held 45 degrees off, he still crosses to the far wall, drifting only a little',
+      got
+        && Math.abs(p.position.x) < 1.6
+        && Math.abs(p.position.x) > 0.2,
+      `drifted ${p.position.x.toFixed(2)} (flat out sideways it would be ${(TUNING.move.run * 0.5).toFixed(1)} or more)`
+    );
   }
   {
     // A press made before he gets there is kept for the kick, and does not spend his air jump.
@@ -144,9 +173,19 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
       p.update(DT, inp({ jumpHeld: true }), cs);
       kickedOff = p.moveEvent === 'wallkick';
     }
-    check('a jump pressed just before he reaches the far wall is kept, and kicks him off it when he touches', early >= 0 && notSpent && kickedOff && p.velocity.z < -4);
+    check(
+      'a jump pressed just before he reaches the far wall is kept, and kicks him off it when he touches',
+      early >= 0
+        && notSpent
+        && kickedOff
+        && p.velocity.z < -4
+    );
     // (His air jump is still his.)
-    check('...and has not cost him his air jump', (p as unknown as { airJumpsLeft: number }).airJumpsLeft === TUNING.jump.airJumps && TUNING.jump.airJumps === 1);
+    check(
+      '...and has not cost him his air jump',
+      (p as unknown as { airJumpsLeft: number }).airJumpsLeft === TUNING.jump.airJumps
+        && TUNING.jump.airJumps === 1
+    );
   }
   {
     // He can still turn back: the stick hauled towards the wall he left takes him back to it.
@@ -159,7 +198,14 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
     const out = p.position.z;
     const speedOut = p.velocity.z;
     for (let t = 0; t < 45; t++) p.update(DT, inp({ move: north, run: true, jumpHeld: true }), open);
-    check('hauling the stick back ends it: he turns and comes back towards the wall he left', out > 1.5 && speedOut > 6 && p.velocity.z < -2 && !p.grounded, `going out at ${speedOut.toFixed(1)}, then back at ${(-p.velocity.z).toFixed(1)}`);
+    check(
+      'hauling the stick back ends it: he turns and comes back towards the wall he left',
+      out > 1.5
+        && speedOut > 6
+        && p.velocity.z < -2
+        && !p.grounded,
+      `going out at ${speedOut.toFixed(1)}, then back at ${(-p.velocity.z).toFixed(1)}`
+    );
   }
   {
     // Landed, it is over: he does not go sliding on across the floor.
@@ -171,7 +217,13 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
     for (let t = 0; t < 400 && !p.grounded; t++) p.update(DT, inp({ jumpHeld: true }), wide);
     const landedAt = p.position.z;
     for (let t = 0; t < 60; t++) p.update(DT, inp({}), wide);
-    check('with no wall opposite he lands, and stops there', p.grounded && p.position.z - landedAt < 1.2 && Math.hypot(p.velocity.x, p.velocity.z) < 0.05, `landed ${landedAt.toFixed(1)} out, slid ${(p.position.z - landedAt).toFixed(2)}`);
+    check(
+      'with no wall opposite he lands, and stops there',
+      p.grounded
+        && p.position.z - landedAt < 1.2
+        && Math.hypot(p.velocity.x, p.velocity.z) < 0.05,
+      `landed ${landedAt.toFixed(1)} out, slid ${(p.position.z - landedAt).toFixed(2)}`
+    );
   }
   {
     // What it was like before (the carry switched off): let go of the stick and he does not reach the other side.
@@ -221,7 +273,13 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   check('he hangs there while nothing is pressed', p.state === 'hang' && Math.abs(p.position.y - (3.2 - 1.05)) < 0.01);
   p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
   for (let t = 0; t < 40; t++) p.update(DT, inp({}), cs);
-  check('jump climbs him up onto the top', p.grounded && Math.abs(p.position.y - 3.2) < 0.01 && p.position.z < -0.3, `y ${p.position.y.toFixed(2)} z ${p.position.z.toFixed(2)}`);
+  check(
+    'jump climbs him up onto the top',
+    p.grounded
+      && Math.abs(p.position.y - 3.2) < 0.01
+      && p.position.z < -0.3,
+    `y ${p.position.y.toFixed(2)} z ${p.position.z.toFixed(2)}`
+  );
   // Letting go.
   const q = new PlayerController(new THREE.Vector3(0, 0, 1.2));
   q.update(DT, inp({ move: north, run: false, jumpPressed: true, jumpHeld: true }), cs);
@@ -313,10 +371,29 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   const roll = go(true);
   const cycle = roll.starts.slice(1).map((t, i) => (t - roll.starts[i]) * DT);
   check('mashing the roll button, he rolls again and again: he has not lost the roll', roll.starts.length >= 7, `${roll.starts.length} rolls in six seconds`);
-  check('...but each roll starts a roll and a pause after the last one did, not on its heels', cycle.every((c) => Math.abs(c - (D.roll.duration + D.cooldown)) < 0.05) && D.cooldown >= 0.2, `${cycle[0].toFixed(2)} s from one roll to the next (a roll is ${D.roll.duration})`);
-  check('...so between rolls he is on his feet and can be hit, for about a quarter of a second each time', roll.open.every((g) => g * DT > D.cooldown - 0.05 && g * DT < D.cooldown + 0.07), `${(roll.open[0] * DT).toFixed(2)} s`);
-  check('...and hits pass through him for less than half of the time, where it was two thirds', roll.safe < 0.5 && roll.safe > 0.3, `${Math.round(roll.safe * 100)}%`);
-  check('rolling everywhere is no longer much faster than running: within a tenth', roll.far < run.far * 1.1 && roll.far > run.far * 0.95, `${roll.far.toFixed(1)} rolling, ${run.far.toFixed(1)} running, in six seconds`);
+  check(
+    '...but each roll starts a roll and a pause after the last one did, not on its heels',
+    cycle.every((c) => Math.abs(c - (D.roll.duration + D.cooldown)) < 0.05)
+      && D.cooldown >= 0.2,
+    `${cycle[0].toFixed(2)} s from one roll to the next (a roll is ${D.roll.duration})`
+  );
+  check(
+    '...so between rolls he is on his feet and can be hit, for about a quarter of a second each time',
+    roll.open.every((g) => g * DT > D.cooldown - 0.05 && g * DT < D.cooldown + 0.07),
+    `${(roll.open[0] * DT).toFixed(2)} s`
+  );
+  check(
+    '...and hits pass through him for less than half of the time, where it was two thirds',
+    roll.safe < 0.5
+      && roll.safe > 0.3,
+    `${Math.round(roll.safe * 100)}%`
+  );
+  check(
+    'rolling everywhere is no longer much faster than running: within a tenth',
+    roll.far < run.far * 1.1
+      && roll.far > run.far * 0.95,
+    `${roll.far.toFixed(1)} rolling, ${run.far.toFixed(1)} running, in six seconds`
+  );
   // A press a little early is kept: he does not have to hit the exact frame the pause ends.
   {
     const p = new PlayerController(new THREE.Vector3(0, 0, 50));
@@ -335,7 +412,12 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
       t++;
       if (p.state === 'dodge') second = t;
     }
-    check('a press made during the pause is remembered: the next roll comes out the moment the pause is over', second > 0 && Math.abs((second - ended) * DT - D.cooldown) < 0.05, `${((second - ended) * DT).toFixed(2)} s after the first ended`);
+    check(
+      'a press made during the pause is remembered: the next roll comes out the moment the pause is over',
+      second > 0
+        && Math.abs((second - ended) * DT - D.cooldown) < 0.05,
+      `${((second - ended) * DT).toFixed(2)} s after the first ended`
+    );
   }
   // The backstep has the same pause after it.
   {
@@ -350,7 +432,12 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
       was = d;
     }
     const c = (starts[1] - starts[0]) * DT;
-    check('the backstep: the same pause after it', starts.length >= 4 && Math.abs(c - (D.back.duration + D.cooldown)) < 0.05, `${c.toFixed(2)} s from one to the next (a backstep is ${D.back.duration})`);
+    check(
+      'the backstep: the same pause after it',
+      starts.length >= 4
+        && Math.abs(c - (D.back.duration + D.cooldown)) < 0.05,
+      `${c.toFixed(2)} s from one to the next (a backstep is ${D.back.duration})`
+    );
   }
 }
 

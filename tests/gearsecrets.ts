@@ -45,7 +45,13 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
     return { ch, crate: ch.crates.find((c) => c.tough)! };
   };
   const { ch, crate } = build();
-  check('the cellars have one iron-bound crate, twice the usual size, and the wedge is tagged for the Cleaver', ch.crates.filter((c) => c.tough).length === 1 && crate.half === 1 && w.gear === 'cleaver' && def.crateContents.length === ch.crates.length);
+  check(
+    'the cellars have one iron-bound crate, twice the usual size, and the wedge is tagged for the Cleaver',
+    ch.crates.filter((c) => c.tough).length === 1
+      && crate.half === 1
+      && w.gear === 'cleaver'
+      && def.crateContents.length === ch.crates.length
+  );
   check('the bin is walled to the roof, with the crate filling its doorway', (() => {
     // Nothing solid may be missing: probe a wall of points just outside the bin, at every height he could be at.
     for (let y = 0.1; y < 11.5; y += 0.4) {
@@ -77,7 +83,12 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
     return { broke: !b.crate.alive, rang };
   };
   const plain = hack(NO_GEAR, 12);
-  check('a rat sword rings off it, every swing of four full combos (the last blow of a combo too)', !plain.broke && plain.rang >= 8, `rang ${plain.rang} times`);
+  check(
+    'a rat sword rings off it, every swing of four full combos (the last blow of a combo too)',
+    !plain.broke
+      && plain.rang >= 8,
+    `rang ${plain.rang} times`
+  );
   for (const id of ['buckler', 'royalScarf', 'emberHelm']) check(`...and so it does in the ${ITEMS[id].name}`, !hack(wear(id), 6).broke);
   {
     // A plunge beside it, and its blast: nothing.
@@ -122,11 +133,22 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
   const def = keep();
   const w = wedge(def, 'pyre');
   const ch = room(def);
-  check('the Keep has a fire, and the wedge in it is tagged for the Ember Helm', def.fire?.length === 1 && w.gear === 'emberHelm' && gearMods(['emberHelm']).fireproof && !NO_GEAR.fireproof);
+  check(
+    'the Keep has a fire, and the wedge in it is tagged for the Ember Helm',
+    def.fire?.length === 1
+      && w.gear === 'emberHelm'
+      && gearMods(['emberHelm']).fireproof
+      && !NO_GEAR.fireproof
+  );
   let outside = 0;
   for (let a = 0; a < Math.PI * 2; a += 0.05) for (const y of [0, 1, 3, 8, 20]) if (!fireAt(def.fire, w.x + Math.cos(a) * (TAKE + 0.9), y, w.z + Math.sin(a) * (TAKE + 0.9))) outside++;
   check('everywhere within reach of the wedge is well inside the fire, at any height (no jumping in over the top)', outside === 0);
-  check('the fire stands clear of the walls and of the lava (he can walk all the way round it)', PYRE.x1 < 46.5 && PYRE.z0 > -48 && !def.lava?.some((l) => l.x1 > PYRE.x0 - 2 && l.x0 < PYRE.x1 + 2 && l.z1 > PYRE.z0 - 2 && l.z0 < PYRE.z1 + 2));
+  check(
+    'the fire stands clear of the walls and of the lava (he can walk all the way round it)',
+    PYRE.x1 < 46.5
+      && PYRE.z0 > -48
+      && !def.lava?.some((l) => l.x1 > PYRE.x0 - 2 && l.x0 < PYRE.x1 + 2 && l.z1 > PYRE.z0 - 2 && l.z0 < PYRE.z1 + 2)
+  );
   /** Walks at the wedge; the fire does what the game does (main.ts lavaStep): burns him and puts him back, unless he is fireproof. */
   const walk = (g: GearMods, tricks: boolean): { took: boolean; burns: number; hearts: number } => {
     const p = new PlayerController(new THREE.Vector3(w.x, 0, PYRE.z1 + 4));
@@ -152,11 +174,23 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
   };
   const plain = walk(NO_GEAR, false);
   const tricky = walk(NO_GEAR, true);
-  check('without the helm the fire burns him and throws him back until he is dead; he never touches the wedge', !plain.took && plain.burns >= TUNING.health.max && plain.hearts === 0, `${plain.burns} burns`);
+  check(
+    'without the helm the fire burns him and throws him back until he is dead; he never touches the wedge',
+    !plain.took
+      && plain.burns >= TUNING.health.max
+      && plain.hearts === 0,
+    `${plain.burns} burns`
+  );
   check('...and no jump, roll or raised shield gets him through it', !tricky.took && tricky.hearts === 0);
   check('...nor does any other gear', ['royalScarf', 'buckler', 'minerHelm', 'sludgeScarf'].every((id) => !walk(wear(id), true).took));
   const helm = walk(wear('emberHelm'), false);
-  check('in the Ember Helm he walks through the fire and takes it, without losing a heart', helm.took && helm.burns === 0 && helm.hearts === TUNING.health.max, `${helm.hearts} hearts`);
+  check(
+    'in the Ember Helm he walks through the fire and takes it, without losing a heart',
+    helm.took
+      && helm.burns === 0
+      && helm.hearts === TUNING.health.max,
+    `${helm.hearts} hearts`
+  );
   const blank = unreachable(def);
   check('the Keep is otherwise as it was (nothing new out of reach)', blank.length === 0, blank.map((q) => q.what).join(', '));
 }
@@ -169,9 +203,23 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
   const specs = keepersOf(w, goal.radius, def.enemies);
   const spec = specs[0];
   const d = Math.hypot(spec.x - w.x, spec.z - w.z);
-  check('one roach keeps it (the bat overhead does not count), and the wedge is tagged for the Moss Scarf', specs.length === 1 && (spec.type ?? 'scuttler') === 'scuttler' && def.enemies.some((e) => e.type === 'bat' && Math.hypot(e.x - w.x, e.z - w.z) < goal.radius) && w.gear === 'mossScarf');
-  check('everywhere he could take it from is inside the range the roach notices him from', d + TAKE < SHY_RANGE * NO_GEAR.notice, `${(d + TAKE).toFixed(1)} < ${SHY_RANGE}`);
-  check('in the Moss Scarf, some of it is outside that range', d > SHY_RANGE * wear('mossScarf').notice + 0.5, `${d.toFixed(1)} > ${SHY_RANGE * wear('mossScarf').notice}`);
+  check(
+    'one roach keeps it (the bat overhead does not count), and the wedge is tagged for the Moss Scarf',
+    specs.length === 1
+      && (spec.type ?? 'scuttler') === 'scuttler'
+      && def.enemies.some((e) => e.type === 'bat' && Math.hypot(e.x - w.x, e.z - w.z) < goal.radius)
+      && w.gear === 'mossScarf'
+  );
+  check(
+    'everywhere he could take it from is inside the range the roach notices him from',
+    d + TAKE < SHY_RANGE * NO_GEAR.notice,
+    `${(d + TAKE).toFixed(1)} < ${SHY_RANGE}`
+  );
+  check(
+    'in the Moss Scarf, some of it is outside that range',
+    d > SHY_RANGE * wear('mossScarf').notice + 0.5,
+    `${d.toFixed(1)} > ${SHY_RANGE * wear('mossScarf').notice}`
+  );
   check('the range is the roach\'s own', SHY_RANGE === TUNING.scuttler.noticeRange);
   const ch = room(def);
   /** Comes down the stairs onto the shelf and goes for the wedge, with the real roach watching. */
@@ -238,7 +286,11 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
   const quick = window(wear('buckler'));
   check('a plain shield can turn a bite aside, in a short window', plain >= 6 && plain <= 12, `${plain} frames`);
   check('the Buckler gives twice as long', quick >= plain * 2 - 1 && quick <= plain * 2 + 2, `${quick} frames`);
-  check('it is not marked as gear (a plain shield can do it), so it must be somewhere he can simply walk to', !w.gear && computeReach(def).near(w.x, w.y + 0.5, w.z, 1, 1, 1));
+  check(
+    'it is not marked as gear (a plain shield can do it), so it must be somewhere he can simply walk to',
+    !w.gear
+      && computeReach(def).near(w.x, w.y + 0.5, w.z, 1, 1, 1)
+  );
   const tr = new GoalTracker(def, none);
   const before = tr.wedgeOut(i);
   tr.parries = 2;
@@ -257,7 +309,13 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
   const total = LEVELS.reduce((n, l) => n + (l.wedges?.length ?? 0), 0);
   const geared = LEVELS.flatMap((l) => (l.wedges ?? []).filter((x) => x.gear).map((x) => x.gear));
   check('there are 49 Golden Wedges now (41, these four, one from each of the two great insects, and the Glimmer Deep\'s two)', total === 49, String(total));
-  check('four wedges are tagged with the gear they need, each a different piece, and every piece is one Pip sells', geared.length === 4 && new Set(geared).size === 4 && geared.every((id) => !!ITEMS[id as string] && !Object.values(STARTING_GEAR).includes(id as string)), geared.join(', '));
+  check(
+    'four wedges are tagged with the gear they need, each a different piece, and every piece is one Pip sells',
+    geared.length === 4
+      && new Set(geared).size === 4
+      && geared.every((id) => !!ITEMS[id as string] && !Object.values(STARTING_GEAR).includes(id as string)),
+    geared.join(', ')
+  );
 }
 
 console.log(failures === 0 ? '\nall passed' : `\n${failures} FAILED`);

@@ -145,7 +145,15 @@ const inScenery = (e: { x: number; z: number; radius: number }): boolean => !roo
   const boss = new Grimsqueak({ x: 0, z: -3, y: 0 });
   boss.canStand = room;
   for (let i = 0; i < 120; i++) boss.update(1 / 60, 0, 0, 4, true);
-  check('asleep he does nothing, throws nothing, and is far out of reach', boss.asleep && boss.x === 0 && boss.z === -3 && boss.spits.length === 0 && boss.y > 10 && boss.alive);
+  check(
+    'asleep he does nothing, throws nothing, and is far out of reach',
+    boss.asleep
+      && boss.x === 0
+      && boss.z === -3
+      && boss.spits.length === 0
+      && boss.y > 10
+      && boss.alive
+  );
   check('asleep he cannot be hurt', !boss.takeHit(5, 0, 4) && boss.hp === GRIM.hp);
   boss.wake();
   boss.rng = () => 0.3;

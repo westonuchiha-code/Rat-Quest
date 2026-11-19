@@ -112,10 +112,24 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
 
 // ---- Where they are, and what they are ----
 {
-  check('the Keep has two, side by side in the inner ward behind the gate, on the way east', specs.length === 2 && specs.every((s) => s.x > 10 && s.x < 36 && s.z > WARD.z0 && s.z < WARD.z1 && (s.y ?? 0) === 0) && dist(specs[0], specs[1]) < N.pairRange);
-  check('...each keeps to the ward (the pit is along its north side, the gatehouse wall along its south)', specs.every((s) => !!s.arena && s.arena.z0 >= WARD.z0 && s.arena.z1 <= WARD.z1 && s.arena.x0 >= WARD.x0 && s.arena.x1 <= WARD.x1));
+  check(
+    'the Keep has two, side by side in the inner ward behind the gate, on the way east',
+    specs.length === 2
+      && specs.every((s) => s.x > 10 && s.x < 36 && s.z > WARD.z0 && s.z < WARD.z1 && (s.y ?? 0) === 0)
+      && dist(specs[0], specs[1]) < N.pairRange
+  );
+  check(
+    '...each keeps to the ward (the pit is along its north side, the gatehouse wall along its south)',
+    specs.every((s) => !!s.arena && s.arena.z0 >= WARD.z0 && s.arena.z1 <= WARD.z1 && s.arena.x0 >= WARD.x0 && s.arena.x1 <= WARD.x1)
+  );
   const [a] = antsOf();
-  check('at its post it faces the way it was set, its pike upright (not levelled), standing on the floor', a.state === 'idle' && !a.level && Math.abs(a.facing - (specs[0].facing ?? 9)) < 1e-6 && canStand(a.x, a.y, a.z, a.radius));
+  check(
+    'at its post it faces the way it was set, its pike upright (not levelled), standing on the floor',
+    a.state === 'idle'
+      && !a.level
+      && Math.abs(a.facing - (specs[0].facing ?? 9)) < 1e-6
+      && canStand(a.x, a.y, a.z, a.radius)
+  );
   check('it is a piece in the level editor, and what the editor places is one, with floor enough to go round him', ENEMY_PIECES.includes('ant') && (() => {
     const lvl = emptyCustom();
     lvl.pieces.push({ t: 'ant', x0: 3, z0: -2, x1: 3, z1: -2, top: 0, dir: 'e' });
@@ -124,9 +138,20 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   })());
   const st = STICKERS.find((s) => s.id === 'foe:ant');
   check('it has a sticker, with a picture', !!st && stickerIcon(st.icon).includes('<svg') && stickerIcon(st.icon) !== stickerIcon('nothing-by-that-name'));
-  check('its pike reaches further than his sword: where it stands off, its thrust reaches him and his cut does not reach it', N.pikeOut + N.thrustSpeed * N.thrustTime > N.holdRange && N.holdRange > SWORD + 0.5 && N.pikeHeld < N.holdRange, `thrust ${(N.pikeOut + N.thrustSpeed * N.thrustTime).toFixed(2)}, stands off ${N.holdRange}, sword ${SWORD.toFixed(2)}`);
+  check(
+    'its pike reaches further than his sword: where it stands off, its thrust reaches him and his cut does not reach it',
+    N.pikeOut + N.thrustSpeed * N.thrustTime > N.holdRange
+      && N.holdRange > SWORD + 0.5
+      && N.pikeHeld < N.holdRange,
+    `thrust ${(N.pikeOut + N.thrustSpeed * N.thrustTime).toFixed(2)}, stands off ${N.holdRange}, sword ${SWORD.toFixed(2)}`
+  );
   check('the point is carried at the height of his chest', N.pikeHeight > 0.5 && N.pikeHeight < TUNING.rat.height - 0.2);
-  check('with him inside its point it can still reach him with its jaws at any distance his sword reaches it from', N.biteRange > SWORD && N.biteRange < N.crowdRange, `bites inside ${N.biteRange}, sword ${SWORD.toFixed(2)}`);
+  check(
+    'with him inside its point it can still reach him with its jaws at any distance his sword reaches it from',
+    N.biteRange > SWORD
+      && N.biteRange < N.crowdRange,
+    `bites inside ${N.biteRange}, sword ${SWORD.toFixed(2)}`
+  );
 }
 
 // ---- One alone: it sees him, comes to pike's length, and levels its pike at him ----
@@ -137,9 +162,24 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   check('from further off than it notices, it stays at its post', a.state === 'idle');
   const p = ratAt(SPOT.x, SPOT.z);
   const r = play([a], p, still, (q) => q[0].state === 'hold' && q[0].stateTime > 0.3);
-  check('it sees him (it says so), comes on, and stops at pike\'s length', r.heard[0].join() === 'alert' && r.seen[0].join(' ') === 'march hold' && Math.abs(dist(a, p.position) - N.holdRange) < 0.6, `${r.seen[0].join(' ')}; ${dist(a, p.position).toFixed(2)} off`);
+  check(
+    'it sees him (it says so), comes on, and stops at pike\'s length',
+    r.heard[0].join() === 'alert'
+      && r.seen[0].join(' ') === 'march hold'
+      && Math.abs(dist(a, p.position) - N.holdRange) < 0.6,
+    `${r.seen[0].join(' ')}; ${dist(a, p.position).toFixed(2)} off`
+  );
   const to = Math.atan2(p.position.x - a.x, p.position.z - a.z);
-  check('...facing him, its pike levelled: its point is between them, at chest height, short of him', a.level && Math.abs(wrap(to - a.facing)) < 0.1 && Math.abs(a.tip.y - N.pikeHeight) < 1e-9 && Math.abs(dist(a, a.tip) - N.pikeHeld) < 1e-6 && dist(a.tip, p.position) < dist(a, p.position) && dist(a.tip, p.position) > RAT, `point ${dist(a.tip, p.position).toFixed(2)} from him`);
+  check(
+    '...facing him, its pike levelled: its point is between them, at chest height, short of him',
+    a.level
+      && Math.abs(wrap(to - a.facing)) < 0.1
+      && Math.abs(a.tip.y - N.pikeHeight) < 1e-9
+      && Math.abs(dist(a, a.tip) - N.pikeHeld) < 1e-6
+      && dist(a.tip, p.position) < dist(a, p.position)
+      && dist(a.tip, p.position) > RAT,
+    `point ${dist(a.tip, p.position).toFixed(2)} from him`
+  );
   put(p, p.position.x, p.position.z, a);
   check('from there his sword does not reach it', swing(p, [a]).enemyHit === null);
 }
@@ -160,8 +200,21 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     }
     return q[0].state === 'recover';
   });
-  check('it draws its pike back (it says so) and holds it there for the length of the tell, harmless', r.heard[0].includes('windup') && Math.abs(wind - N.windup) < 0.04 && !early && Math.abs(back - N.pikeBack) < 0.02, `${wind.toFixed(2)} s, point drawn back to ${back.toFixed(2)}`);
-  check('then it lunges, and a rat who stood still is struck by the point, for a heart', r.heard[0].includes('thrust') && r.results.join() === 'hit' && p.hp === MAX - N.damage, `${r.results.join()} hp ${p.hp}`);
+  check(
+    'it draws its pike back (it says so) and holds it there for the length of the tell, harmless',
+    r.heard[0].includes('windup')
+      && Math.abs(wind - N.windup) < 0.04
+      && !early
+      && Math.abs(back - N.pikeBack) < 0.02,
+    `${wind.toFixed(2)} s, point drawn back to ${back.toFixed(2)}`
+  );
+  check(
+    'then it lunges, and a rat who stood still is struck by the point, for a heart',
+    r.heard[0].includes('thrust')
+      && r.results.join() === 'hit'
+      && p.hp === MAX - N.damage,
+    `${r.results.join()} hp ${p.hp}`
+  );
   check('...by the point: its body never came near him', dist(a, p.position) > N.radius + RAT + 1, `${dist(a, p.position).toFixed(2)} off`);
 }
 {
@@ -185,10 +238,21 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     if (q[0].state === 'recover') stretched += DT;
     return q[0].state !== 'recover';
   });
-  check('after a thrust that meets nothing it is stretched out for most of a second, and can do nothing', Math.abs(stretched - N.recover) < 0.05, `${stretched.toFixed(2)} s`);
+  check(
+    'after a thrust that meets nothing it is stretched out for most of a second, and can do nothing',
+    Math.abs(stretched - N.recover) < 0.05,
+    `${stretched.toFixed(2)} s`
+  );
   put(p, a.x - Math.cos(a.facing) * 0.95, a.z + Math.sin(a.facing) * 0.95, a);
   const cut = swing(p, [a]);
-  check('...and at its flank his sword lands, and it staggers (it says so)', cut.enemyHit === a && a.hp === N.hp - 1 && a.state === 'stagger' && a.events.includes('hurt'), `hp ${a.hp}, ${a.state}`);
+  check(
+    '...and at its flank his sword lands, and it staggers (it says so)',
+    cut.enemyHit === a
+      && a.hp === N.hp - 1
+      && a.state === 'stagger'
+      && a.events.includes('hurt'),
+    `hp ${a.hp}, ${a.state}`
+  );
 }
 {
   // A shield stops the point; a perfect guard beats the pike down.
@@ -203,7 +267,13 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     if (q[0].state === 'recover') stretched += DT;
     return q[0].state !== 'recover';
   });
-  check('a shield stops its point, and it is stretched out for longer than if it had missed', r.results.join() === 'blocked' && p.hp === MAX && Math.abs(stretched - N.blockedRecover) < 0.05, `${r.results.join()}; ${stretched.toFixed(2)} s`);
+  check(
+    'a shield stops its point, and it is stretched out for longer than if it had missed',
+    r.results.join() === 'blocked'
+      && p.hp === MAX
+      && Math.abs(stretched - N.blockedRecover) < 0.05,
+    `${r.results.join()}; ${stretched.toFixed(2)} s`
+  );
   let best = '';
   for (let lead = 0; lead <= 9 && best !== 'parried'; lead++) {
     const [b] = antsOf(1);
@@ -220,7 +290,14 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
       if (q[0].state === 'reel') open += DT;
       return q[0].state !== 'reel';
     });
-    check('a perfect guard beats its pike down (it says so): it reels, its pike no longer levelled, for nearly two seconds', after.heard[0].includes('reel') && pp.hp === MAX && Math.abs(open - N.reel) < 0.05 && open > N.blockedRecover + 0.5, `${open.toFixed(2)} s`);
+    check(
+      'a perfect guard beats its pike down (it says so): it reels, its pike no longer levelled, for nearly two seconds',
+      after.heard[0].includes('reel')
+        && pp.hp === MAX
+        && Math.abs(open - N.reel) < 0.05
+        && open > N.blockedRecover + 0.5,
+      `${open.toFixed(2)} s`
+    );
     // And while it reels he walks in and cuts it down: three cuts.
     const [c] = antsOf(1);
     const p3 = ratAt(SPOT.x, SPOT.z);
@@ -241,7 +318,13 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
       }
       return {};
     }, (q) => !q[0].alive, 240);
-    check('...long enough for him to walk in and kill it before it has its pike back', !c.alive && kill.results.length === 0 && !level, `${cuts} cuts begun, ${(kill.frames * DT).toFixed(2)} s, ${kill.seen[0].join(' ')}`);
+    check(
+      '...long enough for him to walk in and kill it before it has its pike back',
+      !c.alive
+        && kill.results.length === 0
+        && !level,
+      `${cuts} cuts begun, ${(kill.frames * DT).toFixed(2)} s, ${kill.seen[0].join(' ')}`
+    );
   }
   check('(a perfect guard was found)', best === 'parried');
 }
@@ -264,8 +347,21 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     if (q[0].ready) ready = true;
     return {};
   }, () => false, 360);
-  check('with him inside its point it tips its pike up (it is not levelled, and cannot thrust)', a.close && !a.level && !ready && !r.heard[0].includes('windup') && levelled < 20, `${levelled} frames levelled; heard ${r.heard[0].join(' ') || 'nothing'}`);
-  check('...and gives ground, to get its point back between them', dist(a, at0) > 2 && r.seen[0].every((s) => s === 'hold' || s === 'march'), `backed ${dist(a, at0).toFixed(1)}; ${r.seen[0].join(' ')}`);
+  check(
+    'with him inside its point it tips its pike up (it is not levelled, and cannot thrust)',
+    a.close
+      && !a.level
+      && !ready
+      && !r.heard[0].includes('windup')
+      && levelled < 20,
+    `${levelled} frames levelled; heard ${r.heard[0].join(' ') || 'nothing'}`
+  );
+  check(
+    '...and gives ground, to get its point back between them',
+    dist(a, at0) > 2
+      && r.seen[0].every((s) => s === 'hold' || s === 'march'),
+    `backed ${dist(a, at0).toFixed(1)}; ${r.seen[0].join(' ')}`
+  );
   // He lets it go: it levels its pike again.
   const out = play([a], p, still, (q) => q[0].level && q[0].state === 'hold', 600);
   check('let it get its distance and its pike comes down again', a.level && !a.close && out.frames < 300, `${(out.frames * DT).toFixed(2)} s`);
@@ -285,8 +381,21 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     }
     return q[0].state === 'biteRest';
   }, 240);
-  check('stand in front of it inside its point and it bites: its jaws go wide for the length of the tell (it says so), harmless, then snap', r.heard[0].join() === 'biteWind,bite' && Math.abs(wind - N.biteWind) < 0.04 && !early && r.seen[0].join(' ') === 'biteWind bite biteRest', `${r.heard[0].join()}; ${wind.toFixed(2)} s; ${r.seen[0].join(' ')}`);
-  check('...and a rat who stood there is bitten, for a heart; its pike is up out of the way the whole time', r.results.join() === 'hit' && p.hp === MAX - N.biteDamage && !a.level, `${r.results.join()} hp ${p.hp}`);
+  check(
+    'stand in front of it inside its point and it bites: its jaws go wide for the length of the tell (it says so), harmless, then snap',
+    r.heard[0].join() === 'biteWind,bite'
+      && Math.abs(wind - N.biteWind) < 0.04
+      && !early
+      && r.seen[0].join(' ') === 'biteWind bite biteRest',
+    `${r.heard[0].join()}; ${wind.toFixed(2)} s; ${r.seen[0].join(' ')}`
+  );
+  check(
+    '...and a rat who stood there is bitten, for a heart; its pike is up out of the way the whole time',
+    r.results.join() === 'hit'
+      && p.hp === MAX - N.biteDamage
+      && !a.level,
+    `${r.results.join()} hp ${p.hp}`
+  );
   let rest = 0;
   play([a], ratAt(SPOT.x - 20, SPOT.z), still, (q) => {
     if (q[0].state === 'biteRest') rest += DT;
@@ -321,9 +430,19 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   put(p, a.x - Math.sin(a.facing) * behind, a.z - Math.cos(a.facing) * behind, a);
   const mid = dist(a, p.position) - N.radius;
   const cut = swing(p, [a]);
-  check('from behind it, his sword finds its abdomen from further off than it could find its middle', cut.enemyHit === a && a.hp === N.hp - 1 && mid > ATTACK_CLIPS[0].reach, `its middle ${mid.toFixed(2)} away, his reach ${ATTACK_CLIPS[0].reach}`);
+  check(
+    'from behind it, his sword finds its abdomen from further off than it could find its middle',
+    cut.enemyHit === a
+      && a.hp === N.hp - 1
+      && mid > ATTACK_CLIPS[0].reach,
+    `its middle ${mid.toFixed(2)} away, his reach ${ATTACK_CLIPS[0].reach}`
+  );
   const part = a.parts[0];
-  check('...which is behind it, where it is drawn', Math.abs(Math.hypot(part.x - a.x, part.z - a.z) - N.gasterBack) < 1e-6 && Math.abs(wrap(Math.atan2(part.x - a.x, part.z - a.z) - a.facing)) > 3.1);
+  check(
+    '...which is behind it, where it is drawn',
+    Math.abs(Math.hypot(part.x - a.x, part.z - a.z) - N.gasterBack) < 1e-6
+      && Math.abs(wrap(Math.atan2(part.x - a.x, part.z - a.z) - a.facing)) > 3.1
+  );
 }
 
 // ---- It does not stand to be cut down: struck, it springs back out of his reach ----
@@ -353,8 +472,21 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     if (ev.enemyHit && ev.enemyHit !== last) landed++;
     last = ev.enemyHit as Ant | null;
   }
-  check('cut at it up close and it staggers, and then springs back out of his reach (it says so)', seen.includes('stagger') && seen.includes('spring') && heard.includes('spring') && dist(a, p.position) > SWORD + 0.3, `${seen.join(' ')}; ended ${dist(a, p.position).toFixed(2)} off (it sprang from ${from.toFixed(2)})`);
-  check('...so getting in is worth two cuts, not a kill: the third of his combo finds it gone', landed === 2 && a.hp === N.hp - 2 && a.alive, `${landed} cuts landed, hp ${a.hp}`);
+  check(
+    'cut at it up close and it staggers, and then springs back out of his reach (it says so)',
+    seen.includes('stagger')
+      && seen.includes('spring')
+      && heard.includes('spring')
+      && dist(a, p.position) > SWORD + 0.3,
+    `${seen.join(' ')}; ended ${dist(a, p.position).toFixed(2)} off (it sprang from ${from.toFixed(2)})`
+  );
+  check(
+    '...so getting in is worth two cuts, not a kill: the third of his combo finds it gone',
+    landed === 2
+      && a.hp === N.hp - 2
+      && a.alive,
+    `${landed} cuts landed, hp ${a.hp}`
+  );
   check('...and it has its pike levelled at him again', a.level || a.state === 'march' || a.state === 'hold', a.state);
 }
 
@@ -375,7 +507,15 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   play([b], p2, still, (q) => q[0].state === 'hold' && q[0].stateTime > 0.3);
   put(p2, 0, 40);
   const r = play([b], p2, still, (q) => q[0].state === 'idle', 1500);
-  check('when he leaves the ward it shoulders its pike and goes back to its post, to face the way it was set', b.state === 'idle' && r.seen[0].join(' ') === 'return idle' && dist(b, b.home) < 0.3 && Math.abs(wrap(b.facing - (specs[0].facing ?? 0))) < 0.06 && !b.level, r.seen[0].join(' '));
+  check(
+    'when he leaves the ward it shoulders its pike and goes back to its post, to face the way it was set',
+    b.state === 'idle'
+      && r.seen[0].join(' ') === 'return idle'
+      && dist(b, b.home) < 0.3
+      && Math.abs(wrap(b.facing - (specs[0].facing ?? 0))) < 0.06
+      && !b.level,
+    r.seen[0].join(' ')
+  );
 }
 
 // ---- Two: a pair ----
@@ -386,7 +526,17 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   const p = ratAt(a.x - N.noticeRange + 0.5, SPOT.z);
   check('(he is in sight of one and not the other)', dist(a, p.position) < N.noticeRange && dist(b, p.position) > N.noticeRange);
   const r = play(ants, p, still, (q) => q.every((x) => x.awake), 120);
-  check('two near each other are mates, and the one that sees him wakes the other', a.mate === b && b.mate === a && a.awake && b.awake && r.heard[0].includes('alert') && r.heard[1].includes('alert') && r.frames < 10, `${r.frames} frames`);
+  check(
+    'two near each other are mates, and the one that sees him wakes the other',
+    a.mate === b
+      && b.mate === a
+      && a.awake
+      && b.awake
+      && r.heard[0].includes('alert')
+      && r.heard[1].includes('alert')
+      && r.frames < 10,
+    `${r.frames} frames`
+  );
   check('the nearer is the front, the other the flank', a.role === 'front' && b.role === 'flank');
 }
 {
@@ -412,11 +562,33 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     void h;
     void k;
   });
-  check('they come at him together, and within a few seconds one is in front of him and the other behind, each at pike\'s length', pincer > 0 && pincer < 6 && Math.abs(dist(a, p.position) - N.holdRange) < 0.8 && Math.abs(dist(b, p.position) - N.holdRange) < 0.8, `either side of him after ${pincer.toFixed(1)} s`);
-  check('...and they stay either side of him', both / (60 * 24 - pincer * 60) > 0.85, `${((100 * both) / (60 * 24 - pincer * 60)).toFixed(0)}% of the rest of the fight`);
+  check(
+    'they come at him together, and within a few seconds one is in front of him and the other behind, each at pike\'s length',
+    pincer > 0
+      && pincer < 6
+      && Math.abs(dist(a, p.position) - N.holdRange) < 0.8
+      && Math.abs(dist(b, p.position) - N.holdRange) < 0.8,
+    `either side of him after ${pincer.toFixed(1)} s`
+  );
+  check(
+    '...and they stay either side of him',
+    both / (60 * 24 - pincer * 60) > 0.85,
+    `${((100 * both) / (60 * 24 - pincer * 60)).toFixed(0)}% of the rest of the fight`
+  );
   const thrusts = r.heard.map((h) => h.filter((e) => e === 'thrust').length);
-  check('they thrust by turns: both of them, never the two at once', thrusts[0] >= 3 && thrusts[1] >= 3 && Math.abs(thrusts[0] - thrusts[1]) <= 2 && together === 0, `${thrusts.join(' and ')} thrusts; ${together} frames both attacking`);
-  check('standing between them he is struck from in front and from behind', r.results.filter((x) => x === 'hit').length >= 4, `${r.results.filter((x) => x === 'hit').length} blows struck him`);
+  check(
+    'they thrust by turns: both of them, never the two at once',
+    thrusts[0] >= 3
+      && thrusts[1] >= 3
+      && Math.abs(thrusts[0] - thrusts[1]) <= 2
+      && together === 0,
+    `${thrusts.join(' and ')} thrusts; ${together} frames both attacking`
+  );
+  check(
+    'standing between them he is struck from in front and from behind',
+    r.results.filter((x) => x === 'hit').length >= 4,
+    `${r.results.filter((x) => x === 'hit').length} blows struck him`
+  );
   check('they do not walk through each other', nearest > 2 * N.radius, `nearest ${nearest.toFixed(2)}`);
   void starts;
 }
@@ -441,7 +613,12 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     return d > 1.9 ? { move: new THREE.Vector3(flank.x - p.position.x, 0, flank.z - p.position.z).normalize() } : {};
   }, () => again >= 0, 900);
   void r;
-  check('turn on the one behind and walk at it, and it becomes the one that holds him while the other goes round', swapped >= 0 && swapped < 3, `changed over after ${swapped.toFixed(2)} s`);
+  check(
+    'turn on the one behind and walk at it, and it becomes the one that holds him while the other goes round',
+    swapped >= 0
+      && swapped < 3,
+    `changed over after ${swapped.toFixed(2)} s`
+  );
   check('...and is behind him again within a few seconds', again > 0 && again - swapped < 5, `${(again - swapped).toFixed(1)} s later`);
 }
 {
@@ -470,7 +647,13 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     const d = dist(target, p.position);
     return d > 1.9 ? { move: new THREE.Vector3(target.x - p.position.x, 0, target.z - p.position.z).normalize(), run: true } : {};
   }, () => answer >= 0, 600);
-  check('go for one, and once he is inside its point the other comes round and draws its pike back to thrust at his back, without waiting its turn out', inside >= 0 && answer >= 0 && answer - inside < 1.6, `${(answer - inside).toFixed(2)} s after he got inside`);
+  check(
+    'go for one, and once he is inside its point the other comes round and draws its pike back to thrust at his back, without waiting its turn out',
+    inside >= 0
+      && answer >= 0
+      && answer - inside < 1.6,
+    `${(answer - inside).toFixed(2)} s after he got inside`
+  );
 }
 {
   // Break the pair: with its mate dead, one fights on alone.
@@ -487,7 +670,15 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     p.hp = MAX;
     return {};
   }, () => false, 600);
-  check('kill one and the other fights on alone, in front of him, and still thrusts', a.mate === null && a.role === 'front' && a.alive && r.heard[0].filter((e) => e === 'thrust').length >= 2 && r.heard[1].length === 0, `${r.heard[0].filter((e) => e === 'thrust').length} thrusts`);
+  check(
+    'kill one and the other fights on alone, in front of him, and still thrusts',
+    a.mate === null
+      && a.role === 'front'
+      && a.alive
+      && r.heard[0].filter((e) => e === 'thrust').length >= 2
+      && r.heard[1].length === 0,
+    `${r.heard[0].filter((e) => e === 'thrust').length} thrusts`
+  );
 }
 
 // ---- The ward is a ledge: whatever he does, they keep to the floor ----
@@ -514,7 +705,13 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     }, () => false, 60 * 30);
   }
   void ants;
-  check('they never step off the ledge into the pit, or into the gatehouse wall, wherever he leads them', off === 0 && stuckIn === 0 && frames > 5000, `${off} of ${frames} ant-frames off the floor`);
+  check(
+    'they never step off the ledge into the pit, or into the gatehouse wall, wherever he leads them',
+    off === 0
+      && stuckIn === 0
+      && frames > 5000,
+    `${off} of ${frames} ant-frames off the floor`
+  );
 }
 
 // ---- A whole fight, played to win ----
@@ -537,7 +734,12 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     if (d > 1.15) return { move: new THREE.Vector3(target.x - p.position.x, 0, target.z - p.position.z).normalize(), run: true };
     return f % 18 === 0 ? { attackPressed: true } : {};
   }, (q) => q.every((x) => !x.alive) || p.dead, 60 * 90);
-  check('a rat who keeps his shield to whichever is striking, and goes in when one is open, beats the pair', ants.every((x) => !x.alive) && !p.dead, `${(r.frames * DT).toFixed(0)} s, hp ${p.hp}, blows ${r.results.join(' ') || 'none'}`);
+  check(
+    'a rat who keeps his shield to whichever is striking, and goes in when one is open, beats the pair',
+    ants.every((x) => !x.alive)
+      && !p.dead,
+    `${(r.frames * DT).toFixed(0)} s, hp ${p.hp}, blows ${r.results.join(' ') || 'none'}`
+  );
   check('...and it takes him a while: they are not cut down where they stand', r.frames * DT > 8, `${(r.frames * DT).toFixed(1)} s`);
 }
 
@@ -562,11 +764,25 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
     a.rng = () => 0.5;
     return a;
   });
-  check('the Hollows has two, side by side on the north floor, facing the mouth of the west path', found.length === 2 && dist(found[0], found[1]) < N.pairRange && found.every((e) => e.x > F.x0 && e.x < F.x1 && e.z > F.z0 && e.z < F.z1 && Math.abs(e.facing ?? 9) < 1e-6 && stand(e.x, 0, e.z, N.radius)));
-  check('...they keep to that floor (the chasm is along its south side), with room on it to go round him', found.every((e) => !!e.arena && e.arena.x0 >= F.x0 && e.arena.x1 <= F.x1 && e.arena.z0 >= F.z0 && e.arena.z1 <= F.z1 && e.arena.x1 - e.arena.x0 > 30 && e.arena.z1 - e.arena.z0 > 2 * (N.holdRange + 2)));
+  check(
+    'the Hollows has two, side by side on the north floor, facing the mouth of the west path',
+    found.length === 2
+      && dist(found[0], found[1]) < N.pairRange
+      && found.every((e) => e.x > F.x0 && e.x < F.x1 && e.z > F.z0 && e.z < F.z1 && Math.abs(e.facing ?? 9) < 1e-6 && stand(e.x, 0, e.z, N.radius))
+  );
+  check(
+    '...they keep to that floor (the chasm is along its south side), with room on it to go round him',
+    found.every((e) => !!e.arena && e.arena.x0 >= F.x0 && e.arena.x1 <= F.x1 && e.arena.z0 >= F.z0 && e.arena.z1 <= F.z1 && e.arena.x1 - e.arena.x0 > 30 && e.arena.z1 - e.arena.z0 > 2 * (N.holdRange + 2))
+  );
   const goals = new GoalTracker(cave, () => ({ have: 0, total: 0 }));
   const wedge = cave.wedges?.find((w) => w.appears?.type === 'defeat');
-  check('...and they are no part of what the gallery\'s wedge asks for: that is still the seven beasts on the gallery', found.every((e) => e.uncounted) && goals.enemyTotal === 7 && !!wedge && /gallery/i.test(wedge.hint));
+  check(
+    '...and they are no part of what the gallery\'s wedge asks for: that is still the seven beasts on the gallery',
+    found.every((e) => e.uncounted)
+      && goals.enemyTotal === 7
+      && !!wedge
+      && /gallery/i.test(wedge.hint)
+  );
   /** A fight with him standing wherever `at` says: the pairing and the turn-taking as in the game. */
   const fight = (secs: number, at: (t: number, ants: Ant[]) => { x: number; z: number }, each: (ants: Ant[], p: { x: number; z: number }, t: number) => void): Ant[] => {
     const ants = pair();
@@ -589,12 +805,23 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
   const up = fight(6, (t) => ({ x: mouth.x, z: Math.max(mouth.z, -20 - t * 4) }), (ants, _p, t) => {
     if (woke < 0 && ants.every((a) => a.awake)) woke = t;
   });
-  check('coming up the west path he is not seen in its mouth: only once he is out on the open floor, and then both come at him', woke < 0 && up.every((a) => a.state === 'idle'), woke < 0 ? 'still at their post' : `awake after ${woke.toFixed(1)} s`);
+  check(
+    'coming up the west path he is not seen in its mouth: only once he is out on the open floor, and then both come at him',
+    woke < 0
+      && up.every((a) => a.state === 'idle'),
+    woke < 0 ? 'still at their post' : `awake after ${woke.toFixed(1)} s`
+  );
   let seenAt = 0;
   const out = fight(8, (t) => ({ x: mouth.x, z: Math.max(-40, mouth.z - t * 3) }), (ants, p) => {
     if (!seenAt && ants.every((a) => a.awake)) seenAt = p.z;
   });
-  check('...some way in from the mouth (and from the brazier that stands in it)', seenAt < mouth.z - 3 && seenAt > -40 && out.every((a) => a.awake && a.mate !== null), `seen when he is ${(mouth.z - seenAt).toFixed(1)} in`);
+  check(
+    '...some way in from the mouth (and from the brazier that stands in it)',
+    seenAt < mouth.z - 3
+      && seenAt > -40
+      && out.every((a) => a.awake && a.mate !== null),
+    `seen when he is ${(mouth.z - seenAt).toFixed(1)} in`
+  );
   // He stands out on the open floor east of them: one in front, one behind.
   const open = { x: -17, z: -40 };
   let pincer = -1;
@@ -608,7 +835,13 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
       if (round > 2.4) both++;
     }
   });
-  check('out on the open floor they get either side of him, as the Keep\'s two do, and stay there', pincer > 0 && pincer < 8 && both / Math.max(1, after) > 0.85, `either side after ${pincer.toFixed(1)} s, and for ${((100 * both) / Math.max(1, after)).toFixed(0)}% of the rest`);
+  check(
+    'out on the open floor they get either side of him, as the Keep\'s two do, and stay there',
+    pincer > 0
+      && pincer < 8
+      && both / Math.max(1, after) > 0.85,
+    `either side after ${pincer.toFixed(1)} s, and for ${((100 * both) / Math.max(1, after)).toFixed(0)}% of the rest`
+  );
   // Wherever he stands on that floor, by the chasm's edge or against the wall, they stay on it.
   let off = 0;
   let frames = 0;
@@ -627,13 +860,23 @@ const SWORD = ATTACK_CLIPS[0].reach + N.radius;
       if (!stand(a.x, 0, a.z, a.radius * 0.9)) off++;
     }
   });
-  check('wherever he stands on it, at the chasm\'s edge or against the wall, they never leave the floor', off === 0 && frames > 10000, `${off} of ${frames} ant-frames off the floor`);
+  check(
+    'wherever he stands on it, at the chasm\'s edge or against the wall, they never leave the floor',
+    off === 0
+      && frames > 10000,
+    `${off} of ${frames} ant-frames off the floor`
+  );
   // He goes back down the west path: they do not follow him off their floor, and go home.
   let followed = 0;
   const home = fight(30, (t) => (t < 5 ? open : { x: -26, z: 10 }), (ants) => {
     for (const a of ants) if (a.z > F.z1) followed++;
   });
-  check('go back down the west path and they do not follow: they go back to their post', followed === 0 && home.every((a) => a.state === 'idle' && dist(a, a.home) < 0.3), home.map((a) => a.state).join(' '));
+  check(
+    'go back down the west path and they do not follow: they go back to their post',
+    followed === 0
+      && home.every((a) => a.state === 'idle' && dist(a, a.home) < 0.3),
+    home.map((a) => a.state).join(' ')
+  );
 }
 
 console.log(failures === 0 ? '\nAnt pikeman: all checks passed' : `\nAnt pikeman: ${failures} FAILED`);

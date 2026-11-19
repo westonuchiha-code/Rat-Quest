@@ -83,10 +83,27 @@ const reachUp = (x: number, y: number, z: number, toward: [number, number]): num
 {
   const hollows = levelById('hollows')!;
   const door = hollows.courseDoors?.find((d) => d.to === 'glimmer');
-  check('the Glimmer Deep is a level of the GAME, in the Hollows: in the game\'s list, not the test rooms\', and the way out of it leads back to the Hollows', LEVELS.some((l) => l.id === 'glimmer') && !TEST_ROOMS.some((l) => l.id === 'glimmer') && def.world === 'hollows' && def.returnTo === 'hollows' && levelById('glimmer')?.was === 'The Glimmer Deep' && levelById('glimmer')?.name === 'Test Room 8F');
+  check(
+    'the Glimmer Deep is a level of the GAME, in the Hollows: in the game\'s list, not the test rooms\', and the way out of it leads back to the Hollows',
+    LEVELS.some((l) => l.id === 'glimmer')
+      && !TEST_ROOMS.some((l) => l.id === 'glimmer')
+      && def.world === 'hollows'
+      && def.returnTo === 'hollows'
+      && levelById('glimmer')?.was === 'The Glimmer Deep'
+      && levelById('glimmer')?.name === 'Test Room 8F'
+  );
   const hs = hollows.solids.map((b) => makeAabb((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2, b.x1 - b.x0, b.y1 - b.y0, b.z1 - b.z0));
   const others = [hollows.exit, ...(hollows.courseDoors ?? []).filter((d) => d !== door).map((d) => d.door)];
-  check('a door in the Hollows\' east wall leads to it: open from the start, on the cave\'s own floor with floor to stand on before it, and well clear of the other doors', !!door && door.need === 0 && (door.door.y ?? 0) === 0 && door.door.x > 47 && standsOn(hs, door.door.x - 1.4, 0, door.door.z, 0.4) && standsOn(hs, door.door.x - 3, 0, door.door.z, 0.4) && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 8));
+  check(
+    'a door in the Hollows\' east wall leads to it: open from the start, on the cave\'s own floor with floor to stand on before it, and well clear of the other doors',
+    !!door
+      && door.need === 0
+      && (door.door.y ?? 0) === 0
+      && door.door.x > 47
+      && standsOn(hs, door.door.x - 1.4, 0, door.door.z, 0.4)
+      && standsOn(hs, door.door.x - 3, 0, door.door.z, 0.4)
+      && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 8)
+  );
   check('the try-out room is still there, for trying things in', TEST_ROOMS.some((l) => l.id === 'glowcave'));
   let built = true;
   try {
@@ -95,25 +112,62 @@ const reachUp = (x: number, y: number, z: number, toward: [number, number]): num
     built = false;
     console.log(String(e));
   }
-  check('it builds; it is a dark place with no lamp in it, lit only by what grows there (as the try-out settled)', built && (def.ambient ?? 1) < 0.6 && !def.decor.some((d) => d.kind === 'lamp' || d.kind === 'torch' || d.kind === 'brazier' || d.kind === 'light') && def.decor.filter((d) => d.kind === 'mushroom').length > 40 && def.decor.filter((d) => d.kind === 'moss').length > 35);
-  check('he comes in on the Landing, on floor, facing the Rift, with nothing that has seen him: every creature starts further off than it notices him from, or down in the Rift out of his sight', standsOn(cs, def.spawn.x, LANDING, def.spawn.z, 0.4) && def.spawn.y === LANDING && def.spawn.z > RIFT.z1 + 3 && def.enemies.every((e) => (e.y ?? 0) < LANDING - 3 || Math.hypot(e.x - def.spawn.x, e.z - def.spawn.z) > 14));
+  check(
+    'it builds; it is a dark place with no lamp in it, lit only by what grows there (as the try-out settled)',
+    built
+      && (def.ambient ?? 1) < 0.6
+      && !def.decor.some((d) => d.kind === 'lamp' || d.kind === 'torch' || d.kind === 'brazier' || d.kind === 'light')
+      && def.decor.filter((d) => d.kind === 'mushroom').length > 40
+      && def.decor.filter((d) => d.kind === 'moss').length > 35
+  );
+  check(
+    'he comes in on the Landing, on floor, facing the Rift, with nothing that has seen him: every creature starts further off than it notices him from, or down in the Rift out of his sight',
+    standsOn(cs, def.spawn.x, LANDING, def.spawn.z, 0.4)
+      && def.spawn.y === LANDING
+      && def.spawn.z > RIFT.z1 + 3
+      && def.enemies.every((e) => (e.y ?? 0) < LANDING - 3 || Math.hypot(e.x - def.spawn.x, e.z - def.spawn.z) > 14)
+  );
 }
 
 // ---------------------------------------------------------------- the Caps
 const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT.floor, z, top - RIFT.floor + CAP_WIDE * 0.032, CAP_WIDE), r: CAP_WIDE * 0.72 }));
 {
-  check('four Caps grow out of the Rift\'s floor, their tops stepping up from just over the Landing to just under the High Shelf, each nearly two higher than the last', caps.length === 4 && caps.every((c, i) => Math.abs(c.top - CAPS[i][2]) < 0.02) && caps[0].top - LANDING > 1.5 && caps[0].top - LANDING < 2.3 && caps.every((c, i) => i === 0 || (c.top - caps[i - 1].top > 1.6 && c.top - caps[i - 1].top < 2.2)) && HIGH_SHELF.y - caps[3].top > 1.6 && HIGH_SHELF.y - caps[3].top < 2.2, caps.map((c) => c.top.toFixed(2)).join(', '));
+  check(
+    'four Caps grow out of the Rift\'s floor, their tops stepping up from just over the Landing to just under the High Shelf, each nearly two higher than the last',
+    caps.length === 4
+      && caps.every((c, i) => Math.abs(c.top - CAPS[i][2]) < 0.02)
+      && caps[0].top - LANDING > 1.5
+      && caps[0].top - LANDING < 2.3
+      && caps.every((c, i) => i === 0 || (c.top - caps[i - 1].top > 1.6 && c.top - caps[i - 1].top < 2.2))
+      && HIGH_SHELF.y - caps[3].top > 1.6
+      && HIGH_SHELF.y - caps[3].top < 2.2,
+    caps.map((c) => c.top.toFixed(2)).join(', ')
+  );
   // The course, stop by stop: the Landing's lip, the four Caps, the Shelf's edge.
   const lip: Stop = { x: -12, z: RIFT.z1 + 0.5, top: LANDING, r: 1 };
   const shelf: Stop = { x: HIGH_SHELF.x0 + 1.2, z: caps[3].z - 0.5, top: HIGH_SHELF.y, r: 1.4 };
   const course = [lip, ...caps, shelf];
   const tally = course.slice(0, -1).map((s, i) => ways(s, course[i + 1], i === 0 ? 3 : 0.6));
-  check('THE CAPS ARE A COURSE: from the Landing\'s lip to the first, from each to the next and from the last to the High Shelf, every hop can be made, and with ONE jump (a running jump: no second jump is needed anywhere on it)', tally.every((t) => t.one >= 3), tally.map((t) => `${t.one} one-jump timings, ${t.two} two-jump`).join('; '));
-  check('...and none of them is a step: jumping the moment he sets off (no run) fails at every hop but the first, which has the Landing to run on', course.slice(1, -1).every((s, i) => !hop(s, course[i + 2], 0, -1).ok), course.slice(1, -1).map((s, i) => (hop(s, course[i + 2], 0, -1).ok ? 'lands' : 'falls')).join());
+  check(
+    'THE CAPS ARE A COURSE: from the Landing\'s lip to the first, from each to the next and from the last to the High Shelf, every hop can be made, and with ONE jump (a running jump: no second jump is needed anywhere on it)',
+    tally.every((t) => t.one >= 3),
+    tally.map((t) => `${t.one} one-jump timings, ${t.two} two-jump`).join('; ')
+  );
+  check(
+    '...and none of them is a step: jumping the moment he sets off (no run) fails at every hop but the first, which has the Landing to run on',
+    course.slice(1, -1).every((s, i) => !hop(s, course[i + 2], 0, -1).ok),
+    course.slice(1, -1).map((s, i) => (hop(s, course[i + 2], 0, -1).ok ? 'lands' : 'falls')).join()
+  );
   // THE ONLY WAY UP: not from the Far Bank under the Shelf, not from the Landing, not from the Rift.
   const fromBank = reachUp(HIGH_SHELF.x0 - 0.5, FAR_BANK, -8, [HIGH_SHELF.x0 + 2, -8]);
   const fromLanding = reachUp(HIGH_SHELF.x0 - 0.5, LANDING, 16, [HIGH_SHELF.x0 + 2, 16]);
-  check('the High Shelf cannot be climbed to from the ground: not from the Far Bank under it (seven up), nor from the Landing (nine and a half), by any jump, second jump or caught edge', fromBank < HIGH_SHELF.y - 0.5 && fromLanding < HIGH_SHELF.y - 0.5 && HIGH_SHELF.y - FAR_BANK >= 7, `gets to ${fromBank.toFixed(2)} from the bank (at ${FAR_BANK}) and ${fromLanding.toFixed(2)} from the Landing (at ${LANDING}); the Shelf is at ${HIGH_SHELF.y}`);
+  check(
+    'the High Shelf cannot be climbed to from the ground: not from the Far Bank under it (seven up), nor from the Landing (nine and a half), by any jump, second jump or caught edge',
+    fromBank < HIGH_SHELF.y - 0.5
+      && fromLanding < HIGH_SHELF.y - 0.5
+      && HIGH_SHELF.y - FAR_BANK >= 7,
+    `gets to ${fromBank.toFixed(2)} from the bank (at ${FAR_BANK}) and ${fromLanding.toFixed(2)} from the Landing (at ${LANDING}); the Shelf is at ${HIGH_SHELF.y}`
+  );
   // Nor from anything that stands on the Far Bank near it: every ledge and every mushroom he can stand on within ten
   // of the Shelf's edge, tried with the real controller at every timing of one jump and of two.
   const tops: Stop[] = def.solids.filter((b) => b.y1 > FAR_BANK + 0.5 && b.y1 < HIGH_SHELF.y - 0.5 && b.x1 > HIGH_SHELF.x0 - 10 && b.x1 <= HIGH_SHELF.x0 && b.z1 <= RIFT.z0).map((b) => ({ x: Math.min(b.x1 - 0.4, (b.x0 + b.x1) / 2 + 2), z: (b.z0 + b.z1) / 2, top: b.y1, r: 1 }));
@@ -122,14 +176,35 @@ const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT
     const w2 = ways(t, edge, 0.3);
     return w2.one + w2.two > 0 || reachUp(t.x, t.top, t.z, [HIGH_SHELF.x0 + 2, t.z]) > HIGH_SHELF.y - 0.5;
   });
-  check('...nor from anything that stands on the Far Bank near it (its ledges, its mushrooms tall enough to stand on): tried from each with the real controller', tops.length >= 1 && sneaks.length === 0, `${tops.length} places tried${sneaks.length ? `; a way up from ${sneaks.map((t) => `${t.x.toFixed(1)},${t.z.toFixed(1)} (top ${t.top.toFixed(1)})`).join(' and ')}` : ''}`);
+  check(
+    '...nor from anything that stands on the Far Bank near it (its ledges, its mushrooms tall enough to stand on): tried from each with the real controller',
+    tops.length >= 1
+      && sneaks.length === 0,
+    `${tops.length} places tried${sneaks.length ? `; a way up from ${sneaks.map((t) => `${t.x.toFixed(1)},${t.z.toFixed(1)} (top ${t.top.toFixed(1)})`).join(' and ')}` : ''}`
+  );
   const w = GLIMMER_WEDGES.find((x) => x.id === 'shelf')!;
-  check('the first wedge, The High Shelf, stands on the Shelf, on floor, there from the start', w.appears === null && w.y === HIGH_SHELF.y && standsOn(cs, w.x, w.y, w.z, 0.4) && w.x > HIGH_SHELF.x0 + 2);
+  check(
+    'the first wedge, The High Shelf, stands on the Shelf, on floor, there from the start',
+    w.appears === null
+      && w.y === HIGH_SHELF.y
+      && standsOn(cs, w.x, w.y, w.z, 0.4)
+      && w.x > HIGH_SHELF.x0 + 2
+  );
 }
 
 // ---------------------------------------------------------------- the Rift
 {
-  check('the Rift splits the cave from wall to wall: ten across, seven deep, and its floor is not below where the game sends a faller back from (six under zero: the first lay-out had it at seven under, and he could not stand on it); the Far Bank beyond it is a little higher than the Landing', RIFT.z1 - RIFT.z0 === 10 && LANDING - RIFT.floor === 7 && FAR_BANK - LANDING > 2 && FAR_BANK - LANDING < 3 && RIFT.floor >= 0 && standsOn(cs, 0, RIFT.floor, 7, 0.4) && standsOn(cs, 0, FAR_BANK, -6, 0.4) && !standsOn(cs, 0, LANDING, 7, 0.4));
+  check(
+    'the Rift splits the cave from wall to wall: ten across, seven deep, and its floor is not below where the game sends a faller back from (six under zero: the first lay-out had it at seven under, and he could not stand on it); the Far Bank beyond it is a little higher than the Landing',
+    RIFT.z1 - RIFT.z0 === 10
+      && LANDING - RIFT.floor === 7
+      && FAR_BANK - LANDING > 2
+      && FAR_BANK - LANDING < 3
+      && RIFT.floor >= 0
+      && standsOn(cs, 0, RIFT.floor, 7, 0.4)
+      && standsOn(cs, 0, FAR_BANK, -6, 0.4)
+      && !standsOn(cs, 0, LANDING, 7, 0.4)
+  );
   // Out of it: up the shelf mushrooms and onto each bank, with the real controller. (A shelf, as a place to land:
   // its middle, half its depth out from the wall.)
   const stopOf = ([x, z, yaw, top]: readonly [number, number, number, number]): Stop => ({ x: x + Math.sin(yaw) * SHELF.deep * 0.5, z: z + Math.cos(yaw) * SHELF.deep * 0.5, top, r: 1.7 });
@@ -143,31 +218,89 @@ const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT
   const hops = (way: Stop[]): Array<{ one: number; two: number }> => way.slice(0, -1).map((s2, i) => ways(s2, way[i + 1], 0.5));
   const homeHops = hops(homeWay);
   const bankHops = hops(bankWay);
-  check('HE CAN GET OUT OF IT, TO THE DOOR: three shelf mushrooms up the Landing\'s face at the Rift\'s west end and the Landing above the last, each a jump from the one before, and ONE jump does every one', home.length === 3 && homeHops.every((c) => c.one >= 3), homeHops.map((c) => `${c.one}+${c.two}`).join('; '));
-  check('...and to the Far Bank: four more up its face and round onto the west wall, the same', bank.length === 4 && bankHops.every((c) => c.one >= 3), bankHops.map((c) => `${c.one}+${c.two}`).join('; '));
+  check(
+    'HE CAN GET OUT OF IT, TO THE DOOR: three shelf mushrooms up the Landing\'s face at the Rift\'s west end and the Landing above the last, each a jump from the one before, and ONE jump does every one',
+    home.length === 3
+      && homeHops.every((c) => c.one >= 3),
+    homeHops.map((c) => `${c.one}+${c.two}`).join('; ')
+  );
+  check(
+    '...and to the Far Bank: four more up its face and round onto the west wall, the same',
+    bank.length === 4
+      && bankHops.every((c) => c.one >= 3),
+    bankHops.map((c) => `${c.one}+${c.two}`).join('; ')
+  );
   const rises = [...homeWay, ...bankWay].map((s2) => s2.top);
-  check('no step of either ladder is more than one jump high (two and four tenths): under two, every one', homeWay.slice(1).every((s2, i) => s2.top - homeWay[i].top <= 1.95 && s2.top > homeWay[i].top) && bankWay.slice(1).every((s2, i) => s2.top - bankWay[i].top <= 1.95 && s2.top > bankWay[i].top), rises.join(' '));
+  check(
+    'no step of either ladder is more than one jump high (two and four tenths): under two, every one',
+    homeWay.slice(1).every((s2, i) => s2.top - homeWay[i].top <= 1.95 && s2.top > homeWay[i].top)
+      && bankWay.slice(1).every((s2, i) => s2.top - bankWay[i].top <= 1.95 && s2.top > bankWay[i].top),
+    rises.join(' ')
+  );
   const shelves = def.decor.filter((d) => d.kind === 'bracket') as Array<Extract<(typeof def.decor)[number], { kind: 'bracket' }>>;
   const solidOf = (d: (typeof shelves)[number]): boolean => def.solids.some((b) => b.hidden && Math.abs(b.y1 - d.y) < 1e-9 && Math.abs((b.x1 - b.x0) * (b.z1 - b.z0) - SHELF.wide * 2 * SHELF.deep) < 1e-6 && d.x >= b.x0 - 1e-6 && d.x <= b.x1 + 1e-6 && d.z >= b.z0 - 1e-6 && d.z <= b.z1 + 1e-6);
-  check('each shelf is drawn where it is solid, grows from a wall of the Rift (its back is ON a wall\'s face), and glows: amber to the door, another colour to the Far Bank', shelves.length === 7 && shelves.every(solidOf) && shelves.every((d) => Math.abs(d.z - RIFT.z1) < 1e-9 || Math.abs(d.z - RIFT.z0) < 1e-9 || Math.abs(d.x + GLIMMER.halfX) < 1e-9) && new Set(shelves.slice(0, 3).map((d) => d.color)).size === 1 && new Set(shelves.slice(3).map((d) => d.color)).size === 1 && shelves[0].color !== shelves[3].color);
+  check(
+    'each shelf is drawn where it is solid, grows from a wall of the Rift (its back is ON a wall\'s face), and glows: amber to the door, another colour to the Far Bank',
+    shelves.length === 7
+      && shelves.every(solidOf)
+      && shelves.every((d) => Math.abs(d.z - RIFT.z1) < 1e-9 || Math.abs(d.z - RIFT.z0) < 1e-9 || Math.abs(d.x + GLIMMER.halfX) < 1e-9)
+      && new Set(shelves.slice(0, 3).map((d) => d.color)).size === 1
+      && new Set(shelves.slice(3).map((d) => d.color)).size === 1
+      && shelves[0].color !== shelves[3].color
+  );
   // Nothing stands in a shelf or over one where his head would be.
   const crowd = shelves.filter((d) => def.solids.some((b) => !(b.hidden && Math.abs(b.y1 - d.y) < 1e-9) && b.y1 > d.y - 0.5 && b.y0 < d.y + 3.7 && b.kind !== 'wall' && b.kind !== 'floor' && b.x0 < d.x + Math.sin(d.yaw) * SHELF.deep * 0.5 + 0.8 && b.x1 > d.x + Math.sin(d.yaw) * SHELF.deep * 0.5 - 0.8 && b.z0 < d.z + Math.cos(d.yaw) * SHELF.deep * 0.5 + 0.8 && b.z1 > d.z + Math.cos(d.yaw) * SHELF.deep * 0.5 - 0.8));
-  check('nothing else stands in a shelf, or over one where his head goes when he jumps from it', crowd.length === 0, crowd.map((d) => `${d.x},${d.y},${d.z}`).join('; '));
+  check(
+    'nothing else stands in a shelf, or over one where his head goes when he jumps from it',
+    crowd.length === 0,
+    crowd.map((d) => `${d.x},${d.y},${d.z}`).join('; ')
+  );
   const straight = reachUp(0, RIFT.floor, RIFT.z1 - 0.6, [0, RIFT.z1 + 2]);
   check('...but not straight up its sides: seven is more than he can climb', straight < LANDING - 0.5, `gets to ${straight.toFixed(2)}`);
   const scorps = def.enemies.filter((e) => e.type === 'scorpion');
   const bugs = def.enemies.filter((e) => e.type === 'firefly');
-  check('two Lamp Scorpions keep its floor (one its own blue-green, one amber): each made on that floor, kept to it and clear of the corner where the shelves are, the Caps\' stems not in its way at the start', scorps.length === 2 && scorps.every((s) => s.y === RIFT.floor && standsOn(cs, s.x, RIFT.floor, s.z, 0.6) && s.arena!.x0 > SHELVES_HOME[0][0] + SHELF.wide && s.arena!.z0 > RIFT.z0 && s.arena!.z1 < RIFT.z1 && s.arena!.x1 < HIGH_SHELF.x0) && scorps[0].color === undefined && scorps[1].color !== undefined);
+  check(
+    'two Lamp Scorpions keep its floor (one its own blue-green, one amber): each made on that floor, kept to it and clear of the corner where the shelves are, the Caps\' stems not in its way at the start',
+    scorps.length === 2
+      && scorps.every((s) => s.y === RIFT.floor && standsOn(cs, s.x, RIFT.floor, s.z, 0.6) && s.arena!.x0 > SHELVES_HOME[0][0] + SHELF.wide && s.arena!.z0 > RIFT.z0 && s.arena!.z1 < RIFT.z1 && s.arena!.x1 < HIGH_SHELF.x0)
+      && scorps[0].color === undefined
+      && scorps[1].color !== undefined
+  );
   const lamps = GLIMMER_WEDGES.find((x) => x.id === 'lamps')!;
-  check('the second wedge, Lamps Out, asks for those two and no more: they are the only creatures that count, and they do not come back', lamps.appears?.type === 'defeat' && def.enemies.filter((e) => !e.uncounted).length === 2 && def.enemies.filter((e) => !e.uncounted).every((e) => e.type === 'scorpion' && e.respawn === false) && lamps.y === RIFT.floor && standsOn(cs, lamps.x, lamps.y, lamps.z, 0.4));
-  check('three glow bugs fly over the Far Bank, each its own colour, there to be fought and counting toward nothing; their air is in from the walls, short of the Rift and of the Shelf', bugs.length === 3 && new Set(bugs.map((b) => b.color)).size === 3 && bugs.every((b) => b.uncounted && b.y === FAR_BANK && b.arena!.z1 < RIFT.z0 && b.arena!.x1 < HIGH_SHELF.x0 && b.arena!.x0 > -GLIMMER.halfX && b.arena!.z0 > -GLIMMER.halfZ));
-  check('two wedges in all, each with a goal of its own', GLIMMER_WEDGES.length === 2 && def.wedges === GLIMMER_WEDGES && def.goals.length === 2 && def.goals[0].type === 'reach' && def.goals[1].type === 'defeat');
+  check(
+    'the second wedge, Lamps Out, asks for those two and no more: they are the only creatures that count, and they do not come back',
+    lamps.appears?.type === 'defeat'
+      && def.enemies.filter((e) => !e.uncounted).length === 2
+      && def.enemies.filter((e) => !e.uncounted).every((e) => e.type === 'scorpion' && e.respawn === false)
+      && lamps.y === RIFT.floor
+      && standsOn(cs, lamps.x, lamps.y, lamps.z, 0.4)
+  );
+  check(
+    'three glow bugs fly over the Far Bank, each its own colour, there to be fought and counting toward nothing; their air is in from the walls, short of the Rift and of the Shelf',
+    bugs.length === 3
+      && new Set(bugs.map((b) => b.color)).size === 3
+      && bugs.every((b) => b.uncounted && b.y === FAR_BANK && b.arena!.z1 < RIFT.z0 && b.arena!.x1 < HIGH_SHELF.x0 && b.arena!.x0 > -GLIMMER.halfX && b.arena!.z0 > -GLIMMER.halfZ)
+  );
+  check(
+    'two wedges in all, each with a goal of its own',
+    GLIMMER_WEDGES.length === 2
+      && def.wedges === GLIMMER_WEDGES
+      && def.goals.length === 2
+      && def.goals[0].type === 'reach'
+      && def.goals[1].type === 'defeat'
+  );
 }
 
 // ---------------------------------------------------------------- what is to be found
 {
   const by = (id: string) => def.collectibles.find((c) => c.id === id)!;
-  check('three things to find and no more: two bottle caps and a relic (fewer, each earned by moving)', def.collectibles.length === 3 && def.collectibles.filter((c) => c.kind === 'cap').length === 2 && def.collectibles.filter((c) => c.kind === 'relic').length === 1 && def.crateContents.length === 0);
+  check(
+    'three things to find and no more: two bottle caps and a relic (fewer, each earned by moving)',
+    def.collectibles.length === 3
+      && def.collectibles.filter((c) => c.kind === 'cap').length === 2
+      && def.collectibles.filter((c) => c.kind === 'relic').length === 1
+      && def.crateContents.length === 0
+  );
   // The one in the air: taken on the hop from the third Cap to the fourth, and by no hop from the floor.
   const air = by(GLIMMER_PRIZES.air);
   let taken = 0;
@@ -187,9 +320,21 @@ const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT
     }
     if (got) taken++;
   }
-  check('the bottle cap in the air hangs on the line of the hop from the third Cap to the fourth, where that jump carries him: most timings that make the hop take it', taken >= 8 && air.y > caps[3].top + 1 && air.y - RIFT.floor > 14, `${taken} of 31 timings pass through it; it hangs at ${air.y.toFixed(2)}`);
+  check(
+    'the bottle cap in the air hangs on the line of the hop from the third Cap to the fourth, where that jump carries him: most timings that make the hop take it',
+    taken >= 8
+      && air.y > caps[3].top + 1
+      && air.y - RIFT.floor > 14,
+    `${taken} of 31 timings pass through it; it hangs at ${air.y.toFixed(2)}`
+  );
   const deep = by(GLIMMER_PRIZES.deep);
-  check('the second is at the bottom of the Rift, in the pocket behind the last Cap\'s foot, where the scorpions are: got by going down, and coming back up', deep.y < RIFT.floor + 1 && standsOn(cs, deep.x, RIFT.floor, deep.z, 0.3) && deep.x > caps[3].x + 2 && deep.x < HIGH_SHELF.x0);
+  check(
+    'the second is at the bottom of the Rift, in the pocket behind the last Cap\'s foot, where the scorpions are: got by going down, and coming back up',
+    deep.y < RIFT.floor + 1
+      && standsOn(cs, deep.x, RIFT.floor, deep.z, 0.3)
+      && deep.x > caps[3].x + 2
+      && deep.x < HIGH_SHELF.x0
+  );
   const relic = by(GLIMMER_PRIZES.spire);
   const spireTop = mushroomTop(SPIRE.x, FAR_BANK, SPIRE.z, SPIRE.tall, 1.3);
   const upSpire = reachUp(SPIRE.x, FAR_BANK, SPIRE.z + 2.2, [SPIRE.x, SPIRE.z]);
@@ -203,13 +348,27 @@ const caps: Stop[] = CAPS.map(([x, z, top]) => ({ x, z, top: mushroomTop(x, RIFT
     }
     return top;
   })();
-  check('the relic is on the Spire, the tall pink mushroom of the Far Bank: five and a half up, which the second jump and a caught edge reach and one jump does not come near', relic.kind === 'relic' && Math.abs(relic.y - spireTop - 0.8) < 1e-6 && spireTop - FAR_BANK > 5.2 && upSpire > spireTop - 0.05 && oneJump < spireTop - 2, `he gets to ${upSpire.toFixed(2)}; its top is ${spireTop.toFixed(2)}; one jump tops out at ${oneJump.toFixed(2)}`);
+  check(
+    'the relic is on the Spire, the tall pink mushroom of the Far Bank: five and a half up, which the second jump and a caught edge reach and one jump does not come near',
+    relic.kind === 'relic'
+      && Math.abs(relic.y - spireTop - 0.8) < 1e-6
+      && spireTop - FAR_BANK > 5.2
+      && upSpire > spireTop - 0.05
+      && oneJump < spireTop - 2,
+    `he gets to ${upSpire.toFixed(2)}; its top is ${spireTop.toFixed(2)}; one jump tops out at ${oneJump.toFixed(2)}`
+  );
 }
 
 // ---------------------------------------------------------------- the scorpion's sticker
 {
   const st = STICKERS.find((s) => s.id === 'foe:scorpion');
-  check('the Lamp Scorpion has its sticker now that a real level has one (it was left out on purpose while it lived only in a try-out room)', !!st && st.group === 'Beasts' && st.name === 'Lamp Scorpion' && st.blurb.length > 40);
+  check(
+    'the Lamp Scorpion has its sticker now that a real level has one (it was left out on purpose while it lived only in a try-out room)',
+    !!st
+      && st.group === 'Beasts'
+      && st.name === 'Lamp Scorpion'
+      && st.blurb.length > 40
+  );
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

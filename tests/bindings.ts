@@ -44,7 +44,14 @@ check('R1 dodges once bound, and stops attacking', actionsForButton('r1').includ
 bindings.reset();
 
 check('keyboard names', keyLabel('KeyJ') === 'J' && keyLabel('Space') === 'SPACE' && keyLabel('ShiftLeft') === 'L-SHIFT' && keyLabel('Digit3') === '3');
-check('pad names per kind', padLabel('south', 'playstation') === '✕' && padLabel('south', 'xbox') === 'A' && padLabel('east', 'nintendo') === 'A' && padLabel('l2', 'xbox') === 'LT' && padLabel('north', 'generic') === 'TOP BTN');
+check(
+  'pad names per kind',
+  padLabel('south', 'playstation') === '✕'
+    && padLabel('south', 'xbox') === 'A'
+    && padLabel('east', 'nintendo') === 'A'
+    && padLabel('l2', 'xbox') === 'LT'
+    && padLabel('north', 'generic') === 'TOP BTN'
+);
 
 console.log(failures === 0 ? 'bindings: all pass' : `bindings: ${failures} FAIL`);
 process.exit(failures ? 1 : 0);

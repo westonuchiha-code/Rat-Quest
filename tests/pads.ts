@@ -18,11 +18,25 @@ const XBOX = 'Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 0
 const DS = 'DualSense Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 0ce6)';
 const SWITCH = 'Pro Controller (STANDARD GAMEPAD Vendor: 057e Product: 2009)';
 
-check('names are sorted into kinds', padKind(XBOX) === 'xbox' && padKind(DS) === 'playstation' && padKind(SWITCH) === 'nintendo' && padKind('USB Gamepad 0079:0006') === 'generic');
+check(
+  'names are sorted into kinds',
+  padKind(XBOX) === 'xbox'
+    && padKind(DS) === 'playstation'
+    && padKind(SWITCH) === 'nintendo'
+    && padKind('USB Gamepad 0079:0006') === 'generic'
+);
 
 for (const id of [XBOX, DS, SWITCH]) {
   const s = readPad(pad(id, 'standard', 4, 17, { buttons: [0, 4, 15], axes: { 0: 1, 1: 0, 2: -1, 3: 0 } }));
-  check(`${padKind(id)} standard: south, L1, d-pad right, sticks`, s.down.south && s.down.l1 && s.down.right && !s.down.east && s.moveX > 0.99 && s.lookX < -0.99);
+  check(
+    `${padKind(id)} standard: south, L1, d-pad right, sticks`,
+    s.down.south
+      && s.down.l1
+      && s.down.right
+      && !s.down.east
+      && s.moveX > 0.99
+      && s.lookX < -0.99
+  );
 }
 
 // Triggers as analog button values, and the stick deadzone.
@@ -42,13 +56,29 @@ check('the d-pad walks when the stick is idle', dp.moveY === 1 && dp.moveX === 1
   const both = readPad(pad(XBOX, 'standard', 4, 17, { buttons: [12, 15], axes: { 0: 1, 1: 0 } }));
   const none = readPad(pad(XBOX, 'standard', 4, 17, { axes: { 0: 1, 1: 0 } }));
   const leftDown = readPad(pad(XBOX, 'standard', 4, 17, { buttons: [13, 14] }));
-  check('the d-pad is reported as held: up and right, down and left, or not at all', dp.dpadX === 1 && dp.dpadY === 1 && leftDown.dpadX === -1 && leftDown.dpadY === -1 && none.dpadX === 0 && none.dpadY === 0);
+  check(
+    'the d-pad is reported as held: up and right, down and left, or not at all',
+    dp.dpadX === 1
+      && dp.dpadY === 1
+      && leftDown.dpadX === -1
+      && leftDown.dpadY === -1
+      && none.dpadX === 0
+      && none.dpadY === 0
+  );
   check('it is what he walks by only while the stick is at rest', dp.dpadWalks && leftDown.dpadWalks && !both.dpadWalks && both.moveX === 1 && !none.dpadWalks);
 }
 
 // Non-standard pads.
 const xlin = readPad(pad('Microsoft X-Box 360 pad (Vendor: 045e Product: 028e)', '', 8, 11, { rest: { 2: -1, 5: -1 }, axes: { 5: 1, 6: -1, 7: 1, 3: 0.9 }, buttons: [0] }));
-check('xbox pad without a standard mapping: A, right trigger axis, hat d-pad, right stick', xlin.down.south && xlin.down.r2 && !xlin.down.l2 && xlin.down.left && xlin.down.down && xlin.lookX > 0.5);
+check(
+  'xbox pad without a standard mapping: A, right trigger axis, hat d-pad, right stick',
+  xlin.down.south
+    && xlin.down.r2
+    && !xlin.down.l2
+    && xlin.down.left
+    && xlin.down.down
+    && xlin.lookX > 0.5
+);
 const ds4 = readPad(pad('Wireless Controller (Vendor: 054c Product: 09cc)', '', 10, 14, { buttons: [1], axes: { 9: -1, 5: -1 } }));
 check('playstation pad without a standard mapping: cross is south, hat up, right stick y', ds4.down.south && !ds4.down.west && ds4.down.up && ds4.lookY > 0.5);
 const hatRight = readPad(pad('USB Gamepad (Vendor: 0079 Product: 0006)', '', 10, 12, { rest: { 9: 1.2857 }, axes: { 9: -0.4286 } }));

@@ -22,7 +22,10 @@ const def = compileCustom(lvl);
 const kinds = new Set(def.decor.map((d) => d.kind));
 check('the builder\'s new pieces become the new dressing', ['banner', 'torch', 'gauge', 'crystal', 'roots'].every((k) => kinds.has(k as Decor['kind'])));
 check('a crystal cluster is solid (a little)', def.solids.some((b) => b.hidden && b.x0 < 4 && b.x1 > 4 && b.z0 < 4 && b.z1 > 4));
-check('a banner keeps its colour', (def.decor.find((d) => d.kind === 'banner') as Extract<Decor, { kind: 'banner' }>).color !== (compileCustom({ ...lvl, pieces: [lvl.pieces[0], at('banner', 0, -9.7, 6, { dir: 'n' })] }).decor.find((d) => d.kind === 'banner') as Extract<Decor, { kind: 'banner' }>).color);
+check(
+  'a banner keeps its colour',
+  (def.decor.find((d) => d.kind === 'banner') as Extract<Decor, { kind: 'banner' }>).color !== (compileCustom({ ...lvl, pieces: [lvl.pieces[0], at('banner', 0, -9.7, 6, { dir: 'n' })] }).decor.find((d) => d.kind === 'banner') as Extract<Decor, { kind: 'banner' }>).color
+);
 
 // In the worlds.
 const front = (d: { x: number; z: number; yaw: number }, k: number): [number, number] => [d.x + Math.sin(d.yaw) * k, d.z + Math.cos(d.yaw) * k];

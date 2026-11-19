@@ -22,7 +22,11 @@ for (const L of LEVELS) {
   const t0 = Date.now();
   const map = computeReach(L);
   const bad = unreachable(L, map);
-  check(`${L.id}: everything can be reached`, bad.length === 0, bad.slice(0, 4).map((b) => `${b.what} at ${b.x.toFixed(1)},${b.y.toFixed(1)},${b.z.toFixed(1)}`).join('; ') + `  ${Date.now() - t0}ms`);
+  check(
+    `${L.id}: everything can be reached`,
+    bad.length === 0,
+    bad.slice(0, 4).map((b) => `${b.what} at ${b.x.toFixed(1)},${b.y.toFixed(1)},${b.z.toFixed(1)}`).join('; ') + `  ${Date.now() - t0}ms`
+  );
 }
 
 // A crumb on a pillar far too tall, a cap across a gap too wide, and a wedge up high: all caught.
@@ -87,15 +91,34 @@ for (const [gap, expect] of [[2.2, true], [4, true], [6, true], [7.5, true], [9,
   check('the widest chimney the checker allows is about eight units', limit > 7.6 && limit < 8.6, limit.toFixed(2));
   const inside = kicked(limit - 1);
   const outside = kicked(limit + 0.6);
-  check('a unit inside that, the real knight kicks his way up as high as the walls go', inside > 30, `${inside.toFixed(1)} up between walls ${(limit - 1).toFixed(1)} apart`);
-  check('just outside it, he gets no higher than a jump, a kick and a double jump take him: there is no climb', outside < maxClimb() + 2, `${outside.toFixed(1)} up between walls ${(limit + 0.6).toFixed(1)} apart`);
+  check(
+    'a unit inside that, the real knight kicks his way up as high as the walls go',
+    inside > 30,
+    `${inside.toFixed(1)} up between walls ${(limit - 1).toFixed(1)} apart`
+  );
+  check(
+    'just outside it, he gets no higher than a jump, a kick and a double jump take him: there is no climb',
+    outside < maxClimb() + 2,
+    `${outside.toFixed(1)} up between walls ${(limit + 0.6).toFixed(1)} apart`
+  );
   // It follows the kick's numbers: a harder push across carries him further, so a wider gap is a chimney.
   const push = TUNING.moves.wallKickPush;
   (TUNING.moves as { wallKickPush: number }).wallKickPush = push + 2;
   const wider = maxChimney();
   (TUNING.moves as { wallKickPush: number }).wallKickPush = push;
-  check('for a way OUT of somewhere (the trap search) it asks more of each kick, so only a narrower gap counts: about six and a half', maxChimney(2) > 6 && maxChimney(2) < 7.2 && kicked(maxChimney(2)) > 30, `${maxChimney(2).toFixed(2)}`);
-  check('...and it follows the sliders: with a harder push across, a wider gap counts as a chimney', wider > limit + 1.5 && maxChimney() === limit, `${wider.toFixed(2)} with the push at ${push + 2}`);
+  check(
+    'for a way OUT of somewhere (the trap search) it asks more of each kick, so only a narrower gap counts: about six and a half',
+    maxChimney(2) > 6
+      && maxChimney(2) < 7.2
+      && kicked(maxChimney(2)) > 30,
+    `${maxChimney(2).toFixed(2)}`
+  );
+  check(
+    '...and it follows the sliders: with a harder push across, a wider gap counts as a chimney',
+    wider > limit + 1.5
+      && maxChimney() === limit,
+    `${wider.toFixed(2)} with the push at ${push + 2}`
+  );
 }
 
 console.log(failures === 0 ? 'reach: all pass' : `reach: ${failures} FAIL`);

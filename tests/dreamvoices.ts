@@ -16,7 +16,11 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const all = [...LEVELS, ...ARCHIVE, ...TEST_ROOMS];
 const speaking = all.filter((l) => speaksRobot(l)).map((l) => l.id).sort();
-check('the robot voice speaks ONLY in the dream: the Milky Way, the Big Dipper and the Toy Box, and in no other level of the game', speaking.join() === 'bigdipper,milkyway,toybox', speaking.join());
+check(
+  'the robot voice speaks ONLY in the dream: the Milky Way, the Big Dipper and the Toy Box, and in no other level of the game',
+  speaking.join() === 'bigdipper,milkyway,toybox',
+  speaking.join()
+);
 check('...and every level that has the dream\'s look speaks so', all.filter((l) => l.look === 'dream').every((l) => speaksRobot(l)));
 
 const foe = { alive: true, hp: 6, attackActive: false, attacking: false };
@@ -38,7 +42,13 @@ const v2 = new DreamVoices<typeof bare & { hp?: number }>();
 v2.step(0.1, [bare]); bare.attackActive = true;
 check('one that only says when its blow can land speaks then', v2.step(0.1, [bare]).map((c) => c.cry).join() === 'attack');
 
-check('a roach is tiny, a mantis high, a Stag Knight low, anything else plain', voiceOf('scuttler') === 'small' && voiceOf('mantis') === 'thin' && voiceOf('stag') === 'big' && voiceOf('toad') === 'plain');
+check(
+  'a roach is tiny, a mantis high, a Stag Knight low, anything else plain',
+  voiceOf('scuttler') === 'small'
+    && voiceOf('mantis') === 'thin'
+    && voiceOf('stag') === 'big'
+    && voiceOf('toad') === 'plain'
+);
 const lens: string[] = [];
 let ok = true;
 let bytes = 0;
@@ -53,8 +63,15 @@ for (const [name, cries] of Object.entries(ROBOT_VOICES)) for (const cry of ['at
     if (secs < 0.08 || secs > 1.3 || peak < 0.5) { ok = false; lens.push(`${name} ${cry} ${secs.toFixed(2)}s peak ${peak.toFixed(2)}`); }
   }
 }
-check('every voice has two or more sounds for an attack, for being struck and for its end; each a real sound, none over a second and a third', ok, lens.join('; '));
-check('a grunt is shorter than a word: every voice\'s "hurt" sounds are under half a second', Object.values(ROBOT_VOICES).every((c) => c.hurt.every((r) => decodeRecorded(r).data.length / r.rate < 0.5)));
+check(
+  'every voice has two or more sounds for an attack, for being struck and for its end; each a real sound, none over a second and a third',
+  ok,
+  lens.join('; ')
+);
+check(
+  'a grunt is shorter than a word: every voice\'s "hurt" sounds are under half a second',
+  Object.values(ROBOT_VOICES).every((c) => c.hurt.every((r) => decodeRecorded(r).data.length / r.rate < 0.5))
+);
 check('all the voices together add under a quarter of a megabyte to the game', bytes < 256 * 1024, `${(bytes / 1024).toFixed(0)} KB`);
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

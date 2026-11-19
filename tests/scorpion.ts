@@ -74,11 +74,24 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
   const s = scorpion();
   const far = rat(0, S.noticeRange + 4);
   const a = play([s], far, still, () => false, 120);
-  check('far off it does not stir: it sits with its lamp glowing low', a.seen.join() === 'idle' && s.light > 0.2 && s.light < 0.5 && s.lit, `${a.seen.join()}; lamp ${s.light.toFixed(2)}`);
+  check(
+    'far off it does not stir: it sits with its lamp glowing low',
+    a.seen.join() === 'idle'
+      && s.light > 0.2
+      && s.light < 0.5
+      && s.lit,
+    `${a.seen.join()}; lamp ${s.light.toFixed(2)}`
+  );
   const p = rat(0, 7);
   const b = play([s], p, still, (q) => q.state === 'stingWind', 900);
   check('nearer, it sees him (it says so) and comes on, to stalk him', b.heard[0] === 'alert' && b.seen.includes('stalk'));
-  check('...it does not sting from across the room: by the time its tail rears it has come within its sting\'s reach of him, and is facing him', s.state === 'stingWind' && dist(s, p.position) <= S.stingReach + 0.31 && Math.abs(Math.atan2(Math.sin(Math.atan2(p.position.x - s.x, p.position.z - s.z) - s.facing), Math.cos(Math.atan2(p.position.x - s.x, p.position.z - s.z) - s.facing))) < 0.5, `${dist(s, p.position).toFixed(2)} off`);
+  check(
+    '...it does not sting from across the room: by the time its tail rears it has come within its sting\'s reach of him, and is facing him',
+    s.state === 'stingWind'
+      && dist(s, p.position) <= S.stingReach + 0.31
+      && Math.abs(Math.atan2(Math.sin(Math.atan2(p.position.x - s.x, p.position.z - s.z) - s.facing), Math.cos(Math.atan2(p.position.x - s.x, p.position.z - s.z) - s.facing))) < 0.5,
+    `${dist(s, p.position).toFixed(2)} off`
+  );
 }
 
 // ---- The sting: the tell, the ring, the blow, the barb stuck ----
@@ -107,12 +120,36 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     lampAtEnd = q.light;
     tipHigh = Math.max(tipHigh, q.tail.up);
   });
-  check('the tell is as long as it says, and it says so as it begins', Math.abs(tell - S.stingWind) < DT * 1.5 && s.state === 'sting' && a.heard.includes('sting'), `${tell.toFixed(2)} s`);
-  check('...from its first moment there is a ring on the floor, as wide as the blow will be, on where he stands; and it fills as the tell runs out', ringFromTheFirst && onHim < 0.4 && onHimSoon < 0.1 && fills[0] < 0.1 && fills[fills.length - 1] > 0.95 && fills.every((f, i) => i === 0 || f >= fills[i - 1]), `furthest from his middle ${onHim.toFixed(2)} at first, ${onHimSoon.toFixed(2)} after a moment`);
-  check('...its tail rears high over its back and its lamp flares to more than twice what it was', tipHigh > 1.9 && lampAtEnd > 1.35, `barb ${tipHigh.toFixed(2)} up, lamp ${lampAtEnd.toFixed(2)}`);
+  check(
+    'the tell is as long as it says, and it says so as it begins',
+    Math.abs(tell - S.stingWind) < DT * 1.5
+      && s.state === 'sting'
+      && a.heard.includes('sting'),
+    `${tell.toFixed(2)} s`
+  );
+  check(
+    '...from its first moment there is a ring on the floor, as wide as the blow will be, on where he stands; and it fills as the tell runs out',
+    ringFromTheFirst
+      && onHim < 0.4
+      && onHimSoon < 0.1
+      && fills[0] < 0.1
+      && fills[fills.length - 1] > 0.95
+      && fills.every((f, i) => i === 0 || f >= fills[i - 1]),
+    `furthest from his middle ${onHim.toFixed(2)} at first, ${onHimSoon.toFixed(2)} after a moment`
+  );
+  check(
+    '...its tail rears high over its back and its lamp flares to more than twice what it was',
+    tipHigh > 1.9
+      && lampAtEnd > 1.35,
+    `barb ${tipHigh.toFixed(2)} up, lamp ${lampAtEnd.toFixed(2)}`
+  );
   const b = play([s], p, still, (q) => q.state !== 'sting', 60);
   check('the barb comes down on him: one heart', b.results.join() === 'hit' && p.hp === MAX - S.stingDamage, `${b.results.join()}; ${p.hp} hearts`);
-  check('...and is in the floor, in the middle of where the ring was (it says so): the tail stretched out along the ground', s.state === 'stuck' && b.heard.includes('stuck'));
+  check(
+    '...and is in the floor, in the middle of where the ring was (it says so): the tail stretched out along the ground',
+    s.state === 'stuck'
+      && b.heard.includes('stuck')
+  );
   let stuck = 0;
   let turned = 0;
   const f0 = s.facing;
@@ -123,7 +160,13 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     turned = Math.max(turned, Math.abs(q.facing - f0));
     if (stuck > 0.15) atRing = Math.min(atRing, -Math.hypot(q.tail.ahead - q.aimDist, q.tail.up - 0.06));
   });
-  check('it stays stuck for most of a second, not turning, its barb where it struck: the opening', Math.abs(stuck - S.stingStuck) < DT * 1.5 && turned < 1e-9 && -atRing < 0.02, `${stuck.toFixed(2)} s`);
+  check(
+    'it stays stuck for most of a second, not turning, its barb where it struck: the opening',
+    Math.abs(stuck - S.stingStuck) < DT * 1.5
+      && turned < 1e-9
+      && -atRing < 0.02,
+    `${stuck.toFixed(2)} s`
+  );
 }
 
 // ---- The ring follows him, then is set; the blow lands on the ring and nowhere else ----
@@ -144,7 +187,11 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     else if (!setAt) setAt = { x: m.x, z: m.z };
     else moved = Math.max(moved, dist(m, setAt));
   });
-  check('the ring follows a rat who walks across its front, for the first part of the tell: it is never off him', followed < 0.3, `furthest behind him ${followed.toFixed(2)}`);
+  check(
+    'the ring follows a rat who walks across its front, for the first part of the tell: it is never off him',
+    followed < 0.3,
+    `furthest behind him ${followed.toFixed(2)}`
+  );
   check('...then it is set: it does not move again', !!setAt && moved < 1e-6 && a.frames > 10);
   // He stands still until the ring is set, and only then runs: from a standstill, he is out in time.
   for (const side of [-1, 1]) {
@@ -152,7 +199,12 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     const p2 = rat(0, 2.0, { x: 0, z: 0 });
     play([s2], p2, still, (q) => q.state === 'stingWind', 900);
     const b = play([s2], p2, (q) => (q.state === 'stingWind' && q.stateTime < S.stingTrack ? {} : { move: new THREE.Vector3(side, 0, 0), run: true }), (q) => q.state === 'stuck', 300);
-    check(`a rat who stands in the ring until it is set and THEN runs (to its ${side < 0 ? 'left' : 'right'}) is out of it in time: the tell is fair`, b.results.length === 0 && p2.hp === MAX, b.results.join());
+    check(
+      `a rat who stands in the ring until it is set and THEN runs (to its ${side < 0 ? 'left' : 'right'}) is out of it in time: the tell is fair`,
+      b.results.length === 0
+        && p2.hp === MAX,
+      b.results.join()
+    );
   }
   // Beside the ring, he is not touched: the blow is the ring, not the whole of its front.
   const s3 = scorpion();
@@ -180,7 +232,13 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
   const e = play([s5], p5, () => ({ guardHeld: true }), (q) => q.state === 'recover', 400, (q) => {
     if (q.state === 'stuck') stuckFor += DT;
   });
-  check('a shield held up stops the barb, and it is stuck the longer for it', e.results.join() === 'blocked' && p5.hp === MAX && Math.abs(stuckFor - S.stingBlocked) < DT * 1.5, `${e.results.join()}; stuck ${stuckFor.toFixed(2)} s`);
+  check(
+    'a shield held up stops the barb, and it is stuck the longer for it',
+    e.results.join() === 'blocked'
+      && p5.hp === MAX
+      && Math.abs(stuckFor - S.stingBlocked) < DT * 1.5,
+    `${e.results.join()}; stuck ${stuckFor.toFixed(2)} s`
+  );
 }
 
 // ---- Hit it while it is stuck: two blows, and its lamp goes out and it is gone ----
@@ -195,7 +253,16 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     const far = to.length();
     return far > 1.15 ? { move: to.normalize(), run: true } : { move: to.normalize().multiplyScalar(0.01), attackPressed: i % 4 === 0 };
   }, (q) => q.state === 'douse', 600);
-  check('stuck, it can be cut: the first blow staggers it, and at the second, close on the first, its lamp goes out and it darts away (it says so)', a.hits === S.douseAfter && s.hp === S.hp - S.douseAfter && s.state === 'douse' && a.heard.includes('douse') && a.heard.filter((h) => h === 'hurt').length === S.douseAfter && a.results.length === 0, `${a.hits} blows; ${a.heard.join()}`);
+  check(
+    'stuck, it can be cut: the first blow staggers it, and at the second, close on the first, its lamp goes out and it darts away (it says so)',
+    a.hits === S.douseAfter
+      && s.hp === S.hp - S.douseAfter
+      && s.state === 'douse'
+      && a.heard.includes('douse')
+      && a.heard.filter((h) => h === 'hurt').length === S.douseAfter
+      && a.results.length === 0,
+    `${a.hits} blows; ${a.heard.join()}`
+  );
   const from = { x: s.x, z: s.z };
   const fromRat = dist(s, p.position);
   let struck = 0;
@@ -209,9 +276,28 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     if (after > 0.25) lampMax = Math.max(lampMax, q.light);
     litEver ||= q.lit;
   });
-  check('unlit, it runs: well clear of him in under half a second, and it goes on round him in the dark for a second and more', after > S.douseTime + S.dark - DT * 2 && after < S.douseTime + S.dark + DT * 2, `${after.toFixed(2)} s unlit; it began ${fromRat.toFixed(2)} from him`);
-  check('...its lamp is out all that while, and it does nothing: no sting without its lamp', lampMax < 0.02 && struck === 0 && !litEver && b.results.length === 0, `lamp at most ${lampMax.toFixed(3)}`);
-  check('...then its lamp lights again somewhere else (it says so) and it is stalking him once more', b.heard.includes('relight') && s.state === 'stalk' && dist(s, from) > 2.5 && s.lit, `${dist(s, from).toFixed(2)} from where it was cut`);
+  check(
+    'unlit, it runs: well clear of him in under half a second, and it goes on round him in the dark for a second and more',
+    after > S.douseTime + S.dark - DT * 2
+      && after < S.douseTime + S.dark + DT * 2,
+    `${after.toFixed(2)} s unlit; it began ${fromRat.toFixed(2)} from him`
+  );
+  check(
+    '...its lamp is out all that while, and it does nothing: no sting without its lamp',
+    lampMax < 0.02
+      && struck === 0
+      && !litEver
+      && b.results.length === 0,
+    `lamp at most ${lampMax.toFixed(3)}`
+  );
+  check(
+    '...then its lamp lights again somewhere else (it says so) and it is stalking him once more',
+    b.heard.includes('relight')
+      && s.state === 'stalk'
+      && dist(s, from) > 2.5
+      && s.lit,
+    `${dist(s, from).toFixed(2)} from where it was cut`
+  );
   // A single blow, and no second close on it: it only staggers, and comes on.
   const s2 = scorpion();
   const p2 = rat(0.9, 0.5, { x: 0, z: 0 });
@@ -222,7 +308,13 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     one = true;
     return { attackPressed: press };
   }, () => false, 150);
-  check('one blow alone does not put its lamp out: it staggers, and is back to stalking', c.hits === 1 && c.seen.includes('stagger') && !c.seen.includes('douse') && s2.lit);
+  check(
+    'one blow alone does not put its lamp out: it staggers, and is back to stalking',
+    c.hits === 1
+      && c.seen.includes('stagger')
+      && !c.seen.includes('douse')
+      && s2.lit
+  );
 }
 
 // ---- The claws, for a rat who stands in its face ----
@@ -238,7 +330,17 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
       wide = Math.max(wide, q.claw);
     }
   });
-  check('close in front of it, its claws open wide (a short tell: it says so) and snap shut on him: one heart', a.seen.join().startsWith('snapWind,snap') && Math.abs(wind - S.snapWind) < DT * 1.5 && wide > 0.9 && a.results.join() === 'hit' && p.hp === MAX - S.snapDamage && a.heard.includes('snapWind') && a.heard.includes('snap'), `${a.seen.join()}; tell ${wind.toFixed(2)} s; ${a.results.join()}`);
+  check(
+    'close in front of it, its claws open wide (a short tell: it says so) and snap shut on him: one heart',
+    a.seen.join().startsWith('snapWind,snap')
+      && Math.abs(wind - S.snapWind) < DT * 1.5
+      && wide > 0.9
+      && a.results.join() === 'hit'
+      && p.hp === MAX - S.snapDamage
+      && a.heard.includes('snapWind')
+      && a.heard.includes('snap'),
+    `${a.seen.join()}; tell ${wind.toFixed(2)} s; ${a.results.join()}`
+  );
   const s2 = scorpion();
   const p2 = rat(0, 1.25, { x: 0, z: 0 });
   s2.state = 'stalk';
@@ -292,7 +394,13 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     }, (q) => q.state !== 'sprawl', 600, (q) => {
       if (q.state === 'sprawl') down += DT;
     });
-    check('sprawled, it lies there and takes it: more blows than would have put its lamp out, and it does not run', a.hits > S.douseAfter && !a.seen.includes('douse') && (s.state === 'dead' || Math.abs(down - S.sprawl) < 0.4), `${a.hits} blows in ${down.toFixed(2)} s; ${a.seen.join()}`);
+    check(
+      'sprawled, it lies there and takes it: more blows than would have put its lamp out, and it does not run',
+      a.hits > S.douseAfter
+        && !a.seen.includes('douse')
+        && (s.state === 'dead' || Math.abs(down - S.sprawl) < 0.4),
+      `${a.hits} blows in ${down.toFixed(2)} s; ${a.seen.join()}`
+    );
   }
 }
 
@@ -314,10 +422,24 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     if (q.attackActive && !q.lit) unlitStrike++;
     if (q.state === 'sting' && q.attackActive && q.light < 1.2) dimSting++;
   });
-  check('fought as it asks (out of the ring, cut while it is stuck, shield up in its face) it dies of five blows, in a few openings and not one', !s.alive && a.hits === S.hp && a.kills === 1 && a.seen.filter((x) => x === 'stuck').length >= 3, `${a.hits} blows, ${a.seen.filter((x) => x === 'stuck').length} stings, ${a.seen.filter((x) => x === 'douse').length} times dark, ${(a.frames * DT).toFixed(1)} s; he has ${p.hp} hearts`);
+  check(
+    'fought as it asks (out of the ring, cut while it is stuck, shield up in its face) it dies of five blows, in a few openings and not one',
+    !s.alive
+      && a.hits === S.hp
+      && a.kills === 1
+      && a.seen.filter((x) => x === 'stuck').length >= 3,
+    `${a.hits} blows, ${a.seen.filter((x) => x === 'stuck').length} stings, ${a.seen.filter((x) => x === 'douse').length} times dark, ${(a.frames * DT).toFixed(1)} s; he has ${p.hp} hearts`
+  );
   check('...and in all that it never struck unlit, and never stung but with its lamp flaring', unlitStrike === 0 && dimSting === 0);
   const dead = play([s], p, still, () => false, 120);
-  check('dead, its lamp dies and it does nothing more (and it does not come back unless a level says so)', s.light < 0.4 && !s.attackActive && dead.results.length === 0 && !s.respawns && s.state === 'dead');
+  check(
+    'dead, its lamp dies and it does nothing more (and it does not come back unless a level says so)',
+    s.light < 0.4
+      && !s.attackActive
+      && dead.results.length === 0
+      && !s.respawns
+      && s.state === 'dead'
+  );
 }
 
 // ---- Two take turns ----
@@ -366,8 +488,17 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     const a1 = Math.atan2(q[1] - joints[i + 1][1], q[0] - joints[i + 1][0]);
     return Math.atan2(Math.sin(a1 - a0), Math.cos(a1 - a0));
   });
-  check('its tail is as long as the rules say, in links that do not stretch; every link turned the same from the last, curling up and over forward; its point where it is asked', Math.abs(TAIL_LINKS.reduce((x, y) => x + y, 0) - S.tailLength) < 1e-9 && lens.every((l, i) => Math.abs(l - TAIL_LINKS[i]) < 1e-9) && turns.every((t) => Math.abs(t - turns[0]) < 1e-6 && t < 0) && Math.hypot(joints[joints.length - 1][0] - S.rest.ahead, joints[joints.length - 1][1] - S.rest.up) < 1e-3);
-  check('every place the rules put its barb is within its tail\'s reach of its root', [S.rest, S.rear, S.tucked, S.limp, { ahead: S.stingReach, up: 0.06 }, { ahead: S.stingMin, up: 0.06 }].every((t) => Math.hypot(t.ahead - S.tailRoot.ahead, t.up - S.tailRoot.up) < S.tailLength));
+  check(
+    'its tail is as long as the rules say, in links that do not stretch; every link turned the same from the last, curling up and over forward; its point where it is asked',
+    Math.abs(TAIL_LINKS.reduce((x, y) => x + y, 0) - S.tailLength) < 1e-9
+      && lens.every((l, i) => Math.abs(l - TAIL_LINKS[i]) < 1e-9)
+      && turns.every((t) => Math.abs(t - turns[0]) < 1e-6 && t < 0)
+      && Math.hypot(joints[joints.length - 1][0] - S.rest.ahead, joints[joints.length - 1][1] - S.rest.up) < 1e-3
+  );
+  check(
+    'every place the rules put its barb is within its tail\'s reach of its root',
+    [S.rest, S.rear, S.tucked, S.limp, { ahead: S.stingReach, up: 0.06 }, { ahead: S.stingMin, up: 0.06 }].every((t) => Math.hypot(t.ahead - S.tailRoot.ahead, t.up - S.tailRoot.up) < S.tailLength)
+  );
 
   // A whole fight, drawn: at every frame the barb's point, the ring and the lamp are where and as the rules have them.
   const s = scorpion();
@@ -405,17 +536,40 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     if (q.state === 'dark' && q.stateTime > 0.3) lampWhenOut = Math.max(lampWhenOut, bright);
     if (q.state === 'sting') lampWhenFlared = Math.min(lampWhenFlared, bright);
   });
-  check('(the drawn fight went through its states)', ['stalk', 'stingWind', 'sting', 'stuck', 'stagger', 'douse', 'dark', 'dead'].every((x) => seen.has(x)), [...seen].join());
+  check(
+    '(the drawn fight went through its states)',
+    ['stalk', 'stingWind', 'sting', 'stuck', 'stagger', 'douse', 'dark', 'dead'].every((x) => seen.has(x)),
+    [...seen].join()
+  );
   check('the point of its barb is drawn where the rules have it, at every frame of a fight', tipOff < 0.01, `at most ${tipOff.toFixed(4)} off`);
-  check('...no joint of its tail is ever under the floor, and as it stands its feet are on it', under === 0 && feetOff < 0.04, `${under} joints under; feet at most ${feetOff.toFixed(3)} off the floor`);
-  check('...the ring is drawn when and where the rules have it, as wide and as full', ringWrong === 0 && ringOff < 1e-3, `${ringWrong} frames wrong; at most ${ringOff.toFixed(5)} off`);
-  check('...its lamp is drawn dark when it is out and bright when it flares', lampWhenOut < 0.2 && lampWhenFlared > 0.9, `out ${lampWhenOut.toFixed(2)}, flared ${lampWhenFlared.toFixed(2)}`);
+  check(
+    '...no joint of its tail is ever under the floor, and as it stands its feet are on it',
+    under === 0
+      && feetOff < 0.04,
+    `${under} joints under; feet at most ${feetOff.toFixed(3)} off the floor`
+  );
+  check(
+    '...the ring is drawn when and where the rules have it, as wide and as full',
+    ringWrong === 0
+      && ringOff < 1e-3,
+    `${ringWrong} frames wrong; at most ${ringOff.toFixed(5)} off`
+  );
+  check(
+    '...its lamp is drawn dark when it is out and bright when it flares',
+    lampWhenOut < 0.2
+      && lampWhenFlared > 0.9,
+    `out ${lampWhenOut.toFixed(2)}, flared ${lampWhenFlared.toFixed(2)}`
+  );
   const hue = (c: THREE.Color): number => c.getHSL({ h: 0, s: 0, l: 0 }).h;
   const amber = new ScorpionModel(0xffb03a);
   amber.update(1, { state: 'stalk', stateTime: 1, tail: S.rest, light: 1, claw: 0, moving: 0, mark: null });
   const plain = new ScorpionModel();
   plain.update(1, { state: 'stalk', stateTime: 1, tail: S.rest, light: 1, claw: 0, moving: 0, mark: null });
-  check('one given a colour has its lamp that colour; a plain one\'s is a scorpion\'s own blue-green', Math.abs(hue(amber.parts().lamp) - hue(new THREE.Color(0xffb03a))) < 0.03 && Math.abs(hue(plain.parts().lamp) - 0.45) < 0.06);
+  check(
+    'one given a colour has its lamp that colour; a plain one\'s is a scorpion\'s own blue-green',
+    Math.abs(hue(amber.parts().lamp) - hue(new THREE.Color(0xffb03a))) < 0.03
+      && Math.abs(hue(plain.parts().lamp) - 0.45) < 0.06
+  );
 }
 
 // ---- In the Glow Cave ----
@@ -424,8 +578,17 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
   const ss = def.enemies.filter((e) => e.type === 'scorpion');
   const bugs = def.enemies.filter((e) => e.type === 'firefly');
   const inside = (x: number, z: number): boolean => def.solids.some((b) => b.kind !== 'floor' && x > b.x0 - 0.7 && x < b.x1 + 0.7 && z > b.z0 - 0.7 && z < b.z1 + 0.7 && b.y1 > 0.2 && b.y0 < 1);
-  check('two of them live in the Glow Cave, each a lamp of its own colour, and neither a colour the glow bugs have', ss.length === 2 && new Set(ss.map((e) => e.color ?? 0x4dffc8)).size === 2 && ss.every((e) => !bugs.some((b) => b.color === e.color)), ss.map((e) => (e.color ?? 0x4dffc8).toString(16)).join());
-  check('...each starts on open floor, clear of ledges and stems, with the floor of the room for its patch', ss.every((e) => (e.y ?? 0) === 0 && !inside(e.x, e.z) && !!e.arena && e.arena.x0 >= -GLOWCAVE.halfX && e.arena.x1 <= GLOWCAVE.halfX && e.arena.z0 >= -GLOWCAVE.halfZ && e.arena.z1 <= GLOWCAVE.halfZ));
+  check(
+    'two of them live in the Glow Cave, each a lamp of its own colour, and neither a colour the glow bugs have',
+    ss.length === 2
+      && new Set(ss.map((e) => e.color ?? 0x4dffc8)).size === 2
+      && ss.every((e) => !bugs.some((b) => b.color === e.color)),
+    ss.map((e) => (e.color ?? 0x4dffc8).toString(16)).join()
+  );
+  check(
+    '...each starts on open floor, clear of ledges and stems, with the floor of the room for its patch',
+    ss.every((e) => (e.y ?? 0) === 0 && !inside(e.x, e.z) && !!e.arena && e.arena.x0 >= -GLOWCAVE.halfX && e.arena.x1 <= GLOWCAVE.halfX && e.arena.z0 >= -GLOWCAVE.halfZ && e.arena.z1 <= GLOWCAVE.halfZ)
+  );
   check('...they are there to be fought, not a goal, and do not come back', def.goals.length === 0 && ss.every((e) => !e.respawn));
 }
 
@@ -444,7 +607,12 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     else tex.add(`${t.image.width}`);
     if (!mesh.geometry.attributes.uv) plain++;
   });
-  check('every piece of it the room lights wears a picture, and has the picture\'s places on it: none is plain colour', plain === 0 && tex.size >= 2, `${plain} plain`);
+  check(
+    'every piece of it the room lights wears a picture, and has the picture\'s places on it: none is plain colour',
+    plain === 0
+      && tex.size >= 2,
+    `${plain} plain`
+  );
   for (const [name, size] of [['scorpShell', 64], ['scorpTail', 32], ['scorpClaw', 32], ['scorpLamp', 32]] as Array<['scorpShell' | 'scorpTail' | 'scorpClaw' | 'scorpLamp', number]>) {
     const px = getTexturePixels(name);
     let lo = 255;

@@ -13,7 +13,11 @@ function check(name: string, ok: boolean, detail = ''): void {
 const KINDS = Object.keys(GRIM_SPELLS) as GrimSpell[];
 const base: GrimInput = { low: 0, float: 0.55, bow: 0, still: false, talking: false, mouth: 0, gesture: 'rest', reach: 0 };
 const DT = 1 / 60;
-check('he has five spells: a fireball, a summoning, lightning, a healing and a blast', KINDS.join() === 'fireball,summon,lightning,heal,blast' && KINDS.every((k) => GRIM_SPELLS[k].length > 1 && GRIM_SPELLS[k].strike > 0.3 && GRIM_SPELLS[k].strike < GRIM_SPELLS[k].length));
+check(
+  'he has five spells: a fireball, a summoning, lightning, a healing and a blast',
+  KINDS.join() === 'fireball,summon,lightning,heal,blast'
+    && KINDS.every((k) => GRIM_SPELLS[k].length > 1 && GRIM_SPELLS[k].strike > 0.3 && GRIM_SPELLS[k].strike < GRIM_SPELLS[k].length)
+);
 
 // Each begins and ends as he stands at rest, and never jumps between two moments.
 {
@@ -26,7 +30,11 @@ check('he has five spells: a fireball, a summoning, lightning, a healing and a b
   check('every spell begins from his rest and comes back to it (and stays there if it is run on)', ends.length === 0, ends.join());
   let worst = 0;
   for (const k of KINDS) for (let t = 0; t < GRIM_SPELLS[k].length; t += DT) worst = Math.max(worst, ...flat(k, t + DT).map((v, i) => Math.abs(v - flat(k, t)[i])));
-  check('none of them jumps: from one sixtieth of a second to the next no joint turns far', worst < 0.35, `most in one frame: ${worst.toFixed(3)} of a turn's radian`);
+  check(
+    'none of them jumps: from one sixtieth of a second to the next no joint turns far',
+    worst < 0.35,
+    `most in one frame: ${worst.toFixed(3)} of a turn's radian`
+  );
   const moves = KINDS.map((k) => Math.max(...Array.from({ length: 40 }, (_, i) => flat(k, (i / 40) * GRIM_SPELLS[k].length)).map((f) => Math.hypot(...f.map((v, i) => v - rest[i])))));
   check('each of them MOVES him: well away from his rest at some moment', moves.every((m) => m > 1.2), moves.map((m) => m.toFixed(1)).join(' '));
   // No two of them are the same show.
@@ -67,7 +75,13 @@ check('he has five spells: a fireball, a summoning, lightning, a healing and a b
   g.update(DT, { ...base, spell: { kind: 'fireball', t: 0.5 } });
   const held = fire.position.clone();
   for (let t = 0.5; t <= 1.3; t += DT) g.update(DT, { ...base, spell: { kind: 'fireball', t } });
-  check('the fireball is in his claw before the throw (up by his shoulder) and well out in front of him after it', held.y > 1.2 && Math.abs(held.z) < 0.9 && fire.position.z - held.z > 3, `from ${held.z.toFixed(2)} to ${fire.position.z.toFixed(2)} ahead`);
+  check(
+    'the fireball is in his claw before the throw (up by his shoulder) and well out in front of him after it',
+    held.y > 1.2
+      && Math.abs(held.z) < 0.9
+      && fire.position.z - held.z > 3,
+    `from ${held.z.toFixed(2)} to ${fire.position.z.toFixed(2)} ahead`
+  );
 }
 
 // His teeth: rooted in his snout, not hung under it.
@@ -90,7 +104,12 @@ check('he has five spells: a fireball, a summoning, lightning, a healing and a b
     const under = -0.78 * 0.155 * ((0.23 - tooth.position.z) / 0.46);
     return top > under && end < under - 0.04 && !!box && tooth.position.z < box.max.z;
   });
-  check('he has two front teeth, each ROOTED in the underside of his snout and hanging below it (they were cards hung in the air under it)', teeth.length === 2 && rooted && teeth[0].position.x * teeth[1].position.x < 0);
+  check(
+    'he has two front teeth, each ROOTED in the underside of his snout and hanging below it (they were cards hung in the air under it)',
+    teeth.length === 2
+      && rooted
+      && teeth[0].position.x * teeth[1].position.x < 0
+  );
 }
 console.log(failures === 0 ? '\nGrimsqueak spell checks passed.' : `\n${failures} Grimsqueak spell check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

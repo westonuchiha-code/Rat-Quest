@@ -94,7 +94,14 @@ const at = new THREE.Vector3(0, 0, 0);
   m.setTransform(at, 0);
   for (let i = 0; i < 40; i++) m.update(DT, { state: 'idle', stateTime: i * DT, moving: false });
   const rest = measure(m.root).box;
-  check('roach: at rest it stands on the floor, about as big as before', rest.min.y > -0.06 && rest.min.y < 0.08 && rest.max.y > 0.45 && rest.max.y < 0.85, size(rest));
+  check(
+    'roach: at rest it stands on the floor, about as big as before',
+    rest.min.y > -0.06
+      && rest.min.y < 0.08
+      && rest.max.y > 0.45
+      && rest.max.y < 0.85,
+    size(rest)
+  );
   for (let i = 0; i < 150; i++) m.update(DT, { state: 'dead', stateTime: i * DT, moving: false });
   check('roach: dead, it shrivels away to nothing', m.root.scale.x < 0.01);
 }
@@ -121,7 +128,14 @@ const at = new THREE.Vector3(0, 0, 0);
   m.setTransform(at, 0);
   for (let i = 0; i < 40; i++) m.update(DT, { state: 'idle', stateTime: i * DT, moving: false, hopY: 0 });
   const rest = measure(m.root).box;
-  check('toad: at rest it sits on the floor, about as big as before', rest.min.y > -0.08 && rest.max.y > 0.7 && rest.max.y < 1.05 && rest.max.x - rest.min.x < 1.5, size(rest));
+  check(
+    'toad: at rest it sits on the floor, about as big as before',
+    rest.min.y > -0.08
+      && rest.max.y > 0.7
+      && rest.max.y < 1.05
+      && rest.max.x - rest.min.x < 1.5,
+    size(rest)
+  );
   for (let i = 0; i < 48; i++) m.update(DT, { state: 'dead', stateTime: i * DT, moving: false, hopY: 0 });
   const dead = measure(m.root).box;
   check('toad: dead, it lies belly-up ON the floor (it used to roll under it)', dead.min.y > -0.15 && dead.max.y > 0.5, size(dead));
@@ -269,9 +283,24 @@ const at = new THREE.Vector3(0, 0, 0);
     tall = Math.max(tall, r.box.max.y - r.box.min.y);
     floor = Math.min(floor, r.box.min.y);
   }
-  check('guard: he builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.2 && tall < 2.2, `tallest ${tall.toFixed(2)} with his spear`);
-  check('guard: in everything he does, and on the way into it, his spear passes clear of his own head, ears, body, shield, legs and tail', bad.length === 0, bad.join(' | ') || `${LASTS.length} moves, every frame`);
-  check('guard: neither end of his spear ever goes under the floor, and nor does he', low > -0.02 && floor > -0.06, `spear lowest ${low.toFixed(2)}, body lowest ${floor.toFixed(2)}`);
+  check(
+    'guard: he builds, and every pose is whole (no part missing, unpainted or gone bad)',
+    sound
+      && tall > 1.2
+      && tall < 2.2,
+    `tallest ${tall.toFixed(2)} with his spear`
+  );
+  check(
+    'guard: in everything he does, and on the way into it, his spear passes clear of his own head, ears, body, shield, legs and tail',
+    bad.length === 0,
+    bad.join(' | ') || `${LASTS.length} moves, every frame`
+  );
+  check(
+    'guard: neither end of his spear ever goes under the floor, and nor does he',
+    low > -0.02
+      && floor > -0.06,
+    `spear lowest ${low.toFixed(2)}, body lowest ${floor.toFixed(2)}`
+  );
 
   {
     const m = fresh();
@@ -279,26 +308,60 @@ const at = new THREE.Vector3(0, 0, 0);
     const e = ends(m);
     const head = rigOf(m).head.getWorldPosition(new THREE.Vector3());
     const off = Math.hypot(e.tip.x - head.x, e.tip.z - head.z);
-    check('guard: at his post the spear stands upright beside him, its butt on the ground and its point well out from his head', e.dir.y > 0.99 && e.butt.y > -0.01 && e.butt.y < 0.06 && off > 0.34 && e.tip.y > head.y + 0.3, `tilt ${(Math.acos(e.dir.y) * 57.3).toFixed(0)} degrees, butt ${e.butt.y.toFixed(2)} up, point ${off.toFixed(2)} out from his head`);
+    check(
+      'guard: at his post the spear stands upright beside him, its butt on the ground and its point well out from his head',
+      e.dir.y > 0.99
+        && e.butt.y > -0.01
+        && e.butt.y < 0.06
+        && off > 0.34
+        && e.tip.y > head.y + 0.3,
+      `tilt ${(Math.acos(e.dir.y) * 57.3).toFixed(0)} degrees, butt ${e.butt.y.toFixed(2)} up, point ${off.toFixed(2)} out from his head`
+    );
   }
   {
     const m = fresh();
     run(m, 'idle', 0.6);
     run(m, 'hold', 1.2);
     const level = ends(m);
-    check('guard: coming on, the spear is levelled at hip height and points at whoever he faces', level.dir.z > 0.97 && Math.abs(level.dir.y) < 0.12 && level.tip.z > 1 && level.tip.y > 0.3 && level.tip.y < 0.7, `points ${level.dir.x.toFixed(2)}, ${level.dir.y.toFixed(2)}, ${level.dir.z.toFixed(2)}; point ${level.tip.z.toFixed(2)} ahead`);
+    check(
+      'guard: coming on, the spear is levelled at hip height and points at whoever he faces',
+      level.dir.z > 0.97
+        && Math.abs(level.dir.y) < 0.12
+        && level.tip.z > 1
+        && level.tip.y > 0.3
+        && level.tip.y < 0.7,
+      `points ${level.dir.x.toFixed(2)}, ${level.dir.y.toFixed(2)}, ${level.dir.z.toFixed(2)}; point ${level.tip.z.toFixed(2)} ahead`
+    );
     run(m, 'windup', GUARD.windup);
     const drawn = ends(m);
-    check('guard: winding up, the spear is drawn back and still points at its mark', drawn.dir.z > 0.97 && drawn.tip.z < level.tip.z - 0.25, `point ${drawn.tip.z.toFixed(2)} ahead (levelled, ${level.tip.z.toFixed(2)})`);
+    check(
+      'guard: winding up, the spear is drawn back and still points at its mark',
+      drawn.dir.z > 0.97
+        && drawn.tip.z < level.tip.z - 0.25,
+      `point ${drawn.tip.z.toFixed(2)} ahead (levelled, ${level.tip.z.toFixed(2)})`
+    );
     run(m, 'thrust', GUARD.thrustTime);
     const out = ends(m);
     // The blow lands on a rat whose near side is this far off at most: the point should get about there, and not past the far side of him.
     const far = GUARD.radius + GUARD.reach;
-    check('guard: his thrust goes straight ahead, level, and the point reaches about as far as the blow does', out.dir.z > 0.96 && Math.abs(out.dir.y) < 0.1 && Math.abs(out.tip.x) < 0.2 && out.tip.z > far - 0.15 && out.tip.z < far + 0.35, `points ${out.dir.x.toFixed(2)}, ${out.dir.y.toFixed(2)}, ${out.dir.z.toFixed(2)}; point ${out.tip.z.toFixed(2)} ahead, the blow reaches ${far.toFixed(2)} to ${(far + 0.6).toFixed(2)}`);
+    check(
+      'guard: his thrust goes straight ahead, level, and the point reaches about as far as the blow does',
+      out.dir.z > 0.96
+        && Math.abs(out.dir.y) < 0.1
+        && Math.abs(out.tip.x) < 0.2
+        && out.tip.z > far - 0.15
+        && out.tip.z < far + 0.35,
+      `points ${out.dir.x.toFixed(2)}, ${out.dir.y.toFixed(2)}, ${out.dir.z.toFixed(2)}; point ${out.tip.z.toFixed(2)} ahead, the blow reaches ${far.toFixed(2)} to ${(far + 0.6).toFixed(2)}`
+    );
     run(m, 'recover', GUARD.recover);
     run(m, 'hold', 1.2);
     const again = ends(m);
-    check('guard: back in his guard after a thrust, he stands exactly as he did before it (nothing of the lunge is left in him)', again.tip.distanceTo(level.tip) < 0.03 && again.butt.distanceTo(level.butt) < 0.03, `point ${again.tip.distanceTo(level.tip).toFixed(3)} out`);
+    check(
+      'guard: back in his guard after a thrust, he stands exactly as he did before it (nothing of the lunge is left in him)',
+      again.tip.distanceTo(level.tip) < 0.03
+        && again.butt.distanceTo(level.butt) < 0.03,
+      `point ${again.tip.distanceTo(level.tip).toFixed(3)} out`
+    );
     // And his feet step again when he walks, just as a guard's who has never lunged do (they used to stay planted
     // where the lunge had put them).
     const stride = (g: GuardModel): { lift: number; reach: number } => {
@@ -318,7 +381,14 @@ const at = new THREE.Vector3(0, 0, 0);
     run(never, 'hold', 1.2);
     const plain = stride(never);
     const after = stride(m);
-    check('guard: walking after a thrust, his feet step as they did before it', after.reach > 0.1 && after.lift > 0.02 && Math.abs(after.reach - plain.reach) < 0.01 && Math.abs(after.lift - plain.lift) < 0.005, `stride ${after.reach.toFixed(2)}, lift ${after.lift.toFixed(3)} (before: ${plain.reach.toFixed(2)}, ${plain.lift.toFixed(3)})`);
+    check(
+      'guard: walking after a thrust, his feet step as they did before it',
+      after.reach > 0.1
+        && after.lift > 0.02
+        && Math.abs(after.reach - plain.reach) < 0.01
+        && Math.abs(after.lift - plain.lift) < 0.005,
+      `stride ${after.reach.toFixed(2)}, lift ${after.lift.toFixed(3)} (before: ${plain.reach.toFixed(2)}, ${plain.lift.toFixed(3)})`
+    );
   }
   {
     const m = fresh();
@@ -328,7 +398,16 @@ const at = new THREE.Vector3(0, 0, 0);
     const box = measure(rigOf(m).root).box;
     rigOf(m).root.updateMatrixWorld(true);
     const tailLow = Math.min(...rigOf(m).tailSegments.map((seg) => seg.getWorldPosition(new THREE.Vector3()).y));
-    check('guard: dead, he lies on the floor with his tail along it, and his spear lies flat beside him (held, it stood up out of him with its butt under the ground)', e.butt.y > 0 && e.butt.y < 0.1 && e.tip.y > 0 && e.tip.y < 0.1 && box.max.y < 0.75 && tailLow > -0.03, `spear ends ${e.butt.y.toFixed(2)} and ${e.tip.y.toFixed(2)} up; he is ${box.max.y.toFixed(2)} high; tail lowest ${tailLow.toFixed(2)}`);
+    check(
+      'guard: dead, he lies on the floor with his tail along it, and his spear lies flat beside him (held, it stood up out of him with its butt under the ground)',
+      e.butt.y > 0
+        && e.butt.y < 0.1
+        && e.tip.y > 0
+        && e.tip.y < 0.1
+        && box.max.y < 0.75
+        && tailLow > -0.03,
+      `spear ends ${e.butt.y.toFixed(2)} and ${e.tip.y.toFixed(2)} up; he is ${box.max.y.toFixed(2)} high; tail lowest ${tailLow.toFixed(2)}`
+    );
     run(m, 'idle', 1.5);
     const up = ends(m);
     check('guard: alive again, the spear is back in his hand, upright', spearOf(m).parent === rigOf(m).sword && up.dir.y > 0.99 && through(m).length === 0);
@@ -453,8 +532,16 @@ const at = new THREE.Vector3(0, 0, 0);
     tall = Math.max(tall, r.box.max.y - r.box.min.y);
   }
   check('mantis: it builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.2 && tall < 2.6, `tallest ${tall.toFixed(2)}`);
-  check('mantis: in everything it does, and on the way into it, its scythes pass clear of its own head, neck, body, wings and legs', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
-  check('mantis: its scythes and feet never go under the floor (the scythes are driven a little way in after a leap, and only then)', sunk.length === 0, sunk.join(' | '));
+  check(
+    'mantis: in everything it does, and on the way into it, its scythes pass clear of its own head, neck, body, wings and legs',
+    bad.length === 0,
+    bad.join(' | ') || `${MOVES.length} moves, every frame`
+  );
+  check(
+    'mantis: its scythes and feet never go under the floor (the scythes are driven a little way in after a leap, and only then)',
+    sunk.length === 0,
+    sunk.join(' | ')
+  );
   check('mantis: on the ground, its feet are on the ground', afloat.length === 0, afloat.join(' | '));
 
   {
@@ -462,7 +549,12 @@ const at = new THREE.Vector3(0, 0, 0);
     run(m, 'idle', 1.5);
     const head = inside(m).head.getWorldPosition(new THREE.Vector3());
     const b = m.blades();
-    check('mantis: at rest it stands taller than the knight, its scythes folded up before its face', head.y > 1.15 && b.every((x) => x.wrist.z > head.z + 0.1 && x.wrist.y > head.y - 0.35 && x.tip.y < x.wrist.y), `head ${head.y.toFixed(2)} up; wrists ${b.map((x) => x.wrist.y.toFixed(2)).join(', ')} up`);
+    check(
+      'mantis: at rest it stands taller than the knight, its scythes folded up before its face',
+      head.y > 1.15
+        && b.every((x) => x.wrist.z > head.z + 0.1 && x.wrist.y > head.y - 0.35 && x.tip.y < x.wrist.y),
+      `head ${head.y.toFixed(2)} up; wrists ${b.map((x) => x.wrist.y.toFixed(2)).join(', ')} up`
+    );
     // Standing still (and swaying), its feet do not slide.
     run(m, 'sway', 0.6);
     const a0 = feet(m);
@@ -473,7 +565,12 @@ const at = new THREE.Vector3(0, 0, 0);
       feet(m).forEach((f, i) => (moved = Math.max(moved, f.distanceTo(a0[i]))));
       rocked = Math.max(rocked, Math.abs(inside(m).head.getWorldPosition(new THREE.Vector3()).x - x0));
     });
-    check('mantis: swaying, its body rocks from side to side over feet that stay planted', moved < 0.01 && rocked > 0.08, `feet moved ${moved.toFixed(3)}, head rocked ${rocked.toFixed(2)}`);
+    check(
+      'mantis: swaying, its body rocks from side to side over feet that stay planted',
+      moved < 0.01
+        && rocked > 0.08,
+      `feet moved ${moved.toFixed(3)}, head rocked ${rocked.toFixed(2)}`
+    );
     // Walking, they step: each foot stays put on the floor between steps and is lifted over.
     const pos = new THREE.Vector3();
     let lifted = 0;
@@ -492,7 +589,13 @@ const at = new THREE.Vector3(0, 0, 0);
       last = now;
     }
     const kept = feet(m).every((f) => Math.abs(f.z - pos.z) < 1.2);
-    check('mantis: walking, its feet step (down they stay where they are put; up they are carried over) and keep up with it', lifted > 0.08 && slid < 0.01 && kept, `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`);
+    check(
+      'mantis: walking, its feet step (down they stay where they are put; up they are carried over) and keep up with it',
+      lifted > 0.08
+        && slid < 0.01
+        && kept,
+      `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`
+    );
   }
   {
     const m = fresh();
@@ -501,16 +604,36 @@ const at = new THREE.Vector3(0, 0, 0);
     const head = inside(m).head.getWorldPosition(new THREE.Vector3());
     const [right, left] = m.blades();
     const glint = inside(m).glints.map((g) => g.some((x) => x.visible));
-    check('mantis: winding up, that scythe is raised high over its head and glints; the other stays down before its face', right.tip.y > head.y + 0.35 && left.tip.y < head.y + 0.1 && glint[0] && !glint[1], `raised point ${(right.tip.y - head.y).toFixed(2)} over its head`);
+    check(
+      'mantis: winding up, that scythe is raised high over its head and glints; the other stays down before its face',
+      right.tip.y > head.y + 0.35
+        && left.tip.y < head.y + 0.1
+        && glint[0]
+        && !glint[1],
+      `raised point ${(right.tip.y - head.y).toFixed(2)} over its head`
+    );
     run(m, 'slash', MANTIS.slashTime, { arm: -1 });
     const cut = m.blades()[0];
     // The blow lands on a rat whose near side is this far off at most (it has stepped in by then).
     const far = MANTIS.radius + MANTIS.reach;
-    check('mantis: the cut comes down across its front at the height of the knight, and its point gets about as far as the blow does', cut.tip.z > far - 0.55 && cut.tip.z < far + 0.25 && cut.tip.y > 0.25 && cut.tip.y < 0.95 && Math.abs(cut.tip.x) < 0.45, `point ${cut.tip.z.toFixed(2)} ahead, ${cut.tip.y.toFixed(2)} up, ${cut.tip.x.toFixed(2)} across; the blow reaches ${far.toFixed(2)}`);
+    check(
+      'mantis: the cut comes down across its front at the height of the knight, and its point gets about as far as the blow does',
+      cut.tip.z > far - 0.55
+        && cut.tip.z < far + 0.25
+        && cut.tip.y > 0.25
+        && cut.tip.y < 0.95
+        && Math.abs(cut.tip.x) < 0.45,
+      `point ${cut.tip.z.toFixed(2)} ahead, ${cut.tip.y.toFixed(2)} up, ${cut.tip.x.toFixed(2)} across; the blow reaches ${far.toFixed(2)}`
+    );
     run(m, 'windup', MANTIS.delayed, { arm: 1, held: true, windupTime: MANTIS.delayed });
     const second = m.blades();
     const glint2 = inside(m).glints.map((g) => g.some((x) => x.visible));
-    check('mantis: the second cut is the other scythe going up, and it is the one that glints', second[1].tip.y > inside(m).head.getWorldPosition(new THREE.Vector3()).y + 0.35 && glint2[1] && !glint2[0]);
+    check(
+      'mantis: the second cut is the other scythe going up, and it is the one that glints',
+      second[1].tip.y > inside(m).head.getWorldPosition(new THREE.Vector3()).y + 0.35
+        && glint2[1]
+        && !glint2[0]
+    );
   }
   {
     const m = fresh();
@@ -521,7 +644,14 @@ const at = new THREE.Vector3(0, 0, 0);
     const standing = (() => { const s = fresh(); run(s, 'stalk', 0.8); return inside(s).head.getWorldPosition(new THREE.Vector3()).y; })();
     const flared = I.fans.every((f) => f.visible && Math.abs(f.scale.x) > 0.8);
     const b = m.blades();
-    check('mantis: before a leap it crouches, flares its bright wings and lifts both scythes, both glinting', head.y < standing - 0.15 && flared && b.every((x) => x.tip.y > head.y + 0.3) && I.glints.every((g) => g.some((x) => x.visible)), `head ${(standing - head.y).toFixed(2)} lower; points ${b.map((x) => (x.tip.y - head.y).toFixed(2)).join(', ')} over it`);
+    check(
+      'mantis: before a leap it crouches, flares its bright wings and lifts both scythes, both glinting',
+      head.y < standing - 0.15
+        && flared
+        && b.every((x) => x.tip.y > head.y + 0.3)
+        && I.glints.every((g) => g.some((x) => x.visible)),
+      `head ${(standing - head.y).toFixed(2)} lower; points ${b.map((x) => (x.tip.y - head.y).toFixed(2)).join(', ')} over it`
+    );
     const calm = fresh();
     run(calm, 'sway', 1);
     check('mantis: (its wings are folded away the rest of the time)', inside(calm).fans.every((f) => !f.visible));
@@ -531,10 +661,21 @@ const at = new THREE.Vector3(0, 0, 0);
       top = Math.max(top, I.rig.position.y);
       if (Math.abs(t - MANTIS.leapTime / 2) < DT) feetUp = Math.min(...feet(m).map((f) => f.y));
     });
-    check('mantis: it leaps well clear of the floor, legs and all', top > MANTIS.leapHeight * 0.9 && feetUp > 0.4, `${top.toFixed(2)} up, lowest foot ${feetUp.toFixed(2)}`);
+    check(
+      'mantis: it leaps well clear of the floor, legs and all',
+      top > MANTIS.leapHeight * 0.9
+        && feetUp > 0.4,
+      `${top.toFixed(2)} up, lowest foot ${feetUp.toFixed(2)}`
+    );
     run(m, 'stuck', 0.5);
     const stuck = m.blades();
-    check('mantis: it comes down with both scythes driven into the floor in front of it', stuck.every((x) => x.tip.y < 0.05 && x.tip.y > -0.16 && x.tip.z > 0.6) && I.rig.position.y < 0.02 && feet(m).every((f) => f.y < 0.02), `points ${stuck.map((x) => x.tip.y.toFixed(2)).join(', ')} up, ${stuck.map((x) => x.tip.z.toFixed(2)).join(', ')} ahead`);
+    check(
+      'mantis: it comes down with both scythes driven into the floor in front of it',
+      stuck.every((x) => x.tip.y < 0.05 && x.tip.y > -0.16 && x.tip.z > 0.6)
+        && I.rig.position.y < 0.02
+        && feet(m).every((f) => f.y < 0.02),
+      `points ${stuck.map((x) => x.tip.y.toFixed(2)).join(', ')} up, ${stuck.map((x) => x.tip.z.toFixed(2)).join(', ')} ahead`
+    );
   }
   {
     const m = fresh();
@@ -543,7 +684,12 @@ const at = new THREE.Vector3(0, 0, 0);
     run(m, 'slash', 0.08);
     run(m, 'reel', 1);
     const [r, l] = m.blades();
-    check('mantis: its cut turned, its arms are thrown wide open', l.wrist.x - r.wrist.x > 1.0 && l.tip.x - r.tip.x > 1.0, `wrists ${(l.wrist.x - r.wrist.x).toFixed(2)} apart`);
+    check(
+      'mantis: its cut turned, its arms are thrown wide open',
+      l.wrist.x - r.wrist.x > 1.0
+        && l.tip.x - r.tip.x > 1.0,
+      `wrists ${(l.wrist.x - r.wrist.x).toFixed(2)} apart`
+    );
     run(m, 'dead', 1.1);
     const box = measure(inside(m).rig).box;
     check('mantis: dead, it lies on the floor, nothing of it under it', box.max.y < 0.85 && box.min.y > -0.04, size(box));
@@ -668,9 +814,23 @@ const at = new THREE.Vector3(0, 0, 0);
     if (!r.finite || r.meshes < 50) sound = false;
     tall = Math.max(tall, r.box.max.y - r.box.min.y);
   }
-  check('stag: it builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && tall > 1.6 && tall < 3.6, `tallest ${tall.toFixed(2)} with its hammer up`);
-  check('stag: in everything it does, and on the way into it, both its hands are on the hammer\'s shaft', loose.length === 0, loose.join(' | ') || `${MOVES.length} moves, every frame`);
-  check('stag: and the hammer passes clear of its own head, antlers, body, wing cases and legs', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
+  check(
+    'stag: it builds, and every pose is whole (no part missing, unpainted or gone bad)',
+    sound
+      && tall > 1.6
+      && tall < 3.6,
+    `tallest ${tall.toFixed(2)} with its hammer up`
+  );
+  check(
+    'stag: in everything it does, and on the way into it, both its hands are on the hammer\'s shaft',
+    loose.length === 0,
+    loose.join(' | ') || `${MOVES.length} moves, every frame`
+  );
+  check(
+    'stag: and the hammer passes clear of its own head, antlers, body, wing cases and legs',
+    bad.length === 0,
+    bad.join(' | ') || `${MOVES.length} moves, every frame`
+  );
   check('stag: the hammer\'s head rests on the floor, never in it; and its feet are on the floor', sunk.length === 0, sunk.join(' | '));
 
   {
@@ -678,7 +838,15 @@ const at = new THREE.Vector3(0, 0, 0);
     run(m, 'idle', 1.5);
     const h = m.hammerParts();
     const top = inside(m).head.getWorldPosition(new THREE.Vector3());
-    check('stag: at its post it stands taller than the knight, leaning on its hammer: both hands on the end of the shaft, the head on the floor in front', top.y > 1.3 && Math.abs(h.head.y - H.headHalf) < 0.03 && h.head.z > 0.9 && h.grips.every((g) => g.y > 0.9) && Math.abs(h.head.x) < 0.1, `its head ${top.y.toFixed(2)} up; the hammer's ${h.head.z.toFixed(2)} out in front`);
+    check(
+      'stag: at its post it stands taller than the knight, leaning on its hammer: both hands on the end of the shaft, the head on the floor in front',
+      top.y > 1.3
+        && Math.abs(h.head.y - H.headHalf) < 0.03
+        && h.head.z > 0.9
+        && h.grips.every((g) => g.y > 0.9)
+        && Math.abs(h.head.x) < 0.1,
+      `its head ${top.y.toFixed(2)} up; the hammer's ${h.head.z.toFixed(2)} out in front`
+    );
     // Walking: heavy steps, each foot planted between them.
     const pos = new THREE.Vector3();
     let lifted = 0;
@@ -695,7 +863,13 @@ const at = new THREE.Vector3(0, 0, 0);
       });
       last = now;
     }
-    check('stag: walking, its feet step and do not slide', lifted > 0.1 && slid < 0.01 && inside(m).walker.feet().every((f) => Math.abs(f.z - pos.z) < 0.9), `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`);
+    check(
+      'stag: walking, its feet step and do not slide',
+      lifted > 0.1
+        && slid < 0.01
+        && inside(m).walker.feet().every((f) => Math.abs(f.z - pos.z) < 0.9),
+      `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}`
+    );
   }
   {
     const m = fresh();
@@ -706,7 +880,14 @@ const at = new THREE.Vector3(0, 0, 0);
     const h = m.hammerParts();
     const top = I.head.getWorldPosition(new THREE.Vector3());
     const hot = I.coreMat.color.r + I.coreMat.color.g;
-    check('stag: before the slam the hammer is right up over its head and behind it, white-hot, with a red glint on it', h.head.y > top.y + 0.7 && h.head.z < -0.6 && hot > cold + 0.6 && I.glints.some((g) => g.visible), `the hammer's head ${(h.head.y - top.y).toFixed(2)} over its own and ${(-h.head.z).toFixed(2)} behind`);
+    check(
+      'stag: before the slam the hammer is right up over its head and behind it, white-hot, with a red glint on it',
+      h.head.y > top.y + 0.7
+        && h.head.z < -0.6
+        && hot > cold + 0.6
+        && I.glints.some((g) => g.visible),
+      `the hammer's head ${(h.head.y - top.y).toFixed(2)} over its own and ${(-h.head.z).toFixed(2)} behind`
+    );
     // It comes over the top: at no time during the swing is the hammer's head lower than its hands until it is out in front.
     let overTop = true;
     let highest = 0;
@@ -719,10 +900,24 @@ const at = new THREE.Vector3(0, 0, 0);
     const down = m.hammerParts();
     // The blow lands on a rat whose middle is this far off at most.
     const far = STAG.radius + STAG.slamReach + 0.3;
-    check('stag: the slam comes over the top and lands on the floor in front of it, where the blow lands', overTop && highest > 2.4 && Math.abs(down.head.y - H.headHalf) < 0.03 && Math.abs(down.head.x) < 0.15 && down.head.z > far - 0.5 && down.head.z < far + 0.25, `the hammer lands ${down.head.z.toFixed(2)} out; the blow reaches a rat ${far.toFixed(2)} off`);
+    check(
+      'stag: the slam comes over the top and lands on the floor in front of it, where the blow lands',
+      overTop
+        && highest > 2.4
+        && Math.abs(down.head.y - H.headHalf) < 0.03
+        && Math.abs(down.head.x) < 0.15
+        && down.head.z > far - 0.5
+        && down.head.z < far + 0.25,
+      `the hammer lands ${down.head.z.toFixed(2)} out; the blow reaches a rat ${far.toFixed(2)} off`
+    );
     const ringOn = I.ring.visible;
     run(m, 'stuck', 0.6);
-    check('stag: a ring runs out over the floor from where it lands, and is gone again', ringOn && !I.ring.visible && Math.hypot(I.ring.position.x - 0, I.ring.position.z - down.head.z) < 0.3);
+    check(
+      'stag: a ring runs out over the floor from where it lands, and is gone again',
+      ringOn
+        && !I.ring.visible
+        && Math.hypot(I.ring.position.x - 0, I.ring.position.z - down.head.z) < 0.3
+    );
   }
   {
     const m = fresh();
@@ -744,7 +939,18 @@ const at = new THREE.Vector3(0, 0, 0);
     });
     const out = m.hammerParts().head;
     const reach = STAG.radius + STAG.sweepReach + 0.3;
-    check('stag: the sweep is drawn back on its right and swung level across its whole front to its left, at the height of the knight', back.x < -0.9 && back.z < 0.5 && out.x > 0.9 && front > 1.2 && lowest > 0.3 && highest < 0.85 && furthest < reach + 0.1 && furthest > reach - 0.6, `from ${back.x.toFixed(2)} to ${out.x.toFixed(2)} across, ${lowest.toFixed(2)} to ${highest.toFixed(2)} up, ${nearest.toFixed(2)} to ${furthest.toFixed(2)} out (the blow reaches ${reach.toFixed(2)})`);
+    check(
+      'stag: the sweep is drawn back on its right and swung level across its whole front to its left, at the height of the knight',
+      back.x < -0.9
+        && back.z < 0.5
+        && out.x > 0.9
+        && front > 1.2
+        && lowest > 0.3
+        && highest < 0.85
+        && furthest < reach + 0.1
+        && furthest > reach - 0.6,
+      `from ${back.x.toFixed(2)} to ${out.x.toFixed(2)} across, ${lowest.toFixed(2)} to ${highest.toFixed(2)} up, ${nearest.toFixed(2)} to ${furthest.toFixed(2)} out (the blow reaches ${reach.toFixed(2)})`
+    );
   }
   {
     const m = fresh();
@@ -759,18 +965,46 @@ const at = new THREE.Vector3(0, 0, 0);
     const ring = I.ring.visible && Math.hypot(I.ring.position.x, I.ring.position.z) < 0.01;
     run(m, 'settle', 0.12);
     const dropped = I.body.position.y;
-    check('stag: before a stomp it rears up and its wing cases lift, showing the heat under them; then its weight drops and a ring runs out from under it', shut && flared && reared > standing + 0.05 && dropped < standing - 0.05 && ring, `up ${(reared - standing).toFixed(2)}, then down ${(standing - dropped).toFixed(2)}`);
+    check(
+      'stag: before a stomp it rears up and its wing cases lift, showing the heat under them; then its weight drops and a ring runs out from under it',
+      shut
+        && flared
+        && reared > standing + 0.05
+        && dropped < standing - 0.05
+        && ring,
+      `up ${(reared - standing).toFixed(2)}, then down ${(standing - dropped).toFixed(2)}`
+    );
     run(m, 'kneel', 1);
     const h = m.hammerParts();
-    check('stag: its poise broken, it is down low over its hammer, the head of it on the floor', I.body.position.y < standing - 0.2 && Math.abs(h.head.y - H.headHalf) < 0.03 && m.reachShort.every((x) => x < 0.03), `${(standing - I.body.position.y).toFixed(2)} lower`);
+    check(
+      'stag: its poise broken, it is down low over its hammer, the head of it on the floor',
+      I.body.position.y < standing - 0.2
+        && Math.abs(h.head.y - H.headHalf) < 0.03
+        && m.reachShort.every((x) => x < 0.03),
+      `${(standing - I.body.position.y).toFixed(2)} lower`
+    );
     run(m, 'dead', 1.4);
     const box = measure(I.rig).box;
     const d = m.hammerParts();
-    check('stag: dead, it lies on its back with its legs in the air and the hammer on the floor beside it, nothing under the floor', box.min.y > -0.06 && box.max.y < 1.6 && I.walker.feet().every((f) => f.y > 0.5) && Math.abs(d.head.y - H.headHalf) < 0.03 && Math.abs(d.butt.y - H.headHalf) < 0.05 && d.hands.every((hand, i) => hand.distanceTo(d.grips[i]) > 0.4), size(box));
+    check(
+      'stag: dead, it lies on its back with its legs in the air and the hammer on the floor beside it, nothing under the floor',
+      box.min.y > -0.06
+        && box.max.y < 1.6
+        && I.walker.feet().every((f) => f.y > 0.5)
+        && Math.abs(d.head.y - H.headHalf) < 0.03
+        && Math.abs(d.butt.y - H.headHalf) < 0.05
+        && d.hands.every((hand, i) => hand.distanceTo(d.grips[i]) > 0.4),
+      size(box)
+    );
     run(m, 'dead', 2.4);
     check('stag: and then shrivels away to nothing', m.root.scale.x < 0.01);
     run(m, 'idle', 1.5);
-    check('stag: (and is whole again, hands on its hammer, if the level brings it back)', m.root.scale.x > 0.98 && m.reachShort.every((x) => x < 0.03) && through(m).length === 0);
+    check(
+      'stag: (and is whole again, hands on its hammer, if the level brings it back)',
+      m.root.scale.x > 0.98
+        && m.reachShort.every((x) => x < 0.03)
+        && through(m).length === 0
+    );
   }
 }
 
@@ -794,7 +1028,13 @@ const at = new THREE.Vector3(0, 0, 0);
       top = Math.max(top, r.box.max.y);
     }
     check(`${kind}: idling, talking and shrugging, he holds together`, ok);
-    check(`${kind}: he stands on the floor and is the height he was`, low > -0.08 && top > tall[kind]![0] && top < tall[kind]![1], `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`);
+    check(
+      `${kind}: he stands on the floor and is the height he was`,
+      low > -0.08
+        && top > tall[kind]![0]
+        && top < tall[kind]![1],
+      `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`
+    );
     check(`${kind}: the rat can still talk to him from the same distance`, n.inRange(1, 0, 1.5) && !n.inRange(3, 0, 0));
   }
   // Pip keeps hold of his lantern pole, and his free paw moves when he talks.
@@ -806,7 +1046,11 @@ const at = new THREE.Vector3(0, 0, 0);
   pip.root.updateMatrixWorld(true);
   const paw = hold.localToWorld(new THREE.Vector3(0, -0.26, 0.01));
   const local = pip.root.worldToLocal(paw.clone());
-  check('Pip: his right paw is on the lantern pole', Math.hypot(local.x - 0.38, local.z - 0.2) < 0.09, `${local.x.toFixed(2)}, ${local.z.toFixed(2)} (pole at 0.38, 0.20)`);
+  check(
+    'Pip: his right paw is on the lantern pole',
+    Math.hypot(local.x - 0.38, local.z - 0.2) < 0.09,
+    `${local.x.toFixed(2)}, ${local.z.toFixed(2)} (pole at 0.38, 0.20)`
+  );
   const before = free.rotation.x;
   let moved = 0;
   for (let i = 0; i < 90; i++) {
@@ -815,7 +1059,15 @@ const at = new THREE.Vector3(0, 0, 0);
   }
   check('Pip: his left paw waves about when he talks', moved > 0.3, moved.toFixed(2));
   // Wren and Mort have looks of their own, picked by name (levels write it in any case).
-  check('looks go by name: Wren is not Finch, Mort is not Pip', lookOf('bird', 'WREN') === 'wren' && lookOf('bird', 'Finch') === 'finch' && lookOf('mouse', 'MELLOW MORT') === 'mort' && lookOf('mouse', 'Pip') === 'pip' && lookOf(undefined, 'Somebody') === 'pip' && lookOf('villain', 'Mort') === 'grimsqueak');
+  check(
+    'looks go by name: Wren is not Finch, Mort is not Pip',
+    lookOf('bird', 'WREN') === 'wren'
+      && lookOf('bird', 'Finch') === 'finch'
+      && lookOf('mouse', 'MELLOW MORT') === 'mort'
+      && lookOf('mouse', 'Pip') === 'pip'
+      && lookOf(undefined, 'Somebody') === 'pip'
+      && lookOf('villain', 'Mort') === 'grimsqueak'
+  );
   const colours = (n: Npc): Set<number> => {
     const set = new Set<number>();
     n.root.traverse((o) => {
@@ -842,7 +1094,14 @@ const at = new THREE.Vector3(0, 0, 0);
       low = Math.min(low, r.box.min.y);
       top = Math.max(top, r.box.max.y);
     }
-    check(`${name}: idling, talking and shrugging, he holds together and stands on the floor`, ok && low > -0.08 && top > lo && top < hi, `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`);
+    check(
+      `${name}: idling, talking and shrugging, he holds together and stands on the floor`,
+      ok
+        && low > -0.08
+        && top > lo
+        && top < hi,
+      `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`
+    );
     const mix = shared(colours(n), colours(o));
     check(`${name}: he does not wear ${other}'s colours`, mix < 0.35, `${Math.round(mix * 100)}% shared`);
     check(`${name}: the rat can still talk to him from the same distance`, n.inRange(1, 0, 1.5) && !n.inRange(3, 0, 0));
@@ -916,7 +1175,12 @@ const at = new THREE.Vector3(0, 0, 0);
     settle(m, { gesture: 'rest', low: 1 });
     const p = parts(m);
     const top = measure(m.root).box.max.y;
-    check('Grimsqueak: standing, he is more than twice the knight\'s height, and thin', Math.abs(top - GRIM_HEIGHT) < 0.15 && top > 2 * 1.1, `${top.toFixed(2)} tall`);
+    check(
+      'Grimsqueak: standing, he is more than twice the knight\'s height, and thin',
+      Math.abs(top - GRIM_HEIGHT) < 0.15
+        && top > 2 * 1.1,
+      `${top.toFixed(2)} tall`
+    );
     const left = p.arms.find((a) => a.side < 0)!;
     const gap = world(left.hand, 0, -0.08, 0).distanceTo(p.shard.getWorldPosition(new THREE.Vector3()));
     check('Grimsqueak: at rest, one paw is curled over the shard in his chest', gap < 0.24, `${gap.toFixed(2)} from it`);
@@ -929,18 +1193,35 @@ const at = new THREE.Vector3(0, 0, 0);
       return { row: w.row, out: Math.abs(tip.x - root.x), drop: root.y - tip.y };
     });
     const long = tips.filter((w) => w.row === 0);
-    check('Grimsqueak: four whiskers; the long pair sweeps out and hangs past his chin, like a moustache', tips.length === 4 && long.every((w) => w.out > 0.15 && w.drop > 0.35 && w.drop < 0.65) && tips.filter((w) => w.row === 1).every((w) => w.drop > 0.08 && w.drop < long[0].drop), tips.map((w) => `out ${w.out.toFixed(2)} down ${w.drop.toFixed(2)}`).join('; '));
+    check(
+      'Grimsqueak: four whiskers; the long pair sweeps out and hangs past his chin, like a moustache',
+      tips.length === 4
+        && long.every((w) => w.out > 0.15 && w.drop > 0.35 && w.drop < 0.65)
+        && tips.filter((w) => w.row === 1).every((w) => w.drop > 0.08 && w.drop < long[0].drop),
+      tips.map((w) => `out ${w.out.toFixed(2)} down ${w.drop.toFixed(2)}`).join('; ')
+    );
     check('Grimsqueak: no ball of light in his claw when he is at rest', !p.orb.visible);
     settle(m, { gesture: 'conjure' }, 90);
     const orb = p.orb.getWorldPosition(new THREE.Vector3());
-    check('Grimsqueak: making the orb, a ball of light grows in the claw he holds up over his head', p.orb.visible && p.orb.scale.x > 0.7 && orb.y > world(p.head).y + 0.3, `orb at ${orb.y.toFixed(2)}, head at ${world(p.head).y.toFixed(2)}`);
+    check(
+      'Grimsqueak: making the orb, a ball of light grows in the claw he holds up over his head',
+      p.orb.visible
+        && p.orb.scale.x > 0.7
+        && orb.y > world(p.head).y + 0.3,
+      `orb at ${orb.y.toFixed(2)}, head at ${world(p.head).y.toFixed(2)}`
+    );
   }
   // Each tell of the fight has its own shape: where his claws are tells the attacks apart.
   const R = (g: string): THREE.Vector3 => hands[g][1];
   const L = (g: string): THREE.Vector3 => hands[g][0];
   const shoulderY = GRIM_FIGHT_FLOAT + (0.82 + 0.6) * 0.94; // how high he floats, then his waist, then his shoulder
   check('Grimsqueak: the volley has both claws out in front of him', R('cast').z > 0.4 && L('cast').z > 0.4);
-  check('Grimsqueak: the orb has one claw high over his head and the other on his chest', R('conjure').y > shoulders.conjure[1] + 0.4 && L('conjure').y < shoulders.conjure[0], `right ${R('conjure').y.toFixed(3)} left ${L('conjure').y.toFixed(3)} shoulders ${shoulders.conjure.map((y) => y.toFixed(3)).join(' ')}`);
+  check(
+    'Grimsqueak: the orb has one claw high over his head and the other on his chest',
+    R('conjure').y > shoulders.conjure[1] + 0.4
+      && L('conjure').y < shoulders.conjure[0],
+    `right ${R('conjure').y.toFixed(3)} left ${L('conjure').y.toFixed(3)} shoulders ${shoulders.conjure.map((y) => y.toFixed(3)).join(' ')}`
+  );
   check('Grimsqueak: rearing for the swoop, his arms are spread wide like wings', R('rear').x > 0.75 && L('rear').x < -0.75);
   check('Grimsqueak: diving, they are flung back behind him', R('sweep').z < -0.3 && L('sweep').z < -0.3);
   check('Grimsqueak: rising for the slam, both claws are over his head', R('raise').y > shoulderY + 0.4 && L('raise').y > shoulderY + 0.4);
@@ -957,7 +1238,14 @@ const at = new THREE.Vector3(0, 0, 0);
   n.rest();
   for (let i = 0; i < 120; i++) n.update(DT, 0, 0, 3, false);
   const resting = measure(n.root).box;
-  check('Grimsqueak: in a level he floats; left at rest by the ending he stands on the ground', floating.min.y > 0.4 && resting.min.y > -0.06 && resting.min.y < 0.1 && resting.max.y < floating.max.y - 0.4, `${floating.min.y.toFixed(2)} -> ${resting.min.y.toFixed(2)}`);
+  check(
+    'Grimsqueak: in a level he floats; left at rest by the ending he stands on the ground',
+    floating.min.y > 0.4
+      && resting.min.y > -0.06
+      && resting.min.y < 0.1
+      && resting.max.y < floating.max.y - 0.4,
+    `${floating.min.y.toFixed(2)} -> ${resting.min.y.toFixed(2)}`
+  );
 }
 
 // ---- The hero on a ledge: played by the real controller, his paws are on the edge the whole time he hangs and hauls ----
@@ -989,7 +1277,15 @@ const at = new THREE.Vector3(0, 0, 0);
   for (let i = 0; i < 5; i++) tick(input({}));
   tick(input({ move: fwd, jumpPressed: true, jumpHeld: true }));
   for (let i = 0; i < 200 && p.state !== 'hang'; i++) tick(input({ move: fwd.clone().multiplyScalar(0.5), jumpHeld: true }));
-  check('hero: he catches the edge of a block, and the game says where it is (on the lip, just past the face)', p.state === 'hang' && !!p.ledge && Math.abs(p.ledge.y - 1.05) < 0.01 && Math.abs(p.position.y + p.ledge.y - edge.y) < 0.01 && Math.abs(p.position.z + p.ledge.z - edge.z - 0.04) < 0.03, JSON.stringify(p.ledge));
+  check(
+    'hero: he catches the edge of a block, and the game says where it is (on the lip, just past the face)',
+    p.state === 'hang'
+      && !!p.ledge
+      && Math.abs(p.ledge.y - 1.05) < 0.01
+      && Math.abs(p.position.y + p.ledge.y - edge.y) < 0.01
+      && Math.abs(p.position.z + p.ledge.z - edge.z - 0.04) < 0.03,
+    JSON.stringify(p.ledge)
+  );
   let worstHang = 0;
   for (let i = 0; i < 90; i++) {
     tick(input({}));
@@ -1010,10 +1306,27 @@ const at = new THREE.Vector3(0, 0, 0);
       if (chest.y < edge.y - 0.1) sawLow = true;
     }
   }
-  check('hero: his paws stay on the edge for the first half of the pull-up, while he hauls his chest over it', worstClimb < 0.08, `furthest ${worstClimb.toFixed(3)}`);
-  check('hero: the pull-up takes long enough to see (about half a second), and starts from below the edge', frames * DT > 0.4 && frames * DT < 0.7 && sawLow, `${(frames * DT).toFixed(2)} s`);
+  check(
+    'hero: his paws stay on the edge for the first half of the pull-up, while he hauls his chest over it',
+    worstClimb < 0.08,
+    `furthest ${worstClimb.toFixed(3)}`
+  );
+  check(
+    'hero: the pull-up takes long enough to see (about half a second), and starts from below the edge',
+    frames * DT > 0.4
+      && frames * DT < 0.7
+      && sawLow,
+    `${(frames * DT).toFixed(2)} s`
+  );
   for (let i = 0; i < 40; i++) tick(input({}));
-  check('hero: on top, he stands on the block with his sword and shield in his paws again', p.grounded && Math.abs(p.position.y - 3) < 0.01 && p.ledge === null && parts.sword.visible && !parts.backSword.visible);
+  check(
+    'hero: on top, he stands on the block with his sword and shield in his paws again',
+    p.grounded
+      && Math.abs(p.position.y - 3) < 0.01
+      && p.ledge === null
+      && parts.sword.visible
+      && !parts.backSword.visible
+  );
 }
 
 // ---- The hero on a pillar: its capital overhangs the shaft, and he hangs from the capital's edge, not inside it ----
@@ -1079,13 +1392,30 @@ const at = new THREE.Vector3(0, 0, 0);
     }
     if (i === 30) seenAt = p.position.z;
   }
-  check('hero: on a pillar he hangs from the edge of its capital, his body hanging clear of the shaft by as much as the capital overhangs', p.state === 'hang' && Math.abs(seenAt - (FACE - LIP - r)) < 0.01 && !!p.ledge && Math.abs(p.position.z + p.ledge.z - (FACE - LIP + 0.04)) < 0.02, `he is ${(FACE - seenAt - r).toFixed(2)} out from the shaft (the capital overhangs ${LIP}); paws ${(p.position.z + (p.ledge?.z ?? 0) - (FACE - LIP)).toFixed(2)} in from its edge`);
-  check('hero: hanging there, no part of him is inside the capital', worstIn.points === 0, worstIn.points ? `${worstIn.points} points of him, up to ${worstIn.deepest.toFixed(2)} in` : 'none');
+  check(
+    'hero: on a pillar he hangs from the edge of its capital, his body hanging clear of the shaft by as much as the capital overhangs',
+    p.state === 'hang'
+      && Math.abs(seenAt - (FACE - LIP - r)) < 0.01
+      && !!p.ledge
+      && Math.abs(p.position.z + p.ledge.z - (FACE - LIP + 0.04)) < 0.02,
+    `he is ${(FACE - seenAt - r).toFixed(2)} out from the shaft (the capital overhangs ${LIP}); paws ${(p.position.z + (p.ledge?.z ?? 0) - (FACE - LIP)).toFixed(2)} in from its edge`
+  );
+  check(
+    'hero: hanging there, no part of him is inside the capital',
+    worstIn.points === 0,
+    worstIn.points ? `${worstIn.points} points of him, up to ${worstIn.deepest.toFixed(2)} in` : 'none'
+  );
   // (The same measure on a block that does not say it has a capital: he hangs flush, where a capital would be. This is what was wrong.)
   const flush = hangOn(false);
   for (let i = 0; i < 30; i++) flush.tick(input({}));
   const was = inCapital(flush.rat);
-  check('hero: (hung flush against the shaft, as he used to be, that measure finds his head and shoulders in it)', flush.p.state === 'hang' && was.points > 20 && was.deepest > 0.2, `${was.points} points, up to ${was.deepest.toFixed(2)} in`);
+  check(
+    'hero: (hung flush against the shaft, as he used to be, that measure finds his head and shoulders in it)',
+    flush.p.state === 'hang'
+      && was.points > 20
+      && was.deepest > 0.2,
+    `${was.points} points, up to ${was.deepest.toFixed(2)} in`
+  );
   // Up he goes: onto the top, at the same place as from a plain block.
   tick(input({ jumpPressed: true }));
   flush.tick(input({ jumpPressed: true }));
@@ -1093,7 +1423,14 @@ const at = new THREE.Vector3(0, 0, 0);
     tick(input({}));
     flush.tick(input({}));
   }
-  check('hero: he pulls himself up from the capital onto the pillar, to the same spot as from a plain block', p.grounded && Math.abs(p.position.y - TOP) < 0.01 && Math.abs(p.position.z - flush.p.position.z) < 0.01 && p.position.z > FACE + 0.3, `z ${p.position.z.toFixed(2)} (plain block: ${flush.p.position.z.toFixed(2)})`);
+  check(
+    'hero: he pulls himself up from the capital onto the pillar, to the same spot as from a plain block',
+    p.grounded
+      && Math.abs(p.position.y - TOP) < 0.01
+      && Math.abs(p.position.z - flush.p.position.z) < 0.01
+      && p.position.z > FACE + 0.3,
+    `z ${p.position.z.toFixed(2)} (plain block: ${flush.p.position.z.toFixed(2)})`
+  );
   // Let go, and he drops straight down from where he hung.
   const again = hangOn(true);
   for (let i = 0; i < 20; i++) again.tick(input({}));
@@ -1104,7 +1441,12 @@ const at = new THREE.Vector3(0, 0, 0);
   const room = buildChamber({ solids: [{ kind: 'floor', x0: -6, x1: 6, y0: -1, y1: 0, z0: -6, z1: 6 }, { kind: 'pillar', x0: -1, x1: 1, y0: 0, y1: 3, z0: -1, z1: 1 }, { kind: 'wall', x0: 3, x1: 4, y0: 0, y1: 3, z0: -1, z1: 1 }], pit: null, water: [] });
   const pillar = room.colliders.find((c) => Math.abs(c.max.y - 3) < 1e-6 && Math.abs(c.max.x - 1) < 1e-6);
   const wall = room.colliders.find((c) => Math.abs(c.max.x - 4) < 1e-6);
-  check('hero: in a built room, a pillar tells him how far its capital overhangs (and a plain wall has none)', pillar?.lip === PILLAR_LIP && wall !== undefined && wall.lip === undefined);
+  check(
+    'hero: in a built room, a pillar tells him how far its capital overhangs (and a plain wall has none)',
+    pillar?.lip === PILLAR_LIP
+      && wall !== undefined
+      && wall.lip === undefined
+  );
 }
 
 // ---- The hero, fallen: his tail lies on the floor (it used to hang down through it and be gone) ----
@@ -1116,7 +1458,13 @@ const at = new THREE.Vector3(0, 0, 0);
   const tail = (rat as unknown as { tailSegments: THREE.Object3D[] }).tailSegments.map((seg) => seg.getWorldPosition(new THREE.Vector3()));
   const end = tail[tail.length - 1];
   const low = Math.min(...tail.map((p) => p.y));
-  check('hero: fallen, his tail is laid out along the floor towards his feet', low > -0.03 && Math.max(...tail.map((p) => p.y)) < 0.12 && end.z > 0.3, `lowest ${low.toFixed(2)}; its end ${end.y.toFixed(2)} up, ${end.z.toFixed(2)} towards his feet`);
+  check(
+    'hero: fallen, his tail is laid out along the floor towards his feet',
+    low > -0.03
+      && Math.max(...tail.map((p) => p.y)) < 0.12
+      && end.z > 0.3,
+    `lowest ${low.toFixed(2)}; its end ${end.y.toFixed(2)} up, ${end.z.toFixed(2)} towards his feet`
+  );
 }
 
 // ---- The hero's plunge and wall moves: what is drawn matches what he is doing ----
@@ -1161,14 +1509,30 @@ const at = new THREE.Vector3(0, 0, 0);
       const up = blade(rat, () => tick({}, true));
       const sword = (rat as unknown as { sword: THREE.Object3D }).sword;
       const tip = sword.localToWorld(new THREE.Vector3(0, 0, 0.4)).y - p.position.y;
-      check('hero: winding up a plunge, the sword is raised over his head, blade up', p.plungeStage === 1 && up.y > 0.6 && tip > 1.25, `blade ${up.y.toFixed(2)} up, tip ${tip.toFixed(2)} above his feet`);
+      check(
+        'hero: winding up a plunge, the sword is raised over his head, blade up',
+        p.plungeStage === 1
+          && up.y > 0.6
+          && tip > 1.25,
+        `blade ${up.y.toFixed(2)} up, tip ${tip.toFixed(2)} above his feet`
+      );
     }
     for (let i = 0; i < 200 && p.plungeStage !== 2; i++) tick({});
     const dive = blade(rat, () => tick({}, true));
-    check('hero: diving in a plunge, the sword points straight down under him', p.plungeStage === 2 && dive.y < -0.9, `blade ${dive.x.toFixed(2)}, ${dive.y.toFixed(2)}, ${dive.z.toFixed(2)}`);
+    check(
+      'hero: diving in a plunge, the sword points straight down under him',
+      p.plungeStage === 2
+        && dive.y < -0.9,
+      `blade ${dive.x.toFixed(2)}, ${dive.y.toFixed(2)}, ${dive.z.toFixed(2)}`
+    );
     for (let i = 0; i < 200 && p.plungeStage !== 3; i++) tick({});
     const land = blade(rat, () => tick({}, true));
-    check('hero: landed, the sword stands point-down on the ground in front of him (it used to lie along the floor)', p.plungeStage === 3 && land.y < -0.85, `blade ${land.x.toFixed(2)}, ${land.y.toFixed(2)}, ${land.z.toFixed(2)}`);
+    check(
+      'hero: landed, the sword stands point-down on the ground in front of him (it used to lie along the floor)',
+      p.plungeStage === 3
+        && land.y < -0.85,
+      `blade ${land.x.toFixed(2)}, ${land.y.toFixed(2)}, ${land.z.toFixed(2)}`
+    );
   }
   {
     const { p, rat, tick } = make(true);
@@ -1181,14 +1545,27 @@ const at = new THREE.Vector3(0, 0, 0);
     }
     for (let k = 0; k < 4; k++) tick({ move: fwd, jumpHeld: true });
     const onWall = feet(rat);
-    check('hero: in the air against a wall he faces, the game says so and his feet come up onto it', braced && p.onWall && onWall.every((f) => f.z > p.position.z + 0.12 && f.y > p.position.y + 0.12), onWall.map((f) => `${(f.z - p.position.z).toFixed(2)} ahead, ${(f.y - p.position.y).toFixed(2)} up`).join('; '));
+    check(
+      'hero: in the air against a wall he faces, the game says so and his feet come up onto it',
+      braced
+        && p.onWall
+        && onWall.every((f) => f.z > p.position.z + 0.12 && f.y > p.position.y + 0.12),
+      onWall.map((f) => `${(f.z - p.position.z).toFixed(2)} ahead, ${(f.y - p.position.y).toFixed(2)} up`).join('; ')
+    );
     tick({ move: fwd, jumpPressed: true, jumpHeld: true });
     const kicked = p.kickProgress >= 0;
     for (let k = 0; k < 4; k++) tick({ jumpHeld: true });
     const pushing = feet(rat);
     // He has turned to face away from the wall: his legs are driven out behind him, towards it.
     const behind = pushing.every((f) => (f.z - p.position.z) * Math.cos(p.facing) + (f.x - p.position.x) * Math.sin(p.facing) < -0.08);
-    check('hero: kicking off it, he turns away and his legs drive out behind him towards the wall', kicked && !p.onWall && Math.cos(p.facing) < -0.9 && behind, pushing.map((f) => (f.z - p.position.z).toFixed(2)).join(', '));
+    check(
+      'hero: kicking off it, he turns away and his legs drive out behind him towards the wall',
+      kicked
+        && !p.onWall
+        && Math.cos(p.facing) < -0.9
+        && behind,
+      pushing.map((f) => (f.z - p.position.z).toFixed(2)).join(', ')
+    );
     for (let k = 0; k < 30; k++) tick({ jumpHeld: true });
     check('hero: the push is over in a quarter of a second', p.kickProgress === -1);
   }
@@ -1333,7 +1710,11 @@ const at = new THREE.Vector3(0, 0, 0);
     wide = Math.max(wide, r.box.max.x - r.box.min.x);
   }
   check('brood: she builds, and every pose is whole (no part missing, unpainted or gone bad)', sound && wide > 4 && wide < 8, `widest ${wide.toFixed(2)}`);
-  check('brood: in everything she does, and on the way into it, each foreleg reaches to where its spike is put', loose.length === 0, loose.join(' | ') || `${MOVES.length} moves, every frame`);
+  check(
+    'brood: in everything she does, and on the way into it, each foreleg reaches to where its spike is put',
+    loose.length === 0,
+    loose.join(' | ') || `${MOVES.length} moves, every frame`
+  );
   check('brood: and neither foreleg passes through her own head, chest or abdomen', bad.length === 0, bad.join(' | ') || `${MOVES.length} moves, every frame`);
   check('brood: nothing of her goes under the floor: spikes, elbows, feet, knees, belly', sunk.length === 0, sunk.join(' | '));
   {
@@ -1342,10 +1723,19 @@ const at = new THREE.Vector3(0, 0, 0);
     run(m, 'idle', 1.5);
     const lurk = m.parts();
     const low = I.body.position.y;
-    check('brood: lurking, she is low with both spikes resting on the floor in front of her', lurk.tips.every((t) => t.y < 0.08 && t.z > 1.6), lurk.tips.map((t) => `${t.y.toFixed(2)} up, ${t.z.toFixed(2)} ahead`).join('; '));
+    check(
+      'brood: lurking, she is low with both spikes resting on the floor in front of her',
+      lurk.tips.every((t) => t.y < 0.08 && t.z > 1.6),
+      lurk.tips.map((t) => `${t.y.toFixed(2)} up, ${t.z.toFixed(2)} ahead`).join('; ')
+    );
     let highest = 0;
     run(m, 'roar', B.roar, {}, () => (highest = Math.max(highest, ...m.parts().tips.map((t) => t.y))));
-    check('brood: seeing him she rears and throws both forelegs up and wide', highest > 2.8 && I.body.position.y > low + 0.2, `spikes ${highest.toFixed(2)} up`);
+    check(
+      'brood: seeing him she rears and throws both forelegs up and wide',
+      highest > 2.8
+        && I.body.position.y > low + 0.2,
+      `spikes ${highest.toFixed(2)} up`
+    );
     // Walking: feet step, in threes, and do not slide.
     const pos = new THREE.Vector3();
     let lifted = 0;
@@ -1368,7 +1758,14 @@ const at = new THREE.Vector3(0, 0, 0);
       prev = feet;
       wasDown = down;
     }
-    check('brood: walking, her six feet step in threes and do not slide', lifted > 0.2 && slid < 0.012 && most >= 2 && most <= 3, `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}, up to ${most} off the floor at once`);
+    check(
+      'brood: walking, her six feet step in threes and do not slide',
+      lifted > 0.2
+        && slid < 0.012
+        && most >= 2
+        && most <= 3,
+      `lifts ${lifted.toFixed(2)}, a planted foot slides ${slid.toFixed(3)}, up to ${most} off the floor at once`
+    );
     m.setTransform(at, 0);
   }
   for (const arm of [0, 1] as const) {
@@ -1445,11 +1842,22 @@ const at = new THREE.Vector3(0, 0, 0);
     for (const [st, secs, x] of wake) run(m, st, secs, x);
     const lit = I.eyeMat.color.r;
     run(m, 'kneel', B.kneel);
-    check('brood: her legs gone from under her, she is flat with her spikes limp on the floor and her eyes dim', I.body.position.y < 0.6 && m.parts().tips.every((t) => t.y < 0.1) && I.eyeMat.color.r < lit - 0.2);
+    check(
+      'brood: her legs gone from under her, she is flat with her spikes limp on the floor and her eyes dim',
+      I.body.position.y < 0.6
+        && m.parts().tips.every((t) => t.y < 0.1)
+        && I.eyeMat.color.r < lit - 0.2
+    );
     run(m, 'dead', 2);
     const box = measure(I.rig).box;
     const P = m.parts();
-    check('brood: dead, she is curled up small: every leg drawn in, nothing under the floor', box.min.y > -0.03 && box.max.x - box.min.x < 3.6 && P.feet.every((f) => Math.hypot(f.x, f.z) < 1.5), `${size(box)}`);
+    check(
+      'brood: dead, she is curled up small: every leg drawn in, nothing under the floor',
+      box.min.y > -0.03
+        && box.max.x - box.min.x < 3.6
+        && P.feet.every((f) => Math.hypot(f.x, f.z) < 1.5),
+      `${size(box)}`
+    );
     run(m, 'dead', 3.2);
     check('brood: and then shrivels away to nothing', m.root.scale.x < 0.01);
   }
@@ -1534,11 +1942,30 @@ const at = new THREE.Vector3(0, 0, 0);
     fight(40, (_w, t) => ({ x: Math.sin(t * 0.25) * 9, z: Math.cos(t * 0.25) * 9 }), (w, m) => { if (w.state === when && !dead) { while (w.alive) w.takeHit(4, 0, 0); } if (!w.alive) dead += DT; if (dead < 2.3) look(w, m); });
   }
   const all: WyrmState[] = ['idle', 'roar', 'prowl', 'biteWind', 'bite', 'recover', 'reel', 'chargeWind', 'charge', 'stunned', 'skid', 'whipWind', 'whip', 'settle', 'coil', 'coilWind', 'squeeze', 'spent', 'dead'];
-  check('wyrm: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((s) => seen.has(s)), `${frames} frames; not seen: ${all.filter((s) => !seen.has(s)).join(', ') || 'none'}`);
-  check('wyrm: its head and every segment are drawn exactly where the rules have them: what can be hit is what is seen', offPlace < 1e-6, `furthest off ${offPlace.toExponential(1)}`);
+  check(
+    'wyrm: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)',
+    sound
+      && all.every((s) => seen.has(s)),
+    `${frames} frames; not seen: ${all.filter((s) => !seen.has(s)).join(', ') || 'none'}`
+  );
+  check(
+    'wyrm: its head and every segment are drawn exactly where the rules have them: what can be hit is what is seen',
+    offPlace < 1e-6,
+    `furthest off ${offPlace.toExponential(1)}`
+  );
   check('wyrm: every leg reaches its foot', short < 0.03, `worst ${short.toFixed(3)} short`);
-  check('wyrm: its head never crosses its own body, so no part of it lies through another', crossed < 0.2, `the most two parts overlap is ${crossed.toFixed(2)} (${crossedIn})`);
-  check('wyrm: nothing of it goes under the floor: body, head, feet, fangs, feelers, tail spurs', lowBody >= -0.03 && lowFoot >= -0.03 && lowTip >= -0.02, `body ${lowBody.toFixed(2)}, feet ${lowFoot.toFixed(2)}, tips ${lowTip.toFixed(2)}${sunkIn.size ? `; in: ${[...sunkIn].slice(0, 6).join(', ')}` : ''}`);
+  check(
+    'wyrm: its head never crosses its own body, so no part of it lies through another',
+    crossed < 0.2,
+    `the most two parts overlap is ${crossed.toFixed(2)} (${crossedIn})`
+  );
+  check(
+    'wyrm: nothing of it goes under the floor: body, head, feet, fangs, feelers, tail spurs',
+    lowBody >= -0.03
+      && lowFoot >= -0.03
+      && lowTip >= -0.02,
+    `body ${lowBody.toFixed(2)}, feet ${lowFoot.toFixed(2)}, tips ${lowTip.toFixed(2)}${sunkIn.size ? `; in: ${[...sunkIn].slice(0, 6).join(', ')}` : ''}`
+  );
   {
     const { w, m } = fight(1.5, () => ({ x: 0, z: 30 }), () => undefined);
     const I = inside(m);
@@ -1548,11 +1975,24 @@ const at = new THREE.Vector3(0, 0, 0);
     });
     // (It lies curled, so a segment's box is a little wider than the segment: the comparison is of its smaller half-width.)
     const fits = wide.every((s) => Math.min(s.drawn, s.z) >= s.solid - 0.02 && Math.min(s.drawn, s.z) <= s.solid + 0.14);
-    check('wyrm: each segment is drawn as thick as it is solid, tapering to its tail', fits && wide[12].solid < wide[0].solid * 0.8, wide.filter((_s, i) => i % 4 === 0).map((s) => `${Math.min(s.drawn, s.z).toFixed(2)}/${s.solid.toFixed(2)}`).join(' '));
+    check(
+      'wyrm: each segment is drawn as thick as it is solid, tapering to its tail',
+      fits
+        && wide[12].solid < wide[0].solid * 0.8,
+      wide.filter((_s, i) => i % 4 === 0).map((s) => `${Math.min(s.drawn, s.z).toFixed(2)}/${s.solid.toFixed(2)}`).join(' ')
+    );
     const gaps = w.parts.map((p, i) => Math.hypot(p.x - (i ? w.parts[i - 1].x : w.x), p.z - (i ? w.parts[i - 1].z : w.z)));
-    check('wyrm: asleep it lies curled, its segments touching in a row with no gap a rat could walk through', gaps.every((g, i) => g < (i ? w.parts[i - 1].r : w.radius) + w.parts[i].r + 2 * TUNING.rat.radius - 0.05), `gaps ${Math.min(...gaps).toFixed(2)}..${Math.max(...gaps).toFixed(2)}`);
+    check(
+      'wyrm: asleep it lies curled, its segments touching in a row with no gap a rat could walk through',
+      gaps.every((g, i) => g < (i ? w.parts[i - 1].r : w.radius) + w.parts[i].r + 2 * TUNING.rat.radius - 0.05),
+      `gaps ${Math.min(...gaps).toFixed(2)}..${Math.max(...gaps).toFixed(2)}`
+    );
     const P = m.parts();
-    check('wyrm: lying still its legs are down, a pair to a segment, feet on the floor either side of it', P.feet.length === W.segments * 2 && P.feet.every((f) => f.y > -0.03 && f.y < 0.1));
+    check(
+      'wyrm: lying still its legs are down, a pair to a segment, feet on the floor either side of it',
+      P.feet.length === W.segments * 2
+        && P.feet.every((f) => f.y > -0.03 && f.y < 0.1)
+    );
   }
   {
     // What each move looks like.
@@ -1577,9 +2017,27 @@ const at = new THREE.Vector3(0, 0, 0);
       if (w.state === 'prowl' && w.stateTime > 1 && c.g > c.r) greenProwl = true;
       if (w.state === 'stunned' && w.stateTime > 1) { rolled = Math.max(rolled, Math.abs(I.head.rotation.z)); stunnedY = Math.min(stunnedY, measure(I.head).box.min.y); }
     });
-    check('wyrm: seeing him it rears right up; before a bite its head goes up over him with its fangs wide, and they shut as it snaps', rearedRoar > 1.6 && rearedBite > 1.3 && fangsWide > fangsShut + 0.5, `roar ${rearedRoar.toFixed(2)}, bite ${rearedBite.toFixed(2)} up; fangs ${fangsWide.toFixed(2)} apart, then ${fangsShut.toFixed(2)}`);
-    check('wyrm: charging, its head is down on the floor and its eyes are red (no shield stops it); prowling they are green', lowCharge < 0.7 && redCharge && greenProwl, `head ${lowCharge.toFixed(2)} up`);
-    check('wyrm: stunned against a wall, its head lies rolled on its side on the floor', rolled > 0.7 && stunnedY < 0.12 && stunnedY > -0.03, `rolled ${rolled.toFixed(2)}, its lowest point ${stunnedY.toFixed(2)} off the floor`);
+    check(
+      'wyrm: seeing him it rears right up; before a bite its head goes up over him with its fangs wide, and they shut as it snaps',
+      rearedRoar > 1.6
+        && rearedBite > 1.3
+        && fangsWide > fangsShut + 0.5,
+      `roar ${rearedRoar.toFixed(2)}, bite ${rearedBite.toFixed(2)} up; fangs ${fangsWide.toFixed(2)} apart, then ${fangsShut.toFixed(2)}`
+    );
+    check(
+      'wyrm: charging, its head is down on the floor and its eyes are red (no shield stops it); prowling they are green',
+      lowCharge < 0.7
+        && redCharge
+        && greenProwl,
+      `head ${lowCharge.toFixed(2)} up`
+    );
+    check(
+      'wyrm: stunned against a wall, its head lies rolled on its side on the floor',
+      rolled > 0.7
+        && stunnedY < 0.12
+        && stunnedY > -0.03,
+      `rolled ${rolled.toFixed(2)}, its lowest point ${stunnedY.toFixed(2)} off the floor`
+    );
     // The lash.
     let spursUp = 0;
     let spursFlat = 9;
@@ -1592,7 +2050,13 @@ const at = new THREE.Vector3(0, 0, 0);
       if (w.state === 'prowl' && w.stateTime > 1.5) spursFlat = Math.min(spursFlat, Math.max(...P.spurTips.map((p) => p.y)));
       if (w.state === 'whip' && I.wave.visible && Math.hypot(I.wave.position.x - w.tail.x, I.wave.position.z - w.tail.z) < 0.01) waveOn = true;
     });
-    check('wyrm: before a lash its tail lifts and the two spurs go up; then a ring runs out along the floor from its tail', spursUp > spursFlat + 0.6 && tailLift > 0.5 && waveOn, `spurs ${spursUp.toFixed(2)} up (trailing: ${spursFlat.toFixed(2)})`);
+    check(
+      'wyrm: before a lash its tail lifts and the two spurs go up; then a ring runs out along the floor from its tail',
+      spursUp > spursFlat + 0.6
+        && tailLift > 0.5
+        && waveOn,
+      `spurs ${spursUp.toFixed(2)} up (trailing: ${spursFlat.toFixed(2)})`
+    );
     // The coil.
     let ringFaint = false;
     let ringBright = false;
@@ -1613,7 +2077,13 @@ const at = new THREE.Vector3(0, 0, 0);
       }
     }, (w) => { for (let k = 0; k < 17; k++) w.takeHit(1, 0, 0, 'sword', 4); }, 5);
     check('wyrm: coiling, a ring on the floor marks where it will close: faint while it winds, bright once it has reared', ringFaint && ringBright);
-    check('wyrm: wound right round him, its head meets its tail, and it rears up tall looking down into the middle', closed < 2 * TUNING.rat.radius && towering > 1.7 && looksIn < 0.35, `gap ${closed.toFixed(2)}, head ${towering.toFixed(2)} up, ${looksIn.toFixed(2)} off the middle`);
+    check(
+      'wyrm: wound right round him, its head meets its tail, and it rears up tall looking down into the middle',
+      closed < 2 * TUNING.rat.radius
+        && towering > 1.7
+        && looksIn < 0.35,
+      `gap ${closed.toFixed(2)}, head ${towering.toFixed(2)} up, ${looksIn.toFixed(2)} off the middle`
+    );
   }
   {
     const { w, m } = fight(12, () => ({ x: 0, z: 0 }), (w2) => { if (w2.state === 'prowl' && w2.alive) while (w2.alive) w2.takeHit(4, 0, 0); });
@@ -1621,7 +2091,13 @@ const at = new THREE.Vector3(0, 0, 0);
     check('wyrm: dead, and then it shrivels away to nothing', !w.alive && I.head.scale.x < 0.01 && I.segs.every((s) => s.group.scale.x < 0.01));
     const d = fight(8, () => ({ x: 0, z: 0 }), (w2) => { if (w2.state === 'prowl' && w2.alive && w2.stateTime > 0.5) while (w2.alive) w2.takeHit(4, 0, 0); });
     const rolledOver = inside(d.m).segs.filter((s) => Math.abs((s.group as THREE.Object3D).rotation.z) > 1).length;
-    check('wyrm: dead, every segment has rolled over onto its side with its legs curled in', !d.w.alive && rolledOver === W.segments && d.m.parts().feet.every((f) => f.y > -0.03), `${rolledOver} of ${W.segments} rolled`);
+    check(
+      'wyrm: dead, every segment has rolled over onto its side with its legs curled in',
+      !d.w.alive
+        && rolledOver === W.segments
+        && d.m.parts().feet.every((f) => f.y > -0.03),
+      `${rolledOver} of ${W.segments} rolled`
+    );
   }
 }
 
@@ -1713,10 +2189,23 @@ const at = new THREE.Vector3(0, 0, 0);
   fight(0.9, 20, (t, h) => ({ x: h.x + Math.sin(t * 2) * 1.2, z: h.z + Math.cos(t * 2) * 1.2 }));
   fight(0.9, 14, () => ({ x: 0, y: 3, z: 2 }));
   const all: HornetState[] = ['alert', 'hover', 'diveWind', 'dive', 'stuck', 'free', 'joustWind', 'joust', 'climb', 'fall', 'grounded', 'rise', 'dead'];
-  check('hornet: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
-  check('hornet: the point of its lance is drawn exactly where the rules have it, diving, stuck and running: what hits him is what he sees', offPoint < 1e-6, `furthest off ${offPoint.toExponential(1)}`);
+  check(
+    'hornet: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)',
+    sound
+      && all.every((st) => seen.has(st)),
+    `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`
+  );
+  check(
+    'hornet: the point of its lance is drawn exactly where the rules have it, diving, stuck and running: what hits him is what he sees',
+    offPoint < 1e-6,
+    `furthest off ${offPoint.toExponential(1)}`
+  );
   check('hornet: its body is drawn where the rules have it', offPlace < 0.25, `furthest off ${offPlace.toFixed(2)}`);
-  check('hornet: its front legs are on the shaft of its lance in everything it does in the air', short < 0.03, `worst ${short.toFixed(3)} short (${shortIn || 'none'})`);
+  check(
+    'hornet: its front legs are on the shaft of its lance in everything it does in the air',
+    short < 0.03,
+    `worst ${short.toFixed(3)} short (${shortIn || 'none'})`
+  );
   check('hornet: its lance never passes through its own chest, head or abdomen', through < 0, `nearest ${(-through).toFixed(3)} clear (${throughIn})`);
   check('hornet: low down, nothing of it goes under the floor: body, wings, legs, lance, pennant', low >= -0.03, `lowest ${low.toFixed(3)} (${lowIn})`);
 
@@ -1748,9 +2237,19 @@ const at = new THREE.Vector3(0, 0, 0);
       if (h.state === 'hover') beatAir = Math.max(beatAir, Math.abs(flap - lastFlap));
       lastFlap = flap;
     });
-    check('hornet: in the air its wings beat (they are never still from one frame to the next for long)', beatAir > 0.3, `most a wing moves in a frame ${beatAir.toFixed(2)} rad`);
+    check(
+      'hornet: in the air its wings beat (they are never still from one frame to the next for long)',
+      beatAir > 0.3,
+      `most a wing moves in a frame ${beatAir.toFixed(2)} rad`
+    );
     check('hornet: diving, its nose is down the line of its lance', noseDive > 0.3, `nose ${noseDive.toFixed(2)} down`);
-    check('hornet: stuck, the point of its lance is on the floor, it hangs above on the shaft, and all four of its other feet are down on the floor to push', Math.abs(stuckTipY) < 1e-6 && stuckBody > 0.5 && stuckFeet < 0.08, `point ${stuckTipY.toFixed(3)}, chest ${stuckBody.toFixed(2)} up, highest foot ${stuckFeet.toFixed(2)}`);
+    check(
+      'hornet: stuck, the point of its lance is on the floor, it hangs above on the shaft, and all four of its other feet are down on the floor to push',
+      Math.abs(stuckTipY) < 1e-6
+        && stuckBody > 0.5
+        && stuckFeet < 0.08,
+      `point ${stuckTipY.toFixed(3)}, chest ${stuckBody.toFixed(2)} up, highest foot ${stuckFeet.toFixed(2)}`
+    );
     let level = 9;
     let chestHigh = 0;
     fight(0.1, 8, still, (h, m) => {
@@ -1760,7 +2259,13 @@ const at = new THREE.Vector3(0, 0, 0);
         chestHigh = P.tip.y;
       }
     });
-    check('hornet: running at him its lance is near level, at the height of his chest', level < 0.35 && chestHigh > 0.4 && chestHigh < 0.9, `point and butt ${level.toFixed(2)} apart in height; point ${chestHigh.toFixed(2)} up`);
+    check(
+      'hornet: running at him its lance is near level, at the height of his chest',
+      level < 0.35
+        && chestHigh > 0.4
+        && chestHigh < 0.9,
+      `point and butt ${level.toFixed(2)} apart in height; point ${chestHigh.toFixed(2)} up`
+    );
     let flat = 9;
     let lanceLow = 9;
     let stillWings = 9;
@@ -1775,7 +2280,13 @@ const at = new THREE.Vector3(0, 0, 0);
       void lastZ;
       void stillWings;
     });
-    check('hornet: knocked down, it lies on the floor with its lance on the floor beside it', g.h.state === 'grounded' && flat < 0.4 && lanceLow < 0.4, `chest ${flat.toFixed(2)} up; the lance's higher end ${lanceLow.toFixed(2)} up`);
+    check(
+      'hornet: knocked down, it lies on the floor with its lance on the floor beside it',
+      g.h.state === 'grounded'
+        && flat < 0.4
+        && lanceLow < 0.4,
+      `chest ${flat.toFixed(2)} up; the lance's higher end ${lanceLow.toFixed(2)} up`
+    );
     let onBack = 1;
     let legsUp = -9;
     let wingMove = 9;
@@ -1791,7 +2302,14 @@ const at = new THREE.Vector3(0, 0, 0);
       }
       wasFlap = inside(m).wings[0].flap.rotation.z;
     });
-    check('hornet: dead, it lies on its back with its legs curled up over it and its wings still', !d.h.alive && onBack < -0.7 && legsUp > 0 && wingMove < 0.02, `its back ${onBack.toFixed(2)} (down is -1); feet ${legsUp.toFixed(2)} over its chest; wings moving ${wingMove.toFixed(3)}`);
+    check(
+      'hornet: dead, it lies on its back with its legs curled up over it and its wings still',
+      !d.h.alive
+        && onBack < -0.7
+        && legsUp > 0
+        && wingMove < 0.02,
+      `its back ${onBack.toFixed(2)} (down is -1); feet ${legsUp.toFixed(2)} over its chest; wings moving ${wingMove.toFixed(3)}`
+    );
     const gone = fight(0.9, 5, still, (h, _m, t) => { if (Math.abs(t - 2) < DT / 2) while (h.alive) h.takeHit(9, 0, 0); });
     check('hornet: and then it shrivels away to nothing', !gone.h.alive && gone.m.root.scale.x < 0.01);
   }
@@ -1941,9 +2459,22 @@ const at = new THREE.Vector3(0, 0, 0);
   fight(2, 16, still);
   fight(2, 16, (t) => ({ x: Math.sin(t * 0.8) * 4, z: Math.cos(t * 0.5) * 3 }));
   const all: AntState[] = ['idle', 'march', 'hold', 'windup', 'thrust', 'recover', 'biteWind', 'bite', 'biteRest', 'reel', 'stagger', 'spring', 'dead', 'return'];
-  check('ant: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
-  check('ant: in the thrust the point of its pike is drawn exactly where the rules have it: what hits him is what he sees', offThrust < 1e-6, `furthest off ${offThrust.toExponential(1)}`);
-  check('ant: and whenever its pike has been levelled a moment (coming on, standing off, drawing back, stretched out)', offPoint < 1e-6, `furthest off ${offPoint.toExponential(1)}`);
+  check(
+    'ant: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)',
+    sound
+      && all.every((st) => seen.has(st)),
+    `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`
+  );
+  check(
+    'ant: in the thrust the point of its pike is drawn exactly where the rules have it: what hits him is what he sees',
+    offThrust < 1e-6,
+    `furthest off ${offThrust.toExponential(1)}`
+  );
+  check(
+    'ant: and whenever its pike has been levelled a moment (coming on, standing off, drawing back, stretched out)',
+    offPoint < 1e-6,
+    `furthest off ${offPoint.toExponential(1)}`
+  );
   check('ant: its body is drawn where the rules have it', offPlace < 0.45, `furthest off ${offPlace.toFixed(2)}`);
   check('ant: its right front leg never lets go of the shaft while it lives', right < 0.02, `worst ${right.toFixed(3)} off`);
   check('ant: and its left is on the shaft whenever the pike is levelled', left < 0.03, `worst ${left.toFixed(3)} off (${leftIn || 'none'})`);
@@ -1975,28 +2506,99 @@ const at = new THREE.Vector3(0, 0, 0);
     const far: Rat = () => ({ x: 0, z: 60 });
     const post = pose('idle', 1, far);
     const dirOf = (P: ReturnType<AntModel['parts']>): THREE.Vector3 => P.tip.clone().sub(P.butt).normalize();
-    check('ant: at its post it stands square with its pike upright at its right shoulder, its other front leg at its side', !!post && dirOf(post).y > 0.98 && post.holds[0].x < -0.25 && post.hands[1].distanceTo(post.holds[1]) > 0.3 && post.head.y > 0.9, post ? `pike ${dirOf(post).y.toFixed(2)} up; head ${post.head.y.toFixed(2)} high` : 'never');
+    check(
+      'ant: at its post it stands square with its pike upright at its right shoulder, its other front leg at its side',
+      !!post
+        && dirOf(post).y > 0.98
+        && post.holds[0].x < -0.25
+        && post.hands[1].distanceTo(post.holds[1]) > 0.3
+        && post.head.y > 0.9,
+      post ? `pike ${dirOf(post).y.toFixed(2)} up; head ${post.head.y.toFixed(2)} high` : 'never'
+    );
     const hold = pose('hold', 0.8);
-    check('ant: standing off, its pike is level at the height of his chest, along its right side, in both front legs', !!hold && Math.abs(dirOf(hold).y) < 0.05 && Math.abs(hold.tip.y - A.pikeHeight) < 1e-6 && hold.holds[0].x < -0.3 && hold.hands[1].distanceTo(hold.holds[1]) < 0.03 && Math.abs(hold.tip.x) < 1e-6, hold ? `grip ${hold.holds[0].x.toFixed(2)} to its right` : 'never');
+    check(
+      'ant: standing off, its pike is level at the height of his chest, along its right side, in both front legs',
+      !!hold
+        && Math.abs(dirOf(hold).y) < 0.05
+        && Math.abs(hold.tip.y - A.pikeHeight) < 1e-6
+        && hold.holds[0].x < -0.3
+        && hold.hands[1].distanceTo(hold.holds[1]) < 0.03
+        && Math.abs(hold.tip.x) < 1e-6,
+      hold ? `grip ${hold.holds[0].x.toFixed(2)} to its right` : 'never'
+    );
     const draw = pose('windup', A.windup * 0.95);
-    check('ant: before a thrust its pike is drawn right back, it sinks, and its abdomen cocks up behind it', !!draw && !!hold && draw.tip.z < hold.tip.z - 0.4 && draw.holds[0].z < hold.holds[0].z - 0.4 && draw.chest.y < hold.chest.y - 0.02 && draw.gaster[2].y > hold.gaster[2].y + 0.2, draw && hold ? `point back ${(hold.tip.z - draw.tip.z).toFixed(2)}; abdomen up ${(draw.gaster[2].y - hold.gaster[2].y).toFixed(2)}` : 'never');
+    check(
+      'ant: before a thrust its pike is drawn right back, it sinks, and its abdomen cocks up behind it',
+      !!draw
+        && !!hold
+        && draw.tip.z < hold.tip.z - 0.4
+        && draw.holds[0].z < hold.holds[0].z - 0.4
+        && draw.chest.y < hold.chest.y - 0.02
+        && draw.gaster[2].y > hold.gaster[2].y + 0.2,
+      draw && hold ? `point back ${(hold.tip.z - draw.tip.z).toFixed(2)}; abdomen up ${(draw.gaster[2].y - hold.gaster[2].y).toFixed(2)}` : 'never'
+    );
     let lunge: ReturnType<AntModel['parts']> | null = null;
     fight(1, 8, still, (a, m) => {
       if (!lunge && a[0].state === 'recover' && a[0].stateTime > 0.05) lunge = own(m[0]);
     });
     const L = lunge as ReturnType<AntModel['parts']> | null;
-    check('ant: in the thrust it throws itself out behind the point: stretched forward and low, the point far ahead', !!L && !!hold && L.tip.z > hold.tip.z + 0.5 && L.chest.z > hold.chest.z + 0.1 && L.head.y < hold.head.y - 0.05, L && hold ? `point ${L.tip.z.toFixed(2)} ahead; chest ${(L.chest.z - hold.chest.z).toFixed(2)} forward, head ${(hold.head.y - L.head.y).toFixed(2)} lower` : 'never');
+    check(
+      'ant: in the thrust it throws itself out behind the point: stretched forward and low, the point far ahead',
+      !!L
+        && !!hold
+        && L.tip.z > hold.tip.z + 0.5
+        && L.chest.z > hold.chest.z + 0.1
+        && L.head.y < hold.head.y - 0.05,
+      L && hold ? `point ${L.tip.z.toFixed(2)} ahead; chest ${(L.chest.z - hold.chest.z).toFixed(2)} forward, head ${(hold.head.y - L.head.y).toFixed(2)} lower` : 'never'
+    );
     const port = pose('hold', 0.8, inFront(1.85), undefined, (a) => a.close);
     const overHim = port ? port.holds[0].y + ((port.tip.y - port.holds[0].y) * (1.85 - 0.3 - port.holds[0].z)) / (port.tip.z - port.holds[0].z) : 0;
-    check('ant: with him inside its point its pike is tipped up in one front leg, over his head, the other raised to fend him off', !!port && port.tip.y > 1.6 && overHim > TUNING.rat.height && port.hands[1].distanceTo(port.holds[1]) > 0.2 && port.hands[1].z > port.chest.z, port ? `point ${port.tip.y.toFixed(2)} up; the shaft ${overHim.toFixed(2)} high where he stands` : 'never');
+    check(
+      'ant: with him inside its point its pike is tipped up in one front leg, over his head, the other raised to fend him off',
+      !!port
+        && port.tip.y > 1.6
+        && overHim > TUNING.rat.height
+        && port.hands[1].distanceTo(port.holds[1]) > 0.2
+        && port.hands[1].z > port.chest.z,
+      port ? `point ${port.tip.y.toFixed(2)} up; the shaft ${overHim.toFixed(2)} high where he stands` : 'never'
+    );
     const jawsWide = pose('biteWind', A.biteWind * 0.9, inFront(1.0));
     const snap = pose('bite', A.biteTime * 0.85, inFront(1.0));
-    check('ant: before a bite it rears up and back, its head thrown back', !!jawsWide && !!hold && jawsWide.head.z < hold.head.z - 0.15 && jawsWide.head.y > hold.head.y, jawsWide && hold ? `head ${(hold.head.z - jawsWide.head.z).toFixed(2)} back` : 'never');
-    check('ant: and in the bite its head shoots forward and down, about as far ahead as its jaws reach by the rules', !!snap && !!jawsWide && snap.head.z > jawsWide.head.z + 0.3 && snap.head.y < jawsWide.head.y - 0.1 && Math.abs(snap.head.z + 0.33 - (A.radius + A.biteReach)) < 0.3, snap ? `head ${snap.head.z.toFixed(2)} ahead (jaws about ${(snap.head.z + 0.33).toFixed(2)}); the rules reach ${(A.radius + A.biteReach).toFixed(2)}` : 'never');
+    check(
+      'ant: before a bite it rears up and back, its head thrown back',
+      !!jawsWide
+        && !!hold
+        && jawsWide.head.z < hold.head.z - 0.15
+        && jawsWide.head.y > hold.head.y,
+      jawsWide && hold ? `head ${(hold.head.z - jawsWide.head.z).toFixed(2)} back` : 'never'
+    );
+    check(
+      'ant: and in the bite its head shoots forward and down, about as far ahead as its jaws reach by the rules',
+      !!snap
+        && !!jawsWide
+        && snap.head.z > jawsWide.head.z + 0.3
+        && snap.head.y < jawsWide.head.y - 0.1
+        && Math.abs(snap.head.z + 0.33 - (A.radius + A.biteReach)) < 0.3,
+      snap ? `head ${snap.head.z.toFixed(2)} ahead (jaws about ${(snap.head.z + 0.33).toFixed(2)}); the rules reach ${(A.radius + A.biteReach).toFixed(2)}` : 'never'
+    );
     const reel = pose('reel', 0.8, still, (a) => { if (a.state === 'thrust' && a.stateTime > 0.1) a.lungeLanded(false, true); });
-    check('ant: its pike beaten down by a perfect guard, the point is on the floor out to its right and its left front leg is off the shaft', !!reel && reel.tip.y < 0.12 && reel.tip.x < -1 && reel.hands[1].distanceTo(reel.holds[1]) > 0.3 && reel.hands[0].distanceTo(reel.holds[0]) < 0.03, reel ? `point at (${reel.tip.x.toFixed(2)}, ${reel.tip.y.toFixed(2)})` : 'never');
+    check(
+      'ant: its pike beaten down by a perfect guard, the point is on the floor out to its right and its left front leg is off the shaft',
+      !!reel
+        && reel.tip.y < 0.12
+        && reel.tip.x < -1
+        && reel.hands[1].distanceTo(reel.holds[1]) > 0.3
+        && reel.hands[0].distanceTo(reel.holds[0]) < 0.03,
+      reel ? `point at (${reel.tip.x.toFixed(2)}, ${reel.tip.y.toFixed(2)})` : 'never'
+    );
     const home = pose('return', 1.0, (t) => (t < 4 ? { x: 0, z: 0 } : { x: 0, z: 60 }));
-    check('ant: going back to its post its pike is sloped on its shoulder', !!home && dirOf(home).y > 0.85 && home.butt.y > 0.5, home ? `pike ${dirOf(home).y.toFixed(2)} up` : 'never');
+    check(
+      'ant: going back to its post its pike is sloped on its shoulder',
+      !!home
+        && dirOf(home).y > 0.85
+        && home.butt.y > 0.5,
+      home ? `pike ${dirOf(home).y.toFixed(2)} up` : 'never'
+    );
     // Walking, its feet step; standing off, all four are on the floor.
     let lifted = 0;
     let stand = 9;
@@ -2005,7 +2607,13 @@ const at = new THREE.Vector3(0, 0, 0);
       if (a[0].state === 'march') lifted = Math.max(lifted, ...feet.map((f) => f.y));
       if (a[0].state === 'hold' && a[0].stateTime > 0.6 && a[0].walking < 0.05) stand = Math.min(stand, -Math.max(...feet.map((f) => f.y)));
     });
-    check('ant: coming on, its feet lift as it steps (a little: it does not prance); standing off, all four are down on the floor', lifted > 0.06 && lifted < 0.16 && -stand < 0.045, `highest foot ${lifted.toFixed(2)} walking, ${(-stand).toFixed(3)} standing`);
+    check(
+      'ant: coming on, its feet lift as it steps (a little: it does not prance); standing off, all four are down on the floor',
+      lifted > 0.06
+        && lifted < 0.16
+        && -stand < 0.045,
+      `highest foot ${lifted.toFixed(2)} walking, ${(-stand).toFixed(3)} standing`
+    );
     // Dead.
     let lying: ReturnType<AntModel['parts']> | null = null;
     let gone = 1;
@@ -2019,7 +2627,17 @@ const at = new THREE.Vector3(0, 0, 0);
       if (a[0].state === 'dead' && a[0].stateTime > 2.2) gone = m[0].root.scale.x;
     });
     const D = lying as ReturnType<AntModel['parts']> | null;
-    check('ant: dead, it lies over on its side with its legs curled, its pike on the floor beside it and out of its hands', !!D && D.chest.y < 0.4 && D.head.y < 0.45 && D.tip.y < 0.12 && D.butt.y < 0.12 && D.hands[0].distanceTo(D.holds[0]) > 0.3 && Math.max(...D.feet.map((f) => f.y)) < 0.6, D ? `chest ${D.chest.y.toFixed(2)} up; pike ${Math.max(D.tip.y, D.butt.y).toFixed(2)} up, ${D.hands[0].distanceTo(D.holds[0]).toFixed(2)} from its hand` : 'never');
+    check(
+      'ant: dead, it lies over on its side with its legs curled, its pike on the floor beside it and out of its hands',
+      !!D
+        && D.chest.y < 0.4
+        && D.head.y < 0.45
+        && D.tip.y < 0.12
+        && D.butt.y < 0.12
+        && D.hands[0].distanceTo(D.holds[0]) > 0.3
+        && Math.max(...D.feet.map((f) => f.y)) < 0.6,
+      D ? `chest ${D.chest.y.toFixed(2)} up; pike ${Math.max(D.tip.y, D.butt.y).toFixed(2)} up, ${D.hands[0].distanceTo(D.holds[0]).toFixed(2)} from its hand` : 'never'
+    );
     check('ant: and then it shrivels away to nothing', gone < 0.01, `${gone}`);
   }
 }
@@ -2106,11 +2724,24 @@ const at = new THREE.Vector3(0, 0, 0);
   // Away from him, it goes home.
   fight(14, (t) => (t < 3 ? { x: 0, z: 0 } : { x: 60, z: 60 }));
   const all: FireflyState[] = ['idle', 'alert', 'circle', 'runWind', 'run', 'sink', 'spent', 'rise', 'fall', 'grounded', 'dead', 'return'];
-  check('firefly: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)', sound && all.every((st) => seen.has(st)), `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`);
-  check('firefly: the tip of its lantern is drawn exactly where the rules have it, lining up and on a run: a drop of fire appears where the lantern is', offTip < 1e-6, `furthest off ${offTip.toExponential(1)}`);
+  check(
+    'firefly: it builds, and in everything it does it is whole (no part missing, unpainted or gone bad)',
+    sound
+      && all.every((st) => seen.has(st)),
+    `${frames} frames; not seen: ${all.filter((st) => !seen.has(st)).join(' ') || 'none'}`
+  );
+  check(
+    'firefly: the tip of its lantern is drawn exactly where the rules have it, lining up and on a run: a drop of fire appears where the lantern is',
+    offTip < 1e-6,
+    `furthest off ${offTip.toExponential(1)}`
+  );
   check('firefly: flying about, its lantern still trails where the rules have it', offTipFlying < 0.12, `furthest off ${offTipFlying.toFixed(3)}`);
   check('firefly: its body is drawn where the rules have it', offPlace < 0.1, `furthest off ${offPlace.toFixed(3)}`);
-  check('firefly: nothing of it ever goes under the floor: body, lantern, wing cases, wings, legs, feelers', low >= -0.005, `lowest ${low.toFixed(3)} (${lowIn})`);
+  check(
+    'firefly: nothing of it ever goes under the floor: body, lantern, wing cases, wings, legs, feelers',
+    low >= -0.005,
+    `lowest ${low.toFixed(3)} (${lowIn})`
+  );
   check('firefly: nor does its glow go through the floor', glowLow >= -0.005, `lowest ${glowLow.toFixed(3)}`);
 
   // Each thing it does, held and looked at.
@@ -2143,9 +2774,29 @@ const at = new THREE.Vector3(0, 0, 0);
     const box = measure(m.root).box;
     const cases = P.cases.map((c) => own(m, c));
     const chest = own(m, P.chest);
-    check('firefly: it is an insect about the knight\'s size, flying well over his head', box.max.y - box.min.y > 0.7 && box.max.y - box.min.y < 2 && box.min.y - f.floor > 3 && Math.max(box.max.x - box.min.x, box.max.z - box.min.z) < 2.6, size(box));
-    check('firefly: flying, its wing cases stand up and out of the way of its wings', cases.every((c) => c.y - chest.y > 0.35 && Math.abs(c.x) > 0.2) && cases[0].x * cases[1].x < 0, cases.map((c) => `${(c.y - chest.y).toFixed(2)} up, ${Math.abs(c.x).toFixed(2)} out`).join('; '));
-    check('firefly: its lantern hangs behind and below it, lit: bright yellow-green (breathing a little), with a glow round it', own(m, P.tip).z < -0.6 && own(m, P.tip).y < chest.y && P.lantern.g > 0.75 && P.lantern.g > P.lantern.b * 2 && P.halo > 0.05, `#${P.lantern.getHexString()}`);
+    check(
+      'firefly: it is an insect about the knight\'s size, flying well over his head',
+      box.max.y - box.min.y > 0.7
+        && box.max.y - box.min.y < 2
+        && box.min.y - f.floor > 3
+        && Math.max(box.max.x - box.min.x, box.max.z - box.min.z) < 2.6,
+      size(box)
+    );
+    check(
+      'firefly: flying, its wing cases stand up and out of the way of its wings',
+      cases.every((c) => c.y - chest.y > 0.35 && Math.abs(c.x) > 0.2)
+        && cases[0].x * cases[1].x < 0,
+      cases.map((c) => `${(c.y - chest.y).toFixed(2)} up, ${Math.abs(c.x).toFixed(2)} out`).join('; ')
+    );
+    check(
+      'firefly: its lantern hangs behind and below it, lit: bright yellow-green (breathing a little), with a glow round it',
+      own(m, P.tip).z < -0.6
+        && own(m, P.tip).y < chest.y
+        && P.lantern.g > 0.75
+        && P.lantern.g > P.lantern.b * 2
+        && P.halo > 0.05,
+      `#${P.lantern.getHexString()}`
+    );
     // Its wings beat.
     let hi = -9;
     let lo = 9;
@@ -2158,29 +2809,65 @@ const at = new THREE.Vector3(0, 0, 0);
     check('firefly: in the air its wings beat', hi - lo > 0.4, `a wing's end goes ${(hi - lo).toFixed(2)} up and down`);
     const full = bright(P.lantern);
     const tell = held('runWind', F.runWind * 0.95).m.parts();
-    check('firefly: the tell is in its lantern: it flares far brighter than full, towards white, and its glow swells', bright(tell.lantern) > full * 1.25 && tell.lantern.b > 0.6 && tell.halo > P.halo * 2, `#${tell.lantern.getHexString()} against #${P.lantern.getHexString()}; glow ${tell.halo.toFixed(2)} against ${P.halo.toFixed(2)}`);
+    check(
+      'firefly: the tell is in its lantern: it flares far brighter than full, towards white, and its glow swells',
+      bright(tell.lantern) > full * 1.25
+        && tell.lantern.b > 0.6
+        && tell.halo > P.halo * 2,
+      `#${tell.lantern.getHexString()} against #${P.lantern.getHexString()}; glow ${tell.halo.toFixed(2)} against ${P.halo.toFixed(2)}`
+    );
     const dark = held('spent', 0.3);
     const D = dark.m.parts();
     check('firefly: spent, its lantern is dark and has no glow', bright(D.lantern) < full * 0.2 && D.halo === 0, `#${D.lantern.getHexString()}`);
     const chestD = own(dark.m, D.chest);
     const casesD = D.cases.map((c) => own(dark.m, c));
-    check('firefly: spent, it sags: its abdomen hangs straight down under it, clear of the floor, and its wing cases droop', own(dark.m, D.tip).y < chestD.y - 0.5 && Math.abs(own(dark.m, D.tip).z - own(dark.m, D.abdomen[0]).z) < 0.3 && D.tip.y - dark.f.floor > 0.05 && casesD.every((c, i) => c.y - chestD.y < cases[i].y - chest.y - 0.15), `tip ${(D.tip.y - dark.f.floor).toFixed(2)} off the floor; cases ${casesD.map((c) => (c.y - chestD.y).toFixed(2)).join(', ')} up`);
+    check(
+      'firefly: spent, it sags: its abdomen hangs straight down under it, clear of the floor, and its wing cases droop',
+      own(dark.m, D.tip).y < chestD.y - 0.5
+        && Math.abs(own(dark.m, D.tip).z - own(dark.m, D.abdomen[0]).z) < 0.3
+        && D.tip.y - dark.f.floor > 0.05
+        && casesD.every((c, i) => c.y - chestD.y < cases[i].y - chest.y - 0.15),
+      `tip ${(D.tip.y - dark.f.floor).toFixed(2)} off the floor; cases ${casesD.map((c) => (c.y - chestD.y).toFixed(2)).join(', ')} up`
+    );
     const filling = held('spent', F.rest * 0.9).m.parts();
-    check('firefly: its lantern fills again as it hangs: nearly full by the time it goes up', bright(filling.lantern) > full * 0.7 && bright(filling.lantern) > bright(D.lantern) * 3 && filling.halo > 0, `#${filling.lantern.getHexString()}`);
+    check(
+      'firefly: its lantern fills again as it hangs: nearly full by the time it goes up',
+      bright(filling.lantern) > full * 0.7
+        && bright(filling.lantern) > bright(D.lantern) * 3
+        && filling.halo > 0,
+      `#${filling.lantern.getHexString()}`
+    );
   }
   {
     const { f, m } = held('grounded', 0.8, 'spent');
     const P = m.parts();
     const lo = lowest(m.root) - f.floor;
     const feet = P.feet.map((p) => p.y - f.floor);
-    check('firefly: knocked down, it lies on its belly on the floor (not over it, not in it), its feet on the floor round it, its lantern all but out', lo > -0.005 && lo < 0.03 && Math.max(...feet) < 0.08 && Math.min(...feet) > -0.005 && P.chest.y - f.floor < 0.45 && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.2, `lowest ${lo.toFixed(3)}; feet ${Math.min(...feet).toFixed(2)} to ${Math.max(...feet).toFixed(2)}; chest ${(P.chest.y - f.floor).toFixed(2)} up`);
+    check(
+      'firefly: knocked down, it lies on its belly on the floor (not over it, not in it), its feet on the floor round it, its lantern all but out',
+      lo > -0.005
+        && lo < 0.03
+        && Math.max(...feet) < 0.08
+        && Math.min(...feet) > -0.005
+        && P.chest.y - f.floor < 0.45
+        && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.2,
+      `lowest ${lo.toFixed(3)}; feet ${Math.min(...feet).toFixed(2)} to ${Math.max(...feet).toFixed(2)}; chest ${(P.chest.y - f.floor).toFixed(2)} up`
+    );
   }
   {
     const { f, m } = held('dead', 1.2, 'spent', true);
     const P = m.parts();
     const lo = lowest(m.root) - f.floor;
     const feet = P.feet.map((p) => p.y);
-    check('firefly: dead, it lies on its back on the floor, its legs curled up over it, its lantern out', lo > -0.005 && lo < 0.03 && Math.min(...feet) > P.chest.y && P.halo === 0 && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.06, `lowest ${lo.toFixed(3)}; feet ${(Math.min(...feet) - P.chest.y).toFixed(2)} above its chest`);
+    check(
+      'firefly: dead, it lies on its back on the floor, its legs curled up over it, its lantern out',
+      lo > -0.005
+        && lo < 0.03
+        && Math.min(...feet) > P.chest.y
+        && P.halo === 0
+        && (P.lantern.r + P.lantern.g + P.lantern.b) / 3 < 0.06,
+      `lowest ${lo.toFixed(3)}; feet ${(Math.min(...feet) - P.chest.y).toFixed(2)} above its chest`
+    );
     for (let i = 0; i < 90; i++) m.update(DT, { state: 'dead', stateTime: 1.2 + i * DT, x: f.x, y: f.y, z: f.z, facing: f.facing, vent: f.vent, light: 0, floor: f.floor, moving: 0 });
     check('firefly: ...and then it shrivels away to nothing', m.root.scale.x < 0.01);
   }

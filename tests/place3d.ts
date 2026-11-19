@@ -17,7 +17,10 @@ const onTop = makePiece('platform', 4, 1, -2, o);
 check('a slab on a slab stands on it, not through it', onTop.top === 2 && onTop.bottom === 1);
 const crumb = makePiece('crumb', 2.6, 1, 3.4, { ...o, raise: 0 });
 check('a crumb sits on the grid point on the surface', crumb.x0 === 3 && crumb.z0 === 3 && crumb.x1 === 3 && crumb.top === 1);
-check('stairs climb from the surface', (() => { const s = makePiece('stairs', 0, 2, 0, { ...o, raise: 0 }); return s.bottom === 2 && s.top === 5 && s.dir === 'e'; })());
+check(
+  'stairs climb from the surface',
+  (() => { const s = makePiece('stairs', 0, 2, 0, { ...o, raise: 0 }); return s.bottom === 2 && s.top === 5 && s.dir === 'e'; })()
+);
 check('a pool sinks into the surface', makePiece('water', 0, 0, 0, o).top === -0.85);
 check('a pillar starts tall', defaultRaise('pillar') === 3 && defaultRaise('crumb') === 0);
 
@@ -66,12 +69,26 @@ check('looking at nothing picks nothing', pickPiece(pieces, eye, toward(0, 30, -
     ['a guard facing east', makePiece('guard', 1, 0, 1, { w: 1, d: 1, raise: 0, dir: 'e' }), 0, 1, 1],
   ];
   const off = cases.filter(([, p, under, x, z]) => !same(p, again(p, under, x, z)));
-  check('a copied piece put down in the same place is the same piece: size, height and facing', off.length === 0, off.map(([n, p, u, x, z]) => `${n}: ${JSON.stringify(p)} became ${JSON.stringify(again(p, u, x, z))}`).join('; '));
+  check(
+    'a copied piece put down in the same place is the same piece: size, height and facing',
+    off.length === 0,
+    off.map(([n, p, u, x, z]) => `${n}: ${JSON.stringify(p)} became ${JSON.stringify(again(p, u, x, z))}`).join('; ')
+  );
   const moved = makePiece('platform', 10, 3, 10, settingsFrom(cases[0][1], 0));
   check('...and put down on higher ground it stands as far above that', moved.top === 4.5 && moved.x1 - moved.x0 === 5 && moved.z1 - moved.z0 === 2);
-  check('what a piece stands on: the slab under a crumb, the floor under a slab, nothing under the floor', standsOn(pieces, { t: 'crumb', x0: 3, z0: 3, x1: 3, z1: 3, top: 2 }) === 2 && standsOn(pieces, pieces[1]) === 0 && standsOn(pieces, pieces[0]) === 0);
+  check(
+    'what a piece stands on: the slab under a crumb, the floor under a slab, nothing under the floor',
+    standsOn(pieces, { t: 'crumb', x0: 3, z0: 3, x1: 3, z1: 3, top: 2 }) === 2
+      && standsOn(pieces, pieces[1]) === 0
+      && standsOn(pieces, pieces[0]) === 0
+  );
   check('only pieces that face a way can be turned', faces('guard') && faces('stairs') && !faces('platform') && !faces('crumb'));
-  check('a piece over the edge of the room sticks out; the exit door, which stands in the wall, never does', sticksOut(makePiece('platform', 19.5, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40) && !sticksOut(makePiece('platform', 18, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40) && !sticksOut(makePiece('exit', 0, 0, 20.5, { w: 1, d: 1, raise: 0, dir: 'n' }), 40, 40));
+  check(
+    'a piece over the edge of the room sticks out; the exit door, which stands in the wall, never does',
+    sticksOut(makePiece('platform', 19.5, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40)
+      && !sticksOut(makePiece('platform', 18, 0, 0, { w: 3, d: 3, raise: 1, dir: 'n' }), 40, 40)
+      && !sticksOut(makePiece('exit', 0, 0, 20.5, { w: 1, d: 1, raise: 0, dir: 'n' }), 40, 40)
+  );
 }
 
 // A controller's d-pad shapes the piece.
@@ -95,16 +112,35 @@ check('looking at nothing picks nothing', pickPiece(pieces, eye, toward(0, 30, -
   check('a press to the right makes the piece one wider, at once', tap.width === 1 && tap.first === 0 && tap.depth === 0 && tap.raise === 0);
   hold(sh, 0.1, 0, 0);
   const held = hold(sh, 1, 1, 0);
-  check('held, it waits a moment and then goes on widening (a floor can be drawn out without thirty presses)', held.width >= 8 && held.width <= 10 && hold(new PadShaper(), PadShaper.WAIT - 0.02, 1, 0).width === 1, `${held.width} in a second`);
+  check(
+    'held, it waits a moment and then goes on widening (a floor can be drawn out without thirty presses)',
+    held.width >= 8
+      && held.width <= 10
+      && hold(new PadShaper(), PadShaper.WAIT - 0.02, 1, 0).width === 1,
+    `${held.width} in a second`
+  );
   hold(sh, 0.1, 0, 0);
-  check('left makes it narrower; up and down make it deeper and shallower (its footprint, as on a map)', hold(sh, 0.05, -1, 0).width === -1 && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, 1).depth === 1) && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, -1).depth === -1));
+  check(
+    'left makes it narrower; up and down make it deeper and shallower (its footprint, as on a map)',
+    hold(sh, 0.05, -1, 0).width === -1
+      && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, 1).depth === 1)
+      && (hold(sh, 0.05, 0, 0), hold(sh, 0.05, 0, -1).depth === -1)
+  );
   hold(sh, 0.1, 0, 0);
   const up = hold(sh, 0.05, 0, 1, true);
   hold(sh, 0.1, 0, 0);
   const down = hold(sh, 0.05, 0, -1, true);
   hold(sh, 0.1, 0, 0);
   const side = hold(sh, 0.05, 1, 0, true);
-  check('switched to height (Select), up and down raise and lower it instead (left and right still widen and narrow)', up.raise === 1 && up.depth === 0 && down.raise === -1 && down.depth === 0 && side.width === 1 && side.raise === 0);
+  check(
+    'switched to height (Select), up and down raise and lower it instead (left and right still widen and narrow)',
+    up.raise === 1
+      && up.depth === 0
+      && down.raise === -1
+      && down.depth === 0
+      && side.width === 1
+      && side.raise === 0
+  );
   hold(sh, 0.1, 0, 0);
   const corner = hold(sh, 0.05, 1, 1);
   check('a thumb on a corner does one thing, not two', corner.width === 1 && corner.depth === 0);

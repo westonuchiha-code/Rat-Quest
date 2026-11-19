@@ -35,16 +35,40 @@ const ring = (x: number, z: number, r: number, n = 12): number[] => Array.from({
   check('on open floor nothing is cut', cutOutline(world, 0, 0, 0, ring(0, 0, 0.8), out) && out.length === 12 && out.every((l) => l === 1));
   const at = 3.7;
   const rim = ring(at, 0, 0.8);
-  check('at a ledge the side over the drop is drawn in and the side on the floor is not', cutOutline(world, at, 0, 0, rim, out) && out[0] < 0.45 && out[0] > 0.3 && out[6] === 1, `toward the drop ${out[0].toFixed(2)} of its length, away from it ${out[6].toFixed(2)}`);
+  check(
+    'at a ledge the side over the drop is drawn in and the side on the floor is not',
+    cutOutline(world, at, 0, 0, rim, out)
+      && out[0] < 0.45
+      && out[0] > 0.3
+      && out[6] === 1,
+    `toward the drop ${out[0].toFixed(2)} of its length, away from it ${out[6].toFixed(2)}`
+  );
   const past = out.map((l, i) => at + (rim[i * 2] - at) * l).filter((x) => x > 4 + 1e-6);
   check('no point of it is left past the edge', past.length === 0);
   const onPost = ring(10, 0, 0.8);
-  check('on a post narrower than it, it is cut all round to the top of the post', cutOutline(world, 10, 2, 0, onPost, out) && out.every((l) => l < 0.9) && out.every((l, i) => groundAt(world, 10 + (onPost[i * 2] - 10) * l, 2, (onPost[i * 2 + 1]) * l)), `longest spoke ${Math.max(...out).toFixed(2)}`);
+  check(
+    'on a post narrower than it, it is cut all round to the top of the post',
+    cutOutline(world, 10, 2, 0, onPost, out)
+      && out.every((l) => l < 0.9)
+      && out.every((l, i) => groundAt(world, 10 + (onPost[i * 2] - 10) * l, 2, (onPost[i * 2 + 1]) * l)),
+    `longest spoke ${Math.max(...out).toFixed(2)}`
+  );
   const kept = [9, 9, 9];
-  check('with no ground under its middle (a creature in the air over a drop) it is left whole, as it was', !cutOutline(world, 6, 0, 0, ring(6, 0, 0.8), kept) && kept.join() === '9,9,9');
+  check(
+    'with no ground under its middle (a creature in the air over a drop) it is left whole, as it was',
+    !cutOutline(world, 6, 0, 0, ring(6, 0, 0.8), kept)
+      && kept.join() === '9,9,9'
+  );
   // An oval, turned: the long way along x.
   const oval = Array.from({ length: 12 }, (_, i) => [3.2 + Math.cos((i / 12) * Math.PI * 2) * 1.3, Math.sin((i / 12) * Math.PI * 2) * 0.5]).flat();
-  check('an oval is cut by where its own rim is: its long end over the drop, its sides not', cutOutline(world, 3.2, 0, 0, oval, out) && out[0] < 0.7 && out[3] === 1 && out[9] === 1, `${out[0].toFixed(2)}`);
+  check(
+    'an oval is cut by where its own rim is: its long end over the drop, its sides not',
+    cutOutline(world, 3.2, 0, 0, oval, out)
+      && out[0] < 0.7
+      && out[3] === 1
+      && out[9] === 1,
+    `${out[0].toFixed(2)}`
+  );
 }
 
 // ---- Real models ----
@@ -115,7 +139,12 @@ const points = (cuts: ShadowCuts, root: THREE.Object3D): THREE.Vector3[] => cuts
     cuts.cut(root, world);
     if (!before || points(cuts, root).some((p) => p.x > 4.001)) bad.push(name);
   }
-  check('the talking characters and a scene\'s cast have round shadows too, and theirs are cut the same', bad.length === 0 && noShadow.length <= 1, `cut: ${who.length - noShadow.length - bad.length} of ${who.length}${noShadow.length ? `; no disc of its own: ${noShadow.join(', ')}` : ''}${bad.length ? `; WRONG: ${bad.join(', ')}` : ''}`);
+  check(
+    'the talking characters and a scene\'s cast have round shadows too, and theirs are cut the same',
+    bad.length === 0
+      && noShadow.length <= 1,
+    `cut: ${who.length - noShadow.length - bad.length} of ${who.length}${noShadow.length ? `; no disc of its own: ${noShadow.join(', ')}` : ''}${bad.length ? `; WRONG: ${bad.join(', ')}` : ''}`
+  );
 }
 {
   // It is not worked out again while nothing has moved.
@@ -130,7 +159,15 @@ const points = (cuts: ShadowCuts, root: THREE.Object3D): THREE.Vector3[] => cuts
   const later = cuts.worked - first;
   m.setTransform(new THREE.Vector3(3.5, 0, 0), 0);
   cuts.cut(m.root, world);
-  check('a shadow that has not moved is not worked out again for a while; one that has, is at once', first === 1 && still === 0 && later >= 1 && later <= 2 && cuts.worked - first === later + 1, `first ${first}, ten frames on ${still}, forty on ${later}`);
+  check(
+    'a shadow that has not moved is not worked out again for a while; one that has, is at once',
+    first === 1
+      && still === 0
+      && later >= 1
+      && later <= 2
+      && cuts.worked - first === later + 1,
+    `first ${first}, ten frames on ${still}, forty on ${later}`
+  );
   // Hidden: left alone.
   const hidden = new ShadowCuts();
   const g = new GuardModel();
@@ -138,7 +175,11 @@ const points = (cuts: ShadowCuts, root: THREE.Object3D): THREE.Vector3[] => cuts
   g.setTransform(new THREE.Vector3(3.8, 0, 0), 0);
   hidden.cut(g.root, world);
   check('a creature that is not shown costs nothing', hidden.worked === 0);
-  check('a ring on the floor (the stag\'s blow, a lock-on mark) is not taken for a shadow', !isBlobShadow(new THREE.Mesh(new THREE.RingGeometry(0.5, 0.6, 12), new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, depthWrite: false }))) && !isBlobShadow(new THREE.Mesh(new THREE.CircleGeometry(0.5, 12), new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, depthWrite: false }))));
+  check(
+    'a ring on the floor (the stag\'s blow, a lock-on mark) is not taken for a shadow',
+    !isBlobShadow(new THREE.Mesh(new THREE.RingGeometry(0.5, 0.6, 12), new THREE.MeshBasicMaterial({ color: 0xffb060, transparent: true, depthWrite: false })))
+      && !isBlobShadow(new THREE.Mesh(new THREE.CircleGeometry(0.5, 12), new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, depthWrite: false })))
+  );
 }
 
 console.log(failures === 0 ? '\nShadow cut checks passed.' : `\n${failures} shadow cut check(s) failed.`);

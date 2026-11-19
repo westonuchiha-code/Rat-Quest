@@ -50,17 +50,64 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
   const wedge = survey(wedgeGeometry());
   const can = survey(nachoCanGeometry());
   const all = { crumb, cap, relic, ring, wedge, can };
-  check('every shape is whole, painted, and flat-faced (so its faces flash as it turns)', Object.values(all).every((s) => s.whole && s.flat), Object.entries(all).filter(([, s]) => !s.whole || !s.flat).map(([k]) => k).join(', '));
-  check('the crumb is a wedge of cheese about half a unit long, longer than it is tall', crumb.w > 0.4 && crumb.w < 0.6 && crumb.h > 0.2 && crumb.h < 0.42 && crumb.d > 0.3, `${crumb.w.toFixed(2)} x ${crumb.h.toFixed(2)} x ${crumb.d.toFixed(2)}`);
+  check(
+    'every shape is whole, painted, and flat-faced (so its faces flash as it turns)',
+    Object.values(all).every((s) => s.whole && s.flat),
+    Object.entries(all).filter(([, s]) => !s.whole || !s.flat).map(([k]) => k).join(', ')
+  );
+  check(
+    'the crumb is a wedge of cheese about half a unit long, longer than it is tall',
+    crumb.w > 0.4
+      && crumb.w < 0.6
+      && crumb.h > 0.2
+      && crumb.h < 0.42
+      && crumb.d > 0.3,
+    `${crumb.w.toFixed(2)} x ${crumb.h.toFixed(2)} x ${crumb.d.toFixed(2)}`
+  );
   check('...yellow, with an orange rind and dark holes (at least five colours)', crumb.colours.size >= 5, `${crumb.colours.size}`);
-  check('the cap stands on its edge like a coin: round, and thin front to back', cap.w > 0.36 && cap.w < 0.5 && cap.h > 0.36 && cap.h < 0.5 && cap.d < 0.2, `${cap.w.toFixed(2)} x ${cap.h.toFixed(2)} x ${cap.d.toFixed(2)}`);
+  check(
+    'the cap stands on its edge like a coin: round, and thin front to back',
+    cap.w > 0.36
+      && cap.w < 0.5
+      && cap.h > 0.36
+      && cap.h < 0.5
+      && cap.d < 0.2,
+    `${cap.w.toFixed(2)} x ${cap.h.toFixed(2)} x ${cap.d.toFixed(2)}`
+  );
   check('...enamel, a star, steel and cork (at least five colours)', cap.colours.size >= 5, `${cap.colours.size}`);
-  check('the relic is a cut gem, taller than the crumb or the cap, with a ring wider than itself', relic.h > 0.45 && relic.h < 0.65 && relic.w > 0.4 && ring.w > relic.w * 1.4, `${relic.w.toFixed(2)} x ${relic.h.toFixed(2)}, ring ${ring.w.toFixed(2)}`);
-  check('the Golden Wedge is the size it was (a little over a unit tall and wide), and much the biggest', wedge.h > 1.0 && wedge.h < 1.25 && wedge.w > 1.0 && wedge.w < 1.25 && wedge.h > relic.h * 1.7, `${wedge.w.toFixed(2)} x ${wedge.h.toFixed(2)} x ${wedge.d.toFixed(2)}`);
-  check('...with more shape to it than the old one (chamfered edges, a ridged rind, ten holes)', wedge.faces > 150 && wedge.colours.size >= 7, `${wedge.faces} faces, ${wedge.colours.size} colours`);
+  check(
+    'the relic is a cut gem, taller than the crumb or the cap, with a ring wider than itself',
+    relic.h > 0.45
+      && relic.h < 0.65
+      && relic.w > 0.4
+      && ring.w > relic.w * 1.4,
+    `${relic.w.toFixed(2)} x ${relic.h.toFixed(2)}, ring ${ring.w.toFixed(2)}`
+  );
+  check(
+    'the Golden Wedge is the size it was (a little over a unit tall and wide), and much the biggest',
+    wedge.h > 1.0
+      && wedge.h < 1.25
+      && wedge.w > 1.0
+      && wedge.w < 1.25
+      && wedge.h > relic.h * 1.7,
+    `${wedge.w.toFixed(2)} x ${wedge.h.toFixed(2)} x ${wedge.d.toFixed(2)}`
+  );
+  check(
+    '...with more shape to it than the old one (chamfered edges, a ridged rind, ten holes)',
+    wedge.faces > 150
+      && wedge.colours.size >= 7,
+    `${wedge.faces} faces, ${wedge.colours.size} colours`
+  );
   check('the nacho can is the size it was', can.h > 0.3 && can.h < 0.7);
   const sizes = Object.values(ITEM_LOOK);
-  check('rarer things twinkle more often and throw more sparks', ITEM_LOOK.crumb.twinkleEvery > ITEM_LOOK.cap.twinkleEvery && ITEM_LOOK.cap.twinkleEvery > ITEM_LOOK.relic.twinkleEvery && ITEM_LOOK.relic.sparkCount > ITEM_LOOK.cap.sparkCount && ITEM_LOOK.cap.sparkCount > ITEM_LOOK.crumb.sparkCount && sizes.length === 3);
+  check(
+    'rarer things twinkle more often and throw more sparks',
+    ITEM_LOOK.crumb.twinkleEvery > ITEM_LOOK.cap.twinkleEvery
+      && ITEM_LOOK.cap.twinkleEvery > ITEM_LOOK.relic.twinkleEvery
+      && ITEM_LOOK.relic.sparkCount > ITEM_LOOK.cap.sparkCount
+      && ITEM_LOOK.cap.sparkCount > ITEM_LOOK.crumb.sparkCount
+      && sizes.length === 3
+  );
 }
 
 // ---- In a level ----
@@ -78,7 +125,10 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
   const kids = (name: (o: THREE.Object3D) => boolean): THREE.Object3D[] => vis.group.children.filter(name);
   const shadows = (): THREE.Mesh[] => kids((o) => o instanceof THREE.Mesh && (o.material as THREE.MeshBasicMaterial).color?.getHex() === 0 && !(o.material as THREE.Material).vertexColors) as THREE.Mesh[];
   check('three of the four have a shadow (the one over the gap has none)', vis.shadowCount === 3 && shadows().length === 3);
-  check('each shadow lies on the floor under its item, not at the item', shadows().map((s) => `${s.position.x},${s.position.y.toFixed(3)}`).join(' ') === '0,0.025 6,0.025 9,2.025');
+  check(
+    'each shadow lies on the floor under its item, not at the item',
+    shadows().map((s) => `${s.position.x},${s.position.y.toFixed(3)}`).join(' ') === '0,0.025 6,0.025 9,2.025'
+  );
   const face = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.3, 0.7, 0));
   // Twinkles: each item flashes now and then, and is dark in between.
   const twinkleOf = (root: THREE.Object3D): THREE.Mesh => root.children.find((c) => c instanceof THREE.Mesh && (c.material as THREE.Material).blending === THREE.AdditiveBlending) as THREE.Mesh;
@@ -97,9 +147,22 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
       }
     });
   }
-  check('every item twinkles within twelve seconds, and is dark most of the time', roots.length === 4 && lit.every((n) => n > 5 && n < 60 * 12 * 0.4), lit.join(', '));
+  check(
+    'every item twinkles within twelve seconds, and is dark most of the time',
+    roots.length === 4
+      && lit.every((n) => n > 5 && n < 60 * 12 * 0.4),
+    lit.join(', ')
+  );
   check('a twinkle is small, and turned to face the camera', biggest > 0.05 && biggest < 0.3 && turned, biggest.toFixed(2));
-  check('a twinkle opens and shuts', twinkleSize(0) === 0 && twinkleSize(1) === 0 && twinkleSize(0.5) > 0.9 && twinkleSize(0.1) > 0 && twinkleSize(-1) === 0 && twinkleSize(2) === 0);
+  check(
+    'a twinkle opens and shuts',
+    twinkleSize(0) === 0
+      && twinkleSize(1) === 0
+      && twinkleSize(0.5) > 0.9
+      && twinkleSize(0.1) > 0
+      && twinkleSize(-1) === 0
+      && twinkleSize(2) === 0
+  );
   // Taking one: sparks, the pop, and it and its shadow are gone.
   const before = vis.sparks.count;
   tracker.collect('k1');
@@ -109,16 +172,33 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
   const far0 = Math.max(...vis.sparks.group.children.map((c) => Math.hypot(c.position.x - 6, c.position.z)));
   for (let i = 0; i < 12; i++) vis.update(DT, 13 + i * DT, face);
   const far1 = Math.max(...vis.sparks.group.children.map((c) => Math.hypot(c.position.x - 6, c.position.z)));
-  check('taking the cap throws out its sparks, and they fly outwards', before === 0 && thrown === ITEM_LOOK.cap.sparkCount && far1 > far0 + 0.15 && far1 < 1.5, `${thrown} sparks, ${far0.toFixed(2)} -> ${far1.toFixed(2)}`);
+  check(
+    'taking the cap throws out its sparks, and they fly outwards',
+    before === 0
+      && thrown === ITEM_LOOK.cap.sparkCount
+      && far1 > far0 + 0.15
+      && far1 < 1.5,
+    `${thrown} sparks, ${far0.toFixed(2)} -> ${far1.toFixed(2)}`
+  );
   for (let i = 0; i < 60; i++) vis.update(DT, 14 + i * DT, face);
-  check('within a second the sparks are gone, and so are the cap and its shadow', vis.sparks.count === 0 && vis.sparks.group.children.length === 0 && shadows().filter((s) => s.visible).length === 2 && roots.filter((r) => r.visible).length === 3);
+  check(
+    'within a second the sparks are gone, and so are the cap and its shadow',
+    vis.sparks.count === 0
+      && vis.sparks.group.children.length === 0
+      && shadows().filter((s) => s.visible).length === 2
+      && roots.filter((r) => r.visible).length === 3
+  );
   tracker.collect('r1');
   vis.collected([items[3]]);
   check('a relic throws more sparks than a cap', vis.sparks.count === ITEM_LOOK.relic.sparkCount && ITEM_LOOK.relic.sparkCount > thrown);
   // Hidden in a crate: neither it nor its shadow shows.
   vis.hidden = (d) => d.id === 'c1';
   for (let i = 0; i < 30; i++) vis.update(DT, 20 + i * DT, face);
-  check('a crumb still in its crate shows neither itself nor a shadow', shadows().filter((s) => s.visible).length === 0 && roots.filter((r) => r.visible).length === 1);
+  check(
+    'a crumb still in its crate shows neither itself nor a shadow',
+    shadows().filter((s) => s.visible).length === 0
+      && roots.filter((r) => r.visible).length === 1
+  );
   // Without a floor finder there are simply no shadows.
   check('with nothing to say where the floor is, there are no shadows', new CollectibleVisuals(level, tracker).shadowCount === 0);
 }
@@ -138,21 +218,48 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
   };
   run(30);
   const items = (vis as unknown as { items: Array<{ root: THREE.Group; body: THREE.Mesh; rays: THREE.Mesh; shadow: THREE.Mesh; pool: THREE.Mesh; twinkles: THREE.Mesh[] }> }).items;
-  check('a wedge in the course shows, with its shadow and its pool of light on the floor at its base', items[0].root.visible && items[0].shadow.visible && items[0].pool.visible && Math.abs(items[0].shadow.position.y - 0.025) < 1e-6 && Math.abs(items[1].shadow.position.y - 3.025) < 1e-6);
+  check(
+    'a wedge in the course shows, with its shadow and its pool of light on the floor at its base',
+    items[0].root.visible
+      && items[0].shadow.visible
+      && items[0].pool.visible
+      && Math.abs(items[0].shadow.position.y - 0.025) < 1e-6
+      && Math.abs(items[1].shadow.position.y - 3.025) < 1e-6
+  );
   check('it hangs over its base and bobs', items[0].root.position.y > 0.7 && items[0].root.position.y < 1.0);
-  check('one he already has is a pale ghost: no rays, no pool, no twinkles, and nothing bursts when the level loads', (items[1].body.material as THREE.MeshBasicMaterial).transparent && !items[1].rays.visible && !items[1].pool.visible && items[1].twinkles.every((t) => !t.visible) && vis.sparks.count === 0);
+  check(
+    'one he already has is a pale ghost: no rays, no pool, no twinkles, and nothing bursts when the level loads',
+    (items[1].body.material as THREE.MeshBasicMaterial).transparent
+      && !items[1].rays.visible
+      && !items[1].pool.visible
+      && items[1].twinkles.every((t) => !t.visible)
+      && vis.sparks.count === 0
+  );
   let twinkled = 0;
   for (let i = 0; i < 60 * 4; i++) {
     vis.update(DT, 1 + i * DT, () => out, (i2) => got.has(i2), face);
     if (items[0].twinkles.some((t) => t.visible)) twinkled++;
   }
-  check('a gold one twinkles a good part of the time, the ghost never', twinkled > 40 && twinkled < 60 * 4 && items[1].twinkles.every((t) => !t.visible), `${twinkled} of 240 frames`);
+  check(
+    'a gold one twinkles a good part of the time, the ghost never',
+    twinkled > 40
+      && twinkled < 60 * 4
+      && items[1].twinkles.every((t) => !t.visible),
+    `${twinkled} of 240 frames`
+  );
   const r0 = items[0].rays.rotation.z;
   run(60, 6);
   check('its rays turn slowly behind it', Math.abs(items[0].rays.rotation.z - r0) > 0.2 && Math.abs(items[0].rays.rotation.z - r0) < 1.2);
   got.add(0);
   run(1, 8);
-  check('taking it throws a big ring of sparks, and it turns to its ghost', vis.sparks.count >= 20 && (items[0].body.material as THREE.MeshBasicMaterial).transparent && !items[0].rays.visible && !items[0].pool.visible, `${vis.sparks.count} sparks`);
+  check(
+    'taking it throws a big ring of sparks, and it turns to its ghost',
+    vis.sparks.count >= 20
+      && (items[0].body.material as THREE.MeshBasicMaterial).transparent
+      && !items[0].rays.visible
+      && !items[0].pool.visible,
+    `${vis.sparks.count} sparks`
+  );
   run(60, 8.1);
   check('the sparks are gone within a second', vis.sparks.count === 0);
   // Hidden (not out yet, or a shy one that has gone): nothing shows, and nothing bursts when it comes back.
@@ -187,7 +294,11 @@ function survey(g: THREE.BufferGeometry): { w: number; h: number; d: number; fac
     s.update(DT);
     t.update(DT);
   }
-  check('sparks use their own dice: two bursts fly the same way', s.group.children.every((c, i) => c.position.distanceTo(t.group.children[i].position) < 1e-9) && a.length === 6);
+  check(
+    'sparks use their own dice: two bursts fly the same way',
+    s.group.children.every((c, i) => c.position.distanceTo(t.group.children[i].position) < 1e-9)
+      && a.length === 6
+  );
 }
 
 console.log(failures === 0 ? '\nall passed' : `\n${failures} FAILED`);

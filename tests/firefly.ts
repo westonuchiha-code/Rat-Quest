@@ -168,13 +168,43 @@ const YARD = { x: spec.x + 8, z: spec.z };
 // ---- Where it is, and what it is ----
 {
   const found = cave.enemies.filter((e) => e.type === 'firefly');
-  check('the Hollows has one, over the west end of the Undershelf, hanging in clear air over real floor', found.length === 1 && spec.x === SHELF_FIREFLY.x && spec.z === SHELF_FIREFLY.z && canStand(spec.x, spec.y ?? 0, spec.z, 0.45) && canFly(spec.x, (spec.y ?? 0) + F.height, spec.z, F.radius), `at ${spec.x}, ${spec.z}`);
-  check('its air is that end of the shelf and out over the chasm beside it', !!spec.arena && spec.arena.x0 === FIREFLY_AIR.x0 && spec.arena.z1 === FIREFLY_AIR.z1 && !canStand(-18, 0, 26, 0.1) && canFly(-18, F.height, 26, F.radius));
-  check('it is no part of what the gallery\'s wedge asks for', !!spec.uncounted && new GoalTracker(cave, () => ({ have: 0, total: 0 })).enemyTotal === cave.enemies.filter((e) => !e.uncounted).length);
+  check(
+    'the Hollows has one, over the west end of the Undershelf, hanging in clear air over real floor',
+    found.length === 1
+      && spec.x === SHELF_FIREFLY.x
+      && spec.z === SHELF_FIREFLY.z
+      && canStand(spec.x, spec.y ?? 0, spec.z, 0.45)
+      && canFly(spec.x, (spec.y ?? 0) + F.height, spec.z, F.radius),
+    `at ${spec.x}, ${spec.z}`
+  );
+  check(
+    'its air is that end of the shelf and out over the chasm beside it',
+    !!spec.arena
+      && spec.arena.x0 === FIREFLY_AIR.x0
+      && spec.arena.z1 === FIREFLY_AIR.z1
+      && !canStand(-18, 0, 26, 0.1)
+      && canFly(-18, F.height, 26, F.radius)
+  );
+  check(
+    'it is no part of what the gallery\'s wedge asks for',
+    !!spec.uncounted
+      && new GoalTracker(cave, () => ({ have: 0, total: 0 })).enemyTotal === cave.enemies.filter((e) => !e.uncounted).length
+  );
   const w = fight(spec.x, spec.z + 30);
   const f = w.f;
-  check('at its post it hangs in the air facing the way it was set, its lantern full', f.state === 'idle' && Math.abs(f.y - F.height) < 1e-6 && Math.abs(f.facing - (spec.facing ?? 0)) < 1e-6 && f.light === 1);
-  check('its fire leaves it from the tip of its lantern: behind its middle, at the bottom of its body', Math.abs(Math.hypot(f.vent.x - f.x, f.vent.z - f.z) - F.ventBack) < 1e-6 && Math.abs(wrap(Math.atan2(f.x - f.vent.x, f.z - f.vent.z) - f.facing)) < 1e-6 && Math.abs(f.vent.y - f.y - F.ventUp) < 1e-6);
+  check(
+    'at its post it hangs in the air facing the way it was set, its lantern full',
+    f.state === 'idle'
+      && Math.abs(f.y - F.height) < 1e-6
+      && Math.abs(f.facing - (spec.facing ?? 0)) < 1e-6
+      && f.light === 1
+  );
+  check(
+    'its fire leaves it from the tip of its lantern: behind its middle, at the bottom of its body',
+    Math.abs(Math.hypot(f.vent.x - f.x, f.vent.z - f.z) - F.ventBack) < 1e-6
+      && Math.abs(wrap(Math.atan2(f.x - f.vent.x, f.z - f.vent.z) - f.facing)) < 1e-6
+      && Math.abs(f.vent.y - f.y - F.ventUp) < 1e-6
+  );
   // It is out of the sword's reach from the floor and from a jump; a double jump gets over it, and the plunge strikes it.
   const p = w.p;
   put(p, f.x, f.z - 0.9, f);
@@ -210,7 +240,13 @@ const YARD = { x: spec.x + 8, z: spec.z };
   const oneTop = leap.top;
   check('a jump does not get up to it', !one && oneTop < F.height - 0.3, `he gets ${oneTop.toFixed(2)} up; it hangs ${F.height} up`);
   const two = leap(2);
-  check('a double jump gets over it, and the plunge strikes it out of the air', two && leap.top > F.height - 0.3 && f.state === 'fall', `he gets ${leap.top.toFixed(2)} up; it is ${f.state}`);
+  check(
+    'a double jump gets over it, and the plunge strikes it out of the air',
+    two
+      && leap.top > F.height - 0.3
+      && f.state === 'fall',
+    `he gets ${leap.top.toFixed(2)} up; it is ${f.state}`
+  );
 }
 
 // ---- It sees him, and flies round him ----
@@ -237,8 +273,20 @@ const YARD = { x: spec.x + 8, z: spec.z };
     dim = Math.min(dim, q.f.light);
     return false;
   }, 6);
-  check('it flies round him a good way off, over a jump\'s reach, its lantern full; it never comes at him', nearest > F.standOff - 1.5 && lowest > F.height - 0.3 && dim === 1 && w.results.length === 0, `${nearest.toFixed(1)} to ${furthest.toFixed(1)} off over ${frames} frames, ${lowest.toFixed(2)} up`);
-  check('it takes no turns with the others: it asks for none, and it has no blow of its own', (w.f as { ready?: boolean }).ready === undefined && (w.f as { mayAttack?: boolean }).mayAttack === undefined && !w.f.attackActive);
+  check(
+    'it flies round him a good way off, over a jump\'s reach, its lantern full; it never comes at him',
+    nearest > F.standOff - 1.5
+      && lowest > F.height - 0.3
+      && dim === 1
+      && w.results.length === 0,
+    `${nearest.toFixed(1)} to ${furthest.toFixed(1)} off over ${frames} frames, ${lowest.toFixed(2)} up`
+  );
+  check(
+    'it takes no turns with the others: it asks for none, and it has no blow of its own',
+    (w.f as { ready?: boolean }).ready === undefined
+      && (w.f as { mayAttack?: boolean }).mayAttack === undefined
+      && !w.f.attackActive
+  );
   new Director().update(DT, [w.f], w.p.position.x, w.p.position.z);
   check('...so the others\' turn-taking leaves it alone', (w.f as { mayAttack?: boolean }).mayAttack === undefined);
 }
@@ -260,7 +308,15 @@ const YARD = { x: spec.x + 8, z: spec.z };
     moved = Math.max(moved, dist(q.f, from));
     return false;
   });
-  check('for the length of the tell it hangs where it is, turns to line up on him, and its lantern flares far brighter than full', w.f.state === 'run' && flare > 1.6 && toMark < 0.1 && moved < 0.4 && dist(f.mark, w.p.position) < 0.05, `light ${flare.toFixed(2)}; ${toMark.toFixed(3)} off its line; its mark ${dist(f.mark, w.p.position).toFixed(2)} from him`);
+  check(
+    'for the length of the tell it hangs where it is, turns to line up on him, and its lantern flares far brighter than full',
+    w.f.state === 'run'
+      && flare > 1.6
+      && toMark < 0.1
+      && moved < 0.4
+      && dist(f.mark, w.p.position) < 0.05,
+    `light ${flare.toFixed(2)}; ${toMark.toFixed(3)} off its line; its mark ${dist(f.mark, w.p.position).toFixed(2)} from him`
+  );
   const heading = f.facing;
   let wander = 0;
   let level = 0;
@@ -273,16 +329,46 @@ const YARD = { x: spec.x + 8, z: spec.z };
     return false;
   });
   const mine = w.let.filter((d) => d.run === 1);
-  check('the run: straight along its line, level, faster than he can run', wander < 1e-6 && level < 0.05 && fast > TUNING.move.run * 1.5 && w.heard.includes('run'), `${fast.toFixed(1)} against his ${TUNING.move.run}`);
-  check('it lets three drops go, each from the very tip of its lantern', mine.length === F.bombs && mine.every((d) => d.offVent < 1e-9) && w.heard.filter((e) => e === 'drop').length === F.bombs, mine.map((d) => d.offVent.toFixed(3)).join(' '));
+  check(
+    'the run: straight along its line, level, faster than he can run',
+    wander < 1e-6
+      && level < 0.05
+      && fast > TUNING.move.run * 1.5
+      && w.heard.includes('run'),
+    `${fast.toFixed(1)} against his ${TUNING.move.run}`
+  );
+  check(
+    'it lets three drops go, each from the very tip of its lantern',
+    mine.length === F.bombs
+      && mine.every((d) => d.offVent < 1e-9)
+      && w.heard.filter((e) => e === 'drop').length === F.bombs,
+    mine.map((d) => d.offVent.toFixed(3)).join(' ')
+  );
   check('where each will land is known the moment it is let go', mine.every((d) => d.mark !== null));
   play(w, still, (q) => q.landed.filter((d) => d.run === 1).length === F.bombs, 4);
   const down = w.landed.filter((d) => d.run === 1);
   const gaps = down.slice(1).map((d, i) => dist(d, down[i]));
   const along = down.map((d) => (d.x - down[0].x) * Math.sin(heading) + (d.z - down[0].z) * Math.cos(heading));
-  check('each lands exactly where it was marked, after drifting down for about a second', down.length === F.bombs && down.every((d) => d.offMark < 1e-6 && d.fell > 0.8 && d.fell < 1.2), down.map((d) => `${d.offMark.toFixed(4)} off after ${d.fell.toFixed(2)} s`).join('; '));
-  check('they land in a row along its line, evenly spaced, the middle one on him', gaps.every((g) => Math.abs(g - F.bombGap) < 0.05) && along.every((a, i) => Math.abs(a - i * F.bombGap) < 0.05) && down[1].fromRat < 0.1, `gaps ${gaps.map((g) => g.toFixed(2)).join(', ')}; the middle one ${down[1].fromRat.toFixed(2)} from him`);
-  check('the flames are the danger: standing there, he is burned', w.burns >= 1 && w.results[0] === 'hit' && w.p.hp < MAX, `${w.burns} burn(s); health ${w.p.hp} of ${MAX}`);
+  check(
+    'each lands exactly where it was marked, after drifting down for about a second',
+    down.length === F.bombs
+      && down.every((d) => d.offMark < 1e-6 && d.fell > 0.8 && d.fell < 1.2),
+    down.map((d) => `${d.offMark.toFixed(4)} off after ${d.fell.toFixed(2)} s`).join('; ')
+  );
+  check(
+    'they land in a row along its line, evenly spaced, the middle one on him',
+    gaps.every((g) => Math.abs(g - F.bombGap) < 0.05)
+      && along.every((a, i) => Math.abs(a - i * F.bombGap) < 0.05)
+      && down[1].fromRat < 0.1,
+    `gaps ${gaps.map((g) => g.toFixed(2)).join(', ')}; the middle one ${down[1].fromRat.toFixed(2)} from him`
+  );
+  check(
+    'the flames are the danger: standing there, he is burned',
+    w.burns >= 1
+      && w.results[0] === 'hit'
+      && w.p.hp < MAX,
+    `${w.burns} burn(s); health ${w.p.hp} of ${MAX}`
+  );
   check('the drops themselves did nothing: he was not hurt before one had landed and caught', w.results.length === w.burns);
 }
 
@@ -301,12 +387,32 @@ const YARD = { x: spec.x + 8, z: spec.z };
     }
     flames.step(DT);
   }
-  check('a patch catches in a moment, burns, dies down at the end, and is gone', heats[0] === 0 && Math.max(...heats) === 1 && heats[heats.length - 1] === 0 && flames.list.length === 0 && burnFrom < 0.12 && burnTo > F.flameTime - 0.4 && burnTo < F.flameTime, `burns from ${burnFrom.toFixed(2)} to ${burnTo.toFixed(2)} of ${F.flameTime} s`);
+  check(
+    'a patch catches in a moment, burns, dies down at the end, and is gone',
+    heats[0] === 0
+      && Math.max(...heats) === 1
+      && heats[heats.length - 1] === 0
+      && flames.list.length === 0
+      && burnFrom < 0.12
+      && burnTo > F.flameTime - 0.4
+      && burnTo < F.flameTime,
+    `burns from ${burnFrom.toFixed(2)} to ${burnTo.toFixed(2)} of ${F.flameTime} s`
+  );
   flames.add(0, 0, 0, F.flameRadius, F.flameTime);
   for (let i = 0; i < 30; i++) flames.step(DT);
   const edge = F.flameRadius + 0.3 * 0.5;
-  check('it burns whoever is in it, to its edge and no further', !!flames.burning(edge - 0.02, 0, 0, 0.3) && !flames.burning(edge + 0.02, 0, 0, 0.3) && !!flames.burning(0, 0, -edge + 0.02, 0.3));
-  check('a jump clears it: over it he is not burned; nor is he on a ledge above it or the floor below it', !flames.burning(0, 0.75, 0, 0.3) && !!flames.burning(0, 0.6, 0, 0.3) && !flames.burning(0, -0.7, 0, 0.3));
+  check(
+    'it burns whoever is in it, to its edge and no further',
+    !!flames.burning(edge - 0.02, 0, 0, 0.3)
+      && !flames.burning(edge + 0.02, 0, 0, 0.3)
+      && !!flames.burning(0, 0, -edge + 0.02, 0.3)
+  );
+  check(
+    'a jump clears it: over it he is not burned; nor is he on a ledge above it or the floor below it',
+    !flames.burning(0, 0.75, 0, 0.3)
+      && !!flames.burning(0, 0.6, 0, 0.3)
+      && !flames.burning(0, -0.7, 0, 0.3)
+  );
 
   // With the real controller: no shield and no roll gets him through it; the Ember Helm does.
   // (He starts `from` to the side of where the patch will be and does `act`; the patch is burning under him by the
@@ -337,11 +443,24 @@ const YARD = { x: spec.x + 8, z: spec.z };
     return { burned, health: p.hp, flung: p.position.x - at0, guarding, safe, off };
   };
   const plain = burnt(0.4, () => ({}));
-  check('standing in it burns him for a heart and throws him back from its middle', plain.burned && plain.health === MAX - F.burn && plain.flung > 0.3, `flung ${plain.flung.toFixed(2)}`);
+  check(
+    'standing in it burns him for a heart and throws him back from its middle',
+    plain.burned
+      && plain.health === MAX - F.burn
+      && plain.flung > 0.3,
+    `flung ${plain.flung.toFixed(2)}`
+  );
   const shield = burnt(0.4, () => ({ guardHeld: true }));
   check('a raised shield does not stop it, though he faces its middle with it up', shield.burned && shield.guarding && shield.health === MAX - F.burn);
   const roll = burnt(1.6, (_p, i) => ({ dodgePressed: i === 0, move: new THREE.Vector3(-1, 0, 0) }));
-  check('nor does a roll: he is burned in the middle of one, at the moment a roll would carry him through a blow', roll.burned && roll.safe && roll.off < F.flameRadius && roll.health === MAX - F.burn, `${roll.off.toFixed(2)} from its middle; safe from a blow: ${roll.safe}`);
+  check(
+    'nor does a roll: he is burned in the middle of one, at the moment a roll would carry him through a blow',
+    roll.burned
+      && roll.safe
+      && roll.off < F.flameRadius
+      && roll.health === MAX - F.burn,
+    `${roll.off.toFixed(2)} from its middle; safe from a blow: ${roll.safe}`
+  );
   const helm = burnt(0.4, () => ({}), { ...NO_GEAR, fireproof: true });
   check('in the Ember Helm he stands in it unharmed', !helm.burned && helm.health === MAX);
   // Once burned he is safe for a moment, as after any blow: one patch does not take two hearts at once.
@@ -356,7 +475,12 @@ const YARD = { x: spec.x + 8, z: spec.z };
     fs.step(DT);
     if (resolveFlames(p, fs, F.burn, events())) times.push(i * DT);
   }
-  check('burned, he is safe for a moment, as after any blow', times.length === 2 && times[1] - times[0] >= TUNING.health.invulnTime - 0.05, times.map((t) => t.toFixed(2)).join(', '));
+  check(
+    'burned, he is safe for a moment, as after any blow',
+    times.length === 2
+      && times[1] - times[0] >= TUNING.health.invulnTime - 0.05,
+    times.map((t) => t.toFixed(2)).join(', ')
+  );
   times = [];
 }
 
@@ -388,7 +512,18 @@ const YARD = { x: spec.x + 8, z: spec.z };
   for (let i = 0; i < 30; i++) stepEmbers([e2], DT, groundBelow);
   fx.update(0.5, [e2], []);
   const half = fx.shown();
-  check('the ring on the floor is drawn where the drop will land, as wide as the flames it will leave, from the moment it is let go; it fills as the drop falls', first.marks.length === 1 && Math.hypot(first.marks[0].x - e2.land!.x, first.marks[0].z - e2.land!.z) < 1e-9 && Math.abs(first.marks[0].y - e2.land!.y) < 0.1 && Math.abs(first.marks[0].r - F.flameRadius) < 1e-9 && first.marks[0].fill < 0.1 && half.marks[0].fill > 0.4 && half.marks[0].fill < 0.6 && Math.abs(half.marks[0].x - first.marks[0].x) < 1e-9, `fill ${first.marks[0].fill.toFixed(2)} then ${half.marks[0].fill.toFixed(2)}`);
+  check(
+    'the ring on the floor is drawn where the drop will land, as wide as the flames it will leave, from the moment it is let go; it fills as the drop falls',
+    first.marks.length === 1
+      && Math.hypot(first.marks[0].x - e2.land!.x, first.marks[0].z - e2.land!.z) < 1e-9
+      && Math.abs(first.marks[0].y - e2.land!.y) < 0.1
+      && Math.abs(first.marks[0].r - F.flameRadius) < 1e-9
+      && first.marks[0].fill < 0.1
+      && half.marks[0].fill > 0.4
+      && half.marks[0].fill < 0.6
+      && Math.abs(half.marks[0].x - first.marks[0].x) < 1e-9,
+    `fill ${first.marks[0].fill.toFixed(2)} then ${half.marks[0].fill.toFixed(2)}`
+  );
   const fs = new Flames();
   const fl = fs.add(3, 0, 4, F.flameRadius, F.flameTime);
   for (let i = 0; i < 30; i++) fs.step(DT);
@@ -396,7 +531,17 @@ const YARD = { x: spec.x + 8, z: spec.z };
   fx.update(1, [], fs.list);
   const burning = fx.shown();
   const reach = Math.max(...burning.tongues.map((t) => Math.hypot(t.x - fl.x, t.z - fl.z)));
-  check('when it lands the ring goes and flames stand there: every tongue inside the patch that burns', burning.drops === 0 && burning.marks.length === 0 && burning.fires === 1 && burning.tongues.length >= 5 && reach < F.flameRadius && reach > F.flameRadius * 0.4 && burning.tongues.every((t) => t.h > 0.5), `${burning.tongues.length} tongues, the furthest ${reach.toFixed(2)} out of ${F.flameRadius}`);
+  check(
+    'when it lands the ring goes and flames stand there: every tongue inside the patch that burns',
+    burning.drops === 0
+      && burning.marks.length === 0
+      && burning.fires === 1
+      && burning.tongues.length >= 5
+      && reach < F.flameRadius
+      && reach > F.flameRadius * 0.4
+      && burning.tongues.every((t) => t.h > 0.5),
+    `${burning.tongues.length} tongues, the furthest ${reach.toFixed(2)} out of ${F.flameRadius}`
+  );
   for (let i = 0; i < 60 * 4; i++) fs.step(DT);
   fx.update(5, [], fs.list);
   check('when they have burned out nothing is left drawn', fx.shown().fires === 0 && fx.group.children.length === 0);
@@ -410,9 +555,21 @@ const YARD = { x: spec.x + 8, z: spec.z };
   play(w, west, (q) => q.landed.filter((d) => d.run === 1).length === F.bombs || q.p.position.x < -45, 12);
   const down = w.landed.filter((d) => d.run === 1);
   const best = Math.min(...down.map((d) => d.fromRat), 99);
-  check('he runs straight on: it aims at where he is going, and a drop comes down on him', down.length === F.bombs && best < F.flameRadius && w.burns >= 1, `the nearest lands ${best.toFixed(2)} from him; ${w.burns} burn(s)`);
+  check(
+    'he runs straight on: it aims at where he is going, and a drop comes down on him',
+    down.length === F.bombs
+      && best < F.flameRadius
+      && w.burns >= 1,
+    `the nearest lands ${best.toFixed(2)} from him; ${w.burns} burn(s)`
+  );
   const first = w.let.find((d) => d.run === 1)!;
-  check('...let go well ahead of him: aimed at where he would be, not where he was', !!first && first.mark !== null && Math.min(...w.let.filter((d) => d.run === 1).map((d) => d.mark ? d.rat.x - d.mark.x : -9)) > 2, w.let.filter((d) => d.run === 1).map((d) => (d.mark ? (d.rat.x - d.mark.x).toFixed(1) : 'none')).join(', ') + ' ahead of him when let go');
+  check(
+    '...let go well ahead of him: aimed at where he would be, not where he was',
+    !!first
+      && first.mark !== null
+      && Math.min(...w.let.filter((d) => d.run === 1).map((d) => d.mark ? d.rat.x - d.mark.x : -9)) > 2,
+    w.let.filter((d) => d.run === 1).map((d) => (d.mark ? (d.rat.x - d.mark.x).toFixed(1) : 'none')).join(', ') + ' ahead of him when let go'
+  );
 }
 {
   // He runs straight until its line is set, then turns off it: nothing touches him.
@@ -426,7 +583,14 @@ const YARD = { x: spec.x + 8, z: spec.z };
   const down = w.landed.filter((d) => d.run === 1);
   const best = Math.min(...down.map((d) => d.fromRat), 99);
   for (let i = 0; i < 30; i++) step(w, { move: new THREE.Vector3(0, 0, -1), run: true });
-  check('he turns off its line once it is set: every drop misses, and he is not burned', down.length === F.bombs && best > F.flameRadius + 0.6 && w.burns === 0 && w.p.hp === MAX, `the nearest lands ${best.toFixed(2)} from him`);
+  check(
+    'he turns off its line once it is set: every drop misses, and he is not burned',
+    down.length === F.bombs
+      && best > F.flameRadius + 0.6
+      && w.burns === 0
+      && w.p.hp === MAX,
+    `the nearest lands ${best.toFixed(2)} from him`
+  );
 }
 {
   // Its mark is never out over the chasm: a rat running at the edge is aimed at on the floor he can stand on.
@@ -450,7 +614,14 @@ const YARD = { x: spec.x + 8, z: spec.z };
   const dodge = sidestep;
   play(w, dodge, (q) => q.f.state === 'sink');
   const f = w.f;
-  check('after two runs its light is spent', w.runs === F.runs && w.heard.includes('spent') && w.let.length === F.runs * F.bombs && f.light < 0.2, `${w.runs} runs, ${w.let.length} drops, light ${f.light.toFixed(2)}`);
+  check(
+    'after two runs its light is spent',
+    w.runs === F.runs
+      && w.heard.includes('spent')
+      && w.let.length === F.runs * F.bombs
+      && f.light < 0.2,
+    `${w.runs} runs, ${w.let.length} drops, light ${f.light.toFixed(2)}`
+  );
   check('he kept out of its fire by stepping off its line each time', w.burns === 0 && w.p.hp === MAX);
   play(w, still, (q) => q.f.state === 'spent');
   let high = 0;
@@ -465,7 +636,16 @@ const YARD = { x: spec.x + 8, z: spec.z };
     lit = Math.max(lit, q.f.light);
     return false;
   });
-  check('it sinks to hang low over floor he can reach, dark, while its lantern fills', high < F.low + 0.1 && low > F.low - 0.1 && dark < 0.05 && lit > 0.95 && canStand(f.x, 0, f.z, 0.3) && Math.abs(w.t - (w.t - F.rest)) > 0, `${low.toFixed(2)} to ${high.toFixed(2)} up; light ${dark.toFixed(2)} to ${lit.toFixed(2)}`);
+  check(
+    'it sinks to hang low over floor he can reach, dark, while its lantern fills',
+    high < F.low + 0.1
+      && low > F.low - 0.1
+      && dark < 0.05
+      && lit > 0.95
+      && canStand(f.x, 0, f.z, 0.3)
+      && Math.abs(w.t - (w.t - F.rest)) > 0,
+    `${low.toFixed(2)} to ${high.toFixed(2)} up; light ${dark.toFixed(2)} to ${lit.toFixed(2)}`
+  );
   check('left alone it has its light back after a few seconds, and goes up to start again', f.state === 'rise' && w.heard.includes('rise'));
   play(w, dodge, (q) => q.f.state === 'circle');
   check('...at its height, its lantern full', Math.abs(f.y - F.height) < 0.4 && f.light === 1);
@@ -478,7 +658,13 @@ const YARD = { x: spec.x + 8, z: spec.z };
   put(w.p, f.x + 0.9, f.z, f);
   const hp = f.hp;
   const cut = swing(w.p, f);
-  check('hanging spent it is within the sword\'s reach: a cut knocks it to the floor', cut.enemyHit === f && f.hp === hp - 1 && f.state === 'fall', `${f.state}, ${f.hp} of ${F.hp}`);
+  check(
+    'hanging spent it is within the sword\'s reach: a cut knocks it to the floor',
+    cut.enemyHit === f
+      && f.hp === hp - 1
+      && f.state === 'fall',
+    `${f.state}, ${f.hp} of ${F.hp}`
+  );
   w.heard.length = 0;
   play(w, still, (q) => q.f.state === 'grounded');
   check('it lands with a thud and lies there', w.heard.includes('thud') && f.y === 0 && f.downed);
@@ -499,7 +685,12 @@ const YARD = { x: spec.x + 8, z: spec.z };
     return { attackPressed: frame++ % 6 === 0 };
   }, (q) => q.f.state === 'circle', 12);
   const took = 99 - w.f.hp;
-  check('one opening, by the sword alone, is not enough to kill it: it takes a second, or a plunge', took >= 3 && took < F.hp, `${took} of its ${F.hp} in one opening`);
+  check(
+    'one opening, by the sword alone, is not enough to kill it: it takes a second, or a plunge',
+    took >= 3
+      && took < F.hp,
+    `${took} of its ${F.hp} in one opening`
+  );
 }
 {
   // A plunge onto it while it hangs is worth more.
@@ -515,7 +706,12 @@ const YARD = { x: spec.x + 8, z: spec.z };
     if (strike) struck = true;
     return { jumpPressed: i === 1, jumpHeld: true, attackPressed: strike, move: new THREE.Vector3(0, 0, struck ? 0 : 0.5) };
   }, (q) => struck && q.p.grounded, 3);
-  check('a plunge onto it while it hangs takes a good part of its health at a stroke', w.f.hp === F.hp - TUNING.plunge.diveDamage && w.f.downed, `${w.f.hp} of ${F.hp} left`);
+  check(
+    'a plunge onto it while it hangs takes a good part of its health at a stroke',
+    w.f.hp === F.hp - TUNING.plunge.diveDamage
+      && w.f.downed,
+    `${w.f.hp} of ${F.hp} left`
+  );
 }
 
 // ---- Its end ----
@@ -535,7 +731,14 @@ const YARD = { x: spec.x + 8, z: spec.z };
       return { attackPressed: frame++ % 6 === 0 };
     }, (q) => !q.f.alive || q.f.state === 'circle', 12);
   }
-  check('cut down with the sword over two openings, it dies; it does not come back', !f.alive && f.state === 'dead' && !f.respawns && openings === 2, `${openings} openings`);
+  check(
+    'cut down with the sword over two openings, it dies; it does not come back',
+    !f.alive
+      && f.state === 'dead'
+      && !f.respawns
+      && openings === 2,
+    `${openings} openings`
+  );
   for (let i = 0; i < 60; i++) step(w);
   check('it lies on the floor, its lantern out', f.y === 0 && f.light === 0 && canStand(f.x, 0, f.z, 0.2) && !f.attackActive && !f.attacking);
   const lets = w.let.length;
@@ -554,13 +757,28 @@ const YARD = { x: spec.x + 8, z: spec.z };
   c.f.takeHit(1, 0, 0);
   c.heard.length = 0;
   for (let i = 0; i < 60 * 3; i++) step(c);
-  check('cut out of the air over the chasm, it falls into the dark and is gone', !c.f.alive && c.f.y < -5 && c.heard.includes('lost') && !c.heard.includes('thud'), `${c.f.y.toFixed(1)} up`);
+  check(
+    'cut out of the air over the chasm, it falls into the dark and is gone',
+    !c.f.alive
+      && c.f.y < -5
+      && c.heard.includes('lost')
+      && !c.heard.includes('thud'),
+    `${c.f.y.toFixed(1)} up`
+  );
   // One set to come back does.
   const r = fight(YARD.x, YARD.z, 3, { ...spec, respawn: true });
   while (r.f.alive) r.f.takeHit(9, 0, 0);
   put(r.p, YARD.x + 30, YARD.z);
   for (let i = 0; i < 60 * (F.respawn + 1); i++) step(r);
-  check('one set to come back is at its post again after a while, whole, its lantern full', r.f.alive && r.f.state === 'idle' && r.f.hp === F.hp && r.f.light === 1 && dist(r.f, spec) < 0.01 && Math.abs(r.f.y - F.height) < 0.2);
+  check(
+    'one set to come back is at its post again after a while, whole, its lantern full',
+    r.f.alive
+      && r.f.state === 'idle'
+      && r.f.hp === F.hp
+      && r.f.light === 1
+      && dist(r.f, spec) < 0.01
+      && Math.abs(r.f.y - F.height) < 0.2
+  );
 }
 
 // ---- A long fight in the real cave: it keeps to its air and out of the rock, and he is not burned if he keeps off its lines ----
@@ -593,8 +811,20 @@ const YARD = { x: spec.x + 8, z: spec.z };
       return { move: new THREE.Vector3(mx, 0, mz).normalize(), run: true };
     }, () => false, 60);
     const mid = w.landed.filter((d) => d.fromRat < F.flameRadius).length;
-    check(`a minute of it with him running about (dice ${seed}): it never flies into rock or out of its air, and spent it always hangs low over floor he can stand on`, inRock === 0 && out === 0 && lowOverPit === 0 && w.runs >= 6, `${inRock} frames in rock, ${out} out of its air, ${lowOverPit} spent out of his reach; ${w.runs} runs, ${w.let.length} drops let go, ${w.landed.length} caught on floor, ${mid} came down on him, ${w.burns} burns`);
-    check(`...every drop that caught did so exactly where it was marked, on floor he could stand on (dice ${seed})`, w.landed.length > 10 && w.landed.every((d) => d.offMark < 1e-6 && canStand(d.x, d.y, d.z, 0.1)), `${w.landed.filter((d) => !canStand(d.x, d.y, d.z, 0.1)).length} off the floor`);
+    check(
+      `a minute of it with him running about (dice ${seed}): it never flies into rock or out of its air, and spent it always hangs low over floor he can stand on`,
+      inRock === 0
+        && out === 0
+        && lowOverPit === 0
+        && w.runs >= 6,
+      `${inRock} frames in rock, ${out} out of its air, ${lowOverPit} spent out of his reach; ${w.runs} runs, ${w.let.length} drops let go, ${w.landed.length} caught on floor, ${mid} came down on him, ${w.burns} burns`
+    );
+    check(
+      `...every drop that caught did so exactly where it was marked, on floor he could stand on (dice ${seed})`,
+      w.landed.length > 10
+        && w.landed.every((d) => d.offMark < 1e-6 && canStand(d.x, d.y, d.z, 0.1)),
+      `${w.landed.filter((d) => !canStand(d.x, d.y, d.z, 0.1)).length} off the floor`
+    );
     check(`...and it is a real danger to a rat who does not watch it: it burned him (dice ${seed})`, w.burns >= 1, `${w.burns} burns in a minute`);
   }
 }
@@ -605,7 +835,14 @@ const YARD = { x: spec.x + 8, z: spec.z };
   play(w, still, (q) => q.f.state === 'circle' && q.f.stateTime > 0.5);
   put(w.p, 40, 40);
   play(w, still, (q) => q.f.state === 'idle', 30);
-  check('when he goes right away it flies back to its post', w.f.state === 'idle' && w.seen.includes('return') && dist(w.f, spec) < 0.5 && Math.abs(w.f.y - F.height) < 0.3, `${w.seen.join(' ')}; ${dist(w.f, spec).toFixed(1)} from its post`);
+  check(
+    'when he goes right away it flies back to its post',
+    w.f.state === 'idle'
+      && w.seen.includes('return')
+      && dist(w.f, spec) < 0.5
+      && Math.abs(w.f.y - F.height) < 0.3,
+    `${w.seen.join(' ')}; ${dist(w.f, spec).toFixed(1)} from its post`
+  );
 }
 
 // ---- The others: one over the Foundry's north floor, the lava along it; one over the west end of the Keep's ward, the pit along it ----
@@ -619,8 +856,26 @@ const YARD = { x: spec.x + 8, z: spec.z };
     enter(L);
     const found = L.enemies.filter((e) => e.type === 'firefly');
     const sp = found[0];
-    check(`there is one ${place.where}, hanging in clear air over real floor`, found.length === 1 && sp.x === place.at.x && sp.z === place.at.z && canStand(sp.x, sp.y ?? 0, sp.z, 0.45) && canFly(sp.x, (sp.y ?? 0) + F.height, sp.z, F.radius) && canFly(sp.x, (sp.y ?? 0) + F.height + 0.8, sp.z, F.radius), sp ? `at ${sp.x}, ${sp.z}` : 'none');
-    check(`...its air is that floor and out over ${place.beside} beside it; and it is no part of what any wedge there asks for`, !!sp.arena && sp.arena.x0 === place.air.x0 && sp.arena.x1 === place.air.x1 && sp.arena.z0 === place.air.z0 && sp.arena.z1 === place.air.z1 && !!sp.uncounted && new GoalTracker(L, () => ({ have: 0, total: 0 })).enemyTotal === L.enemies.filter((e) => !e.uncounted).length);
+    check(
+      `there is one ${place.where}, hanging in clear air over real floor`,
+      found.length === 1
+        && sp.x === place.at.x
+        && sp.z === place.at.z
+        && canStand(sp.x, sp.y ?? 0, sp.z, 0.45)
+        && canFly(sp.x, (sp.y ?? 0) + F.height, sp.z, F.radius)
+        && canFly(sp.x, (sp.y ?? 0) + F.height + 0.8, sp.z, F.radius),
+      sp ? `at ${sp.x}, ${sp.z}` : 'none'
+    );
+    check(
+      `...its air is that floor and out over ${place.beside} beside it; and it is no part of what any wedge there asks for`,
+      !!sp.arena
+        && sp.arena.x0 === place.air.x0
+        && sp.arena.x1 === place.air.x1
+        && sp.arena.z0 === place.air.z0
+        && sp.arena.z1 === place.air.z1
+        && !!sp.uncounted
+        && new GoalTracker(L, () => ({ have: 0, total: 0 })).enemyTotal === L.enemies.filter((e) => !e.uncounted).length
+    );
     const R = place.roam;
     const mid = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 };
     for (const seed of [3, 11]) {
@@ -655,8 +910,21 @@ const YARD = { x: spec.x + 8, z: spec.z };
         return { move: new THREE.Vector3(mx, 0, mz).normalize(), run: true };
       }, () => false, 60);
       const lost = w.let.filter((d) => d.mark === null).length;
-      check(`a minute of it there with him running about (dice ${seed}): it never flies into anything solid or out of its air, and spent it always hangs low over floor he can stand on`, inRock === 0 && out === 0 && outOfReach === 0 && w.runs >= 6, `${inRock} frames in something solid, ${out} out of its air, ${outOfReach} spent out of his reach; ${w.runs} runs, ${w.let.length} drops let go, ${w.landed.length} caught, ${lost} fell into ${place.beside}; ${w.burns} burns, ${falls} times off the edge`);
-      check(`...every drop that caught did so exactly where it was marked, on floor he could stand on: none on ${place.beside} (dice ${seed})`, w.landed.length > 8 && w.landed.every((d) => d.offMark < 1e-6 && canStand(d.x, d.y, d.z, 0.1) && !wet(d.x, d.y, d.z)) && w.landed.length + lost + w.embers.length === w.let.length, `${w.landed.filter((d) => !canStand(d.x, d.y, d.z, 0.1)).length} off the floor`);
+      check(
+        `a minute of it there with him running about (dice ${seed}): it never flies into anything solid or out of its air, and spent it always hangs low over floor he can stand on`,
+        inRock === 0
+          && out === 0
+          && outOfReach === 0
+          && w.runs >= 6,
+        `${inRock} frames in something solid, ${out} out of its air, ${outOfReach} spent out of his reach; ${w.runs} runs, ${w.let.length} drops let go, ${w.landed.length} caught, ${lost} fell into ${place.beside}; ${w.burns} burns, ${falls} times off the edge`
+      );
+      check(
+        `...every drop that caught did so exactly where it was marked, on floor he could stand on: none on ${place.beside} (dice ${seed})`,
+        w.landed.length > 8
+          && w.landed.every((d) => d.offMark < 1e-6 && canStand(d.x, d.y, d.z, 0.1) && !wet(d.x, d.y, d.z))
+          && w.landed.length + lost + w.embers.length === w.let.length,
+        `${w.landed.filter((d) => !canStand(d.x, d.y, d.z, 0.1)).length} off the floor`
+      );
     }
     // Cut out of the air over what is beside the floor, it is gone.
     const c = fight(Math.min(R.x1 - 1, sp.x + 8), mid.z, 3, sp);
@@ -670,7 +938,14 @@ const YARD = { x: spec.x + 8, z: spec.z };
       c.heard.length = 0;
       for (let i = 0; i < 60 * 3; i++) step(c);
     }
-    check(`cut out of the air over ${place.beside}, it goes down into it and is gone`, !!over && !c.f.alive && c.f.y < -5 && c.heard.includes('lost'), over ? `over ${over.x}, ${over.z}; ${c.f.y.toFixed(1)} up` : 'no such place in its air');
+    check(
+      `cut out of the air over ${place.beside}, it goes down into it and is gone`,
+      !!over
+        && !c.f.alive
+        && c.f.y < -5
+        && c.heard.includes('lost'),
+      over ? `over ${over.x}, ${over.z}; ${c.f.y.toFixed(1)} up` : 'no such place in its air'
+    );
   }
   // The Foundry: a rat up on the Slag Run, over its head, is left alone; and the Slag Crew is still only the island's.
   {
@@ -682,12 +957,22 @@ const YARD = { x: spec.x + 8, z: spec.z };
     f.canFly = canFly;
     for (let i = 0; i < 60 * 5; i++) f.update(DT, sp.x + 2, 8, sp.z + 12, true);
     check('the Foundry: a rat up on the beams of the Slag Run, over its head, is left alone', f.state === 'idle' && f.drops.length === 0);
-    check('the Foundry: the Slag Crew is still only the beasts on the island', L.enemies.filter((e) => !e.uncounted).every((e) => e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1) && L.enemies.filter((e) => !e.uncounted).length === 6);
+    check(
+      'the Foundry: the Slag Crew is still only the beasts on the island',
+      L.enemies.filter((e) => !e.uncounted).every((e) => e.x > ISLAND.x0 && e.x < ISLAND.x1 && e.z > ISLAND.z0 && e.z < ISLAND.z1)
+        && L.enemies.filter((e) => !e.uncounted).length === 6
+    );
   }
   {
     const L = LEVELS.find((l) => l.id === 'keep')!;
     const guard = KEEP_WEDGES.find((w) => w.id === 'guard')!;
-    check('the Keep: the wedge for beating every guard asks for what it did, and its hint is still true (the firefly is not one of them)', L.enemies.filter((e) => !e.uncounted).every((e) => e.type !== 'firefly') && L.enemies.filter((e) => e.uncounted).length === 1 && !/firefly/i.test(guard.hint), `${L.enemies.filter((e) => !e.uncounted).length} to beat`);
+    check(
+      'the Keep: the wedge for beating every guard asks for what it did, and its hint is still true (the firefly is not one of them)',
+      L.enemies.filter((e) => !e.uncounted).every((e) => e.type !== 'firefly')
+        && L.enemies.filter((e) => e.uncounted).length === 1
+        && !/firefly/i.test(guard.hint),
+      `${L.enemies.filter((e) => !e.uncounted).length} to beat`
+    );
     // From the courtyard, the gatehouse wall between them, it does not see him.
     enter(L);
     const sp = L.enemies.find((e) => e.type === 'firefly')!;
@@ -718,9 +1003,23 @@ const YARD = { x: spec.x + 8, z: spec.z };
   c.depth = 40;
   c.pieces.push({ t: 'floor', x0: -20, z0: -20, x1: 20, z1: 20, top: 0 }, { t: 'firefly', x0: 3, z0: 4, x1: 3, z1: 4, top: 0, dir: 'e' });
   const made = compileCustom(c, 'test').enemies.find((e) => e.type === 'firefly');
-  check('a level made with one has it there, facing the way it was set, with room to fly', !!made && made.x === 3 && made.z === 4 && Math.abs((made.facing ?? 0) - Math.PI / 2) < 1e-6 && !!made.arena && made.arena.x1 - made.arena.x0 >= 20);
+  check(
+    'a level made with one has it there, facing the way it was set, with room to fly',
+    !!made
+      && made.x === 3
+      && made.z === 4
+      && Math.abs((made.facing ?? 0) - Math.PI / 2) < 1e-6
+      && !!made.arena
+      && made.arena.x1 - made.arena.x0 >= 20
+  );
   const sticker = STICKERS.find((s) => s.id === 'foe:firefly');
-  check('it has a page in the sticker book, with a picture', !!sticker && sticker.blurb.length > 80 && stickerIcon(sticker.icon, 40).includes('<svg') && stickerIcon(sticker.icon, 40) !== stickerIcon('hornet', 40));
+  check(
+    'it has a page in the sticker book, with a picture',
+    !!sticker
+      && sticker.blurb.length > 80
+      && stickerIcon(sticker.icon, 40).includes('<svg')
+      && stickerIcon(sticker.icon, 40) !== stickerIcon('hornet', 40)
+  );
 }
 
 // ---- A firefly with a colour of its own (the Glow Cave's glow bugs): only its looks are different ----
@@ -753,9 +1052,32 @@ const YARD = { x: spec.x + 8, z: spec.z };
   };
   const plain = run();
   const pink = run(PINK);
-  check('a coloured firefly flies, bombs and burns exactly as a plain one does: the same fight, step for step', plain.path === pink.path && plain.w.burns === pink.w.burns && plain.w.runs === pink.w.runs && plain.w.runs >= 2 && plain.drops.length === pink.drops.length && plain.w.p.hp === pink.w.p.hp, `${pink.w.runs} runs, ${pink.drops.length} drops, burned ${pink.w.burns} times (plain ${plain.w.burns})`);
-  check('...its colour goes with its fire all the way: each drop it lets go, each drop falling, each patch of flame', pink.drops.length >= 6 && pink.drops.every((c) => c === PINK) && pink.embers.length === pink.drops.length && pink.embers.every((c) => c === PINK) && pink.flames.length >= 3 && pink.flames.every((c) => c === PINK), `${pink.drops.length} drops, ${pink.flames.length} patches`);
-  check('...and a plain one\'s fire has no colour given: it is a fire\'s own', plain.drops.every((c) => c === undefined) && plain.flames.length >= 3 && plain.flames.every((c) => c === undefined));
+  check(
+    'a coloured firefly flies, bombs and burns exactly as a plain one does: the same fight, step for step',
+    plain.path === pink.path
+      && plain.w.burns === pink.w.burns
+      && plain.w.runs === pink.w.runs
+      && plain.w.runs >= 2
+      && plain.drops.length === pink.drops.length
+      && plain.w.p.hp === pink.w.p.hp,
+    `${pink.w.runs} runs, ${pink.drops.length} drops, burned ${pink.w.burns} times (plain ${plain.w.burns})`
+  );
+  check(
+    '...its colour goes with its fire all the way: each drop it lets go, each drop falling, each patch of flame',
+    pink.drops.length >= 6
+      && pink.drops.every((c) => c === PINK)
+      && pink.embers.length === pink.drops.length
+      && pink.embers.every((c) => c === PINK)
+      && pink.flames.length >= 3
+      && pink.flames.every((c) => c === PINK),
+    `${pink.drops.length} drops, ${pink.flames.length} patches`
+  );
+  check(
+    '...and a plain one\'s fire has no colour given: it is a fire\'s own',
+    plain.drops.every((c) => c === undefined)
+      && plain.flames.length >= 3
+      && plain.flames.every((c) => c === undefined)
+  );
   // What is drawn: the drop, the mark where it will land, and the light of the flames, in its colour; a plain one's as before.
   const fx = new EmberFx();
   const mk = (color: number | undefined, x: number): Ember => makeEmber({ x, y: 4, z: 0, vx: 0, vy: 0, vz: 0, color }, { gravity: F.bombFall, radius: F.flameRadius, burnFor: F.flameTime }, () => 0);
@@ -765,14 +1087,31 @@ const YARD = { x: spec.x + 8, z: spec.z };
   const hue = (hex: number): number => new THREE.Color(hex).getHSL({ h: 0, s: 0, l: 0 }).h;
   const pinkHue = hue(PINK);
   const near = (a: number, b: number): boolean => Math.min(Math.abs(a - b), 1 - Math.abs(a - b)) < 0.04;
-  check('a coloured drop and its mark on the floor are drawn in its colour; a plain drop and its mark in a fire\'s orange', cols.drops.length === 2 && near(hue(cols.drops[1]), pinkHue) && near(hue(cols.marks[1]), pinkHue) && !near(hue(cols.drops[0]), pinkHue) && hue(cols.drops[0]) < 0.12 && hue(cols.marks[0]) < 0.12, cols.drops.map((c) => c.toString(16)).join());
+  check(
+    'a coloured drop and its mark on the floor are drawn in its colour; a plain drop and its mark in a fire\'s orange',
+    cols.drops.length === 2
+      && near(hue(cols.drops[1]), pinkHue)
+      && near(hue(cols.marks[1]), pinkHue)
+      && !near(hue(cols.drops[0]), pinkHue)
+      && hue(cols.drops[0]) < 0.12
+      && hue(cols.marks[0]) < 0.12,
+    cols.drops.map((c) => c.toString(16)).join()
+  );
   const fl = new Flames();
   fl.add(0, 0, 0, F.flameRadius, F.flameTime);
   fl.add(3, 0, 0, F.flameRadius, F.flameTime, PINK);
   fl.step(0.5);
   const lights: Array<{ color: THREE.Color; r: number; power: number }> = [];
   fx.update(0.5, [], fl.list, lights as never);
-  check('the flames a coloured drop leaves light the room in its colour, and less of it than a real fire does (they are for dark places)', lights.length === 2 && near(hue(lights[1].color.getHex()), pinkHue) && hue(lights[0].color.getHex()) < 0.12 && lights[1].r < lights[0].r && lights[1].power < lights[0].power, lights.map((l) => `${l.color.getHexString()} r${l.r} p${l.power.toFixed(2)}`).join('; '));
+  check(
+    'the flames a coloured drop leaves light the room in its colour, and less of it than a real fire does (they are for dark places)',
+    lights.length === 2
+      && near(hue(lights[1].color.getHex()), pinkHue)
+      && hue(lights[0].color.getHex()) < 0.12
+      && lights[1].r < lights[0].r
+      && lights[1].power < lights[0].power,
+    lights.map((l) => `${l.color.getHexString()} r${l.r} p${l.power.toFixed(2)}`).join('; ')
+  );
   check('...and are the same size and height as any flames: what is drawn is still what burns', (() => {
     const t = fx.shown().tongues;
     const a = t.filter((q) => Math.abs(q.x) < 1.5);

@@ -88,18 +88,63 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   const twin = plate(1, 1, 0.01, floorMat, -3, -3); // (the floor's own material and colour: looks the same whichever is drawn)
   g.add(floor, rug, coin, far, twin);
   const before = sweep(g, 'made');
-  check('the sweep finds a rug a hair over a floor, and a coin a hair over the rug: each smaller thing called the one on top', before.length === 3 && before.every((f) => (f.front === rug && f.back === floor) || (f.front === coin && (f.back === rug || f.back === floor))), told(before));
-  check('...and not a thing well clear of the floor, nor a patch of the floor\'s own material and colour (whichever of those two is drawn, it looks the same)', !before.some((f) => f.front === far || f.front === twin));
+  check(
+    'the sweep finds a rug a hair over a floor, and a coin a hair over the rug: each smaller thing called the one on top',
+    before.length === 3
+      && before.every((f) => (f.front === rug && f.back === floor) || (f.front === coin && (f.back === rug || f.back === floor))),
+    told(before)
+  );
+  check(
+    '...and not a thing well clear of the floor, nor a patch of the floor\'s own material and colour (whichever of those two is drawn, it looks the same)',
+    !before.some((f) => f.front === far || f.front === twin)
+  );
   const done = autoLayer(g);
   const lv = (m: THREE.Mesh): number => (m.userData.layer as number | undefined) ?? 0;
-  check('the layering puts the rug one layer up from the floor and the coin two: what lies on a thing that lies on something is over both', lv(floor) === 0 && lv(rug) === 1 && lv(coin) === 2 && done.layeredMeshes === 2 && done.skins === 0 && !done.skipped, `${lv(floor)}/${lv(rug)}/${lv(coin)}`);
-  check('...after which the sweep finds nothing: what is on a higher layer is painted on after what is under it, and the order decides', sweep(g, 'made').length === 0);
+  check(
+    'the layering puts the rug one layer up from the floor and the coin two: what lies on a thing that lies on something is over both',
+    lv(floor) === 0
+      && lv(rug) === 1
+      && lv(coin) === 2
+      && done.layeredMeshes === 2
+      && done.skins === 0
+      && !done.skipped,
+    `${lv(floor)}/${lv(rug)}/${lv(coin)}`
+  );
+  check(
+    '...after which the sweep finds nothing: what is on a higher layer is painted on after what is under it, and the order decides',
+    sweep(g, 'made').length === 0
+  );
   const rm = rug.material as THREE.ShaderMaterial;
   const cm = coin.material as THREE.ShaderMaterial;
-  check('a flat thing that lies on another is PAINTED ON AFTERWARDS: it writes no depth, is drawn after the room in the order of its layer, and is pulled a hair toward the eye', rm.depthWrite === false && cm.depthWrite === false && rug.renderOrder === 1 && coin.renderOrder === 2 && rm.polygonOffset && rm.polygonOffsetFactor < 0);
-  check('...and the coin on the rug is pulled no further than the rug is (the rug wrote no depth: both are one hair over the FLOOR, and the depth buffer still holds the floor)', cm.polygonOffsetFactor === rm.polygonOffsetFactor && (floor.material as THREE.Material).depthWrite !== false, `${rm.polygonOffsetFactor} / ${cm.polygonOffsetFactor}`);
-  check('its material is a copy that SHARES its settings with the one it was copied from (the room\'s fog, its lights, its flash reach it too): only how it meets the depth buffer is its own', rm !== rugMat && rm.uniforms === rugMat.uniforms && rm.userData.layerOf === rugMat && rugMat.depthWrite !== false);
-  check('...there is one copy of a material for a pull, however many things ask for it; and layering twice changes nothing', decalOf(rugMat) === rm && decalOf(rm) === rm && decalOf(rugMat, 2) !== rm && autoLayer(g).layeredMeshes === 0);
+  check(
+    'a flat thing that lies on another is PAINTED ON AFTERWARDS: it writes no depth, is drawn after the room in the order of its layer, and is pulled a hair toward the eye',
+    rm.depthWrite === false
+      && cm.depthWrite === false
+      && rug.renderOrder === 1
+      && coin.renderOrder === 2
+      && rm.polygonOffset
+      && rm.polygonOffsetFactor < 0
+  );
+  check(
+    '...and the coin on the rug is pulled no further than the rug is (the rug wrote no depth: both are one hair over the FLOOR, and the depth buffer still holds the floor)',
+    cm.polygonOffsetFactor === rm.polygonOffsetFactor
+      && (floor.material as THREE.Material).depthWrite !== false,
+    `${rm.polygonOffsetFactor} / ${cm.polygonOffsetFactor}`
+  );
+  check(
+    'its material is a copy that SHARES its settings with the one it was copied from (the room\'s fog, its lights, its flash reach it too): only how it meets the depth buffer is its own',
+    rm !== rugMat
+      && rm.uniforms === rugMat.uniforms
+      && rm.userData.layerOf === rugMat
+      && rugMat.depthWrite !== false
+  );
+  check(
+    '...there is one copy of a material for a pull, however many things ask for it; and layering twice changes nothing',
+    decalOf(rugMat) === rm
+      && decalOf(rm) === rm
+      && decalOf(rugMat, 2) !== rm
+      && autoLayer(g).layeredMeshes === 0
+  );
   // A SOLID thing with a face flush against another's.
   {
     const wallMat = createPs1Material({ lit: true });
@@ -112,23 +157,58 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
     const found = sweep(gs, 'made');
     const out = autoLayer(gs);
     const skin = block.children[0] as THREE.Mesh | undefined;
-    check('a SOLID thing with a face flush against another\'s (a block let into a wall) is found, and keeps its own honest depth: its material is not touched', found.length === 1 && found[0].front === block && block.material === blockMat && blockMat.depthWrite !== false && !blockMat.polygonOffset);
-    check('...it is given a SKIN instead: itself again, painted on afterwards (the same shape, no depth written, a hair toward the eye, drawn after the room)', out.skins === 1 && !!skin && skin.geometry === block.geometry && (skin.material as THREE.Material).depthWrite === false && (skin.material as THREE.Material).polygonOffset && skin.renderOrder === 1 && (skin.material as THREE.ShaderMaterial).uniforms === blockMat.uniforms);
-    check('...after which the sweep finds nothing there, and a second go gives it no second skin', sweep(gs, 'made').length === 0 && autoLayer(gs).skins === 0 && block.children.length === 1);
+    check(
+      'a SOLID thing with a face flush against another\'s (a block let into a wall) is found, and keeps its own honest depth: its material is not touched',
+      found.length === 1
+        && found[0].front === block
+        && block.material === blockMat
+        && blockMat.depthWrite !== false
+        && !blockMat.polygonOffset
+    );
+    check(
+      '...it is given a SKIN instead: itself again, painted on afterwards (the same shape, no depth written, a hair toward the eye, drawn after the room)',
+      out.skins === 1
+        && !!skin
+        && skin.geometry === block.geometry
+        && (skin.material as THREE.Material).depthWrite === false
+        && (skin.material as THREE.Material).polygonOffset
+        && skin.renderOrder === 1
+        && (skin.material as THREE.ShaderMaterial).uniforms === blockMat.uniforms
+    );
+    check(
+      '...after which the sweep finds nothing there, and a second go gives it no second skin',
+      sweep(gs, 'made').length === 0
+        && autoLayer(gs).skins === 0
+        && block.children.length === 1
+    );
     // (A flat thing made by hand to lie on something, in a material that writes depth: painted on afterwards too.)
     const gh = new THREE.Group();
     const hand = plate(1, 1, 0.01, lyingOn(createPs1Material({ lit: true }), 3));
     gh.add(plate(8, 8, 0, createPs1Material({ lit: true })), hand);
     autoLayer(gh);
-    check('a flat thing made BY HAND to lie three layers up, in a material that wrote depth (the rug\'s diamonds as they were), is made one that is painted on afterwards on that layer: so it cannot stand nearer the eye than his shadow', (hand.material as THREE.Material).depthWrite === false && hand.renderOrder === 3 && hand.userData.layer === 3);
+    check(
+      'a flat thing made BY HAND to lie three layers up, in a material that wrote depth (the rug\'s diamonds as they were), is made one that is painted on afterwards on that layer: so it cannot stand nearer the eye than his shadow',
+      (hand.material as THREE.Material).depthWrite === false
+        && hand.renderOrder === 3
+        && hand.userData.layer === 3
+    );
     const lone = plate(1, 1, 0.01, createPs1Material({ lit: true }));
     asDecal(lone, 2);
-    check('`asDecal` does the same for one mesh by hand (the Long Drop\'s runnels, the cave\'s moss)', (lone.material as THREE.Material).depthWrite === false && lone.renderOrder === 2 && lone.userData.layer === 2);
+    check(
+      '`asDecal` does the same for one mesh by hand (the Long Drop\'s runnels, the cave\'s moss)',
+      (lone.material as THREE.Material).depthWrite === false
+        && lone.renderOrder === 2
+        && lone.userData.layer === 2
+    );
   }
   // (A face that looks straight into something solid is never seen.)
   const g2 = new THREE.Group();
   g2.add(plate(8, 8, 0, floorMat), plate(2, 2, 0.01, createPs1Material({ lit: true })));
-  check('a pair looking straight into something solid is let be (the underside of a pillar on a floor): never seen', sweep(g2, 'made').length === 1 && sweep(g2, 'made', () => true).length === 0);
+  check(
+    'a pair looking straight into something solid is let be (the underside of a pillar on a floor): never seen',
+    sweep(g2, 'made').length === 1
+      && sweep(g2, 'made', () => true).length === 0
+  );
   // (Within ONE mesh: its own surface in one plane is not a pair; two of its faces a hair apart ARE, and cannot be layered.)
   const one = new THREE.BufferGeometry();
   one.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0.01, 0, 0, 0.01, 1, 1, 0.01, 1], 3));
@@ -138,7 +218,13 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   g3.add(both);
   const done3 = autoLayer(g3);
   const left = sweep(g3, 'made');
-  check('two faces of ONE mesh a hair apart, of different colours, cannot be cured by layering (one mesh is drawn all at once): the sweep still finds them', done3.layeredMeshes === 0 && left.length === 1 && left[0].front === both && left[0].back === both);
+  check(
+    'two faces of ONE mesh a hair apart, of different colours, cannot be cured by layering (one mesh is drawn all at once): the sweep still finds them',
+    done3.layeredMeshes === 0
+      && left.length === 1
+      && left[0].front === both
+      && left[0].back === both
+  );
   (both as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material = new THREE.MeshBasicMaterial({ vertexColors: true, depthWrite: false });
   check('...unless the mesh writes no depth: then its faces go down in the order they were made, every frame alike (the moss)', sweep(g3, 'made').length === 0);
   check(`nothing is put more than ${LAYER_MOST} layers up`, (() => {
@@ -204,14 +290,29 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
     });
     if (done.skipped) big.push(L.id);
     if (after.length) dirty.push(L.id);
-    check(`${L.id}: nothing is left that could flicker (${done.skipped ? 'too big to layer as it loads: it is clean AS BUILT' : `${done.layeredMeshes} things were put a layer up as it loaded`})`, after.length === 0, told(after, near));
+    check(
+      `${L.id}: nothing is left that could flicker (${done.skipped ? 'too big to layer as it loads: it is clean AS BUILT' : `${done.layeredMeshes} things were put a layer up as it loaded`})`,
+      after.length === 0,
+      told(after, near)
+    );
     if (done.skipped) check(`...${L.id} has more than ${LAYER_BUDGET} faces, which is why it is not swept as it loads (the sweep of it takes seconds)`, faceCount(ch.group) > LAYER_BUDGET, `${faceCount(ch.group)}`);
   }
   if (!only) {
-    check('every level and every try-out room was swept, and the layering as they load has real work to do (hundreds of things lie on others)', levels === ALL_LEVELS.length + TEST_ROOMS.length && levels >= 33 && cured > 300, `${levels} levels, ${cured} things layered`);
+    check(
+      'every level and every try-out room was swept, and the layering as they load has real work to do (hundreds of things lie on others)',
+      levels === ALL_LEVELS.length + TEST_ROOMS.length
+        && levels >= 33
+        && cured > 300,
+      `${levels} levels, ${cured} things layered`
+    );
     // (The Big Dipper, 2026-11-17: the dream's long ride, 2,260 long. Clean as built, as the Long Drop is.)
     check('only the two long rides (the Long Drop, the Big Dipper) are too big to sweep as they load', big.join() === 'longdrop,bigdipper', big.join());
-    check('in every room, every FLAT thing that lies on something (a rug and each of its layers, the dance floor, a patch, a mark on a wall) is painted on afterwards and writes no depth: so the depth buffer holds the true floor, and his shadow shows on a rug (it had vanished on the long rugs and the dance floor: they stood nearer the eye than it)', flats > 300 && lying.length === 0, `${flats} flat things${lying.length ? `; ${lying.slice(0, 4).join('; ')}` : ''}`);
+    check(
+      'in every room, every FLAT thing that lies on something (a rug and each of its layers, the dance floor, a patch, a mark on a wall) is painted on afterwards and writes no depth: so the depth buffer holds the true floor, and his shadow shows on a rug (it had vanished on the long rugs and the dance floor: they stood nearer the eye than it)',
+      flats > 300
+        && lying.length === 0,
+      `${flats} flat things${lying.length ? `; ${lying.slice(0, 4).join('; ')}` : ''}`
+    );
     check('...and solid things with a flush face wear skins', skins > 200, `${skins} skins`);
   }
 }
@@ -221,7 +322,11 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   // A thin pipe's joint bands.
   const thin = buildChamber({ solids: [], pit: [], water: [], decor: [{ kind: 'pipe', a: [0, 1, 0], b: [0, 1, 12], r: 0.05 }], movers: [] } as never);
   const left = sweep(thin.group, 'pipe');
-  check('a thin pipe\'s joint bands stand proud of it by more than a hair (they were a hundredth proud, in one mesh with the pipe, and flickered through it)', left.length === 0, told(left));
+  check(
+    'a thin pipe\'s joint bands stand proud of it by more than a hair (they were a hundredth proud, in one mesh with the pipe, and flickered through it)',
+    left.length === 0,
+    told(left)
+  );
   // Glowing moss.
   const cave = TEST_ROOMS.find((l) => l.id === 'glowcave')!;
   const room = buildChamber({ solids: cave.solids, pit: cave.pit, water: cave.water ?? [], decor: cave.decor.filter((d) => d.kind === 'moss'), movers: [] } as never);
@@ -230,19 +335,33 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
     const m = o as THREE.Mesh;
     if (m.isMesh && (m.material as THREE.MeshBasicMaterial).map && (m.material as THREE.Material).depthWrite === false && !(m.material as THREE.Material).transparent) moss.push(m);
   });
-  check('the cave\'s moss (lobes lying on one another, threads on the lobes, all one mesh) writes no depth, lies on the rock, and is drawn after the room: so its faces go down in the order they were made', moss.length >= 10 && moss.every((m) => m.renderOrder === 1 && m.userData.layer === 1 && (m.material as THREE.Material).polygonOffset), `${moss.length} clumps`);
+  check(
+    'the cave\'s moss (lobes lying on one another, threads on the lobes, all one mesh) writes no depth, lies on the rock, and is drawn after the room: so its faces go down in the order they were made',
+    moss.length >= 10
+      && moss.every((m) => m.renderOrder === 1 && m.userData.layer === 1 && (m.material as THREE.Material).polygonOffset),
+    `${moss.length} clumps`
+  );
   // The Long Drop: its rails and its runnels.
   const drop = longDropPlan();
   const beds = drop.solids.filter((b) => b.ramp && b.x1 - b.x0 > 10);
   const rails = drop.solids.filter((b) => b.ramp && Math.abs(b.x1 - b.x0 - RAIL.wide) < 1e-6);
   const sunk = rails.filter((r) => beds.some((bed) => Math.abs(bed.z1 - r.z1) < 1e-6 && bed.z0 <= r.z0 && r.y0 < bed.ramp!.low - 1e-6));
-  check('the Long Drop\'s rails stand ON the bed at their low end, not sunk in it (sunk, a rail that ran to the bed\'s end had its own end in the plane of the bed\'s end)', rails.length >= 8 && sunk.length === 0, `${rails.length} rails, ${sunk.length} sunk`);
+  check(
+    'the Long Drop\'s rails stand ON the bed at their low end, not sunk in it (sunk, a rail that ran to the bed\'s end had its own end in the plane of the bed\'s end)',
+    rails.length >= 8
+      && sunk.length === 0,
+    `${rails.length} rails, ${sunk.length} sunk`
+  );
   const ld = TEST_ROOMS.find((l) => l.id === 'longdrop')!;
   const runnels = buildChamber({ solids: [], pit: [], water: [], decor: ld.decor.filter((d) => d.kind === 'runnel').slice(0, 2), movers: [] } as never);
   const strips: THREE.Mesh[] = [];
   // (A runnel is a plane in a group tipped down the slope.)
   runnels.group.traverse((o) => (o as THREE.Mesh).isMesh && (o as THREE.Mesh).geometry.type === 'PlaneGeometry' && o.parent!.rotation.x !== 0 && strips.push(o as THREE.Mesh));
-  check('a runnel of slime is drawn as a thing that LIES ON the floor (it is a strip a hair over it)', strips.length === 2 && strips.every((m) => (m.material as THREE.Material).polygonOffset && (m.material as THREE.Material).depthWrite === false && m.renderOrder === 1 && m.userData.layer === 1));
+  check(
+    'a runnel of slime is drawn as a thing that LIES ON the floor (it is a strip a hair over it)',
+    strips.length === 2
+      && strips.every((m) => (m.material as THREE.Material).polygonOffset && (m.material as THREE.Material).depthWrite === false && m.renderOrder === 1 && m.userData.layer === 1)
+  );
 }
 
 // ---------------------------------------------------------------- what characters lay on the floor
@@ -286,8 +405,20 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
     const onFloor = sweep(g, name).filter((f) => (f.front === floor || f.back === floor) && new THREE.Box3().setFromObject(f.front === floor ? f.back : f.front).getSize(new THREE.Vector3()).y < 0.012);
     if (onFloor.length) bad.push(`${name}: ${told(onFloor)}`);
   }
-  check('every flat thing a character lays on the floor (its shadow, a warning ring, the mark where a sting will land) is drawn as a thing that LIES ON the floor', flats >= 25 && bad.length === 0, `${flats} flat things${bad.length ? `: ${bad.join('; ')}` : ''}`);
-  check('nobody casts two shadows: the off-duty ant and the beaten stag are creatures from elsewhere and bring their own (they had that AND the one every character is given, one on the other, twice as dark)', shadows.get('Corporal Nib') === 1 && shadows.get('a beaten stag') === 1 && shadows.get('Pip') === 1 && shadows.get('ant') === 1, [...shadows].filter(([, n]) => n !== 1).map(([k, n]) => `${k} ${n}`).join());
+  check(
+    'every flat thing a character lays on the floor (its shadow, a warning ring, the mark where a sting will land) is drawn as a thing that LIES ON the floor',
+    flats >= 25
+      && bad.length === 0,
+    `${flats} flat things${bad.length ? `: ${bad.join('; ')}` : ''}`
+  );
+  check(
+    'nobody casts two shadows: the off-duty ant and the beaten stag are creatures from elsewhere and bring their own (they had that AND the one every character is given, one on the other, twice as dark)',
+    shadows.get('Corporal Nib') === 1
+      && shadows.get('a beaten stag') === 1
+      && shadows.get('Pip') === 1
+      && shadows.get('ant') === 1,
+    [...shadows].filter(([, n]) => n !== 1).map(([k, n]) => `${k} ${n}`).join()
+  );
   check('a ring is over its own fill: the scorpion\'s mark', (() => {
     const s = new ScorpionModel() as unknown as { markMat: THREE.Material; fillMat: THREE.Material };
     return s.markMat.polygonOffsetFactor < s.fillMat.polygonOffsetFactor && s.fillMat.polygonOffset;
@@ -295,7 +426,12 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   // (`lyingOn` itself.)
   const a = lyingOn(new THREE.MeshBasicMaterial(), 1);
   const b = lyingOn(new THREE.MeshBasicMaterial(), 3);
-  check('each layer up is drawn nearer than the one below it', a.polygonOffset && b.polygonOffsetFactor < a.polygonOffsetFactor && b.polygonOffsetUnits < a.polygonOffsetUnits);
+  check(
+    'each layer up is drawn nearer than the one below it',
+    a.polygonOffset
+      && b.polygonOffsetFactor < a.polygonOffsetFactor
+      && b.polygonOffsetUnits < a.polygonOffsetUnits
+  );
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

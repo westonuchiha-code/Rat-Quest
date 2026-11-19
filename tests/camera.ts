@@ -102,7 +102,15 @@ function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => TH
 {
   const v = view(-30, 0, 40, 1);
   settle(v, hollows, 2);
-  check('in the open it is where it always was: its usual distance off, looking at him, neither risen nor pulled in', Math.abs(far(v) - C.distance) < 1e-6 && Math.abs(steep(v) - 0.3) < 1e-6 && v.cam.lift === 0 && v.cam.rise === 0 && Math.abs(onScreen(v, chest(v)).up) < 1e-6, `${far(v).toFixed(3)} off, pitch ${steep(v).toFixed(3)}`);
+  check(
+    'in the open it is where it always was: its usual distance off, looking at him, neither risen nor pulled in',
+    Math.abs(far(v) - C.distance) < 1e-6
+      && Math.abs(steep(v) - 0.3) < 1e-6
+      && v.cam.lift === 0
+      && v.cam.rise === 0
+      && Math.abs(onScreen(v, chest(v)).up) < 1e-6,
+    `${far(v).toFixed(3)} off, pitch ${steep(v).toFixed(3)}`
+  );
 }
 
 // ---- A brazier behind him (the Hollows, where the west path comes out: the one the owner's pikemen fought beside) ----
@@ -110,29 +118,66 @@ function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => TH
   // (Its bowl is the widest and highest of it: that is what stands between him and the view.)
   const B = { x: -26, z: -28, half: BRAZIER.bowl * 0.9, top: BRAZIER.rim };
   const box = hollows.find((b) => Math.abs((b.min.x + b.max.x) / 2 - B.x) < 0.01 && Math.abs((b.min.z + b.max.z) / 2 - B.z) < 0.01 && Math.abs(b.max.y - B.top) < 0.01);
-  check('the brazier there is a low solid thing: its bowl a little over a unit wide, its rim a little over a unit high', !!box && Math.abs(box.max.x - box.min.x - B.half * 2) < 0.01 && B.half * 2 > 1 && B.half * 2 < 1.4 && B.top > 1 && B.top < 1.3);
+  check(
+    'the brazier there is a low solid thing: its bowl a little over a unit wide, its rim a little over a unit high',
+    !!box
+      && Math.abs(box.max.x - box.min.x - B.half * 2) < 0.01
+      && B.half * 2 > 1
+      && B.half * 2 < 1.4
+      && B.top > 1
+      && B.top < 1.3
+  );
   // He stands with his back against it; the view is behind him, beyond it.
   const z = B.z + B.half + TUNING.rat.radius + 0.02;
   const before = oldView();
   let old = new THREE.Vector3();
   const f = new THREE.Vector3(B.x, 0, z);
   for (let i = 0; i < 180; i++) old = before(f, Math.PI, hollows);
-  check('as it used to be: backed against it, the view was pulled in to inside his head', old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)) < 0.6, `${old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)).toFixed(2)} from the middle of him`);
+  check(
+    'as it used to be: backed against it, the view was pulled in to inside his head',
+    old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)) < 0.6,
+    `${old.distanceTo(new THREE.Vector3(B.x, C.targetHeight, z)).toFixed(2)} from the middle of him`
+  );
   const v = view(B.x, 0, z, Math.PI);
   settle(v, hollows);
   const waist = chest(v).add(new THREE.Vector3(0, -0.25, 0));
   check('now it is not pulled in: it stays its full distance off', Math.abs(far(v) - C.distance) < 0.02 && v.cam.rise === 0, `${far(v).toFixed(2)} off`);
-  check('it has risen to look over the brazier at him: steeper than he set it, within how steeply it may look', v.cam.lift > 0.3 && steep(v) > 0.6 && steep(v) <= C.liftMaxPitch + 0.03, `pitch ${steep(v).toFixed(2)} (he set 0.30; it may go to ${C.liftMaxPitch})`);
-  check('from there nothing solid is between it and him: his chest, his waist, either side of him', sight(chest(v), v.eye.position, hollows) === 1 && sight(waist, v.eye.position, hollows) === 1 && inside(v.eye.position, hollows) === 0);
+  check(
+    'it has risen to look over the brazier at him: steeper than he set it, within how steeply it may look',
+    v.cam.lift > 0.3
+      && steep(v) > 0.6
+      && steep(v) <= C.liftMaxPitch + 0.03,
+    `pitch ${steep(v).toFixed(2)} (he set 0.30; it may go to ${C.liftMaxPitch})`
+  );
+  check(
+    'from there nothing solid is between it and him: his chest, his waist, either side of him',
+    sight(chest(v), v.eye.position, hollows) === 1
+      && sight(waist, v.eye.position, hollows) === 1
+      && inside(v.eye.position, hollows) === 0
+  );
   check('it has not turned: it is the same way round him as he left it', Math.abs(wrap(bearing(v) - Math.PI)) < 1e-6 && v.cam.yaw === Math.PI);
-  check('all of him is in the picture, a little below its middle (looking so steeply down, it looks a little ahead of him), and the floor three ahead of him (a pike\'s length) is well inside it', onScreen(v, new THREE.Vector3(B.x, 0.05, z)).seen && onScreen(v, new THREE.Vector3(B.x, 1.2, z)).seen && onScreen(v, chest(v)).up < 0 && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).seen && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up < 20, `his chest ${onScreen(v, chest(v)).up.toFixed(0)}, three ahead ${onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up.toFixed(0)} degrees up the picture`);
+  check(
+    'all of him is in the picture, a little below its middle (looking so steeply down, it looks a little ahead of him), and the floor three ahead of him (a pike\'s length) is well inside it',
+    onScreen(v, new THREE.Vector3(B.x, 0.05, z)).seen
+      && onScreen(v, new THREE.Vector3(B.x, 1.2, z)).seen
+      && onScreen(v, chest(v)).up < 0
+      && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).seen
+      && onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up < 20,
+    `his chest ${onScreen(v, chest(v)).up.toFixed(0)}, three ahead ${onScreen(v, new THREE.Vector3(B.x, 0.5, z + 3)).up.toFixed(0)} degrees up the picture`
+  );
   // He walks away from it: the view comes down again.
   for (let i = 0; i < 60; i++) {
     v.focus.z += 3 * DT;
     step(v, hollows, { x: 0, z: 3 });
   }
   settle(v, hollows, 2.5);
-  check('when he walks away from it the view comes down to where he set it', v.cam.lift < 0.01 && Math.abs(steep(v) - 0.3) < 0.02 && Math.abs(far(v) - C.distance) < 0.02, `pitch ${steep(v).toFixed(3)}`);
+  check(
+    'when he walks away from it the view comes down to where he set it',
+    v.cam.lift < 0.01
+      && Math.abs(steep(v) - 0.3) < 0.02
+      && Math.abs(far(v) - C.distance) < 0.02,
+    `pitch ${steep(v).toFixed(3)}`
+  );
   // He backs into it from the open: the view goes up over it without first coming in at him.
   const w = view(B.x, 0, z + 3, Math.PI);
   settle(w, hollows, 1);
@@ -148,11 +193,23 @@ function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => TH
     turn = Math.max(turn, Math.abs(wrap(bearing(w) - Math.PI)));
     last.copy(w.eye.position);
   }
-  check('backing into it from the open, the view goes up over it smoothly, hardly coming in at him at all on the way', nearest > C.distance - 0.4 && jump < 0.25 && turn < 1e-6 && w.cam.lift > 0.3, `nearest ${nearest.toFixed(2)} of ${C.distance}; most it moves in a frame ${jump.toFixed(2)}`);
+  check(
+    'backing into it from the open, the view goes up over it smoothly, hardly coming in at him at all on the way',
+    nearest > C.distance - 0.4
+      && jump < 0.25
+      && turn < 1e-6
+      && w.cam.lift > 0.3,
+    `nearest ${nearest.toFixed(2)} of ${C.distance}; most it moves in a frame ${jump.toFixed(2)}`
+  );
   // A little to one side of the line, its bowl (wider than its stand) would still have hidden him: it rises for that too.
   const s = view(B.x + 0.5, 0, z + 0.3, Math.PI);
   settle(s, hollows);
-  check('a brazier just beside the line between them (its bowl is wider than its stand) is looked over as well', s.cam.lift > 0.2 && Math.abs(far(s) - C.distance) < 0.02, `risen ${s.cam.lift.toFixed(2)}`);
+  check(
+    'a brazier just beside the line between them (its bowl is wider than its stand) is looked over as well',
+    s.cam.lift > 0.2
+      && Math.abs(far(s) - C.distance) < 0.02,
+    `risen ${s.cam.lift.toFixed(2)}`
+  );
   const clear = view(B.x + 1.6, 0, z + 0.3, Math.PI);
   settle(clear, hollows);
   check('one well to the side is left alone', clear.cam.lift === 0 && Math.abs(steep(clear) - 0.3) < 1e-6);
@@ -168,12 +225,26 @@ function oldView(): (focus: THREE.Vector3, yaw: number, colliders: Aabb[]) => TH
   const v = view(barrel.x1 + TUNING.rat.radius + 0.6, barrel.y0, bz, -Math.PI / 2);
   settle(v, hub);
   const feet = new THREE.Vector3(v.focus.x, v.focus.y + 0.55, v.focus.z);
-  check('a barrel between them is looked over: he is not hidden behind it to the neck (as a line to his chest alone would have left him)', v.cam.lift > 0.1 && Math.abs(far(v) - C.distance) < 0.02 && sight(feet, v.eye.position, hub) === 1 && v.eye.position.x < bx, `pitch ${steep(v).toFixed(2)}`);
+  check(
+    'a barrel between them is looked over: he is not hidden behind it to the neck (as a line to his chest alone would have left him)',
+    v.cam.lift > 0.1
+      && Math.abs(far(v) - C.distance) < 0.02
+      && sight(feet, v.eye.position, hub) === 1
+      && v.eye.position.x < bx,
+    `pitch ${steep(v).toFixed(2)}`
+  );
   // The Cistern: a crate with another on top of it and one beside it. A step off it, the view can still see over.
   const stack = { x: 26, z0: 25.5, z1: 26.5, top: 2 };
   const a = view(stack.x, 0, stack.z1 + 1.3, Math.PI);
   settle(a, cistern);
-  check('two crates, one on the other: a step away from them, it looks over them too', a.cam.lift > 0.3 && Math.abs(far(a) - C.distance) < 0.02 && sight(chest(a), a.eye.position, cistern) === 1 && a.eye.position.y > stack.top, `pitch ${steep(a).toFixed(2)}, ${a.eye.position.y.toFixed(1)} up`);
+  check(
+    'two crates, one on the other: a step away from them, it looks over them too',
+    a.cam.lift > 0.3
+      && Math.abs(far(a) - C.distance) < 0.02
+      && sight(chest(a), a.eye.position, cistern) === 1
+      && a.eye.position.y > stack.top,
+    `pitch ${steep(a).toFixed(2)}, ${a.eye.position.y.toFixed(1)} up`
+  );
 }
 
 // ---- A wall behind him: it is still pulled in, but it goes up over his head and looks ahead of him ----
@@ -186,9 +257,27 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   settle(v, cistern);
   const ahead = new THREE.Vector3(x - Math.sin(yaw) * 3, 0.5, z - Math.cos(yaw) * 3);
   const head = new THREE.Vector3(x, 1.1, z);
-  check(`${name} at his back, as it used to be: the view was pulled in to inside his head`, old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)) < 0.6, `${old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)).toFixed(2)} from the middle of him, ${inside(old, cistern).toFixed(2)} into the wall`);
-  check(`${name} at his back: it has gone up over his head, on his side of the wall`, v.cam.rise > C.squeezeRise - 0.05 && v.eye.position.y > 2.5 && inside(v.eye.position, cistern) === 0 && v.cam.lift === 0, `${v.eye.position.y.toFixed(2)} up, ${Math.hypot(v.eye.position.x - x, v.eye.position.z - z).toFixed(2)} out from him`);
-  check(`...and looks down ahead of him: all of him is in the picture, near its foot, and so is the floor three ahead of him`, onScreen(v, new THREE.Vector3(x, 0.05, z)).seen && onScreen(v, head).seen && onScreen(v, chest(v)).up < -5 && onScreen(v, ahead).seen, `his feet ${onScreen(v, new THREE.Vector3(x, 0.05, z)).up.toFixed(0)}, his head ${onScreen(v, head).up.toFixed(0)}, three ahead ${onScreen(v, ahead).up.toFixed(0)} degrees up the picture`);
+  check(
+    `${name} at his back, as it used to be: the view was pulled in to inside his head`,
+    old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)) < 0.6,
+    `${old.distanceTo(new THREE.Vector3(x, C.targetHeight, z)).toFixed(2)} from the middle of him, ${inside(old, cistern).toFixed(2)} into the wall`
+  );
+  check(
+    `${name} at his back: it has gone up over his head, on his side of the wall`,
+    v.cam.rise > C.squeezeRise - 0.05
+      && v.eye.position.y > 2.5
+      && inside(v.eye.position, cistern) === 0
+      && v.cam.lift === 0,
+    `${v.eye.position.y.toFixed(2)} up, ${Math.hypot(v.eye.position.x - x, v.eye.position.z - z).toFixed(2)} out from him`
+  );
+  check(
+    `...and looks down ahead of him: all of him is in the picture, near its foot, and so is the floor three ahead of him`,
+    onScreen(v, new THREE.Vector3(x, 0.05, z)).seen
+      && onScreen(v, head).seen
+      && onScreen(v, chest(v)).up < -5
+      && onScreen(v, ahead).seen,
+    `his feet ${onScreen(v, new THREE.Vector3(x, 0.05, z)).up.toFixed(0)}, his head ${onScreen(v, head).up.toFixed(0)}, three ahead ${onScreen(v, ahead).up.toFixed(0)} degrees up the picture`
+  );
   check(`...and it has not turned`, v.cam.yaw === yaw && Math.abs(onScreen(v, chest(v)).side) < 0.01 && Math.abs(onScreen(v, ahead).side) < 0.01);
   // He walks out from the wall: it comes back down behind him.
   for (let i = 0; i < 90; i++) {
@@ -197,7 +286,13 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
     step(v, cistern);
   }
   settle(v, cistern, 3);
-  check(`...and when he walks out from it, it comes down behind him again`, v.cam.rise < 0.01 && Math.abs(steep(v) - 0.3) < 0.02 && Math.abs(far(v) - C.distance) < 0.05, `pitch ${steep(v).toFixed(3)}, ${far(v).toFixed(2)} off`);
+  check(
+    `...and when he walks out from it, it comes down behind him again`,
+    v.cam.rise < 0.01
+      && Math.abs(steep(v) - 0.3) < 0.02
+      && Math.abs(far(v) - C.distance) < 0.05,
+    `pitch ${steep(v).toFixed(3)}, ${far(v).toFixed(2)} off`
+  );
 }
 {
   // Backing into the wall from the open: it moves smoothly, and he never leaves the picture.
@@ -225,8 +320,18 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
     last.copy(v.eye.position);
     lastDir.copy(dir);
   }
-  check('backing into a wall from the open, the view moves smoothly up over him and he never leaves the picture', jump < 0.6 && swing < 8 && lost === 0, `most it moves in a frame ${jump.toFixed(2)}, most it swings ${swing.toFixed(1)} degrees; out of the picture for ${lost} frames`);
-  check('...and it is never deeper in the wall than it used to go on the way', deep <= deepOld + 0.01, `${deep.toFixed(2)}; it used to go ${deepOld.toFixed(2)} in`);
+  check(
+    'backing into a wall from the open, the view moves smoothly up over him and he never leaves the picture',
+    jump < 0.6
+      && swing < 8
+      && lost === 0,
+    `most it moves in a frame ${jump.toFixed(2)}, most it swings ${swing.toFixed(1)} degrees; out of the picture for ${lost} frames`
+  );
+  check(
+    '...and it is never deeper in the wall than it used to go on the way',
+    deep <= deepOld + 0.01,
+    `${deep.toFixed(2)}; it used to go ${deepOld.toFixed(2)} in`
+  );
   settle(v, cistern, 1);
   check('...and come to rest it is not in the wall at all (it used to rest a little way inside it)', inside(v.eye.position, cistern) === 0);
 }
@@ -235,7 +340,17 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   const room: Aabb[] = [makeAabb(0, -0.5, 0, 20, 1, 20), makeAabb(0, 2, 5.5, 20, 6, 1), makeAabb(0, 2.6, 0, 20, 1, 20)];
   const v = view(0, 0, 5 - TUNING.rat.radius - 0.02, 0);
   settle(v, room);
-  check('under a low roof it goes up only as far as there is room, stays under the roof and out of the wall, and he is still in the picture', v.cam.rise > 0.2 && v.cam.rise < C.squeezeRise - 0.5 && v.eye.position.y < 2.1 - 0.15 && inside(v.eye.position, room) === 0 && Number.isFinite(v.eye.position.x + v.eye.quaternion.x) && onScreen(v, chest(v)).seen && onScreen(v, new THREE.Vector3(0, 1.2, v.focus.z)).seen, `risen ${v.cam.rise.toFixed(2)}; ${v.eye.position.y.toFixed(2)} up under a roof at 2.10; his chest ${onScreen(v, chest(v)).up.toFixed(0)} degrees up the picture`);
+  check(
+    'under a low roof it goes up only as far as there is room, stays under the roof and out of the wall, and he is still in the picture',
+    v.cam.rise > 0.2
+      && v.cam.rise < C.squeezeRise - 0.5
+      && v.eye.position.y < 2.1 - 0.15
+      && inside(v.eye.position, room) === 0
+      && Number.isFinite(v.eye.position.x + v.eye.quaternion.x)
+      && onScreen(v, chest(v)).seen
+      && onScreen(v, new THREE.Vector3(0, 1.2, v.focus.z)).seen,
+    `risen ${v.cam.rise.toFixed(2)}; ${v.eye.position.y.toFixed(2)} up under a roof at 2.10; his chest ${onScreen(v, chest(v)).up.toFixed(0)} degrees up the picture`
+  );
   const flat: Aabb[] = [room[0], room[1], makeAabb(0, 1.7, 0, 20, 1, 20)];
   const u = view(0, 0, 5 - TUNING.rat.radius - 0.02, 0);
   settle(u, flat);
@@ -259,8 +374,20 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   }
   C.liftMaxPitch = tall;
   C.squeezeRise = up;
-  check('with both sliders at nothing the view is exactly what it was, frame for frame', off < 1e-9 && v.cam.lift === 0 && v.cam.rise === 0, `furthest apart ${off.toExponential(1)}`);
-  check('each has a slider, set as the game is', TWEAKS.some((t) => t.path === 'camera.liftMaxPitch') && TWEAKS.some((t) => t.path === 'camera.squeezeRise') && tall === 1.2 && up === 2.6);
+  check(
+    'with both sliders at nothing the view is exactly what it was, frame for frame',
+    off < 1e-9
+      && v.cam.lift === 0
+      && v.cam.rise === 0,
+    `furthest apart ${off.toExponential(1)}`
+  );
+  check(
+    'each has a slider, set as the game is',
+    TWEAKS.some((t) => t.path === 'camera.liftMaxPitch')
+      && TWEAKS.some((t) => t.path === 'camera.squeezeRise')
+      && tall === 1.2
+      && up === 2.6
+  );
 }
 
 // ---- A run about the Cistern with the real knight: against the old view, frame for frame ----
@@ -311,9 +438,19 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
     if (v.cam.lift > 0.1) over++;
     turned = Math.max(turned, Math.abs(wrap(v.cam.yaw - yaw)));
   }
-  check('a minute and a half of running about the Cistern into its walls and crates: the old view was in his head for some of it', inHeadOld > 30, `${inHeadOld} of ${FRAMES} frames within 0.75 of the middle of him`);
+  check(
+    'a minute and a half of running about the Cistern into its walls and crates: the old view was in his head for some of it',
+    inHeadOld > 30,
+    `${inHeadOld} of ${FRAMES} frames within 0.75 of the middle of him`
+  );
   check('...the new one never is', inHead === 0, `${inHead} frames; it went up over his head for ${risen} frames and looked over something low for ${over}`);
-  check('...he is never out of the picture, nothing in it is a bad number, and it is never deeper in anything solid than it used to go', lost === 0 && bad === 0 && deep <= deepOld + 0.01, `out of the picture ${lost} frames; deepest ${deep.toFixed(2)}, where it used to go ${deepOld.toFixed(2)}`);
+  check(
+    '...he is never out of the picture, nothing in it is a bad number, and it is never deeper in anything solid than it used to go',
+    lost === 0
+      && bad === 0
+      && deep <= deepOld + 0.01,
+    `out of the picture ${lost} frames; deepest ${deep.toFixed(2)}, where it used to go ${deepOld.toFixed(2)}`
+  );
   check('...it never swings sharply from one frame to the next', swing < 12, `most ${swing.toFixed(1)} degrees in a frame`);
   check('...and only the stick turned it', turned < 1e-9);
   void L;
@@ -349,7 +486,11 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
       if (nearest < C.distance * 0.85 || under > 0) { ok = false; told.push(`slope ${slope} at ${speed}, ${fps} fps: ${nearest.toFixed(2)} off${under > 0 ? ', under the ramp' : ''}`); }
     }
   }
-  check('going UP a slope (as steep as the roads, and steeper; walking, riding, tucked; at sixty frames a second and at thirty) it stays its distance behind him and over the slope: it is not drawn in to his back', ok, told.join('; '));
+  check(
+    'going UP a slope (as steep as the roads, and steeper; walking, riding, tucked; at sixty frames a second and at thirty) it stays its distance behind him and over the slope: it is not drawn in to his back',
+    ok,
+    told.join('; ')
+  );
   // And a hop on the flat is as it was: its height comes after his gently.
   const eye = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
   const cam = new FollowCamera(eye);
@@ -361,7 +502,12 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   focus.y = 2;
   cam.update(DT, focus, 0, false, 0, 0, flat);
   cam.update(DT, focus, 0, false, 0, 0, flat);
-  check('a hop off flat ground does not jolt it: two up in a step, it has risen a fifth of that or less (the ground under him has not moved)', eye.position.y - y0 < 0.45 && eye.position.y - y0 > 0, `${(eye.position.y - y0).toFixed(2)}`);
+  check(
+    'a hop off flat ground does not jolt it: two up in a step, it has risen a fifth of that or less (the ground under him has not moved)',
+    eye.position.y - y0 < 0.45
+      && eye.position.y - y0 > 0,
+    `${(eye.position.y - y0).toFixed(2)}`
+  );
 }
 
 // ---- IN A HALF PIPE (2026-11-17). The view does not turn by itself, so in a pipe it is on the side of one wall, and he
@@ -413,7 +559,12 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
       }
     }
   }
-  check('in the half pipe (the view on either side of him and cornerwise, pumping gently and hard, at sixty frames a second and thirty) he goes up off the lips and comes back, and through all of it the view is never drawn in to his back (it was, to 1.3), is never under the wall, and never turns by itself', launches >= 24 && told.length === 0, `${launches} launches; ${told.join('; ')}`);
+  check(
+    'in the half pipe (the view on either side of him and cornerwise, pumping gently and hard, at sixty frames a second and thirty) he goes up off the lips and comes back, and through all of it the view is never drawn in to his back (it was, to 1.3), is never under the wall, and never turns by itself',
+    launches >= 24
+      && told.length === 0,
+    `${launches} launches; ${told.join('; ')}`
+  );
 }
 
 // ---- IN THE BOWL (2026-11-17): the same, with a wall on every side of him. ----
@@ -460,7 +611,12 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
       }
     }
   }
-  check('in the bowl (across it both ways; the view behind him, in front of him and cornerwise; sixty frames a second and thirty) he goes up off the lips and comes back, and the view is never drawn in to his back and never under a wall', launches >= 20 && told.length === 0, `${launches} launches; ${told.join('; ')}`);
+  check(
+    'in the bowl (across it both ways; the view behind him, in front of him and cornerwise; sixty frames a second and thirty) he goes up off the lips and comes back, and the view is never drawn in to his back and never under a wall',
+    launches >= 20
+      && told.length === 0,
+    `${launches} launches; ${told.join('; ')}`
+  );
 }
 
 // ---- ON HIS SHIELD, THE VIEW CAN BE ASKED TO COME ROUND BEHIND THE WAY HE IS GOING (TUNING.camera.rideFollowRate): it
@@ -481,8 +637,18 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
     (C as { rideFollowRate: number }).rideFollowRate = was;
     return Math.abs(Math.atan2(Math.sin(cam.yaw - -Math.PI / 2), Math.cos(cam.yaw - -Math.PI / 2)));
   };
-  check('as it is set (0), the view does not come round behind him on his shield: it does not turn by itself', C.rideFollowRate === 0 && Math.abs(run(0, 10) - Math.PI / 2) < 1e-6, `${C.rideFollowRate}, ${run(0, 10).toFixed(2)}`);
-  check('asked to (the Tweaks panel), on his shield it comes round behind the way he is GOING within two seconds; on foot it still does not', run(2, 10) < 0.1 && Math.abs(run(2, 0) - Math.PI / 2) < 1e-6, `riding ${run(2, 10).toFixed(2)} off behind; on foot ${run(2, 0).toFixed(2)}`);
+  check(
+    'as it is set (0), the view does not come round behind him on his shield: it does not turn by itself',
+    C.rideFollowRate === 0
+      && Math.abs(run(0, 10) - Math.PI / 2) < 1e-6,
+    `${C.rideFollowRate}, ${run(0, 10).toFixed(2)}`
+  );
+  check(
+    'asked to (the Tweaks panel), on his shield it comes round behind the way he is GOING within two seconds; on foot it still does not',
+    run(2, 10) < 0.1
+      && Math.abs(run(2, 0) - Math.PI / 2) < 1e-6,
+    `riding ${run(2, 10).toFixed(2)} off behind; on foot ${run(2, 0).toFixed(2)}`
+  );
   check('the Tweaks panel has it', TWEAKS.some((t) => t.path === 'camera.rideFollowRate'));
 }
 

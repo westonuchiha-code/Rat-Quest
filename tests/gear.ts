@@ -36,7 +36,14 @@ for (const it of forSale) {
   const fx = Object.entries(it.fx ?? {}) as Array<[keyof GearFx, number | boolean]>;
   const gains = fx.filter(([k, v]) => GOOD[k](v));
   const losses = fx.filter(([k, v]) => !GOOD[k](v));
-  check(`${it.name}: gives something and costs something, and says both`, gains.length > 0 && losses.length > 0 && !!it.perk && !!it.cost, `+${gains.map((g) => g[0])} -${losses.map((l) => l[0])}`);
+  check(
+    `${it.name}: gives something and costs something, and says both`,
+    gains.length > 0
+      && losses.length > 0
+      && !!it.perk
+      && !!it.cost,
+    `+${gains.map((g) => g[0])} -${losses.map((l) => l[0])}`
+  );
 }
 check('the starting gear does nothing special', JSON.stringify(gearMods(Object.values(STARTING_GEAR))) === JSON.stringify(NO_GEAR));
 
@@ -73,7 +80,11 @@ function notices(notice: number, dist: number): boolean {
 const d = S.noticeRange * 0.75;
 check('a roach notices him at three quarters of its range', notices(1, d));
 check('Moss Scarf: ...but not when he wears moss', !notices(wearing('mossScarf').notice, d));
-check("Miner's Helm: the lamp is seen from beyond the usual range", notices(wearing('minerHelm').notice, S.noticeRange * 1.3) && !notices(1, S.noticeRange * 1.3));
+check(
+  "Miner's Helm: the lamp is seen from beyond the usual range",
+  notices(wearing('minerHelm').notice, S.noticeRange * 1.3)
+    && !notices(1, S.noticeRange * 1.3)
+);
 
 // ---- The sword: twice the hit, slower swings ----
 function swingsToKill(g: GearMods): { swings: number; swingTime: number } {
@@ -115,8 +126,16 @@ function shieldHit(g: GearMods, raisedFor: number, fromAngle: number): string {
   return p.takeHit(p.position.x + Math.sin(a) * 2, p.position.z + Math.cos(a) * 2, 1);
 }
 const late = TUNING.guard.parryWindow * 1.5;
-check('Buckler: a hit a little after raising it is still parried (the Rat Shield only blocks it)', shieldHit(wearing('buckler'), late, 0) === 'parried' && shieldHit(NO_GEAR, late, 0) === 'blocked');
-check('Buckler: ...but a hit from the side gets through (the Rat Shield blocks it)', shieldHit(wearing('buckler'), 0.6, 1.1) === 'hit' && shieldHit(NO_GEAR, 0.6, 1.1) === 'blocked');
+check(
+  'Buckler: a hit a little after raising it is still parried (the Rat Shield only blocks it)',
+  shieldHit(wearing('buckler'), late, 0) === 'parried'
+    && shieldHit(NO_GEAR, late, 0) === 'blocked'
+);
+check(
+  'Buckler: ...but a hit from the side gets through (the Rat Shield blocks it)',
+  shieldHit(wearing('buckler'), 0.6, 1.1) === 'hit'
+    && shieldHit(NO_GEAR, 0.6, 1.1) === 'blocked'
+);
 
 // ---- The Royal Scarf: a heart fewer, and a longer long jump ----
 function longJump(g: GearMods): number {

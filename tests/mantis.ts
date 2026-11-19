@@ -87,7 +87,12 @@ const still = (): Partial<PlayerInput> => ({});
   SENSES.notice = 1;
   const m = new Mantis({ x: O.x, z: O.z, facing: 1.2 });
   for (let i = 0; i < 60; i++) m.update(DT, O.x + 30, 0, O.z, true);
-  check('at rest it stays where it is, facing the way it was set', m.state === 'idle' && Math.abs(m.facing - 1.2) < 1e-6 && Math.hypot(m.x - O.x, m.z - O.z) < 1e-6);
+  check(
+    'at rest it stays where it is, facing the way it was set',
+    m.state === 'idle'
+      && Math.abs(m.facing - 1.2) < 1e-6
+      && Math.hypot(m.x - O.x, m.z - O.z) < 1e-6
+  );
   const far = new Mantis({ x: O.x, z: O.z, arena: { x0: -100, x1: 100, z0: -100, z1: 100 } });
   for (let i = 0; i < 30; i++) far.update(DT, O.x + M.noticeRange + 1, 0, O.z, true);
   const unseen = far.state === 'idle';
@@ -103,7 +108,12 @@ const still = (): Partial<PlayerInput> => ({});
   const p = ratAt(O.x - 1.3, O.z, napping);
   const ev = swingAt(p, napping);
   SENSES.notice = 1;
-  check('struck unawares it does not get out of the way: the sword lands', ev.enemyHit === napping && napping.hp === M.hp - 1 && !napping.events.includes('hop'));
+  check(
+    'struck unawares it does not get out of the way: the sword lands',
+    ev.enemyHit === napping
+      && napping.hp === M.hp - 1
+      && !napping.events.includes('hop')
+  );
 }
 
 // ---- It comes in, and sways round him at arm's length ----
@@ -111,7 +121,13 @@ const still = (): Partial<PlayerInput> => ({});
   const m = mantis();
   const p = ratAt(O.x + 7, O.z, m);
   m.mayAttack = false;
-  check('it walks up and stops to sway, outside the sword\'s reach', until(m, p, 'sway') && gap(m, p) <= M.swayRange + 0.05 && gap(m, p) > 1.05 + M.radius + 0.5, `${gap(m, p).toFixed(2)} away`);
+  check(
+    'it walks up and stops to sway, outside the sword\'s reach',
+    until(m, p, 'sway')
+      && gap(m, p) <= M.swayRange + 0.05
+      && gap(m, p) > 1.05 + M.radius + 0.5,
+    `${gap(m, p).toFixed(2)} away`
+  );
   let near = 9;
   let far = 0;
   let turned = 0;
@@ -124,7 +140,15 @@ const still = (): Partial<PlayerInput> => ({});
     turned = Math.max(turned, Math.abs(Math.atan2(Math.sin(Math.atan2(m.x - p.position.x, m.z - p.position.z) - a0), Math.cos(Math.atan2(m.x - p.position.x, m.z - p.position.z) - a0))));
     worst = Math.max(worst, Math.abs(Math.atan2(Math.sin(Math.atan2(p.position.x - m.x, p.position.z - m.z) - m.facing), Math.cos(Math.atan2(p.position.x - m.x, p.position.z - m.z) - m.facing))));
   }
-  check('swaying, it steps round him, keeps its distance and keeps facing him', m.state === 'sway' && turned > 0.4 && near > M.swayRange - 0.5 && far < M.swayRange + 0.6 && worst < 0.3, `went ${turned.toFixed(2)} rad round him, ${near.toFixed(2)} to ${far.toFixed(2)} away, never more than ${worst.toFixed(2)} rad off him`);
+  check(
+    'swaying, it steps round him, keeps its distance and keeps facing him',
+    m.state === 'sway'
+      && turned > 0.4
+      && near > M.swayRange - 0.5
+      && far < M.swayRange + 0.6
+      && worst < 0.3,
+    `went ${turned.toFixed(2)} rad round him, ${near.toFixed(2)} to ${far.toFixed(2)} away, never more than ${worst.toFixed(2)} rad off him`
+  );
 }
 
 // ---- A sword swung at it while it sways meets air; but not twice running ----
@@ -137,7 +161,14 @@ const still = (): Partial<PlayerInput> => ({});
   const before = { x: m.x, z: m.z };
   const ev = swingAt(p, m);
   const back = Math.hypot(m.x - before.x, m.z - before.z);
-  check('swing at it while it sways and it springs back out of reach: the sword meets air', !ev.enemyHit && m.hp === M.hp && m.events.includes('hop') && back > 1.6, `it went ${back.toFixed(2)} back`);
+  check(
+    'swing at it while it sways and it springs back out of reach: the sword meets air',
+    !ev.enemyHit
+      && m.hp === M.hp
+      && m.events.includes('hop')
+      && back > 1.6,
+    `it went ${back.toFixed(2)} back`
+  );
   check('it has to see the swing coming: it must be poised, and the rat in front of it', !m.poised);
   // He runs it down and swings again before it has its feet under it.
   m.events.length = 0;
@@ -171,7 +202,14 @@ const still = (): Partial<PlayerInput> => ({});
   m.events.length = 0;
   const second = swingAt(p, m);
   for (let i = 0; i < 20; i++) tick(m, p);
-  check('two blows in a row land, and then it springs away whether it is ready to or not', first.enemyHit === m && second.enemyHit === m && m.hp === M.hp - 2 && m.events.includes('hop'), `hp ${m.hp}`);
+  check(
+    'two blows in a row land, and then it springs away whether it is ready to or not',
+    first.enemyHit === m
+      && second.enemyHit === m
+      && m.hp === M.hp - 2
+      && m.events.includes('hop'),
+    `hp ${m.hp}`
+  );
 }
 
 // ---- The cuts ----
@@ -184,13 +222,29 @@ const still = (): Partial<PlayerInput> => ({});
   const told = m.events.includes('windup');
   let tell = 0;
   while (m.state === 'windup' && tell < 200) { tick(m, p); tell++; }
-  check('a scythe goes up before it comes down: half a second of warning', told && m.state === 'slash' && Math.abs(tell * DT - M.windup) < 0.04, `${(tell * DT).toFixed(2)} s`);
+  check(
+    'a scythe goes up before it comes down: half a second of warning',
+    told
+      && m.state === 'slash'
+      && Math.abs(tell * DT - M.windup) < 0.04,
+    `${(tell * DT).toFixed(2)} s`
+  );
   const r = play(m, p, still, (mm) => mm.state === 'recover');
-  check('the rat who stands there is cut twice, a heart each', r.results.filter((x) => x === 'hit').length >= 1 && r.hp <= TUNING.health.max - M.damage, `${r.results.join(', ')}; hearts ${r.hp}`);
+  check(
+    'the rat who stands there is cut twice, a heart each',
+    r.results.filter((x) => x === 'hit').length >= 1
+      && r.hp <= TUNING.health.max - M.damage,
+    `${r.results.join(', ')}; hearts ${r.hp}`
+  );
   check('the second cut is the other scythe', m.cut === 1 && m.arm === -firstArm);
   let open = 0;
   while (m.state === 'recover' && open < 300) { tick(m, p); open++; }
-  check('after its cuts its arms are down for most of a second: open', Math.abs(open * DT - M.recover) < 0.06 && M.recover > 0.8, `${(open * DT).toFixed(2)} s`);
+  check(
+    'after its cuts its arms are down for most of a second: open',
+    Math.abs(open * DT - M.recover) < 0.06
+      && M.recover > 0.8,
+    `${(open * DT).toFixed(2)} s`
+  );
 
   // The second cut: at once, or held.
   const time2 = (roll: number): { quick: boolean; secs: number } => {
@@ -205,7 +259,13 @@ const still = (): Partial<PlayerInput> => ({});
   const quick = time2(0.6);
   const held = time2(0.1);
   check('the second cut comes at once...', quick.quick && Math.abs(quick.secs - M.quick) < 0.04, `${quick.secs.toFixed(2)} s`);
-  check('...or is held, to catch a roll made on the beat of the first', !held.quick && Math.abs(held.secs - M.delayed) < 0.04 && M.delayed > M.quick + TUNING.dodge.roll.duration * 0.6, `${held.secs.toFixed(2)} s`);
+  check(
+    '...or is held, to catch a roll made on the beat of the first',
+    !held.quick
+      && Math.abs(held.secs - M.delayed) < 0.04
+      && M.delayed > M.quick + TUNING.dodge.roll.duration * 0.6,
+    `${held.secs.toFixed(2)} s`
+  );
   // Sometimes there is no second cut.
   const lone = mantis(0.9);
   const pl = ratAt(O.x + 3.4, O.z, lone);
@@ -222,7 +282,13 @@ const still = (): Partial<PlayerInput> => ({});
   until(m, p, 'recover', 1200);
   closeIn(p, m);
   const ev = swingAt(p, m);
-  check('spent after its cuts, it does not get out of the way: the sword lands', m.hp === M.hp - 1 && ev.enemyHit === m && !m.events.includes('hop') && !m.poised);
+  check(
+    'spent after its cuts, it does not get out of the way: the sword lands',
+    m.hp === M.hp - 1
+      && ev.enemyHit === m
+      && !m.events.includes('hop')
+      && !m.poised
+  );
 }
 
 // ---- Blocked, and turned ----
@@ -230,7 +296,13 @@ const still = (): Partial<PlayerInput> => ({});
   const m = mantis(0.6);
   const p = ratAt(O.x + 3.4, O.z, m);
   const r = play(m, p, () => ({ guardHeld: true }), (mm) => mm.state === 'recover');
-  check('a shield held up stops both cuts, and the second comes all the same', r.results.filter((x) => x === 'blocked').length === 2 && r.hp === TUNING.health.max && m.cut === 1, r.results.join(', '));
+  check(
+    'a shield held up stops both cuts, and the second comes all the same',
+    r.results.filter((x) => x === 'blocked').length === 2
+      && r.hp === TUNING.health.max
+      && m.cut === 1,
+    r.results.join(', ')
+  );
   // The shield brought up just as the cut arrives.
   let turned: Mantis | null = null;
   for (let lead = 0.02; lead < TUNING.guard.parryWindow && !turned; lead += 0.02) {
@@ -261,17 +333,40 @@ const still = (): Partial<PlayerInput> => ({});
   const d0 = gap(m, p);
   let tell = 0;
   while (m.state === 'crouch' && tell < 200) { tick(m, p); tell++; }
-  check('from further off it crouches first: more than half a second of warning', crouched && m.events.includes('crouch') && m.state === 'leap' && Math.abs(tell * DT - M.leapWindup) < 0.04 && d0 > M.leapRange[0], `${(tell * DT).toFixed(2)} s, from ${d0.toFixed(2)} away`);
+  check(
+    'from further off it crouches first: more than half a second of warning',
+    crouched
+      && m.events.includes('crouch')
+      && m.state === 'leap'
+      && Math.abs(tell * DT - M.leapWindup) < 0.04
+      && d0 > M.leapRange[0],
+    `${(tell * DT).toFixed(2)} s, from ${d0.toFixed(2)} away`
+  );
   const r = play(m, p, still, (mm) => mm.state === 'stuck');
   const went = Math.hypot(m.x - from.x, m.z - from.z);
-  check('it comes down just short of where he stood, and a rat still standing there is cut for two hearts', r.results.includes('hit') && r.hp === TUNING.health.max - M.leapDamage && Math.abs(gap(m, p) - M.leapShort) < 0.9 && went > 3, `leapt ${went.toFixed(2)}, landed ${gap(m, p).toFixed(2)} from him; hearts ${r.hp}`);
+  check(
+    'it comes down just short of where he stood, and a rat still standing there is cut for two hearts',
+    r.results.includes('hit')
+      && r.hp === TUNING.health.max - M.leapDamage
+      && Math.abs(gap(m, p) - M.leapShort) < 0.9
+      && went > 3,
+    `leapt ${went.toFixed(2)}, landed ${gap(m, p).toFixed(2)} from him; hearts ${r.hp}`
+  );
 
   // He steps aside.
   const n = mantis(0.6);
   const q = ratAt(O.x + 8, O.z, n);
   until(n, q, 'crouch');
   const r2 = play(n, q, (x) => (x.state === 'crouch' && x.stateTime < M.leapWindup * 0.5 ? {} : { move: new THREE.Vector3(0, 0, 1), run: true }), (x) => x.state === 'stuck');
-  check('step aside once it has committed and it comes down on nothing, its scythes in the floor', r2.results.length === 0 && r2.hp === TUNING.health.max && n.state === 'stuck' && n.open && n.events.includes('land'), `it landed ${gap(n, q).toFixed(2)} from him`);
+  check(
+    'step aside once it has committed and it comes down on nothing, its scythes in the floor',
+    r2.results.length === 0
+      && r2.hp === TUNING.health.max
+      && n.state === 'stuck'
+      && n.open
+      && n.events.includes('land'),
+    `it landed ${gap(n, q).toFixed(2)} from him`
+  );
   let stuck = 0;
   const before = n.hp;
   n.events.length = 0;
@@ -283,7 +378,13 @@ const still = (): Partial<PlayerInput> => ({});
     closeIn(q, n, 1.35, Math.PI / 2);
   }
   stuck = n.stateTime;
-  check('stuck, it is open for well over a second: time for two good blows', hits.filter(Boolean).length >= 2 && n.hp <= before - 2 && M.stuck >= 1.2, `${hits.filter(Boolean).length} blows landed, ${stuck.toFixed(2)} s in`);
+  check(
+    'stuck, it is open for well over a second: time for two good blows',
+    hits.filter(Boolean).length >= 2
+      && n.hp <= before - 2
+      && M.stuck >= 1.2,
+    `${hits.filter(Boolean).length} blows landed, ${stuck.toFixed(2)} s in`
+  );
   for (let i = 0; i < 200 && n.state === 'stuck'; i++) tick(n, q);
   check('and when it pulls free after that, it springs away', n.events.includes('hop') && n.state !== 'stuck');
 
@@ -310,7 +411,14 @@ const still = (): Partial<PlayerInput> => ({});
   const went = until(m, p, 'crouch', 1200);
   const x1 = m.x;
   until(m, p, 'stuck', 300);
-  check('it does not leap off the floor: it comes down at the edge', went && m.state === 'stuck' && m.x <= O.x + 5 + 1e-6 && m.x > x1 + 1, `leapt from ${(x1 - O.x).toFixed(2)}, landed at ${(m.x - O.x).toFixed(2)} (floor ends at 5)`);
+  check(
+    'it does not leap off the floor: it comes down at the edge',
+    went
+      && m.state === 'stuck'
+      && m.x <= O.x + 5 + 1e-6
+      && m.x > x1 + 1,
+    `leapt from ${(x1 - O.x).toFixed(2)}, landed at ${(m.x - O.x).toFixed(2)} (floor ends at 5)`
+  );
   // Something solid in the way: it comes down before it.
   const w = mantis(0.6);
   const pw = ratAt(O.x + 8.5, O.z, w);
@@ -318,7 +426,13 @@ const still = (): Partial<PlayerInput> => ({});
   const x0 = w.x;
   w.wallAt = (x) => x > x0 + 2 && x < x0 + 2.6;
   until(w, pw, 'stuck', 300);
-  check('nor through a wall: it comes down short of it', w.state === 'stuck' && w.x < x0 + 2 && w.x >= x0, `leapt from ${(x0 - O.x).toFixed(2)}, landed ${(w.x - x0).toFixed(2)} on (wall 2 on)`);
+  check(
+    'nor through a wall: it comes down short of it',
+    w.state === 'stuck'
+      && w.x < x0 + 2
+      && w.x >= x0,
+    `leapt from ${(x0 - O.x).toFixed(2)}, landed ${(w.x - x0).toFixed(2)} on (wall 2 on)`
+  );
   // No floor behind it: it springs aside instead.
   const h = mantis(0.6);
   const ph = ratAt(O.x + 4, O.z, h);
@@ -334,7 +448,13 @@ const still = (): Partial<PlayerInput> => ({});
     tick(h, ph);
     if (h.x < edge - 1e-6) ok = false;
   }
-  check('with no floor behind it, it springs aside and stays on the floor', ok && h.events.includes('hop') && Math.abs(h.z - z0) > 0.8, `went ${Math.abs(h.z - z0).toFixed(2)} sideways`);
+  check(
+    'with no floor behind it, it springs aside and stays on the floor',
+    ok
+      && h.events.includes('hop')
+      && Math.abs(h.z - z0) > 0.8,
+    `went ${Math.abs(h.z - z0).toFixed(2)} sideways`
+  );
 }
 
 // ---- A plunge, and dying ----

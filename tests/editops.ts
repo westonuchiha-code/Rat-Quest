@@ -56,7 +56,12 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   const b1 = boundsOf(ps);
   check('flipped left and right, the group keeps its place and size', b0.x0 === b1.x0 && b0.x1 === b1.x1 && b0.z0 === b1.z0 && b0.z1 === b1.z1);
   check('...each piece is mirrored across it', ps[0].x0 === 4 && ps[0].x1 === 8 && ps[1].x0 === 7 && ps[2].x0 === 0 && ps[2].x1 === 3);
-  check('...what faced east faces west, what faced north still does, and a lift that glided west glides east', ps[1].dir === 'w' && ps[2].dir === 'n' && ps[3].props?.move === 'e');
+  check(
+    '...what faced east faces west, what faced north still does, and a lift that glided west glides east',
+    ps[1].dir === 'w'
+      && ps[2].dir === 'n'
+      && ps[3].props?.move === 'e'
+  );
   flipPieces(ps, 'x');
   check('flipped back, everything is where it was', ps[0].x0 === 0 && ps[0].x1 === 4 && ps[1].x0 === 1 && ps[1].dir === 'e' && ps[3].props?.move === 'w');
   flipPieces(ps, 'z');
@@ -65,12 +70,39 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   const clip = [box('platform', 0, 0, 2, 2, 3), at('crumb', 1, 1, 3)];
   const made = pasteAt(clip, 20.4, -9.6);
   const mb = boundsOf(made);
-  check('pasted pieces land with their middle where the pointer is, on whole squares', mb.x0 === 19 && mb.x1 === 21 && mb.z0 === -11 && mb.z1 === -9 && made[1].x0 === 20 && made[1].z0 === -10);
-  check('...as copies: the originals are untouched, and heights and settings come too', clip[0].x0 === 0 && made[0] !== clip[0] && made[0].top === 3 && made[1].top === 3);
+  check(
+    'pasted pieces land with their middle where the pointer is, on whole squares',
+    mb.x0 === 19
+      && mb.x1 === 21
+      && mb.z0 === -11
+      && mb.z1 === -9
+      && made[1].x0 === 20
+      && made[1].z0 === -10
+  );
+  check(
+    '...as copies: the originals are untouched, and heights and settings come too',
+    clip[0].x0 === 0
+      && made[0] !== clip[0]
+      && made[0].top === 3
+      && made[1].top === 3
+  );
 
   const p = box('floor', 2, 4, 10, 8);
-  check('a rectangle has eight handles: its corners and the middles of its edges', HANDLES.length === 8 && handlePoint(p, 'nw').x === 2 && handlePoint(p, 'nw').z === 4 && handlePoint(p, 'e').x === 10 && handlePoint(p, 'e').z === 6 && handlePoint(p, 's').z === 8);
-  check('the pointer picks up the handle it is on, a corner before an edge, and none from the middle', handleAt(p, 10.2, 8.1, 0.6) === 'se' && handleAt(p, 6, 3.8, 0.6) === 'n' && handleAt(p, 6, 6, 0.6) === null);
+  check(
+    'a rectangle has eight handles: its corners and the middles of its edges',
+    HANDLES.length === 8
+      && handlePoint(p, 'nw').x === 2
+      && handlePoint(p, 'nw').z === 4
+      && handlePoint(p, 'e').x === 10
+      && handlePoint(p, 'e').z === 6
+      && handlePoint(p, 's').z === 8
+  );
+  check(
+    'the pointer picks up the handle it is on, a corner before an edge, and none from the middle',
+    handleAt(p, 10.2, 8.1, 0.6) === 'se'
+      && handleAt(p, 6, 3.8, 0.6) === 'n'
+      && handleAt(p, 6, 6, 0.6) === null
+  );
   const wide = resizeBy(p, 'e', 15, 99);
   check('dragging the east edge moves only that edge', wide.x0 === 2 && wide.x1 === 15 && wide.z0 === 4 && wide.z1 === 8);
   const corner = resizeBy(p, 'nw', 0, 1);
@@ -85,15 +117,33 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   check('the ground under a point is the top of the highest floor or slab there', surfaceAt(L, 2, 2) === 3 && surfaceAt(L, 8, 8) === 0);
   check('...a wall is not ground, and outside the room there is none', surfaceAt(L, -4.5, 0) === 0 && surfaceAt(L, 40, 0) === null);
   const s = levelStats(L, ENEMY_PIECES);
-  check('the count of a level includes what is hidden in crates and barrels', s.pieces === 11 && s.crumbs === 2 && s.relics === 1 && s.caps === 0 && s.wedges === 1 && s.breakables === 2);
+  check(
+    'the count of a level includes what is hidden in crates and barrels',
+    s.pieces === 11
+      && s.crumbs === 2
+      && s.relics === 1
+      && s.caps === 0
+      && s.wedges === 1
+      && s.breakables === 2
+  );
   check('...its creatures (the boss among them) and its floor area', s.enemies === 2 && s.ground === 400 + 16);
 }
 
 // ---- Measuring a jump ----
 {
   const flat = jumpReaches(0);
-  check('on the level a double jump and a long jump both carry further than a single', flat.jump > 4 && flat.double > flat.jump && flat.long > flat.jump, `jump ${flat.jump.toFixed(1)}, double ${flat.double.toFixed(1)}, long ${flat.long.toFixed(1)}`);
-  check('the editor\'s reach agrees with the jump checker\'s', Math.abs(Math.max(flat.double, flat.long) - jumpReach(0)) < 0.01 && Math.abs(Math.max(jumpReaches(2).jump, jumpReaches(2).double, jumpReaches(2).long) - jumpReach(2)) < 0.01);
+  check(
+    'on the level a double jump and a long jump both carry further than a single',
+    flat.jump > 4
+      && flat.double > flat.jump
+      && flat.long > flat.jump,
+    `jump ${flat.jump.toFixed(1)}, double ${flat.double.toFixed(1)}, long ${flat.long.toFixed(1)}`
+  );
+  check(
+    'the editor\'s reach agrees with the jump checker\'s',
+    Math.abs(Math.max(flat.double, flat.long) - jumpReach(0)) < 0.01
+      && Math.abs(Math.max(jumpReaches(2).jump, jumpReaches(2).double, jumpReaches(2).long) - jumpReach(2)) < 0.01
+  );
   const high = jumpReaches(3);
   check('up three units a single jump cannot make it and a double can', high.jump === 0 && high.double > 0 && high.long === 0);
   const from = { x: 0, z: 0, y: 0 };
@@ -101,7 +151,13 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   check('a wider gap wants a double jump or a long jump', ['double jump', 'long jump'].includes(measureJump(from, { x: flat.jump + 1, z: 0, y: 0 }).verdict));
   check('wider than anything reaches is too far', measureJump(from, { x: 0, z: Math.max(flat.long, flat.double) + 1, y: 0 }).verdict === 'too far');
   const ledge = measureJump(from, { x: 1.5, z: 0, y: 5.5 });
-  check('a ledge above the top of a double jump but within his reach is a double jump and a grab', ledge.verdict === 'double jump and grab' && ledge.grab && !ledge.double, `${ledge.rise} up; he can climb ${maxClimb().toFixed(2)}`);
+  check(
+    'a ledge above the top of a double jump but within his reach is a double jump and a grab',
+    ledge.verdict === 'double jump and grab'
+      && ledge.grab
+      && !ledge.double,
+    `${ledge.rise} up; he can climb ${maxClimb().toFixed(2)}`
+  );
   check('higher than he can reach is too high', measureJump(from, { x: 1, z: 0, y: maxClimb() + 0.5 }).verdict === 'too high');
   const m = measureJump({ x: 0, z: 0, y: 2 }, { x: 3, z: 4, y: 0.5 });
   check('it reports how far across and how far up or down', Math.abs(m.dist - 5) < 1e-9 && Math.abs(m.rise + 1.5) < 1e-9 && m.jump);
@@ -117,38 +173,96 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   check('a level with the boss, a fire and an iron-bound crate has nothing wrong with it', checkCustom(L).length === 0, checkCustom(L).join(' '));
   const def = compileCustom(L);
   const boss = def.enemies.find((e) => e.type === 'brood');
-  check('the Broodmother can be put in a level: she has the run of the whole room, and does not come back', !!boss && boss!.arena!.x0 === -20 && boss!.arena!.x1 === 20 && boss!.arena!.z0 === -20 && boss!.respawn === false && boss!.facing === 0);
-  check('a fire piece burns over its squares, from the floor up', def.fire?.length === 1 && def.fire[0].x0 === 5 && def.fire[0].x1 === 8 && def.fire[0].y === 0);
+  check(
+    'the Broodmother can be put in a level: she has the run of the whole room, and does not come back',
+    !!boss
+      && boss!.arena!.x0 === -20
+      && boss!.arena!.x1 === 20
+      && boss!.arena!.z0 === -20
+      && boss!.respawn === false
+      && boss!.facing === 0
+  );
+  check(
+    'a fire piece burns over its squares, from the floor up',
+    def.fire?.length === 1
+      && def.fire[0].x0 === 5
+      && def.fire[0].x1 === 8
+      && def.fire[0].y === 0
+  );
   const crates = def.solids.filter((b) => b.kind === 'rubble');
-  check('a crate can be bound in iron (and still hold something); the one beside it is plain', crates.length === 2 && crates.filter((b) => b.tough).length === 1 && def.collectibles.some((c) => c.kind === 'cap'));
+  check(
+    'a crate can be bound in iron (and still hold something); the one beside it is plain',
+    crates.length === 2
+      && crates.filter((b) => b.tough).length === 1
+      && def.collectibles.some((c) => c.kind === 'cap')
+  );
   check('a level can put him back where he fell from, and set how far he sees', def.fallBack === true && def.fogRange?.[0] === 6 && def.fogRange?.[1] === 28);
   const again = parseCustom(JSON.stringify(L));
-  check('all of it survives being saved as text and read back', !!again && again!.fallBack === true && again!.fogRange?.[1] === 28 && again!.pieces.some((p) => p.t === 'brood') && again!.pieces.some((p) => p.props?.tough));
+  check(
+    'all of it survives being saved as text and read back',
+    !!again
+      && again!.fallBack === true
+      && again!.fogRange?.[1] === 28
+      && again!.pieces.some((p) => p.t === 'brood')
+      && again!.pieces.some((p) => p.props?.tough)
+  );
   const plain = compileCustom(emptyCustom());
   check('a level that sets none of it is as it always was', plain.fire === undefined && plain.fallBack === undefined && plain.fogRange === undefined);
-  check('a "defeat" goal is satisfied by a boss alone', checkCustom({ ...L, pieces: L.pieces.filter((p) => p.t !== 'crate') }).length === 0 && checkCustom({ ...L, pieces: L.pieces.filter((p) => p.t !== 'brood') }).some((m) => m.includes('defeat')));
+  check(
+    'a "defeat" goal is satisfied by a boss alone',
+    checkCustom({ ...L, pieces: L.pieces.filter((p) => p.t !== 'crate') }).length === 0
+      && checkCustom({ ...L, pieces: L.pieces.filter((p) => p.t !== 'brood') }).some((m) => m.includes('defeat'))
+  );
 }
 
 // ---- The palette ----
 {
   const pieces = TOOLS.filter((g) => g.group !== 'EDIT' && g.group !== 'SHAPES').flatMap((g) => g.items.map((i) => i.t));
-  check('the palette offers every piece once, the new ones (fire, the Broodmother) among them', new Set(pieces).size === pieces.length && pieces.includes('fire') && pieces.includes('brood') && pieces.length >= 48, `${pieces.length} pieces`);
+  check(
+    'the palette offers every piece once, the new ones (fire, the Broodmother) among them',
+    new Set(pieces).size === pieces.length
+      && pieces.includes('fire')
+      && pieces.includes('brood')
+      && pieces.length >= 48,
+    `${pieces.length} pieces`
+  );
   check('every enemy piece is on the palette and is a single spot on the map', ENEMY_PIECES.every((t) => pieces.includes(t) && SINGLE.has(t)));
-  check('the editor\'s own tools are Select, Erase, Pan and Measure', TOOLS[0].group === 'EDIT' && TOOLS[0].items.map((i) => i.t).join() === 'select,erase,pan,measure');
+  check(
+    'the editor\'s own tools are Select, Erase, Pan and Measure',
+    TOOLS[0].group === 'EDIT'
+      && TOOLS[0].items.map((i) => i.t).join() === 'select,erase,pan,measure'
+  );
 }
 
 // ---- Game feel: no slider can be left off the panel ----
 {
   const groups = new Set(TWEAKS.map((t) => t.group));
-  check('every group of sliders is listed in the panel (six groups of creature sliders used to be missing)', [...groups].every((g) => TWEAK_GROUPS.includes(g)) && TWEAK_GROUPS.length === groups.size, `${TWEAK_GROUPS.length} groups: ${TWEAK_GROUPS.join(', ')}`);
-  check('...the Keep Guards, Mantises, Stag Knights, Ironbacks, Flitters and the Broodmother among them', ['Keep Guards', 'Mantises', 'Stag Knights', 'Ironbacks', 'Flitters', 'The Broodmother'].every((g) => TWEAK_GROUPS.includes(g)));
+  check(
+    'every group of sliders is listed in the panel (six groups of creature sliders used to be missing)',
+    [...groups].every((g) => TWEAK_GROUPS.includes(g))
+      && TWEAK_GROUPS.length === groups.size,
+    `${TWEAK_GROUPS.length} groups: ${TWEAK_GROUPS.join(', ')}`
+  );
+  check(
+    '...the Keep Guards, Mantises, Stag Knights, Ironbacks, Flitters and the Broodmother among them',
+    ['Keep Guards', 'Mantises', 'Stag Knights', 'Ironbacks', 'Flitters', 'The Broodmother'].every((g) => TWEAK_GROUPS.includes(g))
+  );
   const named = TWEAK_SECTIONS.flatMap((s) => s.groups);
   check('each group sits under one section heading', new Set(named).size === named.length && [...groups].every((g) => named.includes(g)));
 }
 
 // ---- The Workshop's test switches ----
 {
-  check('every test switch is off to begin with, and nothing is said in the corner', !DEV.god && DEV.slow === 1 && !DEV.openDoors && !DEV.shapes && !DEV.still && !DEV.readout && devSummary() === '');
+  check(
+    'every test switch is off to begin with, and nothing is said in the corner',
+    !DEV.god
+      && DEV.slow === 1
+      && !DEV.openDoors
+      && !DEV.shapes
+      && !DEV.still
+      && !DEV.readout
+      && devSummary() === ''
+  );
   DEV.god = true;
   DEV.slow = 0.25;
   check('what is switched on is said in a few words', devSummary() === 'no damage · speed x0.25');
@@ -172,11 +286,22 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   shapes.update(true, [{ ...foe, attacking: true }], rat);
   const winding = shapes.count;
   shapes.update(true, [{ ...foe, attackActive: true }], { ...rat, swing: { reach: 1.4, arc: 1 }, guarding: true });
-  check('on, they draw a ring for each body, more once an attack is winding up, and his sword and shield too', shapes.object.visible && quiet > 100 && winding > quiet && shapes.count > winding, `${quiet}, ${winding}, ${shapes.count} line ends`);
+  check(
+    'on, they draw a ring for each body, more once an attack is winding up, and his sword and shield too',
+    shapes.object.visible
+      && quiet > 100
+      && winding > quiet
+      && shapes.count > winding,
+    `${quiet}, ${winding}, ${shapes.count} line ends`
+  );
   const pos = shapes.object.geometry.attributes.position;
   let far = 0;
   for (let i = 0; i < shapes.count; i++) far = Math.max(far, Math.hypot(pos.getX(i) - foe.x, pos.getZ(i) - foe.z));
-  check('an attack\'s wedge reaches exactly as far as the blow does: its body, its reach, and the rat\'s own width', Math.abs(far - (foe.radius + foe.bite.reach + rat.radius)) < 0.02 || far > foe.radius + foe.bite.reach + rat.radius, `${far.toFixed(2)}`);
+  check(
+    'an attack\'s wedge reaches exactly as far as the blow does: its body, its reach, and the rat\'s own width',
+    Math.abs(far - (foe.radius + foe.bite.reach + rat.radius)) < 0.02 || far > foe.radius + foe.bite.reach + rat.radius,
+    `${far.toFixed(2)}`
+  );
   shapes.update(true, [{ ...foe, alive: false }], rat);
   check('the dead are not drawn', shapes.count < quiet);
 }
@@ -206,21 +331,66 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   };
   const def = compileCustom(lvl, 'newthings');
   const throwable = def.solids.filter((b) => b.kind === 'rubble' || b.kind === 'barrel');
-  check('a POT and a ROCK placed in the editor are things to lift and throw in the level (and a pot can hold a collectible: the crate after it keeps its own)', throwable.some((b) => b.prop === 'pot') && throwable.some((b) => b.prop === 'rock') && def.crateContents.length === throwable.length && !!def.crateContents[throwable.findIndex((b) => b.prop === 'pot')] && !def.crateContents[throwable.findIndex((b) => !b.prop)]);
+  check(
+    'a POT and a ROCK placed in the editor are things to lift and throw in the level (and a pot can hold a collectible: the crate after it keeps its own)',
+    throwable.some((b) => b.prop === 'pot')
+      && throwable.some((b) => b.prop === 'rock')
+      && def.crateContents.length === throwable.length
+      && !!def.crateContents[throwable.findIndex((b) => b.prop === 'pot')]
+      && !def.crateContents[throwable.findIndex((b) => !b.prop)]
+  );
   const button = def.plates?.find((q) => q.spawn);
   const plain = def.plates?.find((q) => !q.spawn);
-  check('a FLOOR PLATE set to put in a roach is a BUTTON: it puts one in six along the way it faces (east), up to six alive, and that one does not come back', !!button && button.spawn!.type === 'scuttler' && Math.abs(button.spawn!.x - 6) < 1e-6 && Math.abs(button.spawn!.z) < 1e-6 && button.most === 6 && button.spawn!.respawn === false, JSON.stringify(button?.spawn ? { x: button.spawn.x, z: button.spawn.z, type: button.spawn.type } : null));
+  check(
+    'a FLOOR PLATE set to put in a roach is a BUTTON: it puts one in six along the way it faces (east), up to six alive, and that one does not come back',
+    !!button
+      && button.spawn!.type === 'scuttler'
+      && Math.abs(button.spawn!.x - 6) < 1e-6
+      && Math.abs(button.spawn!.z) < 1e-6
+      && button.most === 6
+      && button.spawn!.respawn === false,
+    JSON.stringify(button?.spawn ? { x: button.spawn.x, z: button.spawn.z, type: button.spawn.type } : null)
+  );
   check('...a plate with nothing set is a plain plate, as before', !!plain && plain.spawn === undefined && (def.plates?.length ?? 0) === 2);
   const near = (q: { x: number; z: number }, x: number, z: number): boolean => Math.abs(q.x - x) < 1e-6 && Math.abs(q.z - z) < 1e-6;
   const table = def.decor.find((d) => d.kind === 'table') as { kind: 'table'; x: number; z: number; candle?: boolean; mugs?: unknown[] } | undefined;
-  check('a TABLE is drawn with its candle and three thimbles, and is solid', !!table && near(table, -6, -6) && table.candle === true && table.mugs?.length === 3 && def.solids.some((b) => b.hidden && b.x0 < -6 && b.x1 > -6 && b.z0 < -6 && b.z1 > -6));
-  check('a STOOL is drawn and solid', def.decor.some((d) => d.kind === 'stool' && near(d as { x: number; z: number }, -4.8, -6)) && def.solids.some((b) => b.hidden && b.x0 < -4.8 && b.x1 > -4.8));
+  check(
+    'a TABLE is drawn with its candle and three thimbles, and is solid',
+    !!table
+      && near(table, -6, -6)
+      && table.candle === true
+      && table.mugs?.length === 3
+      && def.solids.some((b) => b.hidden && b.x0 < -6 && b.x1 > -6 && b.z0 < -6 && b.z1 > -6)
+  );
+  check(
+    'a STOOL is drawn and solid',
+    def.decor.some((d) => d.kind === 'stool' && near(d as { x: number; z: number }, -4.8, -6))
+      && def.solids.some((b) => b.hidden && b.x0 < -4.8 && b.x1 > -4.8)
+  );
   const counter = def.solids.find((b) => b.kind === 'plank' && b.x0 === 10 && b.x1 === 11);
-  check('a BAR is a counter over its squares, a counter\'s height, with thimbles along it and a keg on it', !!counter && counter.y1 === 1 && counter.z0 === -6 && counter.z1 === 0 && def.decor.some((d) => d.kind === 'mugs') && def.decor.some((d) => d.kind === 'keg'));
-  check('...and the editor offers all six in its palette, the single ones placed with one click', ['pot', 'rock', 'table', 'stool', 'bar'].every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t))) && ['pot', 'rock', 'table', 'stool'].every((t) => SINGLE.has(t as Piece['t'])) && !SINGLE.has('bar'));
+  check(
+    'a BAR is a counter over its squares, a counter\'s height, with thimbles along it and a keg on it',
+    !!counter
+      && counter.y1 === 1
+      && counter.z0 === -6
+      && counter.z1 === 0
+      && def.decor.some((d) => d.kind === 'mugs')
+      && def.decor.some((d) => d.kind === 'keg')
+  );
+  check(
+    '...and the editor offers all six in its palette, the single ones placed with one click',
+    ['pot', 'rock', 'table', 'stool', 'bar'].every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t)))
+      && ['pot', 'rock', 'table', 'stool'].every((t) => SINGLE.has(t as Piece['t']))
+      && !SINGLE.has('bar')
+  );
   check('...and a level with them has nothing the editor\'s checks find wrong with them', checkCustom(lvl).length === 0, checkCustom(lvl).join('; '));
   const back = parseCustom(JSON.stringify(lvl));
-  check('...and it saves and loads with them in it', !!back && back.pieces.length === lvl.pieces.length && back.pieces.some((q) => q.t === 'plate' && q.props?.spawns === 'roach'));
+  check(
+    '...and it saves and loads with them in it',
+    !!back
+      && back.pieces.length === lvl.pieces.length
+      && back.pieces.some((q) => q.t === 'plate' && q.props?.spawns === 'roach')
+  );
 }
 
 // ---- 2026-11-18: odds and ends for rooms: a candle stub, a cotton reel, a matchbox, a wheel of cheese, a sardine tin ----
@@ -237,12 +407,26 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   };
   const def = compileCustom(lvl, 'oddsandends');
   const junk = def.decor.filter((d) => d.kind === 'junk') as { kind: 'junk'; what: string; x: number; z: number }[];
-  check('each of the five ODDS AND ENDS placed in the editor is drawn where it was put', kinds.every((k, i) => junk.some((d) => d.what === k && Math.abs(d.x - (-8 + i * 4)) < 1e-6 && Math.abs(d.z) < 1e-6)));
-  check('...and each is solid: something to stand on, not to walk through', kinds.every((_, i) => def.solids.some((b) => b.hidden && b.x0 < -8 + i * 4 && b.x1 > -8 + i * 4 && b.z0 < 0 && b.z1 > 0 && b.y1 >= 0.08)));
+  check(
+    'each of the five ODDS AND ENDS placed in the editor is drawn where it was put',
+    kinds.every((k, i) => junk.some((d) => d.what === k && Math.abs(d.x - (-8 + i * 4)) < 1e-6 && Math.abs(d.z) < 1e-6))
+  );
+  check(
+    '...and each is solid: something to stand on, not to walk through',
+    kinds.every((_, i) => def.solids.some((b) => b.hidden && b.x0 < -8 + i * 4 && b.x1 > -8 + i * 4 && b.z0 < 0 && b.z1 > 0 && b.y1 >= 0.08))
+  );
   const m = junkSolids('matchbox', 0, 0, 0, Math.PI / 2)[0];
   check('...and a matchbox turned a quarter is long the other way', (m.z1 - m.z0) > (m.x1 - m.x0));
-  check('...and the editor offers all five, each placed with one click', kinds.every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t)) && SINGLE.has(t)));
-  check('...and a level with them has nothing the editor\'s checks find wrong, and saves and loads', checkCustom(lvl).length === 0 && parseCustom(JSON.stringify(lvl))?.pieces.length === lvl.pieces.length, checkCustom(lvl).join('; '));
+  check(
+    '...and the editor offers all five, each placed with one click',
+    kinds.every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t)) && SINGLE.has(t))
+  );
+  check(
+    '...and a level with them has nothing the editor\'s checks find wrong, and saves and loads',
+    checkCustom(lvl).length === 0
+      && parseCustom(JSON.stringify(lvl))?.pieces.length === lvl.pieces.length,
+    checkCustom(lvl).join('; ')
+  );
 }
 
 console.log(failures === 0 ? '\neditops: all passed' : `\neditops: ${failures} FAILED`);

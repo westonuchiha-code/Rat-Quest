@@ -165,7 +165,13 @@ const levels = (): LevelDef[] => [
   });
   check('non-relic items are within single-jump height of a surface', tooHigh.length === 0, tooHigh.map((i) => i.id).join(', '));
   const count = (k: string): number => level.items.filter((i) => i.kind === k).length;
-  check('totals per kind: 20 crumbs, 6 caps, 3 relics', count('crumb') === 20 && count('cap') === 6 && count('relic') === 3, `${count('crumb')}/${count('cap')}/${count('relic')}`);
+  check(
+    'totals per kind: 20 crumbs, 6 caps, 3 relics',
+    count('crumb') === 20
+      && count('cap') === 6
+      && count('relic') === 3,
+    `${count('crumb')}/${count('cap')}/${count('relic')}`
+  );
 }
 
 if (failed) {

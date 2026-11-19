@@ -57,7 +57,18 @@ function getOn(p: PlayerController, move: THREE.Vector3): boolean {
   return p.riding;
 }
 
-check('it is a room to try, with a door in the Move Garden; it is the dream (its look, its sky) and a SKATE PARK; its doors lead to the dream\'s two rides, and its way out to the garden', TEST_ROOMS.some((l) => l.id === 'toybox') && !!levelById('toybox') && !!garden().courseDoors?.some((d) => d.to === 'toybox') && def.look === 'dream' && def.sky === 'space' && def.skate === true && (def.courseDoors ?? []).map((d) => d.to).sort().join() === 'bigdipper,milkyway' && def.returnTo === 'garden' && def.enemies.length === 0);
+check(
+  'it is a room to try, with a door in the Move Garden; it is the dream (its look, its sky) and a SKATE PARK; its doors lead to the dream\'s two rides, and its way out to the garden',
+  TEST_ROOMS.some((l) => l.id === 'toybox')
+    && !!levelById('toybox')
+    && !!garden().courseDoors?.some((d) => d.to === 'toybox')
+    && def.look === 'dream'
+    && def.sky === 'space'
+    && def.skate === true
+    && (def.courseDoors ?? []).map((d) => d.to).sort().join() === 'bigdipper,milkyway'
+    && def.returnTo === 'garden'
+    && def.enemies.length === 0
+);
 
 // ---- On the flat ----
 {
@@ -66,7 +77,12 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   check('here a jump and ATTACK puts him on his shield over FLAT ground (anywhere else it is the dive)', on && p.riding);
   for (let i = 0; i < 60 * 4.5; i++) p.update(DT, inp({ move: v(0, 1) }), cs);
   const pushed = speedOf(p);
-  check('the stick pushed forward PUSHES him along the flat, up to his standing top speed and no faster: he skates', Math.abs(pushed - R.max) < 0.3 && p.riding, `${pushed.toFixed(1)}`);
+  check(
+    'the stick pushed forward PUSHES him along the flat, up to his standing top speed and no faster: he skates',
+    Math.abs(pushed - R.max) < 0.3
+      && p.riding,
+    `${pushed.toFixed(1)}`
+  );
   for (let i = 0; i < 60; i++) p.update(DT, inp({}), cs);
   {
     // FROM A STANDSTILL: on his shield where he stands (a jump straight up, ATTACK), then the stick forward.
@@ -75,7 +91,13 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     for (let i = 0; i < 80 && !(q.riding && q.grounded); i++) q.update(DT, inp({ jumpHeld: true, attackPressed: !q.riding && q.velocity.y < 5 }), cs);
     const stood = q.riding && speedOf(q) < 0.5;
     for (let i = 0; i < 120; i++) q.update(DT, inp({ move: v(0, 1) }), cs);
-    check('from a STANDSTILL on his shield, the stick forward gets him going: he is not stepped off it before the push has taken hold', stood && q.riding && speedOf(q) > 6, `${speedOf(q).toFixed(1)} after two seconds`);
+    check(
+      'from a STANDSTILL on his shield, the stick forward gets him going: he is not stepped off it before the push has taken hold',
+      stood
+        && q.riding
+        && speedOf(q) > 6,
+      `${speedOf(q).toFixed(1)} after two seconds`
+    );
   }
   check('...and the stick let go, he rolls on, slowing', speedOf(p) < pushed - 1 && speedOf(p) > 4, `${speedOf(p).toFixed(1)}`);
   const q = new PlayerController(new THREE.Vector3(0, 0.01, -10));
@@ -119,7 +141,14 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     return { peaks: peaks.slice(1), p, on, events };
   };
   const coast = session(() => v(0, 0), 7);
-  check('dropped in from a deck and doing nothing, he rides down the wall, across, and three quarters of the way up the far wall; and back, and again, lower each time: a half pipe', coast.on && coast.peaks.length >= 2 && coast.peaks[0] > wallTop * 0.7 && coast.peaks[1] < coast.peaks[0], `${coast.peaks.map((q) => q.toFixed(1)).join(' ')} of ${wallTop.toFixed(1)}`);
+  check(
+    'dropped in from a deck and doing nothing, he rides down the wall, across, and three quarters of the way up the far wall; and back, and again, lower each time: a half pipe',
+    coast.on
+      && coast.peaks.length >= 2
+      && coast.peaks[0] > wallTop * 0.7
+      && coast.peaks[1] < coast.peaks[0],
+    `${coast.peaks.map((q) => q.toFixed(1)).join(' ')} of ${wallTop.toFixed(1)}`
+  );
   // THE LIP (the owner, 2026-11-17: "when riding up a half pipe ramp you should disconnect up at the top like in Tony
   // Hawk's Pro Skater and come back down into the pipe"). `stick`: what he holds. What he does at the far lip.
   const atTheLip = (dt: number, stick: (p: PlayerController) => THREE.Vector3): { high: number; back: boolean; bailed: boolean; out: boolean; air: number; riding: boolean } => {
@@ -143,9 +172,26 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   };
   {
     const a = atTheLip(DT, (p) => (Math.abs(p.position.x - HALF.x) < HALF.flat + 2.5 ? v(Math.sign(p.velocity.x) || -1, 0) : v(0, 0)));
-    check('PUMPED (the stick pushed the way he is going, down in the flat of it), at the far lip he goes STRAIGHT UP off it, a good way over it, and comes back down INTO the pipe on the wall he left, still riding: not out onto the deck, and not thrown off', a.back && !a.out && !a.bailed && a.riding && a.high > wallTop + 1 && a.air > 0.4, `${a.high.toFixed(1)} up (the lip is at ${wallTop.toFixed(1)}), ${a.air.toFixed(2)}s over it`);
+    check(
+      'PUMPED (the stick pushed the way he is going, down in the flat of it), at the far lip he goes STRAIGHT UP off it, a good way over it, and comes back down INTO the pipe on the wall he left, still riding: not out onto the deck, and not thrown off',
+      a.back
+        && !a.out
+        && !a.bailed
+        && a.riding
+        && a.high > wallTop + 1
+        && a.air > 0.4,
+      `${a.high.toFixed(1)} up (the lip is at ${wallTop.toFixed(1)}), ${a.air.toFixed(2)}s over it`
+    );
     const b = atTheLip(DT, () => v(-1, 0));
-    check('...and the same with the stick held toward the far wall the whole time, higher', b.back && !b.out && !b.bailed && b.riding && b.high >= a.high - 0.2, `${b.high.toFixed(1)} up, ${b.air.toFixed(2)}s`);
+    check(
+      '...and the same with the stick held toward the far wall the whole time, higher',
+      b.back
+        && !b.out
+        && !b.bailed
+        && b.riding
+        && b.high >= a.high - 0.2,
+      `${b.high.toFixed(1)} up, ${b.air.toFixed(2)}s`
+    );
   }
   // AT EVERY SPEED. (Sent at the far wall from the flat. At some speeds the wall let go of him a moment before its lip,
   // and he went out over the deck instead of up: found by a film of the real game, at 13; in a sweep, at 16.)
@@ -168,7 +214,11 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       }
       if (!back || !p.riding || sunk > 0.05 || high < wallTop + 1) { ok = false; told.push(`${speed} at ${fps} fps: ${high.toFixed(1)} up${back ? '' : ', NOT BACK'}${sunk > 0.05 ? ', in the wall' : ''}`); }
     }
-    check('sent at the far wall at EVERY speed from 12 to 30, at sixty frames a second and at thirty: he goes up off its lip and comes back down into the pipe, riding', ok, told.join('; '));
+    check(
+      'sent at the far wall at EVERY speed from 12 to 30, at sixty frames a second and at thirty: he goes up off its lip and comes back down into the pipe, riding',
+      ok,
+      told.join('; ')
+    );
   }
   // AT A PHONE'S FRAME RATE. (The owner, 2026-11-17: "it's okay going down but then when you're trying to go back up the
   // other side your character just like phases through the wall". At thirty frames a second and under, a rider holding
@@ -188,7 +238,11 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       told.push(`${fps}: ${sunk.toFixed(2)} in, ${a.high.toFixed(1)} up${a.bailed ? ', THROWN OFF' : ''}${a.back ? '' : ', NOT BACK'}`);
       if (sunk > 0.05 || a.bailed || !a.back || a.out || !a.riding) ok = false;
     }
-    check('at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it, off its lip and back down into the pipe, never inside the wall, never thrown off', ok, told.join('; '));
+    check(
+      'at thirty frames a second, at twenty-four, at twenty (a phone\'s), as at sixty: holding the stick toward the far wall he rides up it, off its lip and back down into the pipe, never inside the wall, never thrown off',
+      ok,
+      told.join('; ')
+    );
   }
   // THE LIP IS AN EDGE TO GRIND ("and they should also count as an edge that you can grind on").
   {
@@ -208,7 +262,11 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       told.push(`${side > 0 ? 'east' : 'west'} lip: ${(on / 60).toFixed(1)}s, at x ${lipX.toFixed(2)} (the lip is at ${(HALF.x + side * deck.out).toFixed(2)})`);
       if (on < 45 || Math.abs(lipX - (HALF.x + side * deck.out)) > 0.15) ok = false;
     }
-    check('the lip of each wall is an edge he can GRIND: skating along the deck beside it, the grind button puts his shield on the lip and it carries him along it', ok, told.join('; '));
+    check(
+      'the lip of each wall is an edge he can GRIND: skating along the deck beside it, the grind button puts his shield on the lip and it carries him along it',
+      ok,
+      told.join('; ')
+    );
     // And from INSIDE the pipe: carving along high on the wall, the grind button takes him up onto the lip.
     const p = rat(HALF.x + deck.out - 0.5, wallTop - 0.75, HALF.z1 - 3);
     p.devRide();
@@ -218,10 +276,24 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
       p.update(DT, inp({ move: v(0, 0), stowPressed: !p.grinding && on === 0 && i % 2 === 0 }), cs);
       if (p.grinding) on++;
     }
-    check('...and from inside the pipe: going along high on the wall, within reach of the lip, the grind button takes him up onto it', on > 30, `${(on / 60).toFixed(1)}s`);
+    check(
+      '...and from inside the pipe: going along high on the wall, within reach of the lip, the grind button takes him up onto it',
+      on > 30,
+      `${(on / 60).toFixed(1)}s`
+    );
   }
-  check('the top of each wall of the pipe, and of the quarter pipe, is marked as a lip IN THE GAME\'S OWN SOLIDS (its top two facets: six in all; and the bowl\'s four walls, eight more)', cs.filter((b) => b.vert && b.ramp).length === 14);
-  check('its walls curve up to sixty degrees, three and a half high; its decks are FLUSH with the walls\' tops ("the tops of the half pipes should be more flush"), and each has a ramp up to it that he can walk', wallTop > 3.3 && COPING === 0 && [-1, 1].every((sd) => Math.abs(ground(HALF.x + sd * (deck.out + 0.05), 0) - ground(HALF.x + sd * (deck.out - 0.02), 0)) < 0.05) && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6 && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1));
+  check(
+    'the top of each wall of the pipe, and of the quarter pipe, is marked as a lip IN THE GAME\'S OWN SOLIDS (its top two facets: six in all; and the bowl\'s four walls, eight more)',
+    cs.filter((b) => b.vert && b.ramp).length === 14
+  );
+  check(
+    'its walls curve up to sixty degrees, three and a half high; its decks are FLUSH with the walls\' tops ("the tops of the half pipes should be more flush"), and each has a ramp up to it that he can walk',
+    wallTop > 3.3
+      && COPING === 0
+      && [-1, 1].every((sd) => Math.abs(ground(HALF.x + sd * (deck.out + 0.05), 0) - ground(HALF.x + sd * (deck.out - 0.02), 0)) < 0.05)
+      && facetsOf(HALF.radius, HALF.facets, HALF.turn).length === 6
+      && [-1, 1].every((s) => Math.abs(ground(HALF.x + s * (deck.out + 1.5), HALF.z1 + HALF.way - 0.5) - deck.y * (0.5 / HALF.way)) < 0.1 && deck.y / HALF.way <= 1)
+  );
 }
 
 // ---- The big ramp ----
@@ -254,10 +326,28 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     return { far, high, air: air / 60, riding: p2.riding, top, got };
   };
   const a = fly(true);
-  check('the big ramp: down its roll-in tucked, off its kicker with a jump, he is thrown HIGH and FAR (twelve up, thirty along, two seconds in the air), and lands riding', a.far > 30 && a.high > 10 && a.air > 1.6 && a.riding, `${a.far.toFixed(0)} far, ${a.high.toFixed(1)} high, ${a.air.toFixed(1)}s in the air, top speed ${a.top.toFixed(1)}`);
+  check(
+    'the big ramp: down its roll-in tucked, off its kicker with a jump, he is thrown HIGH and FAR (twelve up, thirty along, two seconds in the air), and lands riding',
+    a.far > 30
+      && a.high > 10
+      && a.air > 1.6
+      && a.riding,
+    `${a.far.toFixed(0)} far, ${a.high.toFixed(1)} high, ${a.air.toFixed(1)}s in the air, top speed ${a.top.toFixed(1)}`
+  );
   const b = fly(false);
-  check('its bottle cap is in the air over the gap, where that jump carries him; one who only rolls off the lip passes under it', a.got && !b.got && b.riding, `jump ${a.high.toFixed(1)} high, roll ${b.high.toFixed(1)}; cap at ${cap.y.toFixed(1)}`);
-  check('the way up its tower is a ramp he can walk, against the east kerb', BIG.top / BIG.way.len <= 1 && Math.abs(ground((BIG.way.x0 + BIG.way.x1) / 2, BIG.tower.z1 + BIG.way.len / 2) - BIG.top / 2) < 0.1 && ground((BIG.way.x0 + BIG.way.x1) / 2, BIG.tower.z1 - 1) === BIG.top);
+  check(
+    'its bottle cap is in the air over the gap, where that jump carries him; one who only rolls off the lip passes under it',
+    a.got
+      && !b.got
+      && b.riding,
+    `jump ${a.high.toFixed(1)} high, roll ${b.high.toFixed(1)}; cap at ${cap.y.toFixed(1)}`
+  );
+  check(
+    'the way up its tower is a ramp he can walk, against the east kerb',
+    BIG.top / BIG.way.len <= 1
+      && Math.abs(ground((BIG.way.x0 + BIG.way.x1) / 2, BIG.tower.z1 + BIG.way.len / 2) - BIG.top / 2) < 0.1
+      && ground((BIG.way.x0 + BIG.way.x1) / 2, BIG.tower.z1 - 1) === BIG.top
+  );
 }
 
 // ---- The funbox, the quarter pipe ----
@@ -270,7 +360,12 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     p.update(DT, inp({ move: p.grinding ? v(0, 0) : v(-1, 0), stowPressed: p.riding && !p.grinding && p.position.x < BOX.x1 + 0.5 && p.position.x > BOX.x1 - 3 && i % 3 === 0 }), cs);
     if (p.grinding && Math.abs(p.position.y - (BOX.high + BOX.rail.high)) < 0.05) ground2++;
   }
-  check('the funbox: up its ramp, the grind button on its table, and he grinds the rail down its top to the far end', ground2 > 15 && p.position.x < BOX.x0, `${(ground2 / 60).toFixed(2)}s on the rail; he is at ${p.position.x.toFixed(1)},${p.position.y.toFixed(1)},${p.position.z.toFixed(1)} riding ${p.riding}`);
+  check(
+    'the funbox: up its ramp, the grind button on its table, and he grinds the rail down its top to the far end',
+    ground2 > 15
+      && p.position.x < BOX.x0,
+    `${(ground2 / 60).toFixed(2)}s on the rail; he is at ${p.position.x.toFixed(1)},${p.position.y.toFixed(1)},${p.position.z.toFixed(1)} riding ${p.riding}`
+  );
 }
 {
   const foot = TOY.halfZ - QUARTER.deck - facetsOf(QUARTER.radius, QUARTER.facets, QUARTER.turn)[QUARTER.facets - 1].d1;
@@ -284,8 +379,19 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     high = Math.max(high, p.position.y);
     if (p.velocity.z < -3 && p.grounded && p.position.z < foot) back = true;
   }
-  check('the quarter pipe: ridden at, it carries him up its curve and sends him back the way he came, still riding', back && high > 1.2 && p.riding, `up ${high.toFixed(1)}`);
-  check('it stands before the south side with a deck behind its lip, its foot on the floor', Math.abs(ground(8, foot - 0.1)) < 0.01 && ground(8, foot + 0.3) > 0 && ground(8, TOY.halfZ - 1) > 3);
+  check(
+    'the quarter pipe: ridden at, it carries him up its curve and sends him back the way he came, still riding',
+    back
+      && high > 1.2
+      && p.riding,
+    `up ${high.toFixed(1)}`
+  );
+  check(
+    'it stands before the south side with a deck behind its lip, its foot on the floor',
+    Math.abs(ground(8, foot - 0.1)) < 0.01
+      && ground(8, foot + 0.3) > 0
+      && ground(8, TOY.halfZ - 1) > 3
+  );
 }
 
 // ---- The light rails ----
@@ -306,9 +412,23 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     told.push(`rail ${i + 1}: ${(on / 60).toFixed(1)}s, left it ${d.toFixed(1)} from its end`);
     if (on < 60 * 2 || d > 3) ok = false;
   });
-  check('both light rails can be got onto from where they begin (skating along it, the grind button) and ridden to their ends', ok && P.rails.length === 2, told.join('; '));
-  check('a light rail is drawn UNDER the line he rides (a thin tube, its top a hair below his shield): his shield sits on it, not in it', RAIL_TUBE.r <= 0.16 && RAIL_TUBE.under > 0 && RAIL_TUBE.under < 0.1);
-  check('each begins on something he can stand on, and curves', P.rails.every((c) => Math.abs(ground(c.x[0], c.z[0]) - c.y[0]) < 0.4 && [0.2, 0.4, 0.6, 0.8].some((t) => Math.abs(railAt(c, c.len * t).tx - railAt(c, c.len * (t + 0.15)).tx) > 0.25)), P.rails.map((c) => `${ground(c.x[0], c.z[0]).toFixed(2)}/${c.y[0].toFixed(2)}`).join(' '));
+  check(
+    'both light rails can be got onto from where they begin (skating along it, the grind button) and ridden to their ends',
+    ok
+      && P.rails.length === 2,
+    told.join('; ')
+  );
+  check(
+    'a light rail is drawn UNDER the line he rides (a thin tube, its top a hair below his shield): his shield sits on it, not in it',
+    RAIL_TUBE.r <= 0.16
+      && RAIL_TUBE.under > 0
+      && RAIL_TUBE.under < 0.1
+  );
+  check(
+    'each begins on something he can stand on, and curves',
+    P.rails.every((c) => Math.abs(ground(c.x[0], c.z[0]) - c.y[0]) < 0.4 && [0.2, 0.4, 0.6, 0.8].some((t) => Math.abs(railAt(c, c.len * t).tx - railAt(c, c.len * (t + 0.15)).tx) > 0.25)),
+    P.rails.map((c) => `${ground(c.x[0], c.z[0]).toFixed(2)}/${c.y[0].toFixed(2)}`).join(' ')
+  );
 }
 
 // ---- The sword, on the shield (the owner, 2026-11-17: "you should be able to swing your sword on attack while you're
@@ -326,7 +446,16 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     p.update(DT, inp({ move: v(0, 1) }), cs);
     hit ||= p.attackActive;
   }
-  check('ATTACK on his shield is a swing of the sword: it can hit, as a swing does; he rides on at the speed he had, the way he was going, still on his shield', p.swingId === id + 1 && hit && p.riding && speedOf(p) >= before - 0.3 && Math.abs(Math.atan2(p.velocity.x, p.velocity.z) - heading) < 0.05 && p.state === 'ride', `${before.toFixed(1)} then ${speedOf(p).toFixed(1)}`);
+  check(
+    'ATTACK on his shield is a swing of the sword: it can hit, as a swing does; he rides on at the speed he had, the way he was going, still on his shield',
+    p.swingId === id + 1
+      && hit
+      && p.riding
+      && speedOf(p) >= before - 0.3
+      && Math.abs(Math.atan2(p.velocity.x, p.velocity.z) - heading) < 0.05
+      && p.state === 'ride',
+    `${before.toFixed(1)} then ${speedOf(p).toFixed(1)}`
+  );
   // In the air on the shield: a swing too, not the dive, and not a spin.
   p.update(DT, inp({ move: v(0, 1), jumpPressed: true, jumpHeld: true }), cs);
   for (let i = 0; i < 6; i++) p.update(DT, inp({ jumpHeld: true }), cs);
@@ -339,7 +468,14 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     hit2 ||= p.attackActive;
     spun ||= p.rideSpinProgress >= 0;
   }
-  check('...and in the air on it: a swing, not the dive and not a spin; he comes down riding', p.swingId === id2 + 1 && hit2 && !spun && p.riding && p.state === 'ride');
+  check(
+    '...and in the air on it: a swing, not the dive and not a spin; he comes down riding',
+    p.swingId === id2 + 1
+      && hit2
+      && !spun
+      && p.riding
+      && p.state === 'ride'
+  );
 }
 
 // ---- THE BOWL AND THE SPINE (2026-11-17: "more to ride"). The game's own solids, the real controller, at sixty frames
@@ -348,7 +484,15 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const bf = facetsOf(BOWL.radius, BOWL.facets, BOWL.turn);
   const top = bf[bf.length - 1].h1;
   const inner = BOWL.flat + bf[bf.length - 1].d1;
-  check('the bowl: a square floor, a curved wall on each of its four sides rising to one height, a deck all round level with the lips, its corners filled, and a ramp up to the deck', [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (inner - 0.01), BOWL.z + sz * (inner - 0.01)) - top) < 0.05 && Math.abs(ground(BOWL.x + sx * (inner + 1), BOWL.z + sz * (inner + 1)) - top) < 1e-6) && ground(BOWL.x, BOWL.z) === 0 && [[1, 1], [1, -1], [-1, 1], [-1, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (BOWL.flat + 1), BOWL.z + sz * (BOWL.flat + 1)) - top) < 1e-6) && Math.abs(ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - 0.01) - top) < 0.05 && ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - BOWL.way.len + 0.01) < 0.05, `walls ${top.toFixed(2)} high`);
+  check(
+    'the bowl: a square floor, a curved wall on each of its four sides rising to one height, a deck all round level with the lips, its corners filled, and a ramp up to the deck',
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (inner - 0.01), BOWL.z + sz * (inner - 0.01)) - top) < 0.05 && Math.abs(ground(BOWL.x + sx * (inner + 1), BOWL.z + sz * (inner + 1)) - top) < 1e-6)
+      && ground(BOWL.x, BOWL.z) === 0
+      && [[1, 1], [1, -1], [-1, 1], [-1, -1]].every(([sx, sz]) => Math.abs(ground(BOWL.x + sx * (BOWL.flat + 1), BOWL.z + sz * (BOWL.flat + 1)) - top) < 1e-6)
+      && Math.abs(ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - 0.01) - top) < 0.05
+      && ground((BOWL.way.x0 + BOWL.way.x1) / 2, BOWL.z - inner - BOWL.deck - BOWL.way.len + 0.01) < 0.05,
+    `walls ${top.toFixed(2)} high`
+  );
   /** Dropped in off one deck toward the far wall, pumping in the flat: what he does at that wall's lip. */
   const across = (dt: number, dx: number, dz: number): { up: number; back: boolean; bailed: boolean; riding: boolean } => {
     // (Dropped in as into the half pipe: onto his shield on the deck, the stick held until he is over the lip.)
@@ -375,14 +519,25 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   const walls: Array<[number, number, string]> = [[1, 0, 'east'], [-1, 0, 'west'], [0, 1, 'south'], [0, -1, 'north']];
   const runs = walls.flatMap(([dx, dz, name]) => [1 / 60, 1 / 30].map((dt) => ({ name, dt, r: across(dt, dx, dz) })));
   const bad = runs.filter(({ r }) => !(r.up > 1 && r.back && !r.bailed && r.riding));
-  check('dropped in off a deck and pumped across the floor, at EACH of its four walls he goes up off the lip, more than his own height over it on the first pass, and comes back down into the bowl, still riding (sixty frames a second and thirty)', bad.length === 0, runs.map(({ name, dt, r }) => `${name} ${Math.round(1 / dt)}: ${r.up.toFixed(1)} up${r.back ? '' : ', not back'}${r.bailed ? ', BAILED' : ''}`).join('; '));
+  check(
+    'dropped in off a deck and pumped across the floor, at EACH of its four walls he goes up off the lip, more than his own height over it on the first pass, and comes back down into the bowl, still riding (sixty frames a second and thirty)',
+    bad.length === 0,
+    runs.map(({ name, dt, r }) => `${name} ${Math.round(1 / dt)}: ${r.up.toFixed(1)} up${r.back ? '' : ', not back'}${r.bailed ? ', BAILED' : ''}`).join('; ')
+  );
 
   // The spine.
   const sf = facetsOf(SPINE.radius, SPINE.facets, SPINE.turn);
   const sOut = sf[sf.length - 1].d1;
   const sTop = sf[sf.length - 1].h1;
   const zMid = (SPINE.z0 + SPINE.z1) / 2;
-  check('the spine: two curved walls back to back, a ridge and no deck: as high at its middle as its walls, and floor a little way either side', Math.abs(ground(SPINE.x - 0.01, zMid) - sTop) < 0.05 && Math.abs(ground(SPINE.x + 0.01, zMid) - sTop) < 0.05 && ground(SPINE.x - sOut - 0.5, zMid) === 0 && ground(SPINE.x + sOut + 0.5, zMid) === 0, `${sTop.toFixed(2)} high`);
+  check(
+    'the spine: two curved walls back to back, a ridge and no deck: as high at its middle as its walls, and floor a little way either side',
+    Math.abs(ground(SPINE.x - 0.01, zMid) - sTop) < 0.05
+      && Math.abs(ground(SPINE.x + 0.01, zMid) - sTop) < 0.05
+      && ground(SPINE.x - sOut - 0.5, zMid) === 0
+      && ground(SPINE.x + sOut + 0.5, zMid) === 0,
+    `${sTop.toFixed(2)} high`
+  );
   const over = (dt: number, dir: 1 | -1): { over: boolean; high: number; bailed: boolean; riding: boolean; landed: number } => {
     const p = rat(SPINE.x - dir * (sOut + 9), 0, zMid);
     getOn(p, v(dir, 0));
@@ -401,7 +556,11 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
   };
   const overs = ([1, -1] as const).flatMap((dir) => [1 / 60, 1 / 30].map((dt) => ({ dir, dt, r: over(dt, dir) })));
   const badOver = overs.filter(({ r }) => !(r.over && r.high > sTop + 0.5 && !r.bailed && r.riding && r.landed > 0));
-  check('ridden at with the stick forward, he goes up one side, OVER the ridge through the air, and comes down beyond it still riding: from either side, at sixty frames a second and thirty', badOver.length === 0, overs.map(({ dir, dt, r }) => `${dir > 0 ? 'eastward' : 'westward'} ${Math.round(1 / dt)}: ${r.high.toFixed(1)} high, down ${Number.isNaN(r.landed) ? 'nowhere' : r.landed.toFixed(1) + ' beyond'}${r.bailed ? ', BAILED' : ''}`).join('; '));
+  check(
+    'ridden at with the stick forward, he goes up one side, OVER the ridge through the air, and comes down beyond it still riding: from either side, at sixty frames a second and thirty',
+    badOver.length === 0,
+    overs.map(({ dir, dt, r }) => `${dir > 0 ? 'eastward' : 'westward'} ${Math.round(1 / dt)}: ${r.high.toFixed(1)} high, down ${Number.isNaN(r.landed) ? 'nowhere' : r.landed.toFixed(1) + ' beyond'}${r.bailed ? ', BAILED' : ''}`).join('; ')
+  );
 }
 
 // ---- THE LAUNCHER ----
@@ -432,7 +591,13 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     return { up: high - LAUNCHER.rise, far, riding: far > 0, bailed };
   };
   const runs = [0, 16, 24, 30].flatMap((sp) => [1 / 60, 1 / 30].map((dt) => ({ sp, r: at(sp, dt) })));
-  check('the launcher: from a standing push-off, at his standing top speed and tucked, it throws him off its tip and he lands riding, inside the park (and, short of his tucked top speed, can brake to a stop in the lane beyond): higher and further the faster he comes (sixty frames a second and thirty)', runs.every(({ r }) => r.riding && !r.bailed && r.far > 3) && runs[6].r.up > runs[2].r.up + 2 && runs[6].r.far > runs[2].r.far + 10, runs.filter((_, i) => i % 2 === 0).map(({ sp, r }) => `${sp || 'push-off'}: ${r.up.toFixed(1)} over its tip, ${r.far.toFixed(1)} on${r.bailed ? ', BAILED' : ''}`).join('; '));
+  check(
+    'the launcher: from a standing push-off, at his standing top speed and tucked, it throws him off its tip and he lands riding, inside the park (and, short of his tucked top speed, can brake to a stop in the lane beyond): higher and further the faster he comes (sixty frames a second and thirty)',
+    runs.every(({ r }) => r.riding && !r.bailed && r.far > 3)
+      && runs[6].r.up > runs[2].r.up + 2
+      && runs[6].r.far > runs[2].r.far + 10,
+    runs.filter((_, i) => i % 2 === 0).map(({ sp, r }) => `${sp || 'push-off'}: ${r.up.toFixed(1)} over its tip, ${r.far.toFixed(1)} on${r.bailed ? ', BAILED' : ''}`).join('; ')
+  );
 }
 
 // ---- Tricks ----
@@ -472,20 +637,54 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     return { events, before, after: speedOf(p), riding: p.riding, spun, name };
   };
   const plain = trick(() => ({}));
-  check('a jump with nothing done in it is only a landing: no speed for it', plain.riding && plain.events.includes('rideLand') && !plain.events.includes('trick'), `${plain.before.toFixed(1)} to ${plain.after.toFixed(1)}; ${plain.events.join(' ')}`);
+  check(
+    'a jump with nothing done in it is only a landing: no speed for it',
+    plain.riding
+      && plain.events.includes('rideLand')
+      && !plain.events.includes('trick'),
+    `${plain.before.toFixed(1)} to ${plain.after.toFixed(1)}; ${plain.events.join(' ')}`
+  );
   const gain = plain.after - plain.before; // (what the landing itself gives or takes, tricks or none)
   const spin = trick((t) => ({ dodgePressed: t > 0.1 && t < 0.14 }));
-  check('the ROLL button in the air is a SPIN: he and his shield go right round; landed, it is a trick, and speed', spin.spun && spin.riding && spin.events.includes('trick') && spin.after - spin.before > gain + R.trickBoost - 0.6, `${spin.before.toFixed(1)} to ${spin.after.toFixed(1)}`);
+  check(
+    'the ROLL button in the air is a SPIN: he and his shield go right round; landed, it is a trick, and speed',
+    spin.spun
+      && spin.riding
+      && spin.events.includes('trick')
+      && spin.after - spin.before > gain + R.trickBoost - 0.6,
+    `${spin.before.toFixed(1)} to ${spin.after.toFixed(1)}`
+  );
   const grab = trick((t) => ({ guardHeld: t > 0.1 && t < 0.1 + R.grabTime + 0.15 }));
-  check('GUARD held in the air is a GRAB: held long enough it is a trick, and speed', grab.riding && grab.events.includes('trick') && grab.after - grab.before > gain + R.trickBoost - 0.6, `${grab.before.toFixed(1)} to ${grab.after.toFixed(1)}`);
+  check(
+    'GUARD held in the air is a GRAB: held long enough it is a trick, and speed',
+    grab.riding
+      && grab.events.includes('trick')
+      && grab.after - grab.before > gain + R.trickBoost - 0.6,
+    `${grab.before.toFixed(1)} to ${grab.after.toFixed(1)}`
+  );
   const tap = trick((t) => ({ guardHeld: t > 0.1 && t < 0.16 }));
   check('...a tap of it is not', tap.riding && !tap.events.includes('trick'));
   const three = trick((t) => ({ dodgePressed: t > 0.08 && t < 0.12, guardHeld: t > 0.1 && t < 0.6, jumpPressed: t > 0.62 && t < 0.66 }));
-  check('a spin, a grab and a kickflip in one air are THREE tricks: three times the speed (past his standing top speed, up to his tucked one)', three.riding && three.events.includes('trick') && three.after > Math.min(R.tuckMax, three.before + gain + R.trickBoost * 3) - 0.8 && three.after > R.max + 4, `${three.before.toFixed(1)} to ${three.after.toFixed(1)}`);
+  check(
+    'a spin, a grab and a kickflip in one air are THREE tricks: three times the speed (past his standing top speed, up to his tucked one)',
+    three.riding
+      && three.events.includes('trick')
+      && three.after > Math.min(R.tuckMax, three.before + gain + R.trickBoost * 3) - 0.8
+      && three.after > R.max + 4,
+    `${three.before.toFixed(1)} to ${three.after.toFixed(1)}`
+  );
   // ---- Its NAME as he lands it (B4, 2026-11-18) ----
-  check('WHAT HE DID IN THE AIR, AS THE GAME KEEPS IT (for the horn stab): a spin, a grab and a kickflip, in the order he did them', three.name === 'spin grab flip', three.name);
+  check(
+    'WHAT HE DID IN THE AIR, AS THE GAME KEEPS IT (for the horn stab): a spin, a grab and a kickflip, in the order he did them',
+    three.name === 'spin grab flip',
+    three.name
+  );
   const twoSpins = trick((t) => ({ dodgePressed: (t > 0.06 && t < 0.09) || (t > 0.56 && t < 0.59) }));
-  check('...two spins one after another are two (if he lands them)', !twoSpins.events.includes('trick') || twoSpins.name === 'spin spin', `${twoSpins.name || '(not landed)'}; ${twoSpins.events.join(' ')}`);
+  check(
+    '...two spins one after another are two (if he lands them)',
+    !twoSpins.events.includes('trick') || twoSpins.name === 'spin spin',
+    `${twoSpins.name || '(not landed)'}; ${twoSpins.events.join(' ')}`
+  );
   check('...a jump with nothing in it keeps nothing', plain.name === '');
   // Landing half way round a spin: he comes off.
   const p = rat(17.5, 0, -30);
@@ -514,7 +713,15 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     if (p.moveEvent) ev.push(p.moveEvent);
     top = Math.max(top, speedOf(p));
   }
-  check('the films\' rider does the whole line by itself: down the roll-in tucked, off the kicker, a spin, a grab and a kickflip in one air, landed on the bank (and fast for it), and braked to a stop short of the box\'s side', ev.includes('trick') && !ev.includes('bail') && !p.riding && p.position.z < TOY.halfZ - 2 && top > R.max + 6, `top speed ${top.toFixed(1)}; ${[...new Set(ev)].join(' ')}; stopped at z ${p.position.z.toFixed(0)}`);
+  check(
+    'the films\' rider does the whole line by itself: down the roll-in tucked, off the kicker, a spin, a grab and a kickflip in one air, landed on the bank (and fast for it), and braked to a stop short of the box\'s side',
+    ev.includes('trick')
+      && !ev.includes('bail')
+      && !p.riding
+      && p.position.z < TOY.halfZ - 2
+      && top > R.max + 6,
+    `top speed ${top.toFixed(1)}; ${[...new Set(ev)].join(' ')}; stopped at z ${p.position.z.toFixed(0)}`
+  );
 }
 
 // ---- A fall costs nothing in the dream ----
@@ -523,14 +730,27 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
 {
   const all = [...LEVELS, ...ARCHIVE, ...TEST_ROOMS];
   const dream = all.filter((l) => l.look === 'dream');
-  check('in every dream level (the Toy Box, the Milky Way, the Big Dipper) a fall costs NOTHING: he is put back, and that is all', dream.length === 3 && dream.every((l) => l.fallFree === true && fallCost(l, false) === 0));
+  check(
+    'in every dream level (the Toy Box, the Milky Way, the Big Dipper) a fall costs NOTHING: he is put back, and that is all',
+    dream.length === 3
+      && dream.every((l) => l.fallFree === true && fallCost(l, false) === 0)
+  );
   const costly = all.filter((l) => l.fallBack || l.fallDepth !== undefined).filter((l) => !l.fallFree).map((l) => l.id);
-  check('in the waking world a fall he is put back from still costs a heart (the Hollows, the Keep), but for one in the Ember Helm', costly.includes('hollows') && costly.includes('keep') && costly.every((id) => fallCost(levelById(id)!, false) === 1 && fallCost(levelById(id)!, true) === 0), costly.join(' '));
+  check(
+    'in the waking world a fall he is put back from still costs a heart (the Hollows, the Keep), but for one in the Ember Helm',
+    costly.includes('hollows')
+      && costly.includes('keep')
+      && costly.every((id) => fallCost(levelById(id)!, false) === 1 && fallCost(levelById(id)!, true) === 0),
+    costly.join(' ')
+  );
 }
 
 // ---- Bottle caps, kerbs ----
 check('six bottle caps, each where a trick takes him', def.collectibles.length === 6 && def.collectibles.every((c) => c.kind === 'cap' && c.y > 2));
-check('tall sides stand all round it (a box): there is nowhere to fall off, and a curved wall cannot throw him out', [[0, TOY.halfZ + 0.5], [0, -TOY.halfZ - 0.5], [TOY.half + 0.5, 0], [-TOY.half - 0.5, 0]].every(([x, z]) => ground(x, z) >= TOY.wall));
+check(
+  'tall sides stand all round it (a box): there is nowhere to fall off, and a curved wall cannot throw him out',
+  [[0, TOY.halfZ + 0.5], [0, -TOY.halfZ - 0.5], [TOY.half + 0.5, 0], [-TOY.half - 0.5, 0]].every(([x, z]) => ground(x, z) >= TOY.wall)
+);
 
 {
   // (The old note in BACKLOG B10: "a double jump from a deck clears the wall". The walls are as tall as the tower and

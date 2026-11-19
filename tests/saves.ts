@@ -17,7 +17,12 @@ check('nothing saved yet', newestSave(st) === null);
 writeSave(st, at(100, 'sewer'), 'manual');
 writeSave(st, at(300, 'cellars'), 'quick');
 writeSave(st, at(200, 'hunt'), 'auto');
-check('the slots are kept apart', readSave(st, 'manual')?.levelId === 'sewer' && readSave(st, 'quick')?.levelId === 'cellars' && readSave(st, 'auto')?.levelId === 'hunt');
+check(
+  'the slots are kept apart',
+  readSave(st, 'manual')?.levelId === 'sewer'
+    && readSave(st, 'quick')?.levelId === 'cellars'
+    && readSave(st, 'auto')?.levelId === 'hunt'
+);
 check('CONTINUE picks the newest', newestSave(st)?.slot === 'quick');
 writeSave(st, at(400, 'lair'), 'auto');
 check('a newer autosave wins', newestSave(st)?.slot === 'auto' && newestSave(st)?.data.levelId === 'lair');

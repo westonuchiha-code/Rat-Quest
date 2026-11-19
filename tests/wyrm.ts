@@ -114,26 +114,61 @@ const MAX = TUNING.health.max;
 {
   const door = cistern.courseDoors?.find((d) => d.to === 'sump');
   const reach = computeReach(cistern);
-  check('the Sump is a place in the Cistern, through a door in its north-east corner that he can walk up to', !!door && sump.world === 'cistern' && sump.returnTo === 'cistern' && reach.near(door!.door.x - 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x - 0.8, door!.door.z));
-  check('the Wyrm is the only thing in it, and beating it is what its Golden Wedge asks', sump.enemies.length === 1 && sump.wedges?.length === 1 && sump.wedges[0].appears?.type === 'defeat' && sump.goals.length === 1);
+  check(
+    'the Sump is a place in the Cistern, through a door in its north-east corner that he can walk up to',
+    !!door
+      && sump.world === 'cistern'
+      && sump.returnTo === 'cistern'
+      && reach.near(door!.door.x - 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5)
+      && atDoor(door!.door, door!.door.x - 0.8, door!.door.z)
+  );
+  check(
+    'the Wyrm is the only thing in it, and beating it is what its Golden Wedge asks',
+    sump.enemies.length === 1
+      && sump.wedges?.length === 1
+      && sump.wedges[0].appears?.type === 'defeat'
+      && sump.goals.length === 1
+  );
   const A = SUMP_ARENA;
   let floor = true;
   for (let x = A.x0 + 0.7; x <= A.x1 - 0.7; x += 0.5) for (let z = A.z0 + 0.7; z <= A.z1 - 0.7; z += 0.5) if (!canStand(x, 0, z, 0.37)) floor = false;
   check('its floor is the whole room, right up to the walls, with nothing standing on it', floor && Math.abs(A.x0 + 22) < 0.2 && Math.abs(A.z1 - 22) < 0.2);
   check('he comes in more than its notice away', Math.hypot(sump.spawn.x - spec.x, sump.spawn.z - spec.z) > W.noticeRange);
   const sticker = STICKERS.find((s) => s.id === 'foe:wyrm');
-  check('it has a sticker, with a flat picture of its own', !!sticker && stickerIcon(sticker!.icon, 40).includes('<svg') && stickerIcon(sticker!.icon, 40) !== stickerIcon('brood', 40));
+  check(
+    'it has a sticker, with a flat picture of its own',
+    !!sticker
+      && stickerIcon(sticker!.icon, 40).includes('<svg')
+      && stickerIcon(sticker!.icon, 40) !== stickerIcon('brood', 40)
+  );
   const made = compileCustom({ ...emptyCustom(), width: 40, depth: 40, pieces: [...emptyCustom().pieces, { t: 'wyrm', x0: 0, z0: -6, x1: 0, z1: -6, top: 0, dir: 's' }] });
   const e = made.enemies.find((q) => q.type === 'wyrm');
-  check('it can be put in a level in the editor: its floor is the room to the walls, and it does not come back', !!e && e!.arena!.x0 < -19.5 && e!.arena!.x1 > 19.5 && e!.respawn === false && e!.facing === 0);
+  check(
+    'it can be put in a level in the editor: its floor is the room to the walls, and it does not come back',
+    !!e
+      && e!.arena!.x0 < -19.5
+      && e!.arena!.x1 > 19.5
+      && e!.respawn === false
+      && e!.facing === 0
+  );
 }
 
 // ---- Its body ----
 {
   const w = wyrm();
-  check('it is a head and thirteen segments, each a little smaller than the last', w.parts.length === W.segments && w.parts[0].r === W.segRadius && w.parts[12].r < w.parts[0].r * 0.8 && w.parts.every((q, i) => Math.abs(q.r - W.segRadius * wyrmTaper(i)) < 1e-9));
+  check(
+    'it is a head and thirteen segments, each a little smaller than the last',
+    w.parts.length === W.segments
+      && w.parts[0].r === W.segRadius
+      && w.parts[12].r < w.parts[0].r * 0.8
+      && w.parts.every((q, i) => Math.abs(q.r - W.segRadius * wyrmTaper(i)) < 1e-9)
+  );
   const gaps = (v: Wyrm): number[] => v.parts.map((q, i) => Math.hypot(q.x - (i ? v.parts[i - 1].x : v.x), q.z - (i ? v.parts[i - 1].z : v.z)));
-  check('asleep it lies curled, each segment the same distance behind the one in front', gaps(w).every((g) => Math.abs(g - W.spacing) < 0.06), `${Math.min(...gaps(w)).toFixed(2)}..${Math.max(...gaps(w)).toFixed(2)}`);
+  check(
+    'asleep it lies curled, each segment the same distance behind the one in front',
+    gaps(w).every((g) => Math.abs(g - W.spacing) < 0.06),
+    `${Math.min(...gaps(w)).toFixed(2)}..${Math.max(...gaps(w)).toFixed(2)}`
+  );
   // Crawling: every segment goes where the head went.
   const { w: c, p } = awake({ seed: 3 });
   const path: Array<{ x: number; z: number }> = [];
@@ -154,7 +189,13 @@ const MAX = TUNING.health.max;
     if (c.state !== 'squeeze' && c.state !== 'spent') stretched = Math.max(stretched, ...gaps(c));
     for (const q of c.parts) if (q.x < SUMP_ARENA.x0 || q.x > SUMP_ARENA.x1 || q.z < SUMP_ARENA.z0 || q.z > SUMP_ARENA.z1) outside = true;
   }
-  check('crawling, its body goes exactly where its head went, never stretched and never out through a wall', off < 0.12 && stretched < W.spacing + 0.08 && !outside, `tail ${off.toFixed(2)} off the head's path, widest gap ${stretched.toFixed(2)}`);
+  check(
+    'crawling, its body goes exactly where its head went, never stretched and never out through a wall',
+    off < 0.12
+      && stretched < W.spacing + 0.08
+      && !outside,
+    `tail ${off.toFixed(2)} off the head's path, widest gap ${stretched.toFixed(2)}`
+  );
 }
 
 // ---- A long body in a fight ----
@@ -167,7 +208,13 @@ const MAX = TUNING.health.max;
   put(p, side.x, side.z, mid);
   const hp = w.hp;
   const hit = swing(p, w);
-  check('a sword lands on whichever segment is in front of it, not only on its head', hit.enemyHit === w && w.hp === hp - 1 && dist(w, p) > 3, `${dist(w, p).toFixed(1)} from its head`);
+  check(
+    'a sword lands on whichever segment is in front of it, not only on its head',
+    hit.enemyHit === w
+      && w.hp === hp - 1
+      && dist(w, p) > 3,
+    `${dist(w, p).toFixed(1)} from its head`
+  );
   // Two segments in reach of one swing: one blow, not two.
   const again = wyrm();
   until(again, p, 'prowl');
@@ -190,7 +237,12 @@ const MAX = TUNING.health.max;
     resolveCombat(r, [still], ev);
   }
   const held = still.parts.every((s) => Math.hypot(r.position.x - s.x, r.position.z - s.z) >= s.r + TUNING.rat.radius - 0.02);
-  check('he cannot walk through its body: every segment turns him aside', held && r.position.x > q.x - 0.4, `stopped at ${r.position.x.toFixed(2)} (the segment is at ${q.x.toFixed(2)})`);
+  check(
+    'he cannot walk through its body: every segment turns him aside',
+    held
+      && r.position.x > q.x - 0.4,
+    `stopped at ${r.position.x.toFixed(2)} (the segment is at ${q.x.toFixed(2)})`
+  );
   // ...but he can jump it.
   const j = ratAt(q.x + 3, q.z);
   let crossed = false;
@@ -203,7 +255,11 @@ const MAX = TUNING.health.max;
   // A plunge onto a segment counts.
   const hp3 = still.hp;
   still.takeHit(3, 0, 0, 'plunge', 4);
-  check('a blow on a segment does its plain harm; a blow on its head while it is not helpless does too', still.hp === hp3 - 3 && (still.takeHit(1, 0, 0, 'sword', -1), still.hp === hp3 - 4));
+  check(
+    'a blow on a segment does its plain harm; a blow on its head while it is not helpless does too',
+    still.hp === hp3 - 3
+      && (still.takeHit(1, 0, 0, 'sword', -1), still.hp === hp3 - 4)
+  );
   // The test view draws all of it.
   const shapes = new HitShapes();
   shapes.update(true, [{ x: 0, y: 0, z: 0, facing: 0, radius: 0.6, alive: true, attackActive: false }], { x: 9, y: 0, z: 9, facing: 0, radius: 0.3, swing: null, guarding: false, blockArc: 1 });
@@ -241,7 +297,14 @@ const MAX = TUNING.health.max;
     tick(w, p);
     if (w.state === 'biteWind' && w.attackActive) early = true;
   }
-  check('it comes in, its head rears (half a second in which nothing can hurt), and it snaps', got && !early && w.state === 'bite' && w.events.includes('biteWind') && w.events.includes('bite'));
+  check(
+    'it comes in, its head rears (half a second in which nothing can hurt), and it snaps',
+    got
+      && !early
+      && w.state === 'bite'
+      && w.events.includes('biteWind')
+      && w.events.includes('bite')
+  );
   const r = play(w, p, () => ({}), (x) => x.state === 'recover');
   check('standing in front of it, the bite costs him a heart', r.results[0] === 'hit' && r.hp === MAX - W.biteDamage, r.results.join(','));
   const b = awake(0.9);
@@ -264,11 +327,22 @@ const MAX = TUNING.health.max;
   t.takeHit(1, 0, 0, 'sword', -1);
   const headHit = hp - t.hp;
   t.takeHit(1, 0, 0, 'sword', 6);
-  check('while it reels, a blow on its head does double; a blow on its body does not', headHit === W.soft && t.hp === hp - W.soft - 1 && t.events.includes('crit'));
+  check(
+    'while it reels, a blow on its head does double; a blow on its body does not',
+    headHit === W.soft
+      && t.hp === hp - W.soft - 1
+      && t.events.includes('crit')
+  );
   let reel = 0;
   const q = ratAt(0, 18);
   for (; t.state === 'reel'; reel += DT) tick(t, q);
-  check('it reels for nearly two seconds, then is itself again', Math.abs(reel - W.reel) < 0.3 && t.state === 'prowl' && !t.helpless, `${reel.toFixed(2)} s more`);
+  check(
+    'it reels for nearly two seconds, then is itself again',
+    Math.abs(reel - W.reel) < 0.3
+      && t.state === 'prowl'
+      && !t.helpless,
+    `${reel.toFixed(2)} s more`
+  );
 }
 
 // ---- The charge ----
@@ -281,12 +355,34 @@ const MAX = TUNING.health.max;
     tick(w, p);
     if (w.state === 'chargeWind' && w.attackActive) early = true;
   }
-  check('from far off it rears and screams (most of a second), then runs', got && !early && w.state === 'charge' && w.events.includes('chargeWind') && Math.abs(Math.atan2(Math.sin(w.facing - facing0), Math.cos(w.facing - facing0))) < 0.7, `got ${got}, early ${early}, ${w.state}, turned ${Math.abs(Math.atan2(Math.sin(w.facing - facing0), Math.cos(w.facing - facing0))).toFixed(2)}`);
+  check(
+    'from far off it rears and screams (most of a second), then runs',
+    got
+      && !early
+      && w.state === 'charge'
+      && w.events.includes('chargeWind')
+      && Math.abs(Math.atan2(Math.sin(w.facing - facing0), Math.cos(w.facing - facing0))) < 0.7,
+    `got ${got}, early ${early}, ${w.state}, turned ${Math.abs(Math.atan2(Math.sin(w.facing - facing0), Math.cos(w.facing - facing0))).toFixed(2)}`
+  );
   const line = w.facing;
   const from = { x: w.x, z: w.z };
   const r = play(w, p, () => ({ guardHeld: true }), (x) => x.state === 'stunned' || x.state === 'skid');
-  check('dead straight, fast, and no shield stops it: two hearts from a rat in its way', r.results.includes('hit') && r.hp === MAX - W.chargeDamage && Math.abs(Math.atan2(Math.sin(w.facing - line), Math.cos(w.facing - line))) < 1e-9, r.results.join(','));
-  check('it runs on until it meets the wall, and stuns itself there', w.state === 'stunned' && w.helpless && w.events.includes('ram') && Math.hypot(w.x - from.x, w.z - from.z) > 6 && (Math.abs(Math.abs(w.x) - (22 - W.radius)) < 0.8 || Math.abs(Math.abs(w.z) - (22 - W.radius)) < 0.8), `head at ${w.x.toFixed(1)}, ${w.z.toFixed(1)}`);
+  check(
+    'dead straight, fast, and no shield stops it: two hearts from a rat in its way',
+    r.results.includes('hit')
+      && r.hp === MAX - W.chargeDamage
+      && Math.abs(Math.atan2(Math.sin(w.facing - line), Math.cos(w.facing - line))) < 1e-9,
+    r.results.join(',')
+  );
+  check(
+    'it runs on until it meets the wall, and stuns itself there',
+    w.state === 'stunned'
+      && w.helpless
+      && w.events.includes('ram')
+      && Math.hypot(w.x - from.x, w.z - from.z) > 6
+      && (Math.abs(Math.abs(w.x) - (22 - W.radius)) < 0.8 || Math.abs(Math.abs(w.z) - (22 - W.radius)) < 0.8),
+    `head at ${w.x.toFixed(1)}, ${w.z.toFixed(1)}`
+  );
   // He steps out of its line.
   const c = awake(0.1);
   until(c.w, c.p, 'chargeWind', 2400, () => put(c.p, 0, 12));
@@ -300,7 +396,14 @@ const MAX = TUNING.health.max;
   // (He stands at the side of its head, clear of its neck.)
   put(c.p, s.x + Math.cos(s.facing) * 1.35, s.z - Math.sin(s.facing) * 1.35, s);
   const blow = swing(c.p, s);
-  check('stunned, its head lies there to be hit, and it counts double', s.state === 'stunned' && blow.enemyHit === s && s.hp === hp - W.soft && !blow.playerResult, `${hp} to ${s.hp}`);
+  check(
+    'stunned, its head lies there to be hit, and it counts double',
+    s.state === 'stunned'
+      && blow.enemyHit === s
+      && s.hp === hp - W.soft
+      && !blow.playerResult,
+    `${hp} to ${s.hp}`
+  );
   let lain = s.stateTime;
   for (; s.state === 'stunned'; lain += DT) tick(s, c.p);
   check('it lies stunned for two and a half seconds', Math.abs(lain - W.stunned) < 0.1 && s.state === 'prowl', `${lain.toFixed(2)} s, then ${s.state}`);
@@ -327,7 +430,11 @@ const MAX = TUNING.health.max;
   check('strike its tail and the spurs come up at once: it is going to lash', a.lashed && a.w.events.includes('whipWind') && a.w.hp === W.hp - 1);
   const r = play(a.w, a.p, () => ({}), (x) => x.state === 'settle');
   check('the lash whips round along the floor from its tail and catches him there', r.results[0] === 'hit' && r.hp === MAX - W.whipDamage, r.results.join(','));
-  check('...and reaches only so far from its tail: by its head he would be clear', dist(a.w.tail, a.p) < a.w.tail.r + W.whipReach + TUNING.rat.radius && Math.hypot(a.w.x - a.w.tail.x, a.w.z - a.w.tail.z) > a.w.tail.r + W.whipReach + TUNING.rat.radius);
+  check(
+    '...and reaches only so far from its tail: by its head he would be clear',
+    dist(a.w.tail, a.p) < a.w.tail.r + W.whipReach + TUNING.rat.radius
+      && Math.hypot(a.w.x - a.w.tail.x, a.w.z - a.w.tail.z) > a.w.tail.r + W.whipReach + TUNING.rat.radius
+  );
   const c = atTail(true);
   const rj = play(c.w, c.p, (x) => (x.state === 'whipWind' && x.stateTime > W.whipWind - 0.2 ? { jumpPressed: x.stateTime < W.whipWind - 0.17, jumpHeld: true } : x.state === 'whip' ? { jumpHeld: true } : {}), (x) => x.state === 'settle');
   check('a jump clears it', c.lashed && rj.results.length === 0 && rj.hp === MAX);
@@ -349,7 +456,12 @@ const MAX = TUNING.health.max;
     was = q.w.moving;
     q.w.events.length = 0;
   }
-  check('its tail trailing past him as it crawls does not set it off', onTheMove === 0 && passed > 0, `${lashes} lashes, none while crawling; its tail crawled past in reach of him for ${(passed / 60).toFixed(1)} s`);
+  check(
+    'its tail trailing past him as it crawls does not set it off',
+    onTheMove === 0
+      && passed > 0,
+    `${lashes} lashes, none while crawling; its tail crawled past in reach of him for ${(passed / 60).toFixed(1)} s`
+  );
   // But hang about it while it is slow (here: getting its breath back after a bite) and it does.
   const d = awake(0.9);
   until(d.w, d.p, 'recover', 3600, () => put(d.p, d.w.x + Math.sin(d.w.facing) * 2.2, d.w.z + Math.cos(d.w.facing) * 2.2));
@@ -369,7 +481,12 @@ const MAX = TUNING.health.max;
   check('below half its health it is angry, and says so', w.raging && w.events.includes('rage') && w.hp <= W.hp * W.rageAt);
   put(p, 2, 3);
   const coiling = until(w, p, 'coil', 3600, () => put(p, 2, 3));
-  check('soon after, it starts to wind a ring round where he stands', coiling && w.events.includes('coil') && Math.hypot(w.coilAt.x - 2, w.coilAt.z - 3) < 0.01);
+  check(
+    'soon after, it starts to wind a ring round where he stands',
+    coiling
+      && w.events.includes('coil')
+      && Math.hypot(w.coilAt.x - 2, w.coilAt.z - 3) < 0.01
+  );
   const reared = until(w, p, 'coilWind', 900, () => put(p, 2, 3));
   // The ring: every piece of it about the same distance from the middle, and no gap in it a rat could walk out through.
   const ring = [{ x: w.x, z: w.z, r: w.radius }, ...w.parts];
@@ -379,10 +496,22 @@ const MAX = TUNING.health.max;
     const n = ring[(i + 1) % ring.length];
     widest = Math.max(widest, Math.hypot(ring[i].x - n.x, ring[i].z - n.z) - ring[i].r - n.r);
   }
-  check('its head comes right round to its tail: a closed ring, with him inside it', reared && Math.min(...radii) > W.coilRadius - 0.6 && Math.max(...radii) < W.coilRadius + 0.8 && widest < 2 * TUNING.rat.radius, `ring ${Math.min(...radii).toFixed(2)}..${Math.max(...radii).toFixed(2)} across; widest gap ${widest.toFixed(2)}`);
+  check(
+    'its head comes right round to its tail: a closed ring, with him inside it',
+    reared
+      && Math.min(...radii) > W.coilRadius - 0.6
+      && Math.max(...radii) < W.coilRadius + 0.8
+      && widest < 2 * TUNING.rat.radius,
+    `ring ${Math.min(...radii).toFixed(2)}..${Math.max(...radii).toFixed(2)} across; widest gap ${widest.toFixed(2)}`
+  );
   // He stands there: it tightens on him, shield or no.
   const r = play(w, p, () => ({ guardHeld: true }), (x) => x.state === 'spent');
-  check('it rears over him, then tightens: two hearts, and a shield is no use', r.results.includes('hit') && r.hp === MAX - W.squeezeDamage, r.results.join(','));
+  check(
+    'it rears over him, then tightens: two hearts, and a shield is no use',
+    r.results.includes('hit')
+      && r.hp === MAX - W.squeezeDamage,
+    r.results.join(',')
+  );
   check('then it lies wound up and spent, its head soft', w.state === 'spent' && w.helpless && w.coilTight < 0.75);
   // He jumps out over its body instead.
   const c = awake(0.9);
@@ -391,7 +520,13 @@ const MAX = TUNING.health.max;
   put(c.p, 2, 3);
   const away = new THREE.Vector3(c.p.position.x - c.w.x, 0, c.p.position.z - c.w.z).normalize(); // away from its head, over its body
   const rj = play(c.w, c.p, (_x, i) => ({ move: away, run: true, jumpPressed: i === 2 || i === 16, jumpHeld: i >= 2 }), (x) => x.state === 'spent');
-  check('a rat who jumps out over its body before it tightens is clear of it', rj.results.length === 0 && rj.hp === MAX && Math.hypot(c.p.position.x - c.w.coilAt.x, c.p.position.z - c.w.coilAt.z) > W.coilRadius, `${Math.hypot(c.p.position.x - c.w.coilAt.x, c.p.position.z - c.w.coilAt.z).toFixed(2)} from the middle`);
+  check(
+    'a rat who jumps out over its body before it tightens is clear of it',
+    rj.results.length === 0
+      && rj.hp === MAX
+      && Math.hypot(c.p.position.x - c.w.coilAt.x, c.p.position.z - c.w.coilAt.z) > W.coilRadius,
+    `${Math.hypot(c.p.position.x - c.w.coilAt.x, c.p.position.z - c.w.coilAt.z).toFixed(2)} from the middle`
+  );
   let spentFor = c.w.stateTime;
   const far = ratAt(0, 19);
   for (; c.w.state === 'spent'; spentFor += DT) tick(c.w, far);
@@ -426,7 +561,13 @@ const MAX = TUNING.health.max;
     }
     last = e.w.state;
   }
-  check('angry, its charges come in twos: the first wall only turns it round for the second', charges >= 4 && pairs >= 2 && e.w.events.includes('bump'), `${charges} charges, ${pairs} of them the second of a pair`);
+  check(
+    'angry, its charges come in twos: the first wall only turns it round for the second',
+    charges >= 4
+      && pairs >= 2
+      && e.w.events.includes('bump'),
+    `${charges} charges, ${pairs} of them the second of a pair`
+  );
 }
 
 // ---- A whole fight ----
@@ -466,8 +607,18 @@ const MAX = TUNING.health.max;
     }
     w.events.length = 0;
   }
-  check('through a whole fight it stays on its floor, no part of it lies through another, and nothing goes wrong', inside && sound && crossed < 0.25, `most overlap ${crossed.toFixed(2)}; ${[...seen].join(' ')}`);
-  check('and in that time it has bitten, charged and (angry) wound its coil, or is dead', (['bite', 'charge', 'coil'].every((s) => seen.has(s))) || !w.alive, `${w.alive ? `alive at ${w.hp}` : 'dead'}: ${[...seen].join(' ')}`);
+  check(
+    'through a whole fight it stays on its floor, no part of it lies through another, and nothing goes wrong',
+    inside
+      && sound
+      && crossed < 0.25,
+    `most overlap ${crossed.toFixed(2)}; ${[...seen].join(' ')}`
+  );
+  check(
+    'and in that time it has bitten, charged and (angry) wound its coil, or is dead',
+    (['bite', 'charge', 'coil'].every((s) => seen.has(s))) || !w.alive,
+    `${w.alive ? `alive at ${w.hp}` : 'dead'}: ${[...seen].join(' ')}`
+  );
 }
 
 // ---- It never ties itself up ----
@@ -547,10 +698,23 @@ const MAX = TUNING.health.max;
       for (const q of all) if (q.x < A.x0 || q.x > A.x1 || q.z < A.z0 || q.z > A.z1) out++;
     }
   }
-  check('in twenty fights with a rat all over it, it is never stopped for as much as a second with nowhere to go', stopped < 1, `longest ${stopped.toFixed(2)} s (${stoppedAt})`);
-  check('and no part of it ever lies through another, nor leaves its floor', crossed < 0.1 && out === 0, `most overlap ${crossed.toFixed(2)}${crossedAt ? ` (${crossedAt})` : ''}; ${out} frames off its floor`);
+  check(
+    'in twenty fights with a rat all over it, it is never stopped for as much as a second with nowhere to go',
+    stopped < 1,
+    `longest ${stopped.toFixed(2)} s (${stoppedAt})`
+  );
+  check(
+    'and no part of it ever lies through another, nor leaves its floor',
+    crossed < 0.1
+      && out === 0,
+    `most overlap ${crossed.toFixed(2)}${crossedAt ? ` (${crossedAt})` : ''}; ${out} frames off its floor`
+  );
   check('and it never goes half a minute without starting something', lull < 30, `longest ${lull.toFixed(1)} s`);
-  check('and all of its moves come up: bites, charges, rams, lashes, coils and squeezes', ['bite', 'charge', 'ram', 'bump', 'whip', 'coil', 'squeeze'].every((e) => (did[e] ?? 0) >= 5), ['bite', 'charge', 'ram', 'bump', 'whip', 'coil', 'squeeze'].map((e) => `${e} ${did[e] ?? 0}`).join(', '));
+  check(
+    'and all of its moves come up: bites, charges, rams, lashes, coils and squeezes',
+    ['bite', 'charge', 'ram', 'bump', 'whip', 'coil', 'squeeze'].every((e) => (did[e] ?? 0) >= 5),
+    ['bite', 'charge', 'ram', 'bump', 'whip', 'coil', 'squeeze'].map((e) => `${e} ${did[e] ?? 0}`).join(', ')
+  );
 }
 
 // ---- Its end ----

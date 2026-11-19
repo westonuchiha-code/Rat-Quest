@@ -88,7 +88,12 @@ const MAX = TUNING.health.max;
   SENSES.notice = 1;
   const s = new Stag({ x: O.x, z: O.z, facing: 1.2 });
   for (let i = 0; i < 60; i++) s.update(DT, O.x + 30, 0, O.z, true);
-  check('at its post it stands still, facing the way it was set', s.state === 'idle' && Math.abs(s.facing - 1.2) < 1e-6 && Math.hypot(s.x - O.x, s.z - O.z) < 1e-6);
+  check(
+    'at its post it stands still, facing the way it was set',
+    s.state === 'idle'
+      && Math.abs(s.facing - 1.2) < 1e-6
+      && Math.hypot(s.x - O.x, s.z - O.z) < 1e-6
+  );
   const far = new Stag({ x: O.x, z: O.z, arena: { x0: -100, x1: 100, z0: -100, z1: 100 } });
   for (let i = 0; i < 30; i++) far.update(DT, O.x + S.noticeRange + 1, 0, O.z, true);
   const unseen = far.state === 'idle';
@@ -103,7 +108,13 @@ const MAX = TUNING.health.max;
   const p = ratAt(O.x - 1.5, O.z, napping);
   const ev = swingAt(p, napping, false);
   SENSES.notice = 1;
-  check('struck unawares it is hurt, and it knows he is there', ev.enemyHit === napping && napping.hp === S.hp - 1 && napping.state === 'chase' && napping.events.includes('alert'));
+  check(
+    'struck unawares it is hurt, and it knows he is there',
+    ev.enemyHit === napping
+      && napping.hp === S.hp - 1
+      && napping.state === 'chase'
+      && napping.events.includes('alert')
+  );
 }
 
 // ---- Slow, and it cannot be shouldered aside ----
@@ -113,7 +124,12 @@ const MAX = TUNING.health.max;
   s.mayAttack = false;
   const x0 = s.x;
   for (let i = 0; i < 120; i++) tick(s, p);
-  check('it comes on slowly: about half his walking pace', Math.abs((s.x - x0) / 2 - S.speed) < 0.1 && S.speed < TUNING.move.walk * 0.6, `${((s.x - x0) / 2).toFixed(2)} a second (he walks at ${TUNING.move.walk})`);
+  check(
+    'it comes on slowly: about half his walking pace',
+    Math.abs((s.x - x0) / 2 - S.speed) < 0.1
+      && S.speed < TUNING.move.walk * 0.6,
+    `${((s.x - x0) / 2).toFixed(2)} a second (he walks at ${TUNING.move.walk})`
+  );
   // He runs round behind it: it turns too slowly to keep him in front.
   place(p, s, 1.6, 0);
   let behind = 0;
@@ -138,7 +154,13 @@ const MAX = TUNING.health.max;
     nearest = Math.min(nearest, gap(t, q));
   }
   SENSES.notice = 1;
-  check('the rat cannot shove it: it stays where it stands and he is held off it', t.x === at.x && t.z === at.z && nearest > S.radius + TUNING.rat.radius - 0.02, `he got to ${nearest.toFixed(2)} from its middle (its body and his: ${(S.radius + TUNING.rat.radius).toFixed(2)})`);
+  check(
+    'the rat cannot shove it: it stays where it stands and he is held off it',
+    t.x === at.x
+      && t.z === at.z
+      && nearest > S.radius + TUNING.rat.radius - 0.02,
+    `he got to ${nearest.toFixed(2)} from its middle (its body and his: ${(S.radius + TUNING.rat.radius).toFixed(2)})`
+  );
 }
 
 // ---- The slam ----
@@ -149,14 +171,33 @@ const MAX = TUNING.health.max;
   const raised = until(s, p, 'windup');
   let tell = 0;
   while (s.state === 'windup' && tell < 200) { tick(s, p); tell++; }
-  check('the hammer goes up for nearly a second before it comes down', raised && s.events.includes('windup') && s.state === 'slam' && Math.abs(tell * DT - S.windup) < 0.04, `${(tell * DT).toFixed(2)} s`);
+  check(
+    'the hammer goes up for nearly a second before it comes down',
+    raised
+      && s.events.includes('windup')
+      && s.state === 'slam'
+      && Math.abs(tell * DT - S.windup) < 0.04,
+    `${(tell * DT).toFixed(2)} s`
+  );
   const r = play(s, p, still, (x) => x.state === 'stuck');
-  check('a rat still standing there is hit for two hearts', r.results.includes('hit') && r.hp === MAX - S.slamDamage && s.events.includes('slam'), `hearts ${r.hp}`);
+  check(
+    'a rat still standing there is hit for two hearts',
+    r.results.includes('hit')
+      && r.hp === MAX - S.slamDamage
+      && s.events.includes('slam'),
+    `hearts ${r.hp}`
+  );
   // A shield does not stop it.
   const b = stag(0.9);
   const pb = ratAt(O.x + 2.3, O.z, b);
   const rb = play(b, pb, () => ({ guardHeld: true }), (x) => x.state === 'stuck');
-  check('a shield held up does not stop it: two hearts all the same', rb.results.includes('hit') && !rb.results.includes('blocked') && rb.hp === MAX - S.slamDamage, rb.results.join(', '));
+  check(
+    'a shield held up does not stop it: two hearts all the same',
+    rb.results.includes('hit')
+      && !rb.results.includes('blocked')
+      && rb.hp === MAX - S.slamDamage,
+    rb.results.join(', ')
+  );
   // A perfect guard does, and throws it down on one knee.
   let turned: Stag | null = null;
   for (let lead = 0.02; lead < TUNING.guard.parryWindow && !turned; lead += 0.02) {
@@ -174,7 +215,12 @@ const MAX = TUNING.health.max;
   check('step aside once it has committed and the hammer comes down on nothing', rm.results.length === 0 && rm.hp === MAX && m.state === 'stuck' && m.open);
   let stuck = 0;
   while (m.state === 'stuck' && stuck < 300) { tick(m, pm); stuck++; }
-  check('with the hammer in the floor it is open for well over a second', Math.abs((stuck + 1) * DT - S.stuck) < 0.08 && S.stuck >= 1.3, `${(stuck * DT).toFixed(2)} s`);
+  check(
+    'with the hammer in the floor it is open for well over a second',
+    Math.abs((stuck + 1) * DT - S.stuck) < 0.08
+      && S.stuck >= 1.3,
+    `${(stuck * DT).toFixed(2)} s`
+  );
 }
 
 // ---- It does not flinch; but it has only so much poise ----
@@ -184,7 +230,14 @@ const MAX = TUNING.health.max;
   until(s, p, 'windup');
   place(p, s, 1.6, Math.PI / 2); // at its side, out of the hammer's way
   const hit = swingAt(p, s);
-  check('a sword in it does not stop the hammer coming down', hit.enemyHit === s && s.hp === S.hp - 1 && (s.state === 'windup' || s.state === 'slam' || s.state === 'stuck') && s.events.includes('hurt'), `it is in ${s.state}`);
+  check(
+    'a sword in it does not stop the hammer coming down',
+    hit.enemyHit === s
+      && s.hp === S.hp - 1
+      && (s.state === 'windup' || s.state === 'slam' || s.state === 'stuck')
+      && s.events.includes('hurt'),
+    `it is in ${s.state}`
+  );
   // Five in quick succession and it goes down.
   const t = stag(0.9);
   const q = ratAt(O.x + 4, O.z, t);
@@ -195,12 +248,26 @@ const MAX = TUNING.health.max;
     place(q, t, 1.6, Math.PI / 2);
     if (swingAt(q, t, false).enemyHit === t) blows++;
   }
-  check('five blows one after another break its poise: it goes down on one knee', blows === S.poise && t.state === 'kneel' && t.hp === S.hp - S.poise && t.open, `${blows} blows`);
+  check(
+    'five blows one after another break its poise: it goes down on one knee',
+    blows === S.poise
+      && t.state === 'kneel'
+      && t.hp === S.hp - S.poise
+      && t.open,
+    `${blows} blows`
+  );
   let down = 0;
   place(q, t, 1.6, 0);
   const more = swingAt(q, t);
   while (t.state === 'kneel' && down < 400) { tick(t, q); down++; }
-  check('down, it is hit and stays down, for a couple of seconds; then it is up with its poise back', more.enemyHit === t && Math.abs((down + 29) * DT - S.kneel) < 0.15 && t.poise === S.poise && t.events.includes('rise'), `${((down + 29) * DT).toFixed(2)} s`);
+  check(
+    'down, it is hit and stays down, for a couple of seconds; then it is up with its poise back',
+    more.enemyHit === t
+      && Math.abs((down + 29) * DT - S.kneel) < 0.15
+      && t.poise === S.poise
+      && t.events.includes('rise'),
+    `${((down + 29) * DT).toFixed(2)} s`
+  );
   // Blows spaced out never do it.
   const u = stag(0.9);
   const pu = ratAt(O.x + 4, O.z, u);
@@ -228,7 +295,14 @@ const MAX = TUNING.health.max;
   const drew = until(s, p, 'sweepWind');
   let tell = 0;
   while (s.state === 'sweepWind' && tell < 200) { tick(s, p); tell++; }
-  check('close in front of it, it draws the hammer back to one side first', drew && s.events.includes('sweepWind') && s.state === 'sweep' && Math.abs(tell * DT - S.sweepWindup) < 0.04, `${(tell * DT).toFixed(2)} s`);
+  check(
+    'close in front of it, it draws the hammer back to one side first',
+    drew
+      && s.events.includes('sweepWind')
+      && s.state === 'sweep'
+      && Math.abs(tell * DT - S.sweepWindup) < 0.04,
+    `${(tell * DT).toFixed(2)} s`
+  );
   const r = play(s, p, still, (x) => x.state === 'recover');
   check('the sweep catches a rat in front of it for one heart', r.results.includes('hit') && r.hp === MAX - S.sweepDamage);
   // It covers its sides too.
@@ -269,9 +343,20 @@ const MAX = TUNING.health.max;
     tick(s, p);
     if (s.state === 'stompWind') wound = i;
   }
-  check('a rat who stays behind it for about a second makes it stomp, whoever\'s turn it is', wound >= 0 && Math.abs(wound * DT - S.behindTime) < 0.15 && s.events.includes('stompWind'), `after ${(wound * DT).toFixed(2)} s`);
+  check(
+    'a rat who stays behind it for about a second makes it stomp, whoever\'s turn it is',
+    wound >= 0
+      && Math.abs(wound * DT - S.behindTime) < 0.15
+      && s.events.includes('stompWind'),
+    `after ${(wound * DT).toFixed(2)} s`
+  );
   const r = play(s, p, still, (x) => x.state === 'settle');
-  check('the stomp runs out along the floor all round it: he is hit for a heart, behind it or not', r.results.includes('hit') && r.hp === MAX - S.stompDamage && s.events.includes('stomp'));
+  check(
+    'the stomp runs out along the floor all round it: he is hit for a heart, behind it or not',
+    r.results.includes('hit')
+      && r.hp === MAX - S.stompDamage
+      && s.events.includes('stomp')
+  );
   // In the air, it goes under him.
   const t = stag(0.9);
   const q = ratAt(O.x + 4, O.z, t);

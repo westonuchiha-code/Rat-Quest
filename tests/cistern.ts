@@ -34,16 +34,51 @@ const itemAt = (x: number, z: number) => def.collectibles.find((c) => Math.hypot
 {
   const caps = def.collectibles.filter((c) => c.kind === 'cap');
   const cheese = def.collectibles.filter((c) => c.kind === 'crumb');
-  check('there are five bottle caps and three hunks of cheese, and nothing else: eight things where there were thirty-two', caps.length === 5 && cheese.length === 3 && def.collectibles.length === 8);
-  check('each hunk is worth eight crumbs: the cheese in the Cistern is worth what its twenty-four crumbs were', cheese.every((c) => c.worth === 8) && purse().worth(def.id, 'crumb').total === 24 && purse().count(def.id, 'crumb').total === 3);
-  check('a hunk has a name of its own in a save, so an old save does not find the new ones already picked up', cheese.every((c) => /:hunk:\d\d$/.test(c.id)) && caps.every((c) => /:cap:\d\d$/.test(c.id)));
-  check('none of it is in a crate, and no two of them are within twelve of each other: there are no trails', def.collectibles.every((c) => c.crate === undefined) && def.collectibles.every((a) => def.collectibles.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 12)), `nearest two ${Math.min(...def.collectibles.flatMap((a) => def.collectibles.filter((b) => b !== a).map((b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)))).toFixed(1)} apart`);
-  check('none of it is on the floor: the lowest is well over his head from the ground', def.collectibles.every((c) => c.y > 6), `lowest ${Math.min(...def.collectibles.map((c) => c.y)).toFixed(1)}`);
+  check(
+    'there are five bottle caps and three hunks of cheese, and nothing else: eight things where there were thirty-two',
+    caps.length === 5
+      && cheese.length === 3
+      && def.collectibles.length === 8
+  );
+  check(
+    'each hunk is worth eight crumbs: the cheese in the Cistern is worth what its twenty-four crumbs were',
+    cheese.every((c) => c.worth === 8)
+      && purse().worth(def.id, 'crumb').total === 24
+      && purse().count(def.id, 'crumb').total === 3
+  );
+  check(
+    'a hunk has a name of its own in a save, so an old save does not find the new ones already picked up',
+    cheese.every((c) => /:hunk:\d\d$/.test(c.id))
+      && caps.every((c) => /:cap:\d\d$/.test(c.id))
+  );
+  check(
+    'none of it is in a crate, and no two of them are within twelve of each other: there are no trails',
+    def.collectibles.every((c) => c.crate === undefined)
+      && def.collectibles.every((a) => def.collectibles.every((b) => a === b || Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z) > 12)),
+    `nearest two ${Math.min(...def.collectibles.flatMap((a) => def.collectibles.filter((b) => b !== a).map((b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z)))).toFixed(1)} apart`
+  );
+  check(
+    'none of it is on the floor: the lowest is well over his head from the ground',
+    def.collectibles.every((c) => c.y > 6),
+    `lowest ${Math.min(...def.collectibles.map((c) => c.y)).toFixed(1)}`
+  );
   const w = CISTERN_WEDGES.find((x) => x.id === 'caps')!;
-  check('the wedge for the caps asks for five, and says where each is', w.name === 'Five Bottle Caps' && w.appears?.type === 'collect' && /Teeth/.test(w.hint) && /Cleft/.test(w.hint) && /Flue/.test(w.hint));
+  check(
+    'the wedge for the caps asks for five, and says where each is',
+    w.name === 'Five Bottle Caps'
+      && w.appears?.type === 'collect'
+      && /Teeth/.test(w.hint)
+      && /Cleft/.test(w.hint)
+      && /Flue/.test(w.hint)
+  );
   const t = purse();
   for (const c of caps) t.collect(c.id);
-  check('picking up a hunk puts eight in his purse; a cap, one', t.worth(def.id, 'cap').have === 5 && (t.collect(cheese[0].id), t.worth(def.id, 'crumb').have === 8) && t.count(def.id, 'crumb').have === 1);
+  check(
+    'picking up a hunk puts eight in his purse; a cap, one',
+    t.worth(def.id, 'cap').have === 5
+      && (t.collect(cheese[0].id), t.worth(def.id, 'crumb').have === 8)
+      && t.count(def.id, 'crumb').have === 1
+  );
 }
 
 // ---- Wall kicks: the tower's chimney, the Cleft and the Flue ----
@@ -95,7 +130,13 @@ function hop(start: THREE.Vector3): number {
   for (const [delay, how] of [[2, 'quickly'], [8, 'a little late (forgiving enough for a phone)']] as Array<[number, string]>) {
     const t = purse();
     const p = kickUp(new THREE.Vector3(0, CHIMNEY_FLOOR, -4.1), 'z', -1, PERCH, -6.2, delay, t);
-    check(`the tower's chimney, kicking ${how}: he comes out on the perch and has its cap`, p.grounded && Math.abs(p.position.y - PERCH) < 0.05 && t.isCollected(itemAt(0, -6.2).id), `at ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`);
+    check(
+      `the tower's chimney, kicking ${how}: he comes out on the perch and has its cap`,
+      p.grounded
+        && Math.abs(p.position.y - PERCH) < 0.05
+        && t.isCollected(itemAt(0, -6.2).id),
+      `at ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`
+    );
   }
   check('without wall kicks the chimney cannot be climbed', hop(new THREE.Vector3(0, CHIMNEY_FLOOR, -4.1)) < PERCH - 1);
   // From the perch, the tower top is a jump and a grab or a double jump away.
@@ -118,10 +159,27 @@ function hop(start: THREE.Vector3): number {
   for (const delay of [2, 5, 8]) {
     const t = purse();
     const p = kickUp(cleftMid, 'z', -1, CLEFT.top, (CLEFT.northZ0 + CLEFT.northZ1) / 2, delay, t);
-    check(`the Cleft, jump pressed ${delay} frames after each wall: he kicks up from the floor, lands on its north wall and has the cap`, p.grounded && Math.abs(p.position.y - CLEFT.top) < 0.05 && p.position.z < CLEFT.northZ1 && p.position.z > CLEFT.northZ0 && t.isCollected(itemAt(cleftMid.x, (CLEFT.northZ0 + CLEFT.northZ1) / 2).id), `at z ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`);
+    check(
+      `the Cleft, jump pressed ${delay} frames after each wall: he kicks up from the floor, lands on its north wall and has the cap`,
+      p.grounded
+        && Math.abs(p.position.y - CLEFT.top) < 0.05
+        && p.position.z < CLEFT.northZ1
+        && p.position.z > CLEFT.northZ0
+        && t.isCollected(itemAt(cleftMid.x, (CLEFT.northZ0 + CLEFT.northZ1) / 2).id),
+      `at z ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`
+    );
   }
-  check('...it is ten up: twice what a jump and a double jump get him', hop(cleftMid) < CLEFT.top / 2 + 0.2 && CLEFT.top === 10, `a double jump gets ${hop(cleftMid).toFixed(2)}`);
-  check('...and it stands by itself: further from any other wall than he can kick up between (about eight)', [CLEFT.x0 - -48, -26 - CLEFT.x1, CLEFT.northZ0 - -48, -12 - CLEFT.southZ1].every((d) => d > maxChimney() + 0.3), `nearest ${Math.min(CLEFT.x0 - -48, -26 - CLEFT.x1).toFixed(1)}; a chimney can be ${maxChimney().toFixed(2)}`);
+  check(
+    '...it is ten up: twice what a jump and a double jump get him',
+    hop(cleftMid) < CLEFT.top / 2 + 0.2
+      && CLEFT.top === 10,
+    `a double jump gets ${hop(cleftMid).toFixed(2)}`
+  );
+  check(
+    '...and it stands by itself: further from any other wall than he can kick up between (about eight)',
+    [CLEFT.x0 - -48, -26 - CLEFT.x1, CLEFT.northZ0 - -48, -12 - CLEFT.southZ1].every((d) => d > maxChimney() + 0.3),
+    `nearest ${Math.min(CLEFT.x0 - -48, -26 - CLEFT.x1).toFixed(1)}; a chimney can be ${maxChimney().toFixed(2)}`
+  );
 
   // The Flue, on the pump house roof: the hall's east wall and a wall four units in from it. The cap is on that wall.
   const roof = cs.find((b) => Math.abs(b.max.y - 8.5) < 1e-6 && b.min.x === 28)!;
@@ -129,15 +187,33 @@ function hop(start: THREE.Vector3): number {
   for (const delay of [2, 5, 8]) {
     const t = purse();
     const p = kickUp(flueFoot, 'x', 1, FLUE.top, (FLUE.x0 + FLUE.x1) / 2, delay, t);
-    check(`the Flue, jump pressed ${delay} frames after each wall: he kicks from wall to wall across four units, lands on top and has the cap`, p.grounded && Math.abs(p.position.y - FLUE.top) < 0.05 && p.position.x > FLUE.x0 - 0.3 && p.position.x < FLUE.x1 && t.isCollected(itemAt((FLUE.x0 + FLUE.x1) / 2, (FLUE.z0 + FLUE.z1) / 2).id), `at x ${p.position.x.toFixed(2)}, ${p.position.y.toFixed(2)} up`);
+    check(
+      `the Flue, jump pressed ${delay} frames after each wall: he kicks from wall to wall across four units, lands on top and has the cap`,
+      p.grounded
+        && Math.abs(p.position.y - FLUE.top) < 0.05
+        && p.position.x > FLUE.x0 - 0.3
+        && p.position.x < FLUE.x1
+        && t.isCollected(itemAt((FLUE.x0 + FLUE.x1) / 2, (FLUE.z0 + FLUE.z1) / 2).id),
+      `at x ${p.position.x.toFixed(2)}, ${p.position.y.toFixed(2)} up`
+    );
   }
-  check('...it is seven up from the roof: more than a jump, a double jump and a grab get him', hop(flueFoot) - roof.max.y < FLUE.top - roof.max.y - 2 && 48 - FLUE.x1 === 4, `a double jump gets ${(hop(flueFoot) - roof.max.y).toFixed(2)} of ${FLUE.top - roof.max.y}`);
+  check(
+    '...it is seven up from the roof: more than a jump, a double jump and a grab get him',
+    hop(flueFoot) - roof.max.y < FLUE.top - roof.max.y - 2
+      && 48 - FLUE.x1 === 4,
+    `a double jump gets ${(hop(flueFoot) - roof.max.y).toFixed(2)} of ${FLUE.top - roof.max.y}`
+  );
 }
 
 // ---- The Outrigger: a full double jump north from the spiral's last slab ----
 {
   const s = SPIRAL[SPIRAL.length - 1];
-  check('the Outrigger is level with the spiral\'s last slab and nine units out from it', OUTRIGGER.top === s.top && Math.abs(s.z - 1.6 - OUTRIGGER.z1 - 9) < 0.02 && Math.abs((OUTRIGGER.x0 + OUTRIGGER.x1) / 2 - s.x) < 0.02);
+  check(
+    'the Outrigger is level with the spiral\'s last slab and nine units out from it',
+    OUTRIGGER.top === s.top
+      && Math.abs(s.z - 1.6 - OUTRIGGER.z1 - 9) < 0.02
+      && Math.abs((OUTRIGGER.x0 + OUTRIGGER.x1) / 2 - s.x) < 0.02
+  );
   const leap = (second: number, t?: CollectibleTracker): PlayerController => {
     const p = new PlayerController(new THREE.Vector3(s.x, s.top, s.z + 1.3));
     for (let i = 0; i < 10; i++) p.update(DT, inp({}), cs);
@@ -161,7 +237,14 @@ function hop(start: THREE.Vector3): number {
   for (const second of [22, 34]) {
     const t = purse();
     const p = leap(second, t);
-    check(`a run, a jump from the slab's edge and a double jump ${second} frames on: he lands on the Outrigger and has the hunk`, p.grounded && Math.abs(p.position.y - OUTRIGGER.top) < 0.05 && p.position.z < OUTRIGGER.z1 && t.worth(def.id, 'crumb').have === 8, `at z ${p.position.z.toFixed(2)}`);
+    check(
+      `a run, a jump from the slab's edge and a double jump ${second} frames on: he lands on the Outrigger and has the hunk`,
+      p.grounded
+        && Math.abs(p.position.y - OUTRIGGER.top) < 0.05
+        && p.position.z < OUTRIGGER.z1
+        && t.worth(def.id, 'crumb').have === 8,
+      `at z ${p.position.z.toFixed(2)}`
+    );
   }
   const short = leap(0);
   check('one jump alone falls short of it', short.position.y < OUTRIGGER.top - 3, `he comes down at ${short.position.y.toFixed(1)}`);
@@ -250,10 +333,19 @@ function hop(start: THREE.Vector3): number {
   };
   for (const [startWait, second] of [[0, 12], [3.7, 18], [8.1, 12]] as Array<[number, number]>) {
     const r = ride(startWait, second);
-    check(`the Winch, come to ${startWait} s into its round: up the lift, onto the perch, across to the slider when it comes, north on it and up to the ledge, and he has the hunk`, r.stage === 'on the ledge' && r.t.worth(def.id, 'crumb').have === 8, `${r.stage}; ${r.took.toFixed(0)} s`);
+    check(
+      `the Winch, come to ${startWait} s into its round: up the lift, onto the perch, across to the slider when it comes, north on it and up to the ledge, and he has the hunk`,
+      r.stage === 'on the ledge'
+        && r.t.worth(def.id, 'crumb').have === 8,
+      `${r.stage}; ${r.took.toFixed(0)} s`
+    );
   }
   const late = ride(0, 24);
-  check('...the jump up to the ledge wants its double jump early: left late he is under the ledge by then, and falls', late.stage.startsWith('fell from the leap'), late.stage);
+  check(
+    '...the jump up to the ledge wants its double jump early: left late he is under the ledge by then, and falls',
+    late.stage.startsWith('fell from the leap'),
+    late.stage
+  );
 }
 
 // ---- The old drain's roof: along the top of the Bastion's wall, and a hop off the end of it ----
@@ -270,14 +362,24 @@ function hop(start: THREE.Vector3): number {
     if (p.grounded && i > 20) break;
   }
   const onWall = p.grounded && Math.abs(p.position.y - wall.max.y) < 0.05 && p.position.z > 11 && p.position.z < 12;
-  check('from the fort\'s floor he gets up onto the top of its south wall', onWall, `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(2)}`);
+  check(
+    'from the fort\'s floor he gets up onto the top of its south wall',
+    onWall,
+    `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(2)}`
+  );
   // West along the top of the wall (it is one unit wide), to above the old drain's room.
   let fell = false;
   for (let i = 0; i < 600 && p.position.x > DRAIN_ROOF.x; i++) {
     p.update(DT, inp({ move: new THREE.Vector3(-1, 0, Math.max(-0.5, Math.min(0.5, (11.5 - p.position.z) * 2))).normalize() }), cs);
     if (p.position.y < wall.max.y - 0.1) fell = true;
   }
-  check('...walks west along the top of it', !fell && p.grounded && Math.abs(p.position.x - DRAIN_ROOF.x) < 0.3, `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}`);
+  check(
+    '...walks west along the top of it',
+    !fell
+      && p.grounded
+      && Math.abs(p.position.x - DRAIN_ROOF.x) < 0.3,
+    `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}`
+  );
   // And a hop south off it onto the roof.
   for (let i = 0; i < 20; i++) p.update(DT, inp({}), cs);
   p.update(DT, inp({ move: south, jumpPressed: true, jumpHeld: true }), cs);
@@ -286,7 +388,13 @@ function hop(start: THREE.Vector3): number {
     p.update(DT, inp({ move: to.length() > 0.2 ? to.normalize() : to.set(0, 0, 0), jumpHeld: true }), cs);
     pick(t, p);
   }
-  check('...and hops off its end onto the roof of the old drain\'s room, and has the hunk', p.grounded && Math.abs(p.position.y - DRAIN_ROOF.top) < 0.05 && t.worth(def.id, 'crumb').have === 8, `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(1)}`);
+  check(
+    '...and hops off its end onto the roof of the old drain\'s room, and has the hunk',
+    p.grounded
+      && Math.abs(p.position.y - DRAIN_ROOF.top) < 0.05
+      && t.worth(def.id, 'crumb').have === 8,
+    `at ${p.position.x.toFixed(1)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(1)}`
+  );
 }
 
 // ---- No way past: with its route's key piece gone, the checker finds no way to each thing ----
@@ -313,9 +421,15 @@ function hop(start: THREE.Vector3): number {
   for (const [what, gone, want] of cases) check(`without ${what}: ${want.join(' and ')} cannot be got, and everything else still can`, gone.slice().sort().join(',') === want.slice().sort().join(','), `out of reach: ${gone.join(', ') || 'nothing'}`);
   // The two short cuts the checker found while this was being built, each closed by moving something.
   const old1 = { ...def, solids: [...def.solids.filter((b) => !spiral(b)), { kind: 'platform', x0: -1.9, x1: 1.3, y0: 6.5, y1: 7, z0: 17.2, z1: 20.4 } as Box] };
-  check('(a slab hung seven up over the south end of the bridge, where the Outrigger first was, can be got from the grand stairs with no spiral at all: that is why it is not there)', computeReach(old1).near(-0.3, 7, 18.8, 1.2, 0.3, 0.3));
+  check(
+    '(a slab hung seven up over the south end of the bridge, where the Outrigger first was, can be got from the grand stairs with no spiral at all: that is why it is not there)',
+    computeReach(old1).near(-0.3, 7, 18.8, 1.2, 0.3, 0.3)
+  );
   const old2 = { ...def, solids: [...def.solids.filter((b) => !bastion(b)), { kind: 'pillar', x0: -36, x1: -34, y0: 0, y1: 3.5, z0: 30, z1: 32 } as Box] };
-  check('(with the second of the Teeth where it used to stand, the old drain\'s roof can be got from it with no Bastion at all: that is why it was moved a unit)', computeReach(old2).near(DRAIN_ROOF.x, DRAIN_ROOF.top, DRAIN_ROOF.z, 3, 0.3, 0.3));
+  check(
+    '(with the second of the Teeth where it used to stand, the old drain\'s roof can be got from it with no Bastion at all: that is why it was moved a unit)',
+    computeReach(old2).near(DRAIN_ROOF.x, DRAIN_ROOF.top, DRAIN_ROOF.z, 3, 0.3, 0.3)
+  );
 }
 
 console.log(failures === 0 ? 'cistern: all pass' : `cistern: ${failures} FAIL`);

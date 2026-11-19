@@ -38,19 +38,41 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
 
 // ---------------------------------------------------------------- what it is
 {
-  check('the Milky Way is a try-out room: found by its name, among the test rooms, and in none of the game\'s lists', levelById('milkyway')?.id === 'milkyway' && TEST_ROOMS.some((l) => l.id === 'milkyway') && ![...LEVELS, ...ARCHIVE].some((l) => l.id === 'milkyway'));
+  check(
+    'the Milky Way is a try-out room: found by its name, among the test rooms, and in none of the game\'s lists',
+    levelById('milkyway')?.id === 'milkyway'
+      && TEST_ROOMS.some((l) => l.id === 'milkyway')
+      && ![...LEVELS, ...ARCHIVE].some((l) => l.id === 'milkyway')
+  );
   const g = garden();
   const door = g.courseDoors?.find((d) => d.to === 'milkyway');
   const gs = g.solids.map((b) => aabbOf(b));
   const others = [g.exit, ...(g.courseDoors ?? []).filter((d) => d !== door).map((d) => d.door)];
-  check('a door in the Move Garden\'s north wall leads to it: open from the start, floor to stand on before it, well clear of the garden\'s other doors', !!door && door.need === 0 && Math.abs(door.door.z + (GARDEN.halfZ - 0.08)) < 0.01 && standsOn(gs, door.door.x, 0, door.door.z + 1.6, 0.6) && standsOn(gs, door.door.x, 0, door.door.z + 4, 0.6) && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 10));
-  check('it has a sky and no roof or walls: a dome of stars (`sky`), stars drifting round him (`motes`), nothing in it called a wall', def.sky === 'space' && def.motes === 'stars' && !!MOTES.stars && !def.solids.some((b) => b.kind === 'wall'));
+  check(
+    'a door in the Move Garden\'s north wall leads to it: open from the start, floor to stand on before it, well clear of the garden\'s other doors',
+    !!door
+      && door.need === 0
+      && Math.abs(door.door.z + (GARDEN.halfZ - 0.08)) < 0.01
+      && standsOn(gs, door.door.x, 0, door.door.z + 1.6, 0.6)
+      && standsOn(gs, door.door.x, 0, door.door.z + 4, 0.6)
+      && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 10)
+  );
+  check(
+    'it has a sky and no roof or walls: a dome of stars (`sky`), stars drifting round him (`motes`), nothing in it called a wall',
+    def.sky === 'space'
+      && def.motes === 'stars'
+      && !!MOTES.stars
+      && !def.solids.some((b) => b.kind === 'wall')
+  );
   const planets = def.decor.filter((d) => d.kind === 'planet') as Array<{ x: number; y: number; z: number; r: number; color: number; band: number }>;
   check('planets hang about the road, each its own two colours, none within reach of it: every one is further off than its own size and then some from the nearest of the road', planets.length >= 6 && planets.every((p) => p.color !== p.band) && planets.every((p) => {
     const w = wayAt(Math.max(0, Math.min(P.moon.z1, p.z)));
     return Math.hypot(p.x - w.x, p.y - w.y, p.z - Math.max(0, Math.min(P.moon.z1, p.z))) > p.r + 12;
   }), `${planets.length} planets`);
-  check('every planet is near enough to be SEEN (the view reaches two hundred): from somewhere on the road it is closer than that', planets.every((p) => P.lengths.some((l) => Math.hypot(p.x - l.x, p.y - l.y0, p.z - l.z0) - p.r < 190 || Math.hypot(p.x - l.x, p.y - l.y1, p.z - l.z1) - p.r < 190)));
+  check(
+    'every planet is near enough to be SEEN (the view reaches two hundred): from somewhere on the road it is closer than that',
+    planets.every((p) => P.lengths.some((l) => Math.hypot(p.x - l.x, p.y - l.y0, p.z - l.z0) - p.r < 190 || Math.hypot(p.x - l.x, p.y - l.y1, p.z - l.z1) - p.r < 190))
+  );
   let built = true;
   try {
     buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
@@ -58,14 +80,33 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
     built = false;
     console.log(String(e));
   }
-  check('it builds (its planets too); there is nothing to fight, and its way out stands on the Moon and leads back to the Toy Box (it is one of the rooms of the dream: Test Room 1B)', built && def.enemies.length === 0 && def.goals.length === 0 && def.returnTo === 'toybox' && Math.abs(ground(def.exit.x, def.exit.z - 1)) < 1e-9 && def.exit.z > P.moon.z0 + 10);
+  check(
+    'it builds (its planets too); there is nothing to fight, and its way out stands on the Moon and leads back to the Toy Box (it is one of the rooms of the dream: Test Room 1B)',
+    built
+      && def.enemies.length === 0
+      && def.goals.length === 0
+      && def.returnTo === 'toybox'
+      && Math.abs(ground(def.exit.x, def.exit.z - 1)) < 1e-9
+      && def.exit.z > P.moon.z0 + 10
+  );
 }
 
 // ---------------------------------------------------------------- the road
 {
   const roads = cs.filter((b) => b.ramp);
-  check('four lengths of road and an easing-out, each a slope down to the south as steep as a ride needs (the air attack over anything gentler is a dive, not the shield)', LENGTHS.length === 4 && roads.length === 5 && roads.slice(0, 4).every((b) => Math.abs(slopeOf(b) - ROAD.slope) < 1e-6) && ROAD.slope >= TUNING.ride.minSlope && slopeOf(roads[4]) < ROAD.slope);
-  check('the road is one rainbow wide: its picture is as wide as it is, so there is one of each colour across it', ROAD.wide === 7 && roads.every((b) => Math.abs(b.max.x - b.min.x - ROAD.wide) < 1e-9));
+  check(
+    'four lengths of road and an easing-out, each a slope down to the south as steep as a ride needs (the air attack over anything gentler is a dive, not the shield)',
+    LENGTHS.length === 4
+      && roads.length === 5
+      && roads.slice(0, 4).every((b) => Math.abs(slopeOf(b) - ROAD.slope) < 1e-6)
+      && ROAD.slope >= TUNING.ride.minSlope
+      && slopeOf(roads[4]) < ROAD.slope
+  );
+  check(
+    'the road is one rainbow wide: its picture is as wide as it is, so there is one of each colour across it',
+    ROAD.wide === 7
+      && roads.every((b) => Math.abs(b.max.x - b.min.x - ROAD.wide) < 1e-9)
+  );
   // The picture itself: the same either side of the middle line, a white kerb at each edge, seven colours between.
   {
     const px = getTexturePixels('rainbowRoad');
@@ -91,7 +132,15 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
     let mirrored = 0;
     for (let x = 0; x < S / 2; x++) if (Math.abs(hue(at(x, row)) - hue(at(S - 1 - x, row))) <= 12) mirrored++;
     const edge = at(S / 2, row);
-    check('...the picture is laid out from the road\'s middle outward and is the same either side; it has at least six different colours between the middle and the kerb, and the kerb is white', mirrored >= S / 2 - 3 && hues.size >= 6 && (edge >> 16) > 230 && ((edge >> 8) & 255) > 200 && (edge & 255) > 230, `${hues.size} colours, ${mirrored} of ${S / 2} dots mirrored`);
+    check(
+      '...the picture is laid out from the road\'s middle outward and is the same either side; it has at least six different colours between the middle and the kerb, and the kerb is white',
+      mirrored >= S / 2 - 3
+        && hues.size >= 6
+        && (edge >> 16) > 230
+        && ((edge >> 8) & 255) > 200
+        && (edge & 255) > 230,
+      `${hues.size} colours, ${mirrored} of ${S / 2} dots mirrored`
+    );
   }
   // Each gap: the next length starts under the line of the one before, by more than a ride at speed falls in crossing it.
   const hz = TUNING.ride.max * Math.cos(Math.atan(ROAD.slope));
@@ -103,8 +152,18 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
     const t = wide / hz;
     return { wide, under: line - b.y0, falls: 0.5 * TUNING.physics.gravity * TUNING.physics.fallGravityMultiplier * t * t, side: Math.abs(b.x - a.x) };
   });
-  check('three gaps, six or seven across, the next length set to one side of the last: at the road\'s speed he falls about two under its line in crossing one, and the next length starts over three under it (and less than a length\'s thickness more, so a slow rider meets its end and not the sky)', gaps.length === 3 && gaps.every((g) => g.wide >= 6 && g.wide <= 7 && g.under > g.falls + 0.8 && g.side >= 2.5 && g.side < ROAD.wide - 1), gaps.map((g) => `${g.wide} across: falls ${g.falls.toFixed(2)}, next is ${g.under.toFixed(2)} under`).join('; '));
-  check('nothing he rides or stands on is below where the game sends a faller back from (six under zero): the Moon is the level\'s zero', cs.every((b) => b.max.y >= -1e-9) && Math.abs(ground(0, P.moon.z0 + 5)) < 1e-9 && P.headY > 100);
+  check(
+    'three gaps, six or seven across, the next length set to one side of the last: at the road\'s speed he falls about two under its line in crossing one, and the next length starts over three under it (and less than a length\'s thickness more, so a slow rider meets its end and not the sky)',
+    gaps.length === 3
+      && gaps.every((g) => g.wide >= 6 && g.wide <= 7 && g.under > g.falls + 0.8 && g.side >= 2.5 && g.side < ROAD.wide - 1),
+    gaps.map((g) => `${g.wide} across: falls ${g.falls.toFixed(2)}, next is ${g.under.toFixed(2)} under`).join('; ')
+  );
+  check(
+    'nothing he rides or stands on is below where the game sends a faller back from (six under zero): the Moon is the level\'s zero',
+    cs.every((b) => b.max.y >= -1e-9)
+      && Math.abs(ground(0, P.moon.z0 + 5)) < 1e-9
+      && P.headY > 100
+  );
 }
 
 // ---------------------------------------------------------------- ridden
@@ -169,27 +228,80 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
 {
   const run = ride();
   const onMoon = run.p.grounded && Math.abs(run.p.position.y) < 0.05 && run.p.position.z > P.moon.z0 && Math.abs(run.p.position.x) < MOON.half;
-  check('RIDDEN, top to bottom, with the real controller: a hop off the pad and ATTACK puts him on his shield; steering at the middle of each length ahead and never jumping, he crosses all three gaps and comes to rest on the Moon', run.rode && onMoon && run.landed.filter((i) => i >= 1 && i <= 3).length >= 3, `${run.seconds.toFixed(1)} s, top speed ${run.fastest.toFixed(1)}, ends at ${run.p.position.x.toFixed(1)}, ${run.p.position.y.toFixed(2)}, ${run.p.position.z.toFixed(1)}; landed on lengths ${run.landed.join()}`);
-  check('...at the road\'s top speed, in about a quarter of a minute: a short ride, for a try-out', run.fastest > TUNING.ride.max - 1 && run.seconds > 12 && run.seconds < 40, `${run.seconds.toFixed(1)} s`);
-  check('...taking NO bottle cap: rolled off the end of a length without a jump he passes well under each', run.got.size === 0 && def.collectibles.length === 3 && def.collectibles.every((c) => c.kind === 'cap'), [...run.got].join());
-  check('...and never further under the road\'s line than the gaps put him (well short of the depth he is put back from)', run.lowestUnder < 6 && FALL_DEPTH > 20, `${run.lowestUnder.toFixed(2)} at the most`);
+  check(
+    'RIDDEN, top to bottom, with the real controller: a hop off the pad and ATTACK puts him on his shield; steering at the middle of each length ahead and never jumping, he crosses all three gaps and comes to rest on the Moon',
+    run.rode
+      && onMoon
+      && run.landed.filter((i) => i >= 1 && i <= 3).length >= 3,
+    `${run.seconds.toFixed(1)} s, top speed ${run.fastest.toFixed(1)}, ends at ${run.p.position.x.toFixed(1)}, ${run.p.position.y.toFixed(2)}, ${run.p.position.z.toFixed(1)}; landed on lengths ${run.landed.join()}`
+  );
+  check(
+    '...at the road\'s top speed, in about a quarter of a minute: a short ride, for a try-out',
+    run.fastest > TUNING.ride.max - 1
+      && run.seconds > 12
+      && run.seconds < 40,
+    `${run.seconds.toFixed(1)} s`
+  );
+  check(
+    '...taking NO bottle cap: rolled off the end of a length without a jump he passes well under each',
+    run.got.size === 0
+      && def.collectibles.length === 3
+      && def.collectibles.every((c) => c.kind === 'cap'),
+    [...run.got].join()
+  );
+  check(
+    '...and never further under the road\'s line than the gaps put him (well short of the depth he is put back from)',
+    run.lowestUnder < 6
+      && FALL_DEPTH > 20,
+    `${run.lowestUnder.toFixed(2)} at the most`
+  );
   const withJumps = ride({ jump: true });
-  check('with a JUMP OFF THE BOARD at the lip of each gap he makes it too, and takes all three bottle caps: each hangs over the middle of its gap, down the middle of the strip the two lengths share, up where that jump carries him (they are all there is to find, and each is earned by a jump)', withJumps.p.grounded && Math.abs(withJumps.p.position.y) < 0.05 && withJumps.p.position.z > P.moon.z0 && WAY_PRIZES.every((id) => withJumps.got.has(id)) && CAP_UP > 1 && def.collectibles.every((c, i) => c.x === (LENGTHS[i].x + LENGTHS[i + 1].x) / 2), `ends at ${withJumps.p.position.y.toFixed(2)}, ${withJumps.p.position.z.toFixed(1)}; took ${[...withJumps.got].join() || 'none'}`);
+  check(
+    'with a JUMP OFF THE BOARD at the lip of each gap he makes it too, and takes all three bottle caps: each hangs over the middle of its gap, down the middle of the strip the two lengths share, up where that jump carries him (they are all there is to find, and each is earned by a jump)',
+    withJumps.p.grounded
+      && Math.abs(withJumps.p.position.y) < 0.05
+      && withJumps.p.position.z > P.moon.z0
+      && WAY_PRIZES.every((id) => withJumps.got.has(id))
+      && CAP_UP > 1
+      && def.collectibles.every((c, i) => c.x === (LENGTHS[i].x + LENGTHS[i + 1].x) / 2),
+    `ends at ${withJumps.p.position.y.toFixed(2)}, ${withJumps.p.position.z.toFixed(1)}; took ${[...withJumps.got].join() || 'none'}`
+  );
   // Slow: braked to well under the road's speed, no jump: he does not clear the first gap.
   const slow = ride({ brakeTo: 7, frames: 1500 });
   const fellAt = slow.p.position.z;
-  check('a SLOW rider who does not jump does not clear a gap: braked to under half the road\'s speed he drops short of the next length and falls (the gaps are something, not nothing)', slow.rode && (slow.p.position.y < wayAt(fellAt).y - 6 || slow.p.position.y < -3) && fellAt < P.lengths[1].z0 + 3, `at z ${fellAt.toFixed(1)}, ${(wayAt(fellAt).y - slow.p.position.y).toFixed(1)} under the road`);
+  check(
+    'a SLOW rider who does not jump does not clear a gap: braked to under half the road\'s speed he drops short of the next length and falls (the gaps are something, not nothing)',
+    slow.rode
+      && (slow.p.position.y < wayAt(fellAt).y - 6 || slow.p.position.y < -3)
+      && fellAt < P.lengths[1].z0 + 3,
+    `at z ${fellAt.toFixed(1)}, ${(wayAt(fellAt).y - slow.p.position.y).toFixed(1)} under the road`
+  );
   const slowJump = ride({ brakeTo: 10.5, jump: true, frames: 1100 });
-  check('...and one who is slow but JUMPS at the lip lands the first gap', slowJump.landed.includes(1), `landed on lengths ${slowJump.landed.join()}; at z ${slowJump.p.position.z.toFixed(1)}`);
+  check(
+    '...and one who is slow but JUMPS at the lip lands the first gap',
+    slowJump.landed.includes(1),
+    `landed on lengths ${slowJump.landed.join()}; at z ${slowJump.p.position.z.toFixed(1)}`
+  );
   // Off the side.
   const off = ride({ steer: () => 40, frames: 700 });
-  check('there are no walls: steered off the side of the road he falls, further than the depth at which he is put back on the last ground he stood on, a heart the poorer (`fallDepth`)', off.rode && wayAt(off.p.position.z).y - off.p.position.y > FALL_DEPTH - 5 && def.fallDepth === FALL_DEPTH && !def.fallBack, `${(wayAt(off.p.position.z).y - off.p.position.y).toFixed(1)} under the road when the frames ran out`);
+  check(
+    'there are no walls: steered off the side of the road he falls, further than the depth at which he is put back on the last ground he stood on, a heart the poorer (`fallDepth`)',
+    off.rode
+      && wayAt(off.p.position.z).y - off.p.position.y > FALL_DEPTH - 5
+      && def.fallDepth === FALL_DEPTH
+      && !def.fallBack,
+    `${(wayAt(off.p.position.z).y - off.p.position.y).toFixed(1)} under the road when the frames ran out`
+  );
 }
 
 // ---------------------------------------------------------------- the dream's look
 {
   // (The Big Dipper, 2026-11-17, is the dream too: its long ride.)
-  check('in the dream he wears another look (`look`), and nowhere else: no level of the game asks for it, and of the try-out rooms only the dream\'s three', def.look === 'dream' && [...LEVELS, ...ARCHIVE, ...TEST_ROOMS.filter((l) => l.id !== 'milkyway' && l.id !== 'bigdipper' && l.id !== 'toybox')].every((l) => l.look === undefined));
+  check(
+    'in the dream he wears another look (`look`), and nowhere else: no level of the game asks for it, and of the try-out rooms only the dream\'s three',
+    def.look === 'dream'
+      && [...LEVELS, ...ARCHIVE, ...TEST_ROOMS.filter((l) => l.id !== 'milkyway' && l.id !== 'bigdipper' && l.id !== 'toybox')].every((l) => l.look === undefined)
+  );
   const rat = new RatModel();
   const dream = new RatModel(DREAM_LOOK);
   const paintOf = (r: RatModel): number[] => {
@@ -220,7 +332,14 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
     for (let i = 0; i < p.length; i += 3) s += Math.max(p[i], p[i + 1], p[i + 2]) - Math.min(p[i], p[i + 1], p[i + 2]);
     return s / (p.length / 3);
   };
-  check('wearing the dream\'s colours changes most of his paint and makes it far louder; it changes nothing of his SHAPE (the same points in the same places)', changed > 0.6 && loud(worn) > loud(own) * 1.8 && shapeOf(rat) === shape && worn.join() === paintOf(dream).join(), `${Math.round(changed * 100)}% of his paint changed; loudness ${loud(own).toFixed(0)} to ${loud(worn).toFixed(0)}`);
+  check(
+    'wearing the dream\'s colours changes most of his paint and makes it far louder; it changes nothing of his SHAPE (the same points in the same places)',
+    changed > 0.6
+      && loud(worn) > loud(own) * 1.8
+      && shapeOf(rat) === shape
+      && worn.join() === paintOf(dream).join(),
+    `${Math.round(changed * 100)}% of his paint changed; loudness ${loud(own).toFixed(0)} to ${loud(worn).toFixed(0)}`
+  );
   rat.wearColours(null);
   check('...and taking them off puts his own paint back exactly, every part (even two parts of one shape)', paintOf(rat).join() === own.join());
   rat.wearColours(dream);
@@ -233,7 +352,11 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   const before = paintOf(rat);
   rat.wearColours(dream);
   const after = paintOf(rat);
-  check('a helmet put on anew is a new part of him: with the dream\'s rat dressed the same way first, every part still takes its paint (one ear stayed brown when it was not)', after.join() === paintOf(dream).join() && after.filter((c, i) => c !== before[i]).length / after.length > 0.6);
+  check(
+    'a helmet put on anew is a new part of him: with the dream\'s rat dressed the same way first, every part still takes its paint (one ear stayed brown when it was not)',
+    after.join() === paintOf(dream).join()
+      && after.filter((c, i) => c !== before[i]).length / after.length > 0.6
+  );
   rat.wearColours(null);
   // The scarf: in the dream it is THE STREAMER, a ribbon that flies. (The owner, of the short scarf stretched and
   // held out stiff: "it just sort of looks like he's got a second tail coming out of his neck".)
@@ -266,10 +389,33 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   const round = rat.streamerPoints()[STREAMER.points - 1].z - rat.streamerPoints()[0].z;
   rat.setScarfLong(1);
   rat.update(1 / 60, idle);
-  check('his scarf in the dream is a STREAMER: a ribbon out behind him longer than he is tall, there in the dream and put away again after', !offBefore && onInDream && !ribbon.visible && STREAMER.length > 1.2 && start.distanceTo(end) > STREAMER.length * 0.6, `${STREAMER.length} long; its end ${start.distanceTo(end).toFixed(2)} from his neck`);
-  check('it flies BEHIND him and never hangs: its end is behind his neck, and no point of it comes down near the floor', behind < -0.5 && low > 0.45, `end ${(-behind).toFixed(2)} behind; lowest point ${low.toFixed(2)} up`);
-  check('it flutters: no two looks at it a fifth of a second apart find it the same shape; and it is cloth, not elastic (no length of it stretches)', new Set(shapes).size === shapes.length && stretched < 1e-6, `${shapes.length} looks, ${new Set(shapes).size} shapes`);
-  check('when he turns it is left behind for a moment (it is in the room, not stuck to his back) and then streams out behind him the new way', lag < 0.6 && round > 0.5, `moved ${lag.toFixed(2)} in the first frame of the turn; then ${round.toFixed(2)} behind him the other way`);
+  check(
+    'his scarf in the dream is a STREAMER: a ribbon out behind him longer than he is tall, there in the dream and put away again after',
+    !offBefore
+      && onInDream
+      && !ribbon.visible
+      && STREAMER.length > 1.2
+      && start.distanceTo(end) > STREAMER.length * 0.6,
+    `${STREAMER.length} long; its end ${start.distanceTo(end).toFixed(2)} from his neck`
+  );
+  check(
+    'it flies BEHIND him and never hangs: its end is behind his neck, and no point of it comes down near the floor',
+    behind < -0.5
+      && low > 0.45,
+    `end ${(-behind).toFixed(2)} behind; lowest point ${low.toFixed(2)} up`
+  );
+  check(
+    'it flutters: no two looks at it a fifth of a second apart find it the same shape; and it is cloth, not elastic (no length of it stretches)',
+    new Set(shapes).size === shapes.length
+      && stretched < 1e-6,
+    `${shapes.length} looks, ${new Set(shapes).size} shapes`
+  );
+  check(
+    'when he turns it is left behind for a moment (it is in the room, not stuck to his back) and then streams out behind him the new way',
+    lag < 0.6
+      && round > 0.5,
+    `moved ${lag.toFixed(2)} in the first frame of the turn; then ${round.toFixed(2)} behind him the other way`
+  );
 }
 
 // ---------------------------------------------------------------- the second pass: static, flowers, butterflies, sleepers
@@ -278,7 +424,12 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
   const P = milkyWayPlan();
   const half = ROAD.wide / 2;
   const fuzz = def.solids.filter((b) => b.skin === 'dreamStatic');
-  check('its kerbs are in the dream\'s STATIC, every one of them, and nothing he rides on is', fuzz.length >= 8 && fuzz.every((b) => b.y1 - Math.max(b.y0, b.y1 - MOON.kerb - ROAD.deep) > 2) && !def.solids.some((b) => b.skin === 'dreamStatic' && b.ramp));
+  check(
+    'its kerbs are in the dream\'s STATIC, every one of them, and nothing he rides on is',
+    fuzz.length >= 8
+      && fuzz.every((b) => b.y1 - Math.max(b.y0, b.y1 - MOON.kerb - ROAD.deep) > 2)
+      && !def.solids.some((b) => b.skin === 'dreamStatic' && b.ramp)
+  );
   // The static: many colours, mostly dark, and it WINKS.
   const px = getTexturePixels('dreamStatic');
   const cols = new Set<number>();
@@ -287,7 +438,13 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
     cols.add((px.data[i] << 16) | (px.data[i + 1] << 8) | px.data[i + 2]);
     if (px.data[i] + px.data[i + 1] + px.data[i + 2] > 380) bright++;
   }
-  check('the static is a busy noise of many colours, mostly dark, a bright dot here and there', cols.size >= 10 && bright / (px.data.length / 4) > 0.03 && bright / (px.data.length / 4) < 0.2, `${cols.size} colours, ${((bright / (px.data.length / 4)) * 100).toFixed(0)}% bright`);
+  check(
+    'the static is a busy noise of many colours, mostly dark, a bright dot here and there',
+    cols.size >= 10
+      && bright / (px.data.length / 4) > 0.03
+      && bright / (px.data.length / 4) < 0.2,
+    `${cols.size} colours, ${((bright / (px.data.length / 4)) * 100).toFixed(0)}% bright`
+  );
   const tex = getTexture('dreamStatic');
   const before = Uint8Array.from(tex.image.data as Uint8Array);
   blinkTextures(1);
@@ -302,21 +459,55 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
     return n;
   };
   const now = Uint8Array.from(tex.image.data as Uint8Array);
-  check('it WINKS: a few dozen of its dots change a few times a second, and the ones that changed before go back (it never fills up with bright)', diff(before, first) > 10 && diff(before, first) <= 46 && tooSoon && diff(before, now) <= 46 && diff(first, now) > 10, `${diff(before, first)} dots changed; after three winks ${diff(before, now)} differ from the first picture`);
+  check(
+    'it WINKS: a few dozen of its dots change a few times a second, and the ones that changed before go back (it never fills up with bright)',
+    diff(before, first) > 10
+      && diff(before, first) <= 46
+      && tooSoon
+      && diff(before, now) <= 46
+      && diff(first, now) > 10,
+    `${diff(before, first)} dots changed; after three winks ${diff(before, now)} differ from the first picture`
+  );
 
   const beds = def.decor.filter((d) => d.kind === 'flowers') as Array<Extract<(typeof def.decor)[number], { kind: 'flowers' }>>;
   const flies = def.decor.filter((d) => d.kind === 'butterflies') as Array<Extract<(typeof def.decor)[number], { kind: 'butterflies' }>>;
   const cs = def.solids.map(aabbOf);
   const onFloor = beds.every((b) => [[-1, -1], [1, -1], [-1, 1], [1, 1]].every(([sx, sz]) => standsOn(cs, b.x + sx * (b.w / 2 - 0.1), b.y, b.z + sz * (b.d / 2 - 0.1), 0.05)));
-  check('there are beds of flowers either side of the head pad and down both sides of the Moon: each lies wholly on floor, and none is on the road', beds.length === 4 && onFloor && beds.every((b) => Math.abs(b.x) - b.w / 2 >= half - 1e-6), beds.map((b) => `${b.x.toFixed(1)},${b.z.toFixed(0)}`).join(' '));
-  check('butterflies fly over every bed, well clear of the floor', flies.length >= 4 && beds.every((b) => flies.some((f) => Math.abs(f.x - b.x) < b.w && Math.abs(f.z - b.z) < b.d)) && flies.every((f) => f.count >= 2 && f.y - 0.5 > (Math.abs(f.z) < 20 ? P.headY : 0)));
+  check(
+    'there are beds of flowers either side of the head pad and down both sides of the Moon: each lies wholly on floor, and none is on the road',
+    beds.length === 4
+      && onFloor
+      && beds.every((b) => Math.abs(b.x) - b.w / 2 >= half - 1e-6),
+    beds.map((b) => `${b.x.toFixed(1)},${b.z.toFixed(0)}`).join(' ')
+  );
+  check(
+    'butterflies fly over every bed, well clear of the floor',
+    flies.length >= 4
+      && beds.every((b) => flies.some((f) => Math.abs(f.x - b.x) < b.w && Math.abs(f.z - b.z) < b.d))
+      && flies.every((f) => f.count >= 2 && f.y - 0.5 > (Math.abs(f.z) < 20 ? P.headY : 0))
+  );
 
   const dz = def.dozers ?? [];
   const kinds = new Set(dz.map((d) => d.type));
-  check('the waking world\'s terrors are here: a mantis, a scorpion and a Stag Knight, some asleep and some standing about', dz.length >= 5 && kinds.has('mantis') && kinds.has('scorpion') && kinds.has('stag') && dz.some((d) => !d.awake) && dz.some((d) => d.awake), dz.map((d) => `${d.type}${d.awake ? ' (awake)' : ''}`).join(', '));
+  check(
+    'the waking world\'s terrors are here: a mantis, a scorpion and a Stag Knight, some asleep and some standing about',
+    dz.length >= 5
+      && kinds.has('mantis')
+      && kinds.has('scorpion')
+      && kinds.has('stag')
+      && dz.some((d) => !d.awake)
+      && dz.some((d) => d.awake),
+    dz.map((d) => `${d.type}${d.awake ? ' (awake)' : ''}`).join(', ')
+  );
   check('none of them is a creature of the fight: the level has no enemies at all, and nothing here can hurt him', def.enemies.length === 0);
   const solidOf = (d: (typeof dz)[number]): boolean => def.solids.some((b) => b.hidden && Math.abs((b.x0 + b.x1) / 2 - d.x) < 1e-6 && Math.abs((b.z0 + b.z1) / 2 - d.z) < 1e-6 && Math.abs(b.y0 - d.y) < 1e-6 && Math.abs(b.y1 - b.y0 - DOZER[d.type].tall) < 1e-6 && Math.abs((b.x1 - b.x0) / 2 - DOZER[d.type].half) < 1e-6);
-  check('each is SOLID where it is drawn, stands on floor, and is well off the road (a rider down the middle meets none of them)', dz.every(solidOf) && dz.every((d) => standsOn(def.solids.filter((b) => !b.hidden).map(aabbOf), d.x, d.y, d.z, 0.3)) && dz.every((d) => Math.abs(d.x) - DOZER[d.type].half > half + 1.4), dz.map((d) => (Math.abs(d.x) - DOZER[d.type].half - half).toFixed(1)).join(' '));
+  check(
+    'each is SOLID where it is drawn, stands on floor, and is well off the road (a rider down the middle meets none of them)',
+    dz.every(solidOf)
+      && dz.every((d) => standsOn(def.solids.filter((b) => !b.hidden).map(aabbOf), d.x, d.y, d.z, 0.3))
+      && dz.every((d) => Math.abs(d.x) - DOZER[d.type].half > half + 1.4),
+    dz.map((d) => (Math.abs(d.x) - DOZER[d.type].half - half).toFixed(1)).join(' ')
+  );
   check('and each is in a bed of flowers', dz.every((d) => beds.some((b) => Math.abs(d.x - b.x) < b.w / 2 && Math.abs(d.z - b.z) < b.d / 2)));
   // A dozer's colours are loud, and it is put together without a page to draw on.
   const c = new THREE.Color();
@@ -366,7 +557,13 @@ function ride(opts: { jump?: boolean; brakeTo?: number; frames?: number; steer?:
     if (p.position.y < wayAt(Math.max(0, Math.min(plan.moon.z1, p.position.z))).y - 12) fell = true;
     if (fell || (rode && p.position.z > plan.moon.z0 + 2 && p.grounded)) break;
   }
-  check('the films\' rider rides the whole road by itself: on his shield from the lip, over every gap, to the moon', rode && !fell && p.position.z > plan.moon.z0 + 2, `${(frames / 60).toFixed(1)}s, ended at z ${p.position.z.toFixed(1)}`);
+  check(
+    'the films\' rider rides the whole road by itself: on his shield from the lip, over every gap, to the moon',
+    rode
+      && !fell
+      && p.position.z > plan.moon.z0 + 2,
+    `${(frames / 60).toFixed(1)}s, ended at z ${p.position.z.toFixed(1)}`
+  );
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

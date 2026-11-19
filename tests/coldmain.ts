@@ -33,12 +33,30 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 
 // ---- It is a test room ----
 {
-  check('the Cold Main is a test room: found by its name, and in none of the game\'s lists', levelById('coldmain')?.id === 'coldmain' && TEST_ROOMS.some((l) => l.id === 'coldmain') && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'coldmain'));
+  check(
+    'the Cold Main is a test room: found by its name, and in none of the game\'s lists',
+    levelById('coldmain')?.id === 'coldmain'
+      && TEST_ROOMS.some((l) => l.id === 'coldmain')
+      && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'coldmain')
+  );
   const g = garden();
   const door = g.courseDoors?.find((d) => d.to === 'coldmain');
   const others = [g.exit, ...(g.courseDoors ?? []).filter((d) => d !== door).map((d) => d.door)];
-  check('a door in the Move Garden leads to it: open from the start, clear of the other doors and of everything standing by that wall', !!door && door.need === 0 && Math.abs(door.door.z - (GARDEN.halfZ - 0.08)) < 1e-6 && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 4) && !g.solids.some((b) => b.kind !== 'wall' && b.kind !== 'floor' && b.x1 > door.door.x - 1.6 && b.x0 < door.door.x + 1.6 && b.z1 > GARDEN.halfZ - 3));
-  check('nothing in it to win, and its door leads back to the Move Garden; its only creatures are the two Frost Rollers on the ice (put there 2026-11-16; tests/roller.ts), who count toward nothing', def.enemies.length === 2 && def.enemies.every((e) => e.type === 'roller' && e.uncounted) && def.goals.length === 0 && def.returnTo === 'garden');
+  check(
+    'a door in the Move Garden leads to it: open from the start, clear of the other doors and of everything standing by that wall',
+    !!door
+      && door.need === 0
+      && Math.abs(door.door.z - (GARDEN.halfZ - 0.08)) < 1e-6
+      && others.every((o) => Math.hypot(o.x - door.door.x, o.z - door.door.z) > 4)
+      && !g.solids.some((b) => b.kind !== 'wall' && b.kind !== 'floor' && b.x1 > door.door.x - 1.6 && b.x0 < door.door.x + 1.6 && b.z1 > GARDEN.halfZ - 3)
+  );
+  check(
+    'nothing in it to win, and its door leads back to the Move Garden; its only creatures are the two Frost Rollers on the ice (put there 2026-11-16; tests/roller.ts), who count toward nothing',
+    def.enemies.length === 2
+      && def.enemies.every((e) => e.type === 'roller' && e.uncounted)
+      && def.goals.length === 0
+      && def.returnTo === 'garden'
+  );
   let built = true;
   try {
     const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
@@ -55,7 +73,13 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 // ---- Ice is slick; frosted cobbles are not ----
 {
   const sheet = def.solids.filter((b) => b.slick);
-  check('the channel down its middle is ice, bank to bank and wall to wall; the banks are cobbles; and every block of ice in the channel is ice on top, in a picture of its own (not the sheet\'s)', sheet.length === 1 + ICE_BLOCKS.length && sheet.some((b) => b.kind === 'floor' && b.z0 === -G.channel && b.z1 === G.channel && b.skin === 'iceSheet') && sheet.filter((b) => b.kind !== 'floor').every((b) => b.skin === 'iceBlock') && def.solids.filter((b) => b.kind === 'floor' && !b.slick).every((b) => b.skin === 'frostCobbles'));
+  check(
+    'the channel down its middle is ice, bank to bank and wall to wall; the banks are cobbles; and every block of ice in the channel is ice on top, in a picture of its own (not the sheet\'s)',
+    sheet.length === 1 + ICE_BLOCKS.length
+      && sheet.some((b) => b.kind === 'floor' && b.z0 === -G.channel && b.z1 === G.channel && b.skin === 'iceSheet')
+      && sheet.filter((b) => b.kind !== 'floor').every((b) => b.skin === 'iceBlock')
+      && def.solids.filter((b) => b.kind === 'floor' && !b.slick).every((b) => b.skin === 'frostCobbles')
+  );
   /** From a standstill he runs east for `secs`, then lets go: how fast he got, and how far he went on after letting go. */
   const run = (z: number, secs: number): { speed: number; slide: number; ice: boolean } => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, z));
@@ -70,8 +94,20 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const stone = run(7.5, 0.5);
   const ice = run(-2.6, 0.5);
   const iceLong = run(-2.6, 2.5);
-  check('on the cobbles he is at a run in half a second and stops in a stride', !stone.ice && stone.speed > TUNING.move.run * 0.95 && stone.slide < 1.2, `${stone.speed.toFixed(1)} a second, ${stone.slide.toFixed(2)} to stop`);
-  check('on the ice he is a little slower to get going, but not helpless: half a second gets him most of the way to a run', ice.ice && ice.speed < stone.speed * 0.95 && ice.speed > stone.speed * 0.6, `${ice.speed.toFixed(1)} a second`);
+  check(
+    'on the cobbles he is at a run in half a second and stops in a stride',
+    !stone.ice
+      && stone.speed > TUNING.move.run * 0.95
+      && stone.slide < 1.2,
+    `${stone.speed.toFixed(1)} a second, ${stone.slide.toFixed(2)} to stop`
+  );
+  check(
+    'on the ice he is a little slower to get going, but not helpless: half a second gets him most of the way to a run',
+    ice.ice
+      && ice.speed < stone.speed * 0.95
+      && ice.speed > stone.speed * 0.6,
+    `${ice.speed.toFixed(1)} a second`
+  );
   // (His words: "a slower loss of momentum than you would normally have ... a little bit of your momentum for a few seconds longer".)
   const glide = (() => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, -2.6));
@@ -83,7 +119,15 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     }
     return secs;
   })();
-  check('the stick let go at a run, he keeps his momentum for two seconds and more (on the cobbles he has stopped in a quarter of one), and glides six units and more: but not the length of the room', iceLong.speed > TUNING.move.run * 0.9 && glide > 2 && glide < 4 && iceLong.slide > 6 && iceLong.slide < 10, `${glide.toFixed(2)} s and ${iceLong.slide.toFixed(2)} units to stop from ${iceLong.speed.toFixed(1)}`);
+  check(
+    'the stick let go at a run, he keeps his momentum for two seconds and more (on the cobbles he has stopped in a quarter of one), and glides six units and more: but not the length of the room',
+    iceLong.speed > TUNING.move.run * 0.9
+      && glide > 2
+      && glide < 4
+      && iceLong.slide > 6
+      && iceLong.slide < 10,
+    `${glide.toFixed(2)} s and ${iceLong.slide.toFixed(2)} units to stop from ${iceLong.speed.toFixed(1)}`
+  );
   check('...losing it steadily all the while: half way through the glide he still has about half his speed', (() => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, -2.6));
     for (let i = 0; i < 170; i++) p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
@@ -114,9 +158,20 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     const q = new PlayerController(new THREE.Vector3(-12, 0, 7.5));
     for (let i = 0; i < 60; i++) q.update(DT, inp({ move: new THREE.Vector3(1, 0, 0) }), cs);
     q.update(DT, inp({}), cs);
-    check('gliding on ice with the stick let go, he is known to be gliding (and is drawn braced, his feet still): not while he drives himself, not once he has stopped, and never on the cobbles', !driving && letGo && !again && !stopped && !q.gliding);
+    check(
+      'gliding on ice with the stick let go, he is known to be gliding (and is drawn braced, his feet still): not while he drives himself, not once he has stopped, and never on the cobbles',
+      !driving
+        && letGo
+        && !again
+        && !stopped
+        && !q.gliding
+    );
   }
-  check('...and he turns wide on it: thrown the other way, he is carried on twice as far as on the cobbles, and more', turn(-3.2) > turn(7.5) * 2, `${turn(-3.2).toFixed(2)} on ice, ${turn(7.5).toFixed(2)} on cobbles`);
+  check(
+    '...and he turns wide on it: thrown the other way, he is carried on twice as far as on the cobbles, and more',
+    turn(-3.2) > turn(7.5) * 2,
+    `${turn(-3.2).toFixed(2)} on ice, ${turn(7.5).toFixed(2)} on cobbles`
+  );
   // His jump is his own.
   const apex = (z: number): number => {
     const p = new PlayerController(new THREE.Vector3(-12, 0, z));
@@ -136,19 +191,35 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 {
   const spikes = def.decor.filter((d) => d.kind === 'iceSpike');
   const has = spikes.every((s) => iceSpikeSolids(s.x, s.y, s.z, s.size).every((q) => def.solids.some((b) => b.hidden && b.x0 === q.x0 && b.x1 === q.x1 && b.y1 === q.y1 && b.z0 === q.z0)));
-  check('every spike of ice standing from the floor has its solid (unseen: the spike is what is drawn), too tall to step over, and no wider than its drawn foot', spikes.length === ICE_SPIKES.length && has && spikes.every((s) => s.size * ICE_SPIKE.tall >= 1 && s.size * ICE_SPIKE.solid <= s.size * 0.2));
+  check(
+    'every spike of ice standing from the floor has its solid (unseen: the spike is what is drawn), too tall to step over, and no wider than its drawn foot',
+    spikes.length === ICE_SPIKES.length
+      && has
+      && spikes.every((s) => s.size * ICE_SPIKE.tall >= 1 && s.size * ICE_SPIKE.solid <= s.size * 0.2)
+  );
   const s = spikes.find((q) => q.x === 0.8)!;
   const p = new PlayerController(new THREE.Vector3(s.x, 0, s.z + 2.5));
   for (let i = 0; i < 150; i++) p.update(DT, inp({ move: new THREE.Vector3(0, 0, -1) }), cs);
-  check('walking at one, he is stopped by it', p.position.z > s.z + s.size * ICE_SPIKE.solid - 1e-6 && p.position.z < s.z + 1, `z ${p.position.z.toFixed(2)}, the spike at ${s.z}`);
-  check('none stands inside a block of ice or in a wall', spikes.every((q) => Math.abs(q.x) < G.halfX - 0.4 && Math.abs(q.z) < G.halfZ - 0.4 && !ICE_BLOCKS.some(([x, z]) => Math.abs(q.x - x) < ICE_BLOCK / 2 + 0.3 && Math.abs(q.z - z) < ICE_BLOCK / 2 + 0.3)));
+  check(
+    'walking at one, he is stopped by it',
+    p.position.z > s.z + s.size * ICE_SPIKE.solid - 1e-6
+      && p.position.z < s.z + 1,
+    `z ${p.position.z.toFixed(2)}, the spike at ${s.z}`
+  );
+  check(
+    'none stands inside a block of ice or in a wall',
+    spikes.every((q) => Math.abs(q.x) < G.halfX - 0.4 && Math.abs(q.z) < G.halfZ - 0.4 && !ICE_BLOCKS.some(([x, z]) => Math.abs(q.x - x) < ICE_BLOCK / 2 + 0.3 && Math.abs(q.z - z) < ICE_BLOCK / 2 + 0.3))
+  );
 }
 
 // ---- The two caps in their pockets ----
 {
   const caps = [def.collectibles.find((c) => c.id === ICE_PRIZES.south)!, def.collectibles.find((c) => c.id === ICE_PRIZES.north)!];
   const posts = def.solids.filter((b) => b.hidden);
-  check('each bottle cap is out on the ice, low enough to walk into, with spikes on three sides of it', caps.every((c) => Math.abs(c.z) < G.channel && c.y < R.height && posts.filter((b) => Math.hypot((b.x0 + b.x1) / 2 - c.x, (b.z0 + b.z1) / 2 - c.z) < 2.2).length >= 4));
+  check(
+    'each bottle cap is out on the ice, low enough to walk into, with spikes on three sides of it',
+    caps.every((c) => Math.abs(c.z) < G.channel && c.y < R.height && posts.filter((b) => Math.hypot((b.x0 + b.x1) / 2 - c.x, (b.z0 + b.z1) / 2 - c.z) < 2.2).length >= 4)
+  );
   // He can have each: sliding in at its open side and steering onto it.
   const takes = (c: { x: number; y: number; z: number; id: string }, from: [number, number]): boolean => {
     const p = new PlayerController(new THREE.Vector3(from[0], 0, from[1]));
@@ -183,9 +254,22 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 // ---- The blocks of ice, and the relic on the last ----
 {
   const blocks = ICE_BLOCKS.map(([x, z, top]) => ({ x, z, top }));
-  check('four blocks of ice stand in the channel, each higher than the last, each wide enough to land on', blocks.length === 4 && blocks.every((b, i) => Math.abs(b.z) + ICE_BLOCK / 2 < G.channel && (i === 0 || b.top > blocks[i - 1].top)) && ICE_BLOCK >= 2.4);
+  check(
+    'four blocks of ice stand in the channel, each higher than the last, each wide enough to land on',
+    blocks.length === 4
+      && blocks.every((b, i) => Math.abs(b.z) + ICE_BLOCK / 2 < G.channel && (i === 0 || b.top > blocks[i - 1].top))
+      && ICE_BLOCK >= 2.4
+  );
   const relic = def.collectibles.find((c) => c.id === ICE_PRIZES.top)!;
-  check('the relic is over the last, which is higher than he can get from the floor by a double jump and a caught edge', relic.kind === 'relic' && relic.x === blocks[3].x && relic.z === blocks[3].z && relic.y > blocks[3].top && blocks[3].top > CEILING_CLEAR - R.height + 1.25 + 0.05, `its top ${blocks[3].top}`);
+  check(
+    'the relic is over the last, which is higher than he can get from the floor by a double jump and a caught edge',
+    relic.kind === 'relic'
+      && relic.x === blocks[3].x
+      && relic.z === blocks[3].z
+      && relic.y > blocks[3].top
+      && blocks[3].top > CEILING_CLEAR - R.height + 1.25 + 0.05,
+    `its top ${blocks[3].top}`
+  );
   check('three things to find in the room, and no more', def.collectibles.length === 3);
   /**
    * A hop from one stop to the next, by a rat who knows ice: he runs at it, jumps `d` frames on (and again `e` frames
@@ -231,7 +315,11 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     made.push(`${one}/${two}`);
     if (one + two === 0) all = false;
   }
-  check('each block can be reached from the one before (the first from the bank), and stood on, by a rat who brakes in the air: landing with speed, he would slide off', all, `ways that land and stay, with one jump / with two: ${made.join(', ')}`);
+  check(
+    'each block can be reached from the one before (the first from the bank), and stood on, by a rat who brakes in the air: landing with speed, he would slide off',
+    all,
+    `ways that land and stay, with one jump / with two: ${made.join(', ')}`
+  );
   // Landing at a run and doing nothing, he slides off.
   const careless = (() => {
     const from = stops[0];
@@ -256,15 +344,34 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const under = ic.filter((d) => d.top !== undefined);
   const roof = ic.filter((d) => d.top === undefined);
   const headJump = (TUNING.jump.velocity * TUNING.jump.velocity) / (2 * TUNING.physics.gravity) + R.height;
-  check('icicles hang under both pipes, in runs, and their points are above where a jump from the floor puts his head', under.length >= 20 && under.every((d) => d.top! - d.length > headJump + 0.1 && Math.abs(Math.abs(d.z) - (G.halfZ - 0.45)) < 1e-6), `${under.length}; the lowest point ${Math.min(...under.map((d) => d.top! - d.length)).toFixed(2)}, his head at ${headJump.toFixed(2)}`);
+  check(
+    'icicles hang under both pipes, in runs, and their points are above where a jump from the floor puts his head',
+    under.length >= 20
+      && under.every((d) => d.top! - d.length > headJump + 0.1 && Math.abs(Math.abs(d.z) - (G.halfZ - 0.45)) < 1e-6),
+    `${under.length}; the lowest point ${Math.min(...under.map((d) => d.top! - d.length)).toFixed(2)}, his head at ${headJump.toFixed(2)}`
+  );
   const near = (x: number, z: number): number => Math.max(0, ...def.solids.filter((b) => b.kind !== 'wall' && Math.hypot(Math.max(b.x0 - x, 0, x - b.x1), Math.max(b.z0 - z, 0, z - b.z1)) < 6).map((b) => b.y1));
-  check('icicles hang from the roof over the banks, each with its point above a double jump from the highest thing within six of it', roof.length >= 8 && roof.every((d) => c.y - d.length >= near(d.x, d.z) + CEILING_CLEAR), `the nearest ${Math.min(...roof.map((d) => c.y - d.length - near(d.x, d.z) - CEILING_CLEAR)).toFixed(2)} clear`);
+  check(
+    'icicles hang from the roof over the banks, each with its point above a double jump from the highest thing within six of it',
+    roof.length >= 8
+      && roof.every((d) => c.y - d.length >= near(d.x, d.z) + CEILING_CLEAR),
+    `the nearest ${Math.min(...roof.map((d) => c.y - d.length - near(d.x, d.z) - CEILING_CLEAR)).toFixed(2)} clear`
+  );
   const jets = def.decor.filter((d) => d.kind === 'jet');
   const pipes = def.decor.filter((d) => d.kind === 'pipe');
   const falls = jets.filter((j) => !j.push);
   const low = jets.filter((j) => !!j.push);
-  check('two pipes run the length of the room, one on each long wall, and each has burst in two places: at each a jet of gas falls out and down from the pipe, in gusts', pipes.length === 2 && falls.length === 4 && falls.every((j) => (j.every ?? 0) > (j.on ?? 0) && (j.on ?? 0) > 0.5 && j.dir[1] < 0 && Math.sign(j.dir[2]) === -Math.sign(j.z) && pipes.some((p) => Math.abs(p.a[1] - j.y) < 0.5 && Math.abs(p.a[2] - j.z) < 0.5)));
-  check('no two bursts gust in step: each has its own beat', new Set(falls.map((j) => j.every)).size === falls.length && NORTH_BURSTS.length + SOUTH_BURSTS.length === 4);
+  check(
+    'two pipes run the length of the room, one on each long wall, and each has burst in two places: at each a jet of gas falls out and down from the pipe, in gusts',
+    pipes.length === 2
+      && falls.length === 4
+      && falls.every((j) => (j.every ?? 0) > (j.on ?? 0) && (j.on ?? 0) > 0.5 && j.dir[1] < 0 && Math.sign(j.dir[2]) === -Math.sign(j.z) && pipes.some((p) => Math.abs(p.a[1] - j.y) < 0.5 && Math.abs(p.a[2] - j.z) < 0.5))
+  );
+  check(
+    'no two bursts gust in step: each has its own beat',
+    new Set(falls.map((j) => j.every)).size === falls.length
+      && NORTH_BURSTS.length + SOUTH_BURSTS.length === 4
+  );
   check('...and from the foot of each fall the gas runs on low across the ice to the far bank, on the same beat, taking up as the fall arrives', low.length === 4 && low.every((j) => {
     const f = falls.find((q) => q.x === j.x && Math.sign(q.z) === Math.sign(j.z));
     return !!f && f.every === j.every && f.on === j.on && Math.abs((j.delay ?? 0) - f.length / JET_SPEED) < 1e-9 && j.dir[1] === 0 && j.y < 1.2 && Math.abs(Math.abs(j.z) - (G.channel + 0.4)) < 1e-9 && j.length >= G.channel * 2 && Math.abs(f.z + (f.dir[2] / Math.hypot(...f.dir)) * f.length - j.z) < 1.2;
@@ -274,13 +381,28 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
 // ---- The gusts push ----
 {
   const gusts = gustsOf(def.decor);
-  check('the four low runs are gusts, and only they: a fall of gas overhead pushes nobody', gusts.length === 4 && gusts.every((g) => g.push === GUST.push && g.dy === 0) && FALL.length > 5);
-  check('no gust crosses a block of ice (gas does not go through one), at its widest', gusts.every((g) => !ICE_BLOCKS.some(([x]) => Math.abs(g.x - x) < ICE_BLOCK / 2 + g.width / 2)));
+  check(
+    'the four low runs are gusts, and only they: a fall of gas overhead pushes nobody',
+    gusts.length === 4
+      && gusts.every((g) => g.push === GUST.push && g.dy === 0)
+      && FALL.length > 5
+  );
+  check(
+    'no gust crosses a block of ice (gas does not go through one), at its widest',
+    gusts.every((g) => !ICE_BLOCKS.some(([x]) => Math.abs(g.x - x) < ICE_BLOCK / 2 + g.width / 2))
+  );
   const g = gusts.find((q) => q.x === -0.5)!;
   // (The moment its gas first reaches the middle of the channel, and a moment when there is none there.)
   const reach = (along: number): number => g.delay + along / JET_SPEED;
   const mid = G.channel + 0.4;
-  check('the gas is at a place along a gust from when it gets there until the gust has passed, and not between gusts', gasAt(g, reach(mid) + 0.05, mid) && gasAt(g, reach(mid) + g.on - 0.05, mid) && !gasAt(g, reach(mid) - 0.05, mid) && !gasAt(g, reach(mid) + g.on + 0.05, mid) && gasAt(g, reach(mid) + g.every + 0.05, mid));
+  check(
+    'the gas is at a place along a gust from when it gets there until the gust has passed, and not between gusts',
+    gasAt(g, reach(mid) + 0.05, mid)
+      && gasAt(g, reach(mid) + g.on - 0.05, mid)
+      && !gasAt(g, reach(mid) - 0.05, mid)
+      && !gasAt(g, reach(mid) + g.on + 0.05, mid)
+      && gasAt(g, reach(mid) + g.every + 0.05, mid)
+  );
   /** He stands (or does `act`) at (x, z) from `t0` for `secs`, the gusts blowing: where he ends, and whether one had him. */
   const stand = (x: number, z: number, t0: number, secs: number, act: Partial<PlayerInput> = {}): { p: PlayerController; had: boolean } => {
     const p = new PlayerController(new THREE.Vector3(x, 0, z));
@@ -294,7 +416,13 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   };
   // On the ice in its path as it comes: carried across, the way it blows (this one blows north, from the south bank).
   const carried = stand(g.x, 1.5, reach(G.channel + 0.4 - 1.5) - 0.2, g.on + 1.5);
-  check('a rat standing on the ice in a gust\'s path is carried across with it, the way it blows: several units, and not faster than it blows', carried.had && carried.p.position.z < 1.5 - 3 && Math.abs(carried.p.position.x - g.x) < 0.5, `carried ${(1.5 - carried.p.position.z).toFixed(2)}`);
+  check(
+    'a rat standing on the ice in a gust\'s path is carried across with it, the way it blows: several units, and not faster than it blows',
+    carried.had
+      && carried.p.position.z < 1.5 - 3
+      && Math.abs(carried.p.position.x - g.x) < 0.5,
+    `carried ${(1.5 - carried.p.position.z).toFixed(2)}`
+  );
   let fastest = 0;
   {
     const p = new PlayerController(new THREE.Vector3(g.x, 0, 1.5));
@@ -306,7 +434,12 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
       fastest = Math.max(fastest, Math.hypot(p.velocity.x, p.velocity.z));
     }
   }
-  check('...it brings him to the speed it blows at, and no more', fastest > GUST.push * 0.8 && fastest <= GUST.push + 1e-6, `${fastest.toFixed(2)} of ${GUST.push}`);
+  check(
+    '...it brings him to the speed it blows at, and no more',
+    fastest > GUST.push * 0.8
+      && fastest <= GUST.push + 1e-6,
+    `${fastest.toFixed(2)} of ${GUST.push}`
+  );
   // Between gusts he is left alone; beside it he is left alone.
   const quiet = stand(g.x, 1.5, reach(G.channel + 0.4 - 1.5) + g.on + 0.3, g.every - g.on - 0.6);
   check('between gusts nothing moves him', !quiet.had && Math.abs(quiet.p.position.z - 1.5) < 1e-6);
@@ -314,11 +447,22 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   check('beside a gust, clear of its gas at its widest, nothing moves him', !beside.had && Math.abs(beside.p.position.z - 1.5) < 1e-6);
   // On the cobbles where a gust begins, he stands against it.
   const bank = stand(g.x, G.channel + 0.25, 0, g.every * 2);
-  check('on the cobbles at the foot of the bank, in the gas, he stands against it: he has his grip there', bank.had && Math.abs(bank.p.position.z - (G.channel + 0.25)) < 0.02, `moved ${Math.abs(bank.p.position.z - (G.channel + 0.25)).toFixed(3)}`);
+  check(
+    'on the cobbles at the foot of the bank, in the gas, he stands against it: he has his grip there',
+    bank.had
+      && Math.abs(bank.p.position.z - (G.channel + 0.25)) < 0.02,
+    `moved ${Math.abs(bank.p.position.z - (G.channel + 0.25)).toFixed(3)}`
+  );
   // On the ice he can fight it, and loses ground slowly; with it at his back he goes faster than he runs.
   const against = stand(g.x, -2, reach(G.channel + 0.4 + 2) - 0.1, g.on, { move: new THREE.Vector3(0, 0, 1) });
   const free = stand(g.x + 5, -2, reach(G.channel + 0.4 + 2) - 0.1, g.on, { move: new THREE.Vector3(0, 0, 1) });
-  check('running into a gust on the ice he makes far less way than he would beside it', against.had && !free.had && against.p.position.z - -2 < (free.p.position.z - -2) * 0.6, `${(against.p.position.z + 2).toFixed(2)} against ${(free.p.position.z + 2).toFixed(2)}`);
+  check(
+    'running into a gust on the ice he makes far less way than he would beside it',
+    against.had
+      && !free.had
+      && against.p.position.z - -2 < (free.p.position.z - -2) * 0.6,
+    `${(against.p.position.z + 2).toFixed(2)} against ${(free.p.position.z + 2).toFixed(2)}`
+  );
   // What is drawn is what pushes: wherever a puff of a gust is drawn, there is gas by the rule; and the gust has a body there.
   const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
   let drawn = 0;
@@ -342,7 +486,12 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
       if (!near.some((a) => gasAt(own, time, a) && gustOn(gusts, time, own.x, own.y, own.z + own.dz * a, R.radius) === own)) wrong++;
     });
   }
-  check('what is drawn is what pushes: at every moment looked at, wherever a puff of a gust is drawn the rule has gas there and a body there is in the gust', drawn > 150 && wrong === 0, `${drawn} puffs looked at, ${wrong} wrong`);
+  check(
+    'what is drawn is what pushes: at every moment looked at, wherever a puff of a gust is drawn the rule has gas there and a body there is in the gust',
+    drawn > 150
+      && wrong === 0,
+    `${drawn} puffs looked at, ${wrong} wrong`
+  );
 }
 
 // ---- The caps can still be had, the gusts blowing ----
@@ -368,23 +517,46 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const tries = (c: { x: number; y: number; z: number; id: string }, from: [number, number], every: number): number[] => Array.from({ length: 12 }, (_, k) => go(c, from, 20 + (k / 12) * every));
   const south = tries(caps[0], [caps[0].x, -1.5], 5.2);
   const north = tries(caps[1], [caps[1].x - 3.5, caps[1].z + 0.3], 6.6);
-  check('the south cap can be had with the gusts blowing, whenever in a gust\'s round he sets out (the gust there blows INTO its pocket)', south.every((t) => t >= 0), `seconds taken: ${south.map((t) => t.toFixed(1)).join(' ')}`);
-  check('the north cap can be had with the gusts blowing, whenever he sets out (the gust there blows across its pocket, but he is on the cap before it has carried him off)', north.every((t) => t >= 0), `seconds taken: ${north.map((t) => t.toFixed(1)).join(' ')}`);
+  check(
+    'the south cap can be had with the gusts blowing, whenever in a gust\'s round he sets out (the gust there blows INTO its pocket)',
+    south.every((t) => t >= 0),
+    `seconds taken: ${south.map((t) => t.toFixed(1)).join(' ')}`
+  );
+  check(
+    'the north cap can be had with the gusts blowing, whenever he sets out (the gust there blows across its pocket, but he is on the cap before it has carried him off)',
+    north.every((t) => t >= 0),
+    `seconds taken: ${north.map((t) => t.toFixed(1)).join(' ')}`
+  );
 }
 
 // ---- What is heard of the gas ----
 {
   const all = jetsOf(def.decor);
   const pipesOpen = all.filter((j) => j.delay === 0);
-  check('every jet of the room is known for its sound, and the four that are the pipes themselves (no other jet takes up from them) are the ones that crack as they let go', all.length === 8 && pipesOpen.length === 4 && pipesOpen.every((j) => j.push === 0 && j.y > 4));
+  check(
+    'every jet of the room is known for its sound, and the four that are the pipes themselves (no other jet takes up from them) are the ones that crack as they let go',
+    all.length === 8
+      && pipesOpen.length === 4
+      && pipesOpen.every((j) => j.push === 0 && j.y > 4)
+  );
   // (The game cracks the pipe when its gas first leaves it; the gust is on the ice when the low jet's gas is.)
   const warn = FALL.length / JET_SPEED;
-  check('the crack comes when the gas leaves the pipe: two seconds and more before any of it is on the ice', warn > 2 && gustsOf(def.decor).every((g) => Math.abs(g.delay - warn) < 1e-9), `${warn.toFixed(2)} s of warning`);
+  check(
+    'the crack comes when the gas leaves the pipe: two seconds and more before any of it is on the ice',
+    warn > 2
+      && gustsOf(def.decor).every((g) => Math.abs(g.delay - warn) < 1e-9),
+    `${warn.toFixed(2)} s of warning`
+  );
   const g = gustsOf(def.decor).find((q) => q.x === -0.5)!;
   const mid = G.channel + 0.4;
   const there = g.delay + mid / JET_SPEED + 0.3;
   const gone = g.delay + g.length / JET_SPEED + g.on + 0.3;
-  check('the hiss goes by how near the nearest gas is: in a gust it is at his ear, across the room it is far, and with no gas out there is none', gasNear(g, there, g.x, 0.9, 0) < 0.6 && gasNear(g, there, g.x + 9, 0.9, 0) > 8 && gasNear(g, gone, g.x, 0.9, 0) === Infinity);
+  check(
+    'the hiss goes by how near the nearest gas is: in a gust it is at his ear, across the room it is far, and with no gas out there is none',
+    gasNear(g, there, g.x, 0.9, 0) < 0.6
+      && gasNear(g, there, g.x + 9, 0.9, 0) > 8
+      && gasNear(g, gone, g.x, 0.9, 0) === Infinity
+  );
 }
 
 // ---- The tiles ----
@@ -393,7 +565,11 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     const px = getTexturePixels(name);
     let cold = 0;
     for (let i = 0; i < px.size * px.size; i++) if (px.data[i * 4 + 2] >= px.data[i * 4]) cold++;
-    check(`${name}: a cold picture (blue no less than red, all but everywhere)`, cold > px.size * px.size * 0.97, `${((cold / (px.size * px.size)) * 100).toFixed(0)}%`);
+    check(
+      `${name}: a cold picture (blue no less than red, all but everywhere)`,
+      cold > px.size * px.size * 0.97,
+      `${((cold / (px.size * px.size)) * 100).toFixed(0)}%`
+    );
   }
 }
 
@@ -403,14 +579,23 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const px = getTexturePixels('frostCobbles');
   let pale = 0;
   for (let i = 0; i < px.size * px.size; i++) if (px.data[i * 4 + 1] > 150) pale++;
-  check('the frosted cobbles are the ones he chose: a lace of rime, a fifth of the picture and more pale with it', px.size === 64 && pale > px.size * px.size * 0.2, `${((pale / (px.size * px.size)) * 100).toFixed(0)}% pale`);
+  check(
+    'the frosted cobbles are the ones he chose: a lace of rime, a fifth of the picture and more pale with it',
+    px.size === 64
+      && pale > px.size * px.size * 0.2,
+    `${((pale / (px.size * px.size)) * 100).toFixed(0)}% pale`
+  );
   const mean = (name: 'iceBlock' | 'iceSheet'): number => {
     const q = getTexturePixels(name);
     let sum = 0;
     for (let i = 0; i < q.size * q.size; i++) sum += q.data[i * 4 + 1];
     return sum / (q.size * q.size);
   };
-  check('a block of ice is far paler than the sheet it stands on: the two cannot be taken for one thing', mean('iceBlock') > mean('iceSheet') * 2.2, `${mean('iceBlock').toFixed(0)} against ${mean('iceSheet').toFixed(0)}`);
+  check(
+    'a block of ice is far paler than the sheet it stands on: the two cannot be taken for one thing',
+    mean('iceBlock') > mean('iceSheet') * 2.2,
+    `${mean('iceBlock').toFixed(0)} against ${mean('iceSheet').toFixed(0)}`
+  );
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

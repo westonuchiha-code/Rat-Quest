@@ -101,7 +101,12 @@ if (spit) {
   let ended: Glob[] = [];
   for (let i = 0; i < 60 * 4 && ended.length === 0; i++) ended = stepGlobs(globs, DT, ground);
   const g = ended[0];
-  check('the glob lands where he stood', !!g && Math.hypot(g.x - target.x, g.z - target.z) < 1.3, g ? `landed ${g.x.toFixed(1)},${g.z.toFixed(1)}` : 'no landing');
+  check(
+    'the glob lands where he stood',
+    !!g
+      && Math.hypot(g.x - target.x, g.z - target.z) < 1.3,
+    g ? `landed ${g.x.toFixed(1)},${g.z.toFixed(1)}` : 'no landing'
+  );
 }
 const near = new Toad({ x: 0, z: 0 });
 for (let i = 0; i < 120; i++) near.update(DT, 0, 0, 1.5, true);
@@ -172,15 +177,31 @@ check('fallen crates are still solid', stack.colliders.includes(c2.aabb) && stac
   L.blurb = 'Test blurb';
   const def = compileCustom(L);
   const steps = def.solids.filter((b) => b.kind === 'stone');
-  check('stairs become a flight of steps that climbs to the top height', steps.length === 6 && Math.max(...steps.map((b) => b.y1)) === 3, `${steps.length} steps`);
+  check(
+    'stairs become a flight of steps that climbs to the top height',
+    steps.length === 6
+      && Math.max(...steps.map((b) => b.y1)) === 3,
+    `${steps.length} steps`
+  );
   check('steps rise toward the way the stairs face', steps.some((b) => b.z0 <= 0.01 && b.y1 > 2.4));
-  check('a crate can hold a collectible', def.crateContents.length === 1 && def.crateContents[0] !== null && def.collectibles.some((c) => c.crate === 0 && c.kind === 'cap'));
+  check(
+    'a crate can hold a collectible',
+    def.crateContents.length === 1
+      && def.crateContents[0] !== null
+      && def.collectibles.some((c) => c.crate === 0 && c.kind === 'cap')
+  );
   check('a character keeps his name, kind and lines', def.npcs?.[0].name === 'FINCH' && def.npcs[0].kind === 'bird' && def.npcs[0].lines.length === 2);
   check('chosen goals replace the automatic ones', def.goals.length === 2 && def.goals[0].type === 'collect' && def.goals[1].type === 'reach');
   check('the goal marker is where the reach goal points', def.goals[1].type === 'reach' && def.goals[1].x === -8 && def.goals[1].z === -8);
   check('music and description carry over', def.music === 'pump' && def.blurb === 'Test blurb');
   const again = parseCustom(JSON.stringify(L));
-  check('goals, music and props survive saving as text', !!again && again.goals?.length === 2 && again.music === 'pump' && again.pieces.some((q) => q.props?.item === 'cap'));
+  check(
+    'goals, music and props survive saving as text',
+    !!again
+      && again.goals?.length === 2
+      && again.music === 'pump'
+      && again.pieces.some((q) => q.props?.item === 'cap')
+  );
   check('a reach goal without a marker is flagged', checkCustom({ ...emptyCustom(), goals: [{ type: 'reach' }] }).some((m) => /marker/.test(m)));
   check('a defeat goal without enemies is flagged', checkCustom({ ...emptyCustom(), goals: [{ type: 'defeat' }] }).some((m) => /enemy/.test(m)));
   for (const st of STAMPS) {
@@ -200,7 +221,12 @@ check('fallen crates are still solid', stack.colliders.includes(c2.aabb) && stac
 for (const sm of SAMPLES) {
   const d = compileCustom(sm.level);
   const probs = findProblems({ solids: d.solids, pit: d.pit, water: d.water });
-  check(`sample "${sm.title}" has nothing wrong`, checkCustom(sm.level).length === 0 && probs.length === 0, [...checkCustom(sm.level), ...probs].slice(0, 3).join(' | '));
+  check(
+    `sample "${sm.title}" has nothing wrong`,
+    checkCustom(sm.level).length === 0
+      && probs.length === 0,
+    [...checkCustom(sm.level), ...probs].slice(0, 3).join(' | ')
+  );
 }
 
 // Themes: a level's look sets the pictures and fog; a piece can name its own.
@@ -231,7 +257,13 @@ for (const sm of SAMPLES) {
   );
   L.goals = [{ type: 'waves' }];
   const d = compileCustom(L);
-  check('enemies set to a wave are held back in groups', d.enemies.length === 1 && d.waves.length === 2 && d.waves[0].length === 1 && d.waves[1][0].type === 'toad');
+  check(
+    'enemies set to a wave are held back in groups',
+    d.enemies.length === 1
+      && d.waves.length === 2
+      && d.waves[0].length === 1
+      && d.waves[1][0].type === 'toad'
+  );
   check('a waves goal comes from them', d.goals.length === 1 && d.goals[0].type === 'waves');
   check('plates are listed and a gate can wait for them', d.plates?.length === 2 && d.gates?.[0].plates?.length === 2 && !d.gates[0].onGoals);
   check('a gate can wait for pipes instead', d.gates?.[1].pipes?.length === 1);

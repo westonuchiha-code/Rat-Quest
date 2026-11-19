@@ -22,10 +22,17 @@ const save = (x: number, at: number, levelId = 'hollows') => ({ x, y: 0, z: 0, f
 
 check('three files', FILE_COUNT === 3);
 check('File 1 keeps the keys the game always used (an older save simply is File 1)', fileKey(1, 'ratquest.save.v1') === 'ratquest.save.v1');
-check('Files 2 and 3 have their own keys', fileKey(2, 'ratquest.save.v1') === 'ratquest.f2.save.v1' && fileKey(3, 'ratquest.equipment.v1') === 'ratquest.f3.equipment.v1');
+check(
+  'Files 2 and 3 have their own keys',
+  fileKey(2, 'ratquest.save.v1') === 'ratquest.f2.save.v1'
+    && fileKey(3, 'ratquest.equipment.v1') === 'ratquest.f3.equipment.v1'
+);
 check('settings, controls and his own levels are shared by every file',
   ['ratquest.bindings', 'ratquest.audio.v1', 'ratquest.display', 'ratquest.rumble', 'ratquest.glyphs', 'ratquest.mylevels.v1', 'ratquest.tweaks.v1'].every((k) => fileKey(2, k) === k));
-check('every one of a game\'s own stores is in a file', ['save', 'quicksave', 'autosave', 'collectibles', 'equipment', 'inventory', 'levels', 'story', 'wallet', 'stickers', 'meta'].every((k) => GAME_KEYS.includes(`ratquest.${k}.v1` as never)));
+check(
+  'every one of a game\'s own stores is in a file',
+  ['save', 'quicksave', 'autosave', 'collectibles', 'equipment', 'inventory', 'levels', 'story', 'wallet', 'stickers', 'meta'].every((k) => GAME_KEYS.includes(`ratquest.${k}.v1` as never))
+);
 
 // ---- The file store ----
 const files = new FileStore(base, 2);
@@ -45,20 +52,41 @@ mem.set('ratquest.autosave.v1', JSON.stringify(save(1, 5000, 'foundry')));
 mem.set('ratquest.save.v1', JSON.stringify(save(1, 3000, 'cistern')));
 mem.set('ratquest.stickers.v1', JSON.stringify(['char:knight', 'wedge:cistern:a', 'wedge:cistern:b', 'place:hub', 'wedge:foundry:c']));
 const f1 = fileSummary(base, 1);
-check('an older game shows as File 1: where (newest save), wedges', !f1.empty && f1.levelId === 'foundry' && f1.savedAt === 5000 && f1.wedges === 3, JSON.stringify(f1));
+check(
+  'an older game shows as File 1: where (newest save), wedges',
+  !f1.empty
+    && f1.levelId === 'foundry'
+    && f1.savedAt === 5000
+    && f1.wedges === 3,
+  JSON.stringify(f1)
+);
 check('the other files are still empty', fileSummary(base, 2).empty && fileSummary(base, 3).empty);
 writeMeta(new FileStore(base, 1), { played: 3 * 3600 + 5 * 60 + 12 });
-check('time played is kept per file', readMeta(new FileStore(base, 1)).played === 11112 && fileSummary(base, 1).played === 11112 && readMeta(new FileStore(base, 2)).played === 0);
+check(
+  'time played is kept per file',
+  readMeta(new FileStore(base, 1)).played === 11112
+    && fileSummary(base, 1).played === 11112
+    && readMeta(new FileStore(base, 2)).played === 0
+);
 check('time played reads short', formatPlayed(30) === 'under a minute' && formatPlayed(42 * 60) === '42m' && formatPlayed(11112) === '3h 05m');
 
 // ---- Copy and erase ----
 copyFile(base, 1, 3);
 const f3 = fileSummary(base, 3);
 check('copying makes the same game in another file', !f3.empty && f3.wedges === 3 && f3.played === 11112 && f3.levelId === 'foundry');
-check('the copy has its own keys (playing one does not change the other)', mem.get('ratquest.f3.save.v1') === mem.get('ratquest.save.v1') && mem.has('ratquest.f3.stickers.v1'));
+check(
+  'the copy has its own keys (playing one does not change the other)',
+  mem.get('ratquest.f3.save.v1') === mem.get('ratquest.save.v1')
+    && mem.has('ratquest.f3.stickers.v1')
+);
 writeSave(new FileStore(base, 2), save(9, 9000, 'keep'), 'quick');
 copyFile(base, 2, 3);
-check('copying over a file replaces all of it (nothing of the old game is left)', fileSummary(base, 3).levelId === 'keep' && fileSummary(base, 3).wedges === 0 && !mem.has('ratquest.f3.save.v1'));
+check(
+  'copying over a file replaces all of it (nothing of the old game is left)',
+  fileSummary(base, 3).levelId === 'keep'
+    && fileSummary(base, 3).wedges === 0
+    && !mem.has('ratquest.f3.save.v1')
+);
 eraseFile(base, 3);
 check('erasing empties a file', fileSummary(base, 3).empty && ![...mem.keys()].some((k) => k.startsWith('ratquest.f3.')));
 check('and leaves the others alone', !fileSummary(base, 1).empty && !fileSummary(base, 2).empty);

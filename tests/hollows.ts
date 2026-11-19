@@ -24,7 +24,13 @@ const def = hollows();
 const reaches = (d: LevelDef, x: number, y: number, z: number): boolean => computeReach(d).near(x, y + 0.5, z, 0.9, 1, 1);
 const sameBox = (b: { x0: number; x1: number; z0: number; z1: number }, s: { x0: number; x1: number; z0: number; z1: number }): boolean => b.x0 === s.x0 && b.x1 === s.x1 && b.z0 === s.z0 && b.z1 === s.z1;
 
-check('the Hollows is in the world, with its two side areas', def.world === 'hollows' && hollowsWebs().returnTo === 'hollows' && hollowsFaith().returnTo === 'hollows' && ['webs', 'faith'].every((id) => LEVELS.some((l) => l.id === id)));
+check(
+  'the Hollows is in the world, with its two side areas',
+  def.world === 'hollows'
+    && hollowsWebs().returnTo === 'hollows'
+    && hollowsFaith().returnTo === 'hollows'
+    && ['webs', 'faith'].every((id) => LEVELS.some((l) => l.id === id))
+);
 check('the Club\'s north door leads to the Hollows, for twelve wedges', HUB_DOORS.some((d) => d.to === 'hollows' && d.need === 12));
 check('falls in the Hollows cost a heart and put him back (not back at the start)', def.fallBack === true);
 check('the Hollows has its own music', def.music === 'echo' && TRACK_NAMES.includes('echo'));
@@ -97,9 +103,24 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
   const caps = def.collectibles.filter((c) => c.kind === 'cap');
   const cheese = def.collectibles.filter((c) => c.kind === 'crumb');
   const relics = def.collectibles.filter((c) => c.kind === 'relic');
-  check('there are two bottle caps, two hunks of cheese and the three relics, and nothing else: seven things where there were twenty-five', caps.length === 2 && cheese.length === 2 && relics.length === 3 && def.collectibles.length === 7);
-  check('the two hunks are worth what the cave\'s seventeen crumbs were', purse().worth(def.id, 'crumb').total === 17 && cheese.every((c) => (c.worth ?? 1) >= 8 && /:hunk:\d\d$/.test(c.id)), cheese.map((c) => c.worth).join('+'));
-  check('none of it is in a crate or on a floor, and no two are within twelve of each other: there are no trails', def.collectibles.every((c) => c.crate === undefined && c.y > 3) && def.collectibles.every((a) => def.collectibles.every((b) => a === b || Math.hypot(a.x - b.x, a.z - b.z) >= 12)));
+  check(
+    'there are two bottle caps, two hunks of cheese and the three relics, and nothing else: seven things where there were twenty-five',
+    caps.length === 2
+      && cheese.length === 2
+      && relics.length === 3
+      && def.collectibles.length === 7
+  );
+  check(
+    'the two hunks are worth what the cave\'s seventeen crumbs were',
+    purse().worth(def.id, 'crumb').total === 17
+      && cheese.every((c) => (c.worth ?? 1) >= 8 && /:hunk:\d\d$/.test(c.id)),
+    cheese.map((c) => c.worth).join('+')
+  );
+  check(
+    'none of it is in a crate or on a floor, and no two are within twelve of each other: there are no trails',
+    def.collectibles.every((c) => c.crate === undefined && c.y > 3)
+      && def.collectibles.every((a) => def.collectibles.every((b) => a === b || Math.hypot(a.x - b.x, a.z - b.z) >= 12))
+  );
 
   // ---- The Drip Stone: off the side of the Lip at a walk, and back in under it ----
   {
@@ -120,9 +141,21 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
       return { p, got: t.isCollected(itemAt(0, zc).id) };
     };
     const lands = (r: { p: PlayerController; got: boolean }): boolean => r.p.grounded && Math.abs(r.p.position.y - DRIP.top) < 0.05 && r.got;
-    check('THE DRIP STONE: stepping off the Lip\'s side at a walk and steering straight back under it, he lands on the stone and has its hunk; from either side', lands(drop(1, 0, true, false)) && lands(drop(-1, 0, true, false)));
-    check('...with a little room in when he turns back: at once, or four or eight frames after leaving the edge; not twelve', [0, 4, 8].every((k) => lands(drop(1, k, true, false))) && !lands(drop(1, 12, true, false)));
-    check('...but not at a run (he is carried clear of it), and not without steering back: both go into the dark', drop(1, 0, true, true).p.position.y < -3 && drop(1, 0, false, false).p.position.y < -3);
+    check(
+      'THE DRIP STONE: stepping off the Lip\'s side at a walk and steering straight back under it, he lands on the stone and has its hunk; from either side',
+      lands(drop(1, 0, true, false))
+        && lands(drop(-1, 0, true, false))
+    );
+    check(
+      '...with a little room in when he turns back: at once, or four or eight frames after leaving the edge; not twelve',
+      [0, 4, 8].every((k) => lands(drop(1, k, true, false)))
+        && !lands(drop(1, 12, true, false))
+    );
+    check(
+      '...but not at a run (he is carried clear of it), and not without steering back: both go into the dark',
+      drop(1, 0, true, true).p.position.y < -3
+        && drop(1, 0, false, false).p.position.y < -3
+    );
     // Off the tip: the stone is two back from it, more than he can come back under.
     const tip = ((): PlayerController => {
       const p = stand(0, 16, LIP.z0 + 1.5);
@@ -135,7 +168,14 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
       return p;
     })();
     check('...nor off the Lip\'s tip: the stone is too far back under it', tip.position.y < -3);
-    check('it is too high to get onto from the shelf (seven up, over five and a half of chasm), and is inside the Lip\'s edges', DRIP.top > maxClimb() + 1 && 32 - DRIP.z1 > 5.5 && DRIP.x1 <= LIP.x1 - 0.5 && DRIP.x0 >= LIP.x0 + 0.5 && DRIP.z0 > LIP.z0 + 1.9);
+    check(
+      'it is too high to get onto from the shelf (seven up, over five and a half of chasm), and is inside the Lip\'s edges',
+      DRIP.top > maxClimb() + 1
+        && 32 - DRIP.z1 > 5.5
+        && DRIP.x1 <= LIP.x1 - 0.5
+        && DRIP.x0 >= LIP.x0 + 0.5
+        && DRIP.z0 > LIP.z0 + 1.9
+    );
   }
 
   // ---- The Cleft: wall kicks, with the pit past the end of the slot ----
@@ -173,7 +213,13 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
     for (const [delay, how] of [[2, 'quickly'], [8, 'a little late']] as Array<[number, string]>) {
       const t = purse();
       const p = kickUp(new THREE.Vector3(xm, 0, CLEFT.a.z1 + 0.4), -1, CLEFT.top, bz, delay, t);
-      check(`THE CLEFT, kicking ${how}: up between the two fins from the spur, he comes out on top of the thick one and has its cap`, p.grounded && Math.abs(p.position.y - CLEFT.top) < 0.05 && t.isCollected(itemAt(xm, bz).id), `at z ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`);
+      check(
+        `THE CLEFT, kicking ${how}: up between the two fins from the spur, he comes out on top of the thick one and has its cap`,
+        p.grounded
+          && Math.abs(p.position.y - CLEFT.top) < 0.05
+          && t.isCollected(itemAt(xm, bz).id),
+        `at z ${p.position.z.toFixed(2)}, ${p.position.y.toFixed(2)} up`
+      );
     }
     // A jump and a second jump straight up from the spur: nowhere near.
     const hop = stand(xm, 0, (CLEFT.a.z1 + CLEFT.b.z0) / 2);
@@ -183,9 +229,21 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
       hop.update(DT, inp({ jumpPressed: i === 28, jumpHeld: true }), cs);
       high = Math.max(high, hop.position.y);
     }
-    check('...and not without kicking: a jump and a second jump from the spur get nowhere near the top', high < CLEFT.top - 3, `${high.toFixed(2)} of ${CLEFT.top}`);
+    check(
+      '...and not without kicking: a jump and a second jump from the spur get nowhere near the top',
+      high < CLEFT.top - 3,
+      `${high.toFixed(2)} of ${CLEFT.top}`
+    );
     const spur = def.solids.find((b) => b.x0 === CLEFT.x0 && b.x1 === CLEFT.x1 && b.z0 === CLEFT.a.z1 && b.z1 === CLEFT.b.z0);
-    check('the fins are 2.2 apart, the thin one the taller; the slot\'s floor is a spur level with the path, and past the spur\'s end there is no floor', Math.abs(CLEFT.b.z0 - CLEFT.a.z1 - 2.2) < 1e-9 && CLEFT.a.top > CLEFT.top + 2 && !!spur && spur.y1 === 0 && CLEFT.x0 === -22 && !def.solids.some((b) => b.y1 > -3 && b.y1 < 0.5 && b.x0 < CLEFT.x1 + 2 && b.x1 > CLEFT.x1 + 0.1 && b.z0 < CLEFT.b.z0 && b.z1 > CLEFT.a.z1));
+    check(
+      'the fins are 2.2 apart, the thin one the taller; the slot\'s floor is a spur level with the path, and past the spur\'s end there is no floor',
+      Math.abs(CLEFT.b.z0 - CLEFT.a.z1 - 2.2) < 1e-9
+        && CLEFT.a.top > CLEFT.top + 2
+        && !!spur
+        && spur.y1 === 0
+        && CLEFT.x0 === -22
+        && !def.solids.some((b) => b.y1 > -3 && b.y1 < 0.5 && b.x0 < CLEFT.x1 + 2 && b.x1 > CLEFT.x1 + 0.1 && b.z0 < CLEFT.b.z0 && b.z1 > CLEFT.a.z1)
+    );
   }
 
   // ---- The Needle: off the moving slider ----
@@ -237,8 +295,18 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
     };
     const tries: string[] = [];
     for (const lead of [1.5, 0.5, -0.5]) for (const e of [14, 20, 26]) if (((r) => r.on && r.got)(ride(lead, e))) tries.push(`${lead}/${e}`);
-    check('THE NEEDLE: riding the slider out from the Root Shelf, a jump and a second jump as it passes put him on the Needle, and its cap is his; at more than one moment', tries.length >= 6, `${tries.length} of 9: ${tries.join(' ')}`);
-    check('...it is three and a half over the slider and 1.6 off its path, out over the chasm, and too far from Spider Rock to jump to', NEEDLE.top - 10 === 3.5 && Math.abs(NEEDLE.z0 - 3 - 1.6) < 1e-9 && NEEDLE.x1 < 22 && NEEDLE.x0 - ROCK_BOX.x1 > maxChimney() + 1);
+    check(
+      'THE NEEDLE: riding the slider out from the Root Shelf, a jump and a second jump as it passes put him on the Needle, and its cap is his; at more than one moment',
+      tries.length >= 6,
+      `${tries.length} of 9: ${tries.join(' ')}`
+    );
+    check(
+      '...it is three and a half over the slider and 1.6 off its path, out over the chasm, and too far from Spider Rock to jump to',
+      NEEDLE.top - 10 === 3.5
+        && Math.abs(NEEDLE.z0 - 3 - 1.6) < 1e-9
+        && NEEDLE.x1 < 22
+        && NEEDLE.x0 - ROCK_BOX.x1 > maxChimney() + 1
+    );
   }
 
   // ---- The Spire: the leap down from the High Hollow ----
@@ -275,14 +343,25 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
       const one = leap(d, -1);
       if (one.p.grounded && one.p.position.y < 0.1 && !one.got) short.push(`${d}`);
     }
-    check('THE SPIRE: a running jump off the west end of the High Hollow and a second jump in the air, steered down onto it twelve and a half below, and its hunk is his; at every timing tried', made.length === 9, `${made.length} of 9: ${made.join(' ')}`);
+    check(
+      'THE SPIRE: a running jump off the west end of the High Hollow and a second jump in the air, steered down onto it twelve and a half below, and its hunk is his; at every timing tried',
+      made.length === 9,
+      `${made.length} of 9: ${made.join(' ')}`
+    );
     check('...one jump alone comes down short of it, on the floor', short.length === 3, `${short.length} of 3`);
-    check('...it is too tall to climb from the floor, and stands clear of the north wall by more than a kick carries', SPIRE.top > maxClimb() + 1 && SPIRE.z0 - -48 > maxChimney());
+    check(
+      '...it is too tall to climb from the floor, and stands clear of the north wall by more than a kick carries',
+      SPIRE.top > maxClimb() + 1
+        && SPIRE.z0 - -48 > maxChimney()
+    );
   }
 
   // ---- No way past: with its route's key piece gone, the checker finds no way to that thing (and still finds the others) ----
   {
-    check('with everything in place the checker can reach every one of them', unreachable(def, computeReach(def)).filter((b) => b.what === 'cap' || b.what === 'crumb' || b.what === 'relic').length === 0);
+    check(
+      'with everything in place the checker can reach every one of them',
+      unreachable(def, computeReach(def)).filter((b) => b.what === 'cap' || b.what === 'crumb' || b.what === 'relic').length === 0
+    );
     const lost = (drop: (b: Box) => boolean, opts: { chimney?: number } = {}, movers = true): string[] => {
       const cut = { ...def, solids: def.solids.filter((b) => !drop(b)), movers: movers ? def.movers : [] };
       return unreachable(cut, computeReach(cut, opts)).filter((b) => b.what === 'cap' || b.what === 'crumb' || b.what === 'relic').map((b) => def.collectibles.find((c) => Math.hypot(c.x - b.x, c.z - b.z) < 0.01)!.id.split(':').slice(1).join(' '));
@@ -292,13 +371,26 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
     check('without the slider, the Needle\'s cap is out of reach, and only that', noSlide.join() === 'cap 01', noSlide.join(', '));
     const noFin = lost((b) => same(b, CLEFT.x0, CLEFT.x1, CLEFT.a.z0, CLEFT.a.z1));
     const noKicks = lost(() => false, { chimney: 0 });
-    check('without the Cleft\'s thin fin, or without wall kicks, its cap is out of reach, and only that', noFin.join() === 'cap 02' && noKicks.join() === 'cap 02', `${noFin.join(', ')} / ${noKicks.join(', ')}`);
+    check(
+      'without the Cleft\'s thin fin, or without wall kicks, its cap is out of reach, and only that',
+      noFin.join() === 'cap 02'
+        && noKicks.join() === 'cap 02',
+      `${noFin.join(', ')} / ${noKicks.join(', ')}`
+    );
     const noHigh = lost((b) => same(b, -4, 2, -48, -44));
-    check('without the High Hollow, the Spire\'s hunk is out of reach, and only that: the top mushroom is no way onto it', noHigh.join() === 'hunk 02', noHigh.join(', '));
+    check(
+      'without the High Hollow, the Spire\'s hunk is out of reach, and only that: the top mushroom is no way onto it',
+      noHigh.join() === 'hunk 02',
+      noHigh.join(', ')
+    );
     // (The Lip juts from the Mouth: with the Lip alone gone, a leap off the Mouth's edge still comes down on the stone.
     // With everything he comes in on gone, nothing below reaches it.)
     const noTop = lost((b) => same(b, LIP.x0, LIP.x1, LIP.z0, LIP.z1) || (b.x0 >= -12 && b.x1 <= 32 && b.z0 >= 38 && b.z1 <= 48 && b.y1 > 0.5));
-    check('without the Lip and the Mouth it juts from, the Drip Stone\'s hunk is out of reach: nothing below is a way onto it', noTop.includes('hunk 01'), noTop.join(', '));
+    check(
+      'without the Lip and the Mouth it juts from, the Drip Stone\'s hunk is out of reach: nothing below is a way onto it',
+      noTop.includes('hunk 01'),
+      noTop.join(', ')
+    );
   }
 }
 

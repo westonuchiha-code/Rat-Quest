@@ -43,15 +43,25 @@ for (let i = 1; i < SPIRAL.length; i++) {
 }
 check('spiral slabs are a short hop apart', worst < 2.5 && worst < maxRunJumpDistance(), `widest gap ${worst.toFixed(2)}`);
 check('spiral slabs rise by a single jump at most', rise <= 1.5, `rise ${rise}`);
-check('the last slab is a hop below the chimney floor', CHIMNEY_FLOOR - SPIRAL[SPIRAL.length - 1].top <= 1.5 && CHIMNEY_FLOOR - SPIRAL[SPIRAL.length - 1].top > 0);
+check(
+  'the last slab is a hop below the chimney floor',
+  CHIMNEY_FLOOR - SPIRAL[SPIRAL.length - 1].top <= 1.5
+    && CHIMNEY_FLOOR - SPIRAL[SPIRAL.length - 1].top > 0
+);
 
 // The hub.
 const hub = LEVELS.find((l) => l.hub);
 check('there is one hub', !!hub && LEVELS.filter((l) => l.hub).length === 1);
 check('its first course door needs no wedges', HUB_DOORS.some((d) => d.need === 0 && d.to));
-check('every place with wedges has a way in: a door in the Club, or one in its world', LEVELS.filter((l) => l.wedges && !l.returnTo).every((l) => HUB_DOORS.some((d) => d.to === l.id) || LEVELS.some((p) => p.world === l.world && p.courseDoors?.some((d) => d.to === l.id))));
+check(
+  'every place with wedges has a way in: a door in the Club, or one in its world',
+  LEVELS.filter((l) => l.wedges && !l.returnTo).every((l) => HUB_DOORS.some((d) => d.to === l.id) || LEVELS.some((p) => p.world === l.world && p.courseDoors?.some((d) => d.to === l.id)))
+);
 check('course doors lead to real courses', HUB_DOORS.every((d) => d.to === null || !!LEVELS.find((l) => l.id === d.to && l.wedges)));
-check('course doors sit on the walls, apart from each other and the way out', HUB_DOORS.every((d, i) => Math.max(Math.abs(d.door.x), Math.abs(d.door.z)) > 19.5 && HUB_DOORS.every((e, j) => i === j || Math.hypot(d.door.x - e.door.x, d.door.z - e.door.z) > 5) && Math.hypot(d.door.x - hub!.exit.x, d.door.z - hub!.exit.z) > 5));
+check(
+  'course doors sit on the walls, apart from each other and the way out',
+  HUB_DOORS.every((d, i) => Math.max(Math.abs(d.door.x), Math.abs(d.door.z)) > 19.5 && HUB_DOORS.every((e, j) => i === j || Math.hypot(d.door.x - e.door.x, d.door.z - e.door.z) > 5) && Math.hypot(d.door.x - hub!.exit.x, d.door.z - hub!.exit.z) > 5)
+);
 check('more wedges open more doors', [...HUB_DOORS].sort((a, b) => a.need - b.need).every((d, i, a) => i === 0 || d.need > a[i - 1].need));
 
 // The Club: Pip can be talked to across his counter, and the fire is out in the open to rest at.
@@ -61,14 +71,27 @@ check('more wedges open more doors', [...HUB_DOORS].sort((a, b) => a.need - b.ne
   check('Pip is in talking range from the front of his counter', !!pip && !!counter && Math.abs(pip.x - (counter.x1 + 0.3)) < 2.2);
   const f = hub!.restSpot;
   // The brazier itself is solid (small, right in the middle: its foot, and its bowl, which is a little wider); everything else stays back.
-  check('the brazier is solid but small, so he can rest right up against it', !!f && hub!.solids.some((b) => b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1));
-  check('the Club has a fire to rest at, clear of the furniture', !!f && !hub!.solids.some((b) => !(b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1) && b.y1 > f.y + 0.3 && b.x0 < f.x + 2.5 && b.x1 > f.x - 2.5 && b.z0 < f.z + 2.5 && b.z1 > f.z - 2.5 && b.y0 < f.y + 1));
+  check(
+    'the brazier is solid but small, so he can rest right up against it',
+    !!f
+      && hub!.solids.some((b) => b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1)
+  );
+  check(
+    'the Club has a fire to rest at, clear of the furniture',
+    !!f
+      && !hub!.solids.some((b) => !(b.x1 - b.x0 < 1.3 && Math.hypot((b.x0 + b.x1) / 2 - f.x, (b.z0 + b.z1) / 2 - f.z) < 0.1) && b.y1 > f.y + 0.3 && b.x0 < f.x + 2.5 && b.x1 > f.x - 2.5 && b.z0 < f.z + 2.5 && b.z1 > f.z - 2.5 && b.y0 < f.y + 1)
+  );
 }
 
 // Side areas: the Pump Room belongs to the Cistern world, its door is in the pump house, and its way out leads back.
 {
   const pump = LEVELS.find((l) => l.id === 'pumpworks')!;
-  check('the Pump Room is part of the Cistern world and leads back to it', pump.world === 'cistern' && pump.returnTo === 'cistern' && (pump.wedges?.length ?? 0) === 3);
+  check(
+    'the Pump Room is part of the Cistern world and leads back to it',
+    pump.world === 'cistern'
+      && pump.returnTo === 'cistern'
+      && (pump.wedges?.length ?? 0) === 3
+  );
   const cd = def.courseDoors?.find((d) => d.to === 'pumpworks');
   check('the door to it is inside the pump house, behind the plate gate', !!cd && cd.door.x > 40 && Math.abs(cd.door.z - 2) < 3);
   const gate = def.gates?.find((g) => (g.plates?.length ?? 0) === 2);
@@ -86,7 +109,14 @@ check('more wedges open more doors', [...HUB_DOORS].sort((a, b) => a.need - b.ne
   check('the couches by the fire are solid', inside(-5, 0.4, 0) && inside(5, 0.4, 0) && inside(0, 0.4, -5));
   // The couch at (0, -5) faces south: its arms are at its east and west ends, its cushion on the seat. All solid, as
   // drawn. (They were not: standing on the seat he sank into the cushion, and he walked through the arms.)
-  check('...and so are a couch\'s arms (to their tops, above the seat) and the cushion on its seat', inside(-1.15, 0.9, -5) && inside(1.15, 0.9, -5) && !inside(0, 0.9, -4.8) && inside(0.5, 0.8, -4.9) && !inside(-0.5, 0.8, -4.9));
+  check(
+    '...and so are a couch\'s arms (to their tops, above the seat) and the cushion on its seat',
+    inside(-1.15, 0.9, -5)
+      && inside(1.15, 0.9, -5)
+      && !inside(0, 0.9, -4.8)
+      && inside(0.5, 0.8, -4.9)
+      && !inside(-0.5, 0.8, -4.9)
+  );
   check('the speakers on the stage are solid', inside(-7, 2, -20) && inside(7, 2, -20));
 }
 

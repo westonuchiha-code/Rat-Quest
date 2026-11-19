@@ -108,7 +108,11 @@ const boxes = (d: LevelDef) => d.solids.map((b) => makeAabb((b.x0 + b.x1) / 2, (
     const d = Math.hypot(b.cx - nx, b.cz - nz);
     if (!(d > far && d < lamp)) seen.push(`${i}->${i + 1}: ${d.toFixed(1)}`);
   }
-  check('in the dark, each next stone is just past sight, and the lamp shows it', seen.length === 0, seen.join('; ') || `sight ${far}, with the lamp ${lamp.toFixed(1)}`);
+  check(
+    'in the dark, each next stone is just past sight, and the lamp shows it',
+    seen.length === 0,
+    seen.join('; ') || `sight ${far}, with the lamp ${lamp.toFixed(1)}`
+  );
   check('it is a side area of the Hollows, and a fall puts him back on the last stone', def.returnTo === 'hollows' && def.fallBack === true);
 }
 

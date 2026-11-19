@@ -107,15 +107,43 @@ const MAX = TUNING.health.max;
 {
   const door = hollows.courseDoors?.find((d) => d.to === 'brood');
   const reach = computeReach(hollows);
-  check('the Brood Pit is a place in the Hollows, through a door on the gallery\'s north ledge that he can walk up to', !!door && pit.world === 'hollows' && pit.returnTo === 'hollows' && reach.near(door!.door.x + 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x + 0.8, door!.door.z));
-  check('she is the only thing in it, and beating her is what its Golden Wedge asks', pit.enemies.length === 1 && pit.wedges?.length === 1 && pit.wedges[0].appears?.type === 'defeat' && pit.goals.length === 1);
+  check(
+    'the Brood Pit is a place in the Hollows, through a door on the gallery\'s north ledge that he can walk up to',
+    !!door
+      && pit.world === 'hollows'
+      && pit.returnTo === 'hollows'
+      && reach.near(door!.door.x + 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5)
+      && atDoor(door!.door, door!.door.x + 0.8, door!.door.z)
+  );
+  check(
+    'she is the only thing in it, and beating her is what its Golden Wedge asks',
+    pit.enemies.length === 1
+      && pit.wedges?.length === 1
+      && pit.wedges[0].appears?.type === 'defeat'
+      && pit.goals.length === 1
+  );
   const A = PIT_ARENA;
   let floor = true;
   for (let x = A.x0 + B.radius; x <= A.x1 - B.radius; x += 0.5) for (let z = A.z0 + B.radius; z <= A.z1 - B.radius; z += 0.5) if (!canStand(x, 0, z, B.radius)) floor = false;
-  check('the floor she fights on is all floor: nothing stands on it, and she can stand anywhere in it', floor && spec.x > A.x0 && spec.x < A.x1 && spec.z > A.z0 && spec.z < A.z1);
-  check('he comes in more than her notice away, so the fight starts when he walks towards her', Math.hypot(pit.spawn.x - spec.x, pit.spawn.z - spec.z) > B.noticeRange);
+  check(
+    'the floor she fights on is all floor: nothing stands on it, and she can stand anywhere in it',
+    floor
+      && spec.x > A.x0
+      && spec.x < A.x1
+      && spec.z > A.z0
+      && spec.z < A.z1
+  );
+  check(
+    'he comes in more than her notice away, so the fight starts when he walks towards her',
+    Math.hypot(pit.spawn.x - spec.x, pit.spawn.z - spec.z) > B.noticeRange
+  );
   const sticker = STICKERS.find((s) => s.id === 'foe:brood');
-  check('she has a sticker, with a flat picture of her own', !!sticker && stickerIcon(sticker!.icon, 40).includes('<svg') && stickerIcon(sticker!.icon, 40) !== stickerIcon('scuttler', 40));
+  check(
+    'she has a sticker, with a flat picture of her own',
+    !!sticker
+      && stickerIcon(sticker!.icon, 40).includes('<svg')
+      && stickerIcon(sticker!.icon, 40) !== stickerIcon('scuttler', 40)
+  );
 }
 
 // ---- Lurking, and the scream ----
@@ -152,7 +180,13 @@ const MAX = TUNING.health.max;
     if (b.attackActive) early = true;
     tracked = b.stabAt;
   }
-  check('in front of her, a foreleg goes up: a wind-up of six tenths of a second in which nothing can hurt', got && !early && b.state === 'stab' && b.events.includes('stabWind'));
+  check(
+    'in front of her, a foreleg goes up: a wind-up of six tenths of a second in which nothing can hurt',
+    got
+      && !early
+      && b.state === 'stab'
+      && b.events.includes('stabWind')
+  );
   check('the stab comes down where he stood', Math.abs(tracked - gap(b, p)) < 0.3, `aimed ${tracked.toFixed(2)} off, he is ${gap(b, p).toFixed(2)} off`);
   const r = play(b, p, () => ({}), (x) => x.state === 'stabStuck');
   check('standing there, it costs him a heart', r.results[0] === 'hit' && r.hp === MAX - B.stabDamage, r.results.join(','));
@@ -167,7 +201,12 @@ const MAX = TUNING.health.max;
 {
   const { b, p } = awake();
   const r = play(b, p, () => ({ guardHeld: true }), (x) => x.state === 'stabStuck');
-  check('behind a shield both stabs are stopped, and it costs him nothing', r.results.filter((x) => x === 'blocked').length === 2 && r.hp === MAX, r.results.join(','));
+  check(
+    'behind a shield both stabs are stopped, and it costs him nothing',
+    r.results.filter((x) => x === 'blocked').length === 2
+      && r.hp === MAX,
+    r.results.join(',')
+  );
   const c = awake();
   until(c.b, c.p, 'stabWind', 300);
   for (let t = 0; t < B.stabWind * B.stabTrack + 0.02; t += DT) tick(c.b, c.p);
@@ -189,7 +228,12 @@ const MAX = TUNING.health.max;
   const { b, p } = awake(0.1, 2.8);
   const got = until(b, p, 'sweepWind', 300);
   const r = play(b, p, () => ({}), (x) => x.state === 'recover');
-  check('close in front of her she may open both forelegs wide and shut them along the floor: a heart from a rat who stands there', got && r.results[0] === 'hit' && r.hp === MAX - B.sweepDamage);
+  check(
+    'close in front of her she may open both forelegs wide and shut them along the floor: a heart from a rat who stands there',
+    got
+      && r.results[0] === 'hit'
+      && r.hp === MAX - B.sweepDamage
+  );
   const c = awake(0.1, 2.8);
   until(c.b, c.p, 'sweepWind', 300);
   const rj = play(c.b, c.p, (x) => (x.state === 'sweepWind' && x.stateTime > B.sweepWind - 0.22 ? { jumpPressed: x.stateTime < B.sweepWind - 0.19, jumpHeld: true } : x.state === 'sweep' ? { jumpHeld: true } : {}), (x) => x.state === 'recover');
@@ -216,7 +260,14 @@ const MAX = TUNING.health.max;
     highest = Math.max(highest, b.air);
     if (b.air > 1 && Math.abs(b.y - p.position.y) < 0.9) untouchable = false;
   }
-  check('from far off she sinks down, then springs: up over three units, and down where he was', got && Math.hypot(from.x - b.x, from.z - b.z) > 5 && Math.hypot(b.x - where.x, b.z - where.z) < 0.6 && highest > 3, `landed ${Math.hypot(b.x - where.x, b.z - where.z).toFixed(2)} from where he stood, ${highest.toFixed(2)} high`);
+  check(
+    'from far off she sinks down, then springs: up over three units, and down where he was',
+    got
+      && Math.hypot(from.x - b.x, from.z - b.z) > 5
+      && Math.hypot(b.x - where.x, b.z - where.z) < 0.6
+      && highest > 3,
+    `landed ${Math.hypot(b.x - where.x, b.z - where.z).toFixed(2)} from where he stood, ${highest.toFixed(2)} high`
+  );
   check('in the air she is out of reach of his sword and does not shoulder him aside', untouchable && b.hp === hp0);
   const c = awake(0.1, 8);
   const rs = play(c.b, c.p, () => ({ guardHeld: true }), (x) => x.state === 'stuck');
@@ -225,7 +276,13 @@ const MAX = TUNING.health.max;
   until(d.b, d.p, 'leap', 600);
   const away = new THREE.Vector3(Math.cos(d.b.facing), 0, -Math.sin(d.b.facing));
   const rr = play(d.b, d.p, () => ({ move: away, run: true }), (x) => x.state === 'stuck');
-  check('be somewhere else: a rat who runs the moment she springs is clear of it', rr.results.length === 0 && rr.hp === MAX && gap(d.b, d.p) > B.radius + B.slamReach, `${gap(d.b, d.p).toFixed(2)} away when she lands`);
+  check(
+    'be somewhere else: a rat who runs the moment she springs is clear of it',
+    rr.results.length === 0
+      && rr.hp === MAX
+      && gap(d.b, d.p) > B.radius + B.slamReach,
+    `${gap(d.b, d.p).toFixed(2)} away when she lands`
+  );
   let open = 0;
   for (; d.b.state === 'stuck'; open += DT) tick(d.b, d.p);
   check('and then she lies in a heap for a good while: the best opening there is', Math.abs(open - B.stuck) < 0.05 && d.b.state === 'chase');
@@ -243,7 +300,11 @@ const MAX = TUNING.health.max;
     tick(b, p);
     whirled = b.state === 'whirlWind';
   }
-  check('he can get behind her; but stay there three quarters of a second and she winds up a whirl', whirled && Math.abs(Math.atan2(Math.sin(b.facing - face), Math.cos(b.facing - face))) < 2.6);
+  check(
+    'he can get behind her; but stay there three quarters of a second and she winds up a whirl',
+    whirled
+      && Math.abs(Math.atan2(Math.sin(b.facing - face), Math.cos(b.facing - face))) < 2.6
+  );
   const r = play(b, p, () => ({}), (x) => x.state === 'settle');
   check('round she goes, legs out low, and it catches him behind her', r.results[0] === 'hit' && r.hp === MAX - B.whirlDamage);
   const off = Math.abs(Math.atan2(Math.sin(Math.atan2(p.position.x - b.x, p.position.z - b.z) - b.facing), Math.cos(Math.atan2(p.position.x - b.x, p.position.z - b.z) - b.facing)));
@@ -264,10 +325,21 @@ const MAX = TUNING.health.max;
   for (let k = 0; k < B.poise - 1; k++) b.takeHit(1, p.position.x, p.position.z);
   const stood = b.state !== 'kneel';
   b.takeHit(1, p.position.x, p.position.z);
-  check('she does not flinch; but seven blows close together and her legs go from under her', stood && b.state === 'kneel' && b.open && b.events.includes('kneel'));
+  check(
+    'she does not flinch; but seven blows close together and her legs go from under her',
+    stood
+      && b.state === 'kneel'
+      && b.open
+      && b.events.includes('kneel')
+  );
   let down = 0;
   for (; b.state === 'kneel'; down += DT) tick(b, p);
-  check('she is down for two and a half seconds, then up with her poise back', Math.abs(down - B.kneel) < 0.05 && b.poise === B.poise && b.events.includes('rise'));
+  check(
+    'she is down for two and a half seconds, then up with her poise back',
+    Math.abs(down - B.kneel) < 0.05
+      && b.poise === B.poise
+      && b.events.includes('rise')
+  );
   const c = awake();
   for (let k = 0; k < B.poise - 1; k++) c.b.takeHit(1, 0, 0);
   for (let t = 0; t < B.poiseBack + 0.1; t += DT) c.b.update(DT, c.b.x, 0, c.b.z + 40, true);
@@ -280,7 +352,11 @@ const MAX = TUNING.health.max;
   const bx = d.b.x;
   const ev = events();
   resolveCombat(d.p, [d.b], ev);
-  check('she is not shouldered aside: where their bodies meet, it is the rat who gives way', d.b.x === bx && gap(d.b, d.p) >= B.radius + TUNING.rat.radius - 0.01);
+  check(
+    'she is not shouldered aside: where their bodies meet, it is the rat who gives way',
+    d.b.x === bx
+      && gap(d.b, d.p) >= B.radius + TUNING.rat.radius - 0.01
+  );
 }
 
 // ---- Angry: the third stab, and the thread ----
@@ -312,7 +388,13 @@ const MAX = TUNING.health.max;
     lost = gap(b, p);
     if (!b.shadow.on || b.shadow.x !== b.x || b.shadow.z !== b.z) marked = false;
   }
-  check('she follows him across the roof, slower than he runs; her shadow on the floor is right under her', lost > 0.6 && marked && B.hangSpeed < TUNING.move.run, `${lost.toFixed(2)} behind after a second`);
+  check(
+    'she follows him across the roof, slower than he runs; her shadow on the floor is right under her',
+    lost > 0.6
+      && marked
+      && B.hangSpeed < TUNING.move.run,
+    `${lost.toFixed(2)} behind after a second`
+  );
 }
 {
   const drop = (act: (b: Brood) => Partial<PlayerInput>): { r: { results: string[]; hp: number }; b: Brood; p: PlayerController; tell: number } => {
@@ -338,9 +420,22 @@ const MAX = TUNING.health.max;
     return { r: { results, hp: p.hp }, b, p, tell };
   };
   const under = drop(() => ({ guardHeld: true }));
-  check('over him she stops, the thread twangs (half a second), and she drops: two hearts from a rat still under her, shield or no', under.b.events.includes('twang') && under.b.events.includes('drop') && under.r.results.includes('hit') && under.r.hp === MAX - B.slamDamage, under.r.results.join(','));
+  check(
+    'over him she stops, the thread twangs (half a second), and she drops: two hearts from a rat still under her, shield or no',
+    under.b.events.includes('twang')
+      && under.b.events.includes('drop')
+      && under.r.results.includes('hit')
+      && under.r.hp === MAX - B.slamDamage,
+    under.r.results.join(',')
+  );
   const ran = drop(() => ({ move: new THREE.Vector3(1, 0, 0), run: true }));
-  check('a rat who runs when it twangs is out from under her', ran.r.results.length === 0 && ran.r.hp === MAX && gap(ran.b, ran.p) > B.radius + B.slamReach, `${gap(ran.b, ran.p).toFixed(2)} away when she lands`);
+  check(
+    'a rat who runs when it twangs is out from under her',
+    ran.r.results.length === 0
+      && ran.r.hp === MAX
+      && gap(ran.b, ran.p) > B.radius + B.slamReach,
+    `${gap(ran.b, ran.p).toFixed(2)} away when she lands`
+  );
   let heap = 0;
   for (; ran.b.state === 'stuck'; heap += DT) tick(ran.b, ran.p);
   check('and she lies there longer than after a pounce', Math.abs(heap - B.dropStuck) < 0.05 && B.dropStuck > B.stuck && ran.b.air === 0 && ran.b.y === 0);
@@ -393,7 +488,11 @@ const MAX = TUNING.health.max;
     b.events.length = 0;
   }
   check('through a whole fight she stays on her floor and nothing goes wrong', inside && onFloor && sound, [...seen].join(' '));
-  check('and in that time she has stabbed, pounced and (angry) been up her thread', ['stab', 'leap', 'hang'].every((s) => seen.has(s)) || !b.alive, [...seen].join(' '));
+  check(
+    'and in that time she has stabbed, pounced and (angry) been up her thread',
+    ['stab', 'leap', 'hang'].every((s) => seen.has(s)) || !b.alive,
+    [...seen].join(' ')
+  );
 }
 
 // ---- Her end ----

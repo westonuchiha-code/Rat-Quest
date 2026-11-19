@@ -13,7 +13,11 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 
 check('every numbered test room has its two heaps', ROOMS.every((r) => LYING[r.id]), ROOMS.filter((r) => !LYING[r.id]).map((r) => r.id).join(', '));
-check('...and every side area of a numbered room (but the Leap of Faith, which starts on a narrow ledge), and every boss room (but the Sump Wyrm room, whose floor is kept clear for its charges), has them too', [...TEST_ROOMS, ...LEVELS, ...ARCHIVE].filter((l) => /^Test Room \d+[A-Z]$/.test(l.name)).every((l) => LYING[l.id] || l.id === 'faith' || l.id === 'sump') && BOSS_ROOMS.every((b) => LYING[b.id] || b.id === 'sump'));
+check(
+  '...and every side area of a numbered room (but the Leap of Faith, which starts on a narrow ledge), and every boss room (but the Sump Wyrm room, whose floor is kept clear for its charges), has them too',
+  [...TEST_ROOMS, ...LEVELS, ...ARCHIVE].filter((l) => /^Test Room \d+[A-Z]$/.test(l.name)).every((l) => LYING[l.id] || l.id === 'faith' || l.id === 'sump')
+    && BOSS_ROOMS.every((b) => LYING[b.id] || b.id === 'sump')
+);
 for (const r of Object.keys(LYING).map((id) => ({ id }))) {
   const def = levelById(r.id)!;
   const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water ?? [], decor: [], movers: def.movers });
@@ -33,7 +37,11 @@ for (const r of Object.keys(LYING).map((id) => ({ id }))) {
   // Out of everyone's way: not on a character, a door, a pickup or a creature.
   const things: { x: number; z: number }[] = [...(def.npcs ?? []), ...def.collectibles, ...def.gear, ...(def.courseDoors ?? []), ...def.enemies] as never;
   const near = mine.filter((c) => things.some((q) => Number.isFinite(q.x) && Math.hypot(q.x - c.x, q.z - c.z) < 1.5));
-  check(`${r.id}: none stands on a character, a door, a pickup or a creature`, near.length === 0, near.map((c) => `${c.type} ${c.x.toFixed(1)},${c.z.toFixed(1)}`).join('; '));
+  check(
+    `${r.id}: none stands on a character, a door, a pickup or a creature`,
+    near.length === 0,
+    near.map((c) => `${c.type} ${c.x.toFixed(1)},${c.z.toFixed(1)}`).join('; ')
+  );
   // Not on his way in: he starts clear of them all.
   const close = Math.min(...mine.map((c) => Math.hypot(c.x - def.spawn.x, c.z - def.spawn.z)));
   check(`${r.id}: he starts clear of them`, close > 1.8, `${close.toFixed(1)} m`);

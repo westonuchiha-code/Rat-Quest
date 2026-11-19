@@ -44,8 +44,15 @@ const DT = 1 / 60;
   check('bailed (or off the shield, or onto a rail): nothing is kept', log.count === 0);
 }
 {
-  check('the trick sounds are made: a whirl for a spin, a slap for a grab, a stab of horns for tricks landed', (['spinWhirl', 'grabSlap', 'trickStab'] as const).every((n) => SFX_NAMES.includes(n) && sfx(n).data.length > 0 && [...sfx(n).data].every(Number.isFinite)));
-  check('the names are not shown on the screen (the owner, 2026-11-18: "remove the trick names")', !fs.existsSync('src/ui/trickHud.ts') && !/trickHud|TrickHud/.test(fs.readFileSync('src/main.ts', 'utf8')));
+  check(
+    'the trick sounds are made: a whirl for a spin, a slap for a grab, a stab of horns for tricks landed',
+    (['spinWhirl', 'grabSlap', 'trickStab'] as const).every((n) => SFX_NAMES.includes(n) && sfx(n).data.length > 0 && [...sfx(n).data].every(Number.isFinite))
+  );
+  check(
+    'the names are not shown on the screen (the owner, 2026-11-18: "remove the trick names")',
+    !fs.existsSync('src/ui/trickHud.ts')
+      && !/trickHud|TrickHud/.test(fs.readFileSync('src/main.ts', 'utf8'))
+  );
 }
 console.log(failures ? `tricks: ${failures} FAIL` : 'tricks: all pass');
 if (failures) process.exitCode = 1;

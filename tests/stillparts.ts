@@ -91,7 +91,11 @@ for (const spec of cast) {
   const bad = a.findIndex((s, i) => s !== b[i]);
   if (bad >= 0) differ.push(`${spec.name} at step ${bad}`);
 }
-check(`every character of the Hall and the Club (${cast.length - cast.filter((c) => c.kind === 'villain').length}, not the villain) draws EXACTLY what it drew before its still parts were joined, at every step of idling, being talked to, a scene's look and shrug and its strings`, differ.length === 0, differ.join('; '));
+check(
+  `every character of the Hall and the Club (${cast.length - cast.filter((c) => c.kind === 'villain').length}, not the villain) draws EXACTLY what it drew before its still parts were joined, at every step of idling, being talked to, a scene's look and shrug and its strings`,
+  differ.length === 0,
+  differ.join('; ')
+);
 check('...and is made of fewer meshes: at least a fifth fewer, over them all', after < before * 0.8 && after > 0, `${before} meshes to ${after}`);
 
 // The villain is not joined, nor is a cutscene's own cast (Npc.settle is called only for those standing in a room).

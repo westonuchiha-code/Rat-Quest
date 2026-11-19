@@ -15,15 +15,25 @@ function check(name: string, ok: boolean, detail = ''): void {
 
 // ---- Which pad ----
 check('the Steam Deck\'s own controls are a Deck', padKind('Valve Software Steam Deck Controller (STANDARD GAMEPAD Vendor: 28de Product: 1205)') === 'deck');
-check('Steam\'s virtual pad (any pad through Steam Input) reads as an Xbox pad', padKind('Microsoft X-Box 360 pad 0 (STANDARD GAMEPAD Vendor: 28de Product: 11ff)') === 'xbox');
-check('Deck names: A B X Y, L1 R1 L2 R2, VIEW and MENU', ['south', 'east', 'west', 'north', 'l1', 'r1', 'l2', 'r2', 'select', 'start'].map((b) => padLabel(b as never, 'deck')).join(' ') === 'A B X Y L1 R1 L2 R2 VIEW MENU');
+check(
+  'Steam\'s virtual pad (any pad through Steam Input) reads as an Xbox pad',
+  padKind('Microsoft X-Box 360 pad 0 (STANDARD GAMEPAD Vendor: 28de Product: 11ff)') === 'xbox'
+);
+check(
+  'Deck names: A B X Y, L1 R1 L2 R2, VIEW and MENU',
+  ['south', 'east', 'west', 'north', 'l1', 'r1', 'l2', 'r2', 'select', 'start'].map((b) => padLabel(b as never, 'deck')).join(' ') === 'A B X Y L1 R1 L2 R2 VIEW MENU'
+);
 check('Steam\'s controller types map to ours',
   kindForSteamType('PS5Controller') === 'playstation' && kindForSteamType('PS4Controller') === 'playstation' && kindForSteamType('SteamDeckController') === 'deck' &&
   kindForSteamType('XBoxOneController') === 'xbox' && kindForSteamType('SwitchProController') === 'nintendo' && kindForSteamType('GenericGamepad') === null && kindForSteamType(null) === null);
 gamepadInfo.connected = true;
 gamepadInfo.kind = 'xbox';
 setPadKindOverride('playstation');
-check('when Steam says it is a DualSense, the names follow (even though the pad says Xbox)', (gamepadInfo.kind as string) === 'playstation' && labelKind() === 'playstation');
+check(
+  'when Steam says it is a DualSense, the names follow (even though the pad says Xbox)',
+  (gamepadInfo.kind as string) === 'playstation'
+    && labelKind() === 'playstation'
+);
 setPadKindOverride(null);
 gamepadInfo.kind = 'xbox';
 
@@ -42,12 +52,26 @@ check('AUTO is remembered too', glyphMode() === 'auto');
 check('pad: the jump button on an Xbox pad is a green A', /rqg-xbox-south">A</.test(prompt('jump', 'pad')));
 check('keyboard: a keycap with the key\'s name', /rqg-key">SPACE</.test(prompt('jump', 'keyboard')) && /ENTER/.test(prompt('confirm', 'keyboard')) && /ESC/.test(prompt('back', 'keyboard')));
 check('the phone test shows the touch pad\'s PlayStation shapes', /rqg-ps-south/.test(prompt('jump', 'touch')) && /<svg/.test(prompt('jump', 'touch')));
-check('moving: WASD on a keyboard, the left stick on a pad', /WASD/.test(prompt('move', 'keyboard')) && /rqg-stick">L</.test(prompt('move', 'pad')) && /rqg-stick">R</.test(prompt('look', 'pad')));
-check('menu tabs are the shoulder buttons (LB/RB on Xbox, L1/R1 on PlayStation and the Deck)', /LB/.test(prompt('tabPrev', 'pad')) && (setGlyphMode('deck'), /L1/.test(prompt('tabPrev', 'pad'))) && (setGlyphMode('playstation'), /R1/.test(prompt('tabNext', 'pad'))));
+check(
+  'moving: WASD on a keyboard, the left stick on a pad',
+  /WASD/.test(prompt('move', 'keyboard'))
+    && /rqg-stick">L</.test(prompt('move', 'pad')) && /rqg-stick">R</.test(prompt('look', 'pad'))
+);
+check(
+  'menu tabs are the shoulder buttons (LB/RB on Xbox, L1/R1 on PlayStation and the Deck)',
+  /LB/.test(prompt('tabPrev', 'pad'))
+    && (setGlyphMode('deck'), /L1/.test(prompt('tabPrev', 'pad')))
+    && (setGlyphMode('playstation'), /R1/.test(prompt('tabNext', 'pad')))
+);
 setGlyphMode('auto');
 bindings.setKey('jump', 'KeyU');
 bindings.setPad('jump', 'north');
-check('prompts follow the player\'s own bindings', bindings.key('jump') === 'KeyU' && />U</.test(prompt('jump', 'keyboard')) && /rqg-xbox-north/.test(prompt('jump', 'pad')));
+check(
+  'prompts follow the player\'s own bindings',
+  bindings.key('jump') === 'KeyU'
+    && />U</.test(prompt('jump', 'keyboard'))
+    && /rqg-xbox-north/.test(prompt('jump', 'pad'))
+);
 bindings.reset();
 const line = helpLine([['confirm', 'select'], ['back', 'close']], 'pad');
 check('a help line is chips and words', (line.match(/rqg-pair/g) ?? []).length === 2 && /select/.test(line) && /close/.test(line));
@@ -67,7 +91,11 @@ setGlyphMode('auto');
 
 // ---- Photo mode on a pad: the frame button is not the one that leaves ----
 const frameBtn = bindings.pad('lock');
-check('photo mode: frame (lock) and rat (view) are not on the back button', !actionsForButton(frameBtn).includes('back') && !actionsForButton('select').includes('back'));
+check(
+  'photo mode: frame (lock) and rat (view) are not on the back button',
+  !actionsForButton(frameBtn).includes('back')
+    && !actionsForButton('select').includes('back')
+);
 
 // ---- Rumble strengths ----
 const calls: Array<{ strong: number; weak: number }> = [];
@@ -82,7 +110,12 @@ new Rumble(rstore).pulse(0.8, 0.6, 100);
 const low = new Rumble(rstore);
 low.setLevel('low');
 low.pulse(0.8, 0.6, 100);
-check('low is half as strong', calls.length === 2 && Math.abs(calls[1].strong - calls[0].strong / 2) < 1e-9 && Math.abs(calls[1].weak - calls[0].weak / 2) < 1e-9);
+check(
+  'low is half as strong',
+  calls.length === 2
+    && Math.abs(calls[1].strong - calls[0].strong / 2) < 1e-9
+    && Math.abs(calls[1].weak - calls[0].weak / 2) < 1e-9
+);
 check('low is remembered', new Rumble(rstore).level() === 'low');
 const off = new Rumble(rstore);
 off.setLevel('off');

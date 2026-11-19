@@ -81,7 +81,13 @@ const east = new THREE.Vector3(1, 0, 0);
   // The first ring platform starts at x=10.7, so walking east stops at its face (about x=10.4) without climbing it.
   const p = makePlayer(7.5, 0, 0);
   run(p, 120, east);
-  check('0.6-unit ledge blocks walking', p.position.x > 10.0 && p.position.x < 10.5 && p.position.y < 0.05, `x=${p.position.x.toFixed(3)} y=${p.position.y.toFixed(3)}`);
+  check(
+    '0.6-unit ledge blocks walking',
+    p.position.x > 10.0
+      && p.position.x < 10.5
+      && p.position.y < 0.05,
+    `x=${p.position.x.toFixed(3)} y=${p.position.y.toFixed(3)}`
+  );
 }
 
 // 5. A walking jump from the floor lands on the first ring platform (top at 0.6).
@@ -103,7 +109,13 @@ const east = new THREE.Vector3(1, 0, 0);
   run(p, 120, still, {}, () => {
     if (Math.abs(p.position.z - 8) < 1e-6) respawned = true;
   });
-  check('pit fall respawns at spawn', respawned && p.grounded && Math.abs(p.position.y) < 1e-3, `pos=(${p.position.x.toFixed(2)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(2)})`);
+  check(
+    'pit fall respawns at spawn',
+    respawned
+      && p.grounded
+      && Math.abs(p.position.y) < 1e-3,
+    `pos=(${p.position.x.toFixed(2)}, ${p.position.y.toFixed(2)}, ${p.position.z.toFixed(2)})`
+  );
 }
 
 // 7. Short jump, released early, is lower than a full jump.

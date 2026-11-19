@@ -22,7 +22,11 @@ for (const id of Object.keys(ODDMENTS)) {
   }
   const mine = oddmentsIn(def);
   count += mine.length;
-  check(`${id}: its ${mine.length} odds and ends are in it once, drawn and solid`, mine.every(([what, x, y, z]) => def.decor.filter((d) => d.kind === 'junk' && d.what === what && d.x === x && d.y === y && d.z === z).length === 1) && mine.every(([what, x, y, z, yaw]) => def.solids.some((b) => b.hidden && Math.abs(b.x0 - junkSolids(what, x, y, z, yaw)[0].x0) < 1e-9 && Math.abs(b.z0 - junkSolids(what, x, y, z, yaw)[0].z0) < 1e-9)));
+  check(
+    `${id}: its ${mine.length} odds and ends are in it once, drawn and solid`,
+    mine.every(([what, x, y, z]) => def.decor.filter((d) => d.kind === 'junk' && d.what === what && d.x === x && d.y === y && d.z === z).length === 1)
+      && mine.every(([what, x, y, z, yaw]) => def.solids.some((b) => b.hidden && Math.abs(b.x0 - junkSolids(what, x, y, z, yaw)[0].x0) < 1e-9 && Math.abs(b.z0 - junkSolids(what, x, y, z, yaw)[0].z0) < 1e-9))
+  );
   // The room without them, to measure them against.
   const own = new Set(mine.map(([what, x, y, z, yaw]) => JSON.stringify(junkSolids(what, x, y, z, yaw)[0])));
   const solids = def.solids.filter((b) => !own.has(JSON.stringify(b)));

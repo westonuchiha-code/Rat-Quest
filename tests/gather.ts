@@ -92,7 +92,11 @@ for (const L of rooms) {
   }
 }
 CHAMBER_OPTIONS.gatherStill = true;
-check(`every room (${rooms.length}) draws EXACTLY what it drew before its still dressing was gathered, as its flames, banners and lights move`, differ.length === 0, differ.join('; '));
+check(
+  `every room (${rooms.length}) draws EXACTLY what it drew before its still dressing was gathered, as its flames, banners and lights move`,
+  differ.length === 0,
+  differ.join('; ')
+);
 check('...and is made of fewer meshes over them all', after < before, `${before} meshes to ${after}`);
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

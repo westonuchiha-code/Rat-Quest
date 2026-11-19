@@ -26,7 +26,11 @@ for (let i = 0; i < order.length; i++) {
   if (i > 0) {
     const share = d.need / open;
     report.push(`${order[i]} ${d.need}/${open} = ${Math.round(share * 100)}%`);
-    check(`the ${order[i]} door leaves room to skip wedges (asks for at most two thirds of the ${open} open by then)`, share <= 2 / 3 + 1e-9, `${d.need} of ${open}`);
+    check(
+      `the ${order[i]} door leaves room to skip wedges (asks for at most two thirds of the ${open} open by then)`,
+      share <= 2 / 3 + 1e-9,
+      `${d.need} of ${open}`
+    );
     check(`...but asks for real progress (at least a quarter)`, share >= 0.25, `${d.need} of ${open}`);
   }
   open += wedges(order[i]);
@@ -38,15 +42,41 @@ console.log('      ' + report.join('; '));
   const need = (w: string): number => HUB_DOORS.find((d) => d.to === w)!.need;
   const before = (w: string): number => order.slice(0, order.indexOf(w)).reduce((n, x) => n + wedges(x), 0);
   const share = (w: string): number => need(w) / before(w);
-  check('the Foundry door asks about a third of the Cistern\'s wedges', share('foundry') >= 0.28 && share('foundry') <= 0.36, `${need('foundry')} of ${before('foundry')}`);
-  check('the Hollows door asks a little under half of what is open by then', share('hollows') >= 0.39 && share('hollows') <= 0.48, `${need('hollows')} of ${before('hollows')}`);
+  check(
+    'the Foundry door asks about a third of the Cistern\'s wedges',
+    share('foundry') >= 0.28
+      && share('foundry') <= 0.36,
+    `${need('foundry')} of ${before('foundry')}`
+  );
+  check(
+    'the Hollows door asks a little under half of what is open by then',
+    share('hollows') >= 0.39
+      && share('hollows') <= 0.48,
+    `${need('hollows')} of ${before('hollows')}`
+  );
   check('the Keep, the last door, asks just under two thirds', share('keep') >= 0.58 && share('keep') <= 2 / 3, `${need('keep')} of ${before('keep')}`);
-  check('the last door cannot be opened from the first world alone', need('keep') > wedges('cistern'), `the Keep asks ${need('keep')}; the Cistern has ${wedges('cistern')}`);
+  check(
+    'the last door cannot be opened from the first world alone',
+    need('keep') > wedges('cistern'),
+    `the Keep asks ${need('keep')}; the Cistern has ${wedges('cistern')}`
+  );
   // A door he has been through stays open, whatever it asks now.
-  check('a door lets him in with the wedges it asks for, and not with one fewer', doorLetsIn(need('keep'), need('keep'), false) && !doorLetsIn(need('keep'), need('keep') - 1, false));
-  check('a door he has already been through stays open, though its price has gone up since (an old save is not shut out of a world it had reached)', doorLetsIn(need('keep'), 20, true) && doorLetsIn(need('hollows'), 10, true) && doorLetsIn(need('foundry'), 4, true));
+  check(
+    'a door lets him in with the wedges it asks for, and not with one fewer',
+    doorLetsIn(need('keep'), need('keep'), false)
+      && !doorLetsIn(need('keep'), need('keep') - 1, false)
+  );
+  check(
+    'a door he has already been through stays open, though its price has gone up since (an old save is not shut out of a world it had reached)',
+    doorLetsIn(need('keep'), 20, true)
+      && doorLetsIn(need('hollows'), 10, true)
+      && doorLetsIn(need('foundry'), 4, true)
+  );
 }
-check('each door asks for more than the one before', order.slice(1).every((w, i) => HUB_DOORS.find((d) => d.to === w)!.need > HUB_DOORS.find((d) => d.to === order[i])!.need));
+check(
+  'each door asks for more than the one before',
+  order.slice(1).every((w, i) => HUB_DOORS.find((d) => d.to === w)!.need > HUB_DOORS.find((d) => d.to === order[i])!.need)
+);
 
 // The shop.
 const crumbs = order.reduce((n, w) => n + count(w, 'crumb'), 0);
@@ -54,13 +84,26 @@ const caps = order.reduce((n, w) => n + count(w, 'cap'), 0);
 const gear = SHOP.filter((s) => s.kind === 'gear');
 const gearCrumbs = gear.reduce((n, s) => n + s.crumbs, 0);
 const gearCaps = gear.reduce((n, s) => n + s.caps, 0);
-check('all of Pip\'s gear can be bought with what the worlds hold', gearCrumbs <= crumbs && gearCaps <= caps, `${gearCrumbs}/${crumbs} crumbs, ${gearCaps}/${caps} caps`);
-check('...but not out of the first world alone', gearCrumbs > count('cistern', 'crumb') || gearCaps > count('cistern', 'cap'), `the Cistern has ${count('cistern', 'crumb')} crumbs, ${count('cistern', 'cap')} caps`);
+check(
+  'all of Pip\'s gear can be bought with what the worlds hold',
+  gearCrumbs <= crumbs
+    && gearCaps <= caps,
+  `${gearCrumbs}/${crumbs} crumbs, ${gearCaps}/${caps} caps`
+);
+check(
+  '...but not out of the first world alone',
+  gearCrumbs > count('cistern', 'crumb') || gearCaps > count('cistern', 'cap'),
+  `the Cistern has ${count('cistern', 'crumb')} crumbs, ${count('cistern', 'cap')} caps`
+);
 check('the finer things cost more', gear.every((s, i) => i === 0 || s.crumbs >= gear[i - 1].crumbs));
 check('a snack costs less than any gear', SHOP.filter((s) => s.kind === 'snack').every((s) => s.crumbs < Math.min(...gear.map((g) => g.crumbs))));
 
 // Tunable: the sliders reach the doors and the prices, and the game reads them at once.
-check('every door and every price is on a slider in Tweaks', ['foundry', 'hollows', 'keep'].every((w) => TWEAKS.some((t) => t.path === `balance.doors.${w}`)) && Object.keys(BALANCE.prices).every((id) => TWEAKS.some((t) => t.path === `balance.prices.${id}.crumbs`)));
+check(
+  'every door and every price is on a slider in Tweaks',
+  ['foundry', 'hollows', 'keep'].every((w) => TWEAKS.some((t) => t.path === `balance.doors.${w}`))
+    && Object.keys(BALANCE.prices).every((id) => TWEAKS.some((t) => t.path === `balance.prices.${id}.crumbs`))
+);
 {
   const mem = new Map<string, string>();
   const tw = new Tweaks({ getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v) });

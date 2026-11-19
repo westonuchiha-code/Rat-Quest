@@ -123,7 +123,12 @@ const swoopAt = (opts: { guard?: number; swing?: boolean; at?: number } = {}): {
   check('and it flies on, back up out of reach', s.b.y - s.p.position.y > 0.9, (s.b.y - s.p.position.y).toFixed(2));
 
   const blocked = swoopAt({ guard: 30 });
-  check('a swoop into his shield is blocked, and knocks it out of the air', blocked.result === 'blocked' && blocked.b.downed, `${blocked.result} ${blocked.b.state}`);
+  check(
+    'a swoop into his shield is blocked, and knocks it out of the air',
+    blocked.result === 'blocked'
+      && blocked.b.downed,
+    `${blocked.result} ${blocked.b.state}`
+  );
 
   const struck = swoopAt({ swing: true });
   check('a swing at the bottom of the swoop hits it', struck.hit && struck.b.hp === B.hp - 1);

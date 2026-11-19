@@ -17,8 +17,24 @@ function check(name: string, ok: boolean, detail = ''): void {
 const hub = LEVELS.find((l) => l.hub)!;
 const her = (hub.npcs ?? []).find((n) => n.kind === 'rat');
 const dave = (hub.npcs ?? []).find((n) => n.kind === 'pigeon')!;
-check('she is at the Club from the start, up on Dave\'s stage with him and a few steps off, with something to say', !!her && her.name.toUpperCase() === 'JINX' && !her.hidden && her.y === dave.y && Math.hypot(her.x - dave.x, her.z - dave.z) > 3 && Math.hypot(her.x - dave.x, her.z - dave.z) < 8 && her.lines.length >= 3, her ? `${Math.hypot(her.x - dave.x, her.z - dave.z).toFixed(1)} from Dave` : 'not there');
-check('she is a kind of her own, with a voice, and a scene can cast her', (PATRON_KINDS as readonly string[]).includes('rat') && patronLook('rat', 'Jinx') === 'jinx' && !!VOICES.rat && (PUPPET_NPCS as readonly string[]).includes('rat'));
+check(
+  'she is at the Club from the start, up on Dave\'s stage with him and a few steps off, with something to say',
+  !!her
+    && her.name.toUpperCase() === 'JINX'
+    && !her.hidden
+    && her.y === dave.y
+    && Math.hypot(her.x - dave.x, her.z - dave.z) > 3
+    && Math.hypot(her.x - dave.x, her.z - dave.z) < 8
+    && her.lines.length >= 3,
+  her ? `${Math.hypot(her.x - dave.x, her.z - dave.z).toFixed(1)} from Dave` : 'not there'
+);
+check(
+  'she is a kind of her own, with a voice, and a scene can cast her',
+  (PATRON_KINDS as readonly string[]).includes('rat')
+    && patronLook('rat', 'Jinx') === 'jinx'
+    && !!VOICES.rat
+    && (PUPPET_NPCS as readonly string[]).includes('rat')
+);
 
 const body = makePatron('rat', 'jinx');
 const ctx = (time: number, o: Partial<PatronCtx> = {}): PatronCtx => ({ time, talking: false, mouth: 0, headYaw: 0, doing: 'stand', seated: false, turn: 0, ...o });
@@ -28,7 +44,12 @@ body.root.traverse((o) => {
 });
 const pictured = meshes.filter((m) => !!(m.material as THREE.ShaderMaterial).uniforms?.tex?.value?.image && ((m.material as THREE.ShaderMaterial).uniforms.tex.value.image as { width: number }).width > 1);
 const names = new Set(pictured.map((m) => (m.material as THREE.ShaderMaterial).uniforms.tex.value.uuid as string));
-check('she is TEXTURED: her fur, her hair, her top, her skirt, her stockings and her tail each have a picture of their own', names.size >= 6 && pictured.length >= 20, `${names.size} pictures on ${pictured.length} of ${meshes.length} parts`);
+check(
+  'she is TEXTURED: her fur, her hair, her top, her skirt, her stockings and her tail each have a picture of their own',
+  names.size >= 6
+    && pictured.length >= 20,
+  `${names.size} pictures on ${pictured.length} of ${meshes.length} parts`
+);
 const facesOf = (b: { root: THREE.Object3D }): number => {
   let n = 0;
   b.root.traverse((o) => {
@@ -39,7 +60,12 @@ const facesOf = (b: { root: THREE.Object3D }): number => {
 };
 const fox = facesOf(makePatron('fox', 'vix'));
 const knight = facesOf(new RatModel());
-check('she is made of few faces, as everyone here is: fewer than the knight himself (she has more on than the fox, who has fewer still)', facesOf(body) < knight && fox < facesOf(body), `${facesOf(body)} faces; the knight ${knight}, the fox ${fox}`);
+check(
+  'she is made of few faces, as everyone here is: fewer than the knight himself (she has more on than the fox, who has fewer still)',
+  facesOf(body) < knight
+    && fox < facesOf(body),
+  `${facesOf(body)} faces; the knight ${knight}, the fox ${fox}`
+);
 
 // The notch: one ear's rim has a point drawn well in; the other's has none.
 const rimIn = (geo: THREE.BufferGeometry, r: number): number => {
@@ -49,7 +75,12 @@ const rimIn = (geo: THREE.BufferGeometry, r: number): number => {
   for (let i = 0; i < p.count; i++) if (Math.abs(p.getZ(i)) < 1e-9) least = Math.min(least, Math.hypot(p.getX(i), p.getY(i) - r));
   return least / r;
 };
-check('ONE ear has a notch out of its rim: a point of it drawn most of the way in; the other is whole', rimIn(ratEar(0.125, true, 0, 0), 0.125) < 0.5 && Math.abs(rimIn(ratEar(0.125, false, 0, 0), 0.125) - 1) < 1e-6, `${rimIn(ratEar(0.125, true, 0, 0), 0.125).toFixed(2)} of the way out, against ${rimIn(ratEar(0.125, false, 0, 0), 0.125).toFixed(2)}`);
+check(
+  'ONE ear has a notch out of its rim: a point of it drawn most of the way in; the other is whole',
+  rimIn(ratEar(0.125, true, 0, 0), 0.125) < 0.5
+    && Math.abs(rimIn(ratEar(0.125, false, 0, 0), 0.125) - 1) < 1e-6,
+  `${rimIn(ratEar(0.125, true, 0, 0), 0.125).toFixed(2)} of the way out, against ${rimIn(ratEar(0.125, false, 0, 0), 0.125).toFixed(2)}`
+);
 
 // The tail: long, up, curled.
 const tailAt = (time: number, o: Partial<PatronCtx> = {}): THREE.Vector3[] => {
@@ -72,8 +103,21 @@ const tailAt = (time: number, o: Partial<PatronCtx> = {}): THREE.Vector3[] => {
   const len = chain.slice(1).reduce((n, p, i) => n + p.distanceTo(chain[i]), 0);
   const top = Math.max(...chain.map((p) => p.y));
   const tip = chain[chain.length - 1];
-  check('her tail is long (longer than the knight is tall) and UP: it rises from the back of her skirt to over her shoulders', chain.length === 11 && len > 1.0 && top > 1.05 && chain[0].y < 0.6 && chain[0].z < 0, `${chain.length - 1} lengths, ${len.toFixed(2)} long, its highest point ${top.toFixed(2)} up`);
-  check('...and it CURLS: its end has come back down and forward from its highest point', tip.y < top - 0.05 && tip.z > Math.min(...chain.map((p) => p.z)) + 0.1, `end ${(top - tip.y).toFixed(2)} below its top`);
+  check(
+    'her tail is long (longer than the knight is tall) and UP: it rises from the back of her skirt to over her shoulders',
+    chain.length === 11
+      && len > 1.0
+      && top > 1.05
+      && chain[0].y < 0.6
+      && chain[0].z < 0,
+    `${chain.length - 1} lengths, ${len.toFixed(2)} long, its highest point ${top.toFixed(2)} up`
+  );
+  check(
+    '...and it CURLS: its end has come back down and forward from its highest point',
+    tip.y < top - 0.05
+      && tip.z > Math.min(...chain.map((p) => p.z)) + 0.1,
+    `end ${(top - tip.y).toFixed(2)} below its top`
+  );
   const a = tailAt(1).map((p) => p.y.toFixed(3)).join();
   const b = tailAt(3.2).map((p) => p.y.toFixed(3)).join();
   check('the curl comes and goes: it is not the same a couple of seconds on', a !== b);
@@ -90,7 +134,12 @@ const tailAt = (time: number, o: Partial<PatronCtx> = {}): THREE.Vector3[] => {
     }
     return Math.max(...xs) - Math.min(...xs);
   };
-  check('she keeps time with the room (a dip on the beat), and stops to talk', nodOf(false) > 0.004 && nodOf(true) < 1e-6, `${nodOf(false).toFixed(3)} against ${nodOf(true).toFixed(3)}`);
+  check(
+    'she keeps time with the room (a dip on the beat), and stops to talk',
+    nodOf(false) > 0.004
+      && nodOf(true) < 1e-6,
+    `${nodOf(false).toFixed(3)} against ${nodOf(true).toFixed(3)}`
+  );
   check('she stands as tall as she is said to (for the marker over her head)', body.height > 1.2 && body.height < 1.6);
 }
 console.log(failures === 0 ? '\nJinx checks passed.' : `\n${failures} Jinx check(s) failed.`);

@@ -61,7 +61,14 @@ const offset = (m: THREE.Object3D): number => {
 {
   const a = lyingOn(plain(), 1);
   const b = lyingOn(plain(), 3);
-  check('a material for a thing that lies on another is drawn a hair toward the eye, more for each layer up', a.polygonOffset && b.polygonOffset && a.polygonOffsetFactor < 0 && b.polygonOffsetFactor < a.polygonOffsetFactor && b.polygonOffsetUnits < a.polygonOffsetUnits);
+  check(
+    'a material for a thing that lies on another is drawn a hair toward the eye, more for each layer up',
+    a.polygonOffset
+      && b.polygonOffset
+      && a.polygonOffsetFactor < 0
+      && b.polygonOffsetFactor < a.polygonOffsetFactor
+      && b.polygonOffsetUnits < a.polygonOffsetUnits
+  );
 }
 
 // ---- The mug: a cup, with what is in it inside it ----
@@ -72,7 +79,13 @@ const offset = (m: THREE.Object3D): number => {
     const rim = Math.max(...up.map((f) => mid(f).y));
     const inside = up.filter((f) => Math.hypot(mid(f).x, mid(f).z) < 0.05);
     const level = Math.max(...inside.map((f) => mid(f).y));
-    check(`a mug (${full ? 'full' : 'empty'}) is open at its mouth: what is in it lies a finger and more under its rim, and nothing lies flat within a hair of anything else`, inside.length > 0 && rim - level >= 0.025 && inside.every((f) => Math.abs(mid(f).y - level) < 1e-6), `rim ${rim.toFixed(3)}, inside ${level.toFixed(3)}`);
+    check(
+      `a mug (${full ? 'full' : 'empty'}) is open at its mouth: what is in it lies a finger and more under its rim, and nothing lies flat within a hair of anything else`,
+      inside.length > 0
+        && rim - level >= 0.025
+        && inside.every((f) => Math.abs(mid(f).y - level) < 1e-6),
+      `rim ${rim.toFixed(3)}, inside ${level.toFixed(3)}`
+    );
   }
 }
 
@@ -85,7 +98,15 @@ const offset = (m: THREE.Object3D): number => {
   const mid = (f: { a: THREE.Vector3; b: THREE.Vector3; c: THREE.Vector3 }): THREE.Vector3 => f.a.clone().add(f.b).add(f.c).divideScalar(3);
   const heights = [...new Set(up.map((f) => mid(f).y.toFixed(3)))].map(Number).sort((x, y) => x - y);
   const inner = up.filter((f) => Math.hypot(mid(f).x, mid(f).z) < 0.3);
-  check('a barrel has ONE top in its middle, its head, set down inside its staves; and the staves\' ends round it stand higher, as a rim', inner.length >= 8 && new Set(inner.map((f) => mid(f).y.toFixed(3))).size === 1 && heights.length === 2 && heights[1] - heights[0] >= 0.03 && Math.abs(heights[1] - 1.1) < 1e-6, `tops at ${heights.join(' and ')}`);
+  check(
+    'a barrel has ONE top in its middle, its head, set down inside its staves; and the staves\' ends round it stand higher, as a rim',
+    inner.length >= 8
+      && new Set(inner.map((f) => mid(f).y.toFixed(3))).size === 1
+      && heights.length === 2
+      && heights[1] - heights[0] >= 0.03
+      && Math.abs(heights[1] - 1.1) < 1e-6,
+    `tops at ${heights.join(' and ')}`
+  );
 }
 
 // ---- The rugs, the dartboard, the couch's patches: every layer in a material of its own layer ----
@@ -99,25 +120,54 @@ const offset = (m: THREE.Object3D): number => {
       const over = a.box.min.x < b.box.max.x - 0.05 && b.box.min.x < a.box.max.x - 0.05 && a.box.min.z < b.box.max.z - 0.05 && b.box.min.z < a.box.max.z - 0.05;
       if (over && a.y < b.y - 1e-9 && !(b.off > a.off)) wrong++;
     }
-    check(`the ${name}: every piece of it lies on the floor in a material that says so, and a piece over another is a layer up from it`, parts.length >= 4 && parts.every((p) => p.off > 0) && wrong === 0, `${parts.length} pieces, ${wrong} wrong`);
+    check(
+      `the ${name}: every piece of it lies on the floor in a material that says so, and a piece over another is a layer up from it`,
+      parts.length >= 4
+        && parts.every((p) => p.off > 0)
+        && wrong === 0,
+      `${parts.length} pieces, ${wrong} wrong`
+    );
   }
   const board = buildDartboard(mats);
   const discs = board.children.filter((c) => (c as THREE.Mesh).isMesh).map((m) => ({ z: m.position.z, off: offset(m) })).sort((a, b) => a.z - b.z);
-  check('the dartboard: each ring painted on it is a layer up from the one it lies on', discs.length === 6 && discs.every((d, i) => i === 0 || (d.z > discs[i - 1].z && d.off > discs[i - 1].off)), discs.map((d) => d.off).join());
+  check(
+    'the dartboard: each ring painted on it is a layer up from the one it lies on',
+    discs.length === 6
+      && discs.every((d, i) => i === 0 || (d.z > discs[i - 1].z && d.off > discs[i - 1].off)),
+    discs.map((d) => d.off).join()
+  );
   const patchOn = lyingOn(plain());
   const couch = buildCouch({ cloth: plain(), patch: plain(), blanket: plain(), plain: plain(), patchOn, plainOn: layer });
   const sewn: Record<string, number[]> = { patch: [], rip: [], stitch: [] };
   couch.traverse((o) => {
     if (o.name in sewn) sewn[o.name].push(offset(o));
   });
-  check('the couch: its patches, the slits of its rips and the stitches over one are each sewn ON the cloth, in a material that says so, the stitches a layer over the slit', sewn.patch.length === 2 && sewn.patch.every((v) => v > 0) && sewn.rip.length >= 2 && sewn.rip.every((v) => v > 0) && sewn.stitch.length === 5 && sewn.stitch.every((v) => v > Math.max(...sewn.rip)), JSON.stringify(sewn));
+  check(
+    'the couch: its patches, the slits of its rips and the stitches over one are each sewn ON the cloth, in a material that says so, the stitches a layer over the slit',
+    sewn.patch.length === 2
+      && sewn.patch.every((v) => v > 0)
+      && sewn.rip.length >= 2
+      && sewn.rip.every((v) => v > 0)
+      && sewn.stitch.length === 5
+      && sewn.stitch.every((v) => v > Math.max(...sewn.rip)),
+    JSON.stringify(sewn)
+  );
 }
 
 // ---- The door signs can be read ----
 {
   const doors = (hub.courseDoors ?? []).filter((d) => d.name);
-  check('every door of the Club has a name the block letters can write, in one line or two, on its board', doors.length >= 3 && doors.every((d) => [...d.name].every(hasGlyph) && wrapText(d.name.toUpperCase(), SIGN.lineMax).length <= 2 && wrapText(d.name.toUpperCase(), SIGN.lineMax).every((l) => textWidth(l) <= SIGN.w - 8)), doors.map((d) => wrapText(d.name.toUpperCase(), SIGN.lineMax).join(' / ')).join('; '));
-  check('a long name breaks at a space, as evenly as it can', wrapText('THE GREAT CISTERN', 13).join('|') === 'THE GREAT|CISTERN' && wrapText('THE FOUNDRY', 13).join('|') === 'THE FOUNDRY');
+  check(
+    'every door of the Club has a name the block letters can write, in one line or two, on its board',
+    doors.length >= 3
+      && doors.every((d) => [...d.name].every(hasGlyph) && wrapText(d.name.toUpperCase(), SIGN.lineMax).length <= 2 && wrapText(d.name.toUpperCase(), SIGN.lineMax).every((l) => textWidth(l) <= SIGN.w - 8)),
+    doors.map((d) => wrapText(d.name.toUpperCase(), SIGN.lineMax).join(' / ')).join('; ')
+  );
+  check(
+    'a long name breaks at a space, as evenly as it can',
+    wrapText('THE GREAT CISTERN', 13).join('|') === 'THE GREAT|CISTERN'
+      && wrapText('THE FOUNDRY', 13).join('|') === 'THE FOUNDRY'
+  );
   const px = signPixels({ name: 'The Great Cistern', need: 0 }, { open: true, got: 3, of: 16 });
   const shut = signPixels({ name: 'The Hollows', need: 12 }, { open: false, got: 0, of: 0 });
   const bright = (d: Uint8Array): number => {
@@ -125,10 +175,23 @@ const offset = (m: THREE.Object3D): number => {
     for (let i = 0; i < d.length; i += 4) if (d[i] > 200 && d[i + 1] > 160) n++;
     return n;
   };
-  check('a sign carries its door\'s name and, under it, his wedges of the course\'s (open) or what it wants of him (shut), in pale letters on dark wood', px.lines.join('|') === 'THE GREAT|CISTERN|3/16' && shut.lines.join('|') === 'THE HOLLOWS|x 12' && bright(px.data) > 150 && bright(shut.data) > 80 && px.data.length === SIGN.w * SIGN.h * 4);
+  check(
+    'a sign carries its door\'s name and, under it, his wedges of the course\'s (open) or what it wants of him (shut), in pale letters on dark wood',
+    px.lines.join('|') === 'THE GREAT|CISTERN|3/16'
+      && shut.lines.join('|') === 'THE HOLLOWS|x 12'
+      && bright(px.data) > 150
+      && bright(shut.data) > 80
+      && px.data.length === SIGN.w * SIGN.h * 4
+  );
   // A dot of the board is a dot of the screen, and more, from fourteen off: the game's picture is 240 high and its view 55 degrees.
   const dotsAt = (far: number): number => 120 / Math.tan((55 * Math.PI) / 360) / far / SIGN.dots;
-  check('the board is hung big enough to read from across the room: a dot of it is a dot of the screen from fourteen units off, a letter seven of them high', dotsAt(14) >= 1 && GLYPH_H === 7 && SIGN.w / SIGN.dots >= 5, `${dotsAt(14).toFixed(2)} screen dots to a dot at 14; the board ${(SIGN.w / SIGN.dots).toFixed(1)} by ${(SIGN.h / SIGN.dots).toFixed(1)}`);
+  check(
+    'the board is hung big enough to read from across the room: a dot of it is a dot of the screen from fourteen units off, a letter seven of them high',
+    dotsAt(14) >= 1
+      && GLYPH_H === 7
+      && SIGN.w / SIGN.dots >= 5,
+    `${dotsAt(14).toFixed(2)} screen dots to a dot at 14; the board ${(SIGN.w / SIGN.dots).toFixed(1)} by ${(SIGN.h / SIGN.dots).toFixed(1)}`
+  );
 }
 
 // ---- His shadow is cut where the ground ends ----
@@ -139,12 +202,21 @@ const offset = (m: THREE.Object3D): number => {
   const open = shadowSpokes([floor], 3, 0, 3, R, 12);
   check('on open floor the shadow is whole', open.every((v) => v === 1));
   const on = shadowSpokes([floor, post], 0, 2, 0, R, 12);
-  check('standing on a post narrower than his shadow, the shadow is cut to the post\'s top: no spoke of it runs out past the edge into the air', on.every((v, i) => v < 1 && groundAt([floor, post], Math.cos((i / 12) * Math.PI * 2) * R * v, 2, Math.sin((i / 12) * Math.PI * 2) * R * v) && Math.max(Math.abs(Math.cos((i / 12) * Math.PI * 2) * R * v), Math.abs(Math.sin((i / 12) * Math.PI * 2) * R * v)) <= 0.15 + 1e-6), on.map((v) => v.toFixed(2)).join());
+  check(
+    'standing on a post narrower than his shadow, the shadow is cut to the post\'s top: no spoke of it runs out past the edge into the air',
+    on.every((v, i) => v < 1 && groundAt([floor, post], Math.cos((i / 12) * Math.PI * 2) * R * v, 2, Math.sin((i / 12) * Math.PI * 2) * R * v) && Math.max(Math.abs(Math.cos((i / 12) * Math.PI * 2) * R * v), Math.abs(Math.sin((i / 12) * Math.PI * 2) * R * v)) <= 0.15 + 1e-6),
+    on.map((v) => v.toFixed(2)).join()
+  );
   const a = makeAabb(-1, 0.5, 0, 2, 1, 2);
   const b = makeAabb(1, 0.5, 0, 2, 1, 2);
   check('across the seam between two blocks that are flush, it is whole', shadowSpokes([a, b], 0, 1, 0, R, 12).every((v) => v === 1));
   const edge = shadowSpokes([floor, a], -0.1, 1, 0, R, 12);
-  check('at the edge of a ledge, the side of it over the drop is cut and the side on the ledge is whole', edge[0] < 0.5 && edge[6] === 1, edge.map((v) => v.toFixed(2)).join());
+  check(
+    'at the edge of a ledge, the side of it over the drop is cut and the side on the ledge is whole',
+    edge[0] < 0.5
+      && edge[6] === 1,
+    edge.map((v) => v.toFixed(2)).join()
+  );
 }
 
 // ---- The strings of lights are held up ----
@@ -152,7 +224,12 @@ const offset = (m: THREE.Object3D): number => {
   const strings = hub.decor.filter((d) => d.kind === 'bulbs');
   const wall = (x: number, y: number, z: number): boolean => room.colliders.some((c) => c.max.y > y && c.min.y < y && x > c.min.x - 0.6 && x < c.max.x + 0.6 && z > c.min.z - 0.6 && z < c.max.z + 0.6);
   const free = strings.flatMap((s) => [[s.x, s.y, s.z], [s.x1, s.y, s.z1]]).filter(([x, y, z]) => !wall(x, y, z));
-  check('the Club has strings of lights, and some of their ends are out in the room, at no wall', strings.length >= 4 && free.length >= 4, `${free.length} ends at no wall`);
+  check(
+    'the Club has strings of lights, and some of their ends are out in the room, at no wall',
+    strings.length >= 4
+      && free.length >= 4,
+    `${free.length} ends at no wall`
+  );
   // (As built: over each such end there is a wire going up from it to the roof.)
   const ups: Array<{ x: number; z: number; y0: number; y1: number }> = [];
   room.group.updateMatrixWorld(true);
@@ -162,7 +239,11 @@ const offset = (m: THREE.Object3D): number => {
     const box = new THREE.Box3().setFromObject(m);
     if (box.max.y - box.min.y > 1.5 && box.max.x - box.min.x < 0.1 && box.max.z - box.min.z < 0.1) ups.push({ x: (box.min.x + box.max.x) / 2, z: (box.min.z + box.max.z) / 2, y0: box.min.y, y1: box.max.y });
   });
-  check('every end that is at no wall hangs from the roof by a wire of its own: none ends in mid air', free.every(([x, y, z]) => ups.some((u) => Math.hypot(u.x - x, u.z - z) < 0.05 && Math.abs(u.y0 - y) < 0.05 && u.y1 > y + 1.5)), `${ups.length} wires up`);
+  check(
+    'every end that is at no wall hangs from the roof by a wire of its own: none ends in mid air',
+    free.every(([x, y, z]) => ups.some((u) => Math.hypot(u.x - x, u.z - z) < 0.05 && Math.abs(u.y0 - y) < 0.05 && u.y1 > y + 1.5)),
+    `${ups.length} wires up`
+  );
   const held = buildBulbs(4, 0, 0.5, 4, [0, 2]);
   const lone = buildBulbs(4, 0, 0.5, 4);
   check('an end made fast to a wall has no wire up; one hung has', held.children.length === lone.children.length + 2);
@@ -171,7 +252,13 @@ const offset = (m: THREE.Object3D): number => {
 // ---- The fire's glow is only light ----
 {
   const glow = hub.decor.filter((d) => d.kind === 'light' && Math.hypot(d.x, d.z) < 1);
-  check('the light over the Club\'s fire is only light: no post or bulb is drawn of it, and nothing is solid in the air there', glow.length === 1 && glow[0].kind === 'light' && glow[0].bare === true && !hub.solids.some((b) => b.y0 >= 2 && b.x0 < 1 && b.x1 > -1 && b.z0 < 1 && b.z1 > -1));
+  check(
+    'the light over the Club\'s fire is only light: no post or bulb is drawn of it, and nothing is solid in the air there',
+    glow.length === 1
+      && glow[0].kind === 'light'
+      && glow[0].bare === true
+      && !hub.solids.some((b) => b.y0 >= 2 && b.x0 < 1 && b.x1 > -1 && b.z0 < 1 && b.z1 > -1)
+  );
   check('the other lights of the Club still have their posts', hub.decor.filter((d) => d.kind === 'light' && !d.bare).length >= 4);
 }
 
@@ -191,13 +278,23 @@ const offset = (m: THREE.Object3D): number => {
     const n = b.clone().sub(a).cross(d.clone().sub(a)).normalize();
     planes.add([n.x, n.y, n.z].map((v) => Math.round(v * 20) + 0).join());
   }
-  check('a turtle\'s shell is seventeen flat plates: one octagon in the middle of his back, eight round it, eight below', planes.size === 17 && lightTris === 8 + 16 * 4, `${planes.size} plates, ${lightTris} faces of them`);
+  check(
+    'a turtle\'s shell is seventeen flat plates: one octagon in the middle of his back, eight round it, eight below',
+    planes.size === 17
+      && lightTris === 8 + 16 * 4,
+    `${planes.size} plates, ${lightTris} faces of them`
+  );
   // Its outline from behind: eight corners, an eighth of a turn apart.
   let widest = 0;
   for (let i = 0; i < p.count; i++) widest = Math.max(widest, Math.hypot(p.getX(i) / 0.37, p.getY(i) / 0.4));
   const corners = new Set<number>();
   for (let i = 0; i < p.count; i++) if (Math.hypot(p.getX(i) / 0.37, p.getY(i) / 0.4) > widest - 1e-4) corners.add(Math.round((Math.atan2(p.getY(i) / 0.4, p.getX(i) / 0.37) * 180) / Math.PI));
-  check('...and from behind its outline has eight corners, an eighth of a turn apart: an octagon, not a round', corners.size === 8 && [...corners].every((a) => (((a - 22.5) % 45) + 45) % 45 < 1.5 || (((a - 22.5) % 45) + 45) % 45 > 43.5), [...corners].sort((x, y) => x - y).join());
+  check(
+    '...and from behind its outline has eight corners, an eighth of a turn apart: an octagon, not a round',
+    corners.size === 8
+      && [...corners].every((a) => (((a - 22.5) % 45) + 45) % 45 < 1.5 || (((a - 22.5) % 45) + 45) % 45 > 43.5),
+    [...corners].sort((x, y) => x - y).join()
+  );
 }
 
 // ---- Looking up ----
@@ -219,16 +316,40 @@ const offset = (m: THREE.Object3D): number => {
   const mid = view(C.minPitch - C.lookUp / 2);
   const full = view(C.minPitch - C.lookUp);
   check('at its lowest place behind him the view looks down a little, as it always did', low.up === 0 && low.elev < 0 && Math.abs(low.below) < 0.01);
-  check('pushed on past that, it LOOKS UP: the further the stick, the higher it looks, to well above level', mid.up > 0.4 && mid.up < 0.6 && full.up === 1 && mid.elev > low.elev + 0.15 && full.elev > mid.elev + 0.15 && full.elev > 0.3, `${(low.elev * 57.3).toFixed(0)}, ${(mid.elev * 57.3).toFixed(0)}, ${(full.elev * 57.3).toFixed(0)} degrees`);
-  check('...it is never under the floor: it stays clear of the ground beneath it', full.y >= C.floorClear - 1e-6 && mid.y >= C.floorClear - 1e-6, `${full.y.toFixed(2)} up at its lowest`);
-  check('...and he is still in the picture, at the foot of it: his chest no further under its middle than half the view is high', full.below < (55 * Math.PI) / 360 && full.below > 0.2, `${(full.below * 57.3).toFixed(0)} degrees under the middle`);
+  check(
+    'pushed on past that, it LOOKS UP: the further the stick, the higher it looks, to well above level',
+    mid.up > 0.4
+      && mid.up < 0.6
+      && full.up === 1
+      && mid.elev > low.elev + 0.15
+      && full.elev > mid.elev + 0.15
+      && full.elev > 0.3,
+    `${(low.elev * 57.3).toFixed(0)}, ${(mid.elev * 57.3).toFixed(0)}, ${(full.elev * 57.3).toFixed(0)} degrees`
+  );
+  check(
+    '...it is never under the floor: it stays clear of the ground beneath it',
+    full.y >= C.floorClear - 1e-6
+      && mid.y >= C.floorClear - 1e-6,
+    `${full.y.toFixed(2)} up at its lowest`
+  );
+  check(
+    '...and he is still in the picture, at the foot of it: his chest no further under its middle than half the view is high',
+    full.below < (55 * Math.PI) / 360
+      && full.below > 0.2,
+    `${(full.below * 57.3).toFixed(0)} degrees under the middle`
+  );
   // The stick takes it there and back, and no further.
   const cam = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
   const f = new FollowCamera(cam);
   for (let i = 0; i < 300; i++) f.update(DT, new THREE.Vector3(), 0, false, 0, -1, floor, { x: 0, z: 0 });
   const down = f.pitch;
   for (let i = 0; i < 300; i++) f.update(DT, new THREE.Vector3(), 0, false, 0, 1, floor, { x: 0, z: 0 });
-  check('the right stick tilts it all the way to looking up and all the way back to looking down on him, and stops at each', Math.abs(down - (C.minPitch - C.lookUp)) < 1e-9 && Math.abs(f.pitch - C.maxPitch) < 1e-9 && f.lookingUp === 0);
+  check(
+    'the right stick tilts it all the way to looking up and all the way back to looking down on him, and stops at each',
+    Math.abs(down - (C.minPitch - C.lookUp)) < 1e-9
+      && Math.abs(f.pitch - C.maxPitch) < 1e-9
+      && f.lookingUp === 0
+  );
 }
 
 // ---- He is never thrown along a thing he is pressed against ----
@@ -260,12 +381,21 @@ const offset = (m: THREE.Object3D): number => {
       }
     }
   }
-  check('pressed against the Club\'s hearth anywhere along it, at its corners too, with any least push across: no step ever moves him further than he runs in one (he was thrown from one corner of it to the other)', worst <= TUNING.move.run * DT * 1.3 + 1e-6, `${runs} approaches; the furthest in a step ${worst.toFixed(3)} (${where})`);
+  check(
+    'pressed against the Club\'s hearth anywhere along it, at its corners too, with any least push across: no step ever moves him further than he runs in one (he was thrown from one corner of it to the other)',
+    worst <= TUNING.move.run * DT * 1.3 + 1e-6,
+    `${runs} approaches; the furthest in a step ${worst.toFixed(3)} (${where})`
+  );
   // And one who is put INSIDE a thing is put out at its nearer face, not its far one.
   const box = [makeAabb(0, -0.5, 0, 40, 1, 40), makeAabb(0, 1, 0, 6, 2, 2)];
   const p = new PlayerController(new THREE.Vector3(2.8, 0, 0.2));
   p.update(DT, inp({ move: new THREE.Vector3(-1, 0, 0) }), box);
-  check('one who is somehow inside a long thing, near one end of it, is put out at that end, not the length of it away', p.position.x > 3 && p.position.x < 3.4, `x ${p.position.x.toFixed(2)}`);
+  check(
+    'one who is somehow inside a long thing, near one end of it, is put out at that end, not the length of it away',
+    p.position.x > 3
+      && p.position.x < 3.4,
+    `x ${p.position.x.toFixed(2)}`
+  );
 }
 
 // ---- The picture: every dot of it a whole number of the screen's dots ----
@@ -287,11 +417,29 @@ const offset = (m: THREE.Object3D): number => {
     }
     said.push(`${w}x${h}: ${SHARPS.map((sh) => pictureSize(w, h, SHARP_ROWS[sh], dpr).ih).join('/')}`);
   }
-  check('on every screen tried, at every sharpness, each dot of the picture is a whole number of the screen\'s dots, the picture covers its box and no more than a dot over, and it has at least the rows asked for', ok, said.join('; '));
+  check(
+    'on every screen tried, at every sharpness, each dot of the picture is a whole number of the screen\'s dots, the picture covers its box and no more than a dot over, and it has at least the rows asked for',
+    ok,
+    said.join('; ')
+  );
   const hd = SHARPS.map((sh) => pictureSize(1920, 1080, SHARP_ROWS[sh]));
-  check('on a 1080 screen: chunky is 270 rows at four dots to a dot (it was 240 at four and a half), crisp 360 at three, sharp 540 at two, and HD is the screen\'s own 1080', hd.map((p) => `${p.ih}x${p.n}`).join() === '270x4,360x3,540x2,1080x1');
-  check('the game starts at HD (his choice), and HD is never stretched on a screen up to twice 1080 high: one screen dot to a dot; on a 4K one, exactly two', SHARP_DEFAULT === 'hd' && [[1920, 1080], [2560, 1440], [1552, 900], [1366, 768]].every(([w, h]) => pictureSize(w, h, SHARP_ROWS.hd).n === 1) && pictureSize(3840, 2160, SHARP_ROWS.hd).n === 2);
-  check('chunky is the least and the first: the size it always was', SHARPS[0] === 'chunky' && SHARP_ROWS.chunky === 240 && SHARP_ROWS.crisp > SHARP_ROWS.chunky && SHARP_ROWS.sharp > SHARP_ROWS.crisp);
+  check(
+    'on a 1080 screen: chunky is 270 rows at four dots to a dot (it was 240 at four and a half), crisp 360 at three, sharp 540 at two, and HD is the screen\'s own 1080',
+    hd.map((p) => `${p.ih}x${p.n}`).join() === '270x4,360x3,540x2,1080x1'
+  );
+  check(
+    'the game starts at HD (his choice), and HD is never stretched on a screen up to twice 1080 high: one screen dot to a dot; on a 4K one, exactly two',
+    SHARP_DEFAULT === 'hd'
+      && [[1920, 1080], [2560, 1440], [1552, 900], [1366, 768]].every(([w, h]) => pictureSize(w, h, SHARP_ROWS.hd).n === 1)
+      && pictureSize(3840, 2160, SHARP_ROWS.hd).n === 2
+  );
+  check(
+    'chunky is the least and the first: the size it always was',
+    SHARPS[0] === 'chunky'
+      && SHARP_ROWS.chunky === 240
+      && SHARP_ROWS.crisp > SHARP_ROWS.chunky
+      && SHARP_ROWS.sharp > SHARP_ROWS.crisp
+  );
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

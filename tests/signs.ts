@@ -16,13 +16,29 @@ const everyone = [...LEVELS, ...TEST_ROOMS];
 const boards = everyone.flatMap((l) => (l.decor ?? []).filter((d): d is Sign => d.kind === 'sign').map((d) => ({ l: l.id, d })));
 const says = (b: { l: string; d: Sign }): string => `${b.l}: ${b.d.lines.join(' / ')}`;
 
-check('there are boards to check, and the garden has most of them', boards.length >= 15 && boards.filter((b) => b.l === 'garden').length >= 10, `${boards.length} boards in ${new Set(boards.map((b) => b.l)).size} places`);
+check(
+  'there are boards to check, and the garden has most of them',
+  boards.length >= 15
+    && boards.filter((b) => b.l === 'garden').length >= 10,
+  `${boards.length} boards in ${new Set(boards.map((b) => b.l)).size} places`
+);
 
 const noGlyph = boards.filter((b) => !b.d.lines.every((l) => [...l.toUpperCase()].every(hasGlyph)));
-check('every letter and mark on every board is one the block letters have (a comma and a colon were added for them)', noGlyph.length === 0 && hasGlyph(',') && hasGlyph(':'), noGlyph.map(says).join('; '));
+check(
+  'every letter and mark on every board is one the block letters have (a comma and a colon were added for them)',
+  noGlyph.length === 0
+    && hasGlyph(',')
+    && hasGlyph(':'),
+  noGlyph.map(says).join('; ')
+);
 
 const tooMany = boards.filter((b) => b.d.lines.length > 4 || b.d.lines.length === 0);
-check('a board has one to four lines (four since a room\'s title board says its number too, 2026-11-18), and every one of them is drawn', tooMany.length === 0 && boards.every((b) => boardPixels(b.d.lines, b.d.w, b.d.h).lines.length === b.d.lines.length), tooMany.map(says).join('; '));
+check(
+  'a board has one to four lines (four since a room\'s title board says its number too, 2026-11-18), and every one of them is drawn',
+  tooMany.length === 0
+    && boards.every((b) => boardPixels(b.d.lines, b.d.w, b.d.h).lines.length === b.d.lines.length),
+  tooMany.map(says).join('; ')
+);
 
 // The picture: its shape, its dots, its ink.
 const INK_FIRST = [0xff, 0xf0, 0xc0];
@@ -40,7 +56,11 @@ const inkBox = (p: ReturnType<typeof boardPixels>): { x0: number; x1: number; y0
 };
 const made = boards.map((b) => ({ ...b, p: boardPixels(b.d.lines, b.d.w, b.d.h) }));
 const badShape = made.filter(({ d, p }) => Math.abs(p.w / d.w / (p.h / d.h) - 1) > 0.06);
-check('a dot of a letter is a square dot of the board: the picture has the board\'s own shape', badShape.length === 0, badShape.map((b) => `${says(b)} ${b.p.w}x${b.p.h} on ${b.d.w}x${b.d.h}`).join('; '));
+check(
+  'a dot of a letter is a square dot of the board: the picture has the board\'s own shape',
+  badShape.length === 0,
+  badShape.map((b) => `${says(b)} ${b.p.w}x${b.p.h} on ${b.d.w}x${b.d.h}`).join('; ')
+);
 
 const cut = made.filter(({ p }) => {
   const k = inkBox(p);
@@ -55,7 +75,11 @@ check('no line is wider than its board', wide.length === 0, wide.map(says).join(
 const small = (b: (typeof made)[number]): number => (b.d.h / b.p.h) * GLYPH_H;
 const tiny = made.filter((b) => small(b) < 0.12);
 const least = made.reduce((a, b) => (small(b) < small(a) ? b : a));
-check('the smallest writing on any board is a tenth of the knight\'s height or more', tiny.length === 0, `smallest: ${small(least).toFixed(2)} high, "${least.d.lines[least.d.lines.length - 1]}" in ${least.l}`);
+check(
+  'the smallest writing on any board is a tenth of the knight\'s height or more',
+  tiny.length === 0,
+  `smallest: ${small(least).toFixed(2)} high, "${least.d.lines[least.d.lines.length - 1]}" in ${least.l}`
+);
 const doubled = made.filter((b) => b.p.big === 2).length;
 check('most boards have room for a first line at twice the size', doubled >= made.length * 0.6, `${doubled} of ${made.length}`);
 
@@ -63,13 +87,25 @@ check('most boards have room for a first line at twice the size', doubled >= mad
 {
   const p = boardPixels(['GRIND', 'JUMP, THEN STOW'], 3.2, 1.5);
   const k = inkBox(p);
-  check('GRIND / JUMP, THEN STOW: the first line double, the second single and the wider of the two', p.big === 2 && textWidth('JUMP, THEN STOW') > textWidth('GRIND') * 2 && k.x1 - k.x0 + 1 === textWidth('JUMP, THEN STOW'), `${p.w}x${p.h} dots, writing ${k.x1 - k.x0 + 1} wide`);
+  check(
+    'GRIND / JUMP, THEN STOW: the first line double, the second single and the wider of the two',
+    p.big === 2
+      && textWidth('JUMP, THEN STOW') > textWidth('GRIND') * 2
+      && k.x1 - k.x0 + 1 === textWidth('JUMP, THEN STOW'),
+    `${p.w}x${p.h} dots, writing ${k.x1 - k.x0 + 1} wide`
+  );
   const lower = boardPixels(['grind', 'jump, then stow'], 3.2, 1.5);
   check('a board is written in capitals whatever it was given', lower.data.every((v, i) => v === p.data[i]));
   const again = boardPixels(['GRIND', 'JUMP, THEN STOW'], 3.2, 1.5);
   check('the same board is the same picture every time', again.data.every((v, i) => v === p.data[i]));
   const one = boardPixels(['8'], 1, 0.8);
-  check('a one-figure marker is a big figure in the middle of its board', one.big === 2 && Math.abs((inkBox(one).x0 + inkBox(one).x1 + 1) / 2 - one.w / 2) <= 1 && Math.abs((inkBox(one).y0 + inkBox(one).y1 + 1) / 2 - one.h / 2) <= 1.5, `${one.w}x${one.h}`);
+  check(
+    'a one-figure marker is a big figure in the middle of its board',
+    one.big === 2
+      && Math.abs((inkBox(one).x0 + inkBox(one).x1 + 1) / 2 - one.w / 2) <= 1
+      && Math.abs((inkBox(one).y0 + inkBox(one).y1 + 1) / 2 - one.h / 2) <= 1.5,
+    `${one.w}x${one.h}`
+  );
 }
 
 console.log(failures === 0 ? '\nSign board checks passed.' : `\n${failures} sign board check(s) failed.`);

@@ -21,7 +21,11 @@ function check(name: string, ok: boolean, detail = ''): void {
 
 check('no solid overlaps another solid or the pit', problems.length === 0, problems.slice(0, 5).join('; '));
 check('ring platforms all stand outside the pit', ringOk);
-check('platform footprint is inside the room', layout.solids.every((s) => Math.abs(s.x0) <= 21 && Math.abs(s.x1) <= 21 && Math.abs(s.z0) <= 21 && Math.abs(s.z1) <= 21), `half ${h}`);
+check(
+  'platform footprint is inside the room',
+  layout.solids.every((s) => Math.abs(s.x0) <= 21 && Math.abs(s.x1) <= 21 && Math.abs(s.z0) <= 21 && Math.abs(s.z1) <= 21),
+  `half ${h}`
+);
 
 if (failed) {
   console.log(`\n${failed} layout check(s) failed.`);

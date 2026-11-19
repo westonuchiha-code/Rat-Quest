@@ -19,8 +19,18 @@ const start = revealFrame(0);
 const end = revealFrame(REVEAL.total);
 check('the scene starts with a normal camera and no door', start.camBlend === 0 && start.sparkle === 0 && start.fade === 0 && !start.done);
 check('and ends with the camera back, the door solid and the scene done', end.camBlend === 0 && end.fade === 1 && end.done);
-check('he looks both ways before the camera moves', revealFrame(0.6).lookOffset > 0.3 && revealFrame(1.8).lookOffset < -0.3 && revealFrame(REVEAL.look).faceDoor === 0);
-check('the room rumbles in the middle and is still at the ends', revealFrame(2.5).rumble > 0.03 && revealFrame(0.5).rumble === 0 && revealFrame(7).rumble === 0);
+check(
+  'he looks both ways before the camera moves',
+  revealFrame(0.6).lookOffset > 0.3
+    && revealFrame(1.8).lookOffset < -0.3
+    && revealFrame(REVEAL.look).faceDoor === 0
+);
+check(
+  'the room rumbles in the middle and is still at the ends',
+  revealFrame(2.5).rumble > 0.03
+    && revealFrame(0.5).rumble === 0
+    && revealFrame(7).rumble === 0
+);
 check('the camera is on the wall while the door appears', revealFrame(6).camBlend === 1 && revealFrame(REVEAL.panEnd).camBlend === 1);
 let ordered = true;
 let prev = revealFrame(0);
@@ -40,7 +50,14 @@ lp.markCleared('a');
 lp.markPerfect('a');
 lp.setLast('b');
 const again = new LevelProgress(store);
-check('clearing, completing and the last level are remembered', again.cleared('a') && again.perfect('a') && !again.cleared('b') && again.last === 'b' && store.data.has(LEVELS_KEY));
+check(
+  'clearing, completing and the last level are remembered',
+  again.cleared('a')
+    && again.perfect('a')
+    && !again.cleared('b')
+    && again.last === 'b'
+    && store.data.has(LEVELS_KEY)
+);
 again.reset();
 check('reset forgets everything', !new LevelProgress(store).cleared('a') && new LevelProgress(store).last === null);
 store.data.set(LEVELS_KEY, '{nope');
@@ -52,7 +69,12 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   const fx = Math.sin(d.yaw);
   const fz = Math.cos(d.yaw);
   const inside = Math.hypot(d.x + fx * 2, d.z + fz * 2) < Math.hypot(d.x, d.z);
-  check(`the ${side} door faces into the room and works at its foot`, inside && atDoor(d, d.x + fx * 0.6, d.z + fz * 0.6) && !atDoor(d, d.x + fx * 6, d.z + fz * 6));
+  check(
+    `the ${side} door faces into the room and works at its foot`,
+    inside
+      && atDoor(d, d.x + fx * 0.6, d.z + fz * 0.6)
+      && !atDoor(d, d.x + fx * 6, d.z + fz * 6)
+  );
 }
 const cam = doorCamera(doorOn('east', 20));
 check('the camera for a door stands in front of it, looking at it', cam.pos[0] < 19 && Math.abs(cam.pos[2]) < 0.01 && cam.look[0] > 19);
@@ -73,8 +95,26 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   const L = span(left), R = span(right), S = span(step);
   const r = d.width / 2;
   const close = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
-  check(`a door on the ${side} wall: a jamb either side of the opening, half a unit out from the door, up to where the arch springs`, close(L.a1, -r) && close(R.a0, r) && close(L.a0, -r - DOOR_FRAME.jamb - DOOR_FRAME.stagger) && close(R.a1, r + DOOR_FRAME.jamb + DOOR_FRAME.stagger) && close(L.o1, 0.5) && close(R.o1, 0.5) && L.o0 < 0 && left.y0 === 2 && close(left.y1, 2 + d.height - r) && close(right.y1, left.y1));
-  check('...its step runs across the foot of both jambs, a tenth high: he walks up onto it', S.a0 < L.a0 && S.a1 > R.a1 && close(step.y1 - step.y0, 0.1) && close(S.o1, 0.9));
+  check(
+    `a door on the ${side} wall: a jamb either side of the opening, half a unit out from the door, up to where the arch springs`,
+    close(L.a1, -r)
+      && close(R.a0, r)
+      && close(L.a0, -r - DOOR_FRAME.jamb - DOOR_FRAME.stagger)
+      && close(R.a1, r + DOOR_FRAME.jamb + DOOR_FRAME.stagger)
+      && close(L.o1, 0.5)
+      && close(R.o1, 0.5)
+      && L.o0 < 0
+      && left.y0 === 2
+      && close(left.y1, 2 + d.height - r)
+      && close(right.y1, left.y1)
+  );
+  check(
+    '...its step runs across the foot of both jambs, a tenth high: he walks up onto it',
+    S.a0 < L.a0
+      && S.a1 > R.a1
+      && close(step.y1 - step.y0, 0.1)
+      && close(S.o1, 0.9)
+  );
   // Standing where he goes through the door, he is in neither jamb.
   const clear = [-0.9, 0, 0.9].every((a) => [0.35, 1, 1.8].every((o) => {
     const x = d.x + a * fz + o * fx, z = d.z - a * fx + o * fz;
@@ -90,7 +130,12 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
     const hit = (x: number, y: number, z: number, rad: number): boolean => jambs.some((b) => x + rad > b.x0 && x - rad < b.x1 && z + rad > b.z0 && z - rad < b.z1 && y < b.y1 && y + 1 > b.y0);
     return hit(l.spawn.x, l.spawn.y, l.spawn.z, 0.3) || (l.npcs ?? []).some((n) => hit(n.x, n.y ?? 0, n.z, 0.35)) || l.collectibles.some((c) => hit(c.x, c.y - 0.5, c.z, 0.2)) || (l.wedges ?? []).some((w) => hit(w.x, w.y, w.z, 0.3));
   });
-  check(`none of the game's ${doors.length} doors has a jamb where he starts, where someone stands, or over something to pick up`, bad.length === 0 && doors.length > 30, bad.map((b) => b.l.id).join(', '));
+  check(
+    `none of the game's ${doors.length} doors has a jamb where he starts, where someone stands, or over something to pick up`,
+    bad.length === 0
+      && doors.length > 30,
+    bad.map((b) => b.l.id).join(', ')
+  );
 }
 
 // Every level has a ceiling. (Over the walls there was nothing but the dark; the owner, 2026-11-15: "the ceiling has
@@ -103,7 +148,13 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   const open = everyone.filter((l) => l.sky);
   const all = everyone.filter((l) => !l.sky);
   const none = all.filter((l) => !ceilingOf(l.solids));
-  check(`all ${all.length} levels with a roof over them have a ceiling; the three places under the open sky (the dream's: the Milky Way, the Big Dipper, the Toy Box) have none, and no walls to carry one`, none.length === 0 && open.map((l) => l.id).sort().join() === 'bigdipper,milkyway,toybox' && open.every((l) => !ceilingOf(l.solids) && !l.solids.some((b) => b.kind === 'wall')), none.map((l) => l.id).join(', '));
+  check(
+    `all ${all.length} levels with a roof over them have a ceiling; the three places under the open sky (the dream's: the Milky Way, the Big Dipper, the Toy Box) have none, and no walls to carry one`,
+    none.length === 0
+      && open.map((l) => l.id).sort().join() === 'bigdipper,milkyway,toybox'
+      && open.every((l) => !ceilingOf(l.solids) && !l.solids.some((b) => b.kind === 'wall')),
+    none.map((l) => l.id).join(', ')
+  );
   const wrong = all.filter((l) => {
     const c = ceilingOf(l.solids);
     if (!c) return false;
@@ -114,7 +165,11 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
     const clear = l.solids.every((b) => outer.includes(b) || b.y1 + CEILING_CLEAR <= c.y + 1e-6);
     return !(covers && onWalls && clear);
   });
-  check('each covers its level, is no lower than its outer walls, and is clear of his head (a double jump and his own height) over everything inside them', wrong.length === 0, wrong.map((l) => l.id).join(', '));
+  check(
+    'each covers its level, is no lower than its outer walls, and is clear of his head (a double jump and his own height) over everything inside them',
+    wrong.length === 0,
+    wrong.map((l) => l.id).join(', ')
+  );
   const hub = LEVELS.find((l) => l.hub)!;
   const c = ceilingOf(hub.solids)!;
   check('the Club\'s sits right on top of its walls', c.y === c.wallTop && c.y > 8, `${c.y} up`);
@@ -137,7 +192,15 @@ for (const side of ['north', 'south', 'east', 'west'] as const) {
   d.setReveal(0, 1, 0);
   const after = shown().filter((m) => !(m.material as THREE.Material).transparent);
   const joined = box(after);
-  check('A DOOR\'S FRAME is drawn stone by stone while it comes out, and once it is out as a few joined meshes, in the very same place', halfWay > 8 && after.length <= 3 && stones.length > 12 && joined.min.distanceTo(before.min) < 0.02 && joined.max.distanceTo(before.max) < 0.02, `${stones.length} stones, then ${after.length} meshes`);
+  check(
+    'A DOOR\'S FRAME is drawn stone by stone while it comes out, and once it is out as a few joined meshes, in the very same place',
+    halfWay > 8
+      && after.length <= 3
+      && stones.length > 12
+      && joined.min.distanceTo(before.min) < 0.02
+      && joined.max.distanceTo(before.max) < 0.02,
+    `${stones.length} stones, then ${after.length} meshes`
+  );
 }
 
 console.log(failures === 0 ? '\nRoom checks passed.' : `\n${failures} room check(s) failed.`);

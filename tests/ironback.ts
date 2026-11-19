@@ -75,7 +75,13 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   const stopped = again.state !== 'attack';
   for (let i = 0; i < Math.ceil(TUNING.health.recoilStun * 60) + 30; i++) again.update(DT, input(), chamber.colliders);
   again.update(DT, input({ attackPressed: true }), chamber.colliders);
-  check('right after a glance he cannot swing again; a moment later he can', ev3.glanced === e2 && stopped && again.state === 'attack', `glanced=${ev3.glanced === e2} stopped=${stopped} ${again.state}`);
+  check(
+    'right after a glance he cannot swing again; a moment later he can',
+    ev3.glanced === e2
+      && stopped
+      && again.state === 'attack',
+    `glanced=${ev3.glanced === e2} stopped=${stopped} ${again.state}`
+  );
 
   const b = beetle(0);
   const back = ratAt(b.x, b.z - 1.6, b);

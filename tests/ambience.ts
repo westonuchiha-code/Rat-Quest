@@ -23,9 +23,21 @@ check('each world has its own bed of sound', beds.every(Boolean) && new Set(beds
 // s*** out of me". The dream's levels are built with the cave's theme and had the cave's wind under them.)
 {
   const open = [...LEVELS, ...TEST_ROOMS].filter((l) => l.sky === 'space');
-  check('a place under the open sky of the dream (the Toy Box, the Milky Way, the Big Dipper) has NO bed and no far-off noises: no wind among the stars, nothing dripping', open.length === 3 && open.every((l) => { const w = worldSoundFor(l.theme, !!l.hub, l.sky === 'space'); return w.bed === null && w.bedVol === 0 && w.far.length === 0; }), open.map((l) => l.id).join(' '));
-  check('...though they are built with the cave\'s theme, which HAS one (the wind): it is the open sky that takes it away', open.every((l) => worldSoundFor(l.theme, !!l.hub).bed === 'wind'));
-  check('the wind, the one bed that is a hiss, is the quietest of the beds', Object.values(WORLD_SOUND).filter((w) => w.bed).every((w) => w.bed === 'wind' || w.bedVol > WORLD_SOUND.cave.bedVol) && WORLD_SOUND.cave.bedVol <= 0.1);
+  check(
+    'a place under the open sky of the dream (the Toy Box, the Milky Way, the Big Dipper) has NO bed and no far-off noises: no wind among the stars, nothing dripping',
+    open.length === 3
+      && open.every((l) => { const w = worldSoundFor(l.theme, !!l.hub, l.sky === 'space'); return w.bed === null && w.bedVol === 0 && w.far.length === 0; }),
+    open.map((l) => l.id).join(' ')
+  );
+  check(
+    '...though they are built with the cave\'s theme, which HAS one (the wind): it is the open sky that takes it away',
+    open.every((l) => worldSoundFor(l.theme, !!l.hub).bed === 'wind')
+  );
+  check(
+    'the wind, the one bed that is a hiss, is the quietest of the beds',
+    Object.values(WORLD_SOUND).filter((w) => w.bed).every((w) => w.bed === 'wind' || w.bedVol > WORLD_SOUND.cave.bedVol)
+      && WORLD_SOUND.cave.bedVol <= 0.1
+  );
 }
 check('the Club has none (just its music and the fire)', worldSoundFor('dungeon', true).bed === null && worldSoundFor('dungeon', true).far.length === 0);
 
@@ -35,7 +47,13 @@ for (const name of ['drain', 'machine', 'wind', 'hall', 'lavaBubble', 'fire'] as
   const d = s.data;
   const seam = Math.abs(d[0] - d[d.length - 1]);
   const steps = d.slice(1).reduce((m, v, i) => Math.max(m, Math.abs(v - d[i])), 0);
-  check(`${name}: a loop, long enough not to be heard repeating, with no click where it wraps`, s.loop && d.length / s.rate >= 1.4 && seam <= steps + 0.01, `${(d.length / s.rate).toFixed(1)}s, seam ${seam.toFixed(3)}, biggest step ${steps.toFixed(3)}`);
+  check(
+    `${name}: a loop, long enough not to be heard repeating, with no click where it wraps`,
+    s.loop
+      && d.length / s.rate >= 1.4
+      && seam <= steps + 0.01,
+    `${(d.length / s.rate).toFixed(1)}s, seam ${seam.toFixed(3)}, biggest step ${steps.toFixed(3)}`
+  );
   check(`${name}: not silent, not blaring`, rms(d) > 0.05 && rms(d) < 0.6, `rms ${rms(d).toFixed(3)}`);
 }
 for (const name of ['clank', 'hiss', 'pebbles', 'chainClink', 'toll'] as SfxName[]) {
@@ -64,7 +82,11 @@ for (const name of ['clank', 'hiss', 'pebbles', 'chainClink', 'toll'] as SfxName
 
 // The air: each world's motes, kept round him as he moves.
 {
-  check('each world has its own air (embers, spores, dust, mist), the Club none', ['foundry', 'cave', 'keep', 'sewer'].every((t) => !!MOTES[t]) && new Set(['foundry', 'cave', 'keep', 'sewer'].map((t) => MOTES[t]!.color)).size === 4);
+  check(
+    'each world has its own air (embers, spores, dust, mist), the Club none',
+    ['foundry', 'cave', 'keep', 'sewer'].every((t) => !!MOTES[t])
+      && new Set(['foundry', 'cave', 'keep', 'sewer'].map((t) => MOTES[t]!.color)).size === 4
+  );
   const st = MOTES.foundry!;
   const ms: Mote[] = Array.from({ length: 50 }, (_, i) => ({ x: (i % 10) - 5, y: (i % 7), z: Math.floor(i / 10) - 2, phase: i / 50 }));
   let cx = 0;
@@ -72,14 +94,21 @@ for (const name of ['clank', 'hiss', 'pebbles', 'chainClink', 'toll'] as SfxName
     cx += 0.15; // he runs off east
     stepMotes(ms, st, 1 / 60, f / 60, cx, 0, 0);
   }
-  check('the motes keep round him however far he runs', ms.every((m) => Math.abs(m.x - cx) <= MOTE_RANGE && Math.abs(m.z) <= MOTE_RANGE && m.y >= st.low - 0.01 && m.y <= st.high + 0.01));
+  check(
+    'the motes keep round him however far he runs',
+    ms.every((m) => Math.abs(m.x - cx) <= MOTE_RANGE && Math.abs(m.z) <= MOTE_RANGE && m.y >= st.low - 0.01 && m.y <= st.high + 0.01)
+  );
   const y0 = ms.map((m) => m.y);
   stepMotes(ms, st, 0.1, 10, cx, 0, 0);
   const rose = ms.filter((m, i) => m.y > y0[i] || m.y < y0[i] - 1).length;
   check('embers rise', rose === ms.length);
   const dust = MOTES.keep!;
   check('dust in the Keep falls', dust.rise < 0);
-  check('motes fade out towards the edge of the field', moteBrightness({ x: MOTE_RANGE * 0.99, y: 0, z: 0, phase: 0 }, st, 0, 0, 0) < 0.05 && moteBrightness({ x: 0.5, y: 0, z: 0, phase: 0 }, st, 0, 0, 0) > 0.15);
+  check(
+    'motes fade out towards the edge of the field',
+    moteBrightness({ x: MOTE_RANGE * 0.99, y: 0, z: 0, phase: 0 }, st, 0, 0, 0) < 0.05
+      && moteBrightness({ x: 0.5, y: 0, z: 0, phase: 0 }, st, 0, 0, 0) > 0.15
+  );
 }
 
 console.log(failures === 0 ? 'ambience: all pass' : `ambience: ${failures} FAIL`);

@@ -65,7 +65,16 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     if (r.attackPressed) inTheAir = !p.grounded;
     return r;
   });
-  check('in the air over a slope, ATTACK puts his shield under his feet: he comes down on the slope riding it', a.p.riding && a.p.state === 'ride' && inTheAir && a.events.includes('ride') && a.events.includes('rideLand') && a.p.plungeStage === 0, a.events.join());
+  check(
+    'in the air over a slope, ATTACK puts his shield under his feet: he comes down on the slope riding it',
+    a.p.riding
+      && a.p.state === 'ride'
+      && inTheAir
+      && a.events.includes('ride')
+      && a.events.includes('rideLand')
+      && a.p.plungeStage === 0,
+    a.events.join()
+  );
   const b = play(cs, 8, 200, () => ({ move: WEST, run: true }));
   check('running down it he just runs: nothing but the air attack starts a ride', !b.events.includes('ride') && !b.p.riding);
   // (SNEAK was the way on at first: it is not any more.)
@@ -88,7 +97,14 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   let still = 0;
   const standing = play(cs, 8, 200, (i, p) => (p.riding ? { run: false } : { jumpPressed: i === 0, jumpHeld: true, attackPressed: !p.grounded && p.velocity.y < 2 }), new THREE.Vector3(-4, 6, 0));
   still = speedOf(standing.p);
-  check('from a standing jump on the slope it works too, and the slope takes him: he is not stepped off for being slow', standing.events.includes('ride') && !standing.events.includes('rideEnd') && (standing.p.riding || standing.p.position.x < -16) && still >= 0, standing.events.join());
+  check(
+    'from a standing jump on the slope it works too, and the slope takes him: he is not stepped off for being slow',
+    standing.events.includes('ride')
+      && !standing.events.includes('rideEnd')
+      && (standing.p.riding || standing.p.position.x < -16)
+      && still >= 0,
+    standing.events.join()
+  );
   // Too far above it, it is the dive.
   const highUp = [aabbOf(extent('floor', -120, 60, -1, 0, -60, 60)), aabbOf(rampBox('stone', -16, 0, -4, 4, 0, 8, 'e')), aabbOf(extent('stone', -8.4, -7.6, 0, 4 + R.surfDrop + 3, 6, 7))];
   const far = new PlayerController(new THREE.Vector3(-8, 4 + R.surfDrop + 3, 6.5));
@@ -105,7 +121,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
 {
   const cs = hill(16, 8);
   const a = play(cs, 8, 150, surfOnSlope());
-  check('the slope pulls him down it: well before its foot he is going faster than he can run', a.p.riding && speedOf(a.p) > TUNING.move.run + 3 && a.p.grounded, `${speedOf(a.p).toFixed(1)} at x ${a.p.position.x.toFixed(1)}`);
+  check(
+    'the slope pulls him down it: well before its foot he is going faster than he can run',
+    a.p.riding
+      && speedOf(a.p) > TUNING.move.run + 3
+      && a.p.grounded,
+    `${speedOf(a.p).toFixed(1)} at x ${a.p.position.x.toFixed(1)}`
+  );
   const top = play(cs, 8, 600, surfOnSlope());
   let fastest = 0;
   const b = play(cs, 8, 900, (i, p) => {
@@ -113,7 +135,14 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     return surfOnSlope()(i, p);
   });
   check('he never goes faster than the ride\'s top speed', fastest <= R.max + 1e-6 && fastest > 11, `${fastest.toFixed(1)} of ${R.max}`);
-  check('on the flat he rolls on a long way, slowing, and then steps off by himself', !b.p.riding && b.events.includes('rideEnd') && b.p.position.x < -50 && b.p.state !== 'hurt', `stepped off at x ${b.p.position.x.toFixed(0)}`);
+  check(
+    'on the flat he rolls on a long way, slowing, and then steps off by himself',
+    !b.p.riding
+      && b.events.includes('rideEnd')
+      && b.p.position.x < -50
+      && b.p.state !== 'hurt',
+    `stepped off at x ${b.p.position.x.toFixed(0)}`
+  );
   void top;
   // Steering: the stick held across his way turns him.
   const steer = (move: THREE.Vector3, frames: number): Run => play(cs, 8, 260, (i, p) => (p.riding && p.position.x < -17 && i < 150 + frames ? { move, run: false } : surfOnSlope()(i, p)));
@@ -141,11 +170,21 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   };
   const gentleTurn = turned(0.7);
   const carve = turned(1);
-  check('hard over is a carve: he turns much faster than with the stick part way', carve.heading > gentleTurn.heading * 2 && Math.abs(carve.heading - R.turn * R.carve * 0.5) < 0.1, `${carve.heading.toFixed(2)} radians in half a second against ${gentleTurn.heading.toFixed(2)}`);
+  check(
+    'hard over is a carve: he turns much faster than with the stick part way',
+    carve.heading > gentleTurn.heading * 2
+      && Math.abs(carve.heading - R.turn * R.carve * 0.5) < 0.1,
+    `${carve.heading.toFixed(2)} radians in half a second against ${gentleTurn.heading.toFixed(2)}`
+  );
   check('...and it scrubs speed off', carve.speed < gentleTurn.speed - 1, `${carve.speed.toFixed(1)} against ${gentleTurn.speed.toFixed(1)}`);
   // The brake: the stick pulled back against his way.
   const braked = play(cs, 8, 260, (i, p) => (p.riding && p.position.x < -20 ? { move: v(1, 0), run: false } : surfOnSlope()(i, p)));
-  check('the stick pulled back brakes him: he is off the shield long before he would have rolled to a stop', !braked.p.riding && braked.p.position.x > -40, `stopped at x ${braked.p.position.x.toFixed(0)}`);
+  check(
+    'the stick pulled back brakes him: he is off the shield long before he would have rolled to a stop',
+    !braked.p.riding
+      && braked.p.position.x > -40,
+    `stopped at x ${braked.p.position.x.toFixed(0)}`
+  );
   // Up a slope he loses speed.
   const twin = [cs[0], cs[1], cs[2], aabbOf(rampBox('stone', -60, -44, -4, 4, 0, 8, 'w')), aabbOf(extent('stone', -66, -60, 0, 8, -4, 4))];
   let highest = 0;
@@ -158,7 +197,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     }
     return surfOnSlope()(i, p);
   });
-  check('a slope the other side takes him up it on what speed he has, but not as high as he started', riding && highest > 1.5 && highest < 7, `${highest.toFixed(1)} up of 8`);
+  check(
+    'a slope the other side takes him up it on what speed he has, but not as high as he started',
+    riding
+      && highest > 1.5
+      && highest < 7,
+    `${highest.toFixed(1)} up of 8`
+  );
   void upAgain;
 }
 
@@ -167,7 +212,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // One up in two, going straight down it: the ground falls half a unit for each one forward, and is level across him.
   const a = play(hill(16, 8), 8, 125, surfOnSlope());
   const g = a.p.rideGround;
-  check('his shield lies on the slope: nose down going down it, level across', a.p.riding && Math.abs(g.along + 0.5) < 0.05 && Math.abs(g.across) < 0.05, `along ${g.along.toFixed(2)} across ${g.across.toFixed(2)}`);
+  check(
+    'his shield lies on the slope: nose down going down it, level across',
+    a.p.riding
+      && Math.abs(g.along + 0.5) < 0.05
+      && Math.abs(g.across) < 0.05,
+    `along ${g.along.toFixed(2)} across ${g.across.toFixed(2)}`
+  );
   const b = play(hill(16, 8), 8, 400, surfOnSlope());
   const flat = b.p.rideGround;
   check('...and level again on the flat at its foot', b.p.position.y < 0.01 && flat.along === 0 && flat.across === 0);
@@ -179,7 +230,15 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // Two up for one along: he cannot stand on it. From the landing at its top he runs onto it and is off his feet.
   const cs = hill(4, 8);
   const a = play(cs, 8, 60, () => ({ move: WEST, run: true }));
-  check('on ground too steep to stand on he loses his footing and slides: on his hide, not his shield', a.events.includes('slip') && a.p.sliding && a.p.state === 'slide' && !a.p.riding && !a.events.includes('ride'), a.events.join());
+  check(
+    'on ground too steep to stand on he loses his footing and slides: on his hide, not his shield',
+    a.events.includes('slip')
+      && a.p.sliding
+      && a.p.state === 'slide'
+      && !a.p.riding
+      && !a.events.includes('ride'),
+    a.events.join()
+  );
   check('...going down it he is on his seat, feet first', !a.p.slideBack);
   // (He is put on it as he runs off the landing: he does not sail out over it and come down at its foot.)
   let offIt = 0;
@@ -191,11 +250,24 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     }
     return { move: WEST, run: true };
   });
-  check('...run off the landing onto it and he is sliding from its top, never in the air over it', offIt === 0 && high > 6.5, `frames in the air ${offIt}, sliding from ${high.toFixed(2)}`);
+  check(
+    '...run off the landing onto it and he is sliding from its top, never in the air over it',
+    offIt === 0
+      && high > 6.5,
+    `frames in the air ${offIt}, sliding from ${high.toFixed(2)}`
+  );
   const b = play(cs, 8, 200, (_i, p) => (p.sliding ? { move: v(1, 0), run: true } : { move: WEST, run: true }));
   check('...he cannot stop on it, push back as he may: he is at its foot', b.p.position.y < 0.01 && b.p.position.x < -4);
   const c = play(cs, 8, 600, (i) => (i < 30 ? { move: WEST, run: true } : {}));
-  check('...and on the flat at its foot he scrapes to a stop and gets up', c.events.includes('slideEnd') && !c.p.sliding && c.p.grounded && c.p.position.y < 0.01 && c.p.state === 'idle', `${c.events.join()}; ${c.p.state}`);
+  check(
+    '...and on the flat at its foot he scrapes to a stop and gets up',
+    c.events.includes('slideEnd')
+      && !c.p.sliding
+      && c.p.grounded
+      && c.p.position.y < 0.01
+      && c.p.state === 'idle',
+    `${c.events.join()}; ${c.p.state}`
+  );
   // While he slides: no sword, no guard, no roll.
   const busy = play(cs, 8, 50, (i, p) => (p.sliding ? { attackPressed: i % 3 === 0, dodgePressed: i % 3 === 1, guardHeld: true } : { move: WEST, run: true }));
   check('...sliding, he cannot swing, guard or roll', busy.p.sliding && busy.p.state === 'slide' && !busy.p.guarding);
@@ -226,9 +298,25 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     if (p.riding) return { move: p.grounded ? v(0, 0.7) : v(0, 0), run: false };
     return { move: WEST, run: true, jumpPressed: p.grounded && p.position.x < 0.9, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.position.x < -0.3 };
   });
-  check('on his hide he is slower than on his shield down the same slope', hide.events.includes('slip') && board.events.includes('ride') && slideTop <= S.max + 1e-6 && rideTop > slideTop + 3, `${slideTop.toFixed(1)} against ${rideTop.toFixed(1)}`);
-  check('...and steers a good deal less: half a second of the stick turns him less than half as far', slideTurn > 0.02 && rideTurn > slideTurn * 2, `turned ${slideTurn.toFixed(2)} against ${rideTurn.toFixed(2)}`);
-  check('one who is on his shield stays on it down ground too steep to stand on: he does not fall off it onto his hide', !board.events.includes('slip') && !board.p.sliding);
+  check(
+    'on his hide he is slower than on his shield down the same slope',
+    hide.events.includes('slip')
+      && board.events.includes('ride')
+      && slideTop <= S.max + 1e-6
+      && rideTop > slideTop + 3,
+    `${slideTop.toFixed(1)} against ${rideTop.toFixed(1)}`
+  );
+  check(
+    '...and steers a good deal less: half a second of the stick turns him less than half as far',
+    slideTurn > 0.02
+      && rideTurn > slideTurn * 2,
+    `turned ${slideTurn.toFixed(2)} against ${rideTurn.toFixed(2)}`
+  );
+  check(
+    'one who is on his shield stays on it down ground too steep to stand on: he does not fall off it onto his hide',
+    !board.events.includes('slip')
+      && !board.p.sliding
+  );
 
   // Going UP it: he gets a little way, scrabbling, then loses his footing and slides back down on his belly.
   let top = 0;
@@ -242,7 +330,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     if (p.sliding) back = p.slideBack;
     return { move: v(1, 0), run: true };
   }, new THREE.Vector3(-8, 0, 0));
-  check('going UP it he gets a little way before he slips: more than a step, less than a jump', up.events.includes('slip') && top > 0.6 && top < 2.2, `${top.toFixed(2)} up; ${up.events.join()}`);
+  check(
+    'going UP it he gets a little way before he slips: more than a step, less than a jump',
+    up.events.includes('slip')
+      && top > 0.6
+      && top < 2.2,
+    `${top.toFixed(2)} up; ${up.events.join()}`
+  );
   check('...and slides back down it backwards, on his belly, facing the slope he was climbing', back);
   check('...it never throws him: no step moves him further than a slide goes', jerk < S.max * DT + 0.05, `furthest in a step ${jerk.toFixed(2)}`);
   // Nor by jumping: from such ground a jump is the little hop of a slide, and there is no second jump after it.
@@ -252,7 +346,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     return { move: v(1, 0), run: true, jumpPressed: i % 7 === 0, jumpHeld: true };
   }, new THREE.Vector3(-8, 0, 0));
   const oneJump = (TUNING.jump.velocity * TUNING.jump.velocity) / (2 * TUNING.physics.gravity);
-  check('...nor does jumping get him up it: every jump there is a slide\'s little hop, with no second jump after', hopper.events.includes('slideHop') && best < oneJump + 1.2 && hopper.p.position.y < 4, `best ${best.toFixed(2)} (a jump is ${oneJump.toFixed(2)}); ${hopper.events.slice(0, 6).join()}`);
+  check(
+    '...nor does jumping get him up it: every jump there is a slide\'s little hop, with no second jump after',
+    hopper.events.includes('slideHop')
+      && best < oneJump + 1.2
+      && hopper.p.position.y < 4,
+    `best ${best.toFixed(2)} (a jump is ${oneJump.toFixed(2)}); ${hopper.events.slice(0, 6).join()}`
+  );
   // The hop ends the slide: he is in a jump, and looks it; carried as he was going, with no steering; and where he
   // comes down decides what he is next. (The owner, 2026-11-16: "if you jump it should go back into a jump pose and he
   // can slip again if he lands on an [incline] too steep".)
@@ -279,9 +379,28 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
       if (i === hopAt + 1) went = p.velocity.x;
       return hopAt < 0 ? { move: WEST, run: true } : i === hopAt ? { jumpPressed: true, jumpHeld: true } : { move: v(1, 0), run: true, jumpPressed: !p.grounded && i < hopAt + 16 && i % 4 === 0, jumpHeld: true };
     });
-    check('the hop out of a slide ENDS the slide: in the air he is jumping, then falling, and never in the slide\'s pose', hopAt >= 0 && inAir.length > 10 && slidInAir === 0 && inAir.every((st) => st === 'jump' || st === 'fall') && inAir.includes('jump'), `${inAir.length} frames in the air: ${[...new Set(inAir)].join()}`);
-    check('...it is still only a hop: carried as he was going, the stick does not turn him back up the slope, and there is no second jump', turned < 1e-6 && !again.events.includes('wallkick') && !again.events.includes('grab'), `turned ${turned.toFixed(3)}; ${again.events.join()}`);
-    check('...coming down on the same too-steep ground, he slips again', slipsAfter >= 1 && again.events.filter((e) => e === 'slip').length >= 2, again.events.join());
+    check(
+      'the hop out of a slide ENDS the slide: in the air he is jumping, then falling, and never in the slide\'s pose',
+      hopAt >= 0
+        && inAir.length > 10
+        && slidInAir === 0
+        && inAir.every((st) => st === 'jump' || st === 'fall')
+        && inAir.includes('jump'),
+      `${inAir.length} frames in the air: ${[...new Set(inAir)].join()}`
+    );
+    check(
+      '...it is still only a hop: carried as he was going, the stick does not turn him back up the slope, and there is no second jump',
+      turned < 1e-6
+        && !again.events.includes('wallkick')
+        && !again.events.includes('grab'),
+      `turned ${turned.toFixed(3)}; ${again.events.join()}`
+    );
+    check(
+      '...coming down on the same too-steep ground, he slips again',
+      slipsAfter >= 1
+        && again.events.filter((e) => e === 'slip').length >= 2,
+      again.events.join()
+    );
     // Hopping off the foot of the slope onto the flat: he lands on his feet.
     let hop2 = false;
     const flat = play(cs, 8, 140, (_i, p) => {
@@ -289,7 +408,17 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
       if (h) hop2 = true;
       return hop2 ? { jumpPressed: h, jumpHeld: true } : { move: WEST, run: true };
     });
-    check('...coming down on ground he can stand on, he lands on his feet: no slide, nothing to get up from', hop2 && flat.events.includes('slideHop') && !flat.p.sliding && flat.p.grounded && flat.p.state === 'idle' && flat.events.filter((e) => e === 'slip').length === 1 && !flat.events.includes('slideEnd'), `${flat.events.join()}; ${flat.p.state}`);
+    check(
+      '...coming down on ground he can stand on, he lands on his feet: no slide, nothing to get up from',
+      hop2
+        && flat.events.includes('slideHop')
+        && !flat.p.sliding
+        && flat.p.grounded
+        && flat.p.state === 'idle'
+        && flat.events.filter((e) => e === 'slip').length === 1
+        && !flat.events.includes('slideEnd'),
+      `${flat.events.join()}; ${flat.p.state}`
+    );
   }
   // Out of a slide, onto the shield: hop, and the air attack.
   let hopped = false;
@@ -300,7 +429,15 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     if (h) hopped = true;
     return { jumpPressed: h, jumpHeld: hopped, attackPressed: hopped && !p.grounded };
   });
-  check('out of a slide he can hop and get his shield under him with the air attack', hopped && out.events.includes('slideHop') && out.events.includes('ride') && out.p.riding && !out.p.sliding, out.events.join());
+  check(
+    'out of a slide he can hop and get his shield under him with the air attack',
+    hopped
+      && out.events.includes('slideHop')
+      && out.events.includes('ride')
+      && out.p.riding
+      && !out.p.sliding,
+    out.events.join()
+  );
 }
 
 // ---- The ollie and the kickflip ----
@@ -330,10 +467,23 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     return { ...r, peak, air, speedIn, speedOut };
   };
   const ollie = jumpAt(0, null);
-  check('jump is an ollie: he and the shield leave the ground together, and he lands still riding', ollie.events.includes('ollie') && ollie.events.includes('rideLand') && Math.abs(ollie.peak - (R.ollie * R.ollie) / (2 * TUNING.physics.gravity)) < 0.15, `${ollie.peak.toFixed(2)} up, ${ollie.air} frames in the air`);
+  check(
+    'jump is an ollie: he and the shield leave the ground together, and he lands still riding',
+    ollie.events.includes('ollie')
+      && ollie.events.includes('rideLand')
+      && Math.abs(ollie.peak - (R.ollie * R.ollie) / (2 * TUNING.physics.gravity)) < 0.15,
+    `${ollie.peak.toFixed(2)} up, ${ollie.air} frames in the air`
+  );
   check('...he keeps his speed through it', Math.abs(ollie.speedOut - ollie.speedIn) < 0.2, `${ollie.speedIn.toFixed(1)} in, ${ollie.speedOut.toFixed(1)} out`);
   const flip = jumpAt(0, 8);
-  check('a second jump in the air is a kickflip, and landing one gives him a little speed', flip.events.includes('kickflip') && flip.events.includes('trick') && !flip.events.includes('bail') && flip.speedOut >= Math.min(R.max, flip.speedIn + R.trickBoost) - 0.3, `${flip.speedIn.toFixed(1)} in, ${flip.speedOut.toFixed(1)} out`);
+  check(
+    'a second jump in the air is a kickflip, and landing one gives him a little speed',
+    flip.events.includes('kickflip')
+      && flip.events.includes('trick')
+      && !flip.events.includes('bail')
+      && flip.speedOut >= Math.min(R.max, flip.speedIn + R.trickBoost) - 0.3,
+    `${flip.speedIn.toFixed(1)} in, ${flip.speedOut.toFixed(1)} out`
+  );
   check('...it takes the place of his double jump (he has no other in the air)', flip.events.filter((e) => e === 'kickflip').length === 1);
   // Down before the shield has come round: he comes off. (A kickflip lifts him enough to finish one in open air, so
   // this is for landing early, on something higher; here the shield is simply made to turn too slowly to finish.)
@@ -341,7 +491,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   (R as { flipTime: number }).flipTime = 1.5;
   const late = jumpAt(0, 8);
   (R as { flipTime: number }).flipTime = flipTime;
-  check('a kickflip not finished when he lands throws him off: no harm but to his pride', late.events.includes('bail') && late.p.hp === TUNING.health.max && !late.p.riding, late.events.join());
+  check(
+    'a kickflip not finished when he lands throws him off: no harm but to his pride',
+    late.events.includes('bail')
+      && late.p.hp === TUNING.health.max
+      && !late.p.riding,
+    late.events.join()
+  );
 }
 
 // ---- A ramp throws him ----
@@ -362,9 +518,19 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     return { top, events: r.events };
   };
   const plain = launch(false);
-  check('riding off the top of a kicker he is thrown up, well above its top, with no button pressed', plain.top > 1.2 + 0.35 && plain.events.includes('rideLand'), `top ${plain.top.toFixed(2)}; ${plain.events.join()}`);
+  check(
+    'riding off the top of a kicker he is thrown up, well above its top, with no button pressed',
+    plain.top > 1.2 + 0.35
+      && plain.events.includes('rideLand'),
+    `top ${plain.top.toFixed(2)}; ${plain.events.join()}`
+  );
   const popped = launch(true);
-  check('...and a jump at its lip goes higher than the same jump on the flat', popped.top > plain.top + 1.5 && popped.events.includes('ollie'), `top ${popped.top.toFixed(2)}; ${popped.events.join()}`);
+  check(
+    '...and a jump at its lip goes higher than the same jump on the flat',
+    popped.top > plain.top + 1.5
+      && popped.events.includes('ollie'),
+    `top ${popped.top.toFixed(2)}; ${popped.events.join()}`
+  );
 }
 
 // ---- Getting on is a hop, not a snap (the owner, 2026-11-15) ----
@@ -382,7 +548,14 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // The first frame of the ride.
   step('ride', 1);
   const startHeight = rat.boardHeight();
-  check('the moment he gets on, the shield is still where it was on his arm: it has not jumped to his feet', rat.mountProgress >= 0 && rat.boardShown && !rat.shieldOnArm && startHeight > 0.3, `${startHeight.toFixed(2)} up`);
+  check(
+    'the moment he gets on, the shield is still where it was on his arm: it has not jumped to his feet',
+    rat.mountProgress >= 0
+      && rat.boardShown
+      && !rat.shieldOnArm
+      && startHeight > 0.3,
+    `${startHeight.toFixed(2)} up`
+  );
   let hop = 0;
   let smears = 0;
   let faceUp = -1;
@@ -401,9 +574,25 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   });
   check('it takes a third of a second or so: a score of frames to be seen in', frames >= 18 && frames <= 26, `${frames} frames`);
   check('he hops: off the ground and down again', hop > 0.2 && rat.hopHeight === 0, `${hop.toFixed(2)} up at the top`);
-  check('the shield goes DOWN to the ground all the way (never back up), trailing smears as it goes', rose < 0.02 && smears === 2, `rose ${rose.toFixed(3)} at most; ${smears} smears`);
-  check('...it is thrown down and tipped onto its face, never spun over: its painted face never looks up on the way', faceUp < 0.3, `face ${faceUp.toFixed(2)} up at most`);
-  check('...and ends lying under his feet, the smears gone', rat.mountProgress < 0 && rat.smearsShown === 0 && rat.boardShown && Math.abs(rat.boardHeight() - 0.056) < 0.01, `${rat.boardHeight().toFixed(3)} up`);
+  check(
+    'the shield goes DOWN to the ground all the way (never back up), trailing smears as it goes',
+    rose < 0.02
+      && smears === 2,
+    `rose ${rose.toFixed(3)} at most; ${smears} smears`
+  );
+  check(
+    '...it is thrown down and tipped onto its face, never spun over: its painted face never looks up on the way',
+    faceUp < 0.3,
+    `face ${faceUp.toFixed(2)} up at most`
+  );
+  check(
+    '...and ends lying under his feet, the smears gone',
+    rat.mountProgress < 0
+      && rat.smearsShown === 0
+      && rat.boardShown
+      && Math.abs(rat.boardHeight() - 0.056) < 0.01,
+    `${rat.boardHeight().toFixed(3)} up`
+  );
   // Which way up it lies: the wood of its back to his feet, its painted face to the ground.
   {
     const parts = rat as unknown as { boardFlat: THREE.Object3D; root: THREE.Object3D };
@@ -413,23 +602,48 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     const face = new THREE.Vector3(0, 0, 1).applyQuaternion(q); // (the shield's painted face looks along its own +z)
     const top = new THREE.Vector3(0, 1, 0).applyQuaternion(q); // (...and its top is at its own +y, its point at -y)
     const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(parts.root.getWorldQuaternion(new THREE.Quaternion()));
-    check('he stands on the wood of its back: its painted, curved face is down on the ground, its top forward and its point behind', face.y < -0.99 && top.dot(fwd) > 0.99, `face ${face.y.toFixed(2)} up, top ${top.dot(fwd).toFixed(2)} forward`);
+    check(
+      'he stands on the wood of its back: its painted, curved face is down on the ground, its top forward and its point behind',
+      face.y < -0.99
+        && top.dot(fwd) > 0.99,
+      `face ${face.y.toFixed(2)} up, top ${top.dot(fwd).toFixed(2)} forward`
+    );
     const box = new THREE.Box3().setFromObject(mesh);
     const ground = parts.root.getWorldPosition(new THREE.Vector3()).y;
-    check('...and it is on the ground, not in it: its boss just clear of the stone', box.min.y - ground > 0 && box.min.y - ground < 0.02, `${(box.min.y - ground).toFixed(3)} clear`);
+    check(
+      '...and it is on the ground, not in it: its boss just clear of the stone',
+      box.min.y - ground > 0
+        && box.min.y - ground < 0.02,
+      `${(box.min.y - ground).toFixed(3)} clear`
+    );
   }
   // Stepping off: it comes back up onto his arm.
   let up = 0;
   let offFrames = 0;
   step('run', 1);
-  check('stepping off, the shield is still on the ground the first moment, and comes up', rat.dismountProgress >= 0 && rat.boardShown && !rat.shieldOnArm && rat.boardHeight() < 0.1, `${rat.boardHeight().toFixed(2)} up`);
+  check(
+    'stepping off, the shield is still on the ground the first moment, and comes up',
+    rat.dismountProgress >= 0
+      && rat.boardShown
+      && !rat.shieldOnArm
+      && rat.boardHeight() < 0.1,
+    `${rat.boardHeight().toFixed(2)} up`
+  );
   step('run', Math.ceil(RIDE_DISMOUNT / DT) + 2, () => {
     if (rat.dismountProgress >= 0) {
       offFrames++;
       up = Math.max(up, rat.boardHeight());
     }
   });
-  check('...and is on his arm again a fifth of a second later', rat.dismountProgress < 0 && rat.shieldOnArm && !rat.boardShown && up > 0.3 && offFrames >= 8, `${offFrames} frames, ${up.toFixed(2)} up`);
+  check(
+    '...and is on his arm again a fifth of a second later',
+    rat.dismountProgress < 0
+      && rat.shieldOnArm
+      && !rat.boardShown
+      && up > 0.3
+      && offFrames >= 8,
+    `${offFrames} frames, ${up.toFixed(2)} up`
+  );
   // Thrown off, there is no show: it is on his arm as he tumbles.
   step('ride', 30);
   step('hurt', 1);
@@ -451,7 +665,12 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   };
   const low = land(0.5);
   const high = land(4);
-  check('a rider coming down on a slope keeps what of his fall the slope turns along itself: the higher the drop, the faster he is off down it', low > 0.5 && high > low + 2, `${low.toFixed(1)} from half a unit, ${high.toFixed(1)} from four`);
+  check(
+    'a rider coming down on a slope keeps what of his fall the slope turns along itself: the higher the drop, the faster he is off down it',
+    low > 0.5
+      && high > low + 2,
+    `${low.toFixed(1)} from half a unit, ${high.toFixed(1)} from four`
+  );
   const flat = new PlayerController(new THREE.Vector3(-40, 5, 0));
   let onFlat = -1;
   for (let i = 0; i < 120; i++) {
@@ -472,7 +691,14 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     }
     return surfOnSlope()(i, p);
   });
-  check('riding up a slope he slows, stops and comes back down it: he does not hang at the top of his climb, and is not stepped off there', highest > 1 && turnedBack && stuck < 6 && r.events.filter((e) => e === 'ride').length === 1, `${highest.toFixed(2)} up; ${stuck} frames still; ${r.events.join()}`);
+  check(
+    'riding up a slope he slows, stops and comes back down it: he does not hang at the top of his climb, and is not stepped off there',
+    highest > 1
+      && turnedBack
+      && stuck < 6
+      && r.events.filter((e) => e === 'ride').length === 1,
+    `${highest.toFixed(2)} up; ${stuck} frames still; ${r.events.join()}`
+  );
 }
 
 // ---- Coming off ----
@@ -480,7 +706,13 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   const cs = hill(16, 8);
   const wall = [...cs, aabbOf(extent('wall', -30, -29, 0, 6, -8, 8))];
   const hit = play(wall, 8, 400, surfOnSlope());
-  check('riding into a wall at speed throws him off it: he is knocked back and takes a moment to get up, unhurt', hit.events.includes('bail') && !hit.p.riding && hit.p.hp === TUNING.health.max && hit.p.position.x > -29);
+  check(
+    'riding into a wall at speed throws him off it: he is knocked back and takes a moment to get up, unhurt',
+    hit.events.includes('bail')
+      && !hit.p.riding
+      && hit.p.hp === TUNING.health.max
+      && hit.p.position.x > -29
+  );
   const off = play(cs, 8, 200, (i, p) => (p.riding && p.position.x < -20 ? { dodgePressed: true, run: false } : surfOnSlope()(i, p)));
   check('the dodge button steps him off it', off.events.includes('rideEnd') && !off.p.riding && off.p.hp === TUNING.health.max);
   let guarded = false;
@@ -510,7 +742,15 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     p.update(DT, inp(stepped ? { move: WEST, run: i % 40 < 20, dodgePressed: off2 } : surfOnSlope()(i, p)), cs);
     if (p.moveEvent) at.push(p.moveEvent);
   }
-  check('stepped off on a slope he can stand on, he walks and runs on down it on his feet', stepped && at.filter((e) => e === 'ride').length === 1 && at.includes('rideEnd') && !p.riding && !p.sliding, at.join());
+  check(
+    'stepped off on a slope he can stand on, he walks and runs on down it on his feet',
+    stepped
+      && at.filter((e) => e === 'ride').length === 1
+      && at.includes('rideEnd')
+      && !p.riding
+      && !p.sliding,
+    at.join()
+  );
 }
 
 // ---- THE TUCK (the owner, 2026-11-17, of the Big Dipper: "the sliding seems a little slow ... make it gain momentum as you
@@ -530,17 +770,34 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   check('standing on his shield he tops out where he always did', Math.abs(Math.max(...stand.at) - R.max) < 0.2, `${Math.max(...stand.at).toFixed(1)}`);
   const tuck = speeds(() => ({ move: WEST }), 60 * 9);
   const top = Math.max(...tuck.at);
-  check('the stick pushed the way he is going is a TUCK: he goes on gaining speed past his standing top, to a higher one, and no further', Math.abs(top - R.tuckMax) < 0.2 && R.tuckMax > R.max + 4, `${top.toFixed(1)}`);
+  check(
+    'the stick pushed the way he is going is a TUCK: he goes on gaining speed past his standing top, to a higher one, and no further',
+    Math.abs(top - R.tuckMax) < 0.2
+      && R.tuckMax > R.max + 4,
+    `${top.toFixed(1)}`
+  );
   const toMax = tuck.at.findIndex((q) => q >= R.max - 0.1);
   const toTop = tuck.at.findIndex((q) => q >= R.tuckMax - 0.2);
   // (At first it took four seconds, and he said: "it feels like a realistic amount of momentum increase for the incline but
   // this is a video game". Now it is quick: between one second and three.)
-  check('...and he BUILDS it, quickly: from his standing top speed to his tucked one in a second or two, not at a stroke', toMax > 0 && toTop - toMax > 60 && toTop - toMax < 180, `${((toTop - toMax) / 60).toFixed(1)}s`);
+  check(
+    '...and he BUILDS it, quickly: from his standing top speed to his tucked one in a second or two, not at a stroke',
+    toMax > 0
+      && toTop - toMax > 60
+      && toTop - toMax < 180,
+    `${((toTop - toMax) / 60).toFixed(1)}s`
+  );
   check('tucked, he is crouched (`rideTuck`); standing, he is not', tuck.p.rideTuck > 0.9 && stand.p.rideTuck < 0.01);
   // Tucked up to speed, then the stick let go.
   const let2 = speeds((i) => (i < 60 * 5 ? { move: WEST } : {}), 60 * 9.5);
   const after = let2.at.slice(-265);
-  check('letting the stick go, he keeps his speed for a moment and then loses what he had over his standing top, a little at a time: not at a stroke', after[20] > R.max + 2 && Math.abs(after[after.length - 1] - R.max) < 0.3 && after.every((q, i) => i === 0 || q <= after[i - 1] + 0.2), `${after[20].toFixed(1)} then ${after[after.length - 1].toFixed(1)}`);
+  check(
+    'letting the stick go, he keeps his speed for a moment and then loses what he had over his standing top, a little at a time: not at a stroke',
+    after[20] > R.max + 2
+      && Math.abs(after[after.length - 1] - R.max) < 0.3
+      && after.every((q, i) => i === 0 || q <= after[i - 1] + 0.2),
+    `${after[20].toFixed(1)} then ${after[after.length - 1].toFixed(1)}`
+  );
   // Hard over is a carve, not a tuck.
   const carve = speeds((i, p) => { const h = Math.atan2(p.velocity.x, p.velocity.z); return { move: v(Math.cos(h) * (i % 120 < 60 ? 1 : -1) + Math.sin(h) * 0.3, -Math.sin(h) * (i % 120 < 60 ? 1 : -1) + Math.cos(h) * 0.3) }; }, 60 * 5);
   check('the stick hard to one side is a carve and not a tuck: it gains nothing', Math.max(...carve.at) <= R.max + 0.1, `${Math.max(...carve.at).toFixed(1)}`);
@@ -549,8 +806,25 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // Pomo world but you shouldn't be able to like lean forward and give yourself momentum and that kind of stuff"). ----
   FEEL = FEELS.waking;
   const awake = speeds(() => ({ move: WEST }), 60 * 9);
-  check('IN THE WAKING WORLD the same stick is no tuck: he rides the hill at his standing top speed and no faster, and is not crouched', Math.abs(Math.max(...awake.at) - R.max) < 0.2 && awake.p.rideTuck < 0.01 && awake.p.riding, `${Math.max(...awake.at).toFixed(1)}, tuck ${awake.p.rideTuck.toFixed(2)}`);
-  check('the table says so: the waking world has no tuck, no speed for tricks past his standing top, no spin or grab; the dream has all three; a level that wears the dream\'s look plays the dream\'s way, and any other the waking world\'s', !FEELS.waking.ride.tuck && !FEELS.waking.ride.trickSpeed && !FEELS.waking.ride.airTricks && FEELS.dream.ride.tuck && FEELS.dream.ride.trickSpeed && FEELS.dream.ride.airTricks && feelOf({ look: 'dream' }).id === 'dream' && feelOf({}).id === 'waking' && feelOf({ look: 'dream', feel: 'waking' }).id === 'waking');
+  check(
+    'IN THE WAKING WORLD the same stick is no tuck: he rides the hill at his standing top speed and no faster, and is not crouched',
+    Math.abs(Math.max(...awake.at) - R.max) < 0.2
+      && awake.p.rideTuck < 0.01
+      && awake.p.riding,
+    `${Math.max(...awake.at).toFixed(1)}, tuck ${awake.p.rideTuck.toFixed(2)}`
+  );
+  check(
+    'the table says so: the waking world has no tuck, no speed for tricks past his standing top, no spin or grab; the dream has all three; a level that wears the dream\'s look plays the dream\'s way, and any other the waking world\'s',
+    !FEELS.waking.ride.tuck
+      && !FEELS.waking.ride.trickSpeed
+      && !FEELS.waking.ride.airTricks
+      && FEELS.dream.ride.tuck
+      && FEELS.dream.ride.trickSpeed
+      && FEELS.dream.ride.airTricks
+      && feelOf({ look: 'dream' }).id === 'dream'
+      && feelOf({}).id === 'waking'
+      && feelOf({ look: 'dream', feel: 'waking' }).id === 'waking'
+  );
   check('one who is not told where he is plays the waking world\'s way', new PlayerController(new THREE.Vector3()).feel.id === 'waking');
 }
 

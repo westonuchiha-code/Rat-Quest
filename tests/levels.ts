@@ -93,7 +93,12 @@ const hunt = LEVELS.find((l) => l.id === 'hunt')!;
   // A beast marked as no part of it (it is somewhere else in the level) is not asked for.
   const more = new GoalTracker({ ...hunt, enemies: [...hunt.enemies, { type: 'hornet', x: 0, z: 0, uncounted: true }] }, () => ({ have: 0, total: 0 }));
   more.kills = 4;
-  check('a beast marked as no part of a defeat goal is not asked for: the goal still needs its own five, no more', more.enemyTotal === 5 && !more.mainDone() && more.status()[0].text === '4/5');
+  check(
+    'a beast marked as no part of a defeat goal is not asked for: the goal still needs its own five, no more',
+    more.enemyTotal === 5
+      && !more.mainDone()
+      && more.status()[0].text === '4/5'
+  );
   more.kills = 5;
   check('...and is done when those five are beaten', more.mainDone());
 }
@@ -124,7 +129,13 @@ const leap = LEVELS.find((l) => l.id === 'leap')!;
       sizes.push(group.length);
     } else if (alive > 0 && t % 3 < 0.1) alive--; // the player beats one every so often
   }
-  check('waves arrive in order and all of them get beaten', arrivals === w.waves.length && g.mainDone(alive) && sizes.join() === w.waves.map((x) => x.length).join(), `sizes ${sizes.join()} alive ${alive}`);
+  check(
+    'waves arrive in order and all of them get beaten',
+    arrivals === w.waves.length
+      && g.mainDone(alive)
+      && sizes.join() === w.waves.map((x) => x.length).join(),
+    `sizes ${sizes.join()} alive ${alive}`
+  );
   const d = new WaveDirector(w.waves);
   check('the next wave does not come while enemies are alive', d.update(10, 1) === null && d.arrived === 0);
 }
@@ -135,12 +146,21 @@ const leap = LEVELS.find((l) => l.id === 'leap')!;
   const plats = leap.solids.filter((b) => b.kind === 'platform').sort((a, b) => b.z0 - a.z0);
   const gaps: number[] = [];
   for (let i = 0; i + 1 < plats.length; i++) gaps.push(plats[i].z0 - plats[i + 1].z1);
-  check('the parkour gaps are tight but within a running jump', gaps.length >= 6 && gaps.every((g) => g > max * 0.85 && g < max * 0.97), `max ${max.toFixed(2)} gaps ${gaps.map((g) => g.toFixed(2)).join(',')}`);
+  check(
+    'the parkour gaps are tight but within a running jump',
+    gaps.length >= 6
+      && gaps.every((g) => g > max * 0.85 && g < max * 0.97),
+    `max ${max.toFixed(2)} gaps ${gaps.map((g) => g.toFixed(2)).join(',')}`
+  );
   check('the parkour room has a void and no floor', leap.pit !== null && !leap.solids.some((b) => b.kind === 'floor'));
 }
 
 // Overlap helper sanity, so the level checks above can be trusted.
-check('overlap check sees overlaps and ignores touching', overlaps({ kind: 'floor', x0: 0, x1: 2, y0: 0, y1: 1, z0: 0, z1: 2 }, { kind: 'floor', x0: 1, x1: 3, y0: 0, y1: 1, z0: 0, z1: 2 }) && !overlaps({ kind: 'floor', x0: 0, x1: 2, y0: 0, y1: 1, z0: 0, z1: 2 }, { kind: 'floor', x0: 2, x1: 3, y0: 0, y1: 1, z0: 0, z1: 2 }));
+check(
+  'overlap check sees overlaps and ignores touching',
+  overlaps({ kind: 'floor', x0: 0, x1: 2, y0: 0, y1: 1, z0: 0, z1: 2 }, { kind: 'floor', x0: 1, x1: 3, y0: 0, y1: 1, z0: 0, z1: 2 })
+    && !overlaps({ kind: 'floor', x0: 0, x1: 2, y0: 0, y1: 1, z0: 0, z1: 2 }, { kind: 'floor', x0: 2, x1: 3, y0: 0, y1: 1, z0: 0, z1: 2 })
+);
 
 console.log(failures === 0 ? '\nLevel checks passed.' : `\n${failures} level check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

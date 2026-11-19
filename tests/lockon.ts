@@ -19,7 +19,11 @@ check('dead foes are ignored', pickTarget(rat, 0, [foe(0, -3, false), far]) === 
 check('a foe behind the camera loses to one in front', pickTarget(rat, 0, [foe(0, 3), foe(0, -5)])?.z === -5);
 check('foes on another level are ignored', pickTarget(rat, 0, [foe(0, -3, true, 8)]) === null);
 
-check('camera yaw looks at the foe', Math.abs(cameraYawToward(rat, foe(0, -5)) - 0) < 1e-9 && Math.abs(Math.abs(cameraYawToward(rat, foe(0, 5))) - Math.PI) < 1e-9);
+check(
+  'camera yaw looks at the foe',
+  Math.abs(cameraYawToward(rat, foe(0, -5)) - 0) < 1e-9
+    && Math.abs(Math.abs(cameraYawToward(rat, foe(0, 5))) - Math.PI) < 1e-9
+);
 check('facing points at the foe', Math.abs(facingToward(rat, foe(5, 0)) - Math.PI / 2) < 1e-9);
 
 // Camera looking toward -z: +x is the screen's right-hand side? The camera at +z looking -z has right = +x.
@@ -34,7 +38,10 @@ check('nothing further right keeps the current', switchTarget(rat, 0, R, all, 1)
 
 check('keeps a live foe in reach', keepTarget(rat, 0, M, all) === M);
 const dead = foe(0, -6, false);
-check('a dead foe LETS GO, even with another nearby: the lock never moves to a new foe by itself (that swung the view round with nobody asking; he presses again for the next one)', keepTarget(rat, 0, dead, [dead, foe(2, -5)]) === null);
+check(
+  'a dead foe LETS GO, even with another nearby: the lock never moves to a new foe by itself (that swung the view round with nobody asking; he presses again for the next one)',
+  keepTarget(rat, 0, dead, [dead, foe(2, -5)]) === null
+);
 check('a dead foe with nobody else lets go', keepTarget(rat, 0, dead, [dead]) === null);
 check('running far away lets go', keepTarget(rat, 0, foe(0, -30), [foe(0, -30)]) === null);
 if (failures) { console.log(`${failures} FAILED`); process.exit(1); }

@@ -70,7 +70,12 @@ for (let i = 0; i < 60 * 3; i++) {
 }
 check('the chamber reports the platform speed he is riding', (() => { slider.stepMovers(DT, q); return slider.carry.length() >= 0; })());
 check('he is carried sideways', q.position.x > 3, `x ${q.position.x.toFixed(2)}`);
-check('and is still on it', q.grounded && Math.abs(q.position.y - 0.5) < 0.02 && Math.abs(q.position.x - (slider.movers[0].aabb.min.x + slider.movers[0].aabb.max.x) / 2) < 1.5);
+check(
+  'and is still on it',
+  q.grounded
+    && Math.abs(q.position.y - 0.5) < 0.02
+    && Math.abs(q.position.x - (slider.movers[0].aabb.min.x + slider.movers[0].aabb.max.x) / 2) < 1.5
+);
 
 // Standing beside it he is not carried, and a platform that rises into him lifts him up.
 const side = buildChamber({
@@ -118,15 +123,32 @@ check('a lift piece becomes a moving platform', def.movers?.length === 1 && def.
     t += DT;
     if (t > 90) break;
   }
-  check('at the bottom of its run the lift rests on the floor, not in it', Math.abs(ch.movers[1].aabb.min.y) < 0.02 && Math.abs(ch.movers[1].aabb.max.y - 0.5) < 0.02);
+  check(
+    'at the bottom of its run the lift rests on the floor, not in it',
+    Math.abs(ch.movers[1].aabb.min.y) < 0.02
+      && Math.abs(ch.movers[1].aabb.max.y - 0.5) < 0.02
+  );
   step({ move: new THREE.Vector3(0, 0, -1), jumpPressed: true, jumpHeld: true });
   for (let i = 0; i < 26; i++) step({ move: new THREE.Vector3(0, 0, -0.6), jumpHeld: true });
   for (let i = 0; i < 90 && !r.grounded; i++) step();
-  check('he hops onto it', r.grounded && Math.abs(r.position.y - ch.movers[1].aabb.max.y) < 0.05 && r.position.z < -8.2 && r.position.z > -10.8, `z ${r.position.z.toFixed(2)}, y ${r.position.y.toFixed(2)}, lift top ${ch.movers[1].aabb.max.y.toFixed(2)}, grounded ${r.grounded}`);
+  check(
+    'he hops onto it',
+    r.grounded
+      && Math.abs(r.position.y - ch.movers[1].aabb.max.y) < 0.05
+      && r.position.z < -8.2
+      && r.position.z > -10.8,
+    `z ${r.position.z.toFixed(2)}, y ${r.position.y.toFixed(2)}, lift top ${ch.movers[1].aabb.max.y.toFixed(2)}, grounded ${r.grounded}`
+  );
   for (let i = 0; i < 400 && r.position.y < 5.9; i++) step();
   check('the lift takes him up to the ledge height', r.position.y > 5.9 && r.grounded, `y ${r.position.y.toFixed(2)}`);
   for (let i = 0; i < 80; i++) step({ move: new THREE.Vector3(0, 0, -1) });
-  check('and he can step off onto the ledge', r.position.z < -11.5 && Math.abs(r.position.y - 6) < 0.05 && r.grounded, `z ${r.position.z.toFixed(2)} y ${r.position.y.toFixed(2)}`);
+  check(
+    'and he can step off onto the ledge',
+    r.position.z < -11.5
+      && Math.abs(r.position.y - 6) < 0.05
+      && r.grounded,
+    `z ${r.position.z.toFixed(2)} y ${r.position.y.toFixed(2)}`
+  );
 }
 
 // New pieces: lava, rope bridge, cobweb, brazier.
@@ -140,7 +162,12 @@ check('a lift piece becomes a moving platform', def.movers?.length === 1 && def.
   );
   const d2 = compileCustom(c2);
   check('lava becomes a lava pool with a bed under it', d2.lava?.length === 1 && d2.lava[0].y === -0.6 && d2.solids.some((b) => b.y1 < -1 && b.x0 === 2));
-  check('a rope bridge is planks with ropes and posts', d2.solids.some((b) => b.kind === 'plank' && b.x0 === -8) && d2.decor.some((x) => x.kind === 'pipe') && d2.decor.some((x) => x.kind === 'post'));
+  check(
+    'a rope bridge is planks with ropes and posts',
+    d2.solids.some((b) => b.kind === 'plank' && b.x0 === -8)
+      && d2.decor.some((x) => x.kind === 'pipe')
+      && d2.decor.some((x) => x.kind === 'post')
+  );
   check('webs and braziers become decor', d2.decor.some((x) => x.kind === 'web') && d2.decor.some((x) => x.kind === 'brazier'));
   const ch2 = buildChamber({ solids: d2.solids, pit: d2.pit, water: d2.water, decor: d2.decor, lava: d2.lava });
   check('the chamber builds with lava, webs and braziers', ch2.lava.length === 1 && ch2.group.children.length > 5);
@@ -188,7 +215,11 @@ check('a lift piece becomes a moving platform', def.movers?.length === 1 && def.
     const door = reach(L.exit.x + Math.sin(L.exit.yaw) * 1.5, L.exit.z + Math.cos(L.exit.yaw) * 1.5, L.exit.y ?? 0);
     check(`${L.id}: the door can be reached from the start`, door);
     const lost = [...L.collectibles.filter((c) => c.crate === undefined).map((c) => ({ x: c.x, z: c.z, y: c.y - 0.5, n: c.id })), ...L.enemies.map((e) => ({ x: e.x, z: e.z, y: e.y ?? 0, n: 'enemy' }))].filter((q) => !reach(q.x, q.z, q.y));
-    check(`${L.id}: every collectible and enemy stands somewhere he can reach`, lost.length === 0, lost.slice(0, 3).map((q) => `${q.n}@${q.x},${q.z}`).join(' '));
+    check(
+      `${L.id}: every collectible and enemy stands somewhere he can reach`,
+      lost.length === 0,
+      lost.slice(0, 3).map((q) => `${q.n}@${q.x},${q.z}`).join(' ')
+    );
   }
 }
 

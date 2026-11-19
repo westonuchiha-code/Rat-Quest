@@ -32,9 +32,11 @@ const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x =
 /** The model; and, for a candle, its flame (to flicker, and the place its light comes from). */
 /**
  * The model; and what of it moves: a candle's flame (to flicker, and the place its light comes from), a spool's loose
- * thread (to sway: hung from where it leaves the reel), a teacup's steam (wisps that rise and fade, `steam(time)`).
+ * thread (to sway: hung from where it leaves the reel), and `tick(time)` for what moves by its own clock: a teacup's
+ * steam (wisps that rise and fade), a candle's drop of wax running down, a marble's glint. Whatever `tick` moves is
+ * tagged (userData.moves), so that the room leaves it out when it gathers its still dressing (world/chamber.ts).
  */
-export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; steam?: (time: number) => void } {
+export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; tick?: (time: number) => void } {
   const g = new THREE.Group();
   const J = JUNK[what];
   if (what === 'candle') {
@@ -48,7 +50,20 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     const flame = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.2, 6), mats.glow);
     flame.position.set(0, 1.08, 0);
     g.add(flame);
-    return { group: g, flame };
+    // A drop of melted wax: it gathers at the rim, runs slowly down the side, and sets into the pool at the foot.
+    const drop = part(new THREE.SphereGeometry(0.04, 6, 4), 0xfffaf0, mats.wax);
+    drop.userData.moves = true;
+    g.add(drop);
+    const side = -2.1; // (the other side from the drip that has set)
+    const tick = (time: number): void => {
+      const u = ((time + 2.7) % 9) / 9; // nine seconds a drop
+      const run = Math.max(0, (u - 0.35) / 0.65); // it gathers at the rim first
+      const r = 0.15 + 0.02 * run;
+      drop.position.set(Math.cos(side) * (r + 0.01), 0.9 - run * 0.78, Math.sin(side) * (r + 0.01));
+      drop.scale.set(1, 1 + run * 0.6, 1).multiplyScalar(0.6 + Math.min(u / 0.35, 1) * 0.4);
+    };
+    tick(0);
+    return { group: g, flame, tick };
   }
   if (what === 'spool') {
     // Two wooden cheeks and the thread wound between them; a loose end trailing down to the floor.
@@ -227,8 +242,9 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
         w.mat.opacity = 0.32 * Math.sin(Math.PI * u);
       }
     };
+    for (const w of wisps) w.m.userData.moves = true;
     steam(0);
-    return { group: g, steam };
+    return { group: g, tick: steam };
   }
   if (what === 'spoon') {
     // On its back along x: the bowl, the neck, the handle widening to its end.
@@ -289,7 +305,18 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
       band.rotateY(turn);
       g.add(part(band, col, mats.plain, 0, R, 0));
     }
-    return { group: g };
+    // A glint: a bright spot high on the glass that flares now and then, as if the light caught it.
+    const glint = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    glint.position.set(-R * 0.45, R * 1.6, R * 0.55);
+    glint.userData.moves = true;
+    g.add(glint);
+    const tick = (time: number): void => {
+      const u = (time * 0.31 + R * 7) % 1;
+      const flare = u > 0.9 ? Math.sin(((u - 0.9) / 0.1) * Math.PI) : 0;
+      glint.scale.setScalar(0.4 + flare * 1.6);
+    };
+    tick(0);
+    return { group: g, tick };
   }
   // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.
   g.add(part(new THREE.BoxGeometry(J.w * 0.8, J.h * 0.8, J.d), 0xe0dccf, mats.tin, -J.w * 0.1, J.h * 0.4, 0));

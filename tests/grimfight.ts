@@ -54,8 +54,18 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
   const f = make();
   f.run((b) => b.state === 'orbWait', 40);
   const firsts = f.seen.states.filter((s) => s === 'volley' || s === 'swoopWind' || s === 'slamWind' || s === 'orbWind');
-  check('unraged, he shows his four attacks in the order he always did, and none of the new ones', firsts.join() === 'volley,swoopWind,slamWind,orbWind' && !f.seen.states.some((s) => s === 'stormWind' || s === 'storm' || s === 'summon' || s === 'heal'), f.seen.states.join(' '));
-  check('his volley is three bolts, as it was, and each is a ball of FIRE', f.seen.bolts.length === 3 && f.seen.bolts.every((b) => b.kind === 'fire') && f.seen.events.filter((e) => e === 'bolt').length === 3);
+  check(
+    'unraged, he shows his four attacks in the order he always did, and none of the new ones',
+    firsts.join() === 'volley,swoopWind,slamWind,orbWind'
+      && !f.seen.states.some((s) => s === 'stormWind' || s === 'storm' || s === 'summon' || s === 'heal'),
+    f.seen.states.join(' ')
+  );
+  check(
+    'his volley is three bolts, as it was, and each is a ball of FIRE',
+    f.seen.bolts.length === 3
+      && f.seen.bolts.every((b) => b.kind === 'fire')
+      && f.seen.events.filter((e) => e === 'bolt').length === 3
+  );
   check('his slam still sends one ring out along the floor', f.seen.events.filter((e) => e === 'slam').length === 1);
 }
 
@@ -65,14 +75,33 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
   beatDownTo(f, GRIM.hp * GRIM.rage.at);
   const raged = f.run((b) => b.state === 'rage', 30);
   const then = f.run((b) => b.state !== 'rage', 5);
-  check('at half his health he rages, as he did; and the first thing his rage does is a SUMMONING', raged && then && f.boss.state === 'summon' && f.boss.phase === 2, f.boss.state);
+  check(
+    'at half his health he rages, as he did; and the first thing his rage does is a SUMMONING',
+    raged
+      && then
+      && f.boss.state === 'summon'
+      && f.boss.phase === 2,
+    f.boss.state
+  );
   const before = f.seen.summons.length;
   f.run((b) => b.state !== 'summon', 6);
   const made = f.seen.summons.slice(before);
   const out = made.map((m) => Math.hypot(m.x - f.boss.x, m.z - f.boss.z));
   const toward = made.every((m) => (m.x - f.boss.x) * (f.rat.x - f.boss.x) + (m.z - f.boss.z) * (f.rat.z - f.boss.z) > 0);
-  check('two come up out of the floor in front of him, between him and the rat, a little apart', made.length === GRIM.summon.count && made.length === 2 && out.every((d) => Math.abs(d - GRIM.summon.out) < 0.05) && toward && Math.hypot(made[0].x - made[1].x, made[0].z - made[1].z) > 1, out.map((d) => d.toFixed(2)).join(' '));
-  check('they come at the moment the spell\'s gate is open and its hands are up (its blow), and he goes on with the fight after', f.seen.events.includes('summon') && f.boss.state === 'float');
+  check(
+    'two come up out of the floor in front of him, between him and the rat, a little apart',
+    made.length === GRIM.summon.count
+      && made.length === 2
+      && out.every((d) => Math.abs(d - GRIM.summon.out) < 0.05)
+      && toward
+      && Math.hypot(made[0].x - made[1].x, made[0].z - made[1].z) > 1,
+    out.map((d) => d.toFixed(2)).join(' ')
+  );
+  check(
+    'they come at the moment the spell\'s gate is open and its hands are up (its blow), and he goes on with the fight after',
+    f.seen.events.includes('summon')
+      && f.boss.state === 'float'
+  );
   // Never again.
   const n = f.seen.summons.length;
   f.run(() => false, 30);
@@ -88,8 +117,21 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
   const on = (along: number, across: number): boolean => g.boss.stormAtRat(g.boss.x + Math.sin(dir) * along + Math.cos(dir) * across, 0, g.boss.z + Math.cos(dir) * along - Math.sin(dir) * across);
   const aimed = Math.hypot(g.rat.x - g.boss.x, g.rat.z - g.boss.z);
   check('its line is laid through where the rat stood: he is on it', g.boss.stormAtRat(g.rat.x, 0, g.rat.z) && aimed > 3, `${aimed.toFixed(1)} from him`);
-  check('it is a LINE: on it for its whole length, off it two steps to either side, and past its end', on(2, 0) && on(GRIM.storm.long - 0.5, 0) && on(6, GRIM.storm.wide - 0.1) && !on(6, GRIM.storm.wide + 0.3) && !on(6, -GRIM.storm.wide - 0.3) && !on(GRIM.storm.long + 0.5, 0) && !on(-2, 0));
-  check('a rat who steps off it in the time between its setting and its letting go is clear: there is time, at a run', (GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)) * 6.2 > GRIM.storm.wide + 0.4, `${(GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)).toFixed(2)} s; a run covers ${((GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)) * 6.2).toFixed(1)}, the line is ${GRIM.storm.wide} to its edge`);
+  check(
+    'it is a LINE: on it for its whole length, off it two steps to either side, and past its end',
+    on(2, 0)
+      && on(GRIM.storm.long - 0.5, 0)
+      && on(6, GRIM.storm.wide - 0.1)
+      && !on(6, GRIM.storm.wide + 0.3)
+      && !on(6, -GRIM.storm.wide - 0.3)
+      && !on(GRIM.storm.long + 0.5, 0)
+      && !on(-2, 0)
+  );
+  check(
+    'a rat who steps off it in the time between its setting and its letting go is clear: there is time, at a run',
+    (GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)) * 6.2 > GRIM.storm.wide + 0.4,
+    `${(GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)).toFixed(2)} s; a run covers ${((GRIM.storm.windup * GRIM.rage.haste * (1 - GRIM.storm.track)) * 6.2).toFixed(1)}, the line is ${GRIM.storm.wide} to its edge`
+  );
   g.boss.stormTaken();
   check('it hits him once and not again (his shield, or his hurt, takes it)', !g.boss.stormAtRat(g.rat.x, 0, g.rat.z));
   g.run((b) => b.state !== 'storm', 3);
@@ -102,11 +144,23 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
   beatDownTo(f, GRIM.hp * GRIM.heal.at);
   const got = f.boss.state === 'heal' || f.run((b) => b.state === 'heal', 60);
   const hpAt = f.boss.hp;
-  check('nearly beaten, he does not rise from an opening: he stays down and MENDS himself', got && hpAt <= GRIM.hp * GRIM.heal.at && f.seen.events.includes('heal'), `at ${hpAt} of ${GRIM.hp}`);
+  check(
+    'nearly beaten, he does not rise from an opening: he stays down and MENDS himself',
+    got
+      && hpAt <= GRIM.hp * GRIM.heal.at
+      && f.seen.events.includes('heal'),
+    `at ${hpAt} of ${GRIM.hp}`
+  );
   f.run(() => false, 0.6);
   check('he is down on the floor for it, where the sword can reach him', f.boss.lift < 0.15 && f.boss.state === 'heal', `lift ${f.boss.lift.toFixed(2)}`);
   f.run((b) => b.state !== 'heal', 6);
-  check('left alone, he has three hearts back, and goes on', f.boss.hp === hpAt + GRIM.heal.gives && f.seen.events.includes('healed') && f.boss.state === 'float', `${hpAt} to ${f.boss.hp}`);
+  check(
+    'left alone, he has three hearts back, and goes on',
+    f.boss.hp === hpAt + GRIM.heal.gives
+      && f.seen.events.includes('healed')
+      && f.boss.state === 'float',
+    `${hpAt} to ${f.boss.hp}`
+  );
   // He does it once.
   beatDownTo(f, GRIM.hp * GRIM.heal.at - 1);
   f.run(() => false, 12);
@@ -119,9 +173,20 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
   g.run(() => false, 0.8);
   g.boss.takeHit(1, g.rat.x, g.rat.z);
   g.seen.events.push(...g.boss.events.splice(0));
-  check('STRUCK at it, the mending is broken: he loses the blow, gains nothing, and is left open', g.boss.hp === was - 1 && g.seen.events.includes('healBroken') && !g.seen.events.includes('healed') && g.boss.open);
+  check(
+    'STRUCK at it, the mending is broken: he loses the blow, gains nothing, and is left open',
+    g.boss.hp === was - 1
+      && g.seen.events.includes('healBroken')
+      && !g.seen.events.includes('healed')
+      && g.boss.open
+  );
   g.run(() => false, 8);
-  check('and a broken mending is not tried again', g.boss.hp <= was - 1 && g.seen.states.filter((s) => s === 'heal').length === 1 && !g.seen.events.includes('healed'));
+  check(
+    'and a broken mending is not tried again',
+    g.boss.hp <= was - 1
+      && g.seen.states.filter((s) => s === 'heal').length === 1
+      && !g.seen.events.includes('healed')
+  );
 }
 
 // ---------------------------------------------------------------- he can still be beaten, and it does not hang
@@ -135,7 +200,12 @@ check('the four attacks he had keep their numbers: nothing of the old fight was 
     blows++;
     f.run((b) => !b.open || !b.alive, 10);
   }
-  check('struck once at every opening (and at his mending), he is beaten in as many blows as he has hearts', !f.boss.alive && blows === GRIM.hp, `${blows} blows`);
+  check(
+    'struck once at every opening (and at his mending), he is beaten in as many blows as he has hearts',
+    !f.boss.alive
+      && blows === GRIM.hp,
+    `${blows} blows`
+  );
   const h = make();
   // (A rat who never strikes him: the fight goes round and round and never stops in any one state.)
   let stuck = 0;

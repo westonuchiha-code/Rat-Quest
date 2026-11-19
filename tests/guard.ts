@@ -77,12 +77,24 @@ function swingAt(p: PlayerController, g: Guard, act = true): CombatEvents {
   g.rng = fixed();
   SENSES.notice = 1;
   for (let i = 0; i < 60; i++) g.update(DT, O.x + 30, 0, O.z, true);
-  check('at his post he stands still, facing the way he was set, and has no guard up', g.state === 'idle' && Math.abs(g.facing - 1.2) < 1e-6 && !g.guarding && Math.hypot(g.x - O.x, g.z - O.z) < 1e-6);
+  check(
+    'at his post he stands still, facing the way he was set, and has no guard up',
+    g.state === 'idle'
+      && Math.abs(g.facing - 1.2) < 1e-6
+      && !g.guarding
+      && Math.hypot(g.x - O.x, g.z - O.z) < 1e-6
+  );
   const far = new Guard({ x: O.x, z: O.z, arena: { x0: -100, x1: 100, z0: -100, z1: 100 } });
   for (let i = 0; i < 30; i++) far.update(DT, O.x + G.noticeRange + 1, 0, O.z, true);
   const unseen = far.state === 'idle';
   far.update(DT, O.x + G.noticeRange - 0.5, 0, O.z, true);
-  check('he notices the rat from nine units, with a shout, and his shield comes up', unseen && far.state === 'chase' && far.guarding && far.events.includes('alert'));
+  check(
+    'he notices the rat from nine units, with a shout, and his shield comes up',
+    unseen
+      && far.state === 'chase'
+      && far.guarding
+      && far.events.includes('alert')
+  );
   const soft = new Guard({ x: O.x, z: O.z, arena: { x0: -100, x1: 100, z0: -100, z1: 100 } });
   SENSES.notice = wear('mossScarf').notice;
   for (let i = 0; i < 30; i++) soft.update(DT, O.x + G.noticeRange * 0.6, 0, O.z, true);
@@ -103,7 +115,14 @@ function swingAt(p: PlayerController, g: Guard, act = true): CombatEvents {
   const p = ratAt(O.x + 6, O.z, g);
   engage(g, p);
   const d = Math.hypot(p.position.x - g.x, p.position.z - g.z);
-  check('he walks up and stops at spear\'s length: inside his reach, outside the sword\'s', g.state === 'hold' && d <= G.holdRange + 0.05 && d > 1.05 + G.radius + 0.3 && d < G.radius + G.reach + TUNING.rat.radius + G.thrustSpeed * G.thrustTime, `${d.toFixed(2)} away`);
+  check(
+    'he walks up and stops at spear\'s length: inside his reach, outside the sword\'s',
+    g.state === 'hold'
+      && d <= G.holdRange + 0.05
+      && d > 1.05 + G.radius + 0.3
+      && d < G.radius + G.reach + TUNING.rat.radius + G.thrustSpeed * G.thrustTime,
+    `${d.toFixed(2)} away`
+  );
   // The rat runs right round him, twice: he turns with him.
   let worst = 0;
   let closest = 9;
@@ -116,7 +135,11 @@ function swingAt(p: PlayerController, g: Guard, act = true): CombatEvents {
     worst = Math.max(worst, off(g, p));
     closest = Math.min(closest, Math.hypot(p.position.x - g.x, p.position.z - g.z));
   }
-  check('running round him does not get behind his shield', worst < G.blockArc * 0.6, `never more than ${worst.toFixed(2)} rad off his front (the shield covers ${G.blockArc})`);
+  check(
+    'running round him does not get behind his shield',
+    worst < G.blockArc * 0.6,
+    `never more than ${worst.toFixed(2)} rad off his front (the shield covers ${G.blockArc})`
+  );
   // Crowded, he gives ground.
   const h = guard();
   const q = ratAt(O.x + 4, O.z, h);
@@ -150,7 +173,13 @@ function swingAt(p: PlayerController, g: Guard, act = true): CombatEvents {
   closeIn(p, g);
   swingAt(p, g, false);
   g.update(DT, p.position.x, p.position.y, p.position.z, true);
-  check('a second, soon after, and he strikes back at once (even out of turn), with a shorter tell', g.state === 'windup' && g.counter && g.windupTime < G.windup && !g.mayAttack);
+  check(
+    'a second, soon after, and he strikes back at once (even out of turn), with a shorter tell',
+    g.state === 'windup'
+      && g.counter
+      && g.windupTime < G.windup
+      && !g.mayAttack
+  );
   // Left alone for a while he forgets the first.
   const h = guard();
   const q = ratAt(O.x + 1.9, O.z, h);
@@ -166,7 +195,13 @@ function swingAt(p: PlayerController, g: Guard, act = true): CombatEvents {
   // Where his shield does not reach.
   const s = guard();
   s.update(DT, O.x + 3, 0, O.z, true);
-  check('his shield covers his front and not his back or his flank', s.deflects(s.x + 2, s.z) && s.deflects(s.x + 1.5, s.z + 1.5) && !s.deflects(s.x - 2, s.z) && !s.deflects(s.x - 0.3, s.z + 2));
+  check(
+    'his shield covers his front and not his back or his flank',
+    s.deflects(s.x + 2, s.z)
+      && s.deflects(s.x + 1.5, s.z + 1.5)
+      && !s.deflects(s.x - 2, s.z)
+      && !s.deflects(s.x - 0.3, s.z + 2)
+  );
   check('a plunge is never turned by it (see below for what it does)', !s.deflects(s.x + 1, s.z, 'plunge'));
 }
 
@@ -193,7 +228,13 @@ function takeThrust(g: Guard, p: PlayerController, during: (state: string, t: nu
   const p = ratAt(O.x + 5, O.z, g);
   engage(g, p);
   const stood = takeThrust(g, p, () => ({}));
-  check('he holds a moment, draws back (the tell), and thrusts: a rat who just stands there is run through', stood.result === 'hit' && stood.hp === TUNING.health.max - G.damage && Math.abs(stood.tell - G.windup) < 0.05, `tell ${stood.tell.toFixed(2)} s`);
+  check(
+    'he holds a moment, draws back (the tell), and thrusts: a rat who just stands there is run through',
+    stood.result === 'hit'
+      && stood.hp === TUNING.health.max - G.damage
+      && Math.abs(stood.tell - G.windup) < 0.05,
+    `tell ${stood.tell.toFixed(2)} s`
+  );
   check('the tell is long enough to act on, and shorter than the ironback\'s', G.windup >= 0.5 && G.windup < 0.95 && G.counterWindup >= 0.4);
   check('having met his mark, he is still stretched out and open', g.state === 'recover' && g.open && !g.guarding);
 }
@@ -203,7 +244,12 @@ function takeThrust(g: Guard, p: PlayerController, during: (state: string, t: nu
   const p = ratAt(O.x + 5, O.z, g);
   engage(g, p);
   const side = takeThrust(g, p, (state, t) => (state === 'windup' && t > G.windup * G.track ? { move: new THREE.Vector3(0, 0, 1), run: true } : state === 'thrust' ? { move: new THREE.Vector3(0, 0, 1), run: true } : {}));
-  check('a step to the side once he has committed, and the spear goes past', side.result === null && side.hp === TUNING.health.max, `rat ended ${(p.position.z - O.z).toFixed(2)} to the side`);
+  check(
+    'a step to the side once he has committed, and the spear goes past',
+    side.result === null
+      && side.hp === TUNING.health.max,
+    `rat ended ${(p.position.z - O.z).toFixed(2)} to the side`
+  );
   check('...and he is left stretched out with his shield down', g.state === 'recover' && g.open);
   // Now the sword lands, from the front.
   closeIn(p, g);
@@ -218,7 +264,13 @@ function takeThrust(g: Guard, p: PlayerController, during: (state: string, t: nu
   const p = ratAt(O.x + 5, O.z, g);
   engage(g, p);
   const held = takeThrust(g, p, () => ({ guardHeld: true }));
-  check('a raised shield stops the thrust, and he is open for longer', held.result === 'blocked' && held.hp === TUNING.health.max && g.state === 'recover' && g.open);
+  check(
+    'a raised shield stops the thrust, and he is open for longer',
+    held.result === 'blocked'
+      && held.hp === TUNING.health.max
+      && g.state === 'recover'
+      && g.open
+  );
   let open = 0;
   while (g.state === 'recover' && open < 600) { g.update(DT, p.position.x, p.position.y, p.position.z, true); open++; }
   check('...about a second and a half', Math.abs(open * DT - G.blockedRecover) < 0.1 && G.blockedRecover > G.recover, `${(open * DT).toFixed(2)} s`);
@@ -235,12 +287,25 @@ function takeThrust(g: Guard, p: PlayerController, during: (state: string, t: nu
     const r = takeThrust(g, p, (state, t) => ({ guardHeld: (state === 'windup' && t > G.windup - lead) || state === 'thrust' }));
     if (r.result === 'parried') { got = r; break; }
   }
-  check('a perfect guard turns the thrust and knocks his shield wide', got !== null && got.hp === TUNING.health.max && g.state === 'broken' && g.open && g.events.includes('broken'));
+  check(
+    'a perfect guard turns the thrust and knocks his shield wide',
+    got !== null
+      && got.hp === TUNING.health.max
+      && g.state === 'broken'
+      && g.open
+      && g.events.includes('broken')
+  );
   let open = 0;
   const gg = g;
   const start = gg.stateTime;
   while (gg.state === 'broken' && open < 900) { gg.update(DT, p.position.x, p.position.y, p.position.z, true); open++; }
-  check('...for a long time (longer than any other opening)', (open * DT + start) > G.brokenParry - 0.1 && G.brokenParry > G.blockedRecover && G.brokenParry > G.brokenPlunge, `${(open * DT + start).toFixed(2)} s`);
+  check(
+    '...for a long time (longer than any other opening)',
+    (open * DT + start) > G.brokenParry - 0.1
+      && G.brokenParry > G.blockedRecover
+      && G.brokenParry > G.brokenPlunge,
+    `${(open * DT + start).toFixed(2)} s`
+  );
   // The Buckler's doubled window makes that parry easier, the same as against anything else.
   check('(the Buckler doubles the time there is to do it)', wear('buckler').parry === 2 && NO_GEAR.parry === 1);
 }
@@ -263,7 +328,15 @@ function takeThrust(g: Guard, p: PlayerController, during: (state: string, t: nu
     resolveCombat(q, [g], ev);
     if (ev.enemyHit === g || ev.glanced === g) hit = true;
   }
-  check('a plunge comes down over his shield: it does not wound him, but his guard is smashed open', hit && ev.enemyHit === g && !ev.glanced && g.hp === G.hp && g.state === 'broken' && g.open);
+  check(
+    'a plunge comes down over his shield: it does not wound him, but his guard is smashed open',
+    hit
+      && ev.enemyHit === g
+      && !ev.glanced
+      && g.hp === G.hp
+      && g.state === 'broken'
+      && g.open
+  );
   // While he is open, every blow lands; a second plunge then does its full work.
   const before = g.hp;
   g.takeHit(TUNING.plunge.diveDamage, g.x + 1, g.z, 'plunge');

@@ -31,8 +31,22 @@ const NORTH = new THREE.Vector3(0, 0, -1);
 
 // ---- It is a test room, and no part of the game ----
 {
-  check('the garden is a test room: found by its name, and in none of the game\'s lists or counts', levelById('garden')?.id === 'garden' && TEST_ROOMS.some((l) => l.id === 'garden') && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'garden'));
-  check('there is nothing in it to pick up or win, and its door leads back to the Club; its only creatures are the two by the ramps (put there 2026-11-16 to see creatures walk slopes), who count toward nothing and keep to the ramps', def.collectibles.length === 0 && def.enemies.length === 2 && def.enemies.every((e) => e.uncounted && e.arena && e.arena.x0 >= 27 && e.arena.z1 < def.spawn.z) && def.goals.length === 0 && !def.wedges && def.returnTo === 'hub' && !!levelById('hub')?.hub);
+  check(
+    'the garden is a test room: found by its name, and in none of the game\'s lists or counts',
+    levelById('garden')?.id === 'garden'
+      && TEST_ROOMS.some((l) => l.id === 'garden')
+      && ![...LEVELS, ...ARCHIVE, ...ALL_LEVELS].some((l) => l.id === 'garden')
+  );
+  check(
+    'there is nothing in it to pick up or win, and its door leads back to the Club; its only creatures are the two by the ramps (put there 2026-11-16 to see creatures walk slopes), who count toward nothing and keep to the ramps',
+    def.collectibles.length === 0
+      && def.enemies.length === 2
+      && def.enemies.every((e) => e.uncounted && e.arena && e.arena.x0 >= 27 && e.arena.z1 < def.spawn.z)
+      && def.goals.length === 0
+      && !def.wedges
+      && def.returnTo === 'hub'
+      && !!levelById('hub')?.hub
+  );
   let built = true;
   try {
     buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: [] } as never);
@@ -50,9 +64,24 @@ const NORTH = new THREE.Vector3(0, 0, -1);
   for (const s of STEPS) {
     const box = def.solids.find((b) => b.x0 === W && Math.abs((b.z0 + b.z1) / 2 - s.z) < 1e-6 && b.y1 === s.top);
     const sign = signs.find((d) => Math.abs(d.z - s.z) < 1e-6 && Math.abs(d.x - (W + STEP_SIZE)) < 1e-6);
-    check(`the step ${s.top} up: it is that high, 2.6 square and joined to the wall, and its board (on its own front, under its top) says so`, !!box && Math.abs(box.x1 - box.x0 - STEP_SIZE) < 1e-6 && Math.abs(box.z1 - box.z0 - STEP_SIZE) < 1e-6 && !!sign && sign.lines[0] === `${s.top} UP` && sign.lines[1] === s.move && sign.y + sign.h / 2 < s.top && sign.y - sign.h / 2 > 0);
+    check(
+      `the step ${s.top} up: it is that high, 2.6 square and joined to the wall, and its board (on its own front, under its top) says so`,
+      !!box
+        && Math.abs(box.x1 - box.x0 - STEP_SIZE) < 1e-6
+        && Math.abs(box.z1 - box.z0 - STEP_SIZE) < 1e-6
+        && !!sign
+        && sign.lines[0] === `${s.top} UP`
+        && sign.lines[1] === s.move
+        && sign.y + sign.h / 2 < s.top
+        && sign.y - sign.h / 2 > 0
+    );
   }
-  check('the steps are five clear of one another, and ten or more from the room\'s other walls and from the chimneys', STEPS.every((s, i) => i === 0 || Math.abs(STEPS[i - 1].z - s.z - STEP_SIZE - 5) < 1e-6) && GARDEN.halfZ - (STEPS[0].z + STEP_SIZE / 2) >= 10 && Math.min(...STEPS.map((s) => s.z - STEP_SIZE / 2)) - chimneyFaces(CHIMNEYS[0]).z1 >= 6.5);
+  check(
+    'the steps are five clear of one another, and ten or more from the room\'s other walls and from the chimneys',
+    STEPS.every((s, i) => i === 0 || Math.abs(STEPS[i - 1].z - s.z - STEP_SIZE - 5) < 1e-6)
+      && GARDEN.halfZ - (STEPS[0].z + STEP_SIZE / 2) >= 10
+      && Math.min(...STEPS.map((s) => s.z - STEP_SIZE / 2)) - chimneyFaces(CHIMNEYS[0]).z1 >= 6.5
+  );
   for (const c of CHIMNEYS) {
     const f = chimneyFaces(c);
     const west = def.solids.find((b) => b.x0 === c.x && b.x1 === f.west && b.y1 === c.westTop && b.z0 === f.z0);
@@ -61,15 +90,37 @@ const NORTH = new THREE.Vector3(0, 0, -1);
     const ruler = rulers.find((d) => !d.flat && !d.pole && Math.abs(d.x - f.mid) < 1e-6 && d.z === -GARDEN.halfZ);
     const says = c.lines.join(' ');
     const lowTop = Math.min(c.westTop, c.eastTop);
-    check(`the chimney "${c.lines[0]}": two walls ${c.gap} apart, the room's wall behind with a ruler on it, and its board says how wide and how high`, !!west && !!east && !!sign && !!ruler && ruler.width < c.gap && ruler.length >= Math.max(c.westTop, c.eastTop) && (c.id === 'one' ? says.includes(`${lowTop} UP`) : says.includes(`${c.gap} WIDE`) && says.includes(`${lowTop} UP`)), `${(f.east - f.west).toFixed(1)} apart`);
+    check(
+      `the chimney "${c.lines[0]}": two walls ${c.gap} apart, the room's wall behind with a ruler on it, and its board says how wide and how high`,
+      !!west
+        && !!east
+        && !!sign
+        && !!ruler
+        && ruler.width < c.gap
+        && ruler.length >= Math.max(c.westTop, c.eastTop)
+        && (c.id === 'one' ? says.includes(`${lowTop} UP`) : says.includes(`${c.gap} WIDE`) && says.includes(`${lowTop} UP`)),
+      `${(f.east - f.west).toFixed(1)} apart`
+    );
   }
   // Whatever he could kick between is joined on, or further apart than a kick carries him.
   const outer = CHIMNEYS.map((c) => ({ x0: c.x, x1: chimneyFaces(c).east + CHIMNEY_WALL }));
   // (How far a kick carries him before he is back down to where he kicked from: twice its rise time, at its push.)
   const carry = (2 * TUNING.moves.wallKickUp / TUNING.physics.gravity) * TUNING.moves.wallKickPush;
-  check('the chimneys are further apart than a kick carries him, the first is joined to the west wall, and the last is as far from the east wall', outer[0].x0 === W && outer.every((o, i) => i === 0 || o.x0 - outer[i - 1].x1 > carry + 0.5) && GARDEN.halfX - outer[outer.length - 1].x1 > carry + 0.5, `a kick carries ${carry.toFixed(1)}; the least gap is ${Math.min(GARDEN.halfX - outer[outer.length - 1].x1, ...outer.slice(1).map((o, i) => o.x0 - outer[i].x1)).toFixed(1)}`);
-  check('the pole and the strip are in the open: nothing solid within three of either', [[POLE.x, POLE.z], [STRIP.x, STRIP.z], [STRIP.x, STRIP.z - STRIP.length]].every(([x, z]) => def.solids.every((b) => b.y1 <= 0 || x < b.x0 - 3 || x > b.x1 + 3 || z < b.z0 - 3 || z > b.z1 + 3)));
-  check('every board\'s writing is two short lines at most: the game is drawn coarsely, and small writing cannot be read', signs.every((d) => d.lines.length >= 1 && d.lines.length <= 2 && d.lines.every((l) => l.length <= 16)));
+  check(
+    'the chimneys are further apart than a kick carries him, the first is joined to the west wall, and the last is as far from the east wall',
+    outer[0].x0 === W
+      && outer.every((o, i) => i === 0 || o.x0 - outer[i - 1].x1 > carry + 0.5)
+      && GARDEN.halfX - outer[outer.length - 1].x1 > carry + 0.5,
+    `a kick carries ${carry.toFixed(1)}; the least gap is ${Math.min(GARDEN.halfX - outer[outer.length - 1].x1, ...outer.slice(1).map((o, i) => o.x0 - outer[i].x1)).toFixed(1)}`
+  );
+  check(
+    'the pole and the strip are in the open: nothing solid within three of either',
+    [[POLE.x, POLE.z], [STRIP.x, STRIP.z], [STRIP.x, STRIP.z - STRIP.length]].every(([x, z]) => def.solids.every((b) => b.y1 <= 0 || x < b.x0 - 3 || x > b.x1 + 3 || z < b.z0 - 3 || z > b.z1 + 3))
+  );
+  check(
+    'every board\'s writing is two short lines at most: the game is drawn coarsely, and small writing cannot be read',
+    signs.every((d) => d.lines.length >= 1 && d.lines.length <= 2 && d.lines.every((l) => l.length <= 16))
+  );
 }
 
 // ---- Playing it ----
@@ -298,13 +349,32 @@ function play(set: TweakSet): Row {
 // ---- As the game is ----
 const asIs = play(JUMP_SETS[0]);
 {
-  check('as the game is, a jump gets his feet 2.4 up, a double jump 4.6, and one wall kick lifts him 2.8', Math.abs(asIs.jump - 2.43) < 0.05 && Math.abs(asIs.double - 4.6) < 0.1 && Math.abs(asIs.one.gain - 2.8) < 0.1, `${asIs.jump.toFixed(2)}, ${asIs.double.toFixed(2)} and ${asIs.one.gain.toFixed(2)}`);
+  check(
+    'as the game is, a jump gets his feet 2.4 up, a double jump 4.6, and one wall kick lifts him 2.8',
+    Math.abs(asIs.jump - 2.43) < 0.05
+      && Math.abs(asIs.double - 4.6) < 0.1
+      && Math.abs(asIs.one.gain - 2.8) < 0.1,
+    `${asIs.jump.toFixed(2)}, ${asIs.double.toFixed(2)} and ${asIs.one.gain.toFixed(2)}`
+  );
   const BOARD = ['ONE JUMP', 'JUMP, GRAB', 'DOUBLE JUMP', 'DOUBLE, GRAB'];
   STEPS.forEach((s, i) => check(`the step ${s.top} up: its board says "${s.move}", and that is what it needs and no less: ${MOVES[i]}`, s.move === BOARD[i] && asIs.steps[i] === i, `the least that gets him there: ${MOVES[asIs.steps[i]]}`));
   TALL.forEach((c, i) => check(`the chimney "${c.lines[0]}": kicks take him to the top, where he lands`, asIs.climbs[i].landed, `${asIs.climbs[i].kicks} kicks, ${asIs.climbs[i].top.toFixed(2)} up`));
-  check('the "one wall kick" ledge: one kick off the tall wall and a catch of its edge gets him onto it', asIs.one.least === 1, `after the kick he ${AFTER[asIs.one.least]}`);
+  check(
+    'the "one wall kick" ledge: one kick off the tall wall and a catch of its edge gets him onto it',
+    asIs.one.least === 1,
+    `after the kick he ${AFTER[asIs.one.least]}`
+  );
   check('...and none of the four is got up without a kick: a jump, a double jump and a grab do not do it', asIs.free.every((x) => !x));
-  check('a running jump from the line carries him about six along the strip, a double jump about ten, and the strip is long enough for a long jump', asIs.run > 5.6 && asIs.run < 7.2 && asIs.dbl > 9 && asIs.dbl < 12 && asIs.long > asIs.run && asIs.long < STRIP.length, `${asIs.run.toFixed(1)}, ${asIs.dbl.toFixed(1)}, long jump ${asIs.long.toFixed(1)}`);
+  check(
+    'a running jump from the line carries him about six along the strip, a double jump about ten, and the strip is long enough for a long jump',
+    asIs.run > 5.6
+      && asIs.run < 7.2
+      && asIs.dbl > 9
+      && asIs.dbl < 12
+      && asIs.long > asIs.run
+      && asIs.long < STRIP.length,
+    `${asIs.run.toFixed(1)}, ${asIs.dbl.toFixed(1)}, long jump ${asIs.long.toFixed(1)}`
+  );
 }
 
 // ---- The sets ----
@@ -314,13 +384,22 @@ const asIs = play(JUMP_SETS[0]);
   for (const s of JUMP_SETS) {
     t.useSet(s, JUMP_SETS);
     const paths = Object.keys(s.values);
-    check(`the set "${s.name}": its sliders are where it puts them, every other jump slider is at its default, and it is the set shown as in use`, paths.every((p) => readTweak(p) === s.values[p]) && TWEAKS.filter((x) => (x.group === 'Jumping' || x.group === 'Moves') && !paths.includes(x.path)).every((x) => readTweak(x.path) === defaultTweak(x.path)) && t.activeSet(JUMP_SETS) === s && t.count() === paths.length);
+    check(
+      `the set "${s.name}": its sliders are where it puts them, every other jump slider is at its default, and it is the set shown as in use`,
+      paths.every((p) => readTweak(p) === s.values[p])
+        && TWEAKS.filter((x) => (x.group === 'Jumping' || x.group === 'Moves') && !paths.includes(x.path)).every((x) => readTweak(x.path) === defaultTweak(x.path))
+        && t.activeSet(JUMP_SETS) === s
+        && t.count() === paths.length
+    );
   }
   t.set('jump.doubleVelocity', 7.3);
   check('a jump slider moved by hand to somewhere of its own: no set is shown as in use', t.activeSet(JUMP_SETS) === null);
   t.useSet(JUMP_SETS[0], JUMP_SETS);
   check('..."As it is" puts it back', t.count() === 0 && TUNING.jump.doubleVelocity === defaultTweak('jump.doubleVelocity'));
-  check('every set\'s sliders are real ones, and within what the sliders allow', JUMP_SETS.every((s) => Object.entries(s.values).every(([p, v]) => TWEAKS.some((x) => x.path === p && v >= x.min && v <= x.max))));
+  check(
+    'every set\'s sliders are real ones, and within what the sliders allow',
+    JUMP_SETS.every((s) => Object.entries(s.values).every(([p, v]) => TWEAKS.some((x) => x.path === p && v >= x.min && v <= x.max)))
+  );
 }
 
 const rows = [asIs, ...JUMP_SETS.slice(1).map(play)];
@@ -336,12 +415,41 @@ for (const r of rows) {
   const kicksOf = (r: Row, id: string): number => r.climbs[TALL.findIndex((c) => c.id === id)].kicks;
   // (Under the other sets it is enough that the kicks take him over the top: this test's own steering was made for
   // the game as it is, and a stronger kick can carry it past the wall it means to land on.)
-  check('under every set, every chimney is still climbed by kicks and by nothing else', rows.every((r) => r.climbs.every((c, i) => c.landed || c.top > Math.min(TALL[i].westTop, TALL[i].eastTop) + 0.3) && r.free.every((x) => !x)));
-  check('"Stronger wall kick": the same jumps; one kick lifts him a unit more, no more kicks are needed up any chimney, and the one-kick ledge is landed on with no catch', Math.abs(by('kick').double - asIs.double) < 0.01 && by('kick').one.gain > asIs.one.gain + 0.9 && TALL.every((c) => kicksOf(by('kick'), c.id) <= kicksOf(asIs, c.id)) && by('kick').one.least === 0, `${kicksOf(by('kick'), 'wide')} kicks for ${kicksOf(asIs, 'wide')}; after one kick he ${AFTER[by('kick').one.least]}`);
-  check('"Smaller double jump": a double jump reaches about 3.4, so the highest step cannot be jumped onto at all and the next needs a grab', Math.abs(by('double').double - 3.4) < 0.1 && by('double').steps[2] === 3 && by('double').steps[3] === 4 && by('double').steps[0] === 0 && by('double').steps[1] === 1, `double jump ${by('double').double.toFixed(2)}`);
-  check('"Mario\'s proportions": a double jump reaches about 3, so neither of the two highest steps can be jumped onto', Math.abs(by('mario').double - 2.95) < 0.1 && by('mario').steps[2] === 4 && by('mario').steps[3] === 4, `double jump ${by('mario').double.toFixed(2)}`);
+  check(
+    'under every set, every chimney is still climbed by kicks and by nothing else',
+    rows.every((r) => r.climbs.every((c, i) => c.landed || c.top > Math.min(TALL[i].westTop, TALL[i].eastTop) + 0.3) && r.free.every((x) => !x))
+  );
+  check(
+    '"Stronger wall kick": the same jumps; one kick lifts him a unit more, no more kicks are needed up any chimney, and the one-kick ledge is landed on with no catch',
+    Math.abs(by('kick').double - asIs.double) < 0.01
+      && by('kick').one.gain > asIs.one.gain + 0.9
+      && TALL.every((c) => kicksOf(by('kick'), c.id) <= kicksOf(asIs, c.id))
+      && by('kick').one.least === 0,
+    `${kicksOf(by('kick'), 'wide')} kicks for ${kicksOf(asIs, 'wide')}; after one kick he ${AFTER[by('kick').one.least]}`
+  );
+  check(
+    '"Smaller double jump": a double jump reaches about 3.4, so the highest step cannot be jumped onto at all and the next needs a grab',
+    Math.abs(by('double').double - 3.4) < 0.1
+      && by('double').steps[2] === 3
+      && by('double').steps[3] === 4
+      && by('double').steps[0] === 0
+      && by('double').steps[1] === 1,
+    `double jump ${by('double').double.toFixed(2)}`
+  );
+  check(
+    '"Mario\'s proportions": a double jump reaches about 3, so neither of the two highest steps can be jumped onto',
+    Math.abs(by('mario').double - 2.95) < 0.1
+      && by('mario').steps[2] === 4
+      && by('mario').steps[3] === 4,
+    `double jump ${by('mario').double.toFixed(2)}`
+  );
   const kickOf = (r: Row): number => r.one.gain;
-  check('"Both" and "Mario\'s proportions": one wall kick climbs more than a whole double jump reaches (as Mario\'s does); as the game is, it is the other way round', ['both', 'mario'].every((id) => kickOf(by(id)) > by(id).double) && kickOf(asIs) < asIs.double, `as it is: a kick ${kickOf(asIs).toFixed(2)}, a double jump ${asIs.double.toFixed(2)}; both: ${kickOf(by('both')).toFixed(2)} and ${by('both').double.toFixed(2)}; Mario's: ${kickOf(by('mario')).toFixed(2)} and ${by('mario').double.toFixed(2)}`);
+  check(
+    '"Both" and "Mario\'s proportions": one wall kick climbs more than a whole double jump reaches (as Mario\'s does); as the game is, it is the other way round',
+    ['both', 'mario'].every((id) => kickOf(by(id)) > by(id).double)
+      && kickOf(asIs) < asIs.double,
+    `as it is: a kick ${kickOf(asIs).toFixed(2)}, a double jump ${asIs.double.toFixed(2)}; both: ${kickOf(by('both')).toFixed(2)} and ${by('both').double.toFixed(2)}; Mario's: ${kickOf(by('mario')).toFixed(2)} and ${by('mario').double.toFixed(2)}`
+  );
   // What each set's note says it does is what it does (the numbers in the notes, against the room).
   const said = (r: Row, what: RegExp): number => Number(what.exec(r.set.note)?.[1] ?? NaN);
   check('each set\'s note gives its double jump and its wall kick as they measure here, to a tenth', rows.every((r) => {
@@ -360,8 +468,19 @@ for (const r of rows) {
   const slopeOfRun = T.y / (RUN.slope.x1 - RUN.slope.x0);
   const slopeOfChute = T.y / (RUN.chute.z1 - RUN.chute.z0);
   const slopeOfUp = T.y / (RUN.up.z1 - RUN.up.z0);
-  check('the run is a slope he can stand on, the way up to it one he can walk, and the chute one he cannot', slopeOfRun <= MAX_WALK_SLOPE && slopeOfRun >= TUNING.ride.minSlope && slopeOfUp <= MAX_WALK_SLOPE && slopeOfChute > MAX_WALK_SLOPE, `run ${slopeOfRun}, way up ${slopeOfUp}, chute ${slopeOfChute}`);
-  check('each of them has a board that says what it is for', ['THE RUN', 'TOO STEEP', 'JUMP'].every((l) => signs.some((d) => d.lines[0] === l)) && signs.find((d) => d.lines[0] === 'THE RUN')?.lines[1] === 'JUMP, ATTACK');
+  check(
+    'the run is a slope he can stand on, the way up to it one he can walk, and the chute one he cannot',
+    slopeOfRun <= MAX_WALK_SLOPE
+      && slopeOfRun >= TUNING.ride.minSlope
+      && slopeOfUp <= MAX_WALK_SLOPE
+      && slopeOfChute > MAX_WALK_SLOPE,
+    `run ${slopeOfRun}, way up ${slopeOfUp}, chute ${slopeOfChute}`
+  );
+  check(
+    'each of them has a board that says what it is for',
+    ['THE RUN', 'TOO STEEP', 'JUMP'].every((l) => signs.some((d) => d.lines[0] === l))
+      && signs.find((d) => d.lines[0] === 'THE RUN')?.lines[1] === 'JUMP, ATTACK'
+  );
   const drive = (from: THREE.Vector3, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): { p: PlayerController; events: string[] } => {
     const p = new PlayerController(from.clone());
     const events: string[] = [];
@@ -381,7 +500,13 @@ for (const r of rows) {
   };
   // The way up: from the floor at its foot he walks to the top.
   const walked = drive(new THREE.Vector3((RUN.up.x0 + RUN.up.x1) / 2, 0, RUN.up.z0 - 1.5), 260, () => ({ move: new THREE.Vector3(0, 0, 1), run: true }));
-  check('he walks up the way up, from the floor to the top of the run', Math.abs(walked.p.position.y - T.y) < 0.01 && walked.p.grounded && !walked.p.riding, `y ${walked.p.position.y.toFixed(2)}`);
+  check(
+    'he walks up the way up, from the floor to the top of the run',
+    Math.abs(walked.p.position.y - T.y) < 0.01
+      && walked.p.grounded
+      && !walked.p.riding,
+    `y ${walked.p.position.y.toFixed(2)}`
+  );
   // The run: he runs at it, sneaks as he comes onto it, and rides. Holding nothing after, he goes over the kicker.
   let fastest = 0;
   let airPastKicker = 0;
@@ -396,8 +521,20 @@ for (const r of rows) {
     if (p.riding && !p.grounded && p.position.x < RUN.kicker.x0) airPastKicker = Math.max(airPastKicker, p.position.y);
     if (p.grounded && atDoor(def.exit, p.position.x, p.position.z)) doorFrames++;
   });
-  check('THE RUN: a jump, and ATTACK in the air over it, and he rides his shield down it and out across the floor', ridden.events.includes('ride') && rodeToFloor && fastest > TUNING.move.run * 1.5, `fastest ${fastest.toFixed(1)}; ${ridden.events.join()}`);
-  check('...the kicker throws him into the air, higher than its own top, and he comes down still on it', airPastKicker > RUN.kicker.y + 0.35 && ridden.events.includes('rideLand') && !ridden.events.includes('bail'), `${airPastKicker.toFixed(2)} up past the kicker; ${ridden.events.join()}`);
+  check(
+    'THE RUN: a jump, and ATTACK in the air over it, and he rides his shield down it and out across the floor',
+    ridden.events.includes('ride')
+      && rodeToFloor
+      && fastest > TUNING.move.run * 1.5,
+    `fastest ${fastest.toFixed(1)}; ${ridden.events.join()}`
+  );
+  check(
+    '...the kicker throws him into the air, higher than its own top, and he comes down still on it',
+    airPastKicker > RUN.kicker.y + 0.35
+      && ridden.events.includes('rideLand')
+      && !ridden.events.includes('bail'),
+    `${airPastKicker.toFixed(2)} up past the kicker; ${ridden.events.join()}`
+  );
   check('...and going straight he is never at the door: he is in the air past it, or beside it', doorFrames === 0, `${doorFrames} frames at the door`);
   // Off the kicker, JUMP and then JUMP AGAIN is the kickflip, and there is air enough to land it.
   let popped = false;
@@ -415,7 +552,14 @@ for (const r of rows) {
     }
     return { run: false, jumpHeld: popped && !p.grounded };
   });
-  check('...JUMP at its top and JUMP AGAIN in the air: a kickflip, landed', tricked.events.includes('ollie') && tricked.events.includes('kickflip') && tricked.events.includes('trick') && !tricked.events.includes('bail'), tricked.events.join());
+  check(
+    '...JUMP at its top and JUMP AGAIN in the air: a kickflip, landed',
+    tricked.events.includes('ollie')
+      && tricked.events.includes('kickflip')
+      && tricked.events.includes('trick')
+      && !tricked.events.includes('bail'),
+    tricked.events.join()
+  );
   // The rail and the kerb: riding down the middle neither is in reach; steered to one, STOW grinds it to its end.
   const grindRun = (toward: number, line: number, top: number): { ground: number; from: number; to: number; events: string[]; missed: boolean } => {
     let pressed = false;
@@ -453,11 +597,33 @@ for (const r of rows) {
     return { ground, from, to, events: r.events, missed: wrong > 0 };
   };
   const middle = grindRun(0, 0, 0);
-  check('GRIND: riding down the middle of the way, neither the rail nor the kerb is in reach of him', !middle.events.includes('grind') && Math.abs(midZ - RUN.rail.z) > TUNING.grind.reach && Math.abs(midZ - RUN.kerb.z0) > TUNING.grind.reach, middle.events.join());
+  check(
+    'GRIND: riding down the middle of the way, neither the rail nor the kerb is in reach of him',
+    !middle.events.includes('grind')
+      && Math.abs(midZ - RUN.rail.z) > TUNING.grind.reach
+      && Math.abs(midZ - RUN.kerb.z0) > TUNING.grind.reach,
+    middle.events.join()
+  );
   const onRail = grindRun(-1, RUN.rail.z, RUN.rail.y);
-  check('...steered to the rail, STOW puts him on it and he grinds it to its end', onRail.events.includes('grind') && !onRail.missed && onRail.to < RUN.rail.x0 + 0.5 && onRail.events.includes('grindEnd') && !onRail.events.includes('bail'), `${onRail.ground} frames, x ${onRail.from.toFixed(1)} to ${onRail.to.toFixed(1)}; ${onRail.events.join()}`);
+  check(
+    '...steered to the rail, STOW puts him on it and he grinds it to its end',
+    onRail.events.includes('grind')
+      && !onRail.missed
+      && onRail.to < RUN.rail.x0 + 0.5
+      && onRail.events.includes('grindEnd')
+      && !onRail.events.includes('bail'),
+    `${onRail.ground} frames, x ${onRail.from.toFixed(1)} to ${onRail.to.toFixed(1)}; ${onRail.events.join()}`
+  );
   const onKerb = grindRun(1, RUN.kerb.z0, RUN.kerb.y);
-  check('...steered to the kerb, STOW hops him onto its edge and he grinds that to its end', onKerb.events.includes('grind') && !onKerb.missed && onKerb.to < RUN.kerb.x0 + 0.5 && onKerb.events.includes('grindEnd') && !onKerb.events.includes('bail'), `${onKerb.ground} frames, x ${onKerb.from.toFixed(1)} to ${onKerb.to.toFixed(1)}; ${onKerb.events.join()}`);
+  check(
+    '...steered to the kerb, STOW hops him onto its edge and he grinds that to its end',
+    onKerb.events.includes('grind')
+      && !onKerb.missed
+      && onKerb.to < RUN.kerb.x0 + 0.5
+      && onKerb.events.includes('grindEnd')
+      && !onKerb.events.includes('bail'),
+    `${onKerb.ground} frames, x ${onKerb.from.toFixed(1)} to ${onKerb.to.toFixed(1)}; ${onKerb.events.join()}`
+  );
   check('...and a board says so', signs.some((d) => d.lines[0] === 'GRIND' && d.lines[1] === 'JUMP, THEN STOW'));
   // The chute: he runs off the top onto it and is on his shield whether he chose it or not, down to the floor.
   let slidFrom = 0;
@@ -468,10 +634,26 @@ for (const r of rows) {
     if (p.position.z < RUN.chute.z1 - 0.4 && p.position.z > RUN.chute.z0 && !p.grounded) inTheAir++;
     if (p.grounded && p.position.y < 0.01 && p.position.z < RUN.chute.z0) outOnTheFloor = true;
   });
-  check('TOO STEEP: he runs onto the chute, loses his footing and slides on his hide from its top to the floor, on it all the way, and gets up at its foot', chuted.events.includes('slip') && !chuted.events.includes('ride') && slidFrom > T.y - 1.5 && inTheAir === 0 && outOnTheFloor && chuted.events.includes('slideEnd') && !chuted.p.sliding, `slid from ${slidFrom.toFixed(2)}; ${inTheAir} frames in the air; ${chuted.events.join()}`);
+  check(
+    'TOO STEEP: he runs onto the chute, loses his footing and slides on his hide from its top to the floor, on it all the way, and gets up at its foot',
+    chuted.events.includes('slip')
+      && !chuted.events.includes('ride')
+      && slidFrom > T.y - 1.5
+      && inTheAir === 0
+      && outOnTheFloor
+      && chuted.events.includes('slideEnd')
+      && !chuted.p.sliding,
+    `slid from ${slidFrom.toFixed(2)}; ${inTheAir} frames in the air; ${chuted.events.join()}`
+  );
   // ...or on his shield: a jump from the top, out over it, and ATTACK in the air.
   const surfed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 120, (_i, p) => (p.riding ? { run: false } : { move: NORTH, run: true, jumpPressed: p.grounded && p.position.z < T.z0 + 0.9, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.position.z < T.z0 - 0.3 }));
-  check('...or he jumps out over it and presses ATTACK, and goes down it on his shield', surfed.events.includes('ride') && !surfed.events.includes('slip') && surfed.events.includes('rideLand'), surfed.events.join());
+  check(
+    '...or he jumps out over it and presses ATTACK, and goes down it on his shield',
+    surfed.events.includes('ride')
+      && !surfed.events.includes('slip')
+      && surfed.events.includes('rideLand'),
+    surfed.events.join()
+  );
   const climbed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, 0, RUN.chute.z0 - 3), 200, (i) => ({ move: new THREE.Vector3(0, 0, 1), run: true, jumpPressed: i % 45 === 20, jumpHeld: i % 45 >= 20 }));
   check('...and from the floor he cannot get up it', climbed.p.position.y < T.y - 2, `y ${climbed.p.position.y.toFixed(2)}`);
   // The rail from his own feet: running beside it, a jump and STOW in the air brings him down onto it on his shield.
@@ -483,9 +665,22 @@ for (const r of rows) {
     return { events: r.events, on };
   };
   const ranAtIt = fromFeet(true);
-  check('GRIND from his own feet: running beside the rail, a jump and STOW in the air puts his shield under him and he comes down onto the rail', ranAtIt.events.includes('ride') && ranAtIt.events.includes('grind') && ranAtIt.on > 20 && !ranAtIt.events.includes('bail'), `${ranAtIt.on} frames on it; ${ranAtIt.events.join()}`);
+  check(
+    'GRIND from his own feet: running beside the rail, a jump and STOW in the air puts his shield under him and he comes down onto the rail',
+    ranAtIt.events.includes('ride')
+      && ranAtIt.events.includes('grind')
+      && ranAtIt.on > 20
+      && !ranAtIt.events.includes('bail'),
+    `${ranAtIt.on} frames on it; ${ranAtIt.events.join()}`
+  );
   const walkedAtIt = fromFeet(false);
-  check('...too slow (at a walk), nothing happens: he comes down on his feet', !walkedAtIt.events.includes('ride') && !walkedAtIt.events.includes('grind') && walkedAtIt.on === 0, walkedAtIt.events.join());
+  check(
+    '...too slow (at a walk), nothing happens: he comes down on his feet',
+    !walkedAtIt.events.includes('ride')
+      && !walkedAtIt.events.includes('grind')
+      && walkedAtIt.on === 0,
+    walkedAtIt.events.join()
+  );
 }
 
 // ---- The pipe: a floor that curves across his way ----
@@ -494,12 +689,27 @@ for (const r of rows) {
   const facets = pipeFacets();
   const deck = pipeDeck();
   const slopes = facets.map((f) => (f.h1 - f.h0) / (f.d1 - f.d0));
-  check('the pipe\'s wall is a curve cut into facets: each starts where the last ended, and is steeper', facets.every((f, i) => i === 0 || (Math.abs(f.d0 - facets[i - 1].d1) < 1e-9 && Math.abs(f.h0 - facets[i - 1].h1) < 1e-9 && slopes[i] > slopes[i - 1])) && facets[0].h0 === 0, slopes.map((x) => x.toFixed(2)).join(', '));
-  check('...its lower facets he can stand on, its upper ones he cannot, and the top one is steeper than two up for one along', slopes[0] <= MAX_WALK_SLOPE && slopes[slopes.length - 1] > 2 && slopes.some((x) => x > MAX_WALK_SLOPE), `deck ${deck.y.toFixed(2)} up`);
+  check(
+    'the pipe\'s wall is a curve cut into facets: each starts where the last ended, and is steeper',
+    facets.every((f, i) => i === 0 || (Math.abs(f.d0 - facets[i - 1].d1) < 1e-9 && Math.abs(f.h0 - facets[i - 1].h1) < 1e-9 && slopes[i] > slopes[i - 1]))
+      && facets[0].h0 === 0,
+    slopes.map((x) => x.toFixed(2)).join(', ')
+  );
+  check(
+    '...its lower facets he can stand on, its upper ones he cannot, and the top one is steeper than two up for one along',
+    slopes[0] <= MAX_WALK_SLOPE
+      && slopes[slopes.length - 1] > 2
+      && slopes.some((x) => x > MAX_WALK_SLOPE),
+    `deck ${deck.y.toFixed(2)} up`
+  );
   for (const side of [-1, 1]) {
     const boxes = facets.map((f) => def.solids.find((b) => !!b.ramp && b.ramp.axis === 'x' && b.ramp.up === side && Math.abs(Math.min(b.x0, b.x1) - Math.min(PIPE.x + side * (PIPE.flat + f.d0), PIPE.x + side * (PIPE.flat + f.d1))) < 1e-9 && Math.abs(b.y1 - f.h1) < 1e-9 && Math.abs(b.ramp.low - f.h0) < 1e-9 && b.z0 === PIPE.z0 && b.z1 === PIPE.z1));
     const top = def.solids.find((b) => !b.ramp && Math.abs(b.y1 - deck.y) < 1e-9 && Math.abs(Math.min(Math.abs(b.x0 - PIPE.x), Math.abs(b.x1 - PIPE.x)) - deck.out) < 1e-9 && Math.sign((b.x0 + b.x1) / 2 - PIPE.x) === side);
-    check(`the ${side < 0 ? 'west' : 'east'} wall: its facets are there, climbing away from the middle, and a deck at their top`, boxes.every((b) => !!b) && !!top);
+    check(
+      `the ${side < 0 ? 'west' : 'east'} wall: its facets are there, climbing away from the middle, and a deck at their top`,
+      boxes.every((b) => !!b)
+        && !!top
+    );
   }
   check('its board says what it is', def.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'THE PIPE'));
   const drive = (from: THREE.Vector3, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): { p: PlayerController; events: string[] } => {
@@ -516,7 +726,13 @@ for (const r of rows) {
   const eastDeck = PIPE.x + deck.out + PIPE.deck / 2;
   // The way up: from the floor south of it, north up the ramp onto the deck.
   const up = drive(new THREE.Vector3(eastDeck, 0, PIPE.z1 + PIPE.way + 1.5), 150, () => ({ move: NORTH, run: true }));
-  check('he walks up the way onto a deck', Math.abs(up.p.position.y - deck.y) < 0.01 && up.p.grounded && up.p.position.z < PIPE.z1, `y ${up.p.position.y.toFixed(2)}`);
+  check(
+    'he walks up the way onto a deck',
+    Math.abs(up.p.position.y - deck.y) < 0.01
+      && up.p.grounded
+      && up.p.position.z < PIPE.z1,
+    `y ${up.p.position.y.toFixed(2)}`
+  );
   // Dropping in: he stands at the lip, hops, drifts out over the wall and presses ATTACK. Then he touches nothing.
   const dropIn = (steer: (p: PlayerController) => THREE.Vector3): { events: string[]; turns: Array<{ x: number; y: number }>; jolt: number; drift: number; end: PlayerController; fastest: number } => {
     const z = (PIPE.z0 + PIPE.z1) / 2;
@@ -551,15 +767,50 @@ for (const r of rows) {
   };
   const a = dropIn(() => new THREE.Vector3());
   const told = a.turns.map((t) => `${t.x.toFixed(1)}/${t.y.toFixed(2)}`).join(' | ');
-  check('THE PIPE: dropped in from a deck (a hop out over the wall, and ATTACK) he comes down on the wall riding, and its curve gives him his speed', a.events[0] === 'ride' && a.events.includes('rideLand') && a.fastest > TUNING.move.run + 1.5 && !a.events.includes('slip') && !a.events.includes('bail'), `fastest ${a.fastest.toFixed(1)}; ${a.events.join()}`);
-  check('...across the floor and up the far wall, most of the way to its deck: and there he is not stepped off, he comes back down', a.turns.length >= 3 && a.turns[0].x < -(PIPE.flat + 2.5) && a.turns[0].y > deck.y * 0.6 && a.turns[0].y < deck.y, told);
-  check('...to and fro, each climb lower than the last and on the other wall, till he is on its floor and steps off', a.turns.every((t, i) => i === 0 || (t.y < a.turns[i - 1].y && Math.sign(t.x) !== Math.sign(a.turns[i - 1].x))) && a.events[a.events.length - 1] === 'rideEnd' && !a.end.riding && a.end.position.y < 0.01 && Math.abs(a.end.position.x - PIPE.x) < PIPE.flat + 1.2, `${told}; ended ${(a.end.position.x - PIPE.x).toFixed(2)}`);
-  check('...smoothly: no join between facets jolts him, and with nothing held he keeps his line across it', a.jolt < TUNING.ride.max * DT + 0.08 && a.drift < 0.01, `furthest in a step ${a.jolt.toFixed(2)}; drifted ${a.drift.toFixed(3)}`);
+  check(
+    'THE PIPE: dropped in from a deck (a hop out over the wall, and ATTACK) he comes down on the wall riding, and its curve gives him his speed',
+    a.events[0] === 'ride'
+      && a.events.includes('rideLand')
+      && a.fastest > TUNING.move.run + 1.5
+      && !a.events.includes('slip')
+      && !a.events.includes('bail'),
+    `fastest ${a.fastest.toFixed(1)}; ${a.events.join()}`
+  );
+  check(
+    '...across the floor and up the far wall, most of the way to its deck: and there he is not stepped off, he comes back down',
+    a.turns.length >= 3
+      && a.turns[0].x < -(PIPE.flat + 2.5)
+      && a.turns[0].y > deck.y * 0.6
+      && a.turns[0].y < deck.y,
+    told
+  );
+  check(
+    '...to and fro, each climb lower than the last and on the other wall, till he is on its floor and steps off',
+    a.turns.every((t, i) => i === 0 || (t.y < a.turns[i - 1].y && Math.sign(t.x) !== Math.sign(a.turns[i - 1].x)))
+      && a.events[a.events.length - 1] === 'rideEnd'
+      && !a.end.riding
+      && a.end.position.y < 0.01
+      && Math.abs(a.end.position.x - PIPE.x) < PIPE.flat + 1.2,
+    `${told}; ended ${(a.end.position.x - PIPE.x).toFixed(2)}`
+  );
+  check(
+    '...smoothly: no join between facets jolts him, and with nothing held he keeps his line across it',
+    a.jolt < TUNING.ride.max * DT + 0.08
+      && a.drift < 0.01,
+    `furthest in a step ${a.jolt.toFixed(2)}; drifted ${a.drift.toFixed(3)}`
+  );
   // Leaning along it as he goes: he carves along the pipe, and no wall throws him out of it.
   // (He leans north for the first three units of it, then lets it be: the pipe ends five short of the chimneys.)
   const midZ = (PIPE.z0 + PIPE.z1) / 2;
   const b = dropIn((p) => new THREE.Vector3(0, 0, p.position.z > midZ - 3 ? -0.5 : 0));
-  check('...leaning along it he turns down the pipe and rides off along it, and is never thrown: no wall of it is a wall across his way', b.drift > 3 && b.jolt < TUNING.ride.max * DT + 0.08 && !b.events.includes('bail') && !b.events.includes('slip'), `went ${b.drift.toFixed(1)} along it; furthest in a step ${b.jolt.toFixed(2)}; ${b.events.join()}`);
+  check(
+    '...leaning along it he turns down the pipe and rides off along it, and is never thrown: no wall of it is a wall across his way',
+    b.drift > 3
+      && b.jolt < TUNING.ride.max * DT + 0.08
+      && !b.events.includes('bail')
+      && !b.events.includes('slip'),
+    `went ${b.drift.toFixed(1)} along it; furthest in a step ${b.jolt.toFixed(2)}; ${b.events.join()}`
+  );
   // On his feet: up the wall from the floor he gets as far as he can stand, a little further scrabbling, and slides back.
   let top = 0;
   let slid = false;
@@ -568,7 +819,16 @@ for (const r of rows) {
     slid ||= p.sliding;
   });
   const standable = Math.max(...facets.filter((_f, i) => slopes[i] <= MAX_WALK_SLOPE).map((f) => f.h1));
-  check('on his feet he walks up its wall as far as he can stand, scrabbles a little further, and slides back down: he does not walk out of it', top >= standable - 0.01 && top < deck.y - 0.2 && slid && walked.events.includes('slip') && !walked.p.sliding && walked.p.position.y <= standable + 0.01, `${top.toFixed(2)} up (he can stand to ${standable.toFixed(2)}, the deck is ${deck.y.toFixed(2)}); ${walked.events.slice(0, 4).join()}`);
+  check(
+    'on his feet he walks up its wall as far as he can stand, scrabbles a little further, and slides back down: he does not walk out of it',
+    top >= standable - 0.01
+      && top < deck.y - 0.2
+      && slid
+      && walked.events.includes('slip')
+      && !walked.p.sliding
+      && walked.p.position.y <= standable + 0.01,
+    `${top.toFixed(2)} up (he can stand to ${standable.toFixed(2)}, the deck is ${deck.y.toFixed(2)}); ${walked.events.slice(0, 4).join()}`
+  );
 }
 
 // ---- The downhill pipe: ramps tipped two ways ----
@@ -579,7 +839,13 @@ for (const r of rows) {
   const pieces = rs.filter((b) => !!b.ramp && b.min.z === DROP.z0 && b.max.z === DROP.z1 && b.min.x >= DROP.x - half - 1e-9 && b.max.x <= DROP.x + half + 1e-9);
   const facets = dropFacets();
   check('the downhill pipe is a floor and two walls of facets: nine planes side by side', pieces.length === 1 + 2 * DROP.facets, `${pieces.length} pieces`);
-  check('every one of them falls south at the same rate, steep enough for the air attack to be the shield', pieces.every((b) => Math.abs(slopeXZ(b)[1] + fall) < 1e-9) && fall >= TUNING.ride.minSlope && fall <= MAX_WALK_SLOPE, `falls ${fall.toFixed(3)} in one`);
+  check(
+    'every one of them falls south at the same rate, steep enough for the air attack to be the shield',
+    pieces.every((b) => Math.abs(slopeXZ(b)[1] + fall) < 1e-9)
+      && fall >= TUNING.ride.minSlope
+      && fall <= MAX_WALK_SLOPE,
+    `falls ${fall.toFixed(3)} in one`
+  );
   check('...its floor is level across, and each facet is tipped up across as well, away from the middle, more than the one inside it', pieces.filter((b) => Math.abs(slopeXZ(b)[0]) < 1e-9).length === 1 && [-1, 1].every((side) => {
     const wall = pieces.filter((b) => Math.sign((b.min.x + b.max.x) / 2 - DROP.x) === side && Math.abs(slopeXZ(b)[0]) > 1e-9).sort((a, b) => Math.abs(a.min.x + a.max.x - 2 * DROP.x) - Math.abs(b.min.x + b.max.x - 2 * DROP.x));
     return wall.length === DROP.facets && wall.every((b, i) => Math.sign(slopeXZ(b)[0]) === side && (i === 0 || Math.abs(slopeXZ(b)[0]) > Math.abs(slopeXZ(wall[i - 1])[0])));
@@ -593,8 +859,18 @@ for (const r of rows) {
       seam = Math.max(seam, Math.max(...here) - Math.min(...here));
     }
   }
-  check('...and it is ONE surface: where two pieces meet they are at the same height, all the way down', xs.length === 2 * DROP.facets && seam < 1e-5, `greatest step at a join ${seam.toExponential(1)}`);
-  check('its top facet is too steep to stand on, its floor is not', Math.max(...pieces.map(slopeOf)) > MAX_WALK_SLOPE && Math.min(...pieces.map(slopeOf)) <= MAX_WALK_SLOPE && facets[facets.length - 1].h1 > 1.5);
+  check(
+    '...and it is ONE surface: where two pieces meet they are at the same height, all the way down',
+    xs.length === 2 * DROP.facets
+      && seam < 1e-5,
+    `greatest step at a join ${seam.toExponential(1)}`
+  );
+  check(
+    'its top facet is too steep to stand on, its floor is not',
+    Math.max(...pieces.map(slopeOf)) > MAX_WALK_SLOPE
+      && Math.min(...pieces.map(slopeOf)) <= MAX_WALK_SLOPE
+      && facets[facets.length - 1].h1 > 1.5
+  );
   check('its board says what it is', def.decor.some((d) => d.kind === 'sign' && d.lines[0] === 'DOWNHILL PIPE'));
   const drive = (from: THREE.Vector3, frames: number, at: (i: number, p: PlayerController) => Partial<PlayerInput>, each?: (p: PlayerController) => void): { p: PlayerController; events: string[] } => {
     const p = new PlayerController(from.clone());
@@ -611,7 +887,13 @@ for (const r of rows) {
   const SOUTH = new THREE.Vector3(0, 0, 1);
   // The way up: from the floor west of it, east up the ramp onto the platform at the pipe's top.
   const up = drive(new THREE.Vector3(DROP.wayFrom - 1.5, 0, (DROP.back + DROP.z0) / 2), 240, (_i, p) => ({ move: p.position.x < DROP.x - 0.5 ? EAST : new THREE.Vector3(), run: true }));
-  check('he walks up the way to the top of it', Math.abs(up.p.position.y - DROP.rise) < 0.01 && up.p.grounded && Math.abs(up.p.position.x - DROP.x) < 1.5, `y ${up.p.position.y.toFixed(2)} at x ${up.p.position.x.toFixed(1)}`);
+  check(
+    'he walks up the way to the top of it',
+    Math.abs(up.p.position.y - DROP.rise) < 0.01
+      && up.p.grounded
+      && Math.abs(up.p.position.x - DROP.x) < 1.5,
+    `y ${up.p.position.y.toFixed(2)} at x ${up.p.position.x.toFixed(1)}`
+  );
   // Dropping in: from the platform, a hop out over the pipe and ATTACK. Then nothing held till he is out of it.
   const ridden = (off: number): { events: string[]; out: number; crossed: number; air: number; jolt: number; fastest: number; left: number; end: PlayerController } => {
     let rode = false;
@@ -648,14 +930,46 @@ for (const r of rows) {
     return { events: r.events, out, crossed, air, jolt, fastest, left, end: r.p };
   };
   const mid = ridden(0);
-  check('DOWNHILL PIPE: dropped in at its top (a hop, and ATTACK) he rides it to its foot, on it the whole way, faster and faster', mid.events[0] === 'ride' && mid.events.includes('rideLand') && mid.air === 0 && mid.left > TUNING.move.run * 1.6 && !mid.events.includes('bail') && !mid.events.includes('slip'), `leaves it at ${mid.left.toFixed(1)}; ${mid.events.join()}`);
-  check('...smoothly: no join between its planes jolts him, down its length or across it', mid.jolt < TUNING.ride.max * DT + 0.08, `furthest in a step ${mid.jolt.toFixed(2)}`);
-  check('...and out of its end onto the floor, where he can brake and step off', mid.end.position.z > DROP.z1 && mid.end.position.y < 0.01 && !mid.end.riding && mid.events[mid.events.length - 1] === 'rideEnd');
+  check(
+    'DOWNHILL PIPE: dropped in at its top (a hop, and ATTACK) he rides it to its foot, on it the whole way, faster and faster',
+    mid.events[0] === 'ride'
+      && mid.events.includes('rideLand')
+      && mid.air === 0
+      && mid.left > TUNING.move.run * 1.6
+      && !mid.events.includes('bail')
+      && !mid.events.includes('slip'),
+    `leaves it at ${mid.left.toFixed(1)}; ${mid.events.join()}`
+  );
+  check(
+    '...smoothly: no join between its planes jolts him, down its length or across it',
+    mid.jolt < TUNING.ride.max * DT + 0.08,
+    `furthest in a step ${mid.jolt.toFixed(2)}`
+  );
+  check(
+    '...and out of its end onto the floor, where he can brake and step off',
+    mid.end.position.z > DROP.z1
+      && mid.end.position.y < 0.01
+      && !mid.end.riding
+      && mid.events[mid.events.length - 1] === 'rideEnd'
+  );
   const side = ridden(1.2);
-  check('...dropped in off its middle, its wall turns him back across it: he stays in the pipe, and no wall of it is a wall to him', side.crossed >= 1 && side.out < half && side.air === 0 && side.jolt < TUNING.ride.max * DT + 0.08 && !side.events.includes('bail'), `furthest out ${side.out.toFixed(2)} of ${half.toFixed(2)}; crossed its middle ${side.crossed} time(s); ${side.events.join()}`);
+  check(
+    '...dropped in off its middle, its wall turns him back across it: he stays in the pipe, and no wall of it is a wall to him',
+    side.crossed >= 1
+      && side.out < half
+      && side.air === 0
+      && side.jolt < TUNING.ride.max * DT + 0.08
+      && !side.events.includes('bail'),
+    `furthest out ${side.out.toFixed(2)} of ${half.toFixed(2)}; crossed its middle ${side.crossed} time(s); ${side.events.join()}`
+  );
   // On his feet he can walk down its floor, and up it.
   const walkDown = drive(new THREE.Vector3(DROP.x, DROP.rise, DROP.z0 - 0.5), 300, () => ({ move: SOUTH, run: false }));
-  check('on his feet he walks down its floor to the bottom, never sliding', !walkDown.events.includes('slip') && walkDown.p.position.z > DROP.z1 && walkDown.p.position.y < 0.01);
+  check(
+    'on his feet he walks down its floor to the bottom, never sliding',
+    !walkDown.events.includes('slip')
+      && walkDown.p.position.z > DROP.z1
+      && walkDown.p.position.y < 0.01
+  );
 }
 
 console.log(failures === 0 ? '\nAll garden checks passed.' : `\n${failures} garden check(s) FAILED.`);

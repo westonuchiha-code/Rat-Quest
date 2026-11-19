@@ -57,7 +57,11 @@ function check(name: string, ok: boolean, detail = ''): void {
     const locked = trio[2]; // the FURTHEST of the three
     const dl = new Director();
     dl.update(DT, trio, 0, 0, locked);
-    check('locked on to one of three, THAT one has first claim on the attack, though it is the furthest off', locked.mayAttack === true && trio.filter((e) => e.mayAttack).length === 1);
+    check(
+      'locked on to one of three, THAT one has first claim on the attack, though it is the furthest off',
+      locked.mayAttack === true
+        && trio.filter((e) => e.mayAttack).length === 1
+    );
     // How long each must wait after an attack: the locked one comes again sooner.
     const breath = (lock: boolean): number => {
       const two = [fake(2, 0), fake(0, 4)];
@@ -75,7 +79,13 @@ function check(name: string, ok: boolean, detail = ''): void {
     };
     const plain = breath(false);
     const duel = breath(true);
-    check('...and it waits a shorter breath before it comes again: under half the wait of one he is not locked on to. Locking on is a duel, and the one he duels presses him harder (never easier)', duel < plain * 0.5 && duel > 0.2 && plain > 0.6, `${duel.toFixed(2)} s against ${plain.toFixed(2)} s`);
+    check(
+      '...and it waits a shorter breath before it comes again: under half the wait of one he is not locked on to. Locking on is a duel, and the one he duels presses him harder (never easier)',
+      duel < plain * 0.5
+        && duel > 0.2
+        && plain > 0.6,
+      `${duel.toFixed(2)} s against ${plain.toFixed(2)} s`
+    );
     const busy = [fake(2, 0), fake(0, 4)];
     const db = new Director();
     (busy[1] as { ready: boolean }).ready = false;
@@ -120,15 +130,34 @@ function check(name: string, ok: boolean, detail = ''): void {
   };
   const free = fight(false);
   const duel = fight(true);
-  check('locked on to one roach of three, the two that wait spend their waiting at his SIDES, far more than a crowd he is not locked on to does (they also charge through him and back, which is why it is not all of it)', duel.side > free.side * 1.7 && duel.side > 900, `${duel.side} frames against ${free.side}`);
+  check(
+    'locked on to one roach of three, the two that wait spend their waiting at his SIDES, far more than a crowd he is not locked on to does (they also charge through him and back, which is why it is not all of it)',
+    duel.side > free.side * 1.7
+      && duel.side > 900,
+    `${duel.side} frames against ${free.side}`
+  );
   check('...and not bunched in front of him with the one he is fighting', duel.front < duel.side * 0.1, `${duel.front} frames in front`);
-  check('they still take their turns from there: the ones at his sides attack too, and never two at once', duel.attacks - duel.lockedAttacks >= 3 && duel.atOnce === 1, `${duel.attacks} attacks, ${duel.lockedAttacks} by the locked one`);
-  check('nothing got easier: there are at least as many attacks in the same time as with no lock', duel.attacks >= free.attacks, `${duel.attacks} against ${free.attacks}`);
+  check(
+    'they still take their turns from there: the ones at his sides attack too, and never two at once',
+    duel.attacks - duel.lockedAttacks >= 3
+      && duel.atOnce === 1,
+    `${duel.attacks} attacks, ${duel.lockedAttacks} by the locked one`
+  );
+  check(
+    'nothing got easier: there are at least as many attacks in the same time as with no lock',
+    duel.attacks >= free.attacks,
+    `${duel.attacks} against ${free.attacks}`
+  );
   // Two take a hand each; nobody crosses in front of him to get to his place.
   const three = [new Scuttler({ x: 0, z: 5, hunt: true }), new Scuttler({ x: 3, z: 2, hunt: true }), new Scuttler({ x: -3, z: 2, hunt: true })];
   const d3 = new Director();
   d3.update(DT, three, 0, 0, three[0]);
-  check('the one already on his right is sent to his right hand and the one on his left to his left', Math.abs(three[1].flank! - Math.PI / 2) < 0.01 && Math.abs(three[2].flank! + Math.PI / 2) < 0.01 && three[0].flank === null);
+  check(
+    'the one already on his right is sent to his right hand and the one on his left to his left',
+    Math.abs(three[1].flank! - Math.PI / 2) < 0.01
+      && Math.abs(three[2].flank! + Math.PI / 2) < 0.01
+      && three[0].flank === null
+  );
   d3.update(DT, three, 0, 0, null);
   check('the lock let go, they are free to circle as they like again', three.every((e) => e.flank === null));
 }
@@ -172,8 +201,18 @@ function check(name: string, ok: boolean, detail = ''): void {
     };
     const free = fight(false);
     const duel = fight(true);
-    check(`${kind}: locked on to one of three, the two that wait spend most of their waiting at his SIDES`, duel.side > duel.looked * 0.5 && duel.side > free.side * 1.5, `${duel.side} of ${duel.looked} frames, against ${free.side} of ${free.looked} with no lock`);
-    check(`${kind}: ...and the turns are not changed by it: never more at once than with no lock, and no fewer attacks`, duel.atOnce <= Math.max(1, free.atOnce) && duel.attacks >= free.attacks * 0.9, `${duel.attacks} attacks (${free.attacks} with no lock), at most ${duel.atOnce} at once`);
+    check(
+      `${kind}: locked on to one of three, the two that wait spend most of their waiting at his SIDES`,
+      duel.side > duel.looked * 0.5
+        && duel.side > free.side * 1.5,
+      `${duel.side} of ${duel.looked} frames, against ${free.side} of ${free.looked} with no lock`
+    );
+    check(
+      `${kind}: ...and the turns are not changed by it: never more at once than with no lock, and no fewer attacks`,
+      duel.atOnce <= Math.max(1, free.atOnce)
+        && duel.attacks >= free.attacks * 0.9,
+      `${duel.attacks} attacks (${free.attacks} with no lock), at most ${duel.atOnce} at once`
+    );
   }
 }
 
@@ -227,7 +266,11 @@ function check(name: string, ok: boolean, detail = ''): void {
     if (t.state === 'pounce' && t.stateTime < TOAD.pounceTime * 0.5 && t.attackActive) activeEarly = true;
     if (before === 'pounce' && t.state === 'recover') landed = true;
   }
-  check('close in, it crouches, then pounces, then lies winded', ['crouch', 'pounce', 'recover'].every((s, i) => seen.indexOf(s) >= 0 && (i === 0 || seen.indexOf(s) > seen.indexOf(['crouch', 'pounce', 'recover'][i - 1]))), seen.join('>'));
+  check(
+    'close in, it crouches, then pounces, then lies winded',
+    ['crouch', 'pounce', 'recover'].every((s, i) => seen.indexOf(s) >= 0 && (i === 0 || seen.indexOf(s) > seen.indexOf(['crouch', 'pounce', 'recover'][i - 1]))),
+    seen.join('>')
+  );
   check('it comes down where he stood', landed && Math.hypot(t.x - 0, t.z - 2.2) < 0.35, `${t.x.toFixed(2)},${t.z.toFixed(2)}`);
   check('it only hurts as it comes down, not at the start of the jump', !activeEarly);
   t.lungeLanded(false, true);

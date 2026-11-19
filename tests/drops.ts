@@ -10,8 +10,18 @@ function check(name: string, ok: boolean, detail = ''): void {
 }
 const store = { data: new Map<string, string>(), getItem(k: string) { return this.data.get(k) ?? null; }, setItem(k: string, v: string) { this.data.set(k, v); } };
 
-check('one broken crate in ten leaves a can of nacho cheese', CRATE_DROPS.length === 1 && CRATE_DROPS[0].itemId === 'nachoCheese' && CRATE_DROPS[0].chance === 0.1);
-check('a roll under the chance drops it, a roll over does not', rollCrateDrop(() => 0.05) === 'nachoCheese' && rollCrateDrop(() => 0.15) === null && rollCrateDrop(() => 0.99) === null);
+check(
+  'one broken crate in ten leaves a can of nacho cheese',
+  CRATE_DROPS.length === 1
+    && CRATE_DROPS[0].itemId === 'nachoCheese'
+    && CRATE_DROPS[0].chance === 0.1
+);
+check(
+  'a roll under the chance drops it, a roll over does not',
+  rollCrateDrop(() => 0.05) === 'nachoCheese'
+    && rollCrateDrop(() => 0.15) === null
+    && rollCrateDrop(() => 0.99) === null
+);
 {
   let s = 12345;
   const dice = (): number => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
