@@ -208,23 +208,28 @@ export class Doorway {
     for (let i = 0; i < up.count; i++) up.setXY(i, pp.getX(i) / lw + 0.5, pp.getY(i) / lh);
     bakeVertexColor(slabGeo, 0xffffff);
     this.leaf.add(new THREE.Mesh(slabGeo, leafMat));
+    // Its ironwork, all one mesh (2026-11-19: it was four or five, in each of the Hall's thirty doors).
+    const iron: THREE.BufferGeometry[] = [];
     if (look.bands) {
       for (const by of [0.55, straight - 0.2]) {
         const band = new THREE.BoxGeometry(lw - 0.04, 0.16, 0.05);
         band.translate(0, by, 0.18);
-        this.leaf.add(new THREE.Mesh(bakeVertexColor(band, 0x2a2a30), plain));
+        iron.push(bakeVertexColor(band, 0x2a2a30));
       }
       const post = new THREE.BoxGeometry(0.06, lh - 0.5, 0.04);
       post.translate(0, (lh - 0.5) / 2 + 0.1, 0.17);
-      this.leaf.add(new THREE.Mesh(bakeVertexColor(post, 0x2a2a30), plain));
+      iron.push(bakeVertexColor(post, 0x2a2a30));
     }
     // An iron ring pull on the right-hand side.
     const ring = new THREE.TorusGeometry(0.15, 0.03, 5, 10);
     ring.translate(r - 0.5, 1.45, 0.24);
-    this.leaf.add(new THREE.Mesh(bakeVertexColor(ring, 0x55555c), plain));
+    iron.push(bakeVertexColor(ring, 0x55555c));
     const stud = new THREE.BoxGeometry(0.16, 0.16, 0.06);
     stud.translate(r - 0.5, 1.62, 0.2);
-    this.leaf.add(new THREE.Mesh(bakeVertexColor(stud, 0x404048), plain));
+    iron.push(bakeVertexColor(stud, 0x404048));
+    const ironwork = mergeGeometries(iron.map((g) => (g.index ? g.toNonIndexed() : g)));
+    for (const g of iron) g.dispose();
+    if (ironwork) this.leaf.add(new THREE.Mesh(ironwork, plain));
     this.group.add(this.leaf);
 
     // ---- Light spilling out over the floor in front of the door. ----

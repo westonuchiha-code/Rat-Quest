@@ -3363,7 +3363,13 @@ function startGame(): void {
       by[key] = (by[key] ?? 0) + n;
     }
     const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 8);
-    return { level: cur.id, top, calls: renderer.info.render.calls, frameTris: renderer.info.render.triangles, meshes, tris: Math.round(tris), lights, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries };
+    // (Each of the scene's other groups, by how many meshes it shows: him, the doors, and the rest.)
+    const groups = scene.children.filter((c) => !c.name && c !== chamber.group && !npcs.some((x) => x.root === c)).map((c) => {
+      let n = 0;
+      c.traverse((o) => { if ((o as THREE.Mesh).isMesh && o.visible) n++; });
+      return `${n}${c === rat.root ? ' (him)' : c === courseVis?.group ? ' (doors)' : ''}`;
+    }).filter((t) => t !== '0');
+    return { level: cur.id, top, groups, calls: renderer.info.render.calls, frameTris: renderer.info.render.triangles, meshes, tris: Math.round(tris), lights, textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries };
   };
   (window as unknown as { __chaos?: () => unknown }).__chaos = () => ({ level: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp });
   const devAuto: { fight: boolean; swing: number } = { fight: /[#&]autofight\b/.test(location.hash), swing: 0 };
