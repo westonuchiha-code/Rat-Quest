@@ -101,6 +101,61 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(w);
     return { group: g };
   }
+  if (what === 'button') {
+    // A coat button: a thick disc, a raised rim, four holes through the dish in the middle, a thread still in two of them.
+    const R = J.w / 2;
+    g.add(part(new THREE.CylinderGeometry(R, R * 0.96, J.h * 0.8, 16, 1), 0x8a3a2a, mats.wax, 0, J.h * 0.4, 0));
+    g.add(part(new THREE.TorusGeometry(R * 0.86, 0.06, 4, 16).rotateX(Math.PI / 2), 0x9a4a36, mats.wax, 0, J.h * 0.8, 0));
+    for (const [hx, hz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      g.add(part(new THREE.CylinderGeometry(0.09, 0.09, 0.02, 8, 1), 0x1e0e0a, mats.plain, hx * R * 0.24, J.h * 0.8 + 0.006, hz * R * 0.24));
+    }
+    g.add(part(new THREE.BoxGeometry(0.035, 0.03, R * 0.56), 0xe8e0c8, mats.thread, -R * 0.24, J.h * 0.8 + 0.02, 0));
+    return { group: g };
+  }
+  if (what === 'pencil') {
+    // Lying along x: six-sided painted wood, the sharpened end bare wood and its lead, a tin band and a worn pink rubber.
+    const r = J.h / 2;
+    const body = J.w * 0.66;
+    const x0 = -J.w / 2 + 0.3; // where the rubber's band ends and the paint starts
+    const hex = new THREE.CylinderGeometry(r, r, body, 6, 1).rotateZ(Math.PI / 2);
+    g.add(part(hex, 0xe8b830, mats.card, x0 + body / 2, r, 0));
+    const cone = new THREE.CylinderGeometry(0.06, r, J.w - body - 0.3 - 0.12, 6, 1).rotateZ(-Math.PI / 2);
+    const coneLen = J.w - body - 0.3 - 0.12;
+    g.add(part(cone, 0xe8c89a, mats.wood, x0 + body + coneLen / 2, r, 0));
+    g.add(part(new THREE.ConeGeometry(0.06, 0.12, 6).rotateZ(-Math.PI / 2), 0x2a2a30, mats.plain, J.w / 2 - 0.06, r, 0));
+    g.add(part(new THREE.CylinderGeometry(r * 1.04, r * 1.04, 0.14, 8, 1).rotateZ(Math.PI / 2), 0xc8c4b8, mats.tin, x0 - 0.07, r, 0));
+    g.add(part(new THREE.CylinderGeometry(r * 0.96, r * 0.9, 0.16, 8, 1).rotateZ(Math.PI / 2), 0xe08a8a, mats.wax, -J.w / 2 + 0.08, r, 0));
+    return { group: g };
+  }
+  if (what === 'die') {
+    // An ivory cube with dark pips: one on top, the rest round its sides as a real one has them (opposite faces add to seven).
+    const s = J.w;
+    g.add(part(new THREE.BoxGeometry(s, s, s), 0xf0e8d4, mats.wax, 0, s / 2, 0));
+    const pip = (x: number, y: number, z: number, nx: number, ny: number, nz: number): void => {
+      const p = part(new THREE.CircleGeometry(0.075, 6), 0x1a1612, mats.plain, x + nx * 0.004, y + ny * 0.004, z + nz * 0.004);
+      p.lookAt(p.position.x + nx, p.position.y + ny, p.position.z + nz);
+      g.add(p);
+    };
+    const o = s * 0.25;
+    const h = s / 2;
+    // Each face: the pips in its own plane (u, v), pushed out along its normal.
+    const faces: Array<[number, [number, number, number], [number, number, number], [number, number, number]]> = [
+      [1, [0, 1, 0], [1, 0, 0], [0, 0, 1]], // top: one
+      [6, [0, -1, 0], [1, 0, 0], [0, 0, 1]],
+      [2, [0, 0, 1], [1, 0, 0], [0, 1, 0]], // the front: two
+      [5, [0, 0, -1], [1, 0, 0], [0, 1, 0]],
+      [3, [1, 0, 0], [0, 0, 1], [0, 1, 0]], // the east: three
+      [4, [-1, 0, 0], [0, 0, 1], [0, 1, 0]],
+    ];
+    const LAY: Record<number, Array<[number, number]>> = {
+      1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]],
+      5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [-1, 0], [-1, 1], [1, -1], [1, 0], [1, 1]],
+    };
+    for (const [n, nrm, u, v] of faces) for (const [a, b] of LAY[n]) {
+      pip(nrm[0] * h + u[0] * a * o + v[0] * b * o, h + nrm[1] * h + u[1] * a * o + v[1] * b * o, nrm[2] * h + u[2] * a * o + v[2] * b * o, nrm[0], nrm[1], nrm[2]);
+    }
+    return { group: g };
+  }
   // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.
   g.add(part(new THREE.BoxGeometry(J.w * 0.8, J.h * 0.8, J.d), 0xe0dccf, mats.tin, -J.w * 0.1, J.h * 0.4, 0));
   g.add(part(new THREE.PlaneGeometry(J.w * 0.76, J.d * 0.92).rotateX(-Math.PI / 2), 0x6a5a2a, mats.plain, -J.w * 0.1, J.h * 0.7, 0));

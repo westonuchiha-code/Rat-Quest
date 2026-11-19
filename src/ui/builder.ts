@@ -112,6 +112,9 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('matchbox', 'Matchbox', 'Mb', '#c8402e', 'decor', 'A matchbox lying flat, its drawer half out. It faces the way it is turned (R). Solid.'),
     P('cheese', 'Wheel of cheese', 'Ch', '#f2c87a', 'decor', 'A wheel of cheese with a wedge cut out of it. Solid: he can stand on it.'),
     P('sardines', 'Sardine tin', 'Sa', '#a8b8c8', 'decor', 'An opened sardine tin, its lid rolled back. It faces the way it is turned (R). Solid.'),
+    P('button', 'Coat button', 'Bu', '#8a3a2a', 'decor', 'A big coat button lying flat. Solid: a low step.'),
+    P('pencil', 'Pencil stub', 'Pe', '#e8b830', 'decor', 'A pencil stub lying on its side. It lies the way it is turned (R). Solid: a low beam.'),
+    P('die', 'Die', 'Di', '#f0e8d4', 'decor', 'A die, an old ivory one. Solid: he can stand on it.'),
     P('light', 'Light', 'Z', '#ff5a5a', 'decor', 'A coloured light on a post. It can flash.'),
     P('banner', 'Banner', 'Bn', '#7a3aa8', 'decor', 'A banner on a wall.'),
     P('torch', 'Torch', 'T', '#ffb040', 'decor', 'A torch on a wall.'),
@@ -133,9 +136,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['plate', 'matchbox', 'sardines', 'cheese', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
 const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate', 'bar']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };

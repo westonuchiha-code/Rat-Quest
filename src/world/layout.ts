@@ -162,7 +162,7 @@ export function tableSolids(x: number, y: number, z: number): Box[] {
  * house leaves lying about, as tall to him as furniture. As drawn (junkModels.ts) and as solid (`junkSolids`): each a
  * box he can stand on, a little inside what is drawn. `w` across, `d` deep (along its yaw), `h` high.
  */
-export type JunkKind = 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines';
+export type JunkKind = 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die';
 export const JUNK: Record<JunkKind, { w: number; d: number; h: number }> = {
   /** A candle stub stood in a bottle cap. It lights the room round it. */
   candle: { w: 0.5, d: 0.5, h: 1.05 },
@@ -174,6 +174,12 @@ export const JUNK: Record<JunkKind, { w: number; d: number; h: number }> = {
   cheese: { w: 1.7, d: 1.7, h: 0.62 },
   /** A sardine tin, opened: its lid rolled back on its key. */
   sardines: { w: 1.7, d: 0.95, h: 0.32 },
+  /** A coat button lying flat, four holes through it. (2026-11-19) */
+  button: { w: 1.3, d: 1.3, h: 0.2 },
+  /** A pencil stub lying on its side: sharpened at one end, a rubber in a tin band at the other. */
+  pencil: { w: 2.4, d: 0.34, h: 0.34 },
+  /** A die, an old ivory one, its corners worn round. */
+  die: { w: 0.8, d: 0.8, h: 0.8 },
 };
 /** The solid of a piece of junk at (x, y, z) turned `yaw` (a quarter turn or none: it is a box). */
 export function junkSolids(what: JunkKind, x: number, y: number, z: number, yaw = 0): Box[] {
