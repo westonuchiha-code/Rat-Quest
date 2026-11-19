@@ -31,6 +31,7 @@ import { CAMPAIGN } from './campaign';
 import { hall } from './hall';
 import { practiceRoom, widowPit } from './practice';
 import { layThrowables } from './throwables';
+import { layOddments } from './oddments';
 import { BOARDS_SAY, type BoardsSay, HALL_ID, PRACTICE_ROOMS, ROOMS, roomName } from './testRooms';
 import { SEWER } from '../story/scenes';
 import type { EnemySpec, LevelDef } from './types';
@@ -314,6 +315,7 @@ nameTheRooms([...ALL_LEVELS, ...TEST_ROOMS]);
 titleBoards([...ALL_LEVELS, ...TEST_ROOMS], ((typeof location !== 'undefined' && /[#&]boards=(old|number|both)\b/.exec(location.hash)?.[1]) || BOARDS_SAY) as BoardsSay);
 // (And a few pots and rocks to throw, by each test room's way in: levels/throwables.ts.)
 layThrowables([...ALL_LEVELS, ...TEST_ROOMS]);
+layOddments([...ALL_LEVELS, ...TEST_ROOMS]);
 
 let extra: () => LevelDef[] = () => [];
 /** Levels from outside the built-in list (the player's own, from the builder). */

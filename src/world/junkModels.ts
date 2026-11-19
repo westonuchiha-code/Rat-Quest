@@ -156,6 +156,65 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     }
     return { group: g };
   }
+  if (what === 'pawn') {
+    // Turned wood, black and polished: a broad foot, a collar, the body narrowing up to a neck, a ball for a head.
+    const ink = 0x2a2420;
+    g.add(part(new THREE.CylinderGeometry(0.36, 0.4, 0.14, 14, 1), ink, mats.wax, 0, 0.07, 0));
+    g.add(part(new THREE.CylinderGeometry(0.3, 0.36, 0.1, 14, 1), ink, mats.wax, 0, 0.19, 0));
+    g.add(part(new THREE.CylinderGeometry(0.13, 0.27, 0.62, 12, 1), ink, mats.wax, 0, 0.55, 0));
+    g.add(part(new THREE.CylinderGeometry(0.21, 0.21, 0.06, 12, 1), ink, mats.wax, 0, 0.88, 0));
+    g.add(part(new THREE.SphereGeometry(0.24, 12, 8), ink, mats.wax, 0, 1.12, 0));
+    return { group: g };
+  }
+  if (what === 'battery') {
+    // Lying along x: the black body, its gold end, and the knob on the gold end. (Smooth, as wax is: tin's dents
+    // read as cloth at this size.)
+    const r = J.h / 2;
+    const body = J.w * 0.72;
+    const x0 = -J.w / 2 + 0.04;
+    g.add(part(new THREE.CylinderGeometry(r, r, body, 12, 1).rotateZ(Math.PI / 2), 0x2a2a30, mats.wax, x0 + body / 2, r, 0));
+    const gold = J.w - body - 0.12;
+    g.add(part(new THREE.CylinderGeometry(r, r, gold, 12, 1).rotateZ(Math.PI / 2), 0xe0a030, mats.wax, x0 + body + gold / 2, r, 0));
+    g.add(part(new THREE.CylinderGeometry(r * 0.32, r * 0.32, 0.12, 8, 1).rotateZ(Math.PI / 2), 0xc8c4b8, mats.tin, J.w / 2 - 0.06, r, 0));
+    // A white stripe of writing round the black.
+    g.add(part(new THREE.CylinderGeometry(r * 1.01, r * 1.01, 0.12, 12, 1, true).rotateZ(Math.PI / 2), 0xe8e4d8, mats.plain, x0 + body * 0.4, r, 0));
+    return { group: g };
+  }
+  if (what === 'teacup') {
+    // The saucer, the cup on it (a blue band round it, cold tea in it), and its handle.
+    const R = J.w / 2;
+    g.add(part(new THREE.CylinderGeometry(R, R * 0.7, 0.08, 18, 1), 0xf4f0e8, mats.wax, 0, 0.04, 0));
+    const cupR = R * 0.56;
+    const cup = new THREE.CylinderGeometry(cupR, cupR * 0.66, J.h - 0.08, 16, 1, true);
+    g.add(part(cup, 0xf4f0e8, mats.wax, 0, 0.08 + (J.h - 0.08) / 2, 0));
+    // Its inside: the same wall a hair in, its faces turned to look inward (the material is shared: not made two-sided).
+    const inside = new THREE.CylinderGeometry(cupR * 0.97, cupR * 0.64, J.h - 0.08, 16, 1, true);
+    const ix = inside.index!;
+    for (let i = 0; i < ix.count; i += 3) {
+      const a0 = ix.getX(i + 1);
+      ix.setX(i + 1, ix.getX(i + 2));
+      ix.setX(i + 2, a0);
+    }
+    inside.computeVertexNormals();
+    g.add(part(inside, 0xe8e2d4, mats.wax, 0, 0.08 + (J.h - 0.08) / 2, 0));
+    g.add(part(new THREE.CylinderGeometry(cupR * 1.005, cupR * 0.95, 0.1, 16, 1, true), 0x4a72b8, mats.plain, 0, J.h - 0.12, 0));
+    g.add(part(new THREE.CircleGeometry(cupR * 0.8, 14).rotateX(-Math.PI / 2), 0x7a4a24, mats.plain, 0, J.h * 0.45, 0));
+    const handle = new THREE.TorusGeometry(0.17, 0.045, 5, 10, Math.PI * 1.3);
+    handle.rotateZ(-Math.PI * 0.65);
+    g.add(part(handle, 0xf4f0e8, mats.wax, cupR * 0.95 + 0.1, J.h * 0.55, 0));
+    return { group: g };
+  }
+  if (what === 'spoon') {
+    // On its back along x: the bowl, the neck, the handle widening to its end.
+    const bowl = new THREE.SphereGeometry(0.26, 12, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2);
+    bowl.scale(1.3, 0.75, 1);
+    g.add(part(bowl, 0xc8ccd4, mats.tin, -J.w / 2 + 0.36, J.h * 0.95, 0));
+    const handle = new THREE.BoxGeometry(J.w - 0.72, 0.05, 0.14);
+    g.add(part(handle, 0xc8ccd4, mats.tin, 0.36 - 0.02, 0.08, 0));
+    const end = new THREE.CylinderGeometry(0.13, 0.13, 0.05, 10, 1);
+    g.add(part(end, 0xc8ccd4, mats.tin, J.w / 2 - 0.12, 0.08, 0));
+    return { group: g };
+  }
   // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.
   g.add(part(new THREE.BoxGeometry(J.w * 0.8, J.h * 0.8, J.d), 0xe0dccf, mats.tin, -J.w * 0.1, J.h * 0.4, 0));
   g.add(part(new THREE.PlaneGeometry(J.w * 0.76, J.d * 0.92).rotateX(-Math.PI / 2), 0x6a5a2a, mats.plain, -J.w * 0.1, J.h * 0.7, 0));

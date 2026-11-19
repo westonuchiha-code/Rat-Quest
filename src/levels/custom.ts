@@ -20,7 +20,7 @@ export type PieceType =
   | 'roach' | 'toad' | 'beetle' | 'bat' | 'guard' | 'mantis' | 'stag' | 'hornet' | 'ant' | 'firefly' | 'scorpion' | 'brood' | 'wyrm' | 'npc' | 'pipe' | 'fall' | 'gate'
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
-  | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die'
+  | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
@@ -530,7 +530,11 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'sardines':
       case 'button':
       case 'pencil':
-      case 'die': {
+      case 'die':
+      case 'pawn':
+      case 'battery':
+      case 'teacup':
+      case 'spoon': {
         const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
         decor.push({ kind: 'junk', what: p.t, x: cx, y: p.top, z: cz, yaw });
         solids.push(...junkSolids(p.t, cx, p.top, cz, yaw));

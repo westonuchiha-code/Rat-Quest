@@ -226,7 +226,7 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
 // ---- 2026-11-18: odds and ends for rooms: a candle stub, a cotton reel, a matchbox, a wheel of cheese, a sardine tin ----
 {
   const at = (t: Piece['t'], x: number, z: number, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top: 0, ...extra });
-  const kinds = ['candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die'] as const;
+  const kinds = ['candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon'] as const;
   const lvl: CustomLevel = {
     name: 'Odds and ends', width: 30, depth: 30, wallHeight: 8,
     pieces: [
