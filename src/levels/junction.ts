@@ -14,7 +14,7 @@ import { compileCustom, CustomLevel, Piece } from './custom';
 import { doorOn } from '../world/rooms';
 import type { CourseDoorDef, LevelDef } from './types';
 import type { NpcSpec } from '../npc/npc';
-import { extent, stoolSolids, tableSolids, type Decor } from '../world/layout';
+import { extent, junkSolids, stoolSolids, tableSolids, type Decor, type JunkKind } from '../world/layout';
 import { BALANCE } from '../data/balance';
 
 const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top, ...extra });
@@ -249,6 +249,18 @@ function clubBar(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[
   for (const z of seats) {
     decor.push({ kind: 'stool', x: BAR.stoolX, y: 0, z });
     solids.push(...stoolSolids(BAR.stoolX, 0, z));
+  }
+  // Odds and ends: a candle stub and a matchbox on the bar; a wheel of cheese, a sardine tin and a cotton reel along the walls.
+  const junk: Array<[JunkKind, number, number, number, number]> = [
+    ['candle', (BAR.x0 + BAR.x1) / 2, BAR.top, BAR.z0 + 0.45, 0],
+    ['matchbox', (BAR.x0 + BAR.x1) / 2, BAR.top, BAR.z1 - 2.1, EAST],
+    ['cheese', -17.5, 0, HZ - 1.6, 0],
+    ['sardines', HX - 1.1, 0, 5.6, EAST],
+    ['spool', -HX + 1.4, 0, -14.5, 0],
+  ];
+  for (const [what, x, y, z, yaw] of junk) {
+    decor.push({ kind: 'junk', what, x, y, z, yaw });
+    solids.push(...junkSolids(what, x, y, z, yaw));
   }
   const npcs: NpcSpec[] = [
     // She keeps the bar: a mug in one wing and a rag going round it in the other.
