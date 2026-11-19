@@ -1718,6 +1718,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       built.group.position.set(d.x, d.y, d.z);
       built.group.rotation.y = d.yaw;
       group.add(built.group);
+      if (built.sway) swayers.push({ obj: built.sway, axis: 'x', amount: 0.14, speed: 1.3, phase: d.x * 0.9 + d.z });
+      if (built.steam) animators.push(built.steam);
       if (built.flame) {
         swayers.push({ obj: built.flame, axis: 'z', amount: 0.25, speed: 7, phase: d.x + d.z });
         lightDefs.push({ x: d.x, y: d.y + 1.2, z: d.z, r: 6, color: new THREE.Color(0xffb060), power: 0.7, flash: 0, flicker: 0.2, phase: d.x * 1.7 + d.z });

@@ -226,7 +226,7 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
 // ---- 2026-11-18: odds and ends for rooms: a candle stub, a cotton reel, a matchbox, a wheel of cheese, a sardine tin ----
 {
   const at = (t: Piece['t'], x: number, z: number, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top: 0, ...extra });
-  const kinds = ['candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon'] as const;
+  const kinds = ['candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble'] as const;
   const lvl: CustomLevel = {
     name: 'Odds and ends', width: 30, depth: 30, wallHeight: 8,
     pieces: [
@@ -238,7 +238,7 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   const def = compileCustom(lvl, 'oddsandends');
   const junk = def.decor.filter((d) => d.kind === 'junk') as { kind: 'junk'; what: string; x: number; z: number }[];
   check('each of the five ODDS AND ENDS placed in the editor is drawn where it was put', kinds.every((k, i) => junk.some((d) => d.what === k && Math.abs(d.x - (-8 + i * 4)) < 1e-6 && Math.abs(d.z) < 1e-6)));
-  check('...and each is solid: something to stand on, not to walk through', kinds.every((_, i) => def.solids.some((b) => b.hidden && b.x0 < -8 + i * 4 && b.x1 > -8 + i * 4 && b.z0 < 0 && b.z1 > 0 && b.y1 >= 0.15)));
+  check('...and each is solid: something to stand on, not to walk through', kinds.every((_, i) => def.solids.some((b) => b.hidden && b.x0 < -8 + i * 4 && b.x1 > -8 + i * 4 && b.z0 < 0 && b.z1 > 0 && b.y1 >= 0.08)));
   const m = junkSolids('matchbox', 0, 0, 0, Math.PI / 2)[0];
   check('...and a matchbox turned a quarter is long the other way', (m.z1 - m.z0) > (m.x1 - m.x0));
   check('...and the editor offers all five, each placed with one click', kinds.every((t) => TOOLS.some((g) => g.items.some((i) => i.t === t)) && SINGLE.has(t)));

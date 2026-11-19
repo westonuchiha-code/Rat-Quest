@@ -30,7 +30,11 @@ const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x =
 };
 
 /** The model; and, for a candle, its flame (to flicker, and the place its light comes from). */
-export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh } {
+/**
+ * The model; and what of it moves: a candle's flame (to flicker, and the place its light comes from), a spool's loose
+ * thread (to sway: hung from where it leaves the reel), a teacup's steam (wisps that rise and fade, `steam(time)`).
+ */
+export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; steam?: (time: number) => void } {
   const g = new THREE.Group();
   const J = JUNK[what];
   if (what === 'candle') {
@@ -51,11 +55,16 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     for (const y of [0.05, J.h - 0.05]) g.add(part(new THREE.CylinderGeometry(J.w / 2, J.w / 2, 0.1, 14, 1), 0xd8c0a0, mats.wood, 0, y, 0));
     g.add(part(new THREE.CylinderGeometry(J.w / 2 - 0.08, J.w / 2 - 0.08, J.h - 0.2, 14, 1, true), 0x4a7ab0, mats.thread, 0, J.h / 2, 0));
     g.add(part(new THREE.CylinderGeometry(0.08, 0.08, 0.012, 8, 1), 0x6a4a2c, mats.wood, 0, J.h + 0.006, 0));
+    // (Hung from where it leaves the reel, so that it sways from there: 2026-11-19.)
+    const hang = new THREE.Group();
+    hang.position.set(J.w / 2 - 0.06 - Math.sin(0.5) * 0.3, 0.35 + Math.cos(0.5) * 0.3, 0.1);
     const end = new THREE.CylinderGeometry(0.012, 0.012, 0.6, 4, 1);
-    const tail = part(end, 0x4a7ab0, mats.thread, J.w / 2 - 0.06, 0.35, 0.1);
+    end.translate(0, -0.3, 0);
+    const tail = part(end, 0x4a7ab0, mats.thread);
     tail.rotation.z = 0.5;
-    g.add(tail);
-    return { group: g };
+    hang.add(tail);
+    g.add(hang);
+    return { group: g, sway: hang };
   }
   if (what === 'matchbox') {
     // The sleeve (a label on its top, a striking strip down its side) and the drawer pushed half out of it, matches in it.
@@ -181,7 +190,7 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     return { group: g };
   }
   if (what === 'teacup') {
-    // The saucer, the cup on it (a blue band round it, cold tea in it), and its handle.
+    // The saucer, the cup on it (a blue band round it, tea in it), and its handle.
     const R = J.w / 2;
     g.add(part(new THREE.CylinderGeometry(R, R * 0.7, 0.08, 18, 1), 0xf4f0e8, mats.wax, 0, 0.04, 0));
     const cupR = R * 0.56;
@@ -202,7 +211,24 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     const handle = new THREE.TorusGeometry(0.17, 0.045, 5, 10, Math.PI * 1.3);
     handle.rotateZ(-Math.PI * 0.65);
     g.add(part(handle, 0xf4f0e8, mats.wax, cupR * 0.95 + 0.1, J.h * 0.55, 0));
-    return { group: g };
+    // Steam: three faint wisps rising off the tea, each growing and fading as it goes, one after another.
+    const wisps: Array<{ m: THREE.Mesh; mat: THREE.MeshBasicMaterial; k: number }> = [];
+    for (let k = 0; k < 3; k++) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xf4f4f0, transparent: true, opacity: 0, depthWrite: false });
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4), mat);
+      g.add(m);
+      wisps.push({ m, mat, k });
+    }
+    const steam = (time: number): void => {
+      for (const w of wisps) {
+        const u = (time * 0.3 + w.k / 3) % 1;
+        w.m.position.set(Math.sin(time * 1.3 + w.k * 2) * 0.08 * u, J.h * 0.5 + u * 1.1, Math.cos(time * 1.1 + w.k) * 0.08 * u);
+        w.m.scale.setScalar(0.6 + u * 1.4);
+        w.mat.opacity = 0.32 * Math.sin(Math.PI * u);
+      }
+    };
+    steam(0);
+    return { group: g, steam };
   }
   if (what === 'spoon') {
     // On its back along x: the bowl, the neck, the handle widening to its end.
@@ -213,6 +239,56 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(handle, 0xc8ccd4, mats.tin, 0.36 - 0.02, 0.08, 0));
     const end = new THREE.CylinderGeometry(0.13, 0.13, 0.05, 10, 1);
     g.add(part(end, 0xc8ccd4, mats.tin, J.w / 2 - 0.12, 0.08, 0));
+    return { group: g };
+  }
+  if (what === 'safetypin') {
+    // Flat along x: two steel wires, the coil at one end, the clasp at the other with the point tucked in.
+    const steel = 0xc8ccd4;
+    const r = 0.035;
+    const len = J.w - 0.5;
+    for (const z of [-0.14, 0.14]) g.add(part(new THREE.CylinderGeometry(r, r, len, 5, 1).rotateZ(Math.PI / 2), steel, mats.tin, 0.05, r, z));
+    g.add(part(new THREE.TorusGeometry(0.15, r, 4, 10).rotateX(Math.PI / 2), steel, mats.tin, -J.w / 2 + 0.2, r, 0));
+    g.add(part(new THREE.BoxGeometry(0.34, 0.12, 0.44), 0xb0b4bc, mats.tin, J.w / 2 - 0.2, 0.06, 0));
+    return { group: g };
+  }
+  if (what === 'paperclip') {
+    // A wire bent in three loops, lying flat: a tube along its path.
+    const P = (x: number, z: number): THREE.Vector3 => new THREE.Vector3(x, 0.04, z);
+    const hw = J.w / 2;
+    const pts = [P(hw * 0.55, 0.12), P(-hw + 0.25, 0.12), P(-hw, 0), P(-hw + 0.25, -0.25), P(hw - 0.25, -0.25), P(hw, 0), P(hw - 0.25, 0.25), P(-hw + 0.5, 0.25)];
+    const path = new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.3);
+    g.add(part(new THREE.TubeGeometry(path, 48, 0.035, 4, false), 0xb8bcc8, mats.tin));
+    return { group: g };
+  }
+  if (what === 'crayon') {
+    // On its side along x: six-sided red wax, bare at its back end and at its tip, its paper wrapper round the middle.
+    // (Laid end to end, nothing over anything: in a room too big to be layered as it loads, wax under paper flickers.)
+    const r = J.h / 2;
+    const red = 0xd83a5a;
+    const tip = 0.36;
+    const x0 = -J.w / 2;
+    const x1 = J.w / 2 - tip;
+    const wrapA = x0 + 0.2;
+    const wrapB = x1 - 0.42;
+    const seg = (a: number, b: number, rad: number, color: number, mat: THREE.Material): void => {
+      g.add(part(new THREE.CylinderGeometry(rad, rad, b - a, 6, 1).rotateZ(Math.PI / 2), color, mat, (a + b) / 2, r, 0));
+    };
+    seg(x0, wrapA, r, red, mats.wax);
+    seg(wrapA, wrapB, r * 1.03, 0xf0e4c8, mats.card);
+    seg(wrapB, x1, r, red, mats.wax);
+    g.add(part(new THREE.CylinderGeometry(0.06, r, tip, 6, 1).rotateZ(-Math.PI / 2), red, mats.wax, x1 + tip / 2, r, 0));
+    return { group: g };
+  }
+  if (what === 'marble') {
+    // A ball of glass, pale, and its twist of colour: two bands at the surface, crossed (the ball is not see-through).
+    const R = J.h / 2;
+    g.add(part(new THREE.SphereGeometry(R, 14, 10), 0xd8eef4, mats.wax, 0, R, 0));
+    for (const [tilt, turn, col] of [[1.1, 0.6, 0x2a9ad8], [-0.5, 2.2, 0xe8a030]] as const) {
+      const band = new THREE.TorusGeometry(R * 0.95, R * 0.1, 4, 16);
+      band.rotateX(tilt);
+      band.rotateY(turn);
+      g.add(part(band, col, mats.plain, 0, R, 0));
+    }
     return { group: g };
   }
   // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.

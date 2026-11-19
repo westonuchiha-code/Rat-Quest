@@ -162,7 +162,7 @@ export function tableSolids(x: number, y: number, z: number): Box[] {
  * house leaves lying about, as tall to him as furniture. As drawn (junkModels.ts) and as solid (`junkSolids`): each a
  * box he can stand on, a little inside what is drawn. `w` across, `d` deep (along its yaw), `h` high.
  */
-export type JunkKind = 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon';
+export type JunkKind = 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon' | 'safetypin' | 'paperclip' | 'crayon' | 'marble';
 export const JUNK: Record<JunkKind, { w: number; d: number; h: number }> = {
   /** A candle stub stood in a bottle cap. It lights the room round it. */
   candle: { w: 0.5, d: 0.5, h: 1.05 },
@@ -184,10 +184,18 @@ export const JUNK: Record<JunkKind, { w: number; d: number; h: number }> = {
   pawn: { w: 0.8, d: 0.8, h: 1.4 },
   /** A battery lying on its side, its gold end and its little knob. */
   battery: { w: 2.0, d: 0.62, h: 0.62 },
-  /** A teacup on its saucer, a blue band round it and cold tea in the bottom. */
+  /** A teacup on its saucer, a blue band round it and tea in the bottom, still warm: it steams. */
   teacup: { w: 1.5, d: 1.5, h: 0.75 },
   /** A teaspoon lying on its back. */
   spoon: { w: 2.6, d: 0.55, h: 0.22 },
+  /** A safety pin lying flat, closed. (2026-11-19) */
+  safetypin: { w: 2.4, d: 0.5, h: 0.14 },
+  /** A paperclip lying flat. */
+  paperclip: { w: 2.0, d: 0.6, h: 0.1 },
+  /** A wax crayon lying on its side, its paper wrapper torn at the tip. */
+  crayon: { w: 2.2, d: 0.36, h: 0.36 },
+  /** A glass marble with a twist of colour inside. */
+  marble: { w: 0.7, d: 0.7, h: 0.7 },
 };
 /** The solid of a piece of junk at (x, y, z) turned `yaw` (a quarter turn or none: it is a box). */
 export function junkSolids(what: JunkKind, x: number, y: number, z: number, yaw = 0): Box[] {
