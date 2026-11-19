@@ -152,8 +152,10 @@ and its 17 characters (about 830: each is made of many small parts); the Toy Box
 the room's own group: flowers, butterflies, lights). TRIED AND TAKEN OUT: joining each room's still walls and floors
 into one mesh per picture (Hall 2,020 to 1,988; the Long Drop drew three times the triangles, as joined pieces can no
 longer be skipped off screen). DONE: a door's frame is one mesh once it has opened (world/doorway.ts; Hall 2,020 to
-1,674, the same picture: compared side by side; tests/rooms.ts). LEFT: the dream's dressing (instanced flowers) and
-the characters (many small parts each): model work, best done with his eyes on the result.
+1,674, the same picture: compared side by side; tests/rooms.ts). DONE 2026-11-19: each flower is one mesh, not four (world/chamber.ts; the same flower, compared side by side): Toy Box
+1,706 to 617 draw calls, the Milky Way 215 to 132. A chain's links are a quarter lighter (three-sided bars; four-sided
+rings were tried and read as diamonds): the Lair's triangles 37,920 to 36,128, the Waterworks 71,390 to 68,936.
+LEFT: the characters (many small parts each): model work, best done with his eyes on the result.
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in

@@ -1210,13 +1210,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         const stem = new THREE.BoxGeometry(0.025, tall, 0.025);
         stem.translate(0, tall / 2, 0);
         bakeVertexColor(stem, 0x1f8a3a, false);
-        flower.add(new THREE.Mesh(stem, pm));
         const leaf = new THREE.ConeGeometry(0.05, 0.16, 3);
         leaf.rotateZ(-1.1);
         leaf.translate(0.08, tall * 0.42, 0);
         bakeVertexColor(leaf, 0x3ac85a, false);
-        flower.add(new THREE.Mesh(leaf, pm));
-        const head = new THREE.Group();
+        // (2026-11-19: the four parts, stem, leaf, petals and middle, are one mesh: a quarter of the draw calls, the same flower.)
+        const head = new THREE.Object3D();
         head.position.y = tall;
         head.rotation.x = -0.5;
         const R = 0.085 + rnd() * 0.04;
@@ -1229,10 +1228,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         const eye = new THREE.CircleGeometry(R * 0.36, 5);
         eye.translate(0, 0, 0.004);
         bakeVertexColor(eye, heart, false);
-        head.add(new THREE.Mesh(petals, pm), new THREE.Mesh(eye, pm));
         // (A flower's face is to the sky and a little toward wherever it leans.)
         head.rotateX(-Math.PI / 2 + 0.5);
-        flower.add(head);
+        head.updateMatrix();
+        petals.applyMatrix4(head.matrix);
+        eye.applyMatrix4(head.matrix);
+        flower.add(new THREE.Mesh(mergeAll([stem, leaf, petals, eye]), pm));
         group.add(flower);
         nodders.push({ o: flower, phase: rnd() * 6.3, lean: 0.06 + rnd() * 0.07 });
       }
@@ -1777,7 +1778,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     } else if (d.kind === 'chain') {
       const parts: THREE.BufferGeometry[] = [];
       for (let y = d.top, i = 0; y > d.bottom; y -= 0.2, i++) {
-        const link = new THREE.TorusGeometry(0.09, 0.03, 4, 6);
+        // (2026-11-19: a link's bar is three-sided, not four: a quarter fewer triangles, and the ring still six-sided.
+        // Four-sided rings, half the triangles, read as diamonds up close: tried and not kept.)
+        const link = new THREE.TorusGeometry(0.09, 0.03, 3, 6);
         link.rotateY(i % 2 ? Math.PI / 2 : 0);
         link.rotateZ(Math.PI / 2);
         link.translate(0, y - d.top, 0);

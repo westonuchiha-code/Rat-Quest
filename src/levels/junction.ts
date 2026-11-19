@@ -250,13 +250,17 @@ function clubBar(): { decor: Decor[]; solids: LevelDef['solids']; npcs: NpcSpec[
     decor.push({ kind: 'stool', x: BAR.stoolX, y: 0, z });
     solids.push(...stoolSolids(BAR.stoolX, 0, z));
   }
-  // Odds and ends: a candle stub and a matchbox on the bar; a wheel of cheese, a sardine tin and a cotton reel along the walls.
+  // Odds and ends: a candle stub and a matchbox on the bar; the rest about the floor, out of everyone's way.
   const junk: Array<[JunkKind, number, number, number, number]> = [
     ['candle', (BAR.x0 + BAR.x1) / 2, BAR.top, BAR.z0 + 0.45, 0],
     ['matchbox', (BAR.x0 + BAR.x1) / 2, BAR.top, BAR.z1 - 2.1, EAST],
     ['cheese', -17.5, 0, HZ - 1.6, 0],
     ['sardines', HX - 1.1, 0, 5.6, EAST],
     ['spool', -HX + 1.4, 0, -14.5, 0],
+    // (2026-11-19) a die by the card table, a pencil stub along the east wall, a coat button on the west side.
+    ['die', 21.4, 0, -3.9, 0.4],
+    ['pencil', HX - 0.6, 0, -4.5, EAST],
+    ['button', -19.5, 0, -8.2, 0],
   ];
   for (const [what, x, y, z, yaw] of junk) {
     decor.push({ kind: 'junk', what, x, y, z, yaw });
