@@ -69,7 +69,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   const b = play(cs, 8, 200, () => ({ move: WEST, run: true }));
   check('running down it he just runs: nothing but the air attack starts a ride', !b.events.includes('ride') && !b.p.riding);
   // (SNEAK was the way on at first: it is not any more.)
-  const c = play(cs, 8, 200, (i, p) => ({ move: WEST, run: p.position.x > -1 }));
+  const c = play(cs, 8, 200, (_i, p) => ({ move: WEST, run: p.position.x > -1 }));
   check('...not running down it and then sneaking, which was the first way', !c.events.includes('ride') && !c.p.riding);
   const ground = play(cs, 8, 120, (i, p) => ({ move: WEST, run: true, attackPressed: p.grounded && p.position.x < -3 && i % 30 === 0 }));
   check('ATTACK on the ground on a slope is his sword, as anywhere', !ground.events.includes('ride') && !ground.p.riding);
@@ -184,7 +184,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   // (He is put on it as he runs off the landing: he does not sail out over it and come down at its foot.)
   let offIt = 0;
   let high = 0;
-  play(cs, 8, 60, (i, p) => {
+  play(cs, 8, 60, (_i, p) => {
     if (p.position.x < -0.4 && p.position.x > -3.6) {
       if (!p.grounded) offIt++;
       if (p.sliding) high = Math.max(high, p.position.y);
@@ -192,7 +192,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     return { move: WEST, run: true };
   });
   check('...run off the landing onto it and he is sliding from its top, never in the air over it', offIt === 0 && high > 6.5, `frames in the air ${offIt}, sliding from ${high.toFixed(2)}`);
-  const b = play(cs, 8, 200, (i, p) => (p.sliding ? { move: v(1, 0), run: true } : { move: WEST, run: true }));
+  const b = play(cs, 8, 200, (_i, p) => (p.sliding ? { move: v(1, 0), run: true } : { move: WEST, run: true }));
   check('...he cannot stop on it, push back as he may: he is at its foot', b.p.position.y < 0.01 && b.p.position.x < -4);
   const c = play(cs, 8, 600, (i) => (i < 30 ? { move: WEST, run: true } : {}));
   check('...and on the flat at its foot he scrapes to a stop and gets up', c.events.includes('slideEnd') && !c.p.sliding && c.p.grounded && c.p.position.y < 0.01 && c.p.state === 'idle', `${c.events.join()}; ${c.p.state}`);
@@ -207,7 +207,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   let slideTop = 0;
   let slideTurn = 0;
   let slideFrames = 0;
-  const hide = play(long, 30, 150, (i, p) => {
+  const hide = play(long, 30, 150, (_i, p) => {
     if (p.sliding && p.grounded) {
       slideTop = Math.max(slideTop, speedOf(p));
       if (++slideFrames === 30) slideTurn = off(p);
@@ -218,7 +218,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   let rideTop = 0;
   let rideTurn = 0;
   let rideFrames = 0;
-  const board = play(long, 30, 150, (i, p) => {
+  const board = play(long, 30, 150, (_i, p) => {
     if (p.riding && p.grounded) {
       rideTop = Math.max(rideTop, speedOf(p));
       if (++rideFrames === 30) rideTurn = off(p);
@@ -235,7 +235,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   let jerk = 0;
   let last = -8;
   let back = false;
-  const up = play(cs, 8, 150, (i, p) => {
+  const up = play(cs, 8, 150, (_i, p) => {
     jerk = Math.max(jerk, Math.abs(p.position.x - last));
     last = p.position.x;
     top = Math.max(top, p.position.y);
@@ -284,7 +284,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
     check('...coming down on the same too-steep ground, he slips again', slipsAfter >= 1 && again.events.filter((e) => e === 'slip').length >= 2, again.events.join());
     // Hopping off the foot of the slope onto the flat: he lands on his feet.
     let hop2 = false;
-    const flat = play(cs, 8, 140, (i, p) => {
+    const flat = play(cs, 8, 140, (_i, p) => {
       const h = !hop2 && p.sliding && p.grounded && p.position.y < 1.2;
       if (h) hop2 = true;
       return hop2 ? { jumpPressed: h, jumpHeld: true } : { move: WEST, run: true };
@@ -293,7 +293,7 @@ const surfOnSlope = (extra: (i: number, p: PlayerController) => Partial<PlayerIn
   }
   // Out of a slide, onto the shield: hop, and the air attack.
   let hopped = false;
-  const out = play(long, 30, 120, (i, p) => {
+  const out = play(long, 30, 120, (_i, p) => {
     if (p.riding) return { run: false };
     if (!p.sliding && !hopped) return { move: WEST, run: true };
     const h = !hopped && p.grounded && p.position.x < -4;

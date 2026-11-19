@@ -88,7 +88,7 @@ function swingsToKill(g: GearMods): { swings: number; swingTime: number } {
     swings++;
     p.update(DT, input({ attackPressed: true }), chamber.colliders);
     let t = 0;
-    while (p.attackTimer >= 0 && t++ < 200) {
+    while ((p as unknown as { attackTimer: number }).attackTimer >= 0 && t++ < 200) {
       p.update(DT, input(), chamber.colliders);
       resolveCombat(p, [e], ev);
     }

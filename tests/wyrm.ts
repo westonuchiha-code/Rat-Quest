@@ -72,10 +72,6 @@ function put(p: PlayerController, x: number, z: number, face?: { x: number; z: n
   p.velocity.set(0, 0, 0);
   if (face) p.facing = Math.atan2(face.x - x, face.z - z);
 }
-/** Puts the rat `d` in front of its head, facing it. */
-function before(p: PlayerController, w: Wyrm, d: number): void {
-  put(p, w.x + Math.sin(w.facing) * d, w.z + Math.cos(w.facing) * d, w);
-}
 /** One swing from where he stands (it holds still for it). */
 function swing(p: PlayerController, w: Wyrm): CombatEvents {
   const ev = events();
@@ -118,7 +114,7 @@ const MAX = TUNING.health.max;
 {
   const door = cistern.courseDoors?.find((d) => d.to === 'sump');
   const reach = computeReach(cistern);
-  check('the Sump is a place in the Cistern, through a door in its north-east corner that he can walk up to', !!door && sump.world === 'cistern' && sump.returnTo === 'cistern' && reach.near(door!.door.x - 1, door!.door.y, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x - 0.8, door!.door.z));
+  check('the Sump is a place in the Cistern, through a door in its north-east corner that he can walk up to', !!door && sump.world === 'cistern' && sump.returnTo === 'cistern' && reach.near(door!.door.x - 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x - 0.8, door!.door.z));
   check('the Wyrm is the only thing in it, and beating it is what its Golden Wedge asks', sump.enemies.length === 1 && sump.wedges?.length === 1 && sump.wedges[0].appears?.type === 'defeat' && sump.goals.length === 1);
   const A = SUMP_ARENA;
   let floor = true;

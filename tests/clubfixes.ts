@@ -16,7 +16,7 @@ import { makeAabb } from '../src/world/collision';
 import { SIGN, signPixels } from '../src/world/courseDoors';
 import { GLYPH_H, hasGlyph, textWidth, wrapText } from '../src/render/pixelFont';
 import { shellGeometry } from '../src/npc/patrons';
-import { levelById, LEVELS } from '../src/levels/levels';
+import { levelById } from '../src/levels/levels';
 import { TUNING } from '../src/data/tuning';
 import { SHARPS, SHARP_DEFAULT, SHARP_ROWS, pictureSize } from '../src/render/picture';
 
@@ -81,7 +81,7 @@ const offset = (m: THREE.Object3D): number => {
   const def = { solids: [{ kind: 'floor', x0: -3, x1: 3, y0: -1, y1: 0, z0: -3, z1: 3 }, { kind: 'barrel', x0: -0.45, x1: 0.45, y0: 0, y1: 1.1, z0: -0.45, z1: 0.45 }], pit: null, water: [], decor: [], movers: [] };
   const ch = buildChamber(def as never);
   const barrel = ch.crates.find((c) => c.type === 'barrel')!;
-  const up = faces(barrel.mesh).filter((f) => f.n.y > 0.9);
+  const up = faces(barrel.mesh as unknown as THREE.Object3D).filter((f) => f.n.y > 0.9);
   const mid = (f: { a: THREE.Vector3; b: THREE.Vector3; c: THREE.Vector3 }): THREE.Vector3 => f.a.clone().add(f.b).add(f.c).divideScalar(3);
   const heights = [...new Set(up.map((f) => mid(f).y.toFixed(3)))].map(Number).sort((x, y) => x - y);
   const inner = up.filter((f) => Math.hypot(mid(f).x, mid(f).z) < 0.3);

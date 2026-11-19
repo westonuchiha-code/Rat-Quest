@@ -170,7 +170,7 @@ const YARD = { x: spec.x + 8, z: spec.z };
   const found = cave.enemies.filter((e) => e.type === 'firefly');
   check('the Hollows has one, over the west end of the Undershelf, hanging in clear air over real floor', found.length === 1 && spec.x === SHELF_FIREFLY.x && spec.z === SHELF_FIREFLY.z && canStand(spec.x, spec.y ?? 0, spec.z, 0.45) && canFly(spec.x, (spec.y ?? 0) + F.height, spec.z, F.radius), `at ${spec.x}, ${spec.z}`);
   check('its air is that end of the shelf and out over the chasm beside it', !!spec.arena && spec.arena.x0 === FIREFLY_AIR.x0 && spec.arena.z1 === FIREFLY_AIR.z1 && !canStand(-18, 0, 26, 0.1) && canFly(-18, F.height, 26, F.radius));
-  check('it is no part of what the gallery\'s wedge asks for', !!spec.uncounted && new GoalTracker(cave).enemyTotal === cave.enemies.filter((e) => !e.uncounted).length);
+  check('it is no part of what the gallery\'s wedge asks for', !!spec.uncounted && new GoalTracker(cave, () => ({ have: 0, total: 0 })).enemyTotal === cave.enemies.filter((e) => !e.uncounted).length);
   const w = fight(spec.x, spec.z + 30);
   const f = w.f;
   check('at its post it hangs in the air facing the way it was set, its lantern full', f.state === 'idle' && Math.abs(f.y - F.height) < 1e-6 && Math.abs(f.facing - (spec.facing ?? 0)) < 1e-6 && f.light === 1);
@@ -620,7 +620,7 @@ const YARD = { x: spec.x + 8, z: spec.z };
     const found = L.enemies.filter((e) => e.type === 'firefly');
     const sp = found[0];
     check(`there is one ${place.where}, hanging in clear air over real floor`, found.length === 1 && sp.x === place.at.x && sp.z === place.at.z && canStand(sp.x, sp.y ?? 0, sp.z, 0.45) && canFly(sp.x, (sp.y ?? 0) + F.height, sp.z, F.radius) && canFly(sp.x, (sp.y ?? 0) + F.height + 0.8, sp.z, F.radius), sp ? `at ${sp.x}, ${sp.z}` : 'none');
-    check(`...its air is that floor and out over ${place.beside} beside it; and it is no part of what any wedge there asks for`, !!sp.arena && sp.arena.x0 === place.air.x0 && sp.arena.x1 === place.air.x1 && sp.arena.z0 === place.air.z0 && sp.arena.z1 === place.air.z1 && !!sp.uncounted && new GoalTracker(L).enemyTotal === L.enemies.filter((e) => !e.uncounted).length);
+    check(`...its air is that floor and out over ${place.beside} beside it; and it is no part of what any wedge there asks for`, !!sp.arena && sp.arena.x0 === place.air.x0 && sp.arena.x1 === place.air.x1 && sp.arena.z0 === place.air.z0 && sp.arena.z1 === place.air.z1 && !!sp.uncounted && new GoalTracker(L, () => ({ have: 0, total: 0 })).enemyTotal === L.enemies.filter((e) => !e.uncounted).length);
     const R = place.roam;
     const mid = { x: (R.x0 + R.x1) / 2, z: (R.z0 + R.z1) / 2 };
     for (const seed of [3, 11]) {
@@ -753,7 +753,7 @@ const YARD = { x: spec.x + 8, z: spec.z };
   };
   const plain = run();
   const pink = run(PINK);
-  check('a coloured firefly flies, bombs and burns exactly as a plain one does: the same fight, step for step', plain.path === pink.path && plain.w.burns === pink.w.burns && plain.w.runs === pink.w.runs && plain.w.runs >= 2 && plain.drops.length === pink.drops.length && plain.w.p.health === pink.w.p.health, `${pink.w.runs} runs, ${pink.drops.length} drops, burned ${pink.w.burns} times (plain ${plain.w.burns})`);
+  check('a coloured firefly flies, bombs and burns exactly as a plain one does: the same fight, step for step', plain.path === pink.path && plain.w.burns === pink.w.burns && plain.w.runs === pink.w.runs && plain.w.runs >= 2 && plain.drops.length === pink.drops.length && plain.w.p.hp === pink.w.p.hp, `${pink.w.runs} runs, ${pink.drops.length} drops, burned ${pink.w.burns} times (plain ${plain.w.burns})`);
   check('...its colour goes with its fire all the way: each drop it lets go, each drop falling, each patch of flame', pink.drops.length >= 6 && pink.drops.every((c) => c === PINK) && pink.embers.length === pink.drops.length && pink.embers.every((c) => c === PINK) && pink.flames.length >= 3 && pink.flames.every((c) => c === PINK), `${pink.drops.length} drops, ${pink.flames.length} patches`);
   check('...and a plain one\'s fire has no colour given: it is a fire\'s own', plain.drops.every((c) => c === undefined) && plain.flames.length >= 3 && plain.flames.every((c) => c === undefined));
   // What is drawn: the drop, the mark where it will land, and the light of the flames, in its colour; a plain one's as before.

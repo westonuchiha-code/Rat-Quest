@@ -281,6 +281,8 @@ bunch of shit all over them."
 - **Setup:** `npm install` at the repo root. Chrome is `google-chrome`; `puppeteer-core` is a dev dependency.
 - **Tests:** `npm run test:all` runs every suite (103 of them, about 4,050 checks) in ONE build, four at a time:
   about a minute and a half. It must end `0 fail`. `node scripts/test-all.mjs hall lifting` runs only those.
+  It type-checks the game AND the tests first (`tests/tsconfig.json`; alone: `npm run typecheck:tests`): its last line
+  says "types clean" or "TYPE ERRORS", and a suite thrown out part way is said there too ("STOPPED PART WAY").
   A new suite goes in the `test:sim` list in package.json (that list is what test:all runs). One suite by hand:
   `npx vite build --ssr tests/X.ts --outDir .testdist --emptyOutDir && node .testdist/X.js`. `tsc -p .` does not
   type-check tests; their build does.

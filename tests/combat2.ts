@@ -50,14 +50,14 @@ function check(name: string, ok: boolean, detail = ''): void {
 
   const far = fake(40, 0);
   d.update(DT, [far], 0, 0);
-  check('one far from the rat does as it likes', far.mayAttack);
+  check('one far from the rat does as it likes', far.mayAttack === true);
   // The one he is LOCKED ON to (2026-11-16: "the enemy you are locked on to fights harder").
   {
     const trio = [fake(2, 0), fake(0, 4), fake(-6, 0)];
     const locked = trio[2]; // the FURTHEST of the three
     const dl = new Director();
     dl.update(DT, trio, 0, 0, locked);
-    check('locked on to one of three, THAT one has first claim on the attack, though it is the furthest off', locked.mayAttack && trio.filter((e) => e.mayAttack).length === 1);
+    check('locked on to one of three, THAT one has first claim on the attack, though it is the furthest off', locked.mayAttack === true && trio.filter((e) => e.mayAttack).length === 1);
     // How long each must wait after an attack: the locked one comes again sooner.
     const breath = (lock: boolean): number => {
       const two = [fake(2, 0), fake(0, 4)];
@@ -80,11 +80,11 @@ function check(name: string, ok: boolean, detail = ''): void {
     const db = new Director();
     (busy[1] as { ready: boolean }).ready = false;
     db.update(DT, busy, 0, 0, busy[1]);
-    check('a locked-on enemy that is not ready does not hold the others up: the nearest waiting one goes', busy[0].mayAttack && !busy[1].mayAttack);
+    check('a locked-on enemy that is not ready does not hold the others up: the nearest waiting one goes', busy[0].mayAttack === true && !busy[1].mayAttack);
     const away = [fake(2, 0), fake(30, 0)];
     const da = new Director();
     da.update(DT, away, 0, 0, away[1]);
-    check('...nor does one locked on to from across the room', away[0].mayAttack);
+    check('...nor does one locked on to from across the room', away[0].mayAttack === true);
   }
 }
 

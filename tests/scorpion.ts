@@ -439,7 +439,7 @@ const dist = (a: { x: number; z: number }, b: { x: number; z: number }): number 
     if (!mesh.isMesh) return;
     const mat = mesh.material as THREE.ShaderMaterial & { uniforms?: { tex?: { value: THREE.Texture } } };
     if (!mat.uniforms?.tex) return;
-    const t = mat.uniforms.tex.value;
+    const t = mat.uniforms.tex.value as THREE.Texture & { image: { width: number } };
     if (t.image.width <= 1) plain++;
     else tex.add(`${t.image.width}`);
     if (!mesh.geometry.attributes.uv) plain++;

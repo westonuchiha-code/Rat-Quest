@@ -23,7 +23,7 @@ check('Steam\'s controller types map to ours',
 gamepadInfo.connected = true;
 gamepadInfo.kind = 'xbox';
 setPadKindOverride('playstation');
-check('when Steam says it is a DualSense, the names follow (even though the pad says Xbox)', gamepadInfo.kind === 'playstation' && labelKind() === 'playstation');
+check('when Steam says it is a DualSense, the names follow (even though the pad says Xbox)', (gamepadInfo.kind as string) === 'playstation' && labelKind() === 'playstation');
 setPadKindOverride(null);
 gamepadInfo.kind = 'xbox';
 

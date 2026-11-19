@@ -95,7 +95,7 @@ const ground = (x: number, z: number): number => Math.max(-Infinity, ...cs.filte
   }
   // Each gap: the next length starts under the line of the one before, by more than a ride at speed falls in crossing it.
   const hz = TUNING.ride.max * Math.cos(Math.atan(ROAD.slope));
-  const gaps = LENGTHS.slice(0, -1).map((s, i) => {
+  const gaps = LENGTHS.slice(0, -1).map((_s, i) => {
     const a = P.lengths[i];
     const b = P.lengths[i + 1];
     const wide = b.z0 - a.z1;

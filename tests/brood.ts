@@ -107,7 +107,7 @@ const MAX = TUNING.health.max;
 {
   const door = hollows.courseDoors?.find((d) => d.to === 'brood');
   const reach = computeReach(hollows);
-  check('the Brood Pit is a place in the Hollows, through a door on the gallery\'s north ledge that he can walk up to', !!door && pit.world === 'hollows' && pit.returnTo === 'hollows' && reach.near(door!.door.x + 1, door!.door.y, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x + 0.8, door!.door.z));
+  check('the Brood Pit is a place in the Hollows, through a door on the gallery\'s north ledge that he can walk up to', !!door && pit.world === 'hollows' && pit.returnTo === 'hollows' && reach.near(door!.door.x + 1, door!.door.y!, door!.door.z, 1.5, 0.5, 0.5) && atDoor(door!.door, door!.door.x + 0.8, door!.door.z));
   check('she is the only thing in it, and beating her is what its Golden Wedge asks', pit.enemies.length === 1 && pit.wedges?.length === 1 && pit.wedges[0].appears?.type === 'defeat' && pit.goals.length === 1);
   const A = PIT_ARENA;
   let floor = true;

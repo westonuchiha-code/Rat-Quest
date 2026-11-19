@@ -46,7 +46,7 @@ function ride(cs: Aabb[], lane: number, frames: number, at: (i: number, p: Playe
 /** Presses STOW once, the first frame `when` is so. */
 const stowOnce = (when: (p: PlayerController) => boolean): ((i: number, p: PlayerController) => Partial<PlayerInput>) => {
   let done = false;
-  return (i, p) => {
+  return (_i, p) => {
     if (done || !when(p)) return {};
     done = true;
     return { stowPressed: true };

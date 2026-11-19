@@ -176,10 +176,10 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   {
     // What it was like before (the carry switched off): let go of the stick and he does not reach the other side.
     const was = TUNING.moves.wallChainTime;
-    TUNING.moves.wallChainTime = 0;
+    (TUNING.moves as { wallChainTime: number }).wallChainTime = 0;
     const p = firstKick();
     const got = across(p, none, true);
-    TUNING.moves.wallChainTime = was;
+    (TUNING.moves as { wallChainTime: number }).wallChainTime = was;
     check('(with the carry switched off, as it used to be, he falls short of the far wall)', !got, `got to z ${p.position.z.toFixed(2)} of 4.30`);
   }
 }
@@ -198,10 +198,10 @@ check('a long jump goes much further than a running jump', long > plain * 1.25, 
   for (let t = 0; t < 30; t++) cam.update(DT, focus, Math.PI / 2, true, 1, 0, [], { x: 6, z: 0 });
   check('the right stick turns it', cam.yaw > 1.5);
   const was = TUNING.camera.autoFollowRate;
-  TUNING.camera.autoFollowRate = 1.4;
+  (TUNING.camera as { autoFollowRate: number }).autoFollowRate = 1.4;
   const y0 = cam.yaw;
   for (let t = 0; t < 60; t++) cam.update(DT, focus, Math.PI / 2, true, 0, 0, [], { x: 6, z: 0 });
-  TUNING.camera.autoFollowRate = was;
+  (TUNING.camera as { autoFollowRate: number }).autoFollowRate = was;
   check('(the old swing-behind is still there on its slider, off by default)', Math.abs(cam.yaw - y0) > 0.3 && was === 0);
 }
 

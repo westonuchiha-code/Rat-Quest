@@ -27,7 +27,7 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
 // ---- Furniture: what is drawn is what is solid ----
 {
   check('the Club has three tables, with stools round them', tables.length === 3 && stools.length >= 7, `${tables.length} tables, ${stools.length} stools`);
-  check('every table and every stool is in the room\'s own lists: drawn, and solid', [...tables, ...stools].every((d) => def.decor.includes(d) || def.decor.some((e) => e.kind === d.kind && e.x === d.x && e.z === d.z)) && t.solids.every((s) => def.solids.some((b) => b.x0 === s.x0 && b.z0 === s.z0 && b.y1 === s.y1)));
+  check('every table and every stool is in the room\'s own lists: drawn, and solid', [...tables, ...stools].every((d) => def.decor.includes(d) || def.decor.some((e) => e.kind === d.kind && (e as { x: number }).x === (d as { x: number }).x && (e as { z: number }).z === (d as { z: number }).z)) && t.solids.every((s) => def.solids.some((b) => b.x0 === s.x0 && b.z0 === s.z0 && b.y1 === s.y1)));
   const mats = { wood: new THREE.MeshBasicMaterial(), plain: new THREE.MeshBasicMaterial(), glow: new THREE.MeshBasicMaterial() };
   const table = new THREE.Box3().setFromObject(buildTable(mats, {}));
   const stool = new THREE.Box3().setFromObject(buildStool(mats));
@@ -71,11 +71,11 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
 {
   const kinds: PatronKind[] = ['turtle', 'fox', 'ferret', 'owl'];
   const doings: Doing[] = ['stand', 'drink', 'chat', 'lean', 'cards', 'tend'];
-  const names: Record<PatronKind, [string, string]> = { turtle: ['Mossback Mo', 'Pebble'], fox: ['Vix', 'Ash'], ferret: ['Slink', 'Biscuit'], owl: ['Madam Tawny', 'Professor Snow'] };
+  const names: Partial<Record<PatronKind, [string, string]>> = { turtle: ['Mossback Mo', 'Pebble'], fox: ['Vix', 'Ash'], ferret: ['Slink', 'Biscuit'], owl: ['Madam Tawny', 'Professor Snow'] };
   let built = 0;
   let bad = '';
   for (const kind of kinds) {
-    for (const name of names[kind]) {
+    for (const name of names[kind]!) {
       for (const doing of doings) {
         for (const seated of [false, true]) {
           const body = makePatron(kind, patronLook(kind, name));
@@ -91,7 +91,7 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
     }
   }
   check('all four builds, both looks of each, at every thing they do, standing and seated: feet on the floor, nothing under it, a sensible size', bad === '', bad || `${built} looked at`);
-  check('two of one kind are two different people, for every kind', kinds.every((k) => patronLook(k, names[k][0]) !== patronLook(k, names[k][1])));
+  check('two of one kind are two different people, for every kind', kinds.every((k) => patronLook(k, names[k]![0]) !== patronLook(k, names[k]![1])));
   // A turtle's neck comes out when he talks; a fox's ears and tail move.
   const mo = makePatron('turtle', 'mo');
   const headY = (talking: boolean): number => {
@@ -166,7 +166,7 @@ const stools = t.decor.filter((d) => d.kind === 'stool');
   const kinds = new Set(dress.map((d) => d.kind));
   check('the room has rugs, a dance floor, strings of lights, bottles behind the bar and a dartboard', ['rug', 'dancefloor', 'bulbs', 'bottles', 'dartboard'].every((k) => kinds.has(k as never)), [...kinds].join(', '));
   check('there is a rug under every table', tables.every((d) => dress.some((r) => r.kind === 'rug' && r.x === d.x && r.z === d.z)));
-  check('all of it is in the room, and none of it is solid: the dressing adds nothing he can walk into', dress.every((d) => def.decor.some((e) => e.kind === d.kind && e.x === d.x && e.z === d.z)) && !('solids' in clubDressingThings()));
+  check('all of it is in the room, and none of it is solid: the dressing adds nothing he can walk into', dress.every((d) => def.decor.some((e) => e.kind === d.kind && (e as { x: number }).x === (d as { x: number }).x && (e as { z: number }).z === (d as { z: number }).z)) && !('solids' in clubDressingThings()));
   check('the lights hang over his head but low enough for the view to show them, and the bottles are on the wall behind the bar', dress.filter((d) => d.kind === 'bulbs').every((d) => d.y - (d as { sag: number }).sag > 3.6 && d.y < 5.5) && dress.filter((d) => d.kind === 'bottles').every((d) => d.x > BAR.x1 && d.z > BAR.z0 && d.z < BAR.z1 && d.y > BAR.top));
 }
 console.log(failures === 0 ? 'club: all passed' : `club: ${failures} FAILED`);

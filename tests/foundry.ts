@@ -3,7 +3,6 @@
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { makeAabb } from '../src/world/collision';
-import { extent } from '../src/world/layout';
 import { computeReach, maxClimb, maxChimney, unreachable } from '../src/levels/reach';
 import { CollectibleTracker } from '../src/world/collectibles';
 import { TUNING } from '../src/data/tuning';

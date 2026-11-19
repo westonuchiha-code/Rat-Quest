@@ -192,7 +192,7 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
 {
   const roach = new Scuttler({ x: 0, z: 0 });
   const hp = roach.hp;
-  roach.takeHit(L.damage, 0, 5, 'thrown');
+  roach.takeHit(L.damage, 0, 5);
   check('a thrown crate hurts a creature as much as the last blow of his three, and no more: a roach is not killed by one', hp - roach.hp === L.damage && roach.alive && L.damage === 2 && L.damage < hp);
   const guard = new Guard({ x: 0, z: 0, facing: 0 });
   const iron = new Ironback({ x: 0, z: 0 });
@@ -311,7 +311,7 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
 
   // A character's body is solid as the game makes it (main.ts syncNpcBodies: 0.7 across, 1.2 high).
   const floor = aabbOf(extent('floor', -60, 60, -1, 0, -60, 60));
-  const body = aabbOf(extent('npc', -0.35, 0.35, 0, 1.2, 4.65, 5.35));
+  const body = aabbOf(extent('npc' as never, -0.35, 0.35, 0, 1.2, 4.65, 5.35));
   for (const kind of ['crate', 'pot', 'rock'] as const) {
     const c: Crate = { type: kind, index: 0, x: 0, y: 0, z: 0, half: 0.3, alive: true, aabb: aabbOf(extent('rubble', -0.3, 0.3, 0, 0.6, -0.3, 0.3)), mesh: null, lastSwing: -1 };
     const t = startThrow(c, c.half, c.aabb, carryPlace({ x: 0, y: 0, z: 0 }, 0.3), 0, { x: 0, z: 0 }, 1, null, THROWN_AS[kind].speed);

@@ -776,7 +776,7 @@ const at = new THREE.Vector3(0, 0, 0);
 
 // ---- The Club's folk and the king ----
 {
-  const tall: Record<NpcKind, [number, number]> = { mouse: [1.2, 1.7], bird: [1.2, 1.6], pigeon: [1.5, 2.1], villain: [2.75, 3.35] };
+  const tall: Partial<Record<NpcKind, [number, number]>> = { mouse: [1.2, 1.7], bird: [1.2, 1.6], pigeon: [1.5, 2.1], villain: [2.75, 3.35] };
   for (const kind of ['mouse', 'bird', 'pigeon', 'villain'] as NpcKind[]) {
     const n = new Npc({ name: kind, kind, x: 0, z: 0, facing: 0, lines: ['Hello.'] });
     let ok = true;
@@ -794,7 +794,7 @@ const at = new THREE.Vector3(0, 0, 0);
       top = Math.max(top, r.box.max.y);
     }
     check(`${kind}: idling, talking and shrugging, he holds together`, ok);
-    check(`${kind}: he stands on the floor and is the height he was`, low > -0.08 && top > tall[kind][0] && top < tall[kind][1], `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`);
+    check(`${kind}: he stands on the floor and is the height he was`, low > -0.08 && top > tall[kind]![0] && top < tall[kind]![1], `floor ${low.toFixed(2)}, top ${top.toFixed(2)}`);
     check(`${kind}: the rat can still talk to him from the same distance`, n.inRange(1, 0, 1.5) && !n.inRange(3, 0, 0));
   }
   // Pip keeps hold of his lantern pole, and his free paw moves when he talks.

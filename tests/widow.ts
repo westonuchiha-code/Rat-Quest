@@ -114,11 +114,6 @@ function keepRules(w: Widow, p: PlayerController): Partial<PlayerInput> | null {
   }
   return { move: fleeDir.clone(), run: true };
 }
-const put = (p: PlayerController, x: number, north: number): void => {
-  p.position.set(A.x + x, 0, A.z - north);
-  p.prevPosition.copy(p.position);
-  p.velocity.set(0, 0, 0);
-};
 /** Strikes at the nearest piece of her in reach, for as long as she is in `state`: how many blows landed, and what they took. */
 function strike(w: Widow, p: PlayerController, seen: Seen, state: WidowState): { blows: number; took: number } {
   const hp = w.hp;

@@ -139,7 +139,7 @@ const plate = (w: number, d: number, y: number, mat: THREE.Material, x = 0, z = 
   const done3 = autoLayer(g3);
   const left = sweep(g3, 'made');
   check('two faces of ONE mesh a hair apart, of different colours, cannot be cured by layering (one mesh is drawn all at once): the sweep still finds them', done3.layeredMeshes === 0 && left.length === 1 && left[0].front === both && left[0].back === both);
-  both.material = new THREE.MeshBasicMaterial({ vertexColors: true, depthWrite: false });
+  (both as THREE.Mesh<THREE.BufferGeometry, THREE.Material>).material = new THREE.MeshBasicMaterial({ vertexColors: true, depthWrite: false });
   check('...unless the mesh writes no depth: then its faces go down in the order they were made, every frame alike (the moss)', sweep(g3, 'made').length === 0);
   check(`nothing is put more than ${LAYER_MOST} layers up`, (() => {
     const g4 = new THREE.Group();

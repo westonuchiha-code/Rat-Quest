@@ -97,8 +97,8 @@ const play = (r: Roller, px: number, pz: number, seconds: number, each?: (f: num
   check('CURLED, ITS SHELL TURNS THE SWORD (bowling, and for the last of its tuck); walking it does not; a dive from above is not turned', walking && rolling && !dive);
   const hpBefore = r.hp;
   r.takeHit(1, 0, 5, 'plunge');
-  check('...and a dive onto it while it bowls cracks it open on the spot: it is hurt, and spilled', r.hp === hpBefore - 1 && r.state === 'spilled');
-  check('spilled it is OPEN: the sword is not turned, and each blow counts; three and it is beaten', !r.deflects(0, 5) && !r.takeHit(1, 0, 5) && r.state === 'spilled' && r.takeHit(1, 0, 5) && !r.alive && ROLLER.hp === 3);
+  check('...and a dive onto it while it bowls cracks it open on the spot: it is hurt, and spilled', r.hp === hpBefore - 1 && (r.state as string) === 'spilled');
+  check('spilled it is OPEN: the sword is not turned, and each blow counts; three and it is beaten', !r.deflects(0, 5) && !r.takeHit(1, 0, 5) && (r.state as string) === 'spilled' && r.takeHit(1, 0, 5) && !r.alive && ROLLER.hp === 3);
   let back = 0;
   for (let f = 0; f < 60 * 10 && !r.alive; f++) {
     r.update(DT, 50, 0, 50, true);

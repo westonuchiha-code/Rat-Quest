@@ -38,7 +38,7 @@ const canStand = (x: number, y: number, z: number, r: number): boolean => {
   }
   return floor;
 };
-const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, sneakHeld: false, ...o });
+const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, ...o });
 const events = (): CombatEvents => ({ enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] });
 const specs = keep.enemies.filter((e) => e.type === 'ant');
 /** The Keep's two, where it puts them (or only the first). Their dice: always the middle of what they may roll. */

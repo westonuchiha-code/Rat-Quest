@@ -130,7 +130,7 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   for (let i = 0; i < 120; i++) {
     h.facing = 0; // (he keeps behind it)
     h.update(DT, h.x, 0, h.z - 1.5, true);
-    if (h.state === 'buckWind') bucked = true;
+    if ((h.state as string) === 'buckWind') bucked = true;
   }
   check('lingering close behind it, he gets kicked', bucked);
 }
@@ -144,15 +144,15 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   let rammed = false;
   for (let i = 0; i < 200 && !rammed; i++) {
     e.update(DT, e.x, 0, ratZ, true);
-    if (e.state === 'windup') windup += DT;
-    if (e.state === 'ram') rammed = true;
+    if ((e.state as string) === 'windup') windup += DT;
+    if ((e.state as string) === 'ram') rammed = true;
   }
   check('lined up and a few steps away, it rams after a long tell', rammed && windup >= I.windup - 0.02, windup.toFixed(2));
   check('it snorted as the tell began', e.events.includes('snort') && e.events.includes('ram'));
   // He steps aside after it has committed: it goes straight on.
   const x0 = e.x;
   for (let i = 0; i < 20; i++) e.update(DT, e.x + 3, 0, ratZ, true);
-  check('once it charges it does not turn', Math.abs(e.x - x0) < 0.01 && e.state === 'ram');
+  check('once it charges it does not turn', Math.abs(e.x - x0) < 0.01 && (e.state as string) === 'ram');
 
   // Into a wall: bonk, and over on its back.
   const w = beetle(0);
@@ -161,10 +161,10 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   const wallZ = w.z + 4;
   w.wallAt = (_x, _y, z) => z > wallZ;
   for (let i = 0; i < 60 && w.state === 'ram'; i++) w.update(DT, w.x, 0, w.z - 6, true);
-  check('a ram into a wall ends on its back', w.state === 'flipped' && w.events.includes('bonk'), w.state);
+  check('a ram into a wall ends on its back', (w.state as string) === 'flipped' && w.events.includes('bonk'), w.state);
   check('on its back, the front is soft', !w.deflects(w.x, w.z + 2) && w.takeHit(1, w.x, w.z + 2) === false && w.hp === I.hp - 1);
   for (let i = 0; i < Math.ceil((I.flipTime + 0.4) * 60); i++) w.update(DT, w.x, 0, w.z - 6, true);
-  check('then it rights itself', !w.flipped || w.state === 'rise', w.state);
+  check('then it rights itself', !w.flipped || (w.state as string) === 'rise', w.state);
   for (let i = 0; i < 60; i++) w.update(DT, w.x, 0, w.z - 6, true);
   check('and its shell is hard again', w.deflects(w.x + Math.sin(w.facing) * 2, w.z + Math.cos(w.facing) * 2));
 
@@ -211,7 +211,7 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   let result: string | null = null;
   for (let i = 0; i < 60 && !result; i++) {
     e.update(DT, p.position.x, p.position.y, p.position.z, true);
-    if (e.state === 'tossWind') tossed = true;
+    if ((e.state as string) === 'tossWind') tossed = true;
     const ev = events();
     resolveCombat(p, [e], ev);
     result = ev.playerResult;
@@ -254,7 +254,7 @@ function swingAt(p: PlayerController, e: Ironback): CombatEvents {
   check('lined up, it says it is ready, but waits its turn', e.ready && e.state === 'chase');
   e.mayAttack = true;
   e.update(DT, e.x, 0, e.z + 6, true);
-  check('and goes when allowed', e.state === 'windup');
+  check('and goes when allowed', (e.state as string) === 'windup');
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

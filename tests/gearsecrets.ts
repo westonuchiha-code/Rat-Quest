@@ -182,7 +182,7 @@ const none = (): { have: number; total: number } => ({ have: 0, total: 0 });
     const p = new PlayerController(new THREE.Vector3(w.x, 0, -7.6));
     p.gear = g;
     let woke = false;
-    if (how === 'kill') while (roach.alive) roach.takeHit(1, p.position.x, p.position.z, 'sword');
+    if (how === 'kill') while (roach.alive) roach.takeHit(1, p.position.x, p.position.z);
     for (let t = 0; t < 600; t++) {
       const to = new THREE.Vector3(w.x - p.position.x, 0, w.z - p.position.z).normalize();
       p.update(DT, input({ move: to, run: how !== 'sneak', jumpPressed: how === 'leap' && t % 20 === 2, jumpHeld: how === 'leap' }), ch.colliders);

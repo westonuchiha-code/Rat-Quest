@@ -118,7 +118,6 @@ check('it is a room to try, with a door in the Move Garden; it is the dream (its
     }
     return { peaks: peaks.slice(1), p, on, events };
   };
-  const coastStart = (): PlayerController => dropIn(DT);
   const coast = session(() => v(0, 0), 7);
   check('dropped in from a deck and doing nothing, he rides down the wall, across, and three quarters of the way up the far wall; and back, and again, lower each time: a half pipe', coast.on && coast.peaks.length >= 2 && coast.peaks[0] > wallTop * 0.7 && coast.peaks[1] < coast.peaks[0], `${coast.peaks.map((q) => q.toFixed(1)).join(' ')} of ${wallTop.toFixed(1)}`);
   // THE LIP (the owner, 2026-11-17: "when riding up a half pipe ramp you should disconnect up at the top like in Tony

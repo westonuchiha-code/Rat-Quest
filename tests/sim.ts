@@ -49,7 +49,6 @@ function run(
 const still = new THREE.Vector3(0, 0, 0);
 const west = new THREE.Vector3(-1, 0, 0);
 const east = new THREE.Vector3(1, 0, 0);
-const north = new THREE.Vector3(0, 0, -1);
 
 // 1. Standing still on the floor stays grounded at y = 0.
 {

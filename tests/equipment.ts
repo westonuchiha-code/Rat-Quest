@@ -5,7 +5,7 @@ import { Equipment, EQUIPMENT_KEY } from '../src/player/equipment';
 import { ITEMS } from '../src/data/equipment';
 import { chamberPickups } from '../src/world/equipmentLayout';
 import { buildChamber } from '../src/world/chamber';
-import { PlayerController, PlayerInput } from '../src/player/controller';
+import { PlayerController } from '../src/player/controller';
 import { readSave, SAVE_KEY, writeSave } from '../src/core/save';
 import type { StorageLike } from '../src/world/collectibles';
 

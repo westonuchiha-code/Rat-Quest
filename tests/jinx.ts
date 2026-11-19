@@ -27,7 +27,6 @@ body.root.traverse((o) => {
   if ((o as THREE.Mesh).isMesh) meshes.push(o as THREE.Mesh);
 });
 const pictured = meshes.filter((m) => !!(m.material as THREE.ShaderMaterial).uniforms?.tex?.value?.image && ((m.material as THREE.ShaderMaterial).uniforms.tex.value.image as { width: number }).width > 1);
-const tris = meshes.reduce((n, m) => n + (m.geometry.index ? m.geometry.index.count : m.geometry.attributes.position.count) / 3, 0);
 const names = new Set(pictured.map((m) => (m.material as THREE.ShaderMaterial).uniforms.tex.value.uuid as string));
 check('she is TEXTURED: her fur, her hair, her top, her skirt, her stockings and her tail each have a picture of their own', names.size >= 6 && pictured.length >= 20, `${names.size} pictures on ${pictured.length} of ${meshes.length} parts`);
 const facesOf = (b: { root: THREE.Object3D }): number => {

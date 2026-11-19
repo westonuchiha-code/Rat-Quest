@@ -201,7 +201,7 @@ const give = <T extends object>(e: T): T => {
   check('...each made on ground it can stand on, and kept to the ramps, the landing and a few steps before them (they count toward nothing)', RAMP_FOES.every((f) => stand(f.x, f.y ?? 0, f.z, 0.45) && f.uncounted && f.arena!.x0 === L.x0 && f.arena!.z1 < garden.spawn.z - 2));
   reseed(1);
   const roach = give(new Scuttler(RAMP_FOES[0] as never)) as unknown as Walker;
-  let low = L.top;
+  let low: number = L.top;
   for (let f = 0; f < 60 * 30; f++) {
     const pz = Math.min(ramps[0].foot + 1.5, roach.z + 2.2);
     roach.update(DT, ramps[0].x, pz > ramps[0].foot ? 0 : on(0, Math.max(L.z1, pz)), pz, true);

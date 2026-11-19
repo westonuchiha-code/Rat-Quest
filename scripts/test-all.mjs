@@ -16,6 +16,15 @@ const want = process.argv.slice(2);
 const names = want.length ? all.filter((n) => want.includes(n)) : all;
 const out = path.join(root, '.testdist-all');
 const t0 = Date.now();
+// The game AND the tests, type-checked first (tests/tsconfig.json): a test that asks for a thing that is no longer
+// there (a texture taken out, a control renamed) is found here, not by its check quietly passing on nothing.
+const typed = await new Promise((resolve) => {
+  const p = spawn(process.execPath, [path.join(root, 'node_modules/typescript/bin/tsc'), '--noEmit', '-p', path.join(root, 'tests')], { cwd: root });
+  let text = '';
+  p.stdout.on('data', (d) => (text += d));
+  p.stderr.on('data', (d) => (text += d));
+  p.on('close', (code) => resolve({ code, text }));
+});
 await build({
   root,
   logLevel: 'error',
@@ -44,8 +53,9 @@ for (const r of results) {
   fail += fails.length;
   if (r.code !== 0 || fails.length) broken.push(`${r.n} (exit ${r.code})\n  ${(fails.length ? fails : r.text.trim().split('\n').slice(-6)).join('\n  ')}`);
 }
+if (typed.code !== 0) broken.push(`TYPES (tsc -p tests)\n  ${typed.text.trim().split('\n').slice(0, 12).join('\n  ')}`);
 if (broken.length) console.log(`FAILED SUITES:\n${broken.join('\n')}`);
 const stopped = results.filter((r) => r.code !== 0 && !(r.text.match(/^FAIL/gm) ?? []).length).length;
 // (A suite that STOPPED, thrown out part way, has no FAIL line to count: said on the last line too, so it is never read as all passing.)
-console.log(`${names.length} suites: ${pass} pass, ${fail} fail${stopped ? `, ${stopped} STOPPED PART WAY (see above)` : ''} (built in ${((built - t0) / 1000).toFixed(0)} s, ran in ${((Date.now() - built) / 1000).toFixed(0)} s)`);
+console.log(`${names.length} suites: ${pass} pass, ${fail} fail${stopped ? `, ${stopped} STOPPED PART WAY (see above)` : ''}${typed.code !== 0 ? ', TYPE ERRORS (see above)' : ', types clean'} (built in ${((built - t0) / 1000).toFixed(0)} s, ran in ${((Date.now() - built) / 1000).toFixed(0)} s)`);
 process.exit(broken.length ? 1 : 0);

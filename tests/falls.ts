@@ -90,7 +90,7 @@ const inp = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3
   let lastGrounded = 0;
   let lastSafe = 0;
   for (let i = 0; i < 600 && p.position.y > 4; i++) {
-    p.update(DT, inp({ move: new THREE.Vector3(1, 0, 0), run: false, sneak: true }), cs);
+    p.update(DT, inp({ move: new THREE.Vector3(0.3, 0, 0), run: false }) /* (a light push on the stick: there is no sneak any more) */, cs);
     if (p.grounded) {
       lastGrounded = p.position.x;
       if (safeToReturnTo(cs, p.position.x, p.position.y, p.position.z)) lastSafe = p.position.x;

@@ -390,7 +390,7 @@ for (const r of rows) {
   // (Once he is down past it he brakes: the room is not long enough to roll to a stop in from that speed.)
   const EAST = new THREE.Vector3(1, 0, 0);
   const brakePast = (p: PlayerController): Partial<PlayerInput> => (p.grounded && p.position.x < RUN.kicker.x0 - 1 ? { move: EAST, run: false } : { run: false });
-  const ridden = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (i, p) => (p.riding ? brakePast(p) : getOn(p)), (p) => {
+  const ridden = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (_i, p) => (p.riding ? brakePast(p) : getOn(p)), (p) => {
     if (p.riding) fastest = Math.max(fastest, Math.hypot(p.velocity.x, p.velocity.z));
     if (p.riding && p.grounded && p.position.y < 0.01 && p.position.x < RUN.slope.x0 && p.position.x > RUN.kicker.x1) rodeToFloor = true;
     if (p.riding && !p.grounded && p.position.x < RUN.kicker.x0) airPastKicker = Math.max(airPastKicker, p.position.y);
@@ -402,7 +402,7 @@ for (const r of rows) {
   // Off the kicker, JUMP and then JUMP AGAIN is the kickflip, and there is air enough to land it.
   let popped = false;
   let flipped = false;
-  const tricked = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (i, p) => {
+  const tricked = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 420, (_i, p) => {
     if (!p.riding) return getOn(p);
     if (flipped && p.grounded) return brakePast(p);
     if (!popped && p.grounded && p.position.x < RUN.kicker.x0 + 0.5 && p.position.x > RUN.kicker.x0) {
@@ -425,7 +425,7 @@ for (const r of rows) {
     let wrong = 0;
     // (He rides half a unit to its near side, as a player would: steering at that line, and straight along it.)
     const beside = line - toward * 0.5;
-    const r = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 520, (i, p) => {
+    const r = drive(new THREE.Vector3(T.x1 - 2.5, T.y, midZ), 520, (_i, p) => {
       if (!p.riding) return getOn(p);
       if (p.grinding) return { run: false };
       // (Past its end he brakes.)
@@ -463,21 +463,21 @@ for (const r of rows) {
   let slidFrom = 0;
   let outOnTheFloor = false;
   let inTheAir = 0;
-  const chuted = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 200, (i, p) => (p.sliding ? {} : { move: p.position.z > RUN.chute.z0 ? NORTH : new THREE.Vector3(), run: true }), (p) => {
+  const chuted = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 200, (_i, p) => (p.sliding ? {} : { move: p.position.z > RUN.chute.z0 ? NORTH : new THREE.Vector3(), run: true }), (p) => {
     if (p.sliding && p.grounded) slidFrom = Math.max(slidFrom, p.position.y);
     if (p.position.z < RUN.chute.z1 - 0.4 && p.position.z > RUN.chute.z0 && !p.grounded) inTheAir++;
     if (p.grounded && p.position.y < 0.01 && p.position.z < RUN.chute.z0) outOnTheFloor = true;
   });
   check('TOO STEEP: he runs onto the chute, loses his footing and slides on his hide from its top to the floor, on it all the way, and gets up at its foot', chuted.events.includes('slip') && !chuted.events.includes('ride') && slidFrom > T.y - 1.5 && inTheAir === 0 && outOnTheFloor && chuted.events.includes('slideEnd') && !chuted.p.sliding, `slid from ${slidFrom.toFixed(2)}; ${inTheAir} frames in the air; ${chuted.events.join()}`);
   // ...or on his shield: a jump from the top, out over it, and ATTACK in the air.
-  const surfed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 120, (i, p) => (p.riding ? { run: false } : { move: NORTH, run: true, jumpPressed: p.grounded && p.position.z < T.z0 + 0.9, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.position.z < T.z0 - 0.3 }));
+  const surfed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, T.y, T.z0 + 2), 120, (_i, p) => (p.riding ? { run: false } : { move: NORTH, run: true, jumpPressed: p.grounded && p.position.z < T.z0 + 0.9, jumpHeld: !p.grounded, attackPressed: !p.grounded && p.position.z < T.z0 - 0.3 }));
   check('...or he jumps out over it and presses ATTACK, and goes down it on his shield', surfed.events.includes('ride') && !surfed.events.includes('slip') && surfed.events.includes('rideLand'), surfed.events.join());
   const climbed = drive(new THREE.Vector3((RUN.chute.x0 + RUN.chute.x1) / 2, 0, RUN.chute.z0 - 3), 200, (i) => ({ move: new THREE.Vector3(0, 0, 1), run: true, jumpPressed: i % 45 === 20, jumpHeld: i % 45 >= 20 }));
   check('...and from the floor he cannot get up it', climbed.p.position.y < T.y - 2, `y ${climbed.p.position.y.toFixed(2)}`);
   // The rail from his own feet: running beside it, a jump and STOW in the air brings him down onto it on his shield.
   const fromFeet = (run: boolean): { events: string[]; on: number } => {
     let on = 0;
-    const r = drive(new THREE.Vector3(RUN.rail.x1 + 9, 0, RUN.rail.z + 0.5), 200, (i, p) => (p.riding ? { run: false } : { move: WEST, run, jumpPressed: p.grounded && p.position.x < RUN.rail.x1 - 1, jumpHeld: true, stowPressed: !p.grounded && p.velocity.y < 1 }), (p) => {
+    const r = drive(new THREE.Vector3(RUN.rail.x1 + 9, 0, RUN.rail.z + 0.5), 200, (_i, p) => (p.riding ? { run: false } : { move: WEST, run, jumpPressed: p.grounded && p.position.x < RUN.rail.x1 - 1, jumpHeld: true, stowPressed: !p.grounded && p.velocity.y < 1 }), (p) => {
       if (p.grinding) on++;
     });
     return { events: r.events, on };
@@ -567,7 +567,7 @@ for (const r of rows) {
     top = Math.max(top, p.position.y);
     slid ||= p.sliding;
   });
-  const standable = Math.max(...facets.filter((f, i) => slopes[i] <= MAX_WALK_SLOPE).map((f) => f.h1));
+  const standable = Math.max(...facets.filter((_f, i) => slopes[i] <= MAX_WALK_SLOPE).map((f) => f.h1));
   check('on his feet he walks up its wall as far as he can stand, scrabbles a little further, and slides back down: he does not walk out of it', top >= standable - 0.01 && top < deck.y - 0.2 && slid && walked.events.includes('slip') && !walked.p.sliding && walked.p.position.y <= standable + 0.01, `${top.toFixed(2)} up (he can stand to ${standable.toFixed(2)}, the deck is ${deck.y.toFixed(2)}); ${walked.events.slice(0, 4).join()}`);
 }
 
@@ -610,7 +610,7 @@ for (const r of rows) {
   const EAST = new THREE.Vector3(1, 0, 0);
   const SOUTH = new THREE.Vector3(0, 0, 1);
   // The way up: from the floor west of it, east up the ramp onto the platform at the pipe's top.
-  const up = drive(new THREE.Vector3(DROP.wayFrom - 1.5, 0, (DROP.back + DROP.z0) / 2), 240, (i, p) => ({ move: p.position.x < DROP.x - 0.5 ? EAST : new THREE.Vector3(), run: true }));
+  const up = drive(new THREE.Vector3(DROP.wayFrom - 1.5, 0, (DROP.back + DROP.z0) / 2), 240, (_i, p) => ({ move: p.position.x < DROP.x - 0.5 ? EAST : new THREE.Vector3(), run: true }));
   check('he walks up the way to the top of it', Math.abs(up.p.position.y - DROP.rise) < 0.01 && up.p.grounded && Math.abs(up.p.position.x - DROP.x) < 1.5, `y ${up.p.position.y.toFixed(2)} at x ${up.p.position.x.toFixed(1)}`);
   // Dropping in: from the platform, a hop out over the pipe and ATTACK. Then nothing held till he is out of it.
   const ridden = (off: number): { events: string[]; out: number; crossed: number; air: number; jolt: number; fastest: number; left: number; end: PlayerController } => {

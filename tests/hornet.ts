@@ -157,7 +157,7 @@ const YARD = { x: spec.x, z: spec.z + 7 };
   // He steps off the spot once it is set: the lance goes into the floor.
   const h = hornet();
   const p = ratAt(YARD.x, YARD.z);
-  let setAt: { x: number; z: number } | null = null;
+  let setAt = null as { x: number; z: number } | null;
   const r = play(h, p, (q) => {
     if (q.state === 'diveWind' && q.stateTime >= H.diveWind * H.diveTrack) {
       setAt ??= { x: p.position.x, z: p.position.z };
