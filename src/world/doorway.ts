@@ -13,7 +13,7 @@ import { getTexture } from '../render/textures';
 import type { TextureName } from '../render/textures';
 import { DOOR_FRAME, type DoorSpec } from './rooms';
 
-type Theme = 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
+type Theme = 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep' | 'power';
 
 interface Look {
   frame: TextureName;
@@ -34,6 +34,8 @@ export const DOOR_LOOKS: Record<Theme, Look> = {
   dungeon: { frame: 'stone', key: 'brick', leaf: 'ironDoor', bands: false, bright: 1.5 },
   foundry: { frame: 'rustPlate', key: 'hazardTrim', leaf: 'ironDoor', bands: false, bright: 1.6 },
   keep: { frame: 'keepStone', key: 'archTrim', leaf: 'ironDoor', bands: false, bright: 1.6 },
+  // (The electrical set: a girder frame, a striped keystone, an iron door.)
+  power: { frame: 'steelGirder', key: 'hazardTrim', leaf: 'ironDoor', bands: false, bright: 1.7 },
 };
 
 const SPARKLES = 150;

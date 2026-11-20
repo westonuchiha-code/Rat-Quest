@@ -4,7 +4,7 @@
  */
 import type { TextureName } from '../render/textures';
 
-export type ThemeId = 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
+export type ThemeId = 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep' | 'power';
 
 /** The roles the builder's boxes can play. */
 export type Role = 'floor' | 'tile' | 'grate' | 'platform' | 'plank' | 'stone' | 'wall' | 'pillar';
@@ -40,6 +40,11 @@ export const THEMES: Theme[] = [
   {
     id: 'keep', label: 'Keep (castle stone and royal carpet)', fog: 0x130c1a,
     skins: { floor: 'stone', tile: 'royalCarpet', grate: 'ironBars', platform: 'keepStone', plank: 'planks', stone: 'keepStone', wall: 'keepStone', pillar: 'keepStone' },
+  },
+  {
+    // The electrical set (2026-11-20, the Coil Room): steel tread plate, circuit panels, steel girders.
+    id: 'power', label: 'Power plant (steel, copper and circuits)', fog: 0x080c18,
+    skins: { floor: 'treadPlate', tile: 'treadPlate', grate: 'ironBars', platform: 'treadPlate', plank: 'planks', stone: 'circuitPanel', wall: 'circuitPanel', pillar: 'steelGirder' },
   },
 ];
 

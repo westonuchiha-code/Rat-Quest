@@ -17,6 +17,8 @@
  * main.ts: `carry` and `lift` before his update (as a gust is), `hurt` after the fight is resolved (as fire is).
  */
 
+import { hitsBetween, laneState, type Lane } from './teslaCoil';
+
 export interface BeltSpec { kind: 'belt'; x: number; y: number; z: number; w: number; d: number; yaw: number; speed: number }
 export interface BladeSpec { kind: 'blade'; x: number; y: number; z: number; length: number; yaw: number; swing: number; period: number; phase: number }
 export interface SpikeSpec { kind: 'spikes'; x: number; y: number; z: number; w: number; d: number; period: number; up: number; phase: number }
@@ -24,7 +26,12 @@ export interface FanSpec { kind: 'fan'; x: number; y: number; z: number; r: numb
 /** A flame jet: a nozzle at x, y, z that shoots flame `length` along `yaw` (out of a wall), or straight up if `up`,
  * for `on` seconds of every `period`, after a moment's pilot flame. */
 export interface JetSpec { kind: 'flamejet'; x: number; y: number; z: number; yaw: number; up?: boolean; length: number; period: number; on: number; phase: number }
-export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec | JetSpec;
+/** A Tesla coil (world/teslaCoil.ts): its base at x, y, z, `height` to the ring on its top. It plays the beat and throws
+ * bolts at the room's zap plates. `keys`: a small one for a keyboard of coil keys, that plays only what is played on it. */
+export interface TeslaCoilSpec { kind: 'teslacoil'; x: number; y: number; z: number; height: number; r: number; keys?: boolean }
+/** A zap plate: a metal platform (solid; y its top) in a lane of the coil's beat: live for a moment at each of its hits. */
+export interface ZapPlateSpec { kind: 'zapplate'; x: number; y: number; z: number; w: number; d: number; lane: Lane }
+export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec | JetSpec | TeslaCoilSpec | ZapPlateSpec;
 
 /** The numbers: a blade's reach round its edge, the spikes' warning and height, a fan's lift. */
 export const HAZARD = {
@@ -33,6 +40,8 @@ export const HAZARD = {
   fan: { rise: 5.5, accel: 40, top: 0.85, spinUp: 0.6 },
   belt: { speed: 3 },
   jet: { warn: 0.6, radius: 0.45, grow: 0.15, damage: 1 },
+  /** A zap plate's shock (a burn: no roll or shield helps), and how far the coil's beat is heard (across, not up). */
+  zap: { damage: 1, heard: 30 },
 } as const;
 
 /** How far out a jet's flame reaches now, 0..1 of its length (it grows out fast, and dies back as fast); and whether
@@ -172,6 +181,11 @@ function touching(h: HazardSpec, x: number, y: number, z: number, radius: number
     }
     return best < radius + HAZARD.jet.radius ? at : null;
   }
+  if (h.kind === 'zapplate') {
+    if (!laneState(h.lane, time).live) return null;
+    // On its top: feet at its surface (a hop above it is clear of the shock), over it.
+    return Math.abs(x - h.x) <= h.w / 2 + radius * 0.5 && Math.abs(z - h.z) <= h.d / 2 + radius * 0.5 && y >= h.y - 0.1 && y < h.y + 0.25 ? { x: x + 0.01, z } : null;
+  }
   if (h.kind === 'spikes') {
     if (spikesUp(h, time) < 1) return null;
     return Math.abs(x - h.x) <= h.w / 2 && Math.abs(z - h.z) <= h.d / 2 && y >= h.y - 0.1 && y < h.y + HAZARD.spikes.height ? { x, z } : null;
@@ -180,11 +194,11 @@ function touching(h: HazardSpec, x: number, y: number, z: number, radius: number
 }
 
 /** What touches him now and would hurt him: a blade (from where it is) or spikes (from under him). */
-export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes' | 'flamejet'; x: number; z: number } | null {
+export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes' | 'flamejet' | 'zapplate'; x: number; z: number } | null {
   if (body.dead) return null;
   const p = body.position;
   for (const h of hazards) {
-    if (h.kind !== 'blade' && h.kind !== 'spikes' && h.kind !== 'flamejet') continue;
+    if (h.kind !== 'blade' && h.kind !== 'spikes' && h.kind !== 'flamejet' && h.kind !== 'zapplate') continue;
     const at = touching(h, p.x, p.y, p.z, radius, height, time);
     if (at) return { kind: h.kind, ...at };
   }
@@ -219,8 +233,8 @@ const flies = (c: Creature): boolean => !!c.canFly || c.kind === 'bat' || c.kind
  */
 export class HazardFoes {
   private readonly struck = new WeakMap<object, number>();
-  act(hazards: readonly HazardSpec[], foes: readonly Creature[], dt: number, time: number): Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet'; killed: boolean }> {
-    const out: Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet'; killed: boolean }> = [];
+  act(hazards: readonly HazardSpec[], foes: readonly Creature[], dt: number, time: number): Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet' | 'zapplate'; killed: boolean }> {
+    const out: Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet' | 'zapplate'; killed: boolean }> = [];
     for (const c of foes) {
       if (!c.alive) continue;
       const flier = flies(c);
@@ -237,7 +251,8 @@ export class HazardFoes {
           const uz = away > 1e-6 ? (c.z - h.z) / away : 0;
           c.nudge(ux * FOE_HAZARD.fanPush * power * dt, uz * FOE_HAZARD.fanPush * power * dt);
         } else {
-          if (h.kind === 'spikes' && flier) continue;
+          if (h.kind === 'teslacoil') continue;
+          if ((h.kind === 'spikes' || h.kind === 'zapplate') && flier) continue;
           // (A firefly is a creature of fire: a flame jet does not burn it.)
           if (h.kind === 'flamejet' && c.kind === 'firefly') continue;
           if (time - (this.struck.get(c) ?? -1e9) < FOE_HAZARD.cooldown) continue;
@@ -262,10 +277,18 @@ export class HazardFoes {
  * shooting up. Each with how loud (fading with distance, nothing past `HEARD`).
  */
 export const HEARD = 12;
-export function sounds(hazards: readonly HazardSpec[], before: number, now: number, at: { x: number; z: number }): Array<{ kind: 'swish' | 'spikes' | 'jet'; vol: number }> {
-  const out: Array<{ kind: 'swish' | 'spikes' | 'jet'; vol: number }> = [];
+export function sounds(hazards: readonly HazardSpec[], before: number, now: number, at: { x: number; z: number }): Array<{ kind: 'swish' | 'spikes' | 'jet' | 'kick' | 'snare' | 'hat'; vol: number; note?: number }> {
+  const out: Array<{ kind: 'swish' | 'spikes' | 'jet' | 'kick' | 'snare' | 'hat'; vol: number; note?: number }> = [];
   if (now <= before) return out;
   for (const h of hazards) {
+    if (h.kind === 'teslacoil') {
+      // The coil plays the beat (a keyboard's coil only what is played on it), heard across the room at any height.
+      if (h.keys) continue;
+      const far = Math.hypot(h.x - at.x, h.z - at.z);
+      if (far > HAZARD.zap.heard) continue;
+      for (const hit of hitsBetween(before, now)) out.push({ kind: hit.part, vol: 1 - (0.6 * far) / HAZARD.zap.heard, note: hit.note });
+      continue;
+    }
     const far = Math.hypot(h.x - at.x, h.z - at.z);
     if (far > HEARD) continue;
     const vol = 1 - far / HEARD;

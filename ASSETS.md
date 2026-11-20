@@ -72,6 +72,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 15 | `gauntlet` | GAUNTLET | The Gauntlet | waking | dungeon | drift | `src/levels/gauntlet.ts` |
 | Test Room 16 | `press` | THE PRESS | The Press | waking | dungeon | drift | `src/levels/press.ts` |
 | Test Room 17 | `greenroom` | GREEN ROOM | The Green Room | waking | dungeon | drift | `src/levels/greenroom.ts` |
+| Test Room 18 | `coilroom` | COIL ROOM | The Coil Room | waking | power | drift | `src/levels/coilroom.ts` |
 
 **The Hall** (`hall`, the hub): `src/levels/hall.ts`. **Boss rooms:** SPIDER BOSS (`widowpit`, `src/levels/practice.ts`); GRIMSQUEAK (`lair`, `src/levels/keep.ts`); SUMP WYRM (`sump`, `src/levels/cisternHalls.ts`); BROOD MOTHER (`brood`, `src/levels/hollows.ts`).
 
@@ -172,9 +173,9 @@ size of what is solid: the solid boxes are given by the level, not by the model.
 
 ## 7. Textures and looks
 
-All 105 textures are painted in code, dot by dot: `src/render/textures.ts` (one entry each, by name). To replace
+All 109 textures are painted in code, dot by dot: `src/render/textures.ts` (one entry each, by name). To replace
 one: drop a picture of that name into `assets/textures/` (part 0), or repaint its entry in code. The names:
-`stone`, `floor`, `brick`, `water`, `sewerBrick`, `concreteSlab`, `rustPlate`, `drainGrate`, `pipeBands`, `mossStone`, `wetCobbles`, `sludge`, `sewerWater`, `ceramicTiles`, `archTrim`, `dirt`, `dirtRoots`, `planks`, `beamEnd`, `beamSide`, `rubbleWall`, `gravelRail`, `mineBrick`, `clay`, `roughRock`, `wetRock`, `sandstone`, `crystalRock`, `mudFloor`, `mossRock`, `mushroomPatch`, `stalagmite`, `poolWater`, `magmaRock`, `crate`, `ironDoor`, `ironBars`, `hazardTrim`, `scorpShell`, `scorpTail`, `scorpClaw`, `scorpLamp`, `mushroomCap`, `mushroomStem`, `iceBrick`, `frostCobbles`, `iceSheet`, `iceBlock`, `iceClear`, `caveRock`, `caveFloor`, `glowMoss`, `rollerShell`, `rollerUnder`, `stagShell`, `stagBelly`, `stagHorn`, `stagIron`, `ashWood`, `turtleScute`, `turtleScuteMossy`, `turtleSkin`, `turtleBelly`, `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`, `chitin`, `wartSkin`, `leafChitin`, `membrane`, `owlFeathers`, `owlWing`, `softPaint`, `dreamStatic`, `rainbowRoad`, `pomoTiles`, `steamVent`, `widowChitin`, `widowHorn`, `widowBack`, `fireBrick`, `deckPlate`, `castIron`, `girder`, `castingSand`, `coalLumps`, `wroughtIron`, `cutStone`, `charred`, `coals`, `cork`, `tin`, `weave`, `cheese`, `card`, `wax`, `thread`, `couchFabric`, `couchPatch`, `knitBlanket`, `keepStone`, `royalCarpet`.
+`stone`, `floor`, `brick`, `water`, `sewerBrick`, `concreteSlab`, `rustPlate`, `drainGrate`, `pipeBands`, `mossStone`, `wetCobbles`, `sludge`, `sewerWater`, `ceramicTiles`, `archTrim`, `dirt`, `dirtRoots`, `planks`, `beamEnd`, `beamSide`, `rubbleWall`, `gravelRail`, `mineBrick`, `clay`, `roughRock`, `wetRock`, `sandstone`, `crystalRock`, `mudFloor`, `mossRock`, `mushroomPatch`, `stalagmite`, `poolWater`, `magmaRock`, `crate`, `ironDoor`, `ironBars`, `hazardTrim`, `scorpShell`, `scorpTail`, `scorpClaw`, `scorpLamp`, `mushroomCap`, `mushroomStem`, `iceBrick`, `frostCobbles`, `iceSheet`, `iceBlock`, `iceClear`, `caveRock`, `caveFloor`, `glowMoss`, `rollerShell`, `rollerUnder`, `stagShell`, `stagBelly`, `stagHorn`, `stagIron`, `ashWood`, `turtleScute`, `turtleScuteMossy`, `turtleSkin`, `turtleBelly`, `shortFur`, `hairStrands`, `knit`, `ratTail`, `tartan`, `stripeSock`, `chitin`, `wartSkin`, `leafChitin`, `membrane`, `owlFeathers`, `owlWing`, `softPaint`, `dreamStatic`, `rainbowRoad`, `pomoTiles`, `steamVent`, `widowChitin`, `widowHorn`, `widowBack`, `fireBrick`, `deckPlate`, `castIron`, `girder`, `castingSand`, `coalLumps`, `wroughtIron`, `cutStone`, `charred`, `coals`, `cork`, `tin`, `weave`, `cheese`, `card`, `wax`, `thread`, `couchFabric`, `couchPatch`, `knitBlanket`, `keepStone`, `royalCarpet`, `treadPlate`, `circuitPanel`, `copperCoil`, `steelGirder`.
 
 A level's LOOK is a theme: which texture each kind of surface wears (`src/levels/themes.ts`).
 
@@ -186,6 +187,7 @@ A level's LOOK is a theme: which texture each kind of surface wears (`src/levels
 | `dungeon` | Dungeon (grey stone) | floor | brick | stone | stone |
 | `foundry` | Foundry (iron, soot and magma) | rustPlate | mineBrick | rustPlate | magmaRock |
 | `keep` | Keep (castle stone and royal carpet) | stone | keepStone | keepStone | keepStone |
+| `power` | Power plant (steel, copper and circuits) | treadPlate | circuitPanel | treadPlate | circuitPanel |
 
 How everything is shaded (the PS1 look: wobble, banding, fog): `src/render/ps1Material.ts`. How sharp the picture
 is: `src/render/picture.ts`.
@@ -197,8 +199,8 @@ ears can say whether one is right.
 
 ### Sound effects
 
-182 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
-recording, squashed, stored in `src/audio/recorded.ts`); the other 149 are MADE IN CODE (a recipe in `synth.ts`).
+185 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
+recording, squashed, stored in `src/audio/recorded.ts`); the other 152 are MADE IN CODE (a recipe in `synth.ts`).
 
 **To replace an effect, the quick way:** drop a recording of that name into `assets/sounds/` (part 0). It is used whole,
 as it is.
@@ -243,7 +245,7 @@ the made-up sound, delete the entry and run it again. To change a made-up sound,
 | `rewind` | recorded: `recordings/chip/rewind.wav` |
 | `whoosh` | recorded: `recordings/chip/whoosh.wav` |
 
-Made in code: `jump`, `doubleJump`, `hit`, `kill`, `hurt`, `barrel`, `plank`, `pipe`, `plunge`, `shock`, `spit`, `splat`, `croak`, `roachWind`, `lunge`, `rumble`, `water`, `gush`, `drain`, `machine`, `wind`, `hall`, `lavaBubble`, `fire`, `clank`, `hiss`, `pebbles`, `chainClink`, `toll`, `roachScreech`, `snort`, `flipClang`, `batSqueak`, `flap`, `chipNote`, `chipBuzz`, `memoryIn`, `memoryOut`, `cloth`, `keepsake`, `recall`, `softStep`, `chitinTap`, `broodScream`, `broodHiss`, `broodRattle`, `spikeHit`, `threadTwang`, `broodHurt`, `broodDie`, `wyrmRoar`, `wyrmHiss`, `wyrmSnap`, `wyrmRattle`, `wyrmRam`, `wyrmLash`, `wyrmCreak`, `wyrmCrunch`, `plateKnock`, `wyrmCry`, `wyrmDie`, `hornetBuzz`, `hornetWhine`, `hornetHurt`, `hornetDie`, `stagBellow`, `stagStep`, `hammerHum`, `hammerSlam`, `stagRattle`, `stagDie`, `mantisHiss`, `scytheRing`, `scytheCut`, `mantisWings`, `mantisCry`, `mantisDie`, `guardBark`, `spearReady`, `guardYelp`, `guardDie`, `antClick`, `pikeReady`, `antSnap`, `antHurt`, `antDie`, `ironScrape`, `ironCharge`, `ironBonk`, `ironToss`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `grimGather`, `grimBolt`, `boltBurst`, `grimSwoop`, `grimSlam`, `orbHum`, `orbStrike`, `grimCry`, `grimRepel`, `grimSag`, `grimDie`, `fireflyHum`, `fireflyBlink`, `emberDrop`, `emberBurst`, `fireflyFade`, `fireflyHurt`, `fireflyDie`, `rideScrape`, `ridePop`, `rideClatter`, `grindRing`, `widowScream`, `widowRear`, `widowBite`, `widowHurt`, `widowDie`, `poisonSlash`, `poisonWave`, `poisonSpit`, `poisonSplash`, `scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`, `scorpDie`, `gasBurst`, `gasHiss`, `heave`, `hurl`, `setDown`, `potSmash`, `rockKnock`, `squirm`, `spinWhirl`, `grabSlap`, `trickStab`, `leverThrow`, `stoneCrack`, `stoneFall`, `spikeUp`, `flameRoar`, `bellNote`.
+Made in code: `jump`, `doubleJump`, `hit`, `kill`, `hurt`, `barrel`, `plank`, `pipe`, `plunge`, `shock`, `spit`, `splat`, `croak`, `roachWind`, `lunge`, `rumble`, `water`, `gush`, `drain`, `machine`, `wind`, `hall`, `lavaBubble`, `fire`, `clank`, `hiss`, `pebbles`, `chainClink`, `toll`, `roachScreech`, `snort`, `flipClang`, `batSqueak`, `flap`, `chipNote`, `chipBuzz`, `memoryIn`, `memoryOut`, `cloth`, `keepsake`, `recall`, `softStep`, `chitinTap`, `broodScream`, `broodHiss`, `broodRattle`, `spikeHit`, `threadTwang`, `broodHurt`, `broodDie`, `wyrmRoar`, `wyrmHiss`, `wyrmSnap`, `wyrmRattle`, `wyrmRam`, `wyrmLash`, `wyrmCreak`, `wyrmCrunch`, `plateKnock`, `wyrmCry`, `wyrmDie`, `hornetBuzz`, `hornetWhine`, `hornetHurt`, `hornetDie`, `stagBellow`, `stagStep`, `hammerHum`, `hammerSlam`, `stagRattle`, `stagDie`, `mantisHiss`, `scytheRing`, `scytheCut`, `mantisWings`, `mantisCry`, `mantisDie`, `guardBark`, `spearReady`, `guardYelp`, `guardDie`, `antClick`, `pikeReady`, `antSnap`, `antHurt`, `antDie`, `ironScrape`, `ironCharge`, `ironBonk`, `ironToss`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `grimGather`, `grimBolt`, `boltBurst`, `grimSwoop`, `grimSlam`, `orbHum`, `orbStrike`, `grimCry`, `grimRepel`, `grimSag`, `grimDie`, `fireflyHum`, `fireflyBlink`, `emberDrop`, `emberBurst`, `fireflyFade`, `fireflyHurt`, `fireflyDie`, `rideScrape`, `ridePop`, `rideClatter`, `grindRing`, `widowScream`, `widowRear`, `widowBite`, `widowHurt`, `widowDie`, `poisonSlash`, `poisonWave`, `poisonSpit`, `poisonSplash`, `scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`, `scorpDie`, `gasBurst`, `gasHiss`, `heave`, `hurl`, `setDown`, `potSmash`, `rockKnock`, `squirm`, `spinWhirl`, `grabSlap`, `trickStab`, `leverThrow`, `stoneCrack`, `stoneFall`, `spikeUp`, `flameRoar`, `bellNote`, `coilZap`, `coilCrack`, `coilTick`.
 
 The owner's three sound tools (kept whole in the project): `recordings/tools/chip-drum-pad.html`, `recordings/tools/chiptune-pad-studio.html`, `recordings/tools/robot-voice-box.html`. They are driven by
 the scripts in `scripts/chip/` (`sfx.mjs` for effects, `voices.mjs` and `robot.mjs` for voices, `songs.mjs` and `make.mjs` for music).
@@ -297,7 +299,7 @@ GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio
 
 | A level asks for | It gets | Levels that ask for it |
 | --- | --- | --- |
-| `drift` | `cistern` | 35 |
+| `drift` | `cistern` | 36 |
 | `pump` | `foundry` | 5 |
 | `groove` | `bap2` then `bap1` | 3 |
 | `echo` | `hollows` | 7 |

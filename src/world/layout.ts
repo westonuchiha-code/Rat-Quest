@@ -450,7 +450,7 @@ export type Decor =
    */
   | { kind: 'sign'; x: number; y: number; z: number; yaw: number; w: number; h: number; lines: string[]; post?: number }
   /** A piano key on the floor (world/musicFloor.ts): its middle, its footprint, its note in semitones from middle C. */
-  | { kind: 'floorkey'; x: number; y: number; z: number; w: number; d: number; note: number; black?: boolean }
+  | { kind: 'floorkey'; x: number; y: number; z: number; w: number; d: number; note: number; black?: boolean; voice?: 'coil' }
   /** A pad of an echo puzzle (world/musicFloor.ts): `slot` -1 is the puzzle's start pad. */
   | { kind: 'chime'; x: number; y: number; z: number; r: number; note: number; color: number; puzzle: string; slot: number }
   /**

@@ -7,15 +7,21 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bakeVertexColor } from '../render/ps1Material';
-import { HAZARD, bladeAngle, fanPower, jetDir, jetFlame, spikesUp, type HazardSpec } from './hazards';
+import { lastHit, laneState, COIL } from './teslaCoil';
+import { HAZARD, bladeAngle, fanPower, jetDir, jetFlame, spikesUp, type HazardSpec, type TeslaCoilSpec, type ZapPlateSpec } from './hazards';
 
 export interface HazardMats {
   iron: THREE.Material;
   plain: THREE.Material;
+  /** The electrical set's pictures (render/textures.ts): copper wire for a coil, tread plate for a zap plate. */
+  copper?: THREE.Material;
+  tread?: THREE.Material;
 }
 export interface BuiltHazard {
   group: THREE.Group;
   show(time: number): void;
+  /** A keyboard's coil: throw a bolt to there now (a coil key has just been played). */
+  arcTo?(x: number, y: number, z: number, time: number): void;
 }
 
 function mergeAll(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
@@ -35,7 +41,7 @@ const boxAt = (w: number, h: number, d: number, x: number, y: number, z: number,
 /** How deep a belt's frame is, under its top. */
 export const BELT_DEPTH = 0.35;
 
-export function buildHazard(h: HazardSpec, mats: HazardMats): BuiltHazard {
+export function buildHazard(h: HazardSpec, mats: HazardMats, all: readonly HazardSpec[] = []): BuiltHazard {
   const group = new THREE.Group();
   group.userData.moves = true;
   if (h.kind === 'belt') {
@@ -185,6 +191,8 @@ export function buildHazard(h: HazardSpec, mats: HazardMats): BuiltHazard {
       },
     };
   }
+  if (h.kind === 'teslacoil') return buildCoil(h, mats, all);
+  if (h.kind === 'zapplate') return buildZapPlate(h, mats);
   // A fan: a ring set in the floor, a grille over it, blades turning under, and dust carried up the column.
   group.position.set(h.x, h.y, h.z);
   const ring = new THREE.CylinderGeometry(h.r, h.r, 0.08, 20, 1, true);
@@ -233,6 +241,227 @@ export function buildHazard(h: HazardSpec, mats: HazardMats): BuiltHazard {
         m.position.set(mx, 0.2 + k * h.height * 0.9, mz);
         m.visible = power > 0.05;
       }
+    },
+  };
+}
+
+/**
+ * A LIGHTNING BOLT: a jagged line from one point to another, as two crossed ribbons (so it reads from any side), a
+ * bright core and a wide faint glow. `set` lays it again (a new zigzag each time it is called with a new seed).
+ */
+class Bolt {
+  readonly group = new THREE.Group();
+  private readonly core: THREE.BufferGeometry;
+  private readonly glow: THREE.BufferGeometry;
+  private readonly coreMat = new THREE.MeshBasicMaterial({ color: 0xe8f0ff, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  private readonly glowMat: THREE.MeshBasicMaterial;
+  constructor(private readonly segs: number, color: number) {
+    this.glowMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+    const make = (): THREE.BufferGeometry => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array((segs + 1) * 4 * 3), 3));
+      const idx: number[] = [];
+      for (let ribbon = 0; ribbon < 2; ribbon++) {
+        const o = ribbon * (segs + 1) * 2;
+        for (let i = 0; i < segs; i++) {
+          const a = o + i * 2;
+          idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        }
+      }
+      g.setIndex(idx);
+      return g;
+    };
+    this.core = make();
+    this.glow = make();
+    const c = new THREE.Mesh(this.core, this.coreMat);
+    const w = new THREE.Mesh(this.glow, this.glowMat);
+    c.frustumCulled = w.frustumCulled = false;
+    this.group.add(w, c);
+    this.group.visible = false;
+  }
+  /** Lays it from a to b, jagged by `amp` (most in its middle), bright as `bright` (0..1). */
+  set(a: THREE.Vector3, b: THREE.Vector3, seed: number, amp: number, bright: number): void {
+    let s = (Math.floor(seed) % 2147483646) + 1;
+    const rnd = (): number => ((s = (s * 16807) % 2147483647) / 2147483647) * 2 - 1;
+    const dir = b.clone().sub(a);
+    const len = dir.length();
+    const side1 = new THREE.Vector3(0, 1, 0).cross(dir).normalize();
+    if (side1.lengthSq() < 1e-6) side1.set(1, 0, 0);
+    const side2 = dir.clone().cross(side1).normalize();
+    const pts: THREE.Vector3[] = [];
+    for (let i = 0; i <= this.segs; i++) {
+      const k = i / this.segs;
+      const bend = Math.sin(Math.PI * k) * amp * len * 0.12;
+      pts.push(a.clone().lerp(b, k).addScaledVector(side1, rnd() * bend).addScaledVector(side2, rnd() * bend));
+    }
+    const lay = (g: THREE.BufferGeometry, wide: number): void => {
+      const p = g.attributes.position as THREE.BufferAttribute;
+      pts.forEach((q, i) => {
+        p.setXYZ(i * 2, q.x - side1.x * wide, q.y - side1.y * wide, q.z - side1.z * wide);
+        p.setXYZ(i * 2 + 1, q.x + side1.x * wide, q.y + side1.y * wide, q.z + side1.z * wide);
+        const o = (this.segs + 1) * 2;
+        p.setXYZ(o + i * 2, q.x - side2.x * wide, q.y - side2.y * wide, q.z - side2.z * wide);
+        p.setXYZ(o + i * 2 + 1, q.x + side2.x * wide, q.y + side2.y * wide, q.z + side2.z * wide);
+      });
+      p.needsUpdate = true;
+    };
+    lay(this.core, 0.035);
+    lay(this.glow, 0.16);
+    this.coreMat.opacity = bright;
+    this.glowMat.opacity = 0.45 * bright;
+    this.group.visible = bright > 0.02;
+  }
+  hide(): void {
+    this.group.visible = false;
+  }
+}
+
+/**
+ * A TESLA COIL: an iron base, a column wound in copper, a fat steel ring on top. A big one plays the beat
+ * (world/teslaCoil.ts): at each kick a bolt from its ring to every kick plate, at each snare to every snare plate, and at
+ * each hat a few short sparks off the ring; between, a faint crawl of small arcs round the ring. A small one (`keys`)
+ * throws a bolt only where it is told (`arcTo`: a coil key played).
+ */
+function buildCoil(h: TeslaCoilSpec, mats: HazardMats, all: readonly HazardSpec[]): BuiltHazard {
+  const group = new THREE.Group();
+  group.userData.moves = true;
+  group.position.set(h.x, h.y, h.z);
+  const r = h.r;
+  const iron = [boxAt(r * 3.2, 0.3, r * 3.2, 0, 0.15, 0, 0x2a2e34)];
+  const foot = new THREE.CylinderGeometry(r * 1.5, r * 1.8, 0.5, 12, 1);
+  foot.translate(0, 0.55, 0);
+  iron.push(bakeVertexColor(foot, 0x3a4048));
+  // Insulator rings up the foot of the column, white ceramic.
+  for (let k = 0; k < 3; k++) {
+    const ring = new THREE.CylinderGeometry(r * 1.25, r * 1.25, 0.12, 12, 1);
+    ring.translate(0, 0.9 + k * 0.22, 0);
+    iron.push(bakeVertexColor(ring, 0xe8e4d8));
+  }
+  group.add(new THREE.Mesh(mergeAll(iron), mats.iron));
+  const colH = h.height - 1.6;
+  const col = new THREE.CylinderGeometry(r, r, colH, 14, 1, true);
+  col.translate(0, 1.55 + colH / 2, 0);
+  group.add(new THREE.Mesh(bakeVertexColor(col, 0xffffff), mats.copper ?? mats.plain));
+  const cap = new THREE.CylinderGeometry(r * 1.1, r * 1.1, 0.15, 14, 1);
+  cap.translate(0, 1.55 + colH, 0);
+  const stem = new THREE.CylinderGeometry(r * 0.3, r * 0.3, 0.5, 8, 1);
+  stem.translate(0, 1.55 + colH + 0.3, 0);
+  const torusR = r * (h.keys ? 1.6 : 2.2);
+  const tube = r * (h.keys ? 0.5 : 0.7);
+  const torus = new THREE.TorusGeometry(torusR, tube, 8, 20);
+  torus.rotateX(Math.PI / 2);
+  torus.translate(0, h.height, 0);
+  group.add(new THREE.Mesh(mergeAll([bakeVertexColor(cap, 0x8a9098), bakeVertexColor(stem, 0x8a9098), bakeVertexColor(torus, 0xc8ccd4)]), mats.iron));
+  // A glow round the ring that swells at each hit.
+  const haloMat = new THREE.MeshBasicMaterial({ color: 0x7a9aff, transparent: true, opacity: 0.08, blending: THREE.AdditiveBlending, depthWrite: false });
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(torusR + tube * 2, 12, 8), haloMat);
+  halo.position.y = h.height;
+  halo.scale.y = 0.45;
+  group.add(halo);
+  const top = new THREE.Vector3(h.x, h.y + h.height, h.z);
+  const ringPoint = (seed: number, toward?: THREE.Vector3): THREE.Vector3 => {
+    const a = toward ? Math.atan2(toward.z - h.z, toward.x - h.x) + Math.sin(seed) * 0.3 : seed;
+    return new THREE.Vector3(h.x + Math.cos(a) * (torusR + tube * 0.5), h.y + h.height, h.z + Math.sin(a) * (torusR + tube * 0.5));
+  };
+  // The plates it throws at, by lane, and a bolt for each; sparks off the ring.
+  const plates = all.filter((p): p is ZapPlateSpec => p.kind === 'zapplate' && p.lane !== 'safe' && Math.hypot(p.x - h.x, p.z - h.z) < 30);
+  const toPlates = h.keys ? [] : plates.map((p) => ({ p, bolt: new Bolt(10, p.lane === 'kick' ? 0x5a8aff : 0xb060ff) }));
+  for (const t of toPlates) group.add(t.bolt.group);
+  const sparks = Array.from({ length: 4 }, () => new Bolt(5, 0x8aa8ff));
+  for (const b of sparks) group.add(b.group);
+  const keyBolt = new Bolt(9, 0x6af0ff);
+  group.add(keyBolt.group);
+  let keyAt = -1e9;
+  const keyTo = new THREE.Vector3();
+  // (Bolts are laid in the world; the group itself is moved to the coil, so they are put back by its place.)
+  const local = (v: THREE.Vector3): THREE.Vector3 => v.clone().sub(group.position);
+  return {
+    group,
+    arcTo(x, y, z, time) {
+      keyTo.set(x, y, z);
+      keyAt = time;
+    },
+    show(time) {
+      const flick = Math.floor(time * 24);
+      let swell = 0;
+      if (!h.keys) {
+        for (const lane of ['kick', 'snare'] as const) {
+          const hit = lastHit(lane, time);
+          const on = hit.ago < COIL.live ? 1 - hit.ago / COIL.live : 0;
+          swell = Math.max(swell, on, laneState(lane, time).warn * 0.4);
+          for (const t of toPlates) {
+            if (t.p.lane !== lane) continue;
+            if (on <= 0) {
+              t.bolt.hide();
+              continue;
+            }
+            const to = new THREE.Vector3(t.p.x, t.p.y + 0.05, t.p.z);
+            t.bolt.set(local(ringPoint(flick + t.p.x * 7, to)), local(to), flick * 31 + t.p.z * 13, 1, 0.35 + 0.65 * on);
+          }
+        }
+        const hat = lastHit('hat', time);
+        sparks.forEach((b, i) => {
+          if (hat.ago > 0.12 && Math.sin(time * 9 + i * 2.1) < 0.97) return b.hide();
+          const a = flick * 0.7 + i * 1.7;
+          const from = ringPoint(a);
+          const out = from.clone().add(new THREE.Vector3(Math.cos(a) * 0.9, 0.4 + 0.5 * Math.sin(i + flick), Math.sin(a) * 0.9));
+          b.set(local(from), local(out), flick * 17 + i, 1.2, hat.ago <= 0.12 ? 0.9 : 0.35);
+        });
+      }
+      const since = time - keyAt;
+      if (since >= 0 && since < 0.3) {
+        swell = Math.max(swell, 1 - since / 0.3);
+        keyBolt.set(local(ringPoint(flick, keyTo)), local(keyTo), flick * 13, 1, 1 - since / 0.3);
+      } else keyBolt.hide();
+      haloMat.opacity = 0.05 + 0.35 * swell;
+      halo.scale.setScalar(1 + 0.25 * swell);
+      halo.scale.y = 0.45 * (1 + 0.25 * swell);
+      void top;
+    },
+  };
+}
+
+/**
+ * A ZAP PLATE: a slab of tread plate with glowing strips along its edges, the colour of its lane (blue for the kick,
+ * violet for the snare; dull grey for a safe one). The strips brighten through the warning before its hit, and flash
+ * white while it is live, with sparks crawling over its top.
+ */
+function buildZapPlate(h: ZapPlateSpec, mats: HazardMats): BuiltHazard {
+  const group = new THREE.Group();
+  group.userData.moves = true;
+  group.position.set(h.x, h.y, h.z);
+  const T = 0.3;
+  const slab = new THREE.BoxGeometry(h.w, T, h.d);
+  slab.translate(0, -T / 2, 0);
+  group.add(new THREE.Mesh(bakeVertexColor(slab, 0xffffff), mats.tread ?? mats.iron));
+  const color = h.lane === 'kick' ? 0x4a8aff : h.lane === 'snare' ? 0xb050ff : 0x3a4048;
+  const stripMat = new THREE.MeshBasicMaterial({ color });
+  const strips = [
+    boxAt(h.w + 0.04, 0.06, 0.08, 0, -0.02, h.d / 2, 0xffffff), boxAt(h.w + 0.04, 0.06, 0.08, 0, -0.02, -h.d / 2, 0xffffff),
+    boxAt(0.08, 0.06, h.d, h.w / 2, -0.02, 0, 0xffffff), boxAt(0.08, 0.06, h.d, -h.w / 2, -0.02, 0, 0xffffff),
+  ];
+  group.add(new THREE.Mesh(mergeAll(strips), stripMat));
+  // Sparks over its top while live: a few short bolts, laid afresh each moment.
+  const sparks = h.lane === 'safe' ? [] : Array.from({ length: 3 }, () => new Bolt(4, color));
+  for (const b of sparks) group.add(b.group);
+  const base = new THREE.Color(color);
+  const white = new THREE.Color(0xffffff);
+  const dark = base.clone().multiplyScalar(0.35);
+  return {
+    group,
+    show(time) {
+      if (h.lane === 'safe') return;
+      const st = laneState(h.lane, time);
+      if (st.live) stripMat.color.copy(white);
+      else stripMat.color.copy(dark).lerp(base, st.warn).lerp(white, st.warn * st.warn * 0.4);
+      const flick = Math.floor(time * 30);
+      sparks.forEach((b, i) => {
+        if (!st.live) return b.hide();
+        const a = flick * 1.3 + i * 2.2;
+        const from = new THREE.Vector3(Math.cos(a) * h.w * 0.4, 0.04, Math.sin(a * 1.7) * h.d * 0.4);
+        const to = new THREE.Vector3(Math.cos(a + 2) * h.w * 0.4, 0.04, Math.sin(a * 1.7 + 2) * h.d * 0.4);
+        b.set(from, to, flick * 7 + i, 1.5, 0.9);
+      });
     },
   };
 }

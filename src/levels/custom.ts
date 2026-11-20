@@ -225,7 +225,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   ];
   // The room's own walls wear the theme's wall. (Only the newer themes for now: the older ones have always shown sewer
   // brick here, and the levels made with them were dressed to match.)
-  if (theme.id === 'foundry' || theme.id === 'keep') for (let i = 0; i < 4; i++) solids[i] = { ...solids[i], skin: theme.skins.wall };
+  if (theme.id === 'foundry' || theme.id === 'keep' || theme.id === 'power') for (let i = 0; i < 4; i++) solids[i] = { ...solids[i], skin: theme.skins.wall };
   const water: WaterVolume[] = [];
   const lava: LavaVolume[] = [];
   const fire: FireVolume[] = [];

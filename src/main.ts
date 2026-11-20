@@ -2497,7 +2497,12 @@ function startGame(): void {
     // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
     if (musicFloor && chamber.music) {
       for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {
-        if (ev.kind === 'note') audio.play(chamber.music.pads[ev.pad].kind === 'bell' ? 'bellNote' : 'chipNote', { rate: noteRate(ev.note), vol: 0.7, priority: 6 });
+        if (ev.kind === 'note') {
+          // (A bell rings; a coil key makes the keyboard's coil sing, its buzz pitched from C3, so an octave up; the rest are the chip.)
+          const pad = chamber.music.pads[ev.pad];
+          if (pad.voice === 'coil') audio.play('coilZap', { rate: noteRate(ev.note + 12), vol: 0.75, priority: 6 });
+          else audio.play(pad.kind === 'bell' ? 'bellNote' : 'chipNote', { rate: noteRate(ev.note), vol: 0.7, priority: 6 });
+        }
         else if (ev.kind === 'wrong') audio.play('chipBuzz', { vol: 0.6, priority: 6 });
         else if (ev.kind === 'solved') audio.play('clear', { vol: 0.8, priority: 7 });
       }
@@ -2775,9 +2780,13 @@ function startGame(): void {
         audio.play(ev.killed ? 'kill' : 'hit', { vol: 0.6, rate: roll(0.9, 1.1), priority: 5 });
       }
       for (const sd of hazardSounds(hz.specs, hazardClock, worldClock, player.position)) {
-        if (sd.kind === 'swish') audio.play('whoosh', { vol: 0.9 * sd.vol, rate: roll(0.55, 0.65), priority: 5 });
+        // (The Coil Room's beat, world/teslaCoil.ts: the kick sings its bass note, the snare cracks, the hat ticks.)
+        if (sd.kind === 'kick') audio.play('coilZap', { vol: 0.9 * sd.vol, rate: noteRate(sd.note ?? 0), priority: 6 });
+        else if (sd.kind === 'snare') audio.play('coilCrack', { vol: 0.85 * sd.vol, rate: roll(0.97, 1.03), priority: 6 });
+        else if (sd.kind === 'hat') audio.play('coilTick', { vol: 0.5 * sd.vol, rate: roll(0.9, 1.15), priority: 4 });
+        else if (sd.kind === 'swish') audio.play('whoosh', { vol: 0.9 * sd.vol, rate: roll(0.55, 0.65), priority: 5 });
         else if (sd.kind === 'spikes') audio.play('spikeUp', { vol: 0.8 * sd.vol, rate: roll(0.95, 1.05), priority: 5 });
-        else audio.play('flameRoar', { vol: 0.9 * sd.vol, rate: roll(0.92, 1.05), priority: 5 });
+        else if (sd.kind === 'jet') audio.play('flameRoar', { vol: 0.9 * sd.vol, rate: roll(0.92, 1.05), priority: 5 });
       }
       hazardClock = worldClock;
       hz.show(worldClock);

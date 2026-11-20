@@ -131,7 +131,7 @@ export interface LevelDef {
    */
   ambient?: number;
   /** Which look the level has (stone, wood and iron of the exit door follow it). Default: the sewer. */
-  theme?: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep';
+  theme?: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep' | 'power';
   solids: Box[];
   /** The void under the room, for the dark bottom. Null when there is none. */
   pit: Box | null;

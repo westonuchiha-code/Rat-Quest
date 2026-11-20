@@ -30,6 +30,8 @@ export interface MusicPad {
   /** Semitones from middle C. */
   note: number;
   black?: boolean;
+  /** What it sounds like: the sound chip (the default), or a Tesla coil's buzz (`coil`: the Coil Room's keyboard). */
+  voice?: 'coil';
   puzzle?: string;
   /** In a puzzle: which of its pads (0, 1, ...); -1 is its start pad. */
   slot?: number;

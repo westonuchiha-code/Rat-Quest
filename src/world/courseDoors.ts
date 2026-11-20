@@ -137,7 +137,7 @@ export class CourseDoors {
   private readonly doors: Doorway[] = [];
 
   /** `rooms`: how much room there is over each door for its sign (`roomOverDoor`); without it, each hangs at its full size. */
-  constructor(defs: CourseDoorDef[], states: DoorState[], theme: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep', rooms: number[] = []) {
+  constructor(defs: CourseDoorDef[], states: DoorState[], theme: 'sewer' | 'mine' | 'cave' | 'dungeon' | 'foundry' | 'keep' | 'power', rooms: number[] = []) {
     const ironMat = new THREE.MeshBasicMaterial({ color: 0x2b2a2e });
     defs.forEach((def, i) => {
       const st = states[i];

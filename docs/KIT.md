@@ -123,6 +123,37 @@ Flame jet (on the floor it points up; turned, it is in a wall pointing out).
 The Press also shows the crusher (above): a corridor under three crushers out of step, and one to ride up to a ledge.
 ICE, asked for with these, was already a part: the editor's Ice floor (a slick floor, `slick: true`).
 
+## The Coil Room: a Tesla coil on a beat, zap plates, coil keys, the Power plant tile set (Test Room 18)
+
+The owner's idea, 2026-11-20: a room with a big Tesla coil zapping the metal platforms you climb on, on "some sort of
+hip hop beat ... so that you understand when the platforms will and won't be electrocuted", coils you can play "like
+synthesizers", and an electrical tile set. `src/levels/coilroom.ts`; the beat `src/world/teslaCoil.ts`; the parts in
+`world/hazards.ts` and `hazardModels.ts`; `tests/coilroom.ts`.
+
+- **The beat** (`COIL` in teslaCoil.ts): a boom-bap bar, 16 steps at 90 a minute (2.67 s a bar). KICK on steps 1, 8,
+  11, singing a bass line (a note each, four bars round); SNARE on 5 and 13; HAT on 3, 7, 10, 15 (harmless sparks).
+  A plate is live 0.22 s after its lane's hit, and glows up through the 0.5 s before it. One clock: drawn, heard and
+  felt agree.
+- **teslacoil** (decor `{ kind: 'teslacoil', x, y, z, height, r, keys? }`): iron base, white insulator rings, a
+  copper-wound column (`copperCoil`), a steel ring on top, a halo that swells on the hits. It throws a jagged bolt (two
+  crossed ribbons, re-jagged many times a second) to every kick plate on the kick and every snare plate on the snare,
+  and sparks off its ring on the hats. Solid. `keys: true`: a small one that plays no beat, only a bolt to whichever
+  coil key is played.
+- **zapplate** (decor `{ kind: 'zapplate', x, y, z, w, d, lane }`, lane `kick`, `snare` or `safe`): a solid slab of
+  tread plate with glowing edge strips, BLUE for the kick, VIOLET for the snare, grey for safe; brighter through the
+  warning, white with sparks while live. Live and stood on: a shock (a burn, 1; no roll or shield helps; a hop clears it).
+  Creatures that walk are shocked too.
+- **Coil keys**: any floor key with `voice: 'coil'` sings through the coil (`coilZap`, a harsh square buzz with arc
+  crackle, pitched to the note) and the nearest keyboard coil throws a bolt to it.
+- **Sounds** (unheard): `coilZap` (the kick and the keys), `coilCrack` (the snare), `coilTick` (the hat).
+- **The POWER PLANT tile set** (levels/themes.ts `power`; four new pictures in render/textures.ts): `treadPlate`
+  (steel tread plate, floors and platforms), `circuitPanel` (dark panels, copper traces, solder pads, a few lit LEDs:
+  walls), `steelGirder` (pillars), `copperCoil` (the coil's winding). The room's own walls wear it; a door gets a
+  girder frame. In the editor as a theme.
+- **The room**: 18 plates spiral up round the coil, safe, kick, snare, over and over (a safe plate never more than two
+  away), each a jump from the last (the test climbs it with the real rat, one jump each), to a balcony at 19.2 with a
+  crumb; crumbs on two safe plates on the way; the coil keys and their coil by the way in.
+
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 
 Made as the Club's regulars are: a BUILD (the animal) and a LOOK (one of two of it, by name: colours and a thing or

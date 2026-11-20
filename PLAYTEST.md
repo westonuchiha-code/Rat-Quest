@@ -53,6 +53,13 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - Two moles (Digger, Dot) and two hedgehogs (Bramble, Thistle), to talk to. Whether they look like they belong; their
   voices are borrowed and pitched (unheard).
 
+**The Coil Room** (Test Room 18)
+- Whether the beat reads: blue plates on the kick, violet on the snare, a half-second glow before each. All of it is
+  unheard: the coil's buzz, its crack and tick, the bass line. The tempo (90) and the pattern are a few numbers at the
+  top of `src/world/teslaCoil.ts`.
+- The climb: 18 plates, each one jump. Whether it wants harder (fewer safe plates) or easier.
+- The coil keys by the door: whether the coil's voice is fun to play.
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

@@ -3116,6 +3116,115 @@ function paintCoalLumps(p: Px, rand: Rand): void {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// THE ELECTRICAL SET (2026-11-20, the Coil Room; the owner: "create a new tile set like an electrical themed tile set
+// for this type of level"): steel tread plate underfoot, dark panels run with copper traces on the walls, copper
+// wire wound tight round a coil, a steel girder with holes punched in it.
+// ---------------------------------------------------------------------------------------------------------------
+
+/** Steel tread plate: blue-grey steel with raised diamonds in staggered rows, each lit on one side, dark on the other. */
+const paintTreadPlate: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 4, 3);
+  p.each((x, y) => ramp(f[y * s + x] * 1.6, [0x3c434c, 0x48505a, 0x535c66], x, y, 0.25));
+  for (let row = 0; row < s / 8; row++) {
+    for (let col = 0; col < s / 8; col++) {
+      const cx = col * 8 + (row % 2 ? 4 : 0) + 2;
+      const cy = row * 8 + 3;
+      // A raised diamond: a short slanted bar, lit above, shadowed below; alternate rows lean the other way.
+      const lean = row % 2 ? 1 : -1;
+      for (let k = 0; k < 4; k++) {
+        p.set((cx + k) % s, (cy + lean * (k - 1.5) + s) % s | 0, 0x7a848e);
+        p.set((cx + k) % s, (cy + lean * (k - 1.5) + 1 + s) % s | 0, 0x262b31);
+      }
+    }
+  }
+  p.speckle(rand, 30, 0x2a2f35);
+  p.speckle(rand, 14, 0x8a6a48);
+};
+
+/** A wall panel: dark blue-grey, a seam round it with a rivet at each corner, copper traces running square across it with solder pads, and a few lit LEDs. */
+const paintCircuitPanel: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 3, 3);
+  p.each((x, y) => ramp(f[y * s + x] * 1.4, [0x161a20, 0x1c2128, 0x222830], x, y, 0.2));
+  // Panel seams: a dark line and a lit one, every half.
+  for (const o of [0, s / 2]) {
+    p.hline(0, o, s, 0x0a0c10);
+    p.hline(0, o + 1, s, 0x323a44);
+    p.vline(o, 0, s, 0x0a0c10);
+    p.vline(o + 1, 0, s, 0x323a44);
+    for (const q of [0, s / 2]) {
+      rivet(p, o + 3, q + 3, 0x9aa4ae, 0x08090c);
+      rivet(p, o + s / 2 - 4, q + s / 2 - 4, 0x9aa4ae, 0x08090c);
+    }
+  }
+  // Copper traces: from a pad, along, a right-angle turn, along, to another pad.
+  const copper = 0xb87333;
+  const lit = 0xe0a060;
+  for (let t = 0; t < 7; t++) {
+    let x = 4 + Math.floor(rand() * (s - 8));
+    let y = 4 + Math.floor(rand() * (s - 8));
+    p.rect(x - 1, y - 1, 3, 3, lit);
+    const run1 = 6 + Math.floor(rand() * 18);
+    const dx = rand() < 0.5 ? 1 : -1;
+    for (let k = 0; k < run1; k++) {
+      x = (x + dx + s) % s;
+      p.set(x, y, k % 5 === 0 ? lit : copper);
+    }
+    const run2 = 4 + Math.floor(rand() * 14);
+    const dy = rand() < 0.5 ? 1 : -1;
+    for (let k = 0; k < run2; k++) {
+      y = (y + dy + s) % s;
+      p.set(x, y, copper);
+    }
+    p.rect(x - 1, y - 1, 3, 3, lit);
+    p.set(x, y, 0x3a2410);
+  }
+  // A few small lights: green, amber, one red.
+  for (const c of [0x4aff7a, 0x4aff7a, 0xffc040, 0xff4a3a]) {
+    const x = 2 + Math.floor(rand() * (s - 4));
+    const y = 2 + Math.floor(rand() * (s - 4));
+    p.set(x, y, c);
+    p.blend(x + 1, y, c, 0.4);
+  }
+};
+
+/** Copper wire wound tight: thin bands, each lit along its top and dark under, the copper running from deep to bright. */
+const paintCopperCoil: Painter = (p, rand) => {
+  const s = p.size;
+  for (let y = 0; y < s; y++) {
+    const band = y % 3;
+    const base = band === 0 ? 0xe8a868 : band === 1 ? 0xb87333 : 0x5a3418;
+    for (let x = 0; x < s; x++) p.set(x, y, shade(base, 0.92 + 0.16 * rand()));
+  }
+  // Here and there the wire is darker (old), or catches a glint.
+  p.speckle(rand, 20, 0x3a2410);
+  p.speckle(rand, 12, 0xffe0b0);
+};
+
+/** A steel girder: grey steel, a flange down each side, and round holes punched along its middle. */
+const paintSteelGirder: Painter = (p, rand) => {
+  const s = p.size;
+  const f = fbm(s, rand, 4, 2);
+  p.each((x, y) => ramp(f[y * s + x] * 1.5, [0x4a525c, 0x58626c, 0x66707a], x, y, 0.2));
+  for (const x of [0, s - 4]) {
+    p.rect(x, 0, 4, s, 0x3a4048);
+    p.vline(x + (x ? 0 : 3), 0, s, 0x7a848e);
+  }
+  for (let y = 4; y < s; y += 10) {
+    for (let k = -3; k <= 3; k++) {
+      for (let j = -3; j <= 3; j++) {
+        if (k * k + j * j > 10) continue;
+        p.set(s / 2 + k, y + j, k * k + j * j > 5 && j < 0 ? 0x262b31 : 0x0c0e12);
+      }
+    }
+    rivet(p, 6, y, 0x9aa4ae, 0x262b31);
+    rivet(p, s - 8, y, 0x9aa4ae, 0x262b31);
+  }
+  p.speckle(rand, 16, 0x7a5a38);
+};
+
 const DEFS = {
   // legacy (mid-grey / murky green, tinted by vertex colour)
   stone: { size: 32, seed: 11, paint: legacyBlocks(4, 2, 150, 70) },
@@ -3239,6 +3348,11 @@ const DEFS = {
   // keep
   keepStone: { size: 32, seed: 501, paint: paintKeepStone },
   royalCarpet: { size: 32, seed: 502, paint: paintRoyalCarpet },
+  // The electrical set (the Coil Room, 2026-11-20).
+  treadPlate: { size: 32, seed: 701, paint: paintTreadPlate },
+  circuitPanel: { size: 64, seed: 702, paint: paintCircuitPanel },
+  copperCoil: { size: 32, seed: 703, paint: paintCopperCoil },
+  steelGirder: { size: 32, seed: 704, paint: paintSteelGirder },
 } satisfies Record<string, Def>;
 
 export type TextureName = keyof typeof DEFS;
@@ -3249,7 +3363,7 @@ export const TEXTURE_SETS: { sewer: TextureName[]; tunnel: TextureName[]; cave: 
   sewer: ['sewerBrick', 'concreteSlab', 'rustPlate', 'drainGrate', 'pipeBands', 'mossStone', 'wetCobbles', 'sludge', 'sewerWater', 'ceramicTiles', 'archTrim'],
   tunnel: ['dirt', 'dirtRoots', 'planks', 'beamEnd', 'beamSide', 'rubbleWall', 'gravelRail', 'mineBrick', 'clay'],
   cave: ['roughRock', 'wetRock', 'sandstone', 'crystalRock', 'mudFloor', 'mossRock', 'mushroomPatch', 'stalagmite', 'poolWater', 'magmaRock'],
-  shared: ['stone', 'floor', 'brick', 'water', 'crate', 'ironDoor', 'ironBars', 'hazardTrim', 'keepStone', 'royalCarpet'],
+  shared: ['stone', 'floor', 'brick', 'water', 'crate', 'ironDoor', 'ironBars', 'hazardTrim', 'keepStone', 'royalCarpet', 'treadPlate', 'circuitPanel', 'copperCoil', 'steelGirder'],
 };
 
 const pixelCache = new Map<TextureName, TexturePixels>();

@@ -754,7 +754,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const animators: Array<(time: number) => void> = [];
   /** Music underfoot (world/musicFloor.ts): its pads, and how each is drawn. */
   const musicPads: MusicPad[] = [];
-  const musicLooks: Array<{ body: THREE.Object3D; glow: THREE.MeshBasicMaterial; rest: number }> = [];
+  const musicLooks: Array<{ body: THREE.Object3D; glow: THREE.MeshBasicMaterial; rest: number; was?: number }> = [];
   /** Things to hit (world/strikeables.ts): their states, looks and solids, in level order. */
   const strikeThings: Strikeable[] = [];
   const strikeLooks: BuiltStrike[] = [];
@@ -762,6 +762,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Hazards and helpers (world/hazards.ts), in level order, and their looks. */
   const hazardSpecs: HazardSpec[] = [];
   const hazardLooks: BuiltHazard[] = [];
+  const allHazards = (layout.decor ?? []).filter((d): d is HazardSpec => d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate');
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
   const knockables: Array<{ what: JunkKind; x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
@@ -1780,15 +1781,18 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const glow = new THREE.Mesh(glowGeo, glowMat);
       glow.position.set(d.x, d.y + h + 0.012, d.z);
       group.add(glow);
-      musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
+      musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black, ...(d.voice ? { voice: d.voice } : {}) } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
       musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
-    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet') {
-      // Hazards and helpers (world/hazards.ts, hazardModels.ts): drawn here; main.ts has them act on him. A belt is solid.
-      const built = buildHazard(d, { iron: lit('wroughtIron'), plain: plainMat });
+    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate') {
+      // Hazards and helpers (world/hazards.ts, hazardModels.ts): drawn here; main.ts has them act on him. A belt, a zap
+      // plate and a coil are solid. (A coil is told of every plate, to throw its bolts at them.)
+      const built = buildHazard(d, { iron: lit('wroughtIron'), plain: plainMat, copper: lit('copperCoil'), tread: lit('treadPlate') }, allHazards);
       group.add(built.group);
       hazardSpecs.push(d);
       hazardLooks.push(built);
       if (d.kind === 'belt') colliders.push(makeAabb(d.x, d.y - BELT_DEPTH / 2, d.z, d.w, BELT_DEPTH, d.d));
+      if (d.kind === 'zapplate') colliders.push(makeAabb(d.x, d.y - 0.15, d.z, d.w, 0.3, d.d));
+      if (d.kind === 'teslacoil') colliders.push(makeAabb(d.x, d.y + d.height / 2, d.z, d.r * 2.4, d.height, d.r * 2.4));
     } else if (d.kind === 'bell') {
       // A bell (world/strikeables.ts, strikeModels.ts): struck with the sword, and a music pad (world/musicFloor.ts).
       const B = STRIKE.bell;
@@ -2591,6 +2595,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     pads: musicPads,
     show: (lit: readonly number[], down: readonly boolean[], flash: readonly number[], time: number): void => {
       musicLooks.forEach((m, i) => {
+        // (A coil key just played: the nearest keyboard coil throws a bolt to it.)
+        const pad = musicPads[i];
+        if (pad.voice === 'coil' && lit[i] > 0.97 && (m.was ?? 0) <= 0.97) {
+          const coil = hazardLooks.map((b, k) => [b, hazardSpecs[k]] as const).filter(([b]) => !!b.arcTo).sort((a, b2) => Math.hypot(a[1].x - pad.x, a[1].z - pad.z) - Math.hypot(b2[1].x - pad.x, b2[1].z - pad.z))[0];
+          coil?.[0].arcTo?.(pad.x, pad.y + 0.05, pad.z, time);
+        }
+        m.was = lit[i];
         // Pressed: it goes down a little. Sounding: it glows, fading. Solved: its puzzle's pads flash.
         m.body.position.y = m.rest - (down[i] ? 0.035 : 0);
         const f = flash[i] > 0 ? 0.5 + 0.5 * Math.sin(time * 18) : 0;

@@ -241,6 +241,9 @@ export const SFX_NAMES = [
   'flameRoar',
   // A bell struck with the sword (world/strikeables.ts): middle C, played faster for higher notes as the chip's is.
   'bellNote',
+  // The Coil Room (2026-11-20): a Tesla coil singing, as real ones are played: a harsh buzz at the note (the arcs fire
+  // at its pitch) with the arc's crackle on it; its snare, a crack of the arc; its hat, a spark's tick.
+  'coilZap', 'coilCrack', 'coilTick',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -566,6 +569,24 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const strike = (c.r() * 2 - 1) * Math.exp(-t * 200) * 0.4;
     return Math.tanh((v + strike) * Math.min(1, t / 0.002) * 0.9) * Math.min(1, (1.8 - t) / 0.3);
   }, { bits: 8 }),
+  // A Tesla coil's note at C3 (130.8 Hz; played faster for higher notes): the arcs firing at the pitch make a hard
+  // square buzz, rich and a little rough (its pulses shake in time), with crackle riding on it, held a moment, then gone.
+  coilZap: () => draw(0.42, RATE_HI, 281, (c) => (t) => {
+    const f = 130.81 * (1 + 0.004 * Math.sin(t * 90));
+    const buzz = sq(c.osc(0, f), 0.18) * 0.7 + sq(c.osc(1, f * 2.005), 0.3) * 0.25 + saw(c.osc(2, f * 0.5)) * 0.2;
+    const crackle = (c.r() < 0.18 ? c.r() * 2 - 1 : 0) * 0.55;
+    const env = Math.min(1, t / 0.004) * (t < 0.22 ? 1 : Math.max(0, 1 - (t - 0.22) / 0.2));
+    return Math.tanh((buzz + crackle) * 1.6) * env * 0.85;
+  }, { bits: 6 }),
+  // The coil's snare: a hard snap of the arc, a burst of fizz, and a short high buzz in it.
+  coilCrack: () => draw(0.3, RATE_HI, 282, (c) => (t) => {
+    const snap = (c.r() * 2 - 1) * Math.exp(-t * 60);
+    const fizz = (c.lp(0, c.r() * 2 - 1, 0.7) - c.lp(1, c.r() * 2 - 1, 0.2)) * Math.exp(-t * 14) * 0.9;
+    const buzz = sq(c.osc(0, 523.25), 0.2) * Math.exp(-t * 20) * 0.35;
+    return Math.tanh((snap + fizz + buzz) * 1.4) * Math.min(1, (0.3 - t) / 0.05);
+  }, { bits: 6 }),
+  // A spark's tick (the coil's hat): a click and the faintest high fizz.
+  coilTick: () => draw(0.08, RATE_HI, 283, (c) => (t) => ((c.r() * 2 - 1) * Math.exp(-t * 160) + (c.lp(0, c.r() * 2 - 1, 0.9) - c.lp(1, c.r() * 2 - 1, 0.5)) * Math.exp(-t * 60) * 0.5) * 0.8, { bits: 6 }),
   // A blow on cracked stone: a sharp snap, a dull body, and grit trickling after.
   stoneCrack: () => draw(0.45, RATE_HI, 272, (c) => (t) => {
     const snap = (c.r() * 2 - 1) * Math.exp(-t * 90) * 0.9;
