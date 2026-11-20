@@ -42,6 +42,11 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
   (`knightDouble`, `dressDouble`) stands in the character's place; all cleared on loading a level.
   Then the hedgehog's movement was made his own (the owner: different bodies move differently): standIn.ts only, no
   knight's code read into it. `rig.spines` added to the small regulars (npc/patrons.ts) so his spines can bristle.
+  Then (the owner: "he's not a knight, he's a hedgehog ... make him roll around ... maybe he can spit") HIS OWN
+  CONTROLLER, `player/hedgehogController.ts`: walk, hop, ROLL into a ball (momentum, downhill, bounces, low gaps,
+  rams), SPIT, a spine burst. *main.ts*: when he is played, `hog.update` moves him; `player.update` is stepped with
+  nothing pressed (health, hits, death) and put where he is; his hits are fed to `events` after `resolveCombat`; the
+  lift is off for him; the stand-in is drawn from `hog`. `dev/filmDrive.ts`: `&autoball`.
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 

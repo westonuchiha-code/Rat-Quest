@@ -1,15 +1,18 @@
-// THE STAND-IN (player/standIn.ts; the Stand-in room, levels/standinroom.ts; 2026-11-20): Bramble the hedgehog drawn in
-// the rat's place, posed from what the rat's own controller does. The real rat is run through the room's course, and
-// the hedgehog is posed from him every frame as main.ts does it; then each pose is looked at.
+// BRAMBLE, PLAYED (player/hedgehogController.ts, his body player/standIn.ts; the Stand-in room, Test Room 19;
+// 2026-11-20). The owner: "he's not a knight, he's a hedgehog ... make him roll around like a hedgehog ... maybe he can
+// spit". His own moves, in the room built for them, against real roaches: a walk and a hop smaller than the knight's;
+// the BALL (it builds speed and keeps it, runs downhill, bounces off walls, gets through the burrow's low gap, rams);
+// the SPIT; the spine BURST; swimming. Then his body is looked at in each.
 import './../src/core/colorSetup';
 import * as THREE from 'three';
-import { PlayerController, type PlayerInput } from '../src/player/controller';
-import type { RatAnimInput } from '../src/player/ratModel';
+import { HedgehogController, HOG, type HogInput, type HogEvents } from '../src/player/hedgehogController';
 import { StandIn } from '../src/player/standIn';
+import { Scuttler } from '../src/enemies/scuttler';
 import { levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
-import { HANG, POOL, SLOPES, STEPS } from '../src/levels/standinroom';
+import { BURROW, POOL, SLOPES, STEPS } from '../src/levels/standinroom';
 import { ROOMS } from '../src/levels/testRooms';
+import { TUNING } from '../src/data/tuning';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -17,266 +20,224 @@ function check(name: string, ok: boolean, detail = ''): void {
   if (!ok) failures++;
 }
 const DT = 1 / 60;
-const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+const pad = (o: Partial<HogInput> = {}): HogInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, rollPressed: false, ...o });
+const E = new THREE.Vector3(1, 0, 0);
+const N = new THREE.Vector3(0, 0, -1);
 
 const def = levelById('standin');
 check('the Stand-in room is Test Room 19; he walks in as the knight', !!def && !def.playAs && ROOMS.some((r) => r.n === 19 && r.id === 'standin'));
 {
   const b = def?.npcs?.find((n) => n.name === 'Bramble');
   const spawn = def?.spawn ?? { x: 0, y: 0, z: 0, facing: 0 };
-  check('Bramble waits by the way in, to swap with him (and the knight has his own lines, to swap back)', !!b && b.swap?.as === 'hedgehog' && (b.swap?.back.length ?? 0) > 0 && b.lines.length > 0 && Math.hypot(b.x - spawn.x, b.z - spawn.z) < 6, b ? `${Math.hypot(b.x - spawn.x, b.z - spawn.z).toFixed(1)} from the way in` : 'not there');
+  check('Bramble waits by the way in, to swap with him (and the knight has his own lines, to swap back)', !!b && b.swap?.as === 'hedgehog' && (b.swap?.back.length ?? 0) > 0 && Math.hypot(b.x - spawn.x, b.z - spawn.z) < 6);
 }
 const room = buildChamber(def as never);
+const C = room.colliders;
+const W = room.water;
 
-/** What the rat's model is told each frame (as main.ts tells it, in play). */
-function anim(p: PlayerController): RatAnimInput {
-  return {
-    state: p.state, planarSpeed: Math.hypot(p.velocity.x, p.velocity.z), comboStep: p.comboStep, attackTime: p.attackTime,
-    dodgeKind: p.currentDodgeKind, dodgeProgress: p.dodgeProgress, verticalSpeed: p.velocity.y, flipProgress: p.flipProgress,
-    armed: p.armed, stowProgress: p.stowProgress, plungeStage: p.plungeStage, ledge: p.ledge, hangTime: p.hangTime,
-    climbProgress: p.climbProgress, kickProgress: p.kickProgress, onWall: p.onWall,
-    slide: p.sliding ? { back: p.slideBack, air: !p.grounded, ...p.rideGround } : null, glide: p.gliding,
-    carry: p.carryPose, throwT: p.throwProgress,
-    ride: p.riding ? { steer: p.rideSteer, tuck: p.rideTuck, spin: p.rideSpinProgress, grab: p.rideGrabPose, flip: p.rideFlipProgress, air: !p.grounded, ...p.rideGround, grind: p.grinding, grindSide: p.grindSide } : null,
-  };
+// The drawing, posed every step from him.
+const body = new StandIn();
+let nan = 0;
+const rig = (): { body: THREE.Group; root: THREE.Group; head: THREE.Group; spines: ReadonlyArray<{ mesh: THREE.Object3D }> } => body['rig'];
+function step(h: HedgehogController, p: Partial<HogInput> = {}, foes: Scuttler[] = []): HogEvents {
+  const ev = h.update(DT, pad(p), C, W, foes, null);
+  for (const f of foes) f.update(DT, h.position.x, h.position.y, h.position.z, false);
+  body.setTransform(new THREE.Vector3(), h.facing);
+  body.update(DT, h, ev);
+  body.root.traverse((o) => {
+    if (![o.position.x, o.position.y, o.position.z, o.rotation.x, o.rotation.y, o.rotation.z, o.scale.x].every(Number.isFinite)) nan++;
+  });
+  return ev;
 }
-
-const h = new StandIn();
-/** The room his shape takes up: what is drawn of him (a hidden part, the board when he is not riding, is not). */
+const at = (x: number, y: number, z: number, facing = 0): HedgehogController => {
+  const h = new HedgehogController(new THREE.Vector3(x, y, z));
+  h.facing = facing;
+  for (let k = 0; k < 20; k++) step(h);
+  return h;
+};
+/** What is drawn of him, in his own frame. */
 function shape(): THREE.Box3 {
   const box = new THREE.Box3();
   const visible = (o: THREE.Object3D): boolean => o.visible && (!o.parent || visible(o.parent));
-  h.root.traverse((o) => {
+  body.root.updateMatrixWorld(true);
+  body.root.traverse((o) => {
     if ((o as THREE.Mesh).isMesh && visible(o)) box.union(new THREE.Box3().setFromObject(o, true));
   });
   return box;
 }
-let nan = 0;
-const seen = new Map<string, number>();
-/** One frame: the rat steps, the hedgehog is posed from him. What the hedgehog's shape is now (in his own frame). */
-function frame(p: PlayerController, pad: Partial<PlayerInput>): { box: THREE.Box3; a: RatAnimInput } {
-  room.stepMovers(DT, p);
-  p.update(DT, input(pad), room.colliders);
-  const a = anim(p);
-  h.setTransform(new THREE.Vector3(), p.facing);
-  h.update(DT, a);
-  h.root.updateMatrixWorld(true);
-  h.root.traverse((o) => {
-    if (![o.position.x, o.position.y, o.position.z, o.rotation.x, o.rotation.y, o.rotation.z, o.scale.x].every(Number.isFinite)) nan++;
-  });
-  seen.set(a.state, (seen.get(a.state) ?? 0) + 1);
-  return { box: shape(), a };
-}
-const start = (x: number, y: number, z: number, facing = Math.PI): PlayerController => {
-  const p = new PlayerController(new THREE.Vector3(x, y, z));
-  p.water = room.water;
-  p.facing = facing;
-  for (let k = 0; k < 30; k++) frame(p, {});
-  return p;
-};
 
-// ---- Standing, walking, running: his feet on the floor, the needle not through it ----
+// ---- On his feet: smaller than the knight in everything ----
 {
-  const p = start(0, 0, 6);
-  const idle = frame(p, {}).box;
-  check('standing, his feet are on the floor (nothing of him below it, nothing floating)', idle.min.y > -0.03 && idle.min.y < 0.04, `lowest ${idle.min.y.toFixed(3)}`);
-  check('standing, he is his own height (about a metre: the rat is 1.1)', idle.max.y > 0.85 && idle.max.y < 1.15, `top ${idle.max.y.toFixed(2)}`);
-  let low = 9;
-  let high = -9;
-  let legSwing = 0;
+  const h = at(0, 0, 6);
+  check('standing, his feet are on the floor', h.grounded && Math.abs(h.position.y) < 1e-3 && Math.abs(shape().min.y) < 0.04, `lowest ${shape().min.y.toFixed(3)}`);
+  for (let k = 0; k < 60; k++) step(h, { move: E });
+  const walk = h.speed;
+  for (let k = 0; k < 60; k++) step(h, { move: E, run: true });
+  const run = h.speed;
+  check('he walks and scurries, slower than the knight does (short legs)', Math.abs(walk - HOG.walk) < 0.1 && Math.abs(run - HOG.run) < 0.1 && run < TUNING.move.run && walk < TUNING.move.walk, `walk ${walk.toFixed(1)}, scurry ${run.toFixed(1)}`);
+}
+{
+  const h = at(0, 0, 6);
+  let top = 0;
   for (let k = 0; k < 90; k++) {
-    const f = frame(p, { move: new THREE.Vector3(1, 0, 0), run: true });
-    low = Math.min(low, f.box.min.y);
-    high = Math.max(high, f.box.min.y);
-    legSwing = Math.max(legSwing, Math.abs(h['rig'].legs[0].thigh.rotation.x));
+    step(h, { jumpPressed: k === 0, jumpHeld: true });
+    top = Math.max(top, h.position.y);
   }
-  check('running, his legs patter (swing well forward and back)', legSwing > 0.5, `swing ${legSwing.toFixed(2)} rad`);
-  check('running, he stays on the floor (a bob, no sinking in, no floating)', low > -0.05 && high < 0.12, `lowest ${low.toFixed(3)}..${high.toFixed(3)}`);
+  const knight = (TUNING.jump.velocity * TUNING.jump.velocity) / (2 * TUNING.physics.gravity);
+  check('his hop is lower than the knight\'s jump, and there is no second jump', top > 1.1 && top < knight - 0.5, `${top.toFixed(2)} high (the knight: ${knight.toFixed(2)})`);
 }
-// ---- The sword: a swing sweeps the needle across in front of him ----
+// ---- The ball ----
 {
-  const p = start(0, 0, 6);
-  const tipX: number[] = [];
-  const tipZ: number[] = [];
-  const base = new THREE.Vector3();
-  const tip = new THREE.Vector3();
-  frame(p, { attackPressed: true });
-  for (let k = 0; k < 25; k++) {
-    frame(p, {});
-    h.getBlade(base, tip);
-    // (In his own frame: across him, and out in front of him.)
-    h.root.worldToLocal(tip);
-    tipX.push(tip.x);
-    tipZ.push(tip.z);
+  const h = at(-6, 0, 6, Math.PI / 2);
+  step(h, { rollPressed: true });
+  check('ROLL curls him into a ball (and he is a ball to look at)', h.curled && h.state === 'ball' && (() => {
+    for (let k = 0; k < 20; k++) step(h);
+    const b = shape();
+    return b.max.y - b.min.y < 0.75;
+  })(), `${(shape().max.y - shape().min.y).toFixed(2)} high`);
+  let most = 0;
+  for (let k = 0; k < 90; k++) {
+    step(h, { move: E });
+    most = Math.max(most, h.speed);
   }
-  const sweep = Math.max(...tipX) - Math.min(...tipX);
-  check('a swing sweeps the needle across in front of him (for the sword trail too)', sweep > 0.5 && Math.max(...tipZ) > 0.3, `across ${sweep.toFixed(2)}, out ${Math.max(...tipZ).toFixed(2)}`);
+  check('pushed along, the ball builds up to well past his scurry', most > HOG.run + 2, `${most.toFixed(1)} (his scurry ${HOG.run})`);
+  const before = h.speed;
+  for (let k = 0; k < 40; k++) step(h);
+  check('let go, it keeps rolling (it slows, but slowly)', h.speed > before * 0.4 && h.speed > 2, `${before.toFixed(1)} -> ${h.speed.toFixed(1)} in two thirds of a second`);
 }
-// ---- The roll: curled into a ball, rolling over ----
 {
-  const p = start(0, 0, 6);
-  frame(p, { move: new THREE.Vector3(1, 0, 0) });
-  let ball = 9;
-  let turned = 0;
-  frame(p, { move: new THREE.Vector3(1, 0, 0), dodgePressed: true });
-  for (let k = 0; k < 30; k++) {
-    const f = frame(p, { move: new THREE.Vector3(1, 0, 0) });
-    if (f.a.state === 'dodge') {
-      ball = Math.min(ball, f.box.max.y - f.box.min.y);
-      turned = Math.max(turned, h['rig'].body.rotation.x);
-    }
+  // Into the east wall at speed: it bounces back.
+  const h = at(11, 0, 8, Math.PI / 2);
+  step(h, { rollPressed: true });
+  let bounced = 0;
+  for (let k = 0; k < 120 && !bounced; k++) {
+    const ev = step(h, { move: E });
+    if (ev.bounced > 0) bounced = h.velocity.x;
   }
-  check('a dodge: he curls into a ball (much lower than standing) and rolls right over', ball < 0.75 && turned > Math.PI, `ball ${ball.toFixed(2)} high, rolled ${(turned / Math.PI).toFixed(1)} half-turns`);
+  check('rolled hard into a wall, the ball bounces off it', bounced < -1, `back at ${bounced.toFixed(1)}`);
 }
-// ---- The jump and the second jump's flip: a ball turning over in the air ----
 {
-  const p = start(0, 0, 6);
-  let flipBall = 9;
-  for (let k = 0; k < 70; k++) {
-    const f = frame(p, { jumpPressed: k === 0 || k === 22, jumpHeld: true });
-    if (f.a.flipProgress > 0.3 && f.a.flipProgress < 0.7) flipBall = Math.min(flipBall, f.box.max.y - f.box.min.y);
+  // Off the shelf and down the steep slope, curled, no push: it runs away downhill.
+  const h = at(-10.6, STEPS.shelf, (SLOPES.steep.z0 + SLOPES.steep.z1) / 2, Math.PI / 2);
+  step(h, { rollPressed: true });
+  let most = 0;
+  for (let k = 0; k < 20; k++) step(h, { move: E });
+  for (let k = 0; k < 60; k++) {
+    step(h);
+    most = Math.max(most, h.speed);
   }
-  check('the second jump\'s flip: he is a ball as he turns over', flipBall < 0.8, `${flipBall.toFixed(2)} high`);
+  check('down the steep slope, the ball runs away faster than he could push it', most > HOG.ball.top, `${most.toFixed(1)} (pushing, at most ${HOG.ball.top})`);
 }
-// ---- Off the shelf, down the steep slope: he slides (curled) ----
 {
-  const p = start(-11.5, STEPS.shelf, (SLOPES.steep.z0 + SLOPES.steep.z1) / 2, Math.PI / 2);
-  let slid = 0;
-  let curled = 0;
+  // The burrow: on his feet he cannot get in; rolled, he can; under its low lintel he cannot stand up.
+  const mx = (BURROW.x0 + BURROW.x1) / 2;
+  const inside = BURROW.front - BURROW.thick - 1;
+  const walk = at(mx, 0, BURROW.front + 1.5, Math.PI);
+  for (let k = 0; k < 120; k++) step(walk, { move: N });
+  const ball = at(mx, 0, BURROW.front + 1.5, Math.PI);
+  step(ball, { rollPressed: true });
+  let underRoof = true;
   for (let k = 0; k < 120; k++) {
-    const f = frame(p, { move: new THREE.Vector3(1, 0, 0) });
-    if (f.a.state === 'slide') {
-      slid++;
-      if (f.box.max.y - f.box.min.y < 0.8) curled++;
+    step(ball, { move: N });
+    if (ball.position.z < BURROW.front - 0.1 && ball.position.z > BURROW.front - BURROW.thick + 0.1) underRoof &&= !ball.roomToStand(C);
+  }
+  check('the burrow: on his feet he cannot get through its gap; curled up he rolls in', walk.position.z > BURROW.front && ball.position.z < inside + 0.5, `on foot stopped at ${walk.position.z.toFixed(1)}, rolled to ${ball.position.z.toFixed(1)}`);
+  check('...and under the gap\'s low roof there is no room to stand up in', underRoof);
+  // Then out again, uncurled inside (its top is open).
+  step(ball, { rollPressed: true });
+  check('inside, he uncurls (it is open over him)', !ball.curled);
+}
+// ---- The spit, the ram, the burst ----
+{
+  const h = at(0, 0, 6, Math.PI);
+  const r = new Scuttler({ x: 0, z: 3.4, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+  const hp = r.hp;
+  let splats = 0;
+  for (let k = 0; k < 60; k++) splats += step(h, { attackPressed: k === 0 }, [r]).splats.length;
+  check('ATTACK spits: the glob flies ahead and stings a roach 2.6 away', r.hp < hp && splats === 1, `${hp} -> ${r.hp}`);
+  const w = at(0, 0, -10.5, Math.PI);
+  let wall = 0;
+  for (let k = 0; k < 60; k++) wall += step(w, { attackPressed: k === 0 }).splats.length;
+  check('...and spat at a wall, it splats on the wall', wall === 1);
+  const again = at(0, 0, 6, Math.PI);
+  let spat = 0;
+  for (let k = 0; k < 20; k++) if (step(again, { attackPressed: true }).spat) spat++;
+  check(`he can spit only so often (every ${HOG.spit.every}s)`, spat === 1, `${spat} in a third of a second`);
+}
+{
+  const h = at(-6, 0, 3, Math.PI / 2);
+  const r = new Scuttler({ x: 0, z: 3, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+  const hp = r.hp;
+  step(h, { rollPressed: true }, [r]);
+  let rammed = false;
+  let back = 0;
+  for (let k = 0; k < 120 && !rammed; k++) {
+    const ev = step(h, { move: E }, [r]);
+    if (ev.hits.some((x) => x.how === 'ram')) {
+      rammed = true;
+      back = h.velocity.x;
     }
   }
-  check('walked off the shelf onto the steep slope, the real rat slides; the hedgehog slides curled up', slid > 5 && curled >= slid - 3, `${slid} frames sliding, ${curled} of them a ball`);
+  check('rolled fast into a roach, he rams it (spines first) and rebounds', rammed && r.hp < hp && back < 1, `${hp} -> ${r.hp}, then going ${back.toFixed(1)}`);
 }
-// ---- Down the gentle slope: the air attack over it puts the cap under his feet, and he rides it ----
 {
-  const p = start(-9.2, STEPS.shelf - 0.3, (SLOPES.gentle.z0 + SLOPES.gentle.z1) / 2, Math.PI / 2);
-  let rode = 0;
-  let onBoard = 0;
-  for (let k = 0; k < 120; k++) {
-    const f = frame(p, { move: new THREE.Vector3(1, 0, 0), jumpPressed: k === 2, jumpHeld: k < 10, attackPressed: k === 12 });
-    if (f.a.state === 'ride') {
-      rode++;
-      if (h['board'].visible && !h['cap'].visible) onBoard++;
-    }
+  const h = at(0, 0, 6);
+  const near = new Scuttler({ x: 1, z: 6, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+  const far = new Scuttler({ x: 5, z: 6, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+  const [hn, hf] = [near.hp, far.hp];
+  step(h, { rollPressed: true }, []);
+  let burst = false;
+  let spines = 0;
+  for (let k = 0; k < 10; k++) {
+    if (step(h, { attackPressed: k === 1 }, [near, far]).burst) burst = true;
+    spines = Math.max(spines, rig().spines[0].mesh.scale.x);
   }
-  check('over the gentle slope, the air attack: the real rat rides his shield; the hedgehog rides his bottle cap', rode > 10 && onBoard === rode, `${rode} frames riding`);
+  check('curled, ATTACK is a spine burst: it stings a roach close by, not one further off', burst && near.hp < hn && far.hp === hf, `close ${hn} -> ${near.hp}, far ${hf} -> ${far.hp}`);
+  check('...and his spines are thrown out all round', spines > 1.3, `spines at ${spines.toFixed(2)}`);
 }
-// ---- The pool: in it he swims, flat on the water ----
+// ---- Swimming ----
 {
-  const p = start((POOL.x0 + POOL.x1) / 2 + 0.25, POOL.water + 0.5, 0);
+  const h = at((POOL.x0 + POOL.x1) / 2 + 0.25, POOL.water + 0.3, 0);
   let swam = 0;
-  let flat = 0;
-  for (let k = 0; k < 90; k++) {
-    const f = frame(p, { move: new THREE.Vector3(0, 0, k < 45 ? 1 : -1) });
-    if (f.a.state === 'swim') {
-      swam++;
-      if (h['rig'].body.rotation.x > 1) flat++;
-    }
-  }
-  check('dropped in the pool he swims, lying flat on the water', swam > 30 && flat > swam - 15, `${swam} frames swimming, ${flat} flat`);
+  for (let k = 0; k < 90; k++) if (step(h, { move: new THREE.Vector3(0, 0, k < 45 ? 1 : -1) }) && h.state === 'swim') swam++;
+  check('in the pool he swims, his back at the waterline, lying flat', swam > 60 && Math.abs(h.position.y - (POOL.water - HOG.swim.sink)) < 0.1 && rig().body.rotation.x > 1, `${swam} frames, at ${h.position.y.toFixed(2)}`);
 }
-// ---- The high block: he hangs from its edge, his paws on it ----
+// ---- His body, moving ----
 {
-  const p = start((HANG.x0 + HANG.x1) / 2, 0, HANG.z1 + 2.2, Math.PI);
-  let hung = 0;
-  let paws = 9;
-  let climbed = false;
-  for (let k = 0; k < 160 && !climbed; k++) {
-    const f = frame(p, { move: new THREE.Vector3(0, 0, -1), jumpPressed: k === 4, jumpHeld: k < 30 });
-    if (f.a.state === 'hang' && f.a.ledge) {
-      hung++;
-      // Where his paws are, as against the edge he holds: his arms' far ends.
-      const w = new THREE.Vector3();
-      const arm = h['rig'].arms[0];
-      arm.fore.updateMatrixWorld(true);
-      arm.fore.localToWorld(w.set(0, -0.11, 0));
-      paws = Math.min(paws, Math.abs(w.y - f.a.ledge.y));
-    }
-    if (p.grounded && p.position.y > HANG.top - 0.05) climbed = true;
-  }
-  check('jumping at the high block, the real rat catches its edge; the hedgehog hangs with his paws at it', hung > 0 && paws < 0.15, hung ? `paws ${paws.toFixed(2)} off the edge` : 'never hung');
-}
-// ---- HIS OWN MOVEMENT (2026-11-20; the owner: give him movement for his own body, not the knight's) ----
-const rig = (): { body: THREE.Group; root: THREE.Group; head: THREE.Group; spines: ReadonlyArray<{ mesh: THREE.Object3D }> } => h['rig'];
-const spineScale = (): number => rig().spines[0].mesh.scale.x;
-{
-  // Walking: a waddle, his round body rocking side to side over each step.
-  const p = start(0, 0, 6);
+  const h = at(0, 0, 6, Math.PI / 2);
   let lo = 9;
   let hi = -9;
   for (let k = 0; k < 90; k++) {
-    frame(p, { move: new THREE.Vector3(1, 0, 0) });
+    step(h, { move: E });
     if (k > 30) {
       lo = Math.min(lo, rig().body.rotation.z);
       hi = Math.max(hi, rig().body.rotation.z);
     }
   }
   check('walking, he waddles: his body rocks from side to side over his feet', hi > 0.08 && lo < -0.08, `rocks ${lo.toFixed(2)}..${hi.toFixed(2)}`);
-}
-{
-  // Running: a scurry, nose down and forward, spines laid flat.
-  const p = start(0, 0, 6);
-  let pitch = 0;
+  let lean = 0;
   let flat = 9;
   for (let k = 0; k < 90; k++) {
-    frame(p, { move: new THREE.Vector3(1, 0, 0), run: true });
+    step(h, { move: E, run: true });
     if (k > 40) {
-      pitch += rig().body.rotation.x / 49;
-      flat = Math.min(flat, spineScale());
+      lean += rig().body.rotation.x / 49;
+      flat = Math.min(flat, rig().spines[0].mesh.scale.x);
     }
   }
-  check('running, he scurries leaning well forward, his spines laid flat', pitch > 0.3 && flat < 1, `lean ${pitch.toFixed(2)}, spines ${flat.toFixed(2)}`);
+  check('scurrying, he leans well forward, spines laid flat', lean > 0.3 && flat < 1, `lean ${lean.toFixed(2)}`);
 }
 {
-  // Guarding: hunched, his spines bristling up.
-  const p = start(0, 0, 6);
-  for (let k = 0; k < 40; k++) frame(p, { guardHeld: true });
-  check('guarding, he hunches and his spines bristle up', spineScale() > 1.12 && rig().body.rotation.x > 0.2, `spines ${spineScale().toFixed(2)}`);
-}
-{
-  // Landing: a round body bounces, squashed and back.
-  const p = start(0, 0, 6);
+  const h = at(0, 0, 6);
   let squash = 9;
   let landed = false;
   for (let k = 0; k < 100; k++) {
-    const f = frame(p, { jumpPressed: k === 0, jumpHeld: true });
-    if (k > 5 && f.a.state !== 'jump' && f.a.state !== 'fall') landed = true;
+    const ev = step(h, { jumpPressed: k === 0, jumpHeld: true });
+    if (ev.landed > 0) landed = true;
     if (landed) squash = Math.min(squash, rig().body.scale.y);
   }
-  check('landing, he squashes and bounces back', squash < 0.9 && Math.abs(rig().body.scale.y - 1) < 0.03, `squashed to ${squash.toFixed(2)}`);
+  check('landing, his round body squashes and bounces back', squash < 0.9 && Math.abs(rig().body.scale.y - 1) < 0.03, `squashed to ${squash.toFixed(2)}`);
 }
-{
-  // The third blow of the combo: he spins right round, spines out.
-  const p = start(0, 0, 6);
-  let most = 0;
-  let bristle = 0;
-  for (let k = 0; k < 110; k++) {
-    const f = frame(p, { attackPressed: k === 0 || k === 20 || k === 42 });
-    if (f.a.comboStep === 2) {
-      most = Math.max(most, rig().root.rotation.y);
-      bristle = Math.max(bristle, spineScale());
-    }
-  }
-  check('the third blow is a spin: he goes right round, spines bristling', most > 5.5 && bristle > 1.1, `turned ${(most / Math.PI).toFixed(1)} half-turns, spines ${bristle.toFixed(2)}`);
-}
-{
-  // Turning: his head goes into the turn first, his body swings round after.
-  const p = start(0, 0, 6);
-  for (let k = 0; k < 40; k++) frame(p, { move: new THREE.Vector3(1, 0, 0), run: true });
-  let lead = 0;
-  for (let k = 0; k < 12; k++) {
-    frame(p, { move: new THREE.Vector3(0, 0, -1), run: true });
-    lead = Math.max(lead, Math.abs(rig().head.rotation.y));
-  }
-  check('turning, his head leads into the turn', lead > 0.15, `head ${lead.toFixed(2)} rad ahead`);
-}
-check('no part of him ever went to NaN, in any pose', nan === 0, `${nan}`);
-console.log('  states posed:', [...seen.entries()].map(([s, n]) => `${s} ${n}`).join(', '));
+check('no part of him ever went to NaN', nan === 0, `${nan}`);
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 process.exit(failures ? 1 : 0);

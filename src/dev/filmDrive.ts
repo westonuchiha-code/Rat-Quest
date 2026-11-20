@@ -67,6 +67,9 @@ export class FilmDrive {
   private plungeAt = 2;
   private plungeStep = 0;
   private jumpAt = 1;
+  /** `&autoball`: ROLL pressed once, a second in (the hedgehog curls up), for the other drives to push the ball. */
+  private readonly ball: boolean;
+  private ballAt = 1;
   private jumpTwice = false;
   readonly chaos: { seed: number; t: number; next: number; dir: [number, number]; last: { x: number; z: number; t: number }; said: Map<string, number>; lowest?: number; room: string } | null;
 
@@ -81,6 +84,7 @@ export class FilmDrive {
     const sw = /[#&]autoswing(?:=([\d.]+))?\b/.exec(hash);
     this.swing = sw ? Number(sw[1] ?? 1.2) || 1.2 : 0;
     this.plunge = /[#&]autoplunge\b/.test(hash);
+    this.ball = /[#&]autoball\b/.test(hash);
     const c = /[#&]chaos=(\d+)/.exec(hash);
     this.chaos = c ? { seed: Math.max(1, Number(c[1]) || 1), t: 0, next: 0, dir: [0, 1], last: { x: 0, z: 0, t: 0 }, said: new Map(), room: '' } : null;
   }
@@ -134,6 +138,10 @@ export class FilmDrive {
       pad.attackPressed = a.attackPressed;
       pad.guardHeld = a.guardHeld;
       pad.dodgePressed = a.dodgePressed;
+    }
+    if (this.ball && this.ballAt > 0) {
+      this.ballAt -= dt;
+      if (this.ballAt <= 0) pad.dodgePressed = true;
     }
     const c = this.chaos;
     if (c) {

@@ -194,47 +194,40 @@ Coil Room's floor round the coil's foot, coming back when beaten, not among the 
 `EnemySpec` with `type: 'sparkbeetle'`; away from a coil it still keeps the same beat (90 bpm, snare on 2 and 4).
 *main.ts*: one `addEnemy` branch, and its name in WALKERS (so it walks on ramps).
 
-## A stand-in: another character on the rat's controls (`src/player/standIn.ts`; `tests/standin.ts`; the Stand-in, Test Room 19)
+## Bramble, played: another character with moves of his own (`src/player/hedgehogController.ts`, body `standIn.ts`; `tests/standin.ts`; the Stand-in, Test Room 19)
 
-The owner (2026-11-20): "see how close you can get to having one of these other characters control like the main
-character". Not a plan for the game: a try. BRAMBLE the hedgehog (npc/patrons.ts) is drawn in the rat's place and
-posed from the very same things the rat's model is told each frame (`RatAnimInput`). The rat's controller, collision
-and combat are untouched: he plays exactly as the rat does, only the drawing is different.
+The owner (2026-11-20): "he's not a knight, he's a hedgehog so you got to give him other stuff to do ... make him roll
+around like a hedgehog ... like a Metroid kind of thing ... maybe he can spit ... get all the other characters to move
+around like the main character, not give all the other characters the movement of the main character."
 
-HIS OWN MOVEMENT (the owner, the same day: "they're totally different character body types ... they wouldn't move the
-same"). Nothing is copied or scaled from the knight's animation (whose code is not touched): it is the hedgehog's
-own, for a short, round body, and every part of him is on a SPRING (`SPRING` in standIn.ts: how quick, how bouncy
-each part is), so he overshoots and settles the way the knight's springs make the knight do.
+So he has HIS OWN CONTROLLER, written for him (the knight's, player/controller.ts, is not used for his moves and is
+not touched). The same buttons do hedgehog things:
 
-| when | the hedgehog |
-|------|-----------|
-| walking | a WADDLE: his round body rocks side to side over the foot he stands on, his head kept level, little quick steps |
-| running | a SCURRY: nose down and forward, spines laid flat, a bounce each step, arms tucked back |
-| turning, starting, stopping | his head goes into the turn first, his body swings round after it and leans out; he leans in setting off, rocks back stopping |
-| standing | breathes, sniffs the air now and then, looks round |
-| jumping | a quick crouch, then tucked half round going up (short legs drawn in), uncurling with his feet out coming down |
-| landing | his round body SQUASHES and bounces back; his spines shiver up |
-| the 3-hit combo | not sweeps (his arms are short): two STABS with his weight behind them, then a SPIN right round, spines bristling, needle out |
-| guarding | hunched behind his bottle cap, head drawn down, SPINES UP |
-| hit | spines bristle, he flinches half curled |
-| rolls, the air jump's flip, long jump, slide, plunge | curls into a ball of spines and rolls over |
-| dead | curled up tight, as a hedgehog does |
-| swims, hangs, climbs, rides the cap, carries | flat and paddling; paws on the edge; balancing with his arms out; arms up |
+| button | Bramble |
+|--------|---------|
+| move (run held: faster) | walks, a waddle (2.6), or scurries (4.6): slower than the knight, short legs |
+| jump | a little hop (1.4 high; the knight's is 2.5). No second jump, no ledge grabs: he is no climber |
+| ROLL (the knight's dodge) | CURLS INTO A BALL, and stays curled till pressed again. The ball builds speed and KEEPS it (it rolls on when let go), RUNS AWAY DOWNHILL, BOUNCES off walls and off the ground when it lands hard, rolls through gaps too low to walk through, and RAMS what it rolls into fast (it stings, he rebounds). It can hop. He cannot stand up under a roof too low for him |
+| ATTACK, on his feet | SPITS a glob: a short arc ahead, it stings what it hits and splats on walls |
+| ATTACK, curled | a SPINE BURST: his spines thrown out all round, stinging what is close |
 
-**How to see it:** the Stand-in room (Test Room 19: steps, a steep slope and a gentle one, a block to hang from, a
-pool, two roaches, pots). He walks in as the knight; BRAMBLE waits by the way in. Talk to him to the end and they
-SWAP: he is Bramble, and the knight stands where Bramble stood (his own model, in what he wears, turning to watch).
-Talk to the knight (his own face in the talk box) to the end and they swap back. Leaving the room undoes it.
-The swap is a field on any character (`NpcSpec.swap`: who he becomes, and what the knight says when spoken to), so
-another level can have one too. Also: `#as=hedgehog` on any level's address, or `playAs: 'hedgehog'` on a `LevelDef`,
-to be him from the start.
-**What is not done:** his hit flash (he blinks, as the rat does, but does not glow red), the story gestures (sitting,
-waving, pointing) and the wall kick's own pose. The camera is the rat's (he is a little shorter).
-**To do another character the same way:** the hedgehog's bones are reached through `rig` on the small regulars
-(`makeSmall` in patrons.ts: the moles are built the same way, so they should take the same poses, but for curling up. Not tried).
-*main.ts*: what the rat's model is told is kept in `ratAnim` and given to the stand-in too; the stand-in is drawn and
-the rat hidden when asked for; the sword trail reads the needle. The swap: `swappedAs`, set when a talk with a `swap`
-character is read to its end (`dialog.onFinish`, new in ui/dialog.ts), cleared on loading a level; `knightDouble`.
+In water he paddles, his back at the waterline. He lifts nothing (his paws are too short).
+His body moves on springs: the waddle and scurry, his head leading into turns, a squash landing, the ball turning
+over as far as it has rolled, his head thrown forward to spit, his spines lying flat at speed and bristling for the
+burst and when hit. All his numbers are in `HOG` (hedgehogController.ts) and `SPRING` (standIn.ts).
+
+**How to see it:** the Stand-in room (Test Room 19). He walks in as the knight; Bramble waits by the way in and tells
+him what a hedgehog can do; talk to him to the end and you are him (and the knight stands in his place, to swap back).
+The room has the slopes to roll down, the walls to bounce off, roaches to spit at and ram, a pool, and a BURROW whose
+way in is too low to walk through: only the ball gets in, to the crumb inside. (`#as=hedgehog` on the address: him
+from the start, anywhere.) Film drive: `&autoball` presses ROLL once.
+**How it is joined to the game (main.ts):** while he is played, his controller moves him; the knight's controller is
+stepped under him with nothing pressed only for his health, being hit (he is knocked back where it puts him) and
+being beaten, and is kept where the hedgehog is. His spit, ram and burst are hits like any (the flash, the sound,
+the count of creatures beaten). The swap: `NpcSpec.swap`, `dialog.onFinish`.
+**Not done:** his own hurt and beaten sounds (he uses the knight's), a hit flash, ledges or climbing of any kind.
+**To do another character this way:** a controller of his own on the same buttons (`HogInput`), a body that reads it,
+and the same join in main.ts. The mole would be next: a digger, not a roller.
 
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 

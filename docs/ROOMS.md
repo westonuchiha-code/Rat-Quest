@@ -167,18 +167,16 @@ OPUS-WEEK and not fixed.
 - It is soft the rest of the bar, and has 4 hp. Its numbers are in `SPARK`.
 - Seven more enemy designs, each built round one of these rooms' parts, are in `docs/ENEMY-IDEAS.md`.
 
-## 19. The Stand-in: another character on the rat's controls
+## 19. The Stand-in: Bramble the hedgehog, played
 
-**What's in it.** You walk in as the knight. Bramble the hedgehog waits by the way in (`BRAMBLE`): talk to him to the
-end and you swap, you are him and the knight stands in his place; talk to the knight to swap back. And a course with
-one of each move:
-- steps up to a shelf (`STEPS`), and two slopes off it (`SLOPES`): a steep one he slides down and a gentle one to ride;
-- a block too high to jump onto, to hang from (`HANG`);
-- a pool (`POOL`), two roaches that come back, and pots.
+**What's in it.** You walk in as the knight. Bramble waits by the way in (`BRAMBLE`) and tells you what a hedgehog
+can do; talk to him to the end and you are him, with HIS OWN MOVES: a hop, ROLL into a ball (it keeps its speed,
+runs downhill, bounces, rams), SPIT, a spine burst. Talk to the knight standing in his place to swap back. The
+course: steps up to a shelf (`STEPS`), two slopes off it to roll down (`SLOPES`), a BURROW whose way in is too low to
+walk through (`BURROW`: only the ball gets in), a pool (`POOL`), two roaches that come back, and pots.
 
-**The code.** `player/standIn.ts` turns each thing the rat's model is told into a hedgehog pose: a needle for a
-sword, a bottle cap for a shield and a board, and a ball of spines for every roll, flip and slide. See KIT.md for the
-table of moves. Not a plan for the game (the owner's word): a try at how close another body gets.
+**The code.** `player/hedgehogController.ts` (his moves, his own collision; numbers in `HOG`), `player/standIn.ts`
+(his body on springs). See KIT.md for the table of buttons.
 
 ---
 
