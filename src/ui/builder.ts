@@ -69,6 +69,10 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('rock', 'Rock', 'Rk', '#8a8a92', 'things', 'A rock to pick up and throw. It does not break: throw it again.'),
     P('lever', 'Lever', 'Lv', '#c8302a', 'things', 'A lever the sword flips over and back. A gate can open when every lever is over (ON).'),
     P('crackwall', 'Cracked wall', 'Cw', '#b8aa98', 'things', 'A slab of cracked stone: three sword blows bring it down (a heavy blade, two). Its height is the top.'),
+    P('belt', 'Conveyor belt', 'Cv', '#e8c040', 'things', 'A belt that carries whatever stands on it the way it is turned (R): 3 a second. Solid, a low step.'),
+    P('blade', 'Swinging blade', 'Sb', '#c8ccd4', 'things', 'A pendulum blade from overhead, swinging across the way it is turned (R). It hurts; a shield will not stop it.'),
+    P('spikes', 'Spike floor', 'Sp', '#b8bcc4', 'things', 'Spikes in the floor: up for 1.2 seconds of every 3, after a warning poke. They hurt whoever stands in them.'),
+    P('fan', 'Floor fan', 'Fn', '#8a8a90', 'things', 'A fan in the floor that lifts him up its column, 9 high: he hovers near its top.'),
     P('crackfloor', 'Cracked floor', 'Cf', '#b0a490', 'things', 'A slab of cracked floor: it holds him, but a plunge breaks it, and he goes through.'),
   ] },
   { id: 'collect', label: 'Collectibles', items: [
@@ -148,9 +152,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'blade', 'fan', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['belt', 'blade', 'lever', 'plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
 const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate', 'bar']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };

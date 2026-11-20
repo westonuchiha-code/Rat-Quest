@@ -235,6 +235,8 @@ export const SFX_NAMES = [
   // Things to hit (world/strikeables.ts, 2026-11-20): a lever thrown over (a ratchet and an iron clunk), a cracked
   // wall taking a blow (a stone snap and grit), and a slab of stone coming down (a low crash and rubble running on).
   'leverThrow', 'stoneCrack', 'stoneFall',
+  // Hazards (world/hazards.ts, 2026-11-20): spikes shooting up out of their plate (a steel scrape and a hard snap).
+  'spikeUp',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -530,6 +532,16 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const clunk = t > 0.15 ? sine(c.osc(0, 140 * Math.exp(-12 * (t - 0.15)) + 70)) * Math.exp(-(t - 0.15) * 22) : 0;
       if (t >= 0.15 && t < 0.153) x += (c.r() * 2 - 1);
       return Math.tanh(ring(x) * 18 + clunk * 0.9) * Math.min(1, (0.4 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // Spikes up: a quick rising scrape of steel through the holes, a hard snap as they lock, a thin ring after.
+  spikeUp: () => draw(0.4, RATE_HI, 274, (c) => {
+    const ring = knock(2400, RATE_HI, 0.996);
+    return (t) => {
+      const scrape = t < 0.07 ? (c.lp(0, c.r() * 2 - 1, 0.6) - c.lp(1, c.r() * 2 - 1, 0.15)) * (t / 0.07) * 1.2 : 0;
+      const snap = t >= 0.07 ? (c.r() * 2 - 1) * Math.exp(-(t - 0.07) * 140) : 0;
+      const hit = t >= 0.07 && t < 0.073 ? c.r() * 2 - 1 : 0;
+      return Math.tanh((scrape + snap + ring(hit) * 14) * 1.2) * Math.min(1, (0.4 - t) / 0.08);
     };
   }, { bits: 7 }),
   // A blow on cracked stone: a sharp snap, a dull body, and grit trickling after.

@@ -21,7 +21,7 @@ export type PieceType =
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
   | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon' | 'safetypin' | 'paperclip' | 'crayon' | 'marble'
-  | 'lever' | 'crackwall' | 'crackfloor'
+  | 'lever' | 'crackwall' | 'crackfloor' | 'belt' | 'blade' | 'spikes' | 'fan'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
@@ -558,7 +558,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       }
       // Things to hit (world/strikeables.ts): the room makes their solids.
       case 'lever': {
-        const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+        const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 'n'];
         decor.push({ kind: 'lever', x: cx, y: p.top, z: cz, yaw });
         levers++;
         break;
@@ -571,6 +571,24 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       }
       case 'crackfloor':
         decor.push({ kind: 'crackfloor', x: cx, y: p.top, z: cz, w: Math.max(1, x1 - x0), d: Math.max(1, z1 - z0) });
+        break;
+      // Hazards and helpers (world/hazards.ts), with the Gauntlet's numbers. `dir`: the way a belt carries, the way
+      // past a blade (it swings across that).
+      case 'belt': {
+        const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 'n'];
+        decor.push({ kind: 'belt', x: cx, y: p.top + 0.35, z: cz, w: Math.max(1, x1 - x0), d: Math.max(1, z1 - z0), yaw, speed: 3 });
+        break;
+      }
+      case 'blade': {
+        const yaw = { s: 0, n: 0, e: Math.PI / 2, w: Math.PI / 2 }[p.dir ?? 'n'];
+        decor.push({ kind: 'blade', x: cx, y: p.top + 5, z: cz, length: 4, yaw, swing: 0.5, period: 2.4, phase: 0 });
+        break;
+      }
+      case 'spikes':
+        decor.push({ kind: 'spikes', x: cx, y: p.top, z: cz, w: Math.max(1, x1 - x0), d: Math.max(1, z1 - z0), period: 3, up: 1.2, phase: 0 });
+        break;
+      case 'fan':
+        decor.push({ kind: 'fan', x: cx, y: p.top, z: cz, r: 1.5, height: 9 });
         break;
       case 'stool':
         decor.push({ kind: 'stool', x: cx, y: p.top, z: cz });

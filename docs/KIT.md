@@ -74,5 +74,26 @@ machines": Lever, Cracked wall, Cracked floor.
   swing every N seconds) and `&autoplunge` (jump, jump, plunge), dev/filmDrive.ts.
 - Not done: a breakable jar (the clay pot already is one: it breaks, and can hold a collectible).
 
+## Hazards and helpers (`src/world/hazards.ts`, looks in `hazardModels.ts`; `tests/hazards.ts`; the Gauntlet, Test Room 15)
+
+Each is a decor; the room draws it (`Chamber.hazards`), and main.ts has it act on him: a belt and a fan before his
+update (where a gust pushes him), a blade and spikes after the fight (where fire burns him). All of them go by the
+room's clock, so what is drawn and what hurts agree. In the editor, under "Breakables and machines": Conveyor belt,
+Swinging blade, Spike floor, Floor fan (the belt and blade take a direction).
+
+| part | decor | what it does | numbers (`HAZARD`, and the decor's own) |
+|------|-------|--------------|------------------------------------------|
+| belt | `{ kind: 'belt', x, y, z, w, d, yaw, speed }` (y its top) | carries whatever stands on it the way `yaw` points, right off its end. Solid, 0.35 high. | `speed` 3 in the Gauntlet; running against it, he gains 3 a second less |
+| blade | `{ kind: 'blade', x, y, z, length, yaw, swing, period, phase }` (x, y, z its pivot) | swings side to side across `yaw` (the way past it). Its touch hurts; a shield does not stop it (a heavy blow); a roll goes through, as through any blow. | blade 0.6 each way, 0.35 round; `swing` 0.6 rad, `period` 2.4 s, length 4 |
+| spikes | `{ kind: 'spikes', x, y, z, w, d, period, up, phase }` | up for `up` seconds of every `period`, after half a second of a warning poke; standing in them hurts, and a roll does not help. | `period` 3, `up` 1.2, warning 0.5, 0.55 high |
+| fan | `{ kind: 'fan', x, y, z, r, height, on?, off?, phase? }` | in its column he is lifted, to hover about nine tenths of the way up. With `on` and `off`, it runs and stops, spinning up and down. | rise 5.5 a second, `height` 9 (the Gauntlet's ledge is 7) |
+
+- Sounds: a blade swishes through the bottom of its swing (the whoosh, low), spikes `spikeUp` as they come up; heard
+  within 12 (`HEARD`), fading. Unheard.
+- Shown in the Gauntlet: two belts running opposite ways; a corridor of two blades a quarter of a swing apart (a
+  straight run at the right moment gets through: the test finds 8 moments of 24); a corridor of four spike plates a
+  quarter beat apart; a fan up to a high ledge, and one that runs and stops under a crumb hanging in the air.
+- Not done: enemies are not carried, cut or lifted by any of them (only he is).
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

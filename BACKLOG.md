@@ -19,9 +19,9 @@ done, move it to "Done" at the bottom with the commit; do not delete it. Read ST
 part. Part B has three open items, B8, B9 and B11, and each waits on him. B12 (drawing cost) is done as far as it goes
 without rebuilding models. Everything Opus did, by risk, is ONE PAGE: `docs/OPUS-WEEK.md`. What only he can judge is
 `PLAYTEST.md`. Done items are one line each at the bottom. NEW PARTS FOR BUILDING LEVELS (moving platforms of six
-kinds, household objects, a floor piano and an echo puzzle, levers, cracked walls and floors, more to come) are
-catalogued in `docs/KIT.md` and shown in the Workshop (Test Room 12), the Music Room (Test Room 13) and the Yard
-(Test Room 14).
+kinds, household objects, a floor piano and an echo puzzle, levers, cracked walls and floors, belts, blades, spikes,
+fans, more to come) are catalogued in `docs/KIT.md` and shown in the Workshop (Test Room 12), the Music Room (Test
+Room 13), the Yard (Test Room 14) and the Gauntlet (Test Room 15).
 
 ---
 

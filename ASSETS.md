@@ -69,6 +69,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 12 | `workshop` | WORKSHOP | The Workshop | waking | dungeon | drift | `src/levels/workshop.ts` |
 | Test Room 13 | `musicroom` | MUSIC ROOM | The Music Room | waking | dungeon | drift | `src/levels/musicroom.ts` |
 | Test Room 14 | `breakyard` | THE YARD | The Yard | waking | dungeon | drift | `src/levels/breakyard.ts` |
+| Test Room 15 | `gauntlet` | GAUNTLET | The Gauntlet | waking | dungeon | drift | `src/levels/gauntlet.ts` |
 
 **The Hall** (`hall`, the hub): `src/levels/hall.ts`. **Boss rooms:** SPIDER BOSS (`widowpit`, `src/levels/practice.ts`); GRIMSQUEAK (`lair`, `src/levels/keep.ts`); SUMP WYRM (`sump`, `src/levels/cisternHalls.ts`); BROOD MOTHER (`brood`, `src/levels/hollows.ts`).
 
@@ -156,7 +157,7 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 A level asks for a prop by its kind (`decor`, in `src/world/layout.ts`); `src/world/chamber.ts` draws it. There are 61 kinds:
 `arch`, `arena`, `banner`, `bottles`, `bracket`, `brazier`, `bulbs`, `butterflies`, `chain`, `chime`, `couch`, `crackfloor`, `crackwall`, `crystal`, `dancefloor`, `dartboard`, `engine`, `eyes`, `fall`, `floorkey`, `flowers`, `forge`, `gauge`, `grate`, `hole`, `iceSpike`, `icicle`, `jet`, `junk`, `keg`, `lamp`, `lever`, `light`, `lightrail`, `machine`, `mark`, `moss`, `mugs`, `mushroom`, `pipe`, `planet`, `portrait`, `post`, `roots`, `rubble`, `rug`, `ruler`, `runnel`, `shelf`, `sign`, `sleepers`, `slime`, `speaker`, `stalactite`, `stool`, `table`, `torch`, `vent`, `web`, `weed`, `window`.
 
-Props with a model file of their own: `src/world/brazierModel.ts`, `src/world/couchModel.ts`, `src/world/forgeModels.ts`, `src/world/itemModels.ts`, `src/world/junkModels.ts`, `src/world/strikeModels.ts`, `src/world/tavernModels.ts`. Doors: `src/world/doorway.ts`; their signs:
+Props with a model file of their own: `src/world/brazierModel.ts`, `src/world/couchModel.ts`, `src/world/forgeModels.ts`, `src/world/hazardModels.ts`, `src/world/itemModels.ts`, `src/world/junkModels.ts`, `src/world/strikeModels.ts`, `src/world/tavernModels.ts`. Doors: `src/world/doorway.ts`; their signs:
 `src/world/courseDoors.ts`. The sky and its planets: `src/world/sky.ts`. Things to pick up: `src/world/collectibleMeshes.ts`,
 `src/world/itemModels.ts`, `src/world/wedges.ts`. The dream's sleeping creatures: `src/world/dozers.ts`.
 
@@ -190,8 +191,8 @@ ears can say whether one is right.
 
 ### Sound effects
 
-179 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
-recording, squashed, stored in `src/audio/recorded.ts`); the other 146 are MADE IN CODE (a recipe in `synth.ts`).
+180 effects, each known by a name (`SFX_NAMES` in `src/audio/synth.ts`). 33 are RECORDED (a short piece of a
+recording, squashed, stored in `src/audio/recorded.ts`); the other 147 are MADE IN CODE (a recipe in `synth.ts`).
 
 **To replace an effect, the quick way:** drop a recording of that name into `assets/sounds/` (part 0). It is used whole,
 as it is.
@@ -236,7 +237,7 @@ the made-up sound, delete the entry and run it again. To change a made-up sound,
 | `rewind` | recorded: `recordings/chip/rewind.wav` |
 | `whoosh` | recorded: `recordings/chip/whoosh.wav` |
 
-Made in code: `jump`, `doubleJump`, `hit`, `kill`, `hurt`, `barrel`, `plank`, `pipe`, `plunge`, `shock`, `spit`, `splat`, `croak`, `roachWind`, `lunge`, `rumble`, `water`, `gush`, `drain`, `machine`, `wind`, `hall`, `lavaBubble`, `fire`, `clank`, `hiss`, `pebbles`, `chainClink`, `toll`, `roachScreech`, `snort`, `flipClang`, `batSqueak`, `flap`, `chipNote`, `chipBuzz`, `memoryIn`, `memoryOut`, `cloth`, `keepsake`, `recall`, `softStep`, `chitinTap`, `broodScream`, `broodHiss`, `broodRattle`, `spikeHit`, `threadTwang`, `broodHurt`, `broodDie`, `wyrmRoar`, `wyrmHiss`, `wyrmSnap`, `wyrmRattle`, `wyrmRam`, `wyrmLash`, `wyrmCreak`, `wyrmCrunch`, `plateKnock`, `wyrmCry`, `wyrmDie`, `hornetBuzz`, `hornetWhine`, `hornetHurt`, `hornetDie`, `stagBellow`, `stagStep`, `hammerHum`, `hammerSlam`, `stagRattle`, `stagDie`, `mantisHiss`, `scytheRing`, `scytheCut`, `mantisWings`, `mantisCry`, `mantisDie`, `guardBark`, `spearReady`, `guardYelp`, `guardDie`, `antClick`, `pikeReady`, `antSnap`, `antHurt`, `antDie`, `ironScrape`, `ironCharge`, `ironBonk`, `ironToss`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `grimGather`, `grimBolt`, `boltBurst`, `grimSwoop`, `grimSlam`, `orbHum`, `orbStrike`, `grimCry`, `grimRepel`, `grimSag`, `grimDie`, `fireflyHum`, `fireflyBlink`, `emberDrop`, `emberBurst`, `fireflyFade`, `fireflyHurt`, `fireflyDie`, `rideScrape`, `ridePop`, `rideClatter`, `grindRing`, `widowScream`, `widowRear`, `widowBite`, `widowHurt`, `widowDie`, `poisonSlash`, `poisonWave`, `poisonSpit`, `poisonSplash`, `scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`, `scorpDie`, `gasBurst`, `gasHiss`, `heave`, `hurl`, `setDown`, `potSmash`, `rockKnock`, `squirm`, `spinWhirl`, `grabSlap`, `trickStab`, `leverThrow`, `stoneCrack`, `stoneFall`.
+Made in code: `jump`, `doubleJump`, `hit`, `kill`, `hurt`, `barrel`, `plank`, `pipe`, `plunge`, `shock`, `spit`, `splat`, `croak`, `roachWind`, `lunge`, `rumble`, `water`, `gush`, `drain`, `machine`, `wind`, `hall`, `lavaBubble`, `fire`, `clank`, `hiss`, `pebbles`, `chainClink`, `toll`, `roachScreech`, `snort`, `flipClang`, `batSqueak`, `flap`, `chipNote`, `chipBuzz`, `memoryIn`, `memoryOut`, `cloth`, `keepsake`, `recall`, `softStep`, `chitinTap`, `broodScream`, `broodHiss`, `broodRattle`, `spikeHit`, `threadTwang`, `broodHurt`, `broodDie`, `wyrmRoar`, `wyrmHiss`, `wyrmSnap`, `wyrmRattle`, `wyrmRam`, `wyrmLash`, `wyrmCreak`, `wyrmCrunch`, `plateKnock`, `wyrmCry`, `wyrmDie`, `hornetBuzz`, `hornetWhine`, `hornetHurt`, `hornetDie`, `stagBellow`, `stagStep`, `hammerHum`, `hammerSlam`, `stagRattle`, `stagDie`, `mantisHiss`, `scytheRing`, `scytheCut`, `mantisWings`, `mantisCry`, `mantisDie`, `guardBark`, `spearReady`, `guardYelp`, `guardDie`, `antClick`, `pikeReady`, `antSnap`, `antHurt`, `antDie`, `ironScrape`, `ironCharge`, `ironBonk`, `ironToss`, `ironRise`, `ironDie`, `batDie`, `broodDrop`, `grimGather`, `grimBolt`, `boltBurst`, `grimSwoop`, `grimSlam`, `orbHum`, `orbStrike`, `grimCry`, `grimRepel`, `grimSag`, `grimDie`, `fireflyHum`, `fireflyBlink`, `emberDrop`, `emberBurst`, `fireflyFade`, `fireflyHurt`, `fireflyDie`, `rideScrape`, `ridePop`, `rideClatter`, `grindRing`, `widowScream`, `widowRear`, `widowBite`, `widowHurt`, `widowDie`, `poisonSlash`, `poisonWave`, `poisonSpit`, `poisonSplash`, `scorpRasp`, `scorpCharge`, `scorpSting`, `scorpSnap`, `scorpHurt`, `scorpDouse`, `scorpDie`, `gasBurst`, `gasHiss`, `heave`, `hurl`, `setDown`, `potSmash`, `rockKnock`, `squirm`, `spinWhirl`, `grabSlap`, `trickStab`, `leverThrow`, `stoneCrack`, `stoneFall`, `spikeUp`.
 
 The owner's three sound tools (kept whole in the project): `recordings/tools/chip-drum-pad.html`, `recordings/tools/chiptune-pad-studio.html`, `recordings/tools/robot-voice-box.html`. They are driven by
 the scripts in `scripts/chip/` (`sfx.mjs` for effects, `voices.mjs` and `robot.mjs` for voices, `songs.mjs` and `make.mjs` for music).
@@ -288,7 +289,7 @@ GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio
 
 | A level asks for | It gets | Levels that ask for it |
 | --- | --- | --- |
-| `drift` | `cistern` | 32 |
+| `drift` | `cistern` | 33 |
 | `pump` | `foundry` | 5 |
 | `groove` | `bap2` then `bap1` | 3 |
 | `echo` | `hollows` | 7 |

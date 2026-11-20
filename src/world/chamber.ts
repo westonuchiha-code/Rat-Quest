@@ -5,6 +5,8 @@ import { buildForge, type ForgeMats } from './forgeModels';
 import { buildCouch } from './couchModel';
 import { buildJunk } from './junkModels';
 import { buildStrike, type BuiltStrike } from './strikeModels';
+import { buildHazard, BELT_DEPTH, type BuiltHazard } from './hazardModels';
+import type { HazardSpec } from './hazards';
 import { STRIKE, newStrikeable, type Strikeable } from './strikeables';
 import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
@@ -94,6 +96,8 @@ export interface Chamber {
   music?: { pads: MusicPad[]; show(lit: readonly number[], down: readonly boolean[], flash: readonly number[], time: number): void };
   /** Things to hit, if the room has any (world/strikeables.ts): their states, a way to show them, and to take one away (broken). */
   strike?: { things: Strikeable[]; show(time: number): void; remove(index: number): void };
+  /** Hazards and helpers, if the room has any (world/hazards.ts): what they are, and a way to show them at a time. */
+  hazards?: { specs: HazardSpec[]; show(time: number): void };
 }
 
 /** The picture each kind wears unless the box says otherwise. */
@@ -748,6 +752,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const strikeThings: Strikeable[] = [];
   const strikeLooks: BuiltStrike[] = [];
   const strikeSolids: Aabb[] = [];
+  /** Hazards and helpers (world/hazards.ts), in level order, and their looks. */
+  const hazardSpecs: HazardSpec[] = [];
+  const hazardLooks: BuiltHazard[] = [];
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
   const knockables: Array<{ what: JunkKind; x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
@@ -1768,6 +1775,13 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(glow);
       musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
       musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
+    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan') {
+      // Hazards and helpers (world/hazards.ts, hazardModels.ts): drawn here; main.ts has them act on him. A belt is solid.
+      const built = buildHazard(d, { iron: lit('wroughtIron'), plain: plainMat });
+      group.add(built.group);
+      hazardSpecs.push(d);
+      hazardLooks.push(built);
+      if (d.kind === 'belt') colliders.push(makeAabb(d.x, d.y - BELT_DEPTH / 2, d.z, d.w, BELT_DEPTH, d.d));
     } else if (d.kind === 'lever' || d.kind === 'crackwall' || d.kind === 'crackfloor') {
       // Things to hit (world/strikeables.ts, strikeModels.ts): drawn, solid, and struck by main.ts.
       const L = STRIKE.lever;
@@ -2569,5 +2583,6 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       if (i >= 0) colliders.splice(i, 1);
     },
   } : undefined;
-  return { strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  const hazards = hazardSpecs.length ? { specs: hazardSpecs, show: (time: number): void => hazardLooks.forEach((b) => b.show(time)) } : undefined;
+  return { hazards, strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

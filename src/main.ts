@@ -9,6 +9,7 @@ import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
 import { leversOn, strikeThings } from './world/strikeables';
+import { HAZARD, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -1094,6 +1095,8 @@ function startGame(): void {
   let gusts: Gust[] = [];
   /** Music underfoot in this room, if any: floor keys and echo puzzles (world/musicFloor.ts). */
   let musicFloor: MusicFloor | null = null;
+  /** The room clock when the hazards were last heard (world/hazards.ts `sounds`: what happened since). */
+  let hazardClock = 0;
   /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
   let jets: Gust[] = [];
   let jetOpen: boolean[] = [];
@@ -2375,6 +2378,11 @@ function startGame(): void {
     const vyBefore = player.velocity.y;
     // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
     if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
+    // Hazards and helpers (world/hazards.ts): a belt under him carries him; a fan's column lifts him.
+    if (chamber.hazards && !player.dead) {
+      beltCarry(chamber.hazards.specs, player, dt);
+      fanLift(chamber.hazards.specs, player, dt, worldClock);
+    }
     // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`, `&autoswing`, `&autoplunge`.
     // (`&autofight`, `&autolift` and `&carryfoe`, which reach into the fight and his hands, are below.)
     if (filmDrive) {
@@ -2738,6 +2746,21 @@ function startGame(): void {
     lavaStep();
     // A firefly's flames: whoever stands in them is burned (no roll or shield helps). In the Ember Helm he walks through.
     resolveFlames(player, flames, FIREFLY.burn, events);
+    // A blade's touch (too big for a shield) or spikes underfoot (no roll helps); what they sound like near him.
+    if (chamber.hazards) {
+      const hz = chamber.hazards;
+      const touch = hazardHurt(hz.specs, player, worldClock, TUNING.rat.radius, TUNING.rat.height);
+      if (touch) {
+        const result = touch.kind === 'blade' ? player.takeHit(touch.x, touch.z, HAZARD.blade.damage, true) : player.takeBurn(touch.x, touch.z, HAZARD.spikes.damage);
+        if (result === 'hit' || result === 'killed') events.playerResult = result;
+      }
+      for (const sd of hazardSounds(hz.specs, hazardClock, worldClock, player.position)) {
+        if (sd.kind === 'swish') audio.play('whoosh', { vol: 0.9 * sd.vol, rate: roll(0.55, 0.65), priority: 5 });
+        else audio.play('spikeUp', { vol: 0.8 * sd.vol, rate: roll(0.95, 1.05), priority: 5 });
+      }
+      hazardClock = worldClock;
+      hz.show(worldClock);
+    }
     for (const e of enemies) {
       if (!e.alive && !counted.has(e)) {
         counted.add(e);

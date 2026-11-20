@@ -33,6 +33,13 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - The cellar under the cracked floor is 2 deep: a jump and a second in the air get him out. Whether that is a chore.
 - Solve the Music Room's echo puzzle: the gate in the east wall lifts.
 
+**Hazards** (the Gauntlet, Test Room 15)
+- The blades: whether a run through the corridor is too tight or too loose (a third of the moments get through).
+  `BLADES` in `src/levels/gauntlet.ts`, the blade's size `HAZARD.blade` in `src/world/hazards.ts`.
+- The spikes: up 1.2 seconds in every 3 after half a second's warning. Whether the warning reads.
+- The fan: how fast it lifts him and where he hovers (`HAZARD.fan`). Whether steering off it onto the ledge is easy.
+- The blade's swish and the spikes' snap: unheard.
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

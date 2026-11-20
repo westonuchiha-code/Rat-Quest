@@ -9,7 +9,9 @@ belongs to below (marked *main.ts*); the last ones add a few lines by the landin
 plays a quiet knock or tink for each kind of odd-and-end that answered. And a few more after his update: the Music Room's floor
 keys and echo puzzle (`world/musicFloor.ts`). And the things to hit (`world/strikeables.ts`): a block after the
 fight's crate events that strikes them and plays what happened, two more ways for `updateGates` to lift a gate
-(`levers`, `echo`), and two more words that switch on the film drive. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
+(`levers`, `echo`), and two more words that switch on the film drive. And the hazards (`world/hazards.ts`): a belt
+and a fan act on him next to the gust, before his update; a blade and spikes hurt him next to the fire, after the
+fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
 
 ## 1. Changes to how the game PLAYS (review these first)
 
@@ -58,6 +60,11 @@ the sword flips (a gate can wait for levers), a cracked wall three blows bring d
 breaks. In the editor. A gate in the Music Room that its echo puzzle lifts. Nothing in the existing levels uses
 them. **Worth your eye:** combat.ts is untouched, so they use their own copy of the crate's swing test (arc and
 reach): if the crate's changes, theirs will not follow.
+
+Hazards and helpers (`world/hazards.ts`, `hazardModels.ts`; the Gauntlet, Test Room 15; `tests/hazards.ts`): a
+conveyor belt, a pendulum blade, a spike floor, a floor fan. In the editor. Nothing in the existing levels uses them.
+**Worth your eye:** a belt and a fan move him from outside the controller (as a moving platform and a spring do); a
+blade is a heavy blow (`takeHit(..., true)`), spikes a burn (`takeBurn`, so no roll helps).
 
 ## 4. Tools, tests and notes (no effect on the game)
 

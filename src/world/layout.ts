@@ -4,6 +4,7 @@
  * The pit is a void: nothing solid may overlap it.
  */
 
+import type { HazardSpec } from './hazards';
 import type { TextureName } from '../render/textures';
 import type { ForgeSpec } from './forge';
 
@@ -332,6 +333,9 @@ export type Decor =
   | { kind: 'lever'; x: number; y: number; z: number; yaw: number }
   | { kind: 'crackwall'; x: number; y: number; z: number; w: number; h: number; d: number; hits?: number }
   | { kind: 'crackfloor'; x: number; y: number; z: number; w: number; d: number }
+  /** Hazards and helpers (world/hazards.ts): a conveyor belt (solid; y is its top), a pendulum blade (x, y, z its
+   * pivot), spikes in the floor (y the floor), a fan in the floor (y the floor). */
+  | HazardSpec
   /** A rug on the floor (drawn only): round (`r`), or a runner `w` by `d`. `colors`: its edge, its middle, its marks. */
   | { kind: 'rug'; x: number; y: number; z: number; yaw: number; r?: number; w?: number; d?: number; colors: [number, number, number] }
   /** A dance floor of lit tiles (drawn only), `nx` by `nz` of them, each `tile` across. */
