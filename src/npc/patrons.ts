@@ -1434,6 +1434,23 @@ const HEDGEHOG = {
 /** How long a newcomer's legs are (short), and so how high his hips stand. */
 const N_LEG = 0.16;
 
+/** A small regular's bones, for player/standIn.ts: arms (upper and fore) and legs as he is built, limbs hanging down. */
+export interface StandInRig {
+  root: THREE.Group;
+  body: THREE.Group;
+  chest: THREE.Group;
+  head: THREE.Group;
+  arms: ReadonlyArray<{ upper: THREE.Group; fore: THREE.Group; side: number }>;
+  legs: ReadonlyArray<{ thigh: THREE.Group; side: number }>;
+  /** What he holds as a regular (a mug, cards): put away. */
+  hide: THREE.Object3D[];
+  idle(dt: number, t: number): void;
+}
+/** A hedgehog or a mole, as a body for player/standIn.ts. */
+export function makeSmall(kind: 'hedgehog' | 'mole', look: 'bramble' | 'thistle' | 'digger' | 'dot'): { rig: StandInRig; height: number } {
+  return kind === 'hedgehog' ? new Hedgehog(look as 'bramble' | 'thistle') : new Mole(look as 'digger' | 'dot');
+}
+
 /** A small round regular's frame: body, chest, head, arms with a mug and a hand of cards, short legs. What differs is built by each. */
 abstract class Small implements PatronBody {
   readonly root = new THREE.Group();
@@ -1501,6 +1518,22 @@ abstract class Small implements PatronBody {
   }
   /** What each does with his face as he talks and listens (a snout wiggled, a nose twitched). */
   protected abstract face(t: number, ctx: PatronCtx, mouth: number): void;
+
+  /**
+   * His bones, for something else to move him by (player/standIn.ts: the hedgehog worked by the rat's own controls,
+   * 2026-11-20). `idle` runs his own small life only: his eyes blink, his nose twitches.
+   */
+  get rig(): StandInRig {
+    return {
+      root: this.root, body: this.body, chest: this.chest, head: this.head, arms: this.arms, legs: this.legs,
+      hide: [this.mugHand, this.cards],
+      idle: (dt, t) => {
+        const ctx: PatronCtx = { time: t, talking: false, mouth: 0, headYaw: 0, doing: 'stand', seated: false, turn: 0 };
+        this.common.step(dt, ctx);
+        this.face(t, ctx, 0);
+      },
+    };
+  }
 
   update(dt: number, ctx: PatronCtx): void {
     const t = ctx.time;

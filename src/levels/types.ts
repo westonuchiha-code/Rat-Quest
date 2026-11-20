@@ -94,6 +94,8 @@ export interface LevelDef {
   name: string;
   /** One line telling what the level is about, for the level list. */
   blurb: string;
+  /** Drawn as someone else in this level: the hedgehog, worked by his controls (player/standIn.ts; the Stand-in room). */
+  playAs?: 'hedgehog';
   /** Which music plays here. Default 'drift'. */
   music?: 'drift' | 'pump' | 'groove' | 'echo' | 'march' | 'dream';
   /** Colour of the fog and the far dark. Default: the sewer's. */

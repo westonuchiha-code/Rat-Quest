@@ -1,4 +1,4 @@
-# Test Rooms 12-18: a guide (2026-11-20)
+# Test Rooms 12-19: a guide (2026-11-20)
 
 For Fable. These seven rooms were built while you were away. **None of them is a level.** Each is a shelf of parts,
 shown doing what it is for, so you can see a part work before you put it in a real level. Nothing here has been
@@ -26,6 +26,7 @@ it.
 | 16 | `press` | `levels/press.ts` | crushers, flame jets | `press` |
 | 17 | `greenroom` | `levels/greenroom.ts` | two new characters, the mole and the hedgehog | `newcomers` |
 | 18 | `coilroom` | `levels/coilroom.ts` | the Tesla coil on a beat, zap plates, coil keys, the Spark Beetle | `coilroom`, `sparkbeetle` |
+| 19 | `standin` | `levels/standinroom.ts` | Bramble the hedgehog on the rat's controls, and a course to try him on | `standin` |
 
 To run one room's tests: `node scripts/test-all.mjs platforms`. Every suite: `npm run test:all`.
 
@@ -165,6 +166,18 @@ OPUS-WEEK and not fixed.
 - On the snare it bursts all round it: a heavy blow, which a held shield does not stop.
 - It is soft the rest of the bar, and has 4 hp. Its numbers are in `SPARK`.
 - Seven more enemy designs, each built round one of these rooms' parts, are in `docs/ENEMY-IDEAS.md`.
+
+## 19. The Stand-in: another character on the rat's controls
+
+**What's in it.** Bramble the hedgehog in the rat's place (the room sets `playAs: 'hedgehog'`), and a course with one
+of each move:
+- steps up to a shelf (`STEPS`), and two slopes off it (`SLOPES`): a steep one he slides down and a gentle one to ride;
+- a block too high to jump onto, to hang from (`HANG`);
+- a pool (`POOL`), two roaches that come back, and pots.
+
+**The code.** `player/standIn.ts` turns each thing the rat's model is told into a hedgehog pose: a needle for a
+sword, a bottle cap for a shield and a board, and a ball of spines for every roll, flip and slide. See KIT.md for the
+table of moves. Not a plan for the game (the owner's word): a try at how close another body gets.
 
 ---
 

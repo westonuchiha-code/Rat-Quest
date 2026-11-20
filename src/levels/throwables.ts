@@ -30,6 +30,7 @@ export const LYING: Record<string, { right: [number, number]; left: [number, num
   press: { right: [3.4, 10.4], left: [-3.4, 10.8] },
   greenroom: { right: [3.4, 5.4], left: [-3.4, 5.8] },
   coilroom: { right: [-3.4, 9.6], left: [-9.4, 9.6] },
+  standin: { right: [3.4, 9.4], left: [-3.4, 9.8] },
   // The side areas (Test Room 1B, 3B ... 9B), 2026-11-18.
   milkyway: { right: [2.8, -7.1], left: [-2.9, -5.4] },
   bigdipper: { right: [2.8, -7.1], left: [-2.9, -5.4] },

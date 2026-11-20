@@ -16,7 +16,8 @@ import { HAZARD, HazardFoes, Zones, carry as beltCarry, hurt as hazardHurt, lift
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
-import { DREAM_LOOK, RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND } from './player/ratModel';
+import { DREAM_LOOK, RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND, type RatAnimInput } from './player/ratModel';
+import { StandIn } from './player/standIn';
 import { ATTACK_CLIPS } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
@@ -267,6 +268,8 @@ function startGame(): void {
   const rat = new RatModel();
   /** The dream's knight: another rat in loud colours, never shown: the knight borrows its paint (`wearColours`). */
   let dreamRat: RatModel | null = null;
+  /** A hedgehog in his place, worked by his controls (player/standIn.ts): made when first asked for. */
+  let standIn: StandIn | null = null;
   let dreaming = false;
   const sky = new SkyDome();
   const dozers: Dozer[] = [];
@@ -4456,7 +4459,7 @@ function startGame(): void {
     rat.setTransform(drawnPos, player.facing + (photo.open ? photo.turn : 0));
     // In photo mode he holds the chosen pose (he still breathes; nothing else moves).
     const posing = photo.open ? photo.gesture : null;
-    rat.update(photo.open ? rawDt : animDt, {
+    const ratAnim: RatAnimInput = {
       state: photo.open ? (photo.gesture ? 'idle' : player.state === 'run' || player.state === 'walk' ? 'idle' : player.state) : story.scene ? (planarSpeed > 0.3 ? 'walk' : 'idle') : cutscene.active || trans.active ? 'idle' : player.state,
       planarSpeed: story.scene ? planarSpeed : cutscene.active || trans.active ? 0 : planarSpeed,
       comboStep: player.comboStep,
@@ -4479,11 +4482,22 @@ function startGame(): void {
       throwT: player.throwProgress,
       ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
-    });
+    };
+    rat.update(photo.open ? rawDt : animDt, ratAnim);
     // Blink while he is safe after a hit, and flash red at the moment of the hit.
     rat.root.visible = photo.open ? !photo.hideRat : !(player.recentlyHit && Math.floor(time * 18) % 2 === 0 && player.state !== 'hurt');
     // (A cutscene has its own cast: the knight himself waits out of the picture.)
     if (show) rat.root.visible = false;
+    // A STAND-IN (player/standIn.ts): the hedgehog drawn in his place, moved by the same things, when asked for.
+    const standing = /[#&]as=hedgehog/.test(location.hash) || cur.playAs === 'hedgehog';
+    if (standing) {
+      standIn ??= new StandIn();
+      if (!standIn.root.parent) scene.add(standIn.root);
+      standIn.setTransform(drawnPos, player.facing + (photo.open ? photo.turn : 0));
+      standIn.update(photo.open ? rawDt : animDt, ratAnim);
+      standIn.root.visible = rat.root.visible;
+      rat.root.visible = false;
+    } else if (standIn) standIn.root.visible = false;
     flash = Math.max(0, flash - frameDt * 5);
     rat.setFlash(flash * 0.7, flash * 0.05, flash * 0.05);
 
@@ -4503,7 +4517,7 @@ function startGame(): void {
     }
 
     // Sword ribbon during the fast part of a swing.
-    rat.getBlade(bladeBase, bladeTip);
+    (standing && standIn ? standIn : rat).getBlade(bladeBase, bladeTip);
     const clip = ATTACK_CLIPS[player.comboStep];
     const swinging = (player.state === 'attack' || player.riding) && player.attackTime > clip.activeStart - 0.05 && player.attackTime < clip.activeEnd + 0.05;
     trail.update(animDt, swinging && animDt > 0, bladeBase, bladeTip);

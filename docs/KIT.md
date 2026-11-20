@@ -194,6 +194,36 @@ Coil Room's floor round the coil's foot, coming back when beaten, not among the 
 `EnemySpec` with `type: 'sparkbeetle'`; away from a coil it still keeps the same beat (90 bpm, snare on 2 and 4).
 *main.ts*: one `addEnemy` branch, and its name in WALKERS (so it walks on ramps).
 
+## A stand-in: another character on the rat's controls (`src/player/standIn.ts`; `tests/standin.ts`; the Stand-in, Test Room 19)
+
+The owner (2026-11-20): "see how close you can get to having one of these other characters control like the main
+character". Not a plan for the game: a try. BRAMBLE the hedgehog (npc/patrons.ts) is drawn in the rat's place and
+posed from the very same things the rat's model is told each frame (`RatAnimInput`). The rat's controller, collision
+and combat are untouched: he plays exactly as the rat does, only the drawing is different.
+
+| the rat does | the hedgehog does |
+|------|-----------|
+| stands, walks, runs | stands; a quick patter of his short legs, arms swinging, leaning in as he speeds up |
+| jumps, falls | arms out and up, a leg tucked; arms high and feet reaching coming down; a squash on landing |
+| the 3-hit sword combo | a SEWING NEEDLE: a slash across, back again, an overhead chop; his round body turns with it (the sword trail follows the needle) |
+| guards | crouched behind a BOTTLE CAP on his left arm (it always faces forward) |
+| dodge roll, backflip, the air jump's flip, long jump, slide, plunge | CURLS INTO A BALL OF SPINES and rolls over (the ball sits higher on a slope so it does not sink into it) |
+| rides his shield | rides a big bottle cap like a board; spins and kickflips turn it |
+| swims | lies flat, his spiny back at the waterline, paddling |
+| hangs, climbs | arms straight up, paws on the edge (he is short: he hangs low), then up and over |
+| carries, throws | arms up over his head; a throw brings them down |
+| hurt, dead | rocks back; lies on his back |
+
+**How to see it:** the Stand-in room (Test Room 19: steps, a steep slope and a gentle one, a block to hang from, a
+pool, two roaches, pots), where it is on by itself; or `#as=hedgehog` on any level's address. A level asks for it with
+`playAs: 'hedgehog'` on its `LevelDef`.
+**What is not done:** his hit flash (he blinks, as the rat does, but does not glow red), the story gestures (sitting,
+waving, pointing) and the wall kick's own pose. The camera is the rat's (he is a little shorter).
+**To do another character the same way:** the hedgehog's bones are reached through `rig` on the small regulars
+(`makeSmall` in patrons.ts: the moles are built the same way, so they should take the same poses, but for curling up. Not tried).
+*main.ts*: what the rat's model is told is kept in `ratAnim` and given to the stand-in too; the stand-in is drawn and
+the rat hidden when asked for; the sword trail reads the needle.
+
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 
 Made as the Club's regulars are: a BUILD (the animal) and a LOOK (one of two of it, by name: colours and a thing or

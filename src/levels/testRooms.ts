@@ -48,6 +48,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 16, id: 'press', door: 'THE PRESS', like: 'More hazards: crushers (one to ride), flame jets in walls and floor.' },
   { n: 17, id: 'greenroom', door: 'GREEN ROOM', like: 'New characters for Fable: two moles and two hedgehogs, to talk to.' },
   { n: 18, id: 'coilroom', door: 'COIL ROOM', like: 'A Tesla coil plays a beat and zaps the plates: climb in time. A keyboard to play the coil.' },
+  { n: 19, id: 'standin', door: 'STAND-IN', like: 'Bramble the hedgehog on the rat\'s controls: a course with one of every move.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */

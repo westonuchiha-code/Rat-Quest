@@ -32,6 +32,11 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
   *main.ts*: an `addEnemy` branch (it gets the room's clock) and its name in WALKERS. `tests/sparkbeetle.ts` fights it
   with the real rat and the real combat. Note: a shield raised on the very moment parries the burst (the controller's
   rule for every blow); a shield held up does not.
+- **A stand-in** (`player/standIn.ts`, the Stand-in room, Test Room 19): Bramble the hedgehog drawn in the rat's place,
+  posed from what the rat's model is told. Play is untouched. *main.ts*: the object passed to `rat.update` is now a
+  named `ratAnim` (same contents), and after it a block draws the stand-in and hides the rat when the level says
+  `playAs: 'hedgehog'` or the address has `as=hedgehog`; the sword trail reads the stand-in's needle then. Off, it does
+  nothing (it is not even made).
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 
