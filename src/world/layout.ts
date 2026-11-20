@@ -523,6 +523,12 @@ export interface MoverSpec {
   back?: number;
   /** spring: how high it throws him. */
   launch?: number;
+  /** swing: radians each way, and along which way it swings (x or z); seconds a swing (`period`). */
+  arc?: number;
+  along?: 'x' | 'z';
+  period?: number;
+  /** path: the loop of waypoints it follows, each from where it starts (it goes on from the last back to the start). */
+  path?: Array<[number, number, number]>;
 }
 
 const smooth = (f: number): number => f * f * (3 - 2 * f);

@@ -1138,7 +1138,7 @@ export class Builder {
       }
     }
     if (p.t === 'lift') {
-      h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up'], ['crush', 'a crusher: slams down how far it travels']])}</div>`;
+      h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up'], ['crush', 'a crusher: slams down how far it travels'], ['swing', 'swings, hung from how far above'], ['blink', 'blinks: there, gone, there'], ['path', 'a loop: along, up, back, down']])}</div>`;
       h += `<div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;
       h += `<div class="field"><span>How far</span><input type="number" step="0.5" min="0.5" data-pp="travel" value="${pr.travel ?? 4}" /></div>`;
       h += `<div class="field"><span>Speed</span><input type="number" step="0.5" min="0.5" data-pp="speed" value="${pr.speed ?? 2}" /></div>`;

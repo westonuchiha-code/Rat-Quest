@@ -10,6 +10,11 @@
  *   crumble  shakes when he lands on it, falls after `hold` seconds, is gone for `back` seconds, and comes back
  *   spring   a pad: stood on, it squashes and throws him up `launch` high (holding jump or not: the short-hop
  *            rule is for his own jumps), and is ready again a moment later
+ *   swing    (2026-11-20) a platform hung on two chains from a pivot (`to`: from the platform, hanging still, up to
+ *            the pivot), swinging `arc` radians each way along `along` (x or z) once every `period` seconds
+ *   blink    (2026-11-20) there for `hold` seconds, gone for `back`, round and round; it flickers for the last
+ *            moment before it goes (a warning). Several out of step make a path that moves under him.
+ *   path     (2026-11-20) follows a closed loop of waypoints (`path`: each from where it starts), at `speed`
  *   crush    a CRUSHER: a block that waits up high (`hold`), shakes as a warning, slams down `depth`, sits there
  *            (`pause`), and winds back up slowly (`speed`). Coming down on him, it strikes him (a heavy blow) and he
  *            is pushed out from under it. He can ride on top of it.
@@ -20,8 +25,8 @@
  */
 import { moverOffset, type MoverSpec } from './layout';
 
-export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring' | 'crush';
-export const PLATFORM_MOTIONS: readonly PlatformMotion[] = ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring', 'crush'];
+export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring' | 'crush' | 'swing' | 'blink' | 'path';
+export const PLATFORM_MOTIONS: readonly PlatformMotion[] = ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring', 'crush', 'swing', 'blink', 'path'];
 
 /** Defaults for each kind, where its spec says nothing. */
 export const PLATFORM = {
@@ -36,7 +41,50 @@ export const PLATFORM = {
   /** crush: seconds waiting up, of which the last `warn` it shakes; how far it drops; how fast it falls (as a weight
    * falls, from rest); seconds it sits down; units a second winding back up. */
   crush: { hold: 1.6, warn: 0.5, depth: 3, fall: 30, pause: 0.8, rise: 1.5, damage: 2 },
+  /** swing: radians each way, seconds a swing (there and back). */
+  swing: { arc: 0.6, period: 3.2 },
+  /** blink: seconds there, seconds gone, seconds of flicker before it goes. */
+  blink: { hold: 2, back: 1.5, warn: 0.6 },
 } as const;
+
+/** Where a swinging platform is at a time, from where it hangs still. */
+export function swingAt(spec: MoverSpec, time: number): [number, number, number] {
+  const L = Math.hypot(spec.to[0], spec.to[1], spec.to[2]);
+  const arc = spec.arc ?? PLATFORM.swing.arc;
+  const period = spec.period ?? PLATFORM.swing.period;
+  const a = arc * Math.sin(2 * Math.PI * (time / period + (spec.phase ?? 0)));
+  const side = L * Math.sin(a);
+  const up = L * (1 - Math.cos(a));
+  return spec.along === 'z' ? [0, up, side] : [side, up, 0];
+}
+/** Whether a blinking platform is there at a time, and whether it is flickering (about to go). */
+export function blinkAt(spec: MoverSpec, time: number): { there: boolean; flicker: boolean } {
+  const hold = spec.hold ?? PLATFORM.blink.hold;
+  const back = spec.back ?? PLATFORM.blink.back;
+  const cycle = hold + back;
+  const t = ((((time / cycle) + (spec.phase ?? 0)) % 1) + 1) % 1 * cycle;
+  return { there: t < hold, flicker: t < hold && t > hold - PLATFORM.blink.warn };
+}
+/** Where a platform on a loop of waypoints is at a time (each point from where it starts; it goes on from the last back to its start). */
+export function pathAt(spec: MoverSpec, time: number): [number, number, number] {
+  const pts: Array<[number, number, number]> = [[0, 0, 0], ...(spec.path ?? [])];
+  if (pts.length < 2) return [0, 0, 0];
+  const legs = pts.map((p, i) => {
+    const q = pts[(i + 1) % pts.length];
+    return { p, q, len: Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) };
+  });
+  const total = legs.reduce((a, l) => a + l.len, 0);
+  if (total < 1e-6) return [0, 0, 0];
+  let d = ((((time * (spec.speed ?? 2)) / total + (spec.phase ?? 0)) % 1) + 1) % 1 * total;
+  for (const l of legs) {
+    if (d <= l.len || l === legs[legs.length - 1]) {
+      const k = l.len > 1e-6 ? Math.min(1, d / l.len) : 0;
+      return [l.p[0] + (l.q[0] - l.p[0]) * k, l.p[1] + (l.q[1] - l.p[1]) * k, l.p[2] + (l.q[2] - l.p[2]) * k];
+    }
+    d -= l.len;
+  }
+  return [0, 0, 0];
+}
 
 /** A crusher's cycle at a time (from its start): its offset down (0 up .. depth), whether it is falling, and its shake. */
 export function crushAt(spec: MoverSpec, time: number): { down: number; falling: boolean; warning: boolean } {
@@ -164,6 +212,15 @@ export function platformStep(spec: MoverSpec, s: PlatformState, dt: number, ridd
     }
     s.squash = Math.max(0, s.squash - dt * 6);
     out.squash = s.squash;
+  } else if (motion === 'swing') {
+    out.offset = swingAt(spec, s.time);
+  } else if (motion === 'blink') {
+    const b = blinkAt(spec, s.time);
+    out.solid = b.there;
+    // (Flickering: shown and hidden by turns, quick; still solid till it goes.)
+    out.shown = b.there && !(b.flicker && Math.floor(s.time * 14) % 2 === 1);
+  } else if (motion === 'path') {
+    out.offset = pathAt(spec, s.time);
   } else if (motion === 'crush') {
     const c = crushAt(spec, s.time);
     out.offset = [0, -c.down, 0];

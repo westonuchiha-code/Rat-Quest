@@ -535,6 +535,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   // ---- Moving platforms. ----
   const movers: Mover[] = [];
   const moverMeshes: THREE.Mesh[] = [];
+  /** A swinging platform's two chains, by its place among the movers. */
+  const swingChains = new Map<number, THREE.Mesh[]>();
   // (Seated on the floor under them, if they were put with their bodies in it: see hangings.ts. Levels do this
   // themselves when they are compiled; this is for a layout that has not been.)
   for (const spec of seatMovers(layout.movers ?? [], layout.solids)) {
@@ -546,6 +548,17 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     bakeVertexColor(geo, 0xeeeeee);
     const mesh = addMesh(geo, mat(skin), spec.x, spec.y - thick / 2, spec.z);
     moverMeshes.push(mesh);
+    // (A swinging platform hangs on two chains from its pivot: drawn here, stretched to it each step.)
+    if (spec.motion === 'swing') {
+      const chains = [0, 1].map(() => {
+        const g = new THREE.CylinderGeometry(0.04, 0.04, 1, 5, 1);
+        g.translate(0, 0.5, 0);
+        const m = new THREE.Mesh(bakeVertexColor(g, 0x6a6a72), lit('wroughtIron'));
+        group.add(m);
+        return m;
+      });
+      swingChains.set(moverMeshes.length - 1, chains);
+    }
     const mv: Mover = { spec, aabb: makeAabb(spec.x, spec.y - thick / 2, spec.z, spec.w, thick, spec.d), delta: new THREE.Vector3(), state: newPlatformState() };
     movers.push(mv);
     colliders.push(mv.aabb);
@@ -585,6 +598,20 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const mesh = moverMeshes[i];
       mesh.position.set(nx + now.shake[0], ny - thick / 2, nz + now.shake[1]);
       mesh.visible = now.shown;
+      const chains = swingChains.get(i);
+      if (chains) {
+        // From each end of the platform (across the way it swings) up to the pivot over where it hangs still.
+        const pivot = new THREE.Vector3(m.spec.x + m.spec.to[0], m.spec.y + m.spec.to[1], m.spec.z + m.spec.to[2]);
+        const across = m.spec.along === 'z' ? new THREE.Vector3(m.spec.w / 2 - 0.15, 0, 0) : new THREE.Vector3(0, 0, m.spec.d / 2 - 0.15);
+        chains.forEach((c, k) => {
+          const end = new THREE.Vector3(nx, ny, nz).addScaledVector(across, k ? 1 : -1);
+          const top = pivot.clone().addScaledVector(across, (k ? 1 : -1) * 0.4);
+          const dir = top.clone().sub(end);
+          c.position.copy(end);
+          c.scale.set(1, dir.length(), 1);
+          c.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+        });
+      }
       // (A spring squashes down from its top as it throws him.)
       mesh.scale.y = 1 - 0.45 * now.squash;
       mesh.position.y = ny - (thick * mesh.scale.y) / 2;

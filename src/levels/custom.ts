@@ -448,9 +448,13 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         // throws him `travel` high. A spring and a crumble wear their own looks unless a skin is chosen.)
         // (A crusher is a block 2 thick whose top is `top`, dropping `travel`: its top set at the travel plus 2 puts its
         // underside on the floor when it is down.)
-        const extra = motion === 'sink' ? { depth: dist } : motion === 'spring' ? { launch: dist } : motion === 'crush' ? { depth: dist, thick: 2 } : {};
+        // (A swing hangs `travel` under its pivot, swinging along the way it is set to move (north or south: along z);
+        // a path goes the way it is set `travel` along, half that up, back, and down again: a loop; a blink stays put.)
+        const along: 'x' | 'z' = mv === 'n' || mv === 's' ? 'z' : 'x';
+        const loop: Array<[number, number, number]> = mv === 'up' ? [[0, dist, 0]] : [[to[0], 0, to[2]], [to[0], dist / 2, to[2]], [0, dist / 2, 0]];
+        const extra = motion === 'sink' ? { depth: dist } : motion === 'spring' ? { launch: dist } : motion === 'crush' ? { depth: dist, thick: 2 } : motion === 'swing' ? { along, arc: 0.6 } : motion === 'path' ? { path: loop } : {};
         const looks = motion === 'spring' || motion === 'crumble' || motion === 'crush' ? p.skin : (p.skin ?? themed);
-        movers.push({ x: cx, z: cz, y: p.top, w: Math.max(1.5, x1 - x0), d: Math.max(1.5, z1 - z0), to: motion === 'sink' || motion === 'spring' || motion === 'crumble' || motion === 'crush' ? [0, 0, 0] : to, speed: p.props?.speed ?? 2, pause: p.props?.pause ?? 1.5, ...(motion === 'glide' ? {} : { motion }), ...extra, ...(looks ? { skin: looks } : {}) });
+        movers.push({ x: cx, z: cz, y: p.top, w: Math.max(1.5, x1 - x0), d: Math.max(1.5, z1 - z0), to: motion === 'sink' || motion === 'spring' || motion === 'crumble' || motion === 'crush' || motion === 'blink' || motion === 'path' ? [0, 0, 0] : motion === 'swing' ? [0, dist, 0] : to, speed: p.props?.speed ?? 2, pause: p.props?.pause ?? 1.5, ...(motion === 'glide' ? {} : { motion }), ...extra, ...(looks ? { skin: looks } : {}) });
         break;
       }
       case 'lamp':

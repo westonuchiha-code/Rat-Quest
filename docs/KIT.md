@@ -20,9 +20,13 @@ level editor: the "Moving platform" piece, its "Kind" setting; its "How far" mea
 | sink    | sinks while he stands on it, rises again when he is off | `speed` 1.2, `depth` 2.5 | the depth |
 | crumble | shakes when he lands, falls after `hold`, gone for `back`, then returns | `hold` 0.7, `back` 3 | (none) |
 | spring  | squashes and throws him `launch` high (holding jump or not), ready again a moment later | `launch` 6 | the height |
+| swing   | hung on two chains from a pivot (`to`: from the platform hanging still up to the pivot), swings `arc` rad each way along `along` (x or z), rising at the ends as a pendulum; carries him | `arc` 0.6, `period` 3.2 | how far above the pivot is |
+| blink   | there for `hold` s, gone for `back` s, round and round (`phase` puts several out of step); flickers its last 0.6 s; gone, he drops through | `hold` 2, `back` 1.5 | (none) |
+| path    | follows a closed loop of waypoints (`path`, each from its start) at `speed`, carrying him round, up and down too | `speed` 2 | the editor makes a loop: along, half up, back, down |
 | crush   | a CRUSHER: waits up (`hold`), shakes for the last half second, slams down `depth` (as a weight falls), sits (`pause`), winds back up at `speed`. Coming down on him: a heavy blow (2), and he is put out from under it at once the shortest way that is not into a wall. He can ride its top. | `hold` 1.6, `depth` 3, `pause` 0.8, rise 1.5, `thick` 2 | how far it drops |
 
-A spring is striped (hazardTrim), a crumbling one is rubble, unless a `skin` is given. A spring sets his upward speed
+Shown in the Workshop's FRONT half (2026-11-20): a swing across a gap, four blinkers out of step across another, a
+path carrying him up to a high ledge; a crumb at the far end of each. A spring is striped (hazardTrim), a crumbling one is rubble, unless a `skin` is given. A spring sets his upward speed
 from the outside (as gusts push him sideways): the controller is not touched. Crates standing on any of them ride along
 (as on a glide); a crumbled one is not there at all until it comes back.
 

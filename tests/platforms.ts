@@ -4,7 +4,10 @@ import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { buildChamber } from '../src/world/chamber';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
-import { PLATFORM } from '../src/world/platforms';
+import { PLATFORM, blinkAt, pathAt, swingAt } from '../src/world/platforms';
+import { levelById } from '../src/levels/levels';
+import { FRONT } from '../src/levels/workshop';
+import { compileCustom } from '../src/levels/custom';
 import type { MoverSpec } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
 
@@ -109,6 +112,78 @@ const mid = (r: ReturnType<typeof room>): THREE.Vector3 => {
   const let_go = height(false);
   check(`SPRING: stood on, it throws him up about ${PLATFORM.spring.launch}, far higher than a jump of his own`, Math.abs(held - PLATFORM.spring.launch) < 0.6 && held > 2 * (TUNING.jump.velocity * TUNING.jump.velocity) / (2 * TUNING.physics.gravity), `${held.toFixed(2)} up`);
   check('...the same whether he holds jump or not (the short-hop rule is for his own jumps)', Math.abs(let_go - held) < 0.3, `${let_go.toFixed(2)} letting go`);
+}
+
+// ---- swing, blink, path (2026-11-20) ----
+{
+  // SWING: hangs still 6 under its pivot; swings 0.6 rad each way along x, rising at the ends; carries him.
+  const spec = { motion: 'swing', to: [0, 6, 0], arc: 0.6, along: 'x', period: 4 } as Partial<MoverSpec>;
+  const at = swingAt(spec as MoverSpec, 1);
+  check('SWING: a quarter of the way through a swing it is out at its full reach, risen as a pendulum does', Math.abs(at[0] - 6 * Math.sin(0.6)) < 1e-9 && Math.abs(at[1] - 6 * (1 - Math.cos(0.6))) < 1e-9 && at[2] === 0);
+  const r = room(spec);
+  let far = 0;
+  let onIt = true;
+  run(r, 4, () => ({}), () => {
+    const m = mid(r);
+    far = Math.max(far, Math.abs(m.x));
+    if (Math.hypot(r.p.position.x - m.x, r.p.position.z - m.z) > 1.2 || Math.abs(r.p.position.y - m.y) > 0.12) onIt = false;
+  });
+  check('...and he rides it, standing, all the way out and back', onIt && Math.abs(far - 6 * Math.sin(0.6)) < 0.05, `${far.toFixed(2)} out at most`);
+  const chains: THREE.Object3D[] = [];
+  r.ch.group.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && (m.geometry as THREE.CylinderGeometry).parameters?.radiusTop === 0.04) chains.push(m);
+  });
+  check('...hung on two chains, stretched up to its pivot', chains.length === 2 && chains.every((c) => Math.abs(c.scale.y - 6.4) < 0.6), chains.map((c) => c.scale.y.toFixed(2)).join(', '));
+}
+{
+  // BLINK: there 2 s, gone 1.5 s; flickers the last 0.6 s; while gone, not solid: he drops through.
+  const spec = { motion: 'blink', hold: 2, back: 1.5 } as Partial<MoverSpec>;
+  check('BLINK: there for its hold, flickering at the end of it, then gone for its back', blinkAt(spec as MoverSpec, 0.5).there && !blinkAt(spec as MoverSpec, 0.5).flicker && blinkAt(spec as MoverSpec, 1.8).flicker && !blinkAt(spec as MoverSpec, 2.5).there && blinkAt(spec as MoverSpec, 3.6).there);
+  const r = room(spec);
+  run(r, 1);
+  const stood = r.p.grounded && Math.abs(r.p.position.y - 4) < 0.05;
+  run(r, 1.6);
+  check('...he stands on it while it is there, and drops through when it goes', stood && r.p.position.y < 3.5, `y ${r.p.position.y.toFixed(2)}`);
+}
+{
+  // PATH: round a loop of waypoints at its speed, carrying him; back where it began after one round.
+  const spec = { motion: 'path', path: [[6, 0, 0], [6, 3, 0], [0, 3, 0]], speed: 2 } as Partial<MoverSpec>;
+  const p0 = pathAt(spec as MoverSpec, 0);
+  const p1 = pathAt(spec as MoverSpec, 3);
+  const p2 = pathAt(spec as MoverSpec, 4.5);
+  const round = pathAt(spec as MoverSpec, 9);
+  check('PATH: it follows its waypoints at its speed (6 along in 3 s, then 3 up), and is back at the start after a round', p0.join() === '0,0,0' && Math.abs(p1[0] - 6) < 1e-9 && Math.abs(p2[1] - 3) < 1e-9 && round.every((v) => Math.abs(v) < 1e-9));
+  const r = room(spec);
+  let onIt = true;
+  let hi = 0;
+  run(r, 9, () => ({}), () => {
+    const m = mid(r);
+    hi = Math.max(hi, m.y);
+    if (Math.hypot(r.p.position.x - m.x, r.p.position.z - m.z) > 1.2 || Math.abs(r.p.position.y - m.y) > 0.12) onIt = false;
+  });
+  check('...and carries him round the whole loop, up and down too', onIt && Math.abs(hi - 7) < 0.05);
+}
+// The Workshop shows the three in its front half, each between ledges with a crumb on the far one.
+{
+  const w = levelById('workshop')!;
+  const kinds = (w.movers ?? []).map((m) => m.motion ?? 'glide');
+  check('the Workshop has a swing, four blinkers and a path in its front half', kinds.filter((k) => k === 'swing').length === 1 && kinds.filter((k) => k === 'blink').length === 4 && kinds.filter((k) => k === 'path').length === 1 && (w.movers ?? []).filter((m) => m.motion === 'swing' || m.motion === 'blink' || m.motion === 'path').every((m) => m.z === FRONT.z));
+}
+
+{
+  const lvl = compileCustom({
+    name: 'Kit', blurb: '', theme: 'dungeon', width: 20, depth: 20, wallHeight: 10,
+    pieces: [
+      { t: 'floor', x0: -10, z0: -10, x1: 10, z1: 10, top: 0 },
+      { t: 'spawn', x0: 0, z0: 6, x1: 0, z1: 6, top: 0 },
+      { t: 'lift', x0: -1, z0: -1, x1: 1, z1: 1, top: 2, props: { motion: 'swing', move: 'n', travel: 5 } },
+      { t: 'lift', x0: 4, z0: -1, x1: 6, z1: 1, top: 2, props: { motion: 'blink' } },
+      { t: 'lift', x0: -6, z0: -1, x1: -4, z1: 1, top: 2, props: { motion: 'path', move: 'e', travel: 4 } },
+    ],
+  }, 'kit');
+  const [sw, bl, pa] = lvl.movers ?? [];
+  check('in the editor: a swing hangs "how far" under its pivot, swinging the way it is set (north: along z); a blink stays put; a path makes a loop', sw?.motion === 'swing' && sw.to.join() === '0,5,0' && sw.along === 'z' && bl?.motion === 'blink' && bl.to.join() === '0,0,0' && pa?.motion === 'path' && JSON.stringify(pa.path) === JSON.stringify([[4, 0, 0], [4, 2, 0], [0, 2, 0]]), JSON.stringify(pa?.path));
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
