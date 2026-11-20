@@ -1982,7 +1982,7 @@ function startGame(): void {
       // Odds and ends close by answer it (world/chamber.ts thump), each with a little sound of its own: a knock for
       // wood and bone and glass, a tink for tin and china. Unheard by Claude.
       for (const what of new Set(chamber.thump(player.position.x, player.position.y, player.position.z, Math.min(1, Math.abs(vyBefore) / 10)))) {
-        if (what === 'spoon' || what === 'sardines' || what === 'teacup') audio.play('clank', { vol: 0.16, rate: what === 'teacup' ? 3.2 : 2.6, priority: 3 });
+        if (what === 'spoon' || what === 'sardines' || what === 'teacup' || what === 'battery') audio.play('clank', { vol: 0.16, rate: what === 'teacup' ? 3.2 : what === 'battery' ? 2.0 : 2.6, priority: 3 });
         else audio.play('rockKnock', { vol: 0.2, rate: what === 'marble' ? 3 : what === 'die' ? 1.9 : 2.4, priority: 3 });
       }
     }

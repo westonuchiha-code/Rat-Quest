@@ -247,7 +247,8 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(new THREE.CylinderGeometry(0.13, 0.27, 0.62, 12, 1), ink, mats.wax, 0, 0.55, 0));
     g.add(part(new THREE.CylinderGeometry(0.21, 0.21, 0.06, 12, 1), ink, mats.wax, 0, 0.88, 0));
     g.add(part(new THREE.SphereGeometry(0.24, 12, 8), ink, mats.wax, 0, 1.12, 0));
-    return { group: g };
+    // A landing close by rocks it on its broad foot (a little: it is weighted at the base, as a chess piece is).
+    return { group: g, ...tipper(g, 0.38, 0.22) };
   }
   if (what === 'battery') {
     // Lying along x: the black body, its gold end, and the knob on the gold end. (Smooth, as wax is: tin's dents
@@ -261,6 +262,19 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(new THREE.CylinderGeometry(r * 0.32, r * 0.32, 0.12, 8, 1).rotateZ(Math.PI / 2), 0xc8c4b8, mats.tin, J.w / 2 - 0.06, r, 0));
     // A white stripe of writing round the black.
     g.add(part(new THREE.CylinderGeometry(r * 1.01, r * 1.01, 0.12, 12, 1, true).rotateZ(Math.PI / 2), 0xe8e4d8, mats.plain, x0 + body * 0.4, r, 0));
+    // A landing close by rolls it a little across its length, away from him, and it rocks back to where it lay
+    // (never more than a sixth of its width: it stays inside its solid).
+    const { pivot: barrel } = jointAt(g, new THREE.Vector3(0, r, 0));
+    let hit = { at: -99, by: 0, z: 1 };
+    const knock = (strength: number, time: number, _awayX: number, awayZ: number): void => {
+      hit = { at: time, by: strength, z: awayZ >= 0 ? 1 : -1 };
+    };
+    const roll = (time: number): void => {
+      const t = time - hit.at;
+      const s = t >= 0 && t < 3 ? hit.by * (J.d / 6) * Math.exp(-t * 1.8) * Math.sin(t * 4) * hit.z : 0;
+      barrel.position.set(0, r, s);
+      barrel.rotation.x = s / r;
+    };
     // Not quite flat: now and then a tiny spark jumps off its knob.
     const spark = new THREE.Mesh(new THREE.OctahedronGeometry(0.07, 0), new THREE.MeshBasicMaterial({ color: 0xfff4a0 }));
     spark.userData.moves = true;
@@ -275,9 +289,10 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
         spark.scale.setScalar(1.2 - k);
         spark.rotation.set(k * 5, k * 3, 0);
       }
+      roll(time);
     };
     tick(0);
-    return { group: g, tick };
+    return { group: g, tick, knock };
   }
   if (what === 'teacup') {
     // The saucer, the cup on it (a blue band round it, tea in it), and its handle.

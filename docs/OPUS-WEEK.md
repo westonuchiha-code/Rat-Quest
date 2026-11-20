@@ -45,7 +45,7 @@ deliberately broken version. The Hall: 2,020 draw calls at the start of the week
 20 household objects (`world/junkModels.ts`, sizes and solids `JUNK` in `world/layout.ts`), all in the level editor.
 A candle gives light and drips; a reel's thread sways; a teacup steams; a marble glints; a battery sparks. Landing beside
 one (`chamber.thump`) makes a matchbox's matches rattle, a die tip, a marble roll, a reel rock, tea slop, a spoon tap, a
-sardine lid wobble: each moving part is tagged `userData.moves` so the gathering leaves it alone (tests/oddments.ts). Textures on the Club's
+sardine lid wobble, a pawn rock, a battery roll: each moving part is tagged `userData.moves` so the gathering leaves it alone (tests/oddments.ts). Textures on the Club's
 furniture, banners, torches, shelves, pipes, chains, lamps, gauges, roots, speaker, dartboard (seven new painted
 textures in `render/textures.ts`). Title boards say the old name and TEST ROOM N. Drop-in fonts and voices
 (`assets/fonts`, `assets/voices`). An icon for the page.

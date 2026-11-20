@@ -75,7 +75,8 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   ] } as never);
   const moving: THREE.Object3D[] = [];
   ch.group.traverse((o) => { if (o.userData.moves) moving.push(o); });
-  const matches = moving.filter((o) => o.type === 'Group');
+  // (A match is a little group of two: its stick and its head. The battery's roll is a group too, of more.)
+  const matches = moving.filter((o) => o.type === 'Group' && o.children.length === 2);
   // (Rounded to a ten-thousandth, and never a minus nought: a rattle that has died away leaves a millionth or less.)
   const r4 = (v: number): number => Math.round(v * 1e4) / 1e4 + 0;
   const where = (): string => matches.map((m) => `${r4(m.position.y)},${r4(m.rotation.y)}`).join(' ');
@@ -177,6 +178,27 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   check('...the spoon\'s handle lifts and taps, the lid wobbles', most[0] > 0.02 && most[1] > 0.05, most.map((m) => m.toFixed(3)).join(', '));
   ch.update(8);
   check('...and both lie still again', movers.every((m) => m.rotation.z === 0));
+}
+{
+  // A chess pawn rocks on its foot; a battery rolls a little across its length and back.
+  const ch = buildChamber({ solids: [], pit: null, water: [], movers: [], decor: [
+    { kind: 'junk', what: 'pawn', x: 0, y: 0, z: 0, yaw: 0 },
+    { kind: 'junk', what: 'battery', x: 10, y: 0, z: 0, yaw: 0 },
+  ] } as never);
+  const joints: THREE.Object3D[] = [];
+  ch.group.traverse((o) => { if (o.userData.moves && o.type === 'Group' && o.parent?.parent === ch.group) joints.push(o); });
+  ch.update(3);
+  check('a chess pawn and a battery each answer a landing beside them', joints.length === 2 && ch.thump(0, 0, -1.2, 1).join() === 'pawn' && ch.thump(10, 0, -1.2, 1).join() === 'battery', `${joints.length} moving joints`);
+  let tip = 0;
+  let roll = 0;
+  for (let t = 3; t < 4; t += 0.01) {
+    ch.update(t);
+    tip = Math.max(tip, 2 * Math.acos(Math.min(1, Math.abs(joints[0].quaternion.w))));
+    roll = Math.max(roll, joints[1].position.z);
+  }
+  check('...the pawn rocks (less than a die), the battery rolls away from him, no further than a sixth of its width', tip > 0.02 && tip < 0.5 && roll > 0.02 && roll <= JUNK.battery.d / 6 + 1e-9, `pawn ${tip.toFixed(3)} radians, battery ${roll.toFixed(3)} of ${(JUNK.battery.d / 6).toFixed(3)}`);
+  ch.update(8);
+  check('...and both lie as they were', joints[0].quaternion.w === 1 && joints[1].position.z === 0 && joints[1].rotation.x === 0);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

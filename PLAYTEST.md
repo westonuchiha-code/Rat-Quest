@@ -20,7 +20,8 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 **The odds and ends** (household junk at a rat's size, in the Hall, the Club and 17 rooms: `src/levels/oddments.ts`)
 - Whether any stands somewhere you use: moving or removing one is one line in that file.
 - Land beside them: a matchbox's matches rattle, a die tips, a marble rolls and rocks back, a cotton reel rocks, a
-  teacup rattles and its tea slops, a spoon taps, a sardine tin's lid wobbles. Whether each is too much or too little
+  teacup rattles and its tea slops, a spoon taps, a sardine tin's lid wobbles, a chess pawn rocks, a battery
+  rolls a little. Whether each is too much or too little
   is one number in `src/world/junkModels.ts`.
 - Their little sounds (a knock for wood, bone and glass, a tink for tin and china), unheard: `src/main.ts`, by the
   landing sound.
