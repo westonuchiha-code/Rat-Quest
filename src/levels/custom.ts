@@ -21,6 +21,7 @@ export type PieceType =
   | 'plate' | 'lamp' | 'chain' | 'window' | 'slime' | 'web' | 'brazier' | 'vent' | 'speaker' | 'couch' | 'light'
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
   | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon' | 'safetypin' | 'paperclip' | 'crayon' | 'marble'
+  | 'lever' | 'crackwall' | 'crackfloor'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
@@ -76,7 +77,7 @@ export interface PieceProps {
   /** Enemies: 0 or nothing = waiting in the room at the start; 1, 2, 3... = arrives with that wave, after the last is beaten. */
   wave?: number;
   /** A gate: what lifts it. Default: when the goals are done. */
-  opens?: 'goals' | 'pipes' | 'plates';
+  opens?: 'goals' | 'pipes' | 'plates' | 'levers';
   /** A moving platform: which way it glides ('up' is a lift), how far, how fast and how long it waits at each end. */
   move?: 'up' | 'n' | 'e' | 's' | 'w';
   travel?: number;
@@ -185,6 +186,7 @@ export function checkCustom(c: CustomLevel): string[] {
   for (const g of c.pieces.filter((q) => q.t === 'gate')) {
     if (g.props?.opens === 'pipes' && count('pipe') === 0) out.push('A gate that opens with pipes needs a wall pipe on the map.');
     if (g.props?.opens === 'plates' && count('plate') === 0) out.push('A gate that opens with plates needs a floor plate on the map.');
+    if (g.props?.opens === 'levers' && count('lever') === 0) out.push('A gate that opens with levers needs a lever on the map.');
   }
   return out;
 }
@@ -218,6 +220,8 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   const waveSpecs: EnemySpec[][] = [];
   const plates: NonNullable<LevelDef['plates']> = [];
   const gatePieces: Array<{ spec: GateSpec; opens: string }> = [];
+  /** How many levers (world/strikeables.ts): a gate set to open by levers waits for all of them. */
+  let levers = 0;
   const contents: Array<string | null> = [];
   const items = new Items(id);
   let spawn = { x: 0, y: 0, z: 0, facing: Math.PI };
@@ -552,6 +556,22 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         solids.push(...junkSolids(p.t, cx, p.top, cz, yaw));
         break;
       }
+      // Things to hit (world/strikeables.ts): the room makes their solids.
+      case 'lever': {
+        const yaw = { s: 0, n: Math.PI, e: Math.PI / 2, w: -Math.PI / 2 }[p.dir ?? 's'];
+        decor.push({ kind: 'lever', x: cx, y: p.top, z: cz, yaw });
+        levers++;
+        break;
+      }
+      case 'crackwall': {
+        // Its box is the slab: `top` its height above `bottom` (the floor it stands on, 0 if not set).
+        const base = p.bottom ?? 0;
+        decor.push({ kind: 'crackwall', x: cx, y: base, z: cz, w: Math.max(0.4, x1 - x0), h: Math.max(0.5, p.top - base), d: Math.max(0.4, z1 - z0) });
+        break;
+      }
+      case 'crackfloor':
+        decor.push({ kind: 'crackfloor', x: cx, y: p.top, z: cz, w: Math.max(1, x1 - x0), d: Math.max(1, z1 - z0) });
+        break;
       case 'stool':
         decor.push({ kind: 'stool', x: cx, y: p.top, z: cz });
         solids.push(...stoolSolids(cx, p.top, cz));
@@ -586,6 +606,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   for (const g of gatePieces) {
     if (g.opens === 'pipes') g.spec.pipes = pipes.map((_, i) => i);
     else if (g.opens === 'plates') g.spec.plates = plates.map((_, i) => i);
+    else if (g.opens === 'levers') g.spec.levers = Array.from({ length: levers }, (_, i) => i);
     else g.spec.onGoals = true;
   }
   // Goals: the ones the builder chose, or else what is in the level: beasts to beat, pipes to burst, else just reach the door.

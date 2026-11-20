@@ -8,6 +8,7 @@ import { input } from './core/input';
 import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
+import { leversOn, strikeThings } from './world/strikeables';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -2374,7 +2375,7 @@ function startGame(): void {
     const vyBefore = player.velocity.y;
     // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
     if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
-    // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`.
+    // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`, `&autoswing`, `&autoplunge`.
     // (`&autofight`, `&autolift` and `&carryfoe`, which reach into the fight and his hands, are below.)
     if (filmDrive) {
       const pad = { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed };
@@ -2759,6 +2760,28 @@ function startGame(): void {
       hitStop = Math.max(hitStop, 0.05);
       shake = Math.max(shake, 0.05);
       rumble.block();
+    }
+    // Things to hit (world/strikeables.ts): a lever flipped, a cracked wall struck or down, a cracked floor plunged through.
+    if (chamber.strike) {
+      for (const ev of strikeThings(chamber.strike.things, player)) {
+        const t = chamber.strike.things[ev.index];
+        t.struckAt = worldClock;
+        if (ev.kind === 'flip') {
+          audio.play('leverThrow', { vol: 0.85, rate: ev.on ? 1 : 0.9, priority: 7 });
+          hitStop = Math.max(hitStop, 0.03);
+        } else if (ev.kind === 'crack') {
+          audio.play('stoneCrack', { vol: 0.9, rate: roll(0.95, 1.08), priority: 7 });
+          hitStop = Math.max(hitStop, 0.04);
+          shake = Math.max(shake, 0.05);
+        } else {
+          chamber.strike.remove(ev.index);
+          debris.burst(t.x, t.y + t.h / 2, t.z, Math.min(1.2, Math.max(t.w, t.d) / 2), player.position.x, player.position.z, 'pipe');
+          audio.play('stoneFall', { vol: 1, rate: roll(0.95, 1.05), priority: 8 });
+          shake = Math.max(shake, 0.14);
+          rumble.smash();
+        }
+      }
+      chamber.strike.show(worldClock);
     }
     if (events.glanced) {
       // Off the ironback's shell: a clank, sparks, and his arm jarred.
@@ -3362,7 +3385,7 @@ function startGame(): void {
   const devCarryFoe = /[#&]carryfoe\b/.test(location.hash);
   let devCarried = false;
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
-  const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
+  const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
   (window as unknown as { __cost?: () => unknown }).__cost = () => {
@@ -3884,7 +3907,10 @@ function startGame(): void {
       const byGoals = !!g.spec.onGoals && goals.mainDone(aliveCount());
       const foes = g.spec.foes ?? [];
       const byFoes = foes.length > 0 && foes.every((i) => !enemies[i]?.alive);
-      if (byPipes || byGoals || byPlates || byFoes) {
+      // (Levers all on at once, world/strikeables.ts; an echo puzzle solved, world/musicFloor.ts.)
+      const byLevers = !!chamber.strike && leversOn(chamber.strike.things, g.spec.levers ?? []);
+      const byEcho = !!g.spec.echo && !!musicFloor?.solved(g.spec.echo);
+      if (byPipes || byGoals || byPlates || byFoes || byLevers || byEcho) {
         chamber.openGate(g);
         shake = Math.max(shake, 0.12);
       }

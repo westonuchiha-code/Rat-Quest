@@ -27,6 +27,12 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
   landing sound.
 - Left alone they do things too: candles drip, the teacup steams, a marble glints, a battery sparks.
 
+**Things to hit** (the Yard, Test Room 14; and the Music Room's prize gate)
+- A cracked wall takes three blows (a heavy blade, two): one number, `STRIKE.wallHits` in `src/world/strikeables.ts`.
+- The lever's clunk, the stone's crack and its fall: unheard.
+- The cellar under the cracked floor is 2 deep: a jump and a second in the air get him out. Whether that is a chore.
+- Solve the Music Room's echo puzzle: the gate in the east wall lifts.
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

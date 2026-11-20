@@ -25,6 +25,7 @@ export const LYING: Record<string, { right: [number, number]; left: [number, num
   hub: { right: [2.8, 14.9], left: [-2.9, 16.6] },
   workshop: { right: [3.2, 9.4], left: [-3.2, 9.8] },
   musicroom: { right: [3.4, 10.4], left: [-3.4, 10.8] },
+  breakyard: { right: [3.4, 9.4], left: [-3.4, 9.8] },
   // The side areas (Test Room 1B, 3B ... 9B), 2026-11-18.
   milkyway: { right: [2.8, -7.1], left: [-2.9, -5.4] },
   bigdipper: { right: [2.8, -7.1], left: [-2.9, -5.4] },

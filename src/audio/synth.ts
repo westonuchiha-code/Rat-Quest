@@ -232,6 +232,9 @@ export const SFX_NAMES = [
   // Tricks on the shield (BACKLOG B4, 2026-11-18): the air whirling past in a spin, a paw slapped onto the shield's
   // rim for a grab, and a short horn stab when tricks are landed (played higher the more there were).
   'spinWhirl', 'grabSlap', 'trickStab',
+  // Things to hit (world/strikeables.ts, 2026-11-20): a lever thrown over (a ratchet and an iron clunk), a cracked
+  // wall taking a blow (a stone snap and grit), and a slab of stone coming down (a low crash and rubble running on).
+  'leverThrow', 'stoneCrack', 'stoneFall',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -515,6 +518,35 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const thud = sine(c.osc(0, 120 * Math.exp(-10 * t) + 48)) * Math.exp(-t * 18) * 0.8;
       const grit = c.lp(0, c.r() * 2 - 1, 0.4) * Math.exp(-t * 22) * 0.35;
       return Math.tanh(body(x) * 22 + thud + grit) * Math.min(1, (0.42 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // A lever thrown: three quick ratchet clicks, then a heavy iron clunk as it comes over.
+  leverThrow: () => draw(0.4, RATE_HI, 271, (c) => {
+    const ring = knock(620, RATE_HI, 0.99);
+    const clicks = [0, 0.045, 0.09];
+    return (t) => {
+      let x = 0;
+      for (const at of clicks) if (t >= at && t < at + 0.002) x += (c.r() * 2 - 1) * 0.5;
+      const clunk = t > 0.15 ? sine(c.osc(0, 140 * Math.exp(-12 * (t - 0.15)) + 70)) * Math.exp(-(t - 0.15) * 22) : 0;
+      if (t >= 0.15 && t < 0.153) x += (c.r() * 2 - 1);
+      return Math.tanh(ring(x) * 18 + clunk * 0.9) * Math.min(1, (0.4 - t) / 0.05);
+    };
+  }, { bits: 7 }),
+  // A blow on cracked stone: a sharp snap, a dull body, and grit trickling after.
+  stoneCrack: () => draw(0.45, RATE_HI, 272, (c) => (t) => {
+    const snap = (c.r() * 2 - 1) * Math.exp(-t * 90) * 0.9;
+    const body = sine(c.osc(0, 210 * Math.exp(-9 * t) + 80)) * Math.exp(-t * 20) * 0.7;
+    const grit = c.lp(0, c.r() * 2 - 1, 0.45) * (c.r() < 0.25 ? 1 : 0.2) * Math.exp(-t * 7) * 0.35;
+    return Math.tanh((snap + body + grit) * 1.3) * Math.min(1, (0.45 - t) / 0.06);
+  }, { bits: 7 }),
+  // Stone coming down: a low crash, then rubble knocking and running on for a while.
+  stoneFall: () => draw(1.1, RATE_LO, 273, (c) => {
+    const lumps = Array.from({ length: 12 }, (_, i) => ({ at: 0.03 + i * 0.07 + c.r() * 0.05, amp: (1 - i / 14) * (0.5 + c.r() * 0.5), ring: knock(160 + c.r() * 420, RATE_LO, 0.97) }));
+    return (t) => {
+      const crash = sine(c.osc(0, 90 * Math.exp(-5 * t) + 40)) * Math.exp(-t * 6) * 0.8 + c.lp(0, c.r() * 2 - 1, 0.35) * Math.exp(-t * 4) * 0.7;
+      let v = 0;
+      for (const l of lumps) v += l.ring(Math.abs(t - l.at) < 0.004 ? (c.r() * 2 - 1) * l.amp : 0);
+      return Math.tanh((crash + v * 20) * 1.1) * Math.min(1, (1.1 - t) / 0.2);
     };
   }, { bits: 7 }),
   // A creature in his hands: its legs scrabbling at the air, quick dry clicks that run down.

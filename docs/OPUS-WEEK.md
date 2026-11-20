@@ -7,7 +7,9 @@
 and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 13 commits, listed under the group each
 belongs to below (marked *main.ts*); the last ones add a few lines by the landing sound: it calls `chamber.thump`, and
 plays a quiet knock or tink for each kind of odd-and-end that answered. And a few more after his update: the Music Room's floor
-keys and echo puzzle (`world/musicFloor.ts`). Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
+keys and echo puzzle (`world/musicFloor.ts`). And the things to hit (`world/strikeables.ts`): a block after the
+fight's crate events that strikes them and plays what happened, two more ways for `updateGates` to lift a gate
+(`levers`, `echo`), and two more words that switch on the film drive. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
 
 ## 1. Changes to how the game PLAYS (review these first)
 
@@ -50,6 +52,12 @@ sardine lid wobble, a pawn rock, a battery roll: each moving part is tagged `use
 furniture, banners, torches, shelves, pipes, chains, lamps, gauges, roots, speaker, dartboard (seven new painted
 textures in `render/textures.ts`). Title boards say the old name and TEST ROOM N. Drop-in fonts and voices
 (`assets/fonts`, `assets/voices`). An icon for the page.
+
+Things to hit (`world/strikeables.ts`, `strikeModels.ts`; the Yard, Test Room 14; `tests/strikeables.ts`): a lever
+the sword flips (a gate can wait for levers), a cracked wall three blows bring down, a cracked floor only a plunge
+breaks. In the editor. A gate in the Music Room that its echo puzzle lifts. Nothing in the existing levels uses
+them. **Worth your eye:** combat.ts is untouched, so they use their own copy of the crate's swing test (arc and
+reach): if the crate's changes, theirs will not follow.
 
 ## 4. Tools, tests and notes (no effect on the game)
 

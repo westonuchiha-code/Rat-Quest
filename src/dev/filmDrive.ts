@@ -12,6 +12,8 @@
  *   &autowalk=x,z        runs steadily that way
  *   &autogo=x,z,x,z...   runs to each place in turn and hops there (&gostow=2,5: presses STOW at those stops)
  *   &autojump            jumps every two seconds, and again at the top
+ *   &autoswing=N         swings his sword every N seconds (1.2 if no N), standing where he is
+ *   &autoplunge          jumps every three seconds, again at the top, and plunges as he falls
  * (Kept in main.ts, because they move what is in his hands or choose whom to fight: &autofight, &autolift, &carryfoe.)
  */
 import * as THREE from 'three';
@@ -59,6 +61,11 @@ export class FilmDrive {
   private readonly goStow: number[];
   private goStop = 0;
   private readonly jump: boolean;
+  private readonly swing: number;
+  private swingAt = 0;
+  private readonly plunge: boolean;
+  private plungeAt = 2;
+  private plungeStep = 0;
   private jumpAt = 1;
   private jumpTwice = false;
   readonly chaos: { seed: number; t: number; next: number; dir: [number, number]; last: { x: number; z: number; t: number }; said: Map<string, number>; lowest?: number; room: string } | null;
@@ -71,6 +78,9 @@ export class FilmDrive {
     this.go = nums(hash, 'autogo');
     this.goStow = nums(hash, 'gostow') ?? [];
     this.jump = /[#&]autojump\b/.test(hash);
+    const sw = /[#&]autoswing(?:=([\d.]+))?\b/.exec(hash);
+    this.swing = sw ? Number(sw[1] ?? 1.2) || 1.2 : 0;
+    this.plunge = /[#&]autoplunge\b/.test(hash);
     const c = /[#&]chaos=(\d+)/.exec(hash);
     this.chaos = c ? { seed: Math.max(1, Number(c[1]) || 1), t: 0, next: 0, dir: [0, 1], last: { x: 0, z: 0, t: 0 }, said: new Map(), room: '' } : null;
   }
@@ -167,6 +177,29 @@ export class FilmDrive {
         pad.jumpPressed = true;
       }
       pad.jumpHeld = pad.jumpHeld || !p.grounded || pad.jumpPressed;
+    }
+    if (this.swing > 0) {
+      this.swingAt += dt;
+      if (this.swingAt > this.swing && p.grounded) {
+        this.swingAt = 0;
+        pad.attackPressed = true;
+      }
+    }
+    if (this.plunge) {
+      // Up, up again at the top, and down sword first.
+      this.plungeAt += dt;
+      if (this.plungeStep === 0 && this.plungeAt > 3 && p.grounded) {
+        this.plungeAt = 0;
+        this.plungeStep = 1;
+        pad.jumpPressed = true;
+      } else if (this.plungeStep === 1 && !p.grounded && p.velocity.y <= 0) {
+        this.plungeStep = 2;
+        pad.jumpPressed = true;
+      } else if (this.plungeStep === 2 && !p.grounded && p.velocity.y <= 0 && this.plungeAt > 0.9) {
+        this.plungeStep = 0;
+        pad.attackPressed = true;
+      }
+      pad.jumpHeld = pad.jumpHeld || (!p.grounded && this.plungeStep > 0) || pad.jumpPressed;
     }
   }
 

@@ -63,10 +63,13 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('crate', 'Crate', 'C', '#c08a4a', 'things', 'Breaks when hit. It can hold a collectible, or be bound in iron (only a heavy blade breaks it).'),
     P('barrel', 'Barrel', 'B', '#a06a3a', 'things', 'Breaks when hit. It can hold a collectible.'),
     P('pipe', 'Wall pipe', 'Pi', '#9a6a3a', 'things', 'A pipe on a wall that he can burst: a goal, or what opens a gate.'),
-    P('gate', 'Gate', '', '#caa84a', 'things', 'Bars that lift when the goals are done, the pipes burst, or the plates are pressed.'),
+    P('gate', 'Gate', '', '#caa84a', 'things', 'Bars that lift when the goals are done, the pipes burst, the plates are pressed, or every lever is over.'),
     P('plate', 'Floor plate', 'K', '#d8a83a', 'things', 'A plate to stand on. Press them all to open a gate; or set it to put in a creature each time it is stepped on (a button).'),
     P('pot', 'Clay pot', 'Po', '#c0603a', 'things', 'A pot to pick up and throw (STOW lifts, ATTACK throws). Light; it breaks, and can hold a collectible.'),
     P('rock', 'Rock', 'Rk', '#8a8a92', 'things', 'A rock to pick up and throw. It does not break: throw it again.'),
+    P('lever', 'Lever', 'Lv', '#c8302a', 'things', 'A lever the sword flips over and back. A gate can open when every lever is over (ON).'),
+    P('crackwall', 'Cracked wall', 'Cw', '#b8aa98', 'things', 'A slab of cracked stone: three sword blows bring it down (a heavy blade, two). Its height is the top.'),
+    P('crackfloor', 'Cracked floor', 'Cf', '#b0a490', 'things', 'A slab of cracked floor: it holds him, but a plunge breaks it, and he goes through.'),
   ] },
   { id: 'collect', label: 'Collectibles', items: [
     P('crumb', 'Cheese crumb', 'c', '#ffd23a', 'collect', 'A cheese crumb.'),
@@ -145,7 +148,7 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
 const FACES = new Set<PieceType>(['plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
@@ -915,7 +918,7 @@ export class Builder {
       else if (ds.pp === 'pause') props.pause = Math.max(0, Number(t.value) || 0);
       else if (ds.pp === 'color') props.color = t.value;
       else if (ds.pp === 'flash') props.flash = Math.max(0, Math.min(8, Number(t.value) || 0));
-      else if (ds.pp === 'opens') props.opens = t.value === 'pipes' ? 'pipes' : t.value === 'plates' ? 'plates' : 'goals';
+      else if (ds.pp === 'opens') props.opens = t.value === 'pipes' ? 'pipes' : t.value === 'plates' ? 'plates' : t.value === 'levers' ? 'levers' : 'goals';
       else if (ds.pp === 'spawns') {
         const k = ENEMY_PIECES.find((e) => e === t.value && e !== 'brood' && e !== 'wyrm');
         if (k) props.spawns = k;
@@ -1098,7 +1101,7 @@ export class Builder {
       } else h += '<div class="note">A boss: its name and health show along the bottom while it fights. Give it a wide, clear floor.</div>';
       if (p.t === 'bat') h += `<div class="field"><span>Hangs from</span>${sel('perch', pr.perch ?? 'rock', [['rock', 'a knob of rock'], ['chain', 'a chain']])}</div>`;
     }
-    if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed']])}</div>`;
+    if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed'], ['levers', 'every lever is over']])}</div>`;
     if (p.t === 'lift') {
       h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up']])}</div>`;
       h += `<div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;

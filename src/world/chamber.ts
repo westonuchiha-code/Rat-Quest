@@ -4,6 +4,8 @@ import { buildBrazier } from './brazierModel';
 import { buildForge, type ForgeMats } from './forgeModels';
 import { buildCouch } from './couchModel';
 import { buildJunk } from './junkModels';
+import { buildStrike, type BuiltStrike } from './strikeModels';
+import { STRIKE, newStrikeable, type Strikeable } from './strikeables';
 import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
@@ -90,6 +92,8 @@ export interface Chamber {
   thump(x: number, y: number, z: number, strength: number): JunkKind[];
   /** Music underfoot, if the room has any (world/musicFloor.ts): its pads, and a way to show which are lit and pressed. */
   music?: { pads: MusicPad[]; show(lit: readonly number[], down: readonly boolean[], flash: readonly number[], time: number): void };
+  /** Things to hit, if the room has any (world/strikeables.ts): their states, a way to show them, and to take one away (broken). */
+  strike?: { things: Strikeable[]; show(time: number): void; remove(index: number): void };
 }
 
 /** The picture each kind wears unless the box says otherwise. */
@@ -740,6 +744,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Music underfoot (world/musicFloor.ts): its pads, and how each is drawn. */
   const musicPads: MusicPad[] = [];
   const musicLooks: Array<{ body: THREE.Mesh; glow: THREE.MeshBasicMaterial; rest: number }> = [];
+  /** Things to hit (world/strikeables.ts): their states, looks and solids, in level order. */
+  const strikeThings: Strikeable[] = [];
+  const strikeLooks: BuiltStrike[] = [];
+  const strikeSolids: Aabb[] = [];
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
   const knockables: Array<{ what: JunkKind; x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
@@ -1760,6 +1768,22 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(glow);
       musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
       musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
+    } else if (d.kind === 'lever' || d.kind === 'crackwall' || d.kind === 'crackfloor') {
+      // Things to hit (world/strikeables.ts, strikeModels.ts): drawn, solid, and struck by main.ts.
+      const L = STRIKE.lever;
+      const t = d.kind === 'lever' ? newStrikeable('lever', d.x, d.y, d.z, L.w, L.h, L.d)
+        : d.kind === 'crackwall' ? newStrikeable('crackwall', d.x, d.y, d.z, d.w, d.h, d.d, d.hits)
+        : newStrikeable('crackfloor', d.x, d.y - 0.4, d.z, d.w, 0.4, d.d);
+      const built = buildStrike(d, { stone: lit('cutStone'), iron: lit('wroughtIron'), plain: plainMat });
+      built.group.position.set(d.x, d.y, d.z);
+      group.add(built.group);
+      // (A lever's solid is its base only: the handle is struck, not stood on.)
+      const solidH = d.kind === 'lever' ? 0.35 : t.h;
+      const aabb = makeAabb(t.x, t.y + solidH / 2, t.z, t.w, solidH, t.d);
+      colliders.push(aabb);
+      strikeThings.push(t);
+      strikeLooks.push(built);
+      strikeSolids.push(aabb);
     } else if (d.kind === 'junk') {
       // Household junk at a rat's size (junkModels.ts). A candle lights the room round it, and its flame shivers.
       const built = buildJunk(d.what, {
@@ -2536,5 +2560,14 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       });
     },
   } : undefined;
-  return { music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  const strike = strikeThings.length ? {
+    things: strikeThings,
+    show: (time: number): void => strikeLooks.forEach((b, i) => b.show(strikeThings[i], time)),
+    remove: (index: number): void => {
+      strikeThings[index].gone = true;
+      const i = colliders.indexOf(strikeSolids[index]);
+      if (i >= 0) colliders.splice(i, 1);
+    },
+  } : undefined;
+  return { strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

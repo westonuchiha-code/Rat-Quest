@@ -324,6 +324,14 @@ export type Decor =
   | { kind: 'keg'; x: number; y: number; z: number; yaw: number }
   /** Household junk at a rat's size (junkModels.ts): what, where, which way. */
   | { kind: 'junk'; what: JunkKind; x: number; y: number; z: number; yaw: number }
+  /**
+   * Things to hit (world/strikeables.ts), solid, the room makes their solids: a LEVER the sword flips (its post at x, z
+   * on a floor at y; `yaw` the way it throws over); a CRACKED WALL, a slab w by h by d standing on y, that `hits` sword
+   * blows bring down; a CRACKED FLOOR, a slab w by d whose top is y, that only a plunge breaks.
+   */
+  | { kind: 'lever'; x: number; y: number; z: number; yaw: number }
+  | { kind: 'crackwall'; x: number; y: number; z: number; w: number; h: number; d: number; hits?: number }
+  | { kind: 'crackfloor'; x: number; y: number; z: number; w: number; d: number }
   /** A rug on the floor (drawn only): round (`r`), or a runner `w` by `d`. `colors`: its edge, its middle, its marks. */
   | { kind: 'rug'; x: number; y: number; z: number; yaw: number; r?: number; w?: number; d?: number; colors: [number, number, number] }
   /** A dance floor of lit tiles (drawn only), `nx` by `nz` of them, each `tile` across. */
@@ -475,6 +483,10 @@ export interface GateSpec {
   onGoals?: boolean;
   /** Opens when all of these creatures (by their order in the level's `enemies`) are beaten. */
   foes?: number[];
+  /** Opens when all of these levers (world/strikeables.ts; by their order among the room's levers) are on at once. */
+  levers?: number[];
+  /** Opens when the echo puzzle of this name (world/musicFloor.ts) is solved. */
+  echo?: string;
 }
 
 /**

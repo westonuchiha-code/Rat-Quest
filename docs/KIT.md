@@ -49,6 +49,30 @@ rolls. Each answers with a quiet knock (wood, bone, glass) or tink (tin, china).
   every pad flashes, the clear chime). Wrong: a buzz (`chipBuzz`), and it waits for the start pad again. `echoPads(id, y)`
   lays four (C, E, G, the C above) and a start pad. A level could hang a door or a reward on `solved`: nothing does yet.
 - main.ts steps it after him (a few lines by his update) and the room shows what is lit and pressed (`Chamber.music`).
+- **A gate the puzzle lifts**: a gate's `echo: '<puzzle>'` (GateSpec in layout.ts) lifts it once that puzzle is solved.
+  The Music Room has one, in the east wall, with a cheese crumb behind it.
+
+## Things to hit (`src/world/strikeables.ts`, looks in `strikeModels.ts`; `tests/strikeables.ts`; the Yard, Test Room 14)
+
+Each is a decor; the room draws it and makes it solid (`Chamber.strike`), and main.ts strikes them after the fight
+is resolved (`strikeThings(things, player)`), plays what it says and shows them. In the editor, under "Breakables and
+machines": Lever, Cracked wall, Cracked floor.
+
+| part | decor | what breaks or moves it | numbers (`STRIKE`) |
+|------|-------|-------------------------|--------------------|
+| lever | `{ kind: 'lever', x, y, z, yaw }` | a sword swing throws it over (ON); the next throws it back. Once a swing. A plunge does nothing. | its post `lever` 0.5 by 1.3 high; only its base is solid |
+| cracked wall | `{ kind: 'crackwall', x, y, z, w, h, d, hits? }` | sword blows: it cracks at each, and falls at `hits` (default `wallHits` 3). A heavy blade (damage 2 or more) counts two. A plunge's blast does not touch it. | `wallHits` 3, `heavyBlade` 2, `heavyCounts` 2 |
+| cracked floor | `{ kind: 'crackfloor', x, y, z, w, d }` (y is its top) | only a PLUNGE landing on its top. Walked on, dropped on, swung at, it holds. Broken, he goes through. | 0.4 thick |
+
+- **A gate the levers lift**: a gate's `levers: [0, 1]` lifts it when those levers (counted among the room's levers
+  only, first is 0) are all over at once. In the editor: a Gate's "Opens when", "every lever is over".
+- Measured from the box's nearest side, so a wide wall is struck anywhere along it, as a crate is.
+- Sounds: `leverThrow`, `stoneCrack`, `stoneFall` (audio/synth.ts; unheard). A wall or floor coming down throws the
+  same shards a pot does (world/debris.ts).
+- Shown in the Yard: one lever and its gate; two levers and a gate that waits for both; a cracked wall closing a nook;
+  a stone stage with a cracked slab in its top over a cellar. A cheese crumb behind each. Film: `&autoswing=N` (a
+  swing every N seconds) and `&autoplunge` (jump, jump, plunge), dev/filmDrive.ts.
+- Not done: a breakable jar (the clay pot already is one: it breaks, and can hold a collectible).
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

@@ -11,7 +11,7 @@
  */
 import { compileCustom, type CustomLevel } from './custom';
 import type { LevelDef } from './types';
-import type { Decor } from '../world/layout';
+import type { Decor, GateSpec } from '../world/layout';
 
 const HX = 26;
 const HZ = 15;
@@ -51,6 +51,9 @@ export function echoPads(puzzle = 'echo', y = 0): Decor[] {
   return out;
 }
 
+/** A nook in the east wall that the echo puzzle opens (a gate's `echo`): its walls, mouth and gate. */
+export const PRIZE = { x0: HX - 5, mouth: HX - 5, z: 5, half: 2.75, top: 6, gate: 3.5 } as const;
+
 const room: CustomLevel = {
   name: 'The Music Room',
   blurb: 'A piano on the floor to walk on, and an echo puzzle: listen to the tune, then play it back.',
@@ -60,6 +63,11 @@ const room: CustomLevel = {
     { t: 'floor', x0: -HX, z0: -HZ, x1: HX, z1: HZ, top: 0 },
     { t: 'spawn', x0: 0, z0: HZ - 3, x1: 0, z1: HZ - 3, top: 0 },
     { t: 'exit', x0: 0, z0: HZ, x1: 0, z1: HZ, top: 0, dir: 'n' },
+    // The prize nook: two walls out from the east wall, a lintel over its gate, and a cheese crumb inside.
+    { t: 'wall', x0: PRIZE.x0, z0: PRIZE.z - PRIZE.half - 0.5, x1: HX, z1: PRIZE.z - PRIZE.half, top: PRIZE.top },
+    { t: 'wall', x0: PRIZE.x0, z0: PRIZE.z + PRIZE.half, x1: HX, z1: PRIZE.z + PRIZE.half + 0.5, top: PRIZE.top },
+    { t: 'wall', x0: PRIZE.mouth - 0.25, z0: PRIZE.z - PRIZE.half, x1: PRIZE.mouth + 0.25, z1: PRIZE.z + PRIZE.half, top: PRIZE.top, bottom: PRIZE.gate },
+    { t: 'crumb', x0: HX - 2.5, z0: PRIZE.z, x1: HX - 2.5, z1: PRIZE.z, top: 0 },
   ],
 };
 
@@ -69,5 +77,7 @@ export function musicRoom(): LevelDef {
     { kind: 'sign', x: PIANO.x0 + PIANO.white.w * 4, y: 4.5, z: -HZ + 0.06, yaw: 0, w: 9, h: 2.2, lines: ['FLOOR PIANO', 'step on a key to play it,', 'the black ones too'], post: 0 },
     { kind: 'sign', x: ECHO_AT.x, y: 4.5, z: -HZ + 0.06, yaw: 0, w: 9, h: 2.2, lines: ['ECHO', 'stand on the white pad, listen,', 'then play the tune back'], post: 0 },
   ];
-  return { ...def, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...boards] };
+  // The gate the echo puzzle lifts (main.ts updateGates: a gate's `echo`).
+  const gates: GateSpec[] = [{ x: PRIZE.mouth, z: PRIZE.z, width: PRIZE.half * 2, height: PRIZE.gate, alongZ: true, echo: 'echo' }];
+  return { ...def, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...boards], gates: [...(def.gates ?? []), ...gates] };
 }
