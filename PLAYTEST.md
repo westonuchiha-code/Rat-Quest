@@ -39,6 +39,8 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - The spikes: up 1.2 seconds in every 3 after half a second's warning. Whether the warning reads.
 - The fan: how fast it lifts him and where he hovers (`HAZARD.fan`). Whether steering off it onto the ledge is easy.
 - The blade's swish and the spikes' snap: unheard.
+- The buttons in front of each bay put a roach in: watch the belt carry it, the blades and spikes strike it, the
+  fan blow it off. Whether a creature should be lifted by a fan as he is (it is not: they have no fall of their own).
 
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.

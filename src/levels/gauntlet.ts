@@ -6,7 +6,8 @@
  *   SPIKES       a corridor of four spike plates, each coming up a quarter of a beat after the one before.
  *   FANS         a fan in the floor that lifts him up onto a high ledge; and one that runs and stops, under a crumb
  *                hanging in the air.
- * A cheese crumb at the end of each, for something to reach. Kit parts (docs/KIT.md): `belt`, `blade`, `spikes`, `fan`.
+ * A cheese crumb at the end of each, for something to reach. A button in front of each bay puts a roach into it, to see
+ * the hazard act on a creature: carried, struck, blown off the fan. Kit parts (docs/KIT.md): `belt`, `blade`, `spikes`, `fan`.
  */
 import { compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
@@ -23,6 +24,9 @@ export const LEDGE = { top: 7, front: -11 } as const;
 export const FANS = { lift: { x: GAUNTLET.fans, z: -8, r: 1.5, height: 9 }, pulse: { x: 28, z: -2, r: 1.3, height: 8, on: 3, off: 3 } } as const;
 export const BLADES = { length: 4, pivot: 5, swing: 0.6, period: 2.4, at: [-2, -8] } as const;
 export const SPIKE_ROW = { period: 3, up: 1.2, at: [-2, -5, -8, -11], d: 2 } as const;
+
+/** The roach buttons: where each stands (its roach comes in 6 north of it). */
+export const ROACH_BUTTONS: Array<[number, number]> = [[GAUNTLET.belts, 5], [GAUNTLET.blades, 4], [GAUNTLET.spikes, 4], [GAUNTLET.fans, -2]];
 
 const box = (t: Piece['t'], x0: number, z0: number, x1: number, z1: number, top: number, extra: Partial<Piece> = {}): Piece => ({ t, x0, z0, x1, z1, top, ...extra });
 const crumb = (x: number, z: number, top = 0): Piece => ({ t: 'crumb', x0: x, z0: z, x1: x, z1: z, top });
@@ -50,6 +54,9 @@ const room: CustomLevel = {
     box('platform', GAUNTLET.fans - 6, -HZ, GAUNTLET.fans + 6, LEDGE.front, LEDGE.top, { bottom: 0 }),
     crumb(GAUNTLET.fans, -14, LEDGE.top),
     crumb(FANS.pulse.x, FANS.pulse.z, 6),
+    // A button in front of each bay that puts a roach into it (6 north of the button): onto the far belt, under the
+    // first blade, onto the first spike plate, onto the fan. The hazards act on creatures too.
+    ...ROACH_BUTTONS.map(([x, z]): Piece => ({ t: 'plate', x0: x, z0: z, x1: x, z1: z, top: 0, dir: 'n', props: { spawns: 'roach' } })),
   ],
 };
 

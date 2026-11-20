@@ -9,7 +9,7 @@ import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
 import { leversOn, strikeThings } from './world/strikeables';
-import { HAZARD, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
+import { HAZARD, HazardFoes, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -1097,6 +1097,8 @@ function startGame(): void {
   let musicFloor: MusicFloor | null = null;
   /** The room clock when the hazards were last heard (world/hazards.ts `sounds`: what happened since). */
   let hazardClock = 0;
+  /** The hazards' memory of which creature they last struck, and when. */
+  const hazardFoes = new HazardFoes();
   /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
   let jets: Gust[] = [];
   let jetOpen: boolean[] = [];
@@ -2753,6 +2755,11 @@ function startGame(): void {
       if (touch) {
         const result = touch.kind === 'blade' ? player.takeHit(touch.x, touch.z, HAZARD.blade.damage, true) : player.takeBurn(touch.x, touch.z, HAZARD.spikes.damage);
         if (result === 'hit' || result === 'killed') events.playerResult = result;
+      }
+      // And on the creatures (not one in his hands or in flight from his throw: inHand): a belt carries, a fan blows off,
+      // a blade or spikes strike.
+      for (const ev of hazardFoes.act(hz.specs, enemies.filter((e) => !inHand(e)), dt, worldClock)) {
+        audio.play(ev.killed ? 'kill' : 'hit', { vol: 0.6, rate: roll(0.9, 1.1), priority: 5 });
       }
       for (const sd of hazardSounds(hz.specs, hazardClock, worldClock, player.position)) {
         if (sd.kind === 'swish') audio.play('whoosh', { vol: 0.9 * sd.vol, rate: roll(0.55, 0.65), priority: 5 });

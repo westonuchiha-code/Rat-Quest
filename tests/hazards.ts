@@ -4,7 +4,9 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
-import { HAZARD, bladeAngle, bladeAt, carry, fanPower, hurt, lift, sounds, spikesUp, type BladeSpec, type FanSpec, type HazardSpec, type SpikeSpec } from '../src/world/hazards';
+import { Scuttler } from '../src/enemies/scuttler';
+import { Bat } from '../src/enemies/bat';
+import { HAZARD, FOE_HAZARD, HazardFoes, bladeAngle, bladeAt, carry, fanPower, hurt, lift, sounds, spikesUp, type BladeSpec, type FanSpec, type HazardSpec, type SpikeSpec } from '../src/world/hazards';
 import { levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { compileCustom } from '../src/levels/custom';
@@ -196,6 +198,47 @@ const settle = (p: PlayerController): void => {
   check('the fan that runs and stops lifts him while it runs, and lets him down when it stops', hi > 4 && q.grounded && q.position.y < 0.05, `highest ${hi.toFixed(2)}, then ${q.position.y.toFixed(2)}`);
 }
 check('the bays are where their boards say: belts, blades, spikes, fans, west to east', GAUNTLET.belts < GAUNTLET.blades && GAUNTLET.blades < GAUNTLET.spikes && GAUNTLET.spikes < GAUNTLET.fans);
+
+// ---- On creatures (a roach, a bat), stepped as main.ts steps them ----
+{
+  const step = (hf: HazardFoes, foes: Array<Scuttler | Bat>, seconds: number, t0 = 0): Array<{ kind: string; killed: boolean }> => {
+    const out: Array<{ kind: string; killed: boolean }> = [];
+    for (let t = t0; t < t0 + seconds - 1e-9; t += DT) out.push(...hf.act(hz, foes, DT, t));
+    return out;
+  };
+  const east = hz.find((h) => h.kind === 'belt' && Math.sin(h.yaw) > 0.5)!;
+  const roach = new Scuttler({ x: east.x - 4, z: east.z, y: east.y, arena: { x0: -30, x1: 30, z0: -16, z1: 16 } });
+  const x0 = roach.x;
+  step(new HazardFoes(), [roach], 1);
+  check('a roach standing on the near belt is carried east with it, 3 a second', Math.abs(roach.x - x0 - 3) < 0.05 && Math.abs(roach.z - east.z) < 1e-6, `moved ${(roach.x - x0).toFixed(2)}`);
+  const blade = hz.find((h): h is BladeSpec => h.kind === 'blade')!;
+  const r2 = new Scuttler({ x: blade.x, z: blade.z, arena: { x0: -30, x1: 30, z0: -16, z1: 16 } });
+  // (One pass: it touches the roach for about half a second each time through; the next pass begins 0.94 s on.)
+  const hits = step(new HazardFoes(), [r2], 0.9);
+  check('a roach in a blade\'s path is struck as it comes through, once (not every frame it touches)', hits.filter((h) => h.kind === 'blade').length === 1, `${hits.length} blows`);
+  const tough = new Scuttler({ x: blade.x, z: blade.z, arena: { x0: -30, x1: 30, z0: -16, z1: 16 } });
+  let dead = false;
+  for (let k = 0; k < 20 && !dead; k++) dead = step(new HazardFoes(), [tough], blade.period, k * blade.period).some((h) => h.killed) || !tough.alive;
+  check('...and left there, the blade kills it in the end', !tough.alive);
+  const sp = hz.find((h): h is SpikeSpec => h.kind === 'spikes')!;
+  const r3 = new Scuttler({ x: sp.x, z: sp.z, arena: { x0: -30, x1: 30, z0: -16, z1: 16 } });
+  const sh = step(new HazardFoes(), [r3], sp.period);
+  check(`a roach on spikes is struck while they are up, at most once in ${FOE_HAZARD.cooldown} s`, sh.length >= 1 && sh.length <= Math.ceil(sp.up / FOE_HAZARD.cooldown) && sh.every((h) => h.kind === 'spikes'), `${sh.length} in a beat`);
+  const fan = hz.find((h): h is FanSpec => h.kind === 'fan' && !h.on)!;
+  const r4 = new Scuttler({ x: fan.x + 0.2, z: fan.z, arena: { x0: -30, x1: 30, z0: -16, z1: 16 } });
+  step(new HazardFoes(), [r4], 1.5);
+  check('a roach that walks onto a fan is blown off it (a creature keeps to its floor: it is not lifted)', Math.hypot(r4.x - fan.x, r4.z - fan.z) > fan.r + r4.radius - 0.01 && r4.y === 0, `${Math.hypot(r4.x - fan.x, r4.z - fan.z).toFixed(2)} from its middle`);
+  // A bat (a flier): the belt, the spikes and the fan leave it alone; a blade does not.
+  const bats = [
+    new Bat({ x: east.x, z: east.z, y: east.y }), new Bat({ x: sp.x, z: sp.z, y: 0 }), new Bat({ x: fan.x + 0.2, z: fan.z, y: 0 }), new Bat({ x: blade.x, z: blade.z, y: 0.6 }),
+  ];
+  // (A bat roosts high; these are flying low, at a rat's head height.)
+  for (const b of bats) b.y = (b === bats[0] ? east.y : 0) + 0.6;
+  const at = bats.map((b) => [b.x, b.z]);
+  const bh = step(new HazardFoes(), bats, sp.period);
+  check('a bat over a belt, spikes or a fan is left alone by them', bats.slice(0, 3).every((b, i) => b.x === at[i][0] && b.z === at[i][1]) && !bh.some((h) => h.kind === 'spikes'));
+  check('...but a blade strikes a bat in its path', bh.some((h) => h.kind === 'blade'));
+}
 
 // ---- In the level editor ----
 {

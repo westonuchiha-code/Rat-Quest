@@ -93,7 +93,12 @@ Swinging blade, Spike floor, Floor fan (the belt and blade take a direction).
 - Shown in the Gauntlet: two belts running opposite ways; a corridor of two blades a quarter of a swing apart (a
   straight run at the right moment gets through: the test finds 8 moments of 24); a corridor of four spike plates a
   quarter beat apart; a fan up to a high ledge, and one that runs and stops under a crumb hanging in the air.
-- Not done: enemies are not carried, cut or lifted by any of them (only he is).
+- **On creatures** (`HazardFoes` in hazards.ts; main.ts calls it beside his own): a belt carries one that stands on
+  it (by its own `nudge`, so it keeps out of walls); a blade or spikes strike one for 1 (`FOE_HAZARD`), at most once
+  in 0.8 s, taken as a THROWN thing is (a curled roller spills; a shield or shell does not turn it, as his does not);
+  a fan does not lift one (a creature has no fall of its own: it keeps to its floor) but blows one that walks onto it
+  off again. A flier (bat, hornet, firefly) meets only the blades. Not one in his hands or thrown by him. A kill
+  counts as any other. In the Gauntlet, a button in front of each bay puts a roach into it.
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

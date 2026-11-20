@@ -115,30 +115,103 @@ export function lift(hazards: readonly HazardSpec[], body: Body, dt: number, tim
   return null;
 }
 
+/** Does a hazard touch a column (feet at x, y, z; round, `radius`; `height` tall) now? Where from, if it does. */
+function touching(h: HazardSpec, x: number, y: number, z: number, radius: number, height: number, time: number): { x: number; z: number } | null {
+  if (h.kind === 'blade') {
+    const e = bladeAt(h, time);
+    // The blade is a crescent in the plane it swings in: a short bar, `half` each way along the swing, thin across
+    // it (along `yaw`, the way past it).
+    const sx = Math.cos(h.yaw);
+    const sz = -Math.sin(h.yaw);
+    const along = (x - e.x) * sx + (z - e.z) * sz;
+    const t = Math.max(-HAZARD.blade.half, Math.min(HAZARD.blade.half, along));
+    const nx = e.x + sx * t;
+    const nz = e.z + sz * t;
+    const flat = Math.hypot(x - nx, z - nz);
+    const vy = e.y < y ? y - e.y : e.y > y + height ? e.y - y - height : 0;
+    return Math.hypot(flat, vy) < radius + HAZARD.blade.radius ? { x: nx, z: nz } : null;
+  }
+  if (h.kind === 'spikes') {
+    if (spikesUp(h, time) < 1) return null;
+    return Math.abs(x - h.x) <= h.w / 2 && Math.abs(z - h.z) <= h.d / 2 && y >= h.y - 0.1 && y < h.y + HAZARD.spikes.height ? { x, z } : null;
+  }
+  return null;
+}
+
 /** What touches him now and would hurt him: a blade (from where it is) or spikes (from under him). */
 export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes'; x: number; z: number } | null {
   if (body.dead) return null;
   const p = body.position;
   for (const h of hazards) {
-    if (h.kind === 'blade') {
-      const e = bladeAt(h, time);
-      // The blade is a crescent in the plane it swings in: a short bar, `half` each way along the swing, thin across
-      // it (along `yaw`, the way past it); he is a column.
-      const sx = Math.cos(h.yaw);
-      const sz = -Math.sin(h.yaw);
-      const along = (p.x - e.x) * sx + (p.z - e.z) * sz;
-      const t = Math.max(-HAZARD.blade.half, Math.min(HAZARD.blade.half, along));
-      const nx = e.x + sx * t;
-      const nz = e.z + sz * t;
-      const flat = Math.hypot(p.x - nx, p.z - nz);
-      const vy = e.y < p.y ? p.y - e.y : e.y > p.y + height ? e.y - p.y - height : 0;
-      if (Math.hypot(flat, vy) < radius + HAZARD.blade.radius) return { kind: 'blade', x: nx, z: nz };
-    } else if (h.kind === 'spikes') {
-      if (spikesUp(h, time) < 1) continue;
-      if (Math.abs(p.x - h.x) <= h.w / 2 && Math.abs(p.z - h.z) <= h.d / 2 && p.y >= h.y - 0.1 && p.y < h.y + HAZARD.spikes.height) return { kind: 'spikes', x: p.x, z: p.z };
-    }
+    if (h.kind !== 'blade' && h.kind !== 'spikes') continue;
+    const at = touching(h, p.x, p.y, p.z, radius, height, time);
+    if (at) return { kind: h.kind, ...at };
   }
   return null;
+}
+
+/**
+ * CREATURES (2026-11-20). What a creature needs to meet the hazards: where it is, how big, whether it flies, and the
+ * two things the game already does to one (a shove that keeps it out of walls, a blow).
+ */
+export interface Creature {
+  x: number;
+  y: number;
+  z: number;
+  readonly radius: number;
+  readonly alive: boolean;
+  readonly kind: string;
+  /** Set for the creatures that fly (the game's own test of open air). */
+  canFly?: unknown;
+  nudge(dx: number, dz: number): void;
+  takeHit(damage: number, fromX: number, fromZ: number, how?: 'thrown'): boolean;
+}
+/** For creatures: a blow at most once in `cooldown` seconds from any hazard; how hard; how fast a fan blows one off it. */
+export const FOE_HAZARD = { cooldown: 0.8, damage: 1, fanPush: 4 } as const;
+const flies = (c: Creature): boolean => !!c.canFly || c.kind === 'bat' || c.kind === 'hornet' || c.kind === 'firefly';
+
+/**
+ * The hazards acting on creatures, as on him: a belt carries one that stands on it; a blade or spikes strike one
+ * (as a thrown thing does: a shell or a shield does not turn it, as his does not); a fan does not lift one (a
+ * creature keeps to its floor) but blows one that walks onto it off again. A flier only meets the blades.
+ * It remembers when each creature was last struck, so a blade that stays touching strikes once.
+ */
+export class HazardFoes {
+  private readonly struck = new WeakMap<object, number>();
+  act(hazards: readonly HazardSpec[], foes: readonly Creature[], dt: number, time: number): Array<{ foe: Creature; kind: 'blade' | 'spikes'; killed: boolean }> {
+    const out: Array<{ foe: Creature; kind: 'blade' | 'spikes'; killed: boolean }> = [];
+    for (const c of foes) {
+      if (!c.alive) continue;
+      const flier = flies(c);
+      for (const h of hazards) {
+        if (h.kind === 'belt') {
+          if (flier || Math.abs(c.x - h.x) > h.w / 2 || Math.abs(c.z - h.z) > h.d / 2 || c.y < h.y - 0.5 || c.y > h.y + 0.15) continue;
+          c.nudge(Math.sin(h.yaw) * h.speed * dt, Math.cos(h.yaw) * h.speed * dt);
+        } else if (h.kind === 'fan') {
+          const away = Math.hypot(c.x - h.x, c.z - h.z);
+          if (flier || away > h.r + c.radius || c.y > h.y + 1) continue;
+          const power = fanPower(h, time);
+          if (power <= 0) continue;
+          const ux = away > 1e-6 ? (c.x - h.x) / away : 1;
+          const uz = away > 1e-6 ? (c.z - h.z) / away : 0;
+          c.nudge(ux * FOE_HAZARD.fanPush * power * dt, uz * FOE_HAZARD.fanPush * power * dt);
+        } else {
+          if (h.kind === 'spikes' && flier) continue;
+          if (time - (this.struck.get(c) ?? -1e9) < FOE_HAZARD.cooldown) continue;
+          const at = touching(h, c.x, c.y, c.z, c.radius, Math.max(0.6, c.radius * 1.6), time);
+          if (!at) continue;
+          this.struck.set(c, time);
+          // (From where the blade is; spikes come from under it: from just beside its middle.)
+          const fx = h.kind === 'spikes' ? c.x + 0.01 : at.x;
+          const fz = h.kind === 'spikes' ? c.z : at.z;
+          const killed = c.takeHit(FOE_HAZARD.damage, fx, fz, 'thrown');
+          out.push({ foe: c, kind: h.kind, killed: killed || !c.alive });
+          if (!c.alive) break;
+        }
+      }
+    }
+    return out;
+  }
 }
 
 /**

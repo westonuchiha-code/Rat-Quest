@@ -331,8 +331,8 @@ const hall = levelById(HALL_ID)!;
       && PLATE_LEAVE > PLATE_REACH + 0.3
   );
   check(
-    'a floor plate that opens a gate is as it was: only a plate with a creature to put in comes back up',
-    all.filter((l) => !l.id.startsWith('practice_')).every((l) => (l.plates ?? []).every((p) => !p.spawn))
+    'a floor plate that opens a gate is as it was: only a plate with a creature to put in comes back up (buttons only in the practice rooms, and the Gauntlet, which puts a roach into each hazard)',
+    all.filter((l) => !l.id.startsWith('practice_') && l.id !== 'gauntlet').every((l) => (l.plates ?? []).every((p) => !p.spawn))
   );
 }
 
