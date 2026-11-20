@@ -80,6 +80,9 @@ export interface PieceProps {
   /** A moving platform: which way it glides ('up' is a lift), how far, how fast and how long it waits at each end. */
   move?: 'up' | 'n' | 'e' | 's' | 'w';
   travel?: number;
+  /** A moving platform's kind (world/platforms.ts): glide, circle, ride, sink, crumble or spring. Its "how far" is the
+   * glide's or ride's distance, the circle's radius, the sink's depth, the spring's height. */
+  motion?: import('../world/platforms').PlatformMotion;
   speed?: number;
   pause?: number;
   /** A Golden Wedge: a clue for the quest screen, and what makes it appear. */
@@ -418,7 +421,12 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
         const dist = Math.max(0.5, p.props?.travel ?? 4);
         const to: [number, number, number] = mv === 'up' ? [0, dist, 0] : mv === 'n' ? [0, 0, -dist] : mv === 's' ? [0, 0, dist] : mv === 'e' ? [dist, 0, 0] : [-dist, 0, 0];
         const themed = theme.id === 'sewer' ? undefined : theme.skins.plank;
-        movers.push({ x: cx, z: cz, y: p.top, w: Math.max(1.5, x1 - x0), d: Math.max(1.5, z1 - z0), to, speed: p.props?.speed ?? 2, pause: p.props?.pause ?? 1.5, ...((p.skin ?? themed) ? { skin: p.skin ?? themed } : {}) });
+        const motion = p.props?.motion ?? 'glide';
+        // (A circle goes round a middle `travel` away, the way it is set to move; a sink sinks `travel` at most; a spring
+        // throws him `travel` high. A spring and a crumble wear their own looks unless a skin is chosen.)
+        const extra = motion === 'sink' ? { depth: dist } : motion === 'spring' ? { launch: dist } : {};
+        const looks = motion === 'spring' || motion === 'crumble' ? p.skin : (p.skin ?? themed);
+        movers.push({ x: cx, z: cz, y: p.top, w: Math.max(1.5, x1 - x0), d: Math.max(1.5, z1 - z0), to: motion === 'sink' || motion === 'spring' || motion === 'crumble' ? [0, 0, 0] : to, speed: p.props?.speed ?? 2, pause: p.props?.pause ?? 1.5, ...(motion === 'glide' ? {} : { motion }), ...extra, ...(looks ? { skin: looks } : {}) });
         break;
       }
       case 'lamp':

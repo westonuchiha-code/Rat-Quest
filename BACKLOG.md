@@ -18,7 +18,8 @@ done, move it to "Done" at the bottom with the commit; do not delete it. Read ST
 **WHERE THINGS STAND (2026-11-20, end of the Opus week).** Part A is Fable's and was not touched, but for A9's first
 part. Part B has three open items, B8, B9 and B11, and each waits on him. B12 (drawing cost) is done as far as it goes
 without rebuilding models. Everything Opus did, by risk, is ONE PAGE: `docs/OPUS-WEEK.md`. What only he can judge is
-`PLAYTEST.md`. Done items are one line each at the bottom.
+`PLAYTEST.md`. Done items are one line each at the bottom. NEW PARTS FOR BUILDING LEVELS (moving platforms of six
+kinds, household objects, more to come) are catalogued in `docs/KIT.md` and shown in the Workshop (Test Room 12).
 
 ---
 

@@ -41,6 +41,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 9, id: 'keep', door: 'CASTLE', like: 'Ocarina of Time: a keep with guards behind shields.' },
   { n: 10, id: 'garden', door: 'MOVE GYM', like: 'Rulers, ledges and chimneys: for feeling the jump numbers.' },
   { n: 11, id: 'hub', door: 'THE CLUB', like: "Dizzy Dave's hangout, as it was: the first hub." },
+  { n: 12, id: 'workshop', door: 'WORKSHOP', like: 'Not a level: the parts for building levels, a bay each, doing what they are for.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */

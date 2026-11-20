@@ -492,6 +492,14 @@ export interface MoverSpec {
   /** Where in its cycle it starts, 0..1 (default 0). */
   phase?: number;
   skin?: Skin;
+  /** How it moves (world/platforms.ts): glide (the default), circle, ride, sink, crumble or spring. */
+  motion?: import('./platforms').PlatformMotion;
+  /** sink: at most this deep. crumble: seconds it shakes before it goes (`hold`), seconds it is gone (`back`). */
+  depth?: number;
+  hold?: number;
+  back?: number;
+  /** spring: how high it throws him. */
+  launch?: number;
 }
 
 const smooth = (f: number): number => f * f * (3 - 2 * f);

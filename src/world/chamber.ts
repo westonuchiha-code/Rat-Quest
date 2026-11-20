@@ -16,7 +16,8 @@ import { Aabb, makeAabb, topAt } from './collision';
 import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
-import { Box, Decor, GateSpec, JunkKind, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, moverOffset, MUSHROOM, BRACKET, mushroomCap, mushroomStem } from './layout';
+import { newPlatformState, platformStep, type PlatformState } from './platforms';
+import { Box, Decor, GateSpec, JunkKind, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, MUSHROOM, BRACKET, mushroomCap, mushroomStem } from './layout';
 import { TUNING } from '../data/tuning';
 
 /** A portcullis in the room. `open()` lifts it; once it is up its collider is gone. */
@@ -36,12 +37,15 @@ export interface Mover {
   aabb: Aabb;
   /** How far it moved in the last step. */
   delta: THREE.Vector3;
+  /** Its own state: how it moves is world/platforms.ts. */
+  state: PlatformState;
 }
 
-/** Someone who can be carried: the rat. */
+/** Someone who can be carried: the rat. (A spring throws him up: his velocity, if it is given.) */
 export interface Rider {
   position: THREE.Vector3;
   prevPosition: THREE.Vector3;
+  velocity?: THREE.Vector3;
 }
 
 export interface Chamber {
@@ -524,25 +528,27 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   for (const spec of seatMovers(layout.movers ?? [], layout.solids)) {
     const thick = spec.thick ?? 0.5;
     const geo = new THREE.BoxGeometry(spec.w, thick, spec.d, Math.max(1, Math.ceil(spec.w / 2.5)), 1, Math.max(1, Math.ceil(spec.d / 2.5)));
-    const skin = spec.skin ?? DEFAULT_SKIN.plank;
+    // (A spring is striped as a warning is; one that crumbles is rubble; the rest are planks, as before.)
+    const skin = spec.skin ?? (spec.motion === 'spring' ? 'hazardTrim' : spec.motion === 'crumble' ? 'rubbleWall' : DEFAULT_SKIN.plank);
     applyWorldUvs(geo, TILE[skin] ?? 2);
     bakeVertexColor(geo, 0xeeeeee);
     const mesh = addMesh(geo, mat(skin), spec.x, spec.y - thick / 2, spec.z);
     moverMeshes.push(mesh);
-    const mv: Mover = { spec, aabb: makeAabb(spec.x, spec.y - thick / 2, spec.z, spec.w, thick, spec.d), delta: new THREE.Vector3() };
+    const mv: Mover = { spec, aabb: makeAabb(spec.x, spec.y - thick / 2, spec.z, spec.w, thick, spec.d), delta: new THREE.Vector3(), state: newPlatformState() };
     movers.push(mv);
     colliders.push(mv.aabb);
   }
-  let moverTime = 0;
   const carry = new THREE.Vector3();
   const stepMovers = (dt: number, rider?: Rider): void => {
     carry.set(0, 0, 0);
     if (!movers.length) return;
-    moverTime += dt;
     const r = TUNING.rat.radius;
     movers.forEach((m, i) => {
       const a = m.aabb;
-      const [ox, oy, oz] = moverOffset(m.spec, moverTime);
+      // (Whether he stood on it as this step began: a ride, a sink, a crumble and a spring answer to that.)
+      const was = !!rider && Math.abs(rider.position.y - a.max.y) < 0.12 && rider.position.x > a.min.x - 0.05 && rider.position.x < a.max.x + 0.05 && rider.position.z > a.min.z - 0.05 && rider.position.z < a.max.z + 0.05;
+      const now = platformStep(m.spec, m.state, dt, was, TUNING.physics.gravity);
+      const [ox, oy, oz] = now.offset;
       const thick = m.spec.thick ?? 0.5;
       const nx = m.spec.x + ox;
       const ny = m.spec.y + oy;
@@ -563,7 +569,24 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const onIt = crates.filter((c) => c.alive && !c.lifted && Math.abs(c.aabb.min.y - a.max.y) < 0.05 && c.x > a.min.x && c.x < a.max.x && c.z > a.min.z && c.z < a.max.z);
       a.min.set(nx - m.spec.w / 2, ny - thick, nz - m.spec.d / 2);
       a.max.set(nx + m.spec.w / 2, ny, nz + m.spec.d / 2);
-      moverMeshes[i].position.set(nx, ny - thick / 2, nz);
+      const mesh = moverMeshes[i];
+      mesh.position.set(nx + now.shake[0], ny - thick / 2, nz + now.shake[1]);
+      mesh.visible = now.shown;
+      // (A spring squashes down from its top as it throws him.)
+      mesh.scale.y = 1 - 0.45 * now.squash;
+      mesh.position.y = ny - (thick * mesh.scale.y) / 2;
+      if (!now.solid) {
+        // Gone (a crumbled one): nothing there to stand on, until it comes back.
+        a.min.set(nx, -1e4, nz);
+        a.max.set(nx, -1e4 + 1e-3, nz);
+        m.delta.set(0, 0, 0);
+        return;
+      }
+      if (now.launch > 0 && rider?.velocity && was) {
+        rider.velocity.y = now.launch;
+        rider.position.y += 0.02;
+        rider.prevPosition.y += 0.02;
+      }
       for (const c of onIt) moveCrate(c, c.x + dx, c.y + dy, c.z + dz, (c.mesh as unknown as THREE.Object3D | null)?.rotation.y ?? 0);
       if (!rider) return;
       const p = rider.position;

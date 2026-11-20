@@ -429,5 +429,19 @@ const at = (t: Piece['t'], x: number, z: number, top = 0, extra: Partial<Piece> 
   );
 }
 
+// ---- 2026-11-20: a moving platform's kind (world/platforms.ts) ----
+{
+  const at = (x: number, motion: string | undefined, extra: Record<string, unknown> = {}): Piece => ({ t: 'lift', x0: x, z0: 0, x1: x + 2, z1: 2, top: 1, props: { travel: 3, ...(motion ? { motion } : {}), ...extra } as never });
+  const lvl: CustomLevel = { name: 'Platforms', width: 40, depth: 20, wallHeight: 8, pieces: [
+    { t: 'floor', x0: -20, z0: -10, x1: 20, z1: 10, top: 0 }, { t: 'spawn', x0: 0, z0: 8, x1: 0, z1: 8, top: 0 }, { t: 'exit', x0: 0, z0: -10, x1: 0, z1: -10, top: 0 },
+    at(-18, undefined), at(-14, 'circle', { move: 'e' }), at(-10, 'ride'), at(-6, 'sink'), at(-2, 'crumble'), at(2, 'spring'),
+  ] };
+  const ms = compileCustom(lvl, 'platformkinds').movers ?? [];
+  const by = (m: string): (typeof ms)[number] | undefined => ms.find((q) => (q.motion ?? 'glide') === m);
+  check('the editor\'s moving platform comes in six kinds, each compiled to its own', ms.length === 6 && ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring'].every((m) => !!by(m)), ms.map((m) => m.motion ?? 'glide').join(', '));
+  check('...its "how far" is the circle\'s radius (the way it is set), the sink\'s depth, the spring\'s height', by('circle')!.to[0] === 3 && by('sink')!.depth === 3 && by('spring')!.launch === 3 && by('sink')!.to.every((v) => v === 0));
+  check('...and a level with all six has nothing the editor\'s checks find wrong, and saves and loads', checkCustom(lvl).length === 0 && parseCustom(JSON.stringify(lvl))?.pieces.filter((p) => p.t === 'lift').length === 6, checkCustom(lvl).join('; '));
+}
+
 console.log(failures === 0 ? '\neditops: all passed' : `\neditops: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

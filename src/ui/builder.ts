@@ -17,6 +17,7 @@ import { HANDLES, History, flipPieces, handleAt, handlePoint, levelStats, measur
 import { SAMPLES } from '../levels/samples';
 import { THEMES } from '../levels/themes';
 import { TEXTURE_SETS } from '../render/textures';
+import { PLATFORM_MOTIONS } from '../world/platforms';
 import { esc, icon, useDevTheme } from './devTheme';
 
 export type ToolId = PieceType | 'select' | 'erase' | 'pan' | 'measure' | `stamp:${string}`;
@@ -48,7 +49,7 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('pillar', 'Pillar', '', '#9a9a88', 'ground', 'A pillar, from the floor up to its height.'),
     P('stairs', 'Stairs', '', '#8a8a9a', 'ground', 'Steps that climb the way they face.'),
     P('ramp', 'Ramp', '', '#9a9486', 'ground', 'A smooth slope that climbs the way it faces. He walks up one as steep as 1 up for 1 along.'),
-    P('lift', 'Moving platform', '', '#e0a040', 'ground', 'A platform that glides up and down, or sideways. Its settings say how far and how fast.'),
+    P('lift', 'Moving platform', '', '#e0a040', 'ground', 'A platform that moves: glides there and back, goes round, goes when stood on, sinks, crumbles, or is a spring. Its settings say how far and how fast.'),
     P('bridge', 'Rope bridge', '', '#b08850', 'ground', 'A rope bridge across a gap.'),
   ] },
   { id: 'water', label: 'Water and fire', items: [
@@ -904,6 +905,11 @@ export class Builder {
         else delete props.perch;
       } else if (ds.pp === 'wave') props.wave = Math.max(0, Math.round(Number(t.value) || 0));
       else if (ds.pp === 'move') props.move = (['up', 'n', 'e', 's', 'w'] as const).find((m) => m === t.value) ?? 'up';
+      else if (ds.pp === 'motion') {
+        const m = PLATFORM_MOTIONS.find((k) => k === t.value) ?? 'glide';
+        if (m === 'glide') delete props.motion;
+        else props.motion = m;
+      }
       else if (ds.pp === 'travel') props.travel = Math.max(0.5, Number(t.value) || 4);
       else if (ds.pp === 'speed') props.speed = Math.max(0.5, Number(t.value) || 2);
       else if (ds.pp === 'pause') props.pause = Math.max(0, Number(t.value) || 0);
@@ -1094,7 +1100,8 @@ export class Builder {
     }
     if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed']])}</div>`;
     if (p.t === 'lift') {
-      h += `<h4>How it moves</h4><div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;
+      h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up']])}</div>`;
+      h += `<div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;
       h += `<div class="field"><span>How far</span><input type="number" step="0.5" min="0.5" data-pp="travel" value="${pr.travel ?? 4}" /></div>`;
       h += `<div class="field"><span>Speed</span><input type="number" step="0.5" min="0.5" data-pp="speed" value="${pr.speed ?? 2}" /></div>`;
       h += `<div class="field"><span>Waits (s)</span><input type="number" step="0.5" min="0" data-pp="pause" value="${pr.pause ?? 1.5}" /></div>`;
