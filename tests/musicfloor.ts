@@ -10,6 +10,8 @@ import * as THREE from 'three';
 import { PlayerController, type PlayerInput } from '../src/player/controller';
 import { strikeThings } from '../src/world/strikeables';
 import { BELLS } from '../src/levels/musicroom';
+import { checkCustom, compileCustom, type CustomLevel, type Piece } from '../src/levels/custom';
+import { PIECE_GROUPS } from '../src/ui/builder';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -135,6 +137,46 @@ const on = (i: number): { x: number; y: number; z: number } => ({ x: pads[i].x, 
   const heard = lone.update(DT, { x: 9, y: 0, z: 9 }, true);
   check('a bell on its own (no puzzle) sounds its note when struck', heard.length === 1 && heard[0].kind === 'note' && heard[0].note === 7);
   check('the bell\'s sound is one the game has, and makes a sound', SFX_NAMES.includes('bellNote') && sfx('bellNote').data.some((v) => Math.abs(v) > 0.2));
+}
+
+// ---- In the level editor: piano keys, music pads and bells, with notes, puzzles and an order ----
+{
+  const pt = (t: Piece['t'], x: number, z: number, props: Piece['props'] = {}, extra: Partial<Piece> = {}): Piece => ({ t, x0: x, z0: z, x1: x, z1: z, top: 0, props, ...extra });
+  const level: CustomLevel = {
+    name: 'Kit', blurb: '', theme: 'dungeon', width: 30, depth: 30, wallHeight: 8,
+    pieces: [
+      { t: 'floor', x0: -15, z0: -15, x1: 15, z1: 15, top: 0 },
+      { t: 'spawn', x0: 0, z0: 12, x1: 0, z1: 12, top: 0 },
+      { t: 'exit', x0: 0, z0: 15, x1: 0, z1: 15, top: 0, dir: 'n' },
+      { t: 'floorkey', x0: -12, z0: -4, x1: -10.5, z1: 2, top: 0, props: { note: 4 } },
+      { t: 'floorkey', x0: -10.5, z0: -4, x1: -9.5, z1: -1, top: 0, props: { note: 6 } },
+      pt('chime', 0, 0, { note: 0, puzzle: 'A', slot: -1 }), pt('chime', 3, 0, { note: 2, puzzle: 'A', slot: 0 }), pt('chime', 6, 0, { note: 5, puzzle: 'A', slot: 1 }), pt('chime', 9, 0, { note: 7, puzzle: 'A', slot: 2 }),
+      pt('bell', 0, -8, { note: 2, puzzle: 'B', slot: -1 }), pt('bell', 3, -8, { note: 5, puzzle: 'B', slot: 0 }), pt('bell', 6, -8, { note: 9, puzzle: 'B', slot: 1 }),
+      pt('chime', -6, 8, { note: 11 }),
+      { t: 'gate', x0: 12, z0: -3, x1: 12, z1: 3, top: 0, props: { opens: 'echo', puzzle: 'A' } },
+    ],
+  };
+  check('the editor offers the piano key, the music pad and the bell, under Music', ['floorkey', 'chime', 'bell'].every((t) => PIECE_GROUPS.some((g) => g.label === 'Music' && g.items.some((i) => i.t === t))));
+  check('...a level of them is in order (no warnings)', checkCustom(level).length === 0, checkCustom(level).join(' / '));
+  const def = compileCustom(level, 'kit');
+  const keys = def.decor.filter((d) => d.kind === 'floorkey');
+  check('...a key set to E is white and an F# is black', keys.length === 2 && keys.some((d) => d.kind === 'floorkey' && d.note === 4 && !d.black) && keys.some((d) => d.kind === 'floorkey' && d.note === 6 && d.black === true));
+  const kc = buildChamber(def as never);
+  const kp = kc.music?.pads ?? [];
+  const kf = new MusicFloor(kp);
+  check('...its pads make puzzle A and its bells puzzle B, each waiting to be started', kf.stateOf('A') === 'idle' && kf.stateOf('B') === 'idle');
+  check('...and its gate opens when puzzle A is solved', kc.gates.length === 1 && kc.gates[0].spec.echo === 'A');
+  const lone = kp.findIndex((p) => p.kind === 'chime' && p.note === 11);
+  step(kf, null, 0.1);
+  const heard = step(kf, { x: kp[lone].x, y: kp[lone].y, z: kp[lone].z }, 0.2);
+  check('...a pad in no puzzle sounds its note when stepped on', heard.length === 1 && heard[0].kind === 'note' && heard[0].note === 11);
+  const startA = kp.findIndex((p) => p.puzzle === 'A' && p.slot === -1);
+  step(kf, null, 0.1);
+  step(kf, { x: kp[startA].x, y: kp[startA].y, z: kp[startA].z }, 0.1);
+  check('...stepping on puzzle A\'s start pad starts it', kf.stateOf('A') === 'playing');
+  const broken: CustomLevel = { ...level, pieces: level.pieces.filter((p) => !(p.t === 'bell' && p.props?.slot === -1)).concat([pt('chime', -9, 8, { note: 0, puzzle: 'C', slot: 0 })]) };
+  const warn = checkCustom(broken);
+  check('...the editor warns of a puzzle with no start, and of one with too few pads', warn.some((w) => w.includes('B') && w.includes('start')) && warn.some((w) => w.includes('C') && w.includes('two or more')), warn.join(' / '));
 }
 
 // ---- The sounds ----

@@ -2,6 +2,7 @@
  * Levels made in the builder. A custom level is a short list of pieces on a grid; `compileCustom` turns it into a real
  * LevelDef (walls around the edge, crates numbered, goals chosen from what is in it). Pure data, so tests can run it.
  */
+import * as THREE from 'three';
 import { BRAZIER, COUCH, junkSolids, potBox, rockBox, stoolSolids, tableSolids, rampBox, Box, Decor, FireVolume, GateSpec, Kind, LavaVolume, MoverSpec, PipeSpec, WaterVolume, extent } from '../world/layout';
 import { seatMovers } from '../world/hangings';
 import type { NpcSpec } from '../npc/npc';
@@ -22,6 +23,7 @@ export type PieceType =
   | 'banner' | 'torch' | 'gauge' | 'crystal' | 'roots' | 'table' | 'stool' | 'bar'
   | 'candle' | 'spool' | 'matchbox' | 'cheese' | 'sardines' | 'button' | 'pencil' | 'die' | 'pawn' | 'battery' | 'teacup' | 'spoon' | 'safetypin' | 'paperclip' | 'crayon' | 'marble'
   | 'lever' | 'crackwall' | 'crackfloor' | 'belt' | 'blade' | 'spikes' | 'fan' | 'flamejet'
+  | 'floorkey' | 'chime' | 'bell'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
@@ -77,7 +79,13 @@ export interface PieceProps {
   /** Enemies: 0 or nothing = waiting in the room at the start; 1, 2, 3... = arrives with that wave, after the last is beaten. */
   wave?: number;
   /** A gate: what lifts it. Default: when the goals are done. */
-  opens?: 'goals' | 'pipes' | 'plates' | 'levers';
+  opens?: 'goals' | 'pipes' | 'plates' | 'levers' | 'echo';
+  /** Music (world/musicFloor.ts): a floor key's, a pad's or a bell's note, in semitones from middle C. */
+  note?: number;
+  /** A pad or bell: which echo puzzle it belongs to (a letter; none: it just sounds). A gate that opens by an echo: which one. */
+  puzzle?: string;
+  /** A pad or bell in a puzzle: its place in it (0, 1, 2 ...), or -1 for the puzzle's START. */
+  slot?: number;
   /** A moving platform: which way it glides ('up' is a lift), how far, how fast and how long it waits at each end. */
   move?: 'up' | 'n' | 'e' | 's' | 'w';
   travel?: number;
@@ -183,10 +191,20 @@ export function checkCustom(c: CustomLevel): string[] {
       if (g.count === 'all' && have === 0 && !c.pieces.some((p) => p.props?.item === g.kind)) out.push(`There are no ${g.kind}s on the map.`);
     }
   }
+  // An echo puzzle needs a start (order: start) and two or more pads or bells to play its tune on.
+  for (const id of new Set(c.pieces.filter((q) => (q.t === 'chime' || q.t === 'bell') && q.props?.puzzle).map((q) => q.props!.puzzle as string))) {
+    const mine = c.pieces.filter((q) => (q.t === 'chime' || q.t === 'bell') && q.props?.puzzle === id);
+    if (!mine.some((q) => q.props?.slot === -1)) out.push(`Echo puzzle ${id} needs a start pad or bell (set one's order to "start").`);
+    if (mine.filter((q) => (q.props?.slot ?? 0) >= 0).length < 2) out.push(`Echo puzzle ${id} needs two or more pads or bells to play its tune on.`);
+  }
   for (const g of c.pieces.filter((q) => q.t === 'gate')) {
     if (g.props?.opens === 'pipes' && count('pipe') === 0) out.push('A gate that opens with pipes needs a wall pipe on the map.');
     if (g.props?.opens === 'plates' && count('plate') === 0) out.push('A gate that opens with plates needs a floor plate on the map.');
     if (g.props?.opens === 'levers' && count('lever') === 0) out.push('A gate that opens with levers needs a lever on the map.');
+    if (g.props?.opens === 'echo') {
+      const id = g.props.puzzle ?? 'A';
+      if (!c.pieces.some((q) => (q.t === 'chime' || q.t === 'bell') && q.props?.puzzle === id)) out.push(`A gate that opens with echo puzzle ${id} needs that puzzle's pads or bells on the map.`);
+    }
   }
   return out;
 }
@@ -219,7 +237,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
   const enemies: EnemySpec[] = [];
   const waveSpecs: EnemySpec[][] = [];
   const plates: NonNullable<LevelDef['plates']> = [];
-  const gatePieces: Array<{ spec: GateSpec; opens: string }> = [];
+  const gatePieces: Array<{ spec: GateSpec; opens: string; puzzle?: string }> = [];
   /** How many levers (world/strikeables.ts): a gate set to open by levers waits for all of them. */
   let levers = 0;
   const contents: Array<string | null> = [];
@@ -503,7 +521,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'gate': {
         const spec: GateSpec = { x: cx, z: cz, y: p.top, width: Math.max(2, x1 - x0, z1 - z0), height: 3.5, alongZ: z1 - z0 > x1 - x0 };
         gates.push(spec);
-        gatePieces.push({ spec, opens: p.props?.opens ?? 'goals' });
+        gatePieces.push({ spec, opens: p.props?.opens ?? 'goals', puzzle: p.props?.puzzle ?? 'A' });
         break;
       }
       case 'plate': {
@@ -592,6 +610,27 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
       case 'fan':
         decor.push({ kind: 'fan', x: cx, y: p.top, z: cz, r: 1.5, height: 9 });
         break;
+      // Music (world/musicFloor.ts): a floor piano key, an echo puzzle's pad, a bell to strike. A note's sharps are
+      // black keys; a pad's colour goes by its note round the octave, a puzzle's start pad is white.
+      case 'floorkey': {
+        const note = p.props?.note ?? 0;
+        decor.push({ kind: 'floorkey', x: cx, y: p.top, z: cz, w: Math.max(0.6, x1 - x0), d: Math.max(1, z1 - z0), note, ...(isSharp(note) ? { black: true } : {}) });
+        break;
+      }
+      case 'chime': {
+        const note = p.props?.note ?? 0;
+        const slot = p.props?.slot ?? 0;
+        const start = !!p.props?.puzzle && slot === -1;
+        decor.push({ kind: 'chime', x: cx, y: p.top, z: cz, r: start ? 1 : 1.3, note, color: start ? 0xe8e4dc : noteColor(note), puzzle: p.props?.puzzle ?? '', slot });
+        break;
+      }
+      case 'bell': {
+        const note = p.props?.note ?? 0;
+        const slot = p.props?.slot ?? 0;
+        const yaw = { s: 0, n: 0, e: Math.PI / 2, w: Math.PI / 2 }[p.dir ?? 'n'];
+        decor.push({ kind: 'bell', x: cx, y: p.top, z: cz, yaw, note, color: p.props?.puzzle && slot === -1 ? 0xf0ece0 : bellColor(note), ...(p.props?.puzzle ? { puzzle: p.props.puzzle, slot } : {}) });
+        break;
+      }
       case 'flamejet': {
         // On the floor it points up; turned (dir), it is set in a wall at 0.6 up, pointing that way.
         if (!p.dir) decor.push({ kind: 'flamejet', x: cx, y: p.top, z: cz, yaw: 0, up: true, length: 4, period: 3, on: 1, phase: 0 });
@@ -633,6 +672,7 @@ export function compileCustom(c: CustomLevel, id = 'custom'): LevelDef {
     if (g.opens === 'pipes') g.spec.pipes = pipes.map((_, i) => i);
     else if (g.opens === 'plates') g.spec.plates = plates.map((_, i) => i);
     else if (g.opens === 'levers') g.spec.levers = Array.from({ length: levers }, (_, i) => i);
+    else if (g.opens === 'echo') g.spec.echo = g.puzzle;
     else g.spec.onGoals = true;
   }
   // Goals: the ones the builder chose, or else what is in the level: beasts to beat, pipes to burst, else just reach the door.
@@ -720,4 +760,16 @@ export function parseCustom(text: string): CustomLevel | null {
   } catch {
     return null;
   }
+}
+
+/** Music helpers for the editor's pieces: a note's sharps are black keys; a pad's colour goes round the octave. */
+const isSharp = (note: number): boolean => [1, 3, 6, 8, 10].includes(((note % 12) + 12) % 12);
+function noteColor(note: number): number {
+  const c = new THREE.Color().setHSL((((note % 12) + 12) % 12) / 12, 0.6, 0.55);
+  return c.getHex();
+}
+/** A bell's colour: bronze for the low ones, toward silver for the high. */
+function bellColor(note: number): number {
+  const k = Math.max(0, Math.min(1, (note + 12) / 36));
+  return new THREE.Color(0x9a6a3a).lerp(new THREE.Color(0xc8ccd4), k).getHex();
 }

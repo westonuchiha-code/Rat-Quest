@@ -54,7 +54,12 @@ rolls. Each answers with a quiet knock (wood, bone, glass) or tink (tin, china).
   (`bellNote`, a bell's partials, unheard); with `puzzle` and `slot` it is a pad of an echo puzzle like a chime, one
   bell its start (slot -1). Standing under it does nothing. It swings when struck, and a halo round it lights as it
   sounds. `bells(id, y)` in levels/musicroom.ts lays four in D minor (D, F, A, D) and a white start bell: the Music
-  Room's BELL ECHO, which opens a nook in its west wall. Not in the level editor yet (it would need a note setting).
+  Room's BELL ECHO, which opens a nook in its west wall.
+- **In the level editor** (a group of its own, MUSIC): Piano key (drag it as long and wide as you like; sharps are
+  black), Music pad, Bell. Each has a NOTE (C an octave below middle C to C two above). A pad or a bell has a PUZZLE
+  (none: it just sounds; or A, B, C) and an ORDER in it (start, pad 1 ... pad 8). A gate can open when "an echo
+  puzzle is solved" (which one). The editor warns of a puzzle with no start, or fewer than two pads. A pad's colour
+  goes by its note round the octave; a bell goes bronze to silver, low to high; a start pad or bell is white.
 - main.ts steps it after him (a few lines by his update) and the room shows what is lit and pressed (`Chamber.music`).
 - **A gate the puzzle lifts**: a gate's `echo: '<puzzle>'` (GateSpec in layout.ts) lifts it once that puzzle is solved.
   The Music Room has one, in the east wall, with a cheese crumb behind it.

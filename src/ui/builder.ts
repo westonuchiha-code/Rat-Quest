@@ -33,6 +33,16 @@ export interface PieceInfo {
   color: string;
   layer: LayerId;
 }
+/** Music pieces' settings: notes from an octave under middle C to two over; puzzles by letter; a pad's order. */
+const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTES: ReadonlyArray<readonly [string, string]> = Array.from({ length: 37 }, (_, i) => {
+  const n = i - 12;
+  const name = NOTE_NAMES[((n % 12) + 12) % 12];
+  const oct = Math.floor(n / 12);
+  return [String(n), `${name}${oct === 0 ? '' : oct > 0 ? ' ' + '+'.repeat(oct) : ' ' + '-'.repeat(-oct)}${n === 0 ? ' (middle C)' : ''}`] as const;
+});
+const PUZZLES: ReadonlyArray<readonly [string, string]> = [['', 'none: it just sounds'], ['A', 'puzzle A'], ['B', 'puzzle B'], ['C', 'puzzle C']];
+const ORDERS: ReadonlyArray<readonly [string, string]> = [['-1', 'start'], ...Array.from({ length: 8 }, (_, i) => [String(i), `pad ${i + 1}`] as const)];
 const P = (t: PieceType, label: string, glyph: string, color: string, layer: LayerId, tip: string): PieceInfo => ({ t, label, glyph, color, layer, tip });
 
 /** Every piece, in the order the palette shows them. */
@@ -58,6 +68,11 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('lava', 'Lava', '', '#ff6a1a', 'water', 'It burns: a heart, and back to the last safe ground.'),
     P('fire', 'Fire', '', '#ffb020', 'water', 'A standing fire over these squares. It burns unless he is fireproof (the Ember Helm).'),
     P('fall', 'Grate fall', 'F', '#8aff8a', 'water', 'Water pouring out of a wall grate (for looks).'),
+  ] },
+  { id: 'music', label: 'Music', items: [
+    P('floorkey', 'Piano key', 'Pk', '#f2efe6', 'things', 'A key on the floor: landing on it plays its note on the sound chip. Sharps (C#, D# ...) are black keys and stand a little higher. Drag it as long and wide as you like.'),
+    P('chime', 'Music pad', 'Mp', '#e8c040', 'things', 'A coloured pad with a note. On its own it sounds when stepped on. Give it a puzzle and an order and it is a pad of an ECHO PUZZLE: one of them, set to "start", plays a tune the player then steps back.'),
+    P('bell', 'Bell', 'Bl', '#c88040', 'things', 'A bell in a frame, struck with the sword: it rings its note. Like a music pad it can be part of an echo puzzle (one set to "start"). Turn it with R.'),
   ] },
   { id: 'things', label: 'Breakables and machines', items: [
     P('crate', 'Crate', 'C', '#c08a4a', 'things', 'Breaks when hit. It can hold a collectible, or be bound in iron (only a heavy blade breaks it).'),
@@ -153,9 +168,9 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'blade', 'fan', 'flamejet', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'blade', 'fan', 'flamejet', 'chime', 'bell', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
-const FACES = new Set<PieceType>(['belt', 'blade', 'lever', 'plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
+const FACES = new Set<PieceType>(['belt', 'blade', 'lever', 'bell', 'plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
 const AREAS = new Set<PieceType>([...BOX_TYPES, 'water', 'river', 'lava', 'fire', 'bridge', 'stairs', 'ramp', 'lift', 'gate', 'bar']);
 const DIR_NAME = { n: 'North', e: 'East', s: 'South', w: 'West' };
@@ -923,7 +938,12 @@ export class Builder {
       else if (ds.pp === 'pause') props.pause = Math.max(0, Number(t.value) || 0);
       else if (ds.pp === 'color') props.color = t.value;
       else if (ds.pp === 'flash') props.flash = Math.max(0, Math.min(8, Number(t.value) || 0));
-      else if (ds.pp === 'opens') props.opens = t.value === 'pipes' ? 'pipes' : t.value === 'plates' ? 'plates' : t.value === 'levers' ? 'levers' : 'goals';
+      else if (ds.pp === 'opens') props.opens = t.value === 'pipes' ? 'pipes' : t.value === 'plates' ? 'plates' : t.value === 'levers' ? 'levers' : t.value === 'echo' ? 'echo' : 'goals';
+      else if (ds.pp === 'note') props.note = Math.max(-12, Math.min(24, Math.round(Number(t.value) || 0)));
+      else if (ds.pp === 'puzzle') {
+        if (t.value) props.puzzle = t.value;
+        else delete props.puzzle;
+      } else if (ds.pp === 'slot') props.slot = Math.max(-1, Math.min(7, Math.round(Number(t.value) || 0)));
       else if (ds.pp === 'spawns') {
         const k = ENEMY_PIECES.find((e) => e === t.value && e !== 'brood' && e !== 'wyrm');
         if (k) props.spawns = k;
@@ -1106,7 +1126,17 @@ export class Builder {
       } else h += '<div class="note">A boss: its name and health show along the bottom while it fights. Give it a wide, clear floor.</div>';
       if (p.t === 'bat') h += `<div class="field"><span>Hangs from</span>${sel('perch', pr.perch ?? 'rock', [['rock', 'a knob of rock'], ['chain', 'a chain']])}</div>`;
     }
-    if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed'], ['levers', 'every lever is over']])}</div>`;
+    if (p.t === 'gate') {
+      h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed'], ['levers', 'every lever is over'], ['echo', 'an echo puzzle is solved']])}</div>`;
+      if (pr.opens === 'echo') h += `<div class="field"><span>Puzzle</span>${sel('puzzle', pr.puzzle ?? 'A', PUZZLES.slice(1))}</div>`;
+    }
+    if (p.t === 'floorkey' || p.t === 'chime' || p.t === 'bell') {
+      h += `<h4>The note</h4><div class="field"><span>Note</span>${sel('note', String(pr.note ?? 0), NOTES)}</div>`;
+      if (p.t !== 'floorkey') {
+        h += `<div class="field"><span>Puzzle</span>${sel('puzzle', pr.puzzle ?? '', PUZZLES)}</div>`;
+        if (pr.puzzle) h += `<div class="field"><span>Order</span>${sel('slot', String(pr.slot ?? 0), ORDERS)}</div><div class="note">Pads and bells of one puzzle play its tune; "start" is the one that starts it (stepped on, or struck). Solved, it can open a gate.</div>`;
+      }
+    }
     if (p.t === 'lift') {
       h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up'], ['crush', 'a crusher: slams down how far it travels']])}</div>`;
       h += `<div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;

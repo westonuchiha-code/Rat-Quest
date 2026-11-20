@@ -144,7 +144,8 @@ export class MusicFloor {
       out.push({ kind: 'note', note: this.pads[i].note, pad: i });
     };
     // A key, or a chime with no puzzle playing a tune just now: it sounds.
-    if (pressed >= 0 && (this.pads[pressed].kind === 'key' || (this.pads[pressed].kind === 'bell' && !this.pads[pressed].puzzle))) sound(pressed);
+    // (A pad or a bell in no puzzle just sounds: the editor makes those.)
+    if (pressed >= 0 && (this.pads[pressed].kind === 'key' || !this.pads[pressed].puzzle)) sound(pressed);
     for (const p of this.puzzles) {
       if (pressed === p.start && p.state !== 'playing') {
         p.round = 1;
