@@ -92,6 +92,10 @@ the Power plant tile set (four new pictures, a theme, a door look). *main.ts*: t
 the other hazards' (`coilZap` at the bass note, `coilCrack`, `coilTick`), and a coil-voiced key plays `coilZap`.
 Plates shock through the same `hurt` path as the spikes (a burn).
 
+**More parts in rooms 12-18** (2026-11-20, later): swing, blink and path platforms (the Workshop); float zone, mud and
+launcher (the Gauntlet). *main.ts*: `zones.step` beside the belt and fan; the stick scaled by the mud; jump counted as
+held while flying from a launcher.
+
 **The fifth robot run** (2026-11-20, PLAYTEST.md): nothing broken. One thing for you: at the peak of a jump, feet
 within a step (0.35) of a ledge's top, he is inside its edge for 3-4 frames before the controller lifts him onto it
 (`tests/chaos.ts` now allows 8 frames in that band, 3 deeper in).

@@ -10,7 +10,7 @@ import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/cham
 import { MusicFloor, noteRate } from './world/musicFloor';
 import { leversOn, strikeThings } from './world/strikeables';
 import { PLATFORM } from './world/platforms';
-import { HAZARD, HazardFoes, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
+import { HAZARD, HazardFoes, Zones, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -1098,6 +1098,9 @@ function startGame(): void {
   let musicFloor: MusicFloor | null = null;
   /** The room clock when the hazards were last heard (world/hazards.ts `sounds`: what happened since). */
   let hazardClock = 0;
+  /** The float zones, mud and launchers (world/hazards.ts Zones), and how much of his stride the mud leaves him. */
+  const zones = new Zones();
+  let zoneStride = 1;
   /** A crusher came down on him this step (it is struck after the fight is resolved). */
   let crusherHit = false;
   /** The hazards' memory of which creature they last struck, and when. */
@@ -2388,7 +2391,16 @@ function startGame(): void {
     if (chamber.hazards && !player.dead) {
       beltCarry(chamber.hazards.specs, player, dt);
       fanLift(chamber.hazards.specs, player, dt, worldClock);
-    }
+      // A float zone pushes back some of the gravity he is under; mud slows his stride; a launcher fires him.
+      const g = TUNING.physics.gravity * (player.velocity.y < 0 ? TUNING.physics.fallGravityMultiplier : 1) * player.feel.foot.gravity;
+      const z = zones.step(chamber.hazards.specs, player, dt, g, worldClock);
+      zoneStride = z.stride;
+      if (z.launched) {
+        audio.play('hurl', { vol: 1, rate: 0.8, priority: 7 });
+        audio.play('land', { vol: 0.8, rate: 0.6, priority: 6 });
+        shake = Math.max(shake, 0.1);
+      }
+    } else zoneStride = 1;
     // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`, `&autoswing`, `&autoplunge`.
     // (`&autofight`, `&autolift` and `&carryfoe`, which reach into the fight and his hands, are below.)
     if (filmDrive) {
@@ -2493,7 +2505,8 @@ function startGame(): void {
       audio.play('heave', { vol: 0.6, rate: 1.15, priority: 6 });
       audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
     }
-    player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
+    // (Flying from a launcher counts as holding jump: the short-hop rule is for his own jumps, not a cannon's throw.)
+    player.update(dt, { move: zoneStride < 1 ? m.clone().multiplyScalar(zoneStride) : m, run, jumpPressed, jumpHeld: jumpHeld || zones.flying, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
     // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
     if (musicFloor && chamber.music) {
       for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {

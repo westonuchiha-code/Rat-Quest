@@ -789,7 +789,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Hazards and helpers (world/hazards.ts), in level order, and their looks. */
   const hazardSpecs: HazardSpec[] = [];
   const hazardLooks: BuiltHazard[] = [];
-  const allHazards = (layout.decor ?? []).filter((d): d is HazardSpec => d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate');
+  const allHazards = (layout.decor ?? []).filter((d): d is HazardSpec => d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate' || d.kind === 'floatzone' || d.kind === 'mud' || d.kind === 'launcher');
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
   const knockables: Array<{ what: JunkKind; x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
@@ -1810,7 +1810,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(glow);
       musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black, ...(d.voice ? { voice: d.voice } : {}) } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
       musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
-    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate') {
+    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet' || d.kind === 'teslacoil' || d.kind === 'zapplate' || d.kind === 'floatzone' || d.kind === 'mud' || d.kind === 'launcher') {
       // Hazards and helpers (world/hazards.ts, hazardModels.ts): drawn here; main.ts has them act on him. A belt, a zap
       // plate and a coil are solid. (A coil is told of every plate, to throw its bolts at them.)
       const built = buildHazard(d, { iron: lit('wroughtIron'), plain: plainMat, copper: lit('copperCoil'), tread: lit('treadPlate') }, allHazards);

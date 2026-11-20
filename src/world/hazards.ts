@@ -31,7 +31,15 @@ export interface JetSpec { kind: 'flamejet'; x: number; y: number; z: number; ya
 export interface TeslaCoilSpec { kind: 'teslacoil'; x: number; y: number; z: number; height: number; r: number; keys?: boolean }
 /** A zap plate: a metal platform (solid; y its top) in a lane of the coil's beat: live for a moment at each of its hits. */
 export interface ZapPlateSpec { kind: 'zapplate'; x: number; y: number; z: number; w: number; d: number; lane: Lane }
-export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec | JetSpec | TeslaCoilSpec | ZapPlateSpec;
+/** A FLOAT ZONE (2026-11-20): a box (x, z its middle, y its floor; w, h, d) where gravity is `gravity` of what it is
+ * (0.35: a jump goes about three times as high and hangs). Drawn as a faint column with motes drifting up. */
+export interface FloatSpec { kind: 'floatzone'; x: number; y: number; z: number; w: number; h: number; d: number; gravity: number }
+/** MUD (2026-11-20): a patch of floor (y its top) that slows his stride to `slow` of itself while he is in it. */
+export interface MudSpec { kind: 'mud'; x: number; y: number; z: number; w: number; d: number; slow: number }
+/** A LAUNCHER (2026-11-20): a cannon pad at x, y, z, `r` round. Stepped onto, it fires him toward `yaw` at `speed`
+ * across and `up` upward, and holds him to that speed across until he lands (his own steering does not slow it). */
+export interface LauncherSpec { kind: 'launcher'; x: number; y: number; z: number; r: number; yaw: number; speed: number; up: number }
+export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec | JetSpec | TeslaCoilSpec | ZapPlateSpec | FloatSpec | MudSpec | LauncherSpec;
 
 /** The numbers: a blade's reach round its edge, the spikes' warning and height, a fan's lift. */
 export const HAZARD = {
@@ -193,6 +201,69 @@ function touching(h: HazardSpec, x: number, y: number, z: number, radius: number
   return null;
 }
 
+/**
+ * ZONES (2026-11-20): what the float zone, the mud and the launcher do to him, before his update (as the belt and the
+ * fan). Gravity is pushed back by `1 - gravity` of the world's (`g`, units a second squared) while he is in a float
+ * zone; mud says how much of his stride is left (main.ts scales the stick by it); a launcher, stepped onto fresh,
+ * throws him and then holds his speed across until he lands. Returns what happened, to be heard.
+ */
+export class Zones {
+  /** Flying from a launcher: the speed across to hold him to, and how long he has been flying. */
+  private flight: { vx: number; vz: number; t: number; from: LauncherSpec } | null = null;
+  /** The launcher his feet were on last step (it fires only when he comes onto it). */
+  private onPad: LauncherSpec | null = null;
+  /** When each launcher last fired (world time), for the flash drawn on it. */
+  static readonly fired = new WeakMap<LauncherSpec, number>();
+
+  step(hazards: readonly HazardSpec[], body: Body, dt: number, g: number, time: number): { stride: number; floating: boolean; launched: LauncherSpec | null } {
+    const out = { stride: 1, floating: false, launched: null as LauncherSpec | null };
+    if (body.dead) {
+      this.flight = null;
+      return out;
+    }
+    const p = body.position;
+    let pad: LauncherSpec | null = null;
+    for (const h of hazards) {
+      if (h.kind === 'floatzone') {
+        if (Math.abs(p.x - h.x) > h.w / 2 || Math.abs(p.z - h.z) > h.d / 2 || p.y < h.y - 0.1 || p.y > h.y + h.h) continue;
+        // (Not while standing: his feet are on the floor and gravity there does nothing.)
+        if (!body.grounded) body.velocity.y += g * (1 - h.gravity) * dt;
+        out.floating = true;
+      } else if (h.kind === 'mud') {
+        if (body.grounded && Math.abs(p.x - h.x) <= h.w / 2 && Math.abs(p.z - h.z) <= h.d / 2 && Math.abs(p.y - h.y) < 0.2) out.stride = Math.min(out.stride, h.slow);
+      } else if (h.kind === 'launcher') {
+        if (body.grounded && Math.hypot(p.x - h.x, p.z - h.z) <= h.r && Math.abs(p.y - h.y) < 0.25) pad = h;
+      }
+    }
+    if (pad && pad !== this.onPad && !this.flight) {
+      // Fire: up, and across toward its aim; a little off the pad so the floor lets him go.
+      body.velocity.y = pad.up;
+      body.velocity.x = Math.sin(pad.yaw) * pad.speed;
+      body.velocity.z = Math.cos(pad.yaw) * pad.speed;
+      p.y += 0.05;
+      body.prevPosition.y += 0.05;
+      this.flight = { vx: body.velocity.x, vz: body.velocity.z, t: 0, from: pad };
+      Zones.fired.set(pad, time);
+      out.launched = pad;
+    }
+    this.onPad = pad;
+    if (this.flight) {
+      this.flight.t += dt;
+      // Landed (after leaving the pad), or flying too long (stopped by a wall): his own again.
+      if ((body.grounded && this.flight.t > 0.1) || this.flight.t > 4) this.flight = null;
+      else {
+        body.velocity.x = this.flight.vx;
+        body.velocity.z = this.flight.vz;
+      }
+    }
+    return out;
+  }
+  /** Flying from a launcher now (for tests, and a whoosh). */
+  get flying(): boolean {
+    return !!this.flight;
+  }
+}
+
 /** What touches him now and would hurt him: a blade (from where it is) or spikes (from under him). */
 export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes' | 'flamejet' | 'zapplate'; x: number; z: number } | null {
   if (body.dead) return null;
@@ -251,7 +322,8 @@ export class HazardFoes {
           const uz = away > 1e-6 ? (c.z - h.z) / away : 0;
           c.nudge(ux * FOE_HAZARD.fanPush * power * dt, uz * FOE_HAZARD.fanPush * power * dt);
         } else {
-          if (h.kind === 'teslacoil') continue;
+          // (A coil, a float zone, mud and a launcher do nothing to a creature: only he is floated, slowed, fired.)
+          if (h.kind === 'teslacoil' || h.kind === 'floatzone' || h.kind === 'mud' || h.kind === 'launcher') continue;
           if ((h.kind === 'spikes' || h.kind === 'zapplate') && flier) continue;
           // (A firefly is a creature of fire: a flame jet does not burn it.)
           if (h.kind === 'flamejet' && c.kind === 'firefly') continue;

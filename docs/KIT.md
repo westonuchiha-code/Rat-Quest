@@ -116,6 +116,18 @@ Swinging blade, Spike floor, Floor fan (the belt and blade take a direction).
   off again. A flier (bat, hornet, firefly) meets only the blades. Not one in his hands or thrown by him. A kill
   counts as any other. In the Gauntlet, a button in front of each bay puts a roach into it.
 
+### Float zone, mud, launcher (2026-11-20; `Zones` in hazards.ts; the Gauntlet's front half; `tests/hazards.ts`)
+
+Physics to play with, all acting on him before his update (main.ts, by the belt and fan):
+- **floatzone** `{ kind: 'floatzone', x, y, z, w, h, d, gravity }`: in the box, gravity is `gravity` of itself (0.35:
+  a jump 2.4 high outside goes 6.8 inside, and hangs). A faint violet column, motes drifting up.
+- **mud** `{ kind: 'mud', x, y, z, w, d, slow }`: on it, his stride is `slow` of itself (0.4); main.ts scales the stick.
+  A brown patch with bubbles.
+- **launcher** `{ kind: 'launcher', x, y, z, r, yaw, speed, up }`: stepped onto (fresh), it fires him `up` upward and
+  `speed` across toward `yaw`, and HOLDS that speed across until he lands; while flying it counts as holding jump
+  (the short-hop rule would halve the throw: found by the test). A striped pad, a barrel tilted to its aim, a flash.
+- Creatures are not floated, slowed or fired.
+
 ### Flame jets (`flamejet` in hazards.ts; `tests/press.ts`; the Press, Test Room 16)
 
 `{ kind: 'flamejet', x, y, z, yaw, up?, length, period, on, phase }`: a nozzle in a wall pointing along `yaw` (or in

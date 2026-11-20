@@ -10,7 +10,8 @@ import { HAZARD, FOE_HAZARD, HazardFoes, bladeAngle, bladeAt, carry, fanPower, h
 import { levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { compileCustom } from '../src/levels/custom';
-import { FANS, GAUNTLET, LEDGE, SPIKE_ROW } from '../src/levels/gauntlet';
+import { FANS, GAUNTLET, LEDGE, PHYS, SPIKE_ROW } from '../src/levels/gauntlet';
+import { Zones } from '../src/world/hazards';
 import { TUNING } from '../src/data/tuning';
 import { SFX_NAMES, sfx } from '../src/audio/synth';
 
@@ -238,6 +239,54 @@ check('the bays are where their boards say: belts, blades, spikes, fans, west to
   const bh = step(new HazardFoes(), bats, sp.period);
   check('a bat over a belt, spikes or a fan is left alone by them', bats.slice(0, 3).every((b, i) => b.x === at[i][0] && b.z === at[i][1]) && !bh.some((h) => h.kind === 'spikes'));
   check('...but a blade strikes a bat in its path', bh.some((h) => h.kind === 'blade'));
+}
+
+// ---- Float zone, mud, launcher (2026-11-20), with the real rat, as main.ts steps them ----
+{
+  const g = (p: PlayerController): number => TUNING.physics.gravity * (p.velocity.y < 0 ? TUNING.physics.fallGravityMultiplier : 1) * p.feel.foot.gravity;
+  /** Steps him with the zones (and the stick scaled by the mud, as main.ts does): how far he went across, his peak. */
+  const go = (p: PlayerController, z: Zones, seconds: number, pad: (k: number) => Partial<PlayerInput>): { peak: number; launched: number } => {
+    let peak = p.position.y;
+    let launched = 0;
+    for (let k = 0; k < Math.round(seconds / DT); k++) {
+      const r = z.step(hz, p, DT, g(p), k * DT);
+      if (r.launched) launched++;
+      const i = input(pad(k));
+      if (r.stride < 1) i.move.multiplyScalar(r.stride);
+      // (As main.ts: flying from a launcher counts as holding jump.)
+      if (z.flying) i.jumpHeld = true;
+      p.update(DT, i, room.colliders);
+      peak = Math.max(peak, p.position.y);
+    }
+    return { peak, launched };
+  };
+  const jumpPeak = (x: number): number => {
+    const p = new PlayerController(new THREE.Vector3(x, 0, PHYS.z));
+    settle(p);
+    return go(p, new Zones(), 3, (k) => ({ jumpPressed: k === 2, jumpHeld: true })).peak;
+  };
+  const outside = jumpPeak(PHYS.float.x + 12);
+  const inside = jumpPeak(PHYS.float.x);
+  check('FLOAT: in the float zone a jump goes about three times as high as outside it (a third of the pull)', inside > outside * 2.4 && inside < outside * 3.6, `${outside.toFixed(2)} outside, ${inside.toFixed(2)} inside`);
+  const f = new PlayerController(new THREE.Vector3(PHYS.float.x - 2.5, 0, PHYS.z));
+  settle(f);
+  go(f, new Zones(), 5, (k) => ({ jumpPressed: k === 2, jumpHeld: true, move: k > 30 ? new THREE.Vector3(-1, 0, 0) : new THREE.Vector3() }));
+  check('...and from its floor he floats up and onto the high ledge beside it', f.grounded && Math.abs(f.position.y - PHYS.float.ledge.top) < 0.05, `y ${f.position.y.toFixed(2)}`);
+  const walk = (x: number): number => {
+    const p = new PlayerController(new THREE.Vector3(x, 0, PHYS.z - 1.5));
+    settle(p);
+    const x0 = p.position.x;
+    go(p, new Zones(), 1, () => ({ move: new THREE.Vector3(1, 0, 0) }));
+    return p.position.x - x0;
+  };
+  const dry = walk(PHYS.mud.x + 14);
+  const wet = walk(PHYS.mud.x - 3);
+  check(`MUD: walking through it he goes ${PHYS.mud.slow} as far as on dry floor`, Math.abs(wet / dry - PHYS.mud.slow) < 0.08, `${wet.toFixed(2)} in the mud, ${dry.toFixed(2)} dry, in a second`);
+  const l = new PlayerController(new THREE.Vector3(PHYS.launcher.x - 3, 0, PHYS.z));
+  settle(l);
+  const shot = go(l, new Zones(), 4, (k) => ({ move: k < 55 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3() }));
+  check('LAUNCHER: he walks onto it and it fires him, once', shot.launched === 1);
+  check('...across onto the ledge beyond (it holds his speed across till he lands)', l.grounded && Math.abs(l.position.y - PHYS.launcher.ledge.top) < 0.05 && l.position.x > PHYS.launcher.ledge.x0 && l.position.x < PHYS.launcher.ledge.x1, `at ${l.position.x.toFixed(2)}, ${l.position.y.toFixed(2)}`);
 }
 
 // ---- In the level editor ----

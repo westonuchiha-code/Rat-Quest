@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bakeVertexColor } from '../render/ps1Material';
 import { lastHit, laneState, COIL } from './teslaCoil';
-import { HAZARD, bladeAngle, fanPower, jetDir, jetFlame, spikesUp, type HazardSpec, type TeslaCoilSpec, type ZapPlateSpec } from './hazards';
+import { Zones, HAZARD, bladeAngle, fanPower, jetDir, jetFlame, spikesUp, type HazardSpec, type TeslaCoilSpec, type ZapPlateSpec, type FloatSpec, type MudSpec, type LauncherSpec } from './hazards';
 
 export interface HazardMats {
   iron: THREE.Material;
@@ -192,6 +192,9 @@ export function buildHazard(h: HazardSpec, mats: HazardMats, all: readonly Hazar
     };
   }
   if (h.kind === 'teslacoil') return buildCoil(h, mats, all);
+  if (h.kind === 'floatzone') return buildFloat(h);
+  if (h.kind === 'mud') return buildMud(h);
+  if (h.kind === 'launcher') return buildLauncher(h, mats);
   if (h.kind === 'zapplate') return buildZapPlate(h, mats);
   // A fan: a ring set in the floor, a grille over it, blades turning under, and dust carried up the column.
   group.position.set(h.x, h.y, h.z);
@@ -462,6 +465,123 @@ function buildZapPlate(h: ZapPlateSpec, mats: HazardMats): BuiltHazard {
         const to = new THREE.Vector3(Math.cos(a + 2) * h.w * 0.4, 0.04, Math.sin(a * 1.7 + 2) * h.d * 0.4);
         b.set(from, to, flick * 7 + i, 1.5, 0.9);
       });
+    },
+  };
+}
+
+/** A FLOAT ZONE: a faint column of violet light, its edges a little brighter, and motes drifting slowly up it. */
+function buildFloat(h: FloatSpec): BuiltHazard {
+  const group = new THREE.Group();
+  group.userData.moves = true;
+  group.position.set(h.x, h.y, h.z);
+  const veil = new THREE.Mesh(new THREE.BoxGeometry(h.w, h.h, h.d), new THREE.MeshBasicMaterial({ color: 0x9a7aff, transparent: true, opacity: 0.07, depthWrite: false, side: THREE.DoubleSide }));
+  veil.position.y = h.h / 2;
+  group.add(veil);
+  const ring = new THREE.Mesh(mergeAll([
+    boxAt(h.w, 0.04, 0.08, 0, 0.02, h.d / 2, 0xffffff), boxAt(h.w, 0.04, 0.08, 0, 0.02, -h.d / 2, 0xffffff),
+    boxAt(0.08, 0.04, h.d, h.w / 2, 0.02, 0, 0xffffff), boxAt(0.08, 0.04, h.d, -h.w / 2, 0.02, 0, 0xffffff),
+  ]), new THREE.MeshBasicMaterial({ color: 0xb89aff }));
+  group.add(ring);
+  const moteMat = new THREE.MeshBasicMaterial({ color: 0xe0d0ff, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+  const motes = Array.from({ length: 24 }, (_, i) => {
+    const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), moteMat);
+    m.userData.at = [((i * 0.618) % 1 - 0.5) * h.w * 0.9, ((i * 0.377) % 1 - 0.5) * h.d * 0.9, i / 24];
+    group.add(m);
+    return m;
+  });
+  return {
+    group,
+    show(time) {
+      for (const m of motes) {
+        const [mx, mz, ph] = m.userData.at as number[];
+        const k = (time * 0.12 + ph) % 1;
+        m.position.set(mx + 0.15 * Math.sin(time + ph * 9), k * h.h, mz + 0.15 * Math.cos(time * 0.8 + ph * 7));
+        m.rotation.y = time + ph;
+      }
+    },
+  };
+}
+
+/** MUD: a flat brown patch, wetter in the middle, with bubbles that swell and burst here and there. */
+function buildMud(h: MudSpec): BuiltHazard {
+  const group = new THREE.Group();
+  group.userData.moves = true;
+  group.position.set(h.x, h.y, h.z);
+  const top = new THREE.PlaneGeometry(h.w, h.d, 8, 8);
+  top.rotateX(-Math.PI / 2);
+  top.translate(0, 0.015, 0);
+  const pos = top.attributes.position;
+  const cols = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const k = Math.hypot(pos.getX(i) / (h.w / 2), pos.getZ(i) / (h.d / 2));
+    c.set(0x4a3220).lerp(new THREE.Color(0x2a1a10), Math.max(0, 1 - k));
+    cols.set([c.r, c.g, c.b], i * 3);
+  }
+  top.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+  group.add(new THREE.Mesh(top, new THREE.MeshBasicMaterial({ vertexColors: true })));
+  const bubbleMat = new THREE.MeshBasicMaterial({ color: 0x5a4028 });
+  const bubbles = Array.from({ length: 7 }, (_, i) => {
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 4, 0, Math.PI * 2, 0, Math.PI / 2), bubbleMat);
+    b.userData.at = [((i * 0.618) % 1 - 0.5) * h.w * 0.8, ((i * 0.377) % 1 - 0.5) * h.d * 0.8, i * 0.9];
+    group.add(b);
+    return b;
+  });
+  return {
+    group,
+    show(time) {
+      for (const b of bubbles) {
+        const [bx, bz, ph] = b.userData.at as number[];
+        const k = ((time + ph) % 2.4) / 2.4;
+        b.position.set(bx, 0.015, bz);
+        const sc = k < 0.85 ? k / 0.85 : 0;
+        b.scale.setScalar(Math.max(0.01, sc));
+        b.visible = sc > 0.02;
+      }
+    },
+  };
+}
+
+/** A LAUNCHER: a squat striped base and a fat barrel tilted toward where it throws; its muzzle flashes when it fires. */
+function buildLauncher(h: LauncherSpec, mats: HazardMats): BuiltHazard {
+  const group = new THREE.Group();
+  group.userData.moves = true;
+  group.position.set(h.x, h.y, h.z);
+  group.rotation.y = h.yaw;
+  const base = new THREE.CylinderGeometry(h.r, h.r * 1.1, 0.16, 16, 1);
+  base.translate(0, 0.08, 0);
+  bakeVertexColor(base, 0x3a3e46);
+  const stripes: THREE.BufferGeometry[] = [base];
+  for (let k = 0; k < 8; k++) {
+    const a = (k / 8) * Math.PI * 2;
+    stripes.push(boxAt(0.18, 0.02, h.r * 0.5, Math.sin(a) * h.r * 0.7, 0.2, Math.cos(a) * h.r * 0.7, k % 2 ? 0x1a1a1a : 0xe8c040));
+    stripes[stripes.length - 1].rotateY(0);
+  }
+  group.add(new THREE.Mesh(mergeAll(stripes), mats.iron));
+  // The barrel: at the back of the pad, tilted up toward its aim (as steep as its throw), the mouth toward +z.
+  const tilt = Math.atan2(h.speed, h.up);
+  const barrel = new THREE.Group();
+  barrel.position.set(0, 0.2, -h.r * 0.75);
+  barrel.rotation.x = tilt;
+  const tube = new THREE.CylinderGeometry(0.28, 0.34, 1.1, 10, 1, true);
+  tube.translate(0, 0.55, 0);
+  const lip = new THREE.TorusGeometry(0.29, 0.06, 4, 10);
+  lip.rotateX(Math.PI / 2);
+  lip.translate(0, 1.1, 0);
+  barrel.add(new THREE.Mesh(mergeAll([bakeVertexColor(tube, 0x4a5058), bakeVertexColor(lip, 0xb87333)]), mats.iron));
+  const flashMat = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), flashMat);
+  flash.position.y = 1.25;
+  barrel.add(flash);
+  group.add(barrel);
+  return {
+    group,
+    show(time) {
+      const since = time - (Zones.fired.get(h) ?? -1e9);
+      flashMat.opacity = since >= 0 && since < 0.3 ? 1 - since / 0.3 : 0;
+      flash.scale.setScalar(1 + 2 * Math.max(0, Math.min(1, since / 0.3)));
+      // (It kicks back a little when it fires.)
+      barrel.position.y = 0.2 - (since >= 0 && since < 0.2 ? 0.08 * (1 - since / 0.2) : 0);
     },
   };
 }
