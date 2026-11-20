@@ -351,7 +351,17 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(part(handle, 0xc8ccd4, mats.tin, 0.36 - 0.02, 0.08, 0));
     const end = new THREE.CylinderGeometry(0.13, 0.13, 0.05, 10, 1);
     g.add(part(end, 0xc8ccd4, mats.tin, J.w / 2 - 0.12, 0.08, 0));
-    return { group: g };
+    // A landing close by: it rocks on the round of its bowl, the handle's end lifting and tapping down, and still.
+    const { pivot } = jointAt(g, new THREE.Vector3(-J.w / 2 + 0.36, 0, 0));
+    let hit = { at: -99, by: 0 };
+    const knock = (strength: number, time: number): void => {
+      hit = { at: time, by: strength };
+    };
+    const tick = (time: number): void => {
+      const t = time - hit.at;
+      pivot.rotation.z = t >= 0 && t < 2 ? hit.by * 0.12 * Math.exp(-t * 4) * Math.abs(Math.sin(t * 18)) : 0;
+    };
+    return { group: g, tick, knock };
   }
   if (what === 'safetypin') {
     // Flat along x: two steel wires, the coil at one end, the clasp at the other with the point tucked in.
@@ -439,10 +449,23 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     g.add(f);
   }
   // The lid: rolled up into a curl at the east end, and the key through it.
+  // (On a roll of their own: a landing close by sets the curl and its key wobbling on it.)
+  const roll = new THREE.Group();
+  roll.position.set(J.w * 0.33, J.h * 0.55, 0);
+  roll.userData.moves = true;
+  g.add(roll);
   const curl = new THREE.CylinderGeometry(0.12, 0.12, J.d * 0.96, 10, 1);
   curl.rotateX(Math.PI / 2);
-  g.add(part(curl, 0xe8e4d8, mats.tin, J.w * 0.33, J.h * 0.55, 0));
+  roll.add(part(curl, 0xe8e4d8, mats.tin));
   const key = new THREE.TorusGeometry(0.09, 0.022, 4, 8);
-  g.add(part(key, 0xc8c4b8, mats.tin, J.w * 0.33, J.h * 0.55, J.d * 0.5 + 0.1));
-  return { group: g };
+  roll.add(part(key, 0xc8c4b8, mats.tin, 0, 0, J.d * 0.5 + 0.1));
+  let hit = { at: -99, by: 0 };
+  const knock = (strength: number, time: number): void => {
+    hit = { at: time, by: strength };
+  };
+  const tick = (time: number): void => {
+    const t = time - hit.at;
+    roll.rotation.z = t >= 0 && t < 2 ? hit.by * 0.35 * Math.exp(-t * 3) * Math.sin(t * 20) : 0;
+  };
+  return { group: g, tick, knock };
 }

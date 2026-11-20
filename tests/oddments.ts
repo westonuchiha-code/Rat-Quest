@@ -81,8 +81,8 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   const where = (): string => matches.map((m) => `${r4(m.position.y)},${r4(m.rotation.y)}`).join(' ');
   ch.update(1);
   const still = where();
-  check('a thump far off is not felt', ch.thump(8, 0, 8, 1) === 0);
-  check('...one beside a matchbox is', ch.thump(1, 0, 0.5, 1) === 1);
+  check('a thump far off is not felt', ch.thump(8, 0, 8, 1).length === 0);
+  check('...one beside a matchbox is, and says it was a matchbox (for its sound)', ch.thump(1, 0, 0.5, 1).join() === 'matchbox');
   ch.update(1.05);
   const shaken = where();
   ch.update(4);
@@ -111,7 +111,7 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   };
   ch.update(2);
   const before = joints.map(topOf);
-  check('a die and a marble each answer a landing beside them', joints.length === 2 && ch.thump(-1.2, 0, 0, 1) === 1 && ch.thump(8.8, 0, 0, 1) === 1, `${joints.length} moving joints`);
+  check('a die and a marble each answer a landing beside them', joints.length === 2 && ch.thump(-1.2, 0, 0, 1).join() === 'die' && ch.thump(8.8, 0, 0, 1).join() === 'marble', `${joints.length} moving joints`);
   const eastward = [0, 0];
   const westward = [0, 0];
   for (let t = 2; t < 2.6; t += 0.02) {
@@ -147,7 +147,7 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   cup.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && m.geometry.type === 'CircleGeometry' && o.userData.moves) tea = m; });
   const tilt = (o: THREE.Object3D): number => 2 * Math.acos(Math.min(1, Math.abs(o.quaternion.w)));
   ch.update(3);
-  check('a cotton reel and a teacup each answer a landing beside them', !!reel && !!tea && ch.thump(-1.2, 0, 0, 1) === 1 && ch.thump(8.8, 0, 0, 1) === 1);
+  check('a cotton reel and a teacup each answer a landing beside them', !!reel && !!tea && ch.thump(-1.2, 0, 0, 1).join() === 'spool' && ch.thump(8.8, 0, 0, 1).join() === 'teacup');
   let reelMost = 0;
   let teaMost = 0;
   for (let t = 3; t < 3.8; t += 0.02) {
@@ -158,6 +158,25 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   check('...the reel rocks on its rim (less than a die does), the tea slops', reelMost > 0.03 && reelMost < 0.3 && teaMost > 0.03, `reel ${reelMost.toFixed(3)}, tea ${teaMost.toFixed(3)} radians`);
   ch.update(8);
   check('...and both settle level again', tilt(reel) < 1e-6 && tilt(tea!) < 1e-6);
+}
+{
+  // A spoon rocks on its bowl, its handle tapping; a sardine tin's curled lid wobbles on its key. Both settle.
+  const ch = buildChamber({ solids: [], pit: null, water: [], movers: [], decor: [
+    { kind: 'junk', what: 'spoon', x: 0, y: 0, z: 0, yaw: 0 },
+    { kind: 'junk', what: 'sardines', x: 10, y: 0, z: 0, yaw: 1 },
+  ] } as never);
+  const movers: THREE.Object3D[] = [];
+  ch.group.traverse((o) => { if (o.userData.moves && o.type === 'Group') movers.push(o); });
+  ch.update(3);
+  check('a spoon and a sardine tin each answer a landing beside them, and say which they are', movers.length === 2 && ch.thump(-1.5, 0, 0, 1).join() === 'spoon' && ch.thump(8.5, 0, 0, 1).join() === 'sardines', `${movers.length} moving parts`);
+  const most = [0, 0];
+  for (let t = 3; t < 3.8; t += 0.01) {
+    ch.update(t);
+    movers.forEach((m, i) => { most[i] = Math.max(most[i], Math.abs(m.rotation.z)); });
+  }
+  check('...the spoon\'s handle lifts and taps, the lid wobbles', most[0] > 0.02 && most[1] > 0.05, most.map((m) => m.toFixed(3)).join(', '));
+  ch.update(8);
+  check('...and both lie still again', movers.every((m) => m.rotation.z === 0));
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

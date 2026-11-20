@@ -1979,8 +1979,12 @@ function startGame(): void {
     if (!heard.grounded && player.grounded && !inWater) {
       audio.play('land', { vol: Math.min(1, 0.35 + Math.abs(vyBefore) / 12), rate: roll(0.9, 1.1) });
       rumble.land(Math.abs(vyBefore));
-      // Odds and ends close by answer it: a matchbox's matches rattle (world/chamber.ts thump). Unheard by Claude.
-      if (chamber.thump(player.position.x, player.position.y, player.position.z, Math.min(1, Math.abs(vyBefore) / 10)) > 0) audio.play('rockKnock', { vol: 0.2, rate: 2.4, priority: 3 });
+      // Odds and ends close by answer it (world/chamber.ts thump), each with a little sound of its own: a knock for
+      // wood and bone and glass, a tink for tin and china. Unheard by Claude.
+      for (const what of new Set(chamber.thump(player.position.x, player.position.y, player.position.z, Math.min(1, Math.abs(vyBefore) / 10)))) {
+        if (what === 'spoon' || what === 'sardines' || what === 'teacup') audio.play('clank', { vol: 0.16, rate: what === 'teacup' ? 3.2 : 2.6, priority: 3 });
+        else audio.play('rockKnock', { vol: 0.2, rate: what === 'marble' ? 3 : what === 'die' ? 1.9 : 2.4, priority: 3 });
+      }
     }
     if ((s === 'attack' || (player.riding && player.attackTime > 0)) && player.swingId !== heard.swing) {
       audio.play('swing', { vol: 0.7, rate: roll(0.95, 1.12), priority: 6 });
