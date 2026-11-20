@@ -298,6 +298,8 @@ bunch of shit all over them."
   `&autowalk=x,z`, `&autogo=x,z,...` (&gostow=N), `&autojump`, and `&chaos=N`: he runs about at random into walls,
   jumping, swinging, rolling, and anything wrong (a NaN, inside a solid, out of the world, stuck) is written to the
   console as `CHAOS ...`. In main.ts still: `&autofight`, `&autolift`, `&carryfoe`.
+  To film him by a thing, `&at=x,y,z,0&autojump` with a fixed `&eye`/`&look` is the sure way: `&autogo` runs him there,
+  and its route is often blocked (by a table, a pot he stops at, a character he can talk to).
 - **Films and stills:** `scripts/film/stills.mjs`, `film.mjs`, `cut.sh` (the header of each says how).
 
 ## Where things are
