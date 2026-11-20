@@ -37,5 +37,18 @@ rolls. Each answers with a quiet knock (wood, bone, glass) or tink (tin, china).
 `userData.moves`, so a room's gathering leaves it alone. Shown off: the tour film; placed today in 17 rooms
 (`src/levels/oddments.ts`), which will go when the levels are laid out again.
 
+## Music underfoot (`src/world/musicFloor.ts`; `tests/musicfloor.ts`; shown in the Music Room, Test Room 13)
+
+- **floorkey** (decor `{ kind: 'floorkey', x, y, z, w, d, note, black? }`): a piano key on the floor. Landing on it plays
+  its note, in semitones from middle C, on the chip (`chipNote` in audio/synth.ts, played at 2^(note/12) of its speed). A
+  black key stands higher, and over a white one it is the black that sounds. `pianoKeys(y)` in levels/musicroom.ts lays a
+  whole octave.
+- **chime** (decor `{ kind: 'chime', x, y, z, r, note, color, puzzle, slot }`): a pad of an ECHO PUZZLE named by
+  `puzzle`; `slot` -1 is its start pad. Standing on the start pad, the puzzle plays a tune on its pads (3 notes, lighting
+  each), then listens; played back right, the next round is a note longer; three rounds and it is SOLVED (`MusicFloor.solved`,
+  every pad flashes, the clear chime). Wrong: a buzz (`chipBuzz`), and it waits for the start pad again. `echoPads(id, y)`
+  lays four (C, E, G, the C above) and a start pad. A level could hang a door or a reward on `solved`: nothing does yet.
+- main.ts steps it after him (a few lines by his update) and the room shows what is lit and pressed (`Chamber.music`).
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

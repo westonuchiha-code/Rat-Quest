@@ -171,6 +171,8 @@ export const SFX_NAMES = [
   'boot', 'villainLaugh',
   // A record pulled back under a hand and let go: he is put back where he stood, after a fall into the dark.
   'rewind',
+  // The Music Room (2026-11-20): one chip note at middle C, played faster for every other note; and a wrong answer.
+  'chipNote', 'chipBuzz',
   // Story: a memory opening and closing, cloth, a small found thing, the pang of knowing it, a soft whoosh.
   'memoryIn', 'memoryOut', 'cloth', 'keepsake', 'recall', 'whoosh', 'softStep',
   // The great insects. A hard foot on stone (both of them, and anything else with feet like that).
@@ -468,6 +470,11 @@ const RECIPES: Record<SfxName, () => Sample> = {
   }, { bits: 7, gain: 0.7 }),
   // A soft rush of air: a jump seen from far off.
   // (What is heard is the recorded one, recordings/chip/rewind.wav: a real scratch. This is what stands in if it is taken out.)
+  // A sound chip's note: a square wave at middle C (261.6 Hz), its edge softened, a quick bright start and a fall
+  // away over half a second. A floor key plays it at 2^(n/12) of its speed for the note n semitones up (world/musicFloor.ts).
+  chipNote: () => draw(0.6, RATE_HI, 91, (c) => (t) => (sq(c.osc(0, 261.63), 0.25) * 0.6 + sq(c.osc(1, 261.63 * 2.003), 0.5) * 0.12 + sine(c.osc(2, 261.63)) * 0.4) * Math.min(1, t / 0.004) * Math.exp(-t * 5.5) * 0.8, { bits: 8 }),
+  // A wrong answer: two low squares a little apart from each other, rubbing, for a moment.
+  chipBuzz: () => draw(0.45, RATE_HI, 92, (c) => (t) => (sq(c.osc(0, 98), 0.5) + sq(c.osc(1, 103.8), 0.5)) * 0.45 * bell(t, 0.45), { bits: 6 }),
   rewind: () => draw(0.4, RATE_HI, 66, (c) => (t) => saw(c.osc(0, 300 + 1500 * Math.pow(1 - t / 0.4, 2))) * 0.4 * bell(t, 0.4) + (c.lp(0, c.r() * 2 - 1, 0.3) - c.lp(1, c.r() * 2 - 1, 0.05)) * 0.4 * bell(t, 0.4), { bits: 7, gain: 0.6 }),
   whoosh: () => draw(0.3, RATE_HI, 65, (c) => (t) => (c.lp(0, c.r() * 2 - 1, 0.06 + 0.3 * Math.sin(Math.PI * (t / 0.3))) - c.lp(1, c.r() * 2 - 1, 0.03)) * bell(t, 0.3), { bits: 7, gain: 0.5 }),
   // Heaved up: a scrape along the floor as it leaves it, then a soft knock as it settles in his hands.

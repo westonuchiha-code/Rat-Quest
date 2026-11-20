@@ -17,6 +17,7 @@ import { mount, seatMovers } from './hangings';
 import { buildDrain } from './drain';
 import type { Crate } from './crates';
 import { newPlatformState, platformStep, type PlatformState } from './platforms';
+import type { MusicPad } from './musicFloor';
 import { Box, Decor, GateSpec, JunkKind, Kind, LavaVolume, Layout, MoverSpec, PipeSpec, Skin, WaterVolume, buildLayout, ceilingOf, MUSHROOM, BRACKET, mushroomCap, mushroomStem } from './layout';
 import { TUNING } from '../data/tuning';
 
@@ -87,6 +88,8 @@ export interface Chamber {
   gather(): void;
   /** He landed at (x, y, z), this hard (0..1): odds and ends within reach answer it (a matchbox's matches rattle). Which kinds did (for their sounds). */
   thump(x: number, y: number, z: number, strength: number): JunkKind[];
+  /** Music underfoot, if the room has any (world/musicFloor.ts): its pads, and a way to show which are lit and pressed. */
+  music?: { pads: MusicPad[]; show(lit: readonly number[], down: readonly boolean[], flash: readonly number[], time: number): void };
 }
 
 /** The picture each kind wears unless the box says otherwise. */
@@ -734,6 +737,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const needles: Array<{ obj: THREE.Object3D; base: number; phase: number }> = [];
   /** Story machinery that moves: each is called every frame with the time. */
   const animators: Array<(time: number) => void> = [];
+  /** Music underfoot (world/musicFloor.ts): its pads, and how each is drawn. */
+  const musicPads: MusicPad[] = [];
+  const musicLooks: Array<{ body: THREE.Mesh; glow: THREE.MeshBasicMaterial; rest: number }> = [];
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
   const knockables: Array<{ what: JunkKind; x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
@@ -1736,6 +1742,24 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       piece.traverse((o) => {
         if (o.userData.flame) swayers.push({ obj: o, axis: 'z', amount: 0.22, speed: 7, phase: d.x + d.z });
       });
+    } else if (d.kind === 'floorkey' || d.kind === 'chime') {
+      // Music underfoot (world/musicFloor.ts): a key or a pad, and a glow over it that lights as it sounds.
+      const key = d.kind === 'floorkey';
+      const h = key ? (d.black ? 0.16 : 0.07) : 0.1;
+      const w = key ? d.w : d.r * 2;
+      const dd = key ? d.d : d.r * 2;
+      const geo = key ? new THREE.BoxGeometry(w - 0.06, h, dd - 0.06) : new THREE.CylinderGeometry(d.r, d.r * 1.05, h, 16, 1);
+      const col = key ? (d.black ? 0x22222a : 0xf2efe6) : d.color;
+      bakeVertexColor(geo, col);
+      const body = addMesh(geo, plainMat, d.x, d.y + h / 2, d.z);
+      const glowGeo = key ? new THREE.PlaneGeometry(w - 0.1, dd - 0.1) : new THREE.CircleGeometry(d.r * 0.9, 16);
+      glowGeo.rotateX(-Math.PI / 2);
+      const glowMat = new THREE.MeshBasicMaterial({ color: key ? (d.black ? 0x7a9aff : 0xffe28a) : d.color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+      const glow = new THREE.Mesh(glowGeo, glowMat);
+      glow.position.set(d.x, d.y + h + 0.012, d.z);
+      group.add(glow);
+      musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
+      musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
     } else if (d.kind === 'junk') {
       // Household junk at a rat's size (junkModels.ts). A candle lights the room round it, and its flame shivers.
       const built = buildJunk(d.what, {
@@ -2501,5 +2525,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     }
     return heard;
   };
-  return { thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  const music = musicPads.length ? {
+    pads: musicPads,
+    show: (lit: readonly number[], down: readonly boolean[], flash: readonly number[], time: number): void => {
+      musicLooks.forEach((m, i) => {
+        // Pressed: it goes down a little. Sounding: it glows, fading. Solved: its puzzle's pads flash.
+        m.body.position.y = m.rest - (down[i] ? 0.035 : 0);
+        const f = flash[i] > 0 ? 0.5 + 0.5 * Math.sin(time * 18) : 0;
+        m.glow.opacity = Math.min(1, Math.max(lit[i] * 0.9, f * 0.8));
+      });
+    },
+  } : undefined;
+  return { music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }

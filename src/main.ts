@@ -7,6 +7,7 @@ import { SwordTrail } from './render/swordTrail';
 import { input } from './core/input';
 import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
+import { MusicFloor, noteRate } from './world/musicFloor';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
@@ -1090,6 +1091,8 @@ function startGame(): void {
   };
   /** The level's gusts (jets of gas that push), and the clock they and their drawing both go by. */
   let gusts: Gust[] = [];
+  /** Music underfoot in this room, if any: floor keys and echo puzzles (world/musicFloor.ts). */
+  let musicFloor: MusicFloor | null = null;
   /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
   let jets: Gust[] = [];
   let jetOpen: boolean[] = [];
@@ -1752,6 +1755,7 @@ function startGame(): void {
       autoLayer(chamber.group, (p) => cs.some((b) => !b.ramp && p.x > b.min.x + 1e-3 && p.x < b.max.x - 1e-3 && p.y > b.min.y + 1e-3 && p.y < b.max.y - 1e-3 && p.z > b.min.z + 1e-3 && p.z < b.max.z - 1e-3));
       // Then its still dressing is gathered into fewer meshes (what was layered is left as it is).
       chamber.gather();
+      musicFloor = chamber.music ? new MusicFloor(chamber.music.pads) : null;
     }
     scene.add(chamber.group);
     player.water = chamber.water;
@@ -2475,6 +2479,15 @@ function startGame(): void {
       audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
     }
     player.update(dt, { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
+    // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
+    if (musicFloor && chamber.music) {
+      for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {
+        if (ev.kind === 'note') audio.play('chipNote', { rate: noteRate(ev.note), vol: 0.7, priority: 6 });
+        else if (ev.kind === 'wrong') audio.play('chipBuzz', { vol: 0.6, priority: 6 });
+        else if (ev.kind === 'solved') audio.play('clear', { vol: 0.8, priority: 7 });
+      }
+      chamber.music.show(musicFloor.lit, musicFloor.down, musicFloor.flash, worldClock);
+    }
     // (His tricks by name, for the name shown as he lands them: a grab is the guard held long enough in the air, as
     // the controller counts it; and a slap of his paw on the rim when it counts.)
     if (player.riding && !player.grounded) {

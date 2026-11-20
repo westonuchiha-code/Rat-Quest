@@ -42,6 +42,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 10, id: 'garden', door: 'MOVE GYM', like: 'Rulers, ledges and chimneys: for feeling the jump numbers.' },
   { n: 11, id: 'hub', door: 'THE CLUB', like: "Dizzy Dave's hangout, as it was: the first hub." },
   { n: 12, id: 'workshop', door: 'WORKSHOP', like: 'Not a level: the parts for building levels, a bay each, doing what they are for.' },
+  { n: 13, id: 'musicroom', door: 'MUSIC ROOM', like: 'A piano on the floor, and an echo puzzle: listen, then play it back.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */

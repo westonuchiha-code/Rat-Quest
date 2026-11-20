@@ -434,6 +434,10 @@ export type Decor =
    * that faces `yaw`, its middle at x, y, z; `post` stands it on a post from the floor at `post` instead.
    */
   | { kind: 'sign'; x: number; y: number; z: number; yaw: number; w: number; h: number; lines: string[]; post?: number }
+  /** A piano key on the floor (world/musicFloor.ts): its middle, its footprint, its note in semitones from middle C. */
+  | { kind: 'floorkey'; x: number; y: number; z: number; w: number; d: number; note: number; black?: boolean }
+  /** A pad of an echo puzzle (world/musicFloor.ts): `slot` -1 is the puzzle's start pad. */
+  | { kind: 'chime'; x: number; y: number; z: number; r: number; note: number; color: number; puzzle: string; slot: number }
   /**
    * A ruler: a tick and a number at every unit. Standing (the default) it is on a wall that faces `yaw`, its zero at
    * x, y, z; `pole` stands it in the open, read from both sides. `flat` lays it on the floor, running from x, y, z

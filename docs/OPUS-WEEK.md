@@ -6,7 +6,8 @@
 **The four files where a small change breaks something far away.** `src/player/controller.ts`, `src/combat/combat.ts`
 and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 13 commits, listed under the group each
 belongs to below (marked *main.ts*); the last ones add a few lines by the landing sound: it calls `chamber.thump`, and
-plays a quiet knock or tink for each kind of odd-and-end that answered. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
+plays a quiet knock or tink for each kind of odd-and-end that answered. And a few more after his update: the Music Room's floor
+keys and echo puzzle (`world/musicFloor.ts`). Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
 
 ## 1. Changes to how the game PLAYS (review these first)
 
