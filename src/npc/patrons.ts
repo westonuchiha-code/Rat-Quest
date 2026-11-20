@@ -17,7 +17,6 @@ import { getTexture } from '../render/textures';
 import { createPs1Material } from '../render/ps1Material';
 import { buildMug } from '../world/tavernModels';
 import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl' | 'rat' | 'mole' | 'hedgehog';
 export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl', 'rat', 'mole', 'hedgehog'];
@@ -1428,9 +1427,9 @@ const MOLE = {
 } as const;
 const HEDGEHOG = {
   /** Bramble: brown spines, a green apron. */
-  bramble: { face: 0xd8b48a, belly: 0xf2dcbc, spine: 0x5e4028, tip: 0xe8d4b0, nose: 0x1a1210, cloth: 0x4a7a3a, clothDark: 0x355a2a, paw: 0x7a5a44 },
+  bramble: { face: 0xd8b48a, belly: 0xf2dcbc, spine: 0x4e3420, tip: 0xeedcb8, nose: 0x1a1210, cloth: 0x4a7a3a, clothDark: 0x355a2a, paw: 0x7a5a44 },
   /** Thistle: pale spines, a thistle flower in them, rosy cheeks. */
-  thistle: { face: 0xeedcc6, belly: 0xfbf1e2, spine: 0xb8a690, tip: 0xfbf5ea, nose: 0x3a2a2a, cloth: 0x8a4a9a, clothDark: 0x6a3878, paw: 0xa8887a },
+  thistle: { face: 0xeedcc6, belly: 0xfbf1e2, spine: 0x8a7464, tip: 0xf6eee0, nose: 0x3a2a2a, cloth: 0x8a4a9a, clothDark: 0x6a3878, paw: 0xa8887a },
 } as const;
 /** How long a newcomer's legs are (short), and so how high his hips stand. */
 const N_LEG = 0.16;
@@ -1663,7 +1662,8 @@ class Hedgehog extends Small {
       (_nx, _ny, nz) => (nz > 0.25 ? C.belly : C.face), 7, 0.92,
     ));
     // The spines: a coat of cones over his back and the top of him, each pointing out, dark with a pale tip.
-    this.chest.add(spines(0, 0.27, -0.02, [0.27, 0.27, 0.24], 130, (d) => d.z < 0.3 && d.y > -0.5, 0.12, C.spine, C.tip, 11));
+    // The coat of spines over his back, sides and shoulders: the face and the belly are left clear.
+    this.chest.add(spineCoat(0, 0.25, -0.02, [0.29, 0.3, 0.27], 0.55, 1.95, 28, 10, 0.085, C.spine, C.tip));
     this.addLegs(0.055, 0.11, C.face, C.paw);
     this.addArms(0.22, 0.35, 0.05, 0.13, 0.11, C.face, () => {
       const g = new THREE.Group();
@@ -1678,10 +1678,11 @@ class Hedgehog extends Small {
     this.nose.add(turned([[0, 0], [0.085, 0.02], [0.055, 0.11], [0.025, 0.18], [0, 0.19]], C.face, 6, 0.9, true));
     this.nose.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.nose }), 0, 0.005, 0.19));
     this.head.add(this.nose);
-    this.head.add(spines(0, 0.05, -0.03, [0.15, 0.15, 0.14], 44, (d) => d.z < -0.05 && d.y > -0.2, 0.09, C.spine, C.tip, 23));
+    // And a cap of them over the top and back of his head, the brow left clear, joining the coat behind.
+    this.head.add(spineCoat(0, 0.045, -0.02, [0.172, 0.165, 0.17], 0.4, 1.7, 18, 6, 0.06, C.spine, C.tip));
     for (const side of [-1, 1]) {
       // Small round ears, half hidden in the spines.
-      const ear = kit.blob(0.045, 0.045, 0.02, (_x, _y, nz) => (nz > 0.3 ? 0xe8a8a8 : C.face), side * 0.12, 0.12, 0.03, 8, 5, 0.1);
+      const ear = kit.blob(0.042, 0.042, 0.02, (_x, _y, nz) => (nz > 0.3 ? 0xe8a8a8 : C.face), side * 0.115, 0.115, 0.07, 8, 5, 0.1);
       ear.rotation.y = side * -0.35;
       this.head.add(ear);
       if (look === 'thistle') this.head.add(bead(0.03, new THREE.MeshBasicMaterial({ color: 0xf0a0a8 }), side * 0.1, 0.0, 0.11));
@@ -1702,7 +1703,7 @@ class Hedgehog extends Small {
     } else {
       // A thistle flower tucked in the spines over one ear, and a bow at her neck.
       const flower = new THREE.Group();
-      flower.position.set(0.1, 0.16, -0.04);
+      flower.position.set(0.09, 0.215, -0.03);
       flower.add(bead(0.045, new THREE.MeshBasicMaterial({ color: 0xa860c8 }), 0, 0.04, 0));
       flower.add(turned([[0.05, 0], [0.04, 0.03], [0, 0.04]], 0x5a8a3a, 6, 1, false, mat));
       flower.rotation.z = -0.4;
@@ -1727,43 +1728,74 @@ class Hedgehog extends Small {
 }
 
 /**
- * A coat of spines: `n` cones spread evenly over an ellipsoid (middle x, y, z; radii), each standing out from its
- * surface, where `keep` says (by the way out from the middle). Dark from the root, pale at the tip; one mesh.
+ * A hedgehog's COAT OF SPINES: one mantle, part of an egg shape round (x, y, z) with these radii, over the back, the
+ * sides and the top (the way out from the middle, by `phi` round and `theta` down from the top, as a sphere is laid
+ * out: the front, +z, is left open for the face and the belly). Its surface is cut in a grid, and each cell raised in
+ * the middle into a short four-sided point that leans back toward the rump; dark at its root, pale at its tip. The
+ * points are longest along the spine of the back and shorter toward the mantle's edges. ONE mesh, tidy rows: the owner,
+ * 2026-11-20, of loose cones stuck on all over: "they look f****** crazy weird".
  */
-function spines(x: number, y: number, z: number, radii: [number, number, number], n: number, keep: (d: THREE.Vector3) => boolean, length: number, root: number, tip: number, seed: number): THREE.Mesh {
-  const parts: THREE.BufferGeometry[] = [];
-  const up = new THREE.Vector3(0, 1, 0);
+function spineCoat(x: number, y: number, z: number, radii: [number, number, number], open: number, thetaTo: number, cols: number, rows: number, spike: number, root: number, tip: number): THREE.Mesh {
+  const phi0 = Math.PI - (Math.PI / 2 - open);
+  const phiLen = Math.PI + 2 * (Math.PI / 2 - open);
+  const theta0 = 0.12;
+  const at = (u: number, v: number): THREE.Vector3 => {
+    const phi = phi0 + phiLen * u;
+    const th = theta0 + (thetaTo - theta0) * v;
+    return new THREE.Vector3(-Math.cos(phi) * Math.sin(th), Math.cos(th), Math.sin(phi) * Math.sin(th));
+  };
+  const onShell = (d: THREE.Vector3): THREE.Vector3 => new THREE.Vector3(x + d.x * radii[0], y + d.y * radii[1], z + d.z * radii[2]);
+  const pos: number[] = [];
+  const col: number[] = [];
   const a = new THREE.Color(root);
   const b = new THREE.Color(tip);
-  let s = seed;
-  const rnd = (): number => ((s = (s * 16807) % 2147483647) / 2147483647);
-  const total = n * 3;
-  for (let i = 0; i < total && parts.length < n; i++) {
-    // (Points spread evenly over a ball: the golden-angle spiral.)
-    const v = 1 - (2 * (i + 0.5)) / total;
-    const r = Math.sqrt(1 - v * v);
-    const th = i * 2.399963;
-    const d = new THREE.Vector3(Math.cos(th) * r, v, Math.sin(th) * r);
-    if (!keep(d)) continue;
-    const len = length * (0.8 + 0.4 * rnd());
-    const cone = new THREE.ConeGeometry(0.03, len, 4, 1).toNonIndexed();
-    cone.deleteAttribute('uv');
-    const pos = cone.attributes.position;
-    const cols = new Float32Array(pos.count * 3);
-    const c = new THREE.Color();
-    for (let k = 0; k < pos.count; k++) {
-      c.copy(a).lerp(b, pos.getY(k) > len * 0.2 ? 1 : 0);
-      cols.set([c.r, c.g, c.b], k * 3);
+  const lean = new THREE.Vector3(0, -0.25, -0.6);
+  const push = (p: THREE.Vector3, c: THREE.Color): void => {
+    pos.push(p.x, p.y, p.z);
+    col.push(c.r, c.g, c.b);
+  };
+  for (let r = 0; r < rows; r++) {
+    // (Every other row is shifted half a cell round, so the points sit in staggered rows as a hedgehog's do.)
+    const shift = r % 2 ? 0.5 : 0;
+    for (let c = 0; c < cols; c++) {
+      const u0 = Math.max(0, Math.min(1, (c + shift) / cols));
+      const u1 = Math.max(0, Math.min(1, (c + 1 + shift) / cols));
+      if (u1 - u0 < 1e-6) continue;
+      const v0 = r / rows;
+      const v1 = (r + 1) / rows;
+      const corners = [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)];
+      const mid = at((u0 + u1) / 2, (v0 + v1) / 2);
+      // Longest along the ridge of the back, shorter toward the edges of the mantle and at the very top.
+      const um = (u0 + u1) / 2;
+      const vm = (v0 + v1) / 2;
+      const k = Math.pow(Math.sin(Math.PI * um), 0.6) * (0.55 + 0.45 * Math.sin(Math.PI * Math.min(1, vm * 1.15)));
+      const out = mid.clone().add(lean.clone().multiplyScalar(0.6)).normalize();
+      const peak = onShell(mid).add(out.multiplyScalar(spike * (0.45 + 0.55 * k)));
+      const base = corners.map(onShell);
+      // Each point banded as a real spine is: a dark shaft, and a pale tip on its last third, with a hard edge
+      // between them (a ring part-way up each point), so the coat reads as spines from any side.
+      const ring = base.map((q) => q.clone().lerp(peak, 0.62));
+      // (Wound so that each face looks OUT: the other way, only its inside is drawn and the body shows through.)
+      for (let e = 0; e < 4; e++) {
+        const f = (e + 1) % 4;
+        push(base[e], a);
+        push(ring[f], a);
+        push(base[f], a);
+        push(base[e], a);
+        push(ring[e], a);
+        push(ring[f], a);
+        push(ring[e], b);
+        push(peak, b);
+        push(ring[f], b);
+      }
     }
-    cone.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-    cone.translate(0, len / 2, 0);
-    // A little off the straight out, so they lie back as a hedgehog's do.
-    const out = d.clone().add(new THREE.Vector3(0, 0.1, -0.55)).normalize();
-    cone.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, out));
-    cone.translate(x + d.x * radii[0] * 0.92, y + d.y * radii[1] * 0.92, z + d.z * radii[2] * 0.92);
-    parts.push(cone);
   }
-  return new THREE.Mesh(mergeGeometries(parts) ?? new THREE.BufferGeometry(), mat);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((pos.length / 3) * 2), 2));
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, mat);
 }
 
 export function makePatron(kind: PatronKind, look: PatronLook): PatronBody {

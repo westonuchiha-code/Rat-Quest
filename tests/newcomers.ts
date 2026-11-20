@@ -83,5 +83,32 @@ for (const [name, kind, look] of CAST) {
   check('the two moles and the two hedgehogs differ in their things, not only their colours (a helmet and lamp, spectacles and a scarf; an apron, a flower and a bow)', count('mole', 'digger') !== count('mole', 'dot') && count('hedgehog', 'bramble') !== count('hedgehog', 'thistle'));
 }
 
+// The hedgehog's coat of spines (patrons.ts spineCoat): one mesh, its faces looking OUT (wound the other way, only the
+// inside of the coat is drawn and the body shows through it: so it looked, once). Most of its faces must face away
+// from its middle.
+{
+  const coats: THREE.Mesh[] = [];
+  makePatron('hedgehog', 'bramble').root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && m.geometry.attributes.position.count / 3 > 1000) coats.push(m);
+  });
+  const outward = coats.map((m) => {
+    const p = m.geometry.attributes.position;
+    m.geometry.computeBoundingBox();
+    const mid = m.geometry.boundingBox!.getCenter(new THREE.Vector3());
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
+    let out = 0;
+    for (let i = 0; i < p.count; i += 3) {
+      a.fromBufferAttribute(p, i);
+      b.fromBufferAttribute(p, i + 1);
+      c.fromBufferAttribute(p, i + 2);
+      n.subVectors(b, a).cross(c.clone().sub(a));
+      if (n.dot(a.clone().add(b).add(c).divideScalar(3).sub(mid)) > 0) out++;
+    }
+    return out / (p.count / 3);
+  });
+  check('the hedgehog\'s coat of spines (body and head) is two tidy meshes whose faces look out', coats.length === 2 && outward.every((f) => f > 0.8), outward.map((f) => f.toFixed(2)).join(', '));
+}
+
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 process.exit(failures ? 1 : 0);

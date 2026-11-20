@@ -139,7 +139,10 @@ Both share a frame (`class Small`: short legs with round feet that hang off a st
 cards); what differs is built by each. Placed in the Green Room only: Digger and Dot at cards, Bramble keeping a
 counter (on a step: a hedgehog is shorter than a counter), Thistle on a stool with a drink. Polished once (2026-11-20,
 the owner's word): the moles' spade paws and pointed claws, bigger eyes, whiskers; the hedgehogs' ears (pink inside)
-and paws in colour (they were plain white balls), shorter and denser spines lying back.
+and paws in colour (they were plain white balls). Then (the owner: the hedgehogs "look f****** crazy weird") their
+loose cones were replaced by ONE COAT OF SPINES (`spineCoat` in patrons.ts): a mantle over back, sides and the top of
+the head, cut into staggered rows of short four-sided points that lean back, each a dark shaft with a pale tip. Its
+numbers: how many points round and down, how long, how far round it comes to the face.
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.
