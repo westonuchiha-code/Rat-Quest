@@ -142,7 +142,10 @@ the owner's word): the moles' spade paws and pointed claws, bigger eyes, whisker
 and paws in colour (they were plain white balls). Then (the owner: the hedgehogs "look f****** crazy weird") their
 loose cones were replaced by ONE COAT OF SPINES (`spineCoat` in patrons.ts): a mantle over back, sides and the top of
 the head, cut into staggered rows of short four-sided points that lean back, each a dark shaft with a pale tip. Its
-numbers: how many points round and down, how long, how far round it comes to the face.
+numbers: how many points round and down, how long, how far round it comes to the face (two numbers for the head:
+narrow over the brow, so the spines come down to a point there, and wide by the eyes). Then the FACE (the owner: "their
+face still look bad"): a round head with a pale mask, a short snout tipped up with a shiny black button nose, big dark
+eyes with a glint (they were white slits sunk in the head), a small mouth that opens as they talk.
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

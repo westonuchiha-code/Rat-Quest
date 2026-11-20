@@ -1651,6 +1651,7 @@ class Mole extends Small {
 class Hedgehog extends Small {
   readonly height = 1.0;
   private readonly nose = new THREE.Group();
+  private readonly mouthPiece = new THREE.Group();
 
   constructor(private readonly look: 'bramble' | 'thistle') {
     super();
@@ -1670,28 +1671,45 @@ class Hedgehog extends Small {
       g.add(kit.blob(0.045, 0.04, 0.045, C.paw, 0, -0.025, 0.01, 7, 5, 0.15));
       return g;
     });
-    // The head: round, running out into a POINTED snout with a black button of a nose; spines over the back of it.
+    // The head: ROUND, a pale mask over the face, and a SHORT snout tipped up a little with a shiny black button of a
+    // nose. (It was a long wedge of a snout taking up the whole face, and eyes sunk to slits: the owner, the same day,
+    // "their face still look bad".)
     this.head.position.set(0, 0.45, 0.06);
     this.chest.add(this.head);
-    this.head.add(turned([[0, -0.08], [0.14, -0.05], [0.16, 0.04], [0.12, 0.13], [0, 0.17]], C.face, 7, 0.95));
-    this.nose.position.set(0, 0.01, 0.12);
-    this.nose.add(turned([[0, 0], [0.085, 0.02], [0.055, 0.11], [0.025, 0.18], [0, 0.19]], C.face, 6, 0.9, true));
-    this.nose.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.nose }), 0, 0.005, 0.19));
+    this.head.add(turned(
+      [[0, -0.1], [0.11, -0.085], [0.165, 0], [0.17, 0.06], [0.13, 0.14], [0.06, 0.18], [0, 0.185]],
+      (_nx, ny, nz) => (nz > 0.15 && ny < 0.35 ? C.belly : C.face), 10, 0.95,
+    ));
+    this.nose.position.set(0, -0.012, 0.13);
+    this.nose.add(turned([[0, 0], [0.075, 0.01], [0.062, 0.055], [0.036, 0.095], [0, 0.105]], C.belly, 8, 0.9, true));
+    this.nose.add(bead(0.027, new THREE.MeshBasicMaterial({ color: C.nose }), 0, 0.004, 0.105));
+    this.nose.add(bead(0.008, WHITE, 0.01, 0.017, 0.124));
     this.head.add(this.nose);
+    // A small mouth under the snout, that opens as he talks.
+    this.mouthPiece.position.set(0, -0.06, 0.13);
+    this.mouthPiece.add(kit.box(0.045, 0.012, 0.012, 0x3a2420, 0, 0, 0));
+    this.head.add(this.mouthPiece);
     // And a cap of them over the top and back of his head, the brow left clear, joining the coat behind.
-    this.head.add(spineCoat(0, 0.045, -0.02, [0.172, 0.165, 0.17], 0.4, 1.7, 18, 6, 0.06, C.spine, C.tip));
+    this.head.add(spineCoat(0, 0.045, -0.02, [0.172, 0.168, 0.17], [0.12, 1.15], 1.7, 18, 6, 0.06, C.spine, C.tip));
     for (const side of [-1, 1]) {
       // Small round ears, half hidden in the spines.
       const ear = kit.blob(0.042, 0.042, 0.02, (_x, _y, nz) => (nz > 0.3 ? 0xe8a8a8 : C.face), side * 0.115, 0.115, 0.07, 8, 5, 0.1);
       ear.rotation.y = side * -0.35;
       this.head.add(ear);
-      if (look === 'thistle') this.head.add(bead(0.03, new THREE.MeshBasicMaterial({ color: 0xf0a0a8 }), side * 0.1, 0.0, 0.11));
+      if (look === 'thistle') {
+        const cheek = kit.blob(0.03, 0.02, 0.01, 0xf2a2ac, side * 0.098, -0.02, 0.135, 8, 5, 0);
+        cheek.rotation.y = side * 0.55;
+        this.head.add(cheek);
+      }
     }
+    // Eyes: a hedgehog's are dark, round and bright: a black bead each, a white glint in it, set ON the face.
     const eyes: THREE.Object3D[] = [];
     for (const side of [-1, 1]) {
-      const e = eye(0.03, 0.018);
-      e.position.set(side * 0.07, 0.07, 0.12);
-      e.rotation.y = side * 0.35;
+      const e = new THREE.Group();
+      e.add(bead(0.032, BLACK, 0, 0, 0, 8, 6));
+      e.add(bead(0.01, WHITE, side * -0.008, 0.013, 0.026));
+      e.position.set(side * 0.07, 0.055, 0.15);
+      e.rotation.y = side * 0.4;
       this.head.add(e);
       eyes.push(e);
     }
@@ -1709,20 +1727,21 @@ class Hedgehog extends Small {
       flower.rotation.z = -0.4;
       this.head.add(flower);
       for (const side of [-1, 1]) {
-        const loop = kit.box(0.08, 0.05, 0.02, C.cloth, side * 0.045, 0.45, 0.2);
+        const loop = kit.box(0.08, 0.05, 0.02, C.cloth, side * 0.045, 0.37, 0.235);
         loop.rotation.z = side * 0.3;
         this.chest.add(loop);
       }
-      this.chest.add(kit.blob(0.022, 0.022, 0.022, C.clothDark, 0, 0.45, 0.21));
+      this.chest.add(kit.blob(0.022, 0.022, 0.022, C.clothDark, 0, 0.37, 0.245));
     }
     ink = mat;
-    this.common = new Common(eyes, 0.85);
+    this.common = new Common(eyes, 1);
   }
 
   protected face(t: number, ctx: PatronCtx, mouth: number): void {
-    // The nose twitches, quick, now and then; talking, it bobs with each word.
+    // The nose twitches, quick, now and then; talking, it bobs with each word and the mouth opens under it.
     const twitch = now(t, 3.4, 0.35, this.look === 'thistle' ? 1.6 : 0.4);
-    this.nose.rotation.x = -0.25 * mouth + 0.1 * Math.sin(t * 24) * twitch;
+    this.nose.rotation.x = -0.16 - 0.15 * mouth + 0.08 * Math.sin(t * 24) * twitch;
+    this.mouthPiece.scale.set(1, 1 + 3.5 * mouth, 1);
     this.nose.rotation.y = (ctx.talking ? 0.04 : 0) * Math.sin(t * 7);
   }
 }
@@ -1735,12 +1754,15 @@ class Hedgehog extends Small {
  * points are longest along the spine of the back and shorter toward the mantle's edges. ONE mesh, tidy rows: the owner,
  * 2026-11-20, of loose cones stuck on all over: "they look f****** crazy weird".
  */
-function spineCoat(x: number, y: number, z: number, radii: [number, number, number], open: number, thetaTo: number, cols: number, rows: number, spike: number, root: number, tip: number): THREE.Mesh {
-  const phi0 = Math.PI - (Math.PI / 2 - open);
-  const phiLen = Math.PI + 2 * (Math.PI / 2 - open);
+function spineCoat(x: number, y: number, z: number, radii: [number, number, number], open: number | [number, number], thetaTo: number, cols: number, rows: number, spike: number, root: number, tip: number): THREE.Mesh {
+  // `open`: how wide the gap at the front is, each side of straight ahead (radians); two numbers, at the top and at the
+  // bottom of the mantle (a head's spines come down to a point over the brow and leave the face open below).
+  const [openTop, openBottom] = typeof open === 'number' ? [open, open] : open;
   const theta0 = 0.12;
   const at = (u: number, v: number): THREE.Vector3 => {
-    const phi = phi0 + phiLen * u;
+    // (Narrow over the brow, opening only toward the bottom: the eyes are low on the face.)
+    const o = openTop + (openBottom - openTop) * Math.pow(v, 2.5);
+    const phi = Math.PI / 2 + o + (2 * Math.PI - 2 * o) * u;
     const th = theta0 + (thetaTo - theta0) * v;
     return new THREE.Vector3(-Math.cos(phi) * Math.sin(th), Math.cos(th), Math.sin(phi) * Math.sin(th));
   };
