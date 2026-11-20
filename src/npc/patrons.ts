@@ -17,10 +17,11 @@ import { getTexture } from '../render/textures';
 import { createPs1Material } from '../render/ps1Material';
 import { buildMug } from '../world/tavernModels';
 import { bead, mix, modelKit, type ColorAt } from '../render/modelKit';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl' | 'rat';
-export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl', 'rat'];
-export type PatronLook = 'mo' | 'pebble' | 'vix' | 'ash' | 'slink' | 'biscuit' | 'tawny' | 'snow' | 'jinx';
+export type PatronKind = 'turtle' | 'fox' | 'ferret' | 'owl' | 'rat' | 'mole' | 'hedgehog';
+export const PATRON_KINDS: readonly PatronKind[] = ['turtle', 'fox', 'ferret', 'owl', 'rat', 'mole', 'hedgehog'];
+export type PatronLook = 'mo' | 'pebble' | 'vix' | 'ash' | 'slink' | 'biscuit' | 'tawny' | 'snow' | 'jinx' | 'digger' | 'dot' | 'bramble' | 'thistle';
 /** `tend`: keeping the bar (a mug in one hand and a rag going round it in the other). */
 export type Doing = 'stand' | 'drink' | 'chat' | 'lean' | 'cards' | 'tend';
 
@@ -31,6 +32,8 @@ export function patronLook(kind: PatronKind, name: string): PatronLook {
   if (kind === 'ferret') return n.includes('BISCUIT') ? 'biscuit' : 'slink';
   if (kind === 'owl') return n.includes('SNOW') ? 'snow' : 'tawny';
   if (kind === 'rat') return 'jinx';
+  if (kind === 'mole') return n.includes('DOT') ? 'dot' : 'digger';
+  if (kind === 'hedgehog') return n.includes('THISTLE') ? 'thistle' : 'bramble';
   return n.includes('ASH') ? 'ash' : 'vix';
 }
 
@@ -1409,10 +1412,346 @@ class Jinx implements PatronBody {
   }
 }
 
+// ---------------------------------------------------------------------------------------------------------------
+// NEWCOMERS (2026-11-20, for Fable; the owner: "most of the characters were designed by Opus in the first place so we
+// could also pump out a bunch of different characters for Fable to work on later"). Two more animals made into cute
+// characters, two of each: a MOLE (short, round, velvet, big pink spade hands, a long pink nose, eyes he can hardly
+// open) and a HEDGEHOG (round, a coat of spines over his back and head, a pointed snout). They do all the regulars do:
+// stand, drink, chat, lean, play cards, keep the bar, sit on a stool. Shown in the Green Room (Test Room 17).
+// ---------------------------------------------------------------------------------------------------------------
+
+const MOLE = {
+  /** Digger: a miner, a yellow helmet with a lamp on it. */
+  digger: { coat: 0x3a3440, light: 0x5e5668, pink: 0xe8a0a0, pinkDark: 0xb87070, claw: 0xf0e4cc, cloth: 0x7a5232 },
+  /** Dot: round spectacles and a knitted scarf. */
+  dot: { coat: 0x26222c, light: 0x48424f, pink: 0xf4b4bc, pinkDark: 0xc8888f, claw: 0xf4ead8, cloth: 0x3a8a6a },
+} as const;
+const HEDGEHOG = {
+  /** Bramble: brown spines, a green apron. */
+  bramble: { face: 0xd8b48a, belly: 0xf2dcbc, spine: 0x5e4028, tip: 0xe8d4b0, nose: 0x1a1210, cloth: 0x4a7a3a, clothDark: 0x355a2a },
+  /** Thistle: pale spines, a thistle flower in them, rosy cheeks. */
+  thistle: { face: 0xeedcc6, belly: 0xfbf1e2, spine: 0xb8a690, tip: 0xfbf5ea, nose: 0x3a2a2a, cloth: 0x8a4a9a, clothDark: 0x6a3878 },
+} as const;
+/** How long a newcomer's legs are (short), and so how high his hips stand. */
+const N_LEG = 0.16;
+
+/** A small round regular's frame: body, chest, head, arms with a mug and a hand of cards, short legs. What differs is built by each. */
+abstract class Small implements PatronBody {
+  readonly root = new THREE.Group();
+  abstract readonly height: number;
+  protected readonly body = new THREE.Group();
+  protected readonly chest = new THREE.Group();
+  protected readonly head = new THREE.Group();
+  protected readonly arms: Array<{ upper: THREE.Group; fore: THREE.Group; side: number }> = [];
+  protected readonly legs: Array<{ thigh: THREE.Group; side: number }> = [];
+  protected readonly mugHand = new THREE.Group();
+  protected readonly cards = new THREE.Group();
+  protected common!: Common;
+  private sip = 0;
+
+  constructor() {
+    this.root.add(this.body);
+    this.body.position.y = N_LEG;
+    this.body.add(this.chest);
+  }
+  /** Short legs, a foot each. */
+  protected addLegs(r: number, x: number, color: number, foot: number): void {
+    for (const side of [-1, 1]) {
+      const thigh = new THREE.Group();
+      thigh.position.set(side * x, 0, 0.02);
+      thigh.add(limb(r, r * 0.85, N_LEG, color));
+      thigh.add(kit.box(r * 1.7, 0.05, r * 2.6, foot, 0, -N_LEG + 0.025, r * 0.7));
+      this.body.add(thigh);
+      this.legs.push({ thigh, side });
+    }
+  }
+  /** Arms: upper and fore, and what each hand holds; `hand` makes the hand on the end of each. */
+  protected addArms(x: number, y: number, r: number, upper: number, fore: number, color: number, hand: (side: number) => THREE.Object3D): void {
+    for (const side of [-1, 1]) {
+      const up = new THREE.Group();
+      up.position.set(side * x, y, 0.02);
+      up.add(limb(r, r * 0.85, upper, color));
+      const fo = new THREE.Group();
+      fo.position.set(0, -upper, 0);
+      fo.add(limb(r * 0.85, r * 0.75, fore, color));
+      const h = hand(side);
+      h.position.y = -fore;
+      fo.add(h);
+      up.add(fo);
+      if (side > 0) {
+        this.mugHand.position.set(0, -fore - 0.03, 0.07);
+        this.mugHand.add(mug());
+        fo.add(this.mugHand);
+      } else {
+        this.cards.position.set(0, -fore - 0.02, 0.05);
+        for (let i = 0; i < 4; i++) {
+          const fan = new THREE.Group();
+          fan.rotation.z = (i - 1.5) * 0.28;
+          fan.position.z = i * 0.004;
+          fan.add(kit.box(0.07, 0.1, 0.006, i % 2 ? 0xe9e2cf : 0xdcd3bb, 0, 0.05, 0));
+          this.cards.add(fan);
+        }
+        fo.add(this.cards);
+      }
+      this.chest.add(up);
+      this.arms.push({ upper: up, fore: fo, side });
+    }
+  }
+  /** What each does with his face as he talks and listens (a snout wiggled, a nose twitched). */
+  protected abstract face(t: number, ctx: PatronCtx, mouth: number): void;
+
+  update(dt: number, ctx: PatronCtx): void {
+    const t = ctx.time;
+    this.common.step(dt, ctx);
+    const lean = ctx.doing === 'lean' && !ctx.seated;
+    const speaking = ctx.talking || this.common.mouth > 0.05;
+    // Standing (a little bob as he breathes), sitting with his legs out in front, or leaning back.
+    this.body.position.y = ctx.seated ? SEAT + 0.07 : N_LEG;
+    // (He breathes in his chest, not his legs: his feet stay on the floor.)
+    this.chest.position.y = 0.008 * Math.sin(t * 1.9);
+    this.body.position.z = lean ? -0.06 : 0;
+    this.body.rotation.x = lean ? -0.16 : ctx.seated ? 0.05 : 0;
+    this.chest.rotation.x = (ctx.doing === 'cards' ? 0.14 : 0) + 0.025 * Math.sin(t * 1.7);
+    this.chest.rotation.z = 0.03 * Math.sin(t * 0.8);
+    for (const leg of this.legs) leg.thigh.rotation.set(ctx.seated ? -1.45 : lean && leg.side > 0 ? 0.35 : 0, 0, leg.side * (ctx.seated ? 0.15 : 0.04));
+    const peek = ctx.doing === 'cards' && !ctx.talking ? now(t, 6.5, 2.2, ctx.turn * 3) : 0;
+    this.head.rotation.y = ctx.headYaw * (1 - 0.8 * peek);
+    this.head.rotation.x = 0.3 * peek + (Common.listening(ctx) ? 0.08 * Math.max(0, Math.sin(t * 2.9)) ** 3 : 0) + (ctx.talking ? 0.05 * Math.sin(t * 8.5) : 0) - 0.45 * this.sip + (ctx.nod ?? 0);
+    this.head.rotation.z = 0.08 * Math.sin(t * 0.6);
+    this.face(t, ctx, this.common.mouth);
+    const drinking = ctx.doing === 'drink' && !ctx.talking;
+    this.sip = drinking ? now(t, 6.4, 2.2) : ease(this.sip, 0, dt, 8);
+    this.mugHand.visible = ctx.doing === 'drink' || ctx.doing === 'tend';
+    this.cards.visible = ctx.doing === 'cards';
+    for (const arm of this.arms) {
+      const s = arm.side;
+      if (lean) {
+        // Arms folded over his round middle.
+        arm.upper.rotation.set(-0.55, 0, s * 0.3);
+        arm.fore.rotation.set(-1.3, 0, s * -1.2);
+      } else if (s > 0 && this.mugHand.visible) {
+        const rub = ctx.doing === 'tend' ? 0.15 * Math.sin(t * 5) : 0;
+        arm.upper.rotation.set(-0.6 - 0.8 * this.sip + rub, 0, s * 0.15);
+        arm.fore.rotation.set(-1.0 - 0.7 * this.sip, 0, s * -0.3);
+        this.mugHand.rotation.x = 1.5 + 0.5 * this.sip;
+      } else if (s < 0 && this.cards.visible) {
+        arm.upper.rotation.set(-0.5 - 0.2 * peek, 0, s * 0.12);
+        arm.fore.rotation.set(-1.4 - 0.2 * peek, 0, s * -0.5);
+        this.cards.rotation.set(1.2, 0, 0);
+      } else if (s < 0 && ctx.doing === 'tend') {
+        // The rag going round the mug in the other hand.
+        arm.upper.rotation.set(-0.7 + 0.1 * Math.sin(t * 6), 0, s * -0.1 + 0.1 * Math.cos(t * 6));
+        arm.fore.rotation.set(-1.1, 0, s * -0.6);
+      } else {
+        const wave = speaking ? 0.5 + 0.45 * Math.sin(t * 5 + s * 1.3) : 0;
+        const rest = ctx.seated ? -0.6 : 0;
+        arm.upper.rotation.set(rest - 0.5 * wave, 0, s * (0.25 + 0.2 * wave));
+        arm.fore.rotation.set(rest * 0.8 - 0.8 * wave - 0.15, 0, 0);
+      }
+    }
+  }
+}
+
+class Mole extends Small {
+  readonly height = 1.0;
+  private readonly snout = new THREE.Group();
+
+  constructor(private readonly look: 'digger' | 'dot') {
+    super();
+    const C = MOLE[look];
+    ink = furMat;
+    // ONE round body, pear-shaped, wider at the bottom; a paler front.
+    this.chest.add(turned(
+      [[0, 0], [0.2, 0.03], [0.26, 0.17], [0.25, 0.32], [0.19, 0.45], [0.1, 0.52], [0, 0.53]],
+      (_nx, ny, nz) => (nz > 0.35 && ny > -0.6 && ny < 0.6 ? C.light : C.coat), 7, 0.9,
+    ));
+    this.addLegs(0.06, 0.12, C.coat, C.pink);
+    // Arms: short, and on the end of each a SPADE of a hand, wide and pink, four pale claws along its edge.
+    this.addArms(0.23, 0.36, 0.055, 0.14, 0.11, C.coat, (side) => {
+      const g = new THREE.Group();
+      g.add(kit.box(0.14, 0.05, 0.11, C.pink, side * 0.01, -0.02, 0.01));
+      for (let k = 0; k < 4; k++) g.add(kit.box(0.022, 0.05, 0.03, C.claw, -0.05 + k * 0.033, -0.065, 0.045));
+      return g;
+    });
+    // The head: ONE round piece running into the body, and a long pink snout that goes everywhere first.
+    this.head.position.set(0, 0.47, 0.05);
+    this.chest.add(this.head);
+    this.head.add(turned([[0, -0.08], [0.15, -0.05], [0.18, 0.04], [0.14, 0.13], [0, 0.18]], C.coat, 7, 0.95));
+    this.snout.position.set(0, 0.02, 0.13);
+    this.snout.add(turned([[0, 0], [0.07, 0.02], [0.06, 0.12], [0.035, 0.19], [0, 0.2]], C.pink, 6, 0.9, true, mat));
+    this.snout.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.pinkDark }), 0, 0, 0.2));
+    this.head.add(this.snout);
+    const eyes: THREE.Object3D[] = [];
+    for (const side of [-1, 1]) {
+      const e = eye(0.022, 0.014);
+      e.position.set(side * 0.075, 0.07, 0.135);
+      e.rotation.y = side * 0.4;
+      this.head.add(e);
+      eyes.push(e);
+    }
+    if (look === 'digger') {
+      // A miner's helmet: a yellow dome with a brim, and a lamp on its front that is always lit.
+      const hat = new THREE.Group();
+      hat.position.set(0, 0.1, 0);
+      hat.add(turned([[0, 0], [0.17, 0], [0.16, 0.07], [0.1, 0.13], [0, 0.14]], (_x, ny) => (ny < -0.6 ? 0xb8902a : 0xe8c040), 8, 1, false, mat));
+      const brim = new THREE.CylinderGeometry(0.2, 0.2, 0.02, 10, 1);
+      hat.add(new THREE.Mesh(paintFaces(faceted(brim), 0xd8b030, 0), mat));
+      hat.add(kit.box(0.06, 0.05, 0.04, 0x3a3a40, 0, 0.06, 0.15));
+      hat.add(bead(0.024, new THREE.MeshBasicMaterial({ color: 0xfff2a0 }), 0, 0.06, 0.175));
+      hat.rotation.x = -0.12;
+      this.head.add(hat);
+      // A belt of tools round his middle: a leather strap, a hammer's head.
+      this.chest.add(turned([[0.255, 0], [0.26, 0.05], [0.255, 0.06]], C.cloth, 7, 0.9, false, mat).translateY(0.15));
+      this.chest.add(kit.box(0.07, 0.04, 0.04, 0x8a8a92, 0.2, 0.17, 0.14));
+    } else {
+      // Round spectacles, and a knitted scarf with its end hanging down his front.
+      for (const side of [-1, 1]) {
+        const rim = new THREE.TorusGeometry(0.04, 0.008, 4, 10);
+        const m = new THREE.Mesh(paintFaces(faceted(rim), 0x2a2018, 0), mat);
+        m.position.set(side * 0.07, 0.07, 0.165);
+        m.rotation.y = side * 0.25;
+        this.head.add(m);
+      }
+      this.head.add(kit.box(0.04, 0.008, 0.008, 0x2a2018, 0, 0.075, 0.175));
+      this.chest.add(turned([[0.1, 0], [0.18, 0.01], [0.17, 0.07], [0.09, 0.08]], (_x, ny) => (Math.round((ny + 1) * 3) % 2 ? C.cloth : 0xe8e0c8), 7, 1, false, mat).translateY(0.43));
+      const end = limb(0.045, 0.04, 0.2, (_x, ny) => (Math.round((ny + 1) * 3) % 2 ? C.cloth : 0xe8e0c8), 4, mat);
+      end.position.set(0.07, 0.47, 0.17);
+      end.rotation.x = -0.25;
+      this.chest.add(end);
+    }
+    ink = mat;
+    this.common = new Common(eyes, 0.45);
+  }
+
+  protected face(t: number, ctx: PatronCtx, mouth: number): void {
+    // His snout sniffs about all the time; talking, it lifts with each word.
+    const sniff = now(t, 2.7, 0.5, this.look === 'dot' ? 1.1 : 0);
+    this.snout.rotation.x = -0.35 * mouth + 0.08 * Math.sin(t * 17) * sniff;
+    this.snout.rotation.y = 0.12 * Math.sin(t * 0.9 + (ctx.turn ? 1 : 0));
+  }
+}
+
+class Hedgehog extends Small {
+  readonly height = 1.0;
+  private readonly nose = new THREE.Group();
+
+  constructor(private readonly look: 'bramble' | 'thistle') {
+    super();
+    const C = HEDGEHOG[look];
+    ink = softMat;
+    // ONE round body: a soft pale front; the back is under the spines.
+    this.chest.add(turned(
+      [[0, 0], [0.2, 0.02], [0.26, 0.15], [0.25, 0.3], [0.2, 0.43], [0.1, 0.5], [0, 0.51]],
+      (_nx, _ny, nz) => (nz > 0.25 ? C.belly : C.face), 7, 0.92,
+    ));
+    // The spines: a coat of cones over his back and the top of him, each pointing out, dark with a pale tip.
+    this.chest.add(spines(0, 0.27, -0.02, [0.27, 0.27, 0.24], 90, (d) => d.z < 0.3 && d.y > -0.5, 0.16, C.spine, C.tip, 11));
+    this.addLegs(0.055, 0.11, C.face, C.nose);
+    this.addArms(0.22, 0.35, 0.05, 0.13, 0.11, C.face, () => {
+      const g = new THREE.Group();
+      g.add(bead(0.045, mat, 0, -0.02, 0.01));
+      return g;
+    });
+    // The head: round, running out into a POINTED snout with a black button of a nose; spines over the back of it.
+    this.head.position.set(0, 0.45, 0.06);
+    this.chest.add(this.head);
+    this.head.add(turned([[0, -0.08], [0.14, -0.05], [0.16, 0.04], [0.12, 0.13], [0, 0.17]], C.face, 7, 0.95));
+    this.nose.position.set(0, 0.01, 0.12);
+    this.nose.add(turned([[0, 0], [0.085, 0.02], [0.055, 0.11], [0.025, 0.18], [0, 0.19]], C.face, 6, 0.9, true));
+    this.nose.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.nose }), 0, 0.005, 0.19));
+    this.head.add(this.nose);
+    this.head.add(spines(0, 0.05, -0.03, [0.15, 0.15, 0.14], 34, (d) => d.z < -0.05 && d.y > -0.2, 0.12, C.spine, C.tip, 23));
+    for (const side of [-1, 1]) {
+      // Small round ears, half hidden in the spines.
+      this.head.add(bead(0.04, mat, side * 0.12, 0.12, 0.02));
+      if (look === 'thistle') this.head.add(bead(0.03, new THREE.MeshBasicMaterial({ color: 0xf0a0a8 }), side * 0.1, 0.0, 0.11));
+    }
+    const eyes: THREE.Object3D[] = [];
+    for (const side of [-1, 1]) {
+      const e = eye(0.03, 0.018);
+      e.position.set(side * 0.07, 0.07, 0.12);
+      e.rotation.y = side * 0.35;
+      this.head.add(e);
+      eyes.push(e);
+    }
+    if (look === 'bramble') {
+      // A green apron tied round his middle, its bib up his front.
+      this.chest.add(kit.box(0.26, 0.26, 0.02, C.cloth, 0, 0.17, 0.235));
+      this.chest.add(kit.box(0.16, 0.12, 0.02, C.clothDark, 0, 0.35, 0.215));
+      this.chest.add(turned([[0.255, 0], [0.26, 0.03], [0.255, 0.035]], C.clothDark, 7, 0.92, false, mat).translateY(0.24));
+    } else {
+      // A thistle flower tucked in the spines over one ear, and a bow at her neck.
+      const flower = new THREE.Group();
+      flower.position.set(0.1, 0.16, -0.04);
+      flower.add(bead(0.045, new THREE.MeshBasicMaterial({ color: 0xa860c8 }), 0, 0.04, 0));
+      flower.add(turned([[0.05, 0], [0.04, 0.03], [0, 0.04]], 0x5a8a3a, 6, 1, false, mat));
+      flower.rotation.z = -0.4;
+      this.head.add(flower);
+      for (const side of [-1, 1]) {
+        const loop = kit.box(0.08, 0.05, 0.02, C.cloth, side * 0.045, 0.45, 0.2);
+        loop.rotation.z = side * 0.3;
+        this.chest.add(loop);
+      }
+      this.chest.add(bead(0.022, mat, 0, 0.45, 0.21));
+    }
+    ink = mat;
+    this.common = new Common(eyes, 0.85);
+  }
+
+  protected face(t: number, ctx: PatronCtx, mouth: number): void {
+    // The nose twitches, quick, now and then; talking, it bobs with each word.
+    const twitch = now(t, 3.4, 0.35, this.look === 'thistle' ? 1.6 : 0.4);
+    this.nose.rotation.x = -0.25 * mouth + 0.1 * Math.sin(t * 24) * twitch;
+    this.nose.rotation.y = (ctx.talking ? 0.04 : 0) * Math.sin(t * 7);
+  }
+}
+
+/**
+ * A coat of spines: `n` cones spread evenly over an ellipsoid (middle x, y, z; radii), each standing out from its
+ * surface, where `keep` says (by the way out from the middle). Dark from the root, pale at the tip; one mesh.
+ */
+function spines(x: number, y: number, z: number, radii: [number, number, number], n: number, keep: (d: THREE.Vector3) => boolean, length: number, root: number, tip: number, seed: number): THREE.Mesh {
+  const parts: THREE.BufferGeometry[] = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  const a = new THREE.Color(root);
+  const b = new THREE.Color(tip);
+  let s = seed;
+  const rnd = (): number => ((s = (s * 16807) % 2147483647) / 2147483647);
+  const total = n * 3;
+  for (let i = 0; i < total && parts.length < n; i++) {
+    // (Points spread evenly over a ball: the golden-angle spiral.)
+    const v = 1 - (2 * (i + 0.5)) / total;
+    const r = Math.sqrt(1 - v * v);
+    const th = i * 2.399963;
+    const d = new THREE.Vector3(Math.cos(th) * r, v, Math.sin(th) * r);
+    if (!keep(d)) continue;
+    const len = length * (0.8 + 0.4 * rnd());
+    const cone = new THREE.ConeGeometry(0.03, len, 4, 1).toNonIndexed();
+    cone.deleteAttribute('uv');
+    const pos = cone.attributes.position;
+    const cols = new Float32Array(pos.count * 3);
+    const c = new THREE.Color();
+    for (let k = 0; k < pos.count; k++) {
+      c.copy(a).lerp(b, pos.getY(k) > len * 0.2 ? 1 : 0);
+      cols.set([c.r, c.g, c.b], k * 3);
+    }
+    cone.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    cone.translate(0, len / 2, 0);
+    // A little off the straight out, so they lie back as a hedgehog's do.
+    const out = d.clone().add(new THREE.Vector3(0, 0.15, -0.35)).normalize();
+    cone.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, out));
+    cone.translate(x + d.x * radii[0] * 0.92, y + d.y * radii[1] * 0.92, z + d.z * radii[2] * 0.92);
+    parts.push(cone);
+  }
+  return new THREE.Mesh(mergeGeometries(parts) ?? new THREE.BufferGeometry(), mat);
+}
+
 export function makePatron(kind: PatronKind, look: PatronLook): PatronBody {
   if (kind === 'turtle') return new Turtle(look === 'pebble' ? 'pebble' : 'mo');
   if (kind === 'ferret') return new Ferret(look === 'biscuit' ? 'biscuit' : 'slink');
   if (kind === 'owl') return new Owl(look === 'snow' ? 'snow' : 'tawny');
   if (kind === 'rat') return new Jinx();
+  if (kind === 'mole') return new Mole(look === 'dot' ? 'dot' : 'digger');
+  if (kind === 'hedgehog') return new Hedgehog(look === 'thistle' ? 'thistle' : 'bramble');
   return new Fox(look === 'ash' ? 'ash' : 'vix');
 }

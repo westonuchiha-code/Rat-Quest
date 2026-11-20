@@ -118,5 +118,20 @@ Flame jet (on the floor it points up; turned, it is in a wall pointing out).
 The Press also shows the crusher (above): a corridor under three crushers out of step, and one to ride up to a ledge.
 ICE, asked for with these, was already a part: the editor's Ice floor (a slick floor, `slick: true`).
 
+## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
+
+Made as the Club's regulars are: a BUILD (the animal) and a LOOK (one of two of it, by name: colours and a thing or
+two about the model). Each does what the regulars do (`doing`: stand, drink, chat, lean, cards, tend; `seated` on a
+stool), has a voice (audio/speech.ts, a borrowed recording at its own pitch), a talk-box face (npc/portrait.ts),
+and can be cast in a scene (cutscene/stage.ts). Put one in a level as any regular: an `NpcSpec` with its `kind`.
+
+| kind | looks (by name) | what it is |
+|------|-----------------|------------|
+| `mole` | DIGGER (a miner: yellow helmet with a lit lamp, a tool belt), DOT (round spectacles, a knitted scarf) | short and round, velvet, big pink spade hands with pale claws, a long pink snout that sniffs about, eyes he can hardly open; voice: low and mumbled |
+| `hedgehog` | BRAMBLE (brown spines, a green apron), THISTLE (pale spines, a thistle flower in them, rosy cheeks, a bow) | round, a coat of spines over back and head (one mesh), a pointed snout with a twitching nose; voice: quick and bright |
+
+Both share a frame (`class Small`: short legs, arms, a mug and a hand of cards); what differs is built by each. Placed
+in the Green Room only: Digger and Dot at cards, Bramble keeping a counter, Thistle on a stool with a drink.
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

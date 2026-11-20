@@ -22,6 +22,7 @@ without rebuilding models. Everything Opus did, by risk, is ONE PAGE: `docs/OPUS
 kinds, household objects, a floor piano and an echo puzzle, levers, cracked walls and floors, belts, blades, spikes,
 fans, crushers, flame jets, more to come) are catalogued in `docs/KIT.md` and shown in the Workshop (Test Room 12), the Music Room (Test
 Room 13), the Yard (Test Room 14), the Gauntlet (Test Room 15) and the Press (Test Room 16).
+New characters for Fable (a mole and a hedgehog, two of each) are in the Green Room (Test Room 17).
 
 ---
 

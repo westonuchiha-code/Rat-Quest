@@ -73,6 +73,10 @@ with `bellNote` instead of the chip. (Found on the way, NOT fixed: `crushCheck` 
 `resolveCombat`, which clears it, so being pinned against a ceiling hurts him without the hurt being shown or heard.) The Gauntlet has roach buttons, so `tests/hall.ts`'s rule "buttons
 only in the practice rooms" now names it as the one other room allowed them.
 
+New characters (the Green Room, Test Room 17; `tests/newcomers.ts`): a mole (Digger, Dot) and a hedgehog (Bramble,
+Thistle), as the Club's regulars are made (`npc/patrons.ts`), each with a voice, a portrait, a place in cutscenes.
+Not placed anywhere else.
+
 ## 4. Tools, tests and notes (no effect on the game)
 
 `npm run test:all`: the whole suite in one build, about 95 s; it type-checks the game and the tests first (new

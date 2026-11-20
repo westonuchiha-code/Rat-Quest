@@ -43,6 +43,9 @@ export const VOICES: Record<NpcKind, VoiceDef> = {
   ferret: { bank: 'mort', pitch: 1.65, wobble: 0.18, vol: 0.5, standIn: 240 },
   owl: { bank: 'pigeon', pitch: 0.86, wobble: 0.02, vol: 0.65, standIn: 140 },
   rat: { bank: 'wren', pitch: 1.08, wobble: 0.06, vol: 0.6, standIn: 230 },
+  // The newcomers (2026-11-20): a mole, slow and low and mumbled; a hedgehog, quick and bright.
+  mole: { bank: 'mort', pitch: 0.78, wobble: 0.08, vol: 0.55, standIn: 110 },
+  hedgehog: { bank: 'wren', pitch: 1.25, wobble: 0.1, vol: 0.55, standIn: 260 },
 };
 
 /**

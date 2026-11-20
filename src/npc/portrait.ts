@@ -15,7 +15,7 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillStyle = c;
     g.fillRect(x, y, w, h);
   };
-  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : kind === 'rat' ? '#2a1a30' : '#2a3448');
+  px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : kind === 'rat' ? '#2a1a30' : kind === 'mole' ? '#2a2620' : kind === 'hedgehog' ? '#2a3022' : '#2a3448');
   if (kind === 'turtle') {
     const old = patronLook('turtle', name) === 'mo';
     const skin = old ? '#7c8f4e' : '#9fbf5a';
@@ -90,6 +90,58 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     px(6, 19, 12, 2, '#1a1620'); // a studded collar
     for (const x of [7, 10, 13, 16]) px(x, 19, 1, 1, '#d8d8e4');
     px(4, 21, 16, 3, '#34303e');
+  } else if (kind === 'mole') {
+    // A round velvet head, a long pink nose, eyes he can hardly open; a helmet and lamp, or round spectacles.
+    const dot = patronLook('mole', name) === 'dot';
+    const coat = dot ? '#26222c' : '#3a3440';
+    px(5, 6, 14, 12, coat);
+    px(4, 8, 16, 8, coat);
+    px(7, 11, 3, 1, '#14100c'); // squinting eyes
+    px(14, 11, 3, 1, '#14100c');
+    px(10, 12, 4, 6, dot ? '#f4b4bc' : '#e8a0a0'); // the snout
+    px(9, 17, 6, 3, dot ? '#f4b4bc' : '#e8a0a0');
+    px(11, 19, 2, 1, '#b87070');
+    if (dot) {
+      px(6, 10, 5, 1, '#2a2018'); // spectacles
+      px(13, 10, 5, 1, '#2a2018');
+      px(6, 13, 5, 1, '#2a2018');
+      px(13, 13, 5, 1, '#2a2018');
+      px(11, 11, 2, 1, '#2a2018');
+      px(4, 20, 16, 3, '#3a8a6a'); // the scarf
+      px(6, 20, 2, 3, '#e8e0c8');
+      px(12, 20, 2, 3, '#e8e0c8');
+      px(18, 20, 2, 3, '#e8e0c8');
+    } else {
+      px(4, 2, 16, 5, '#e8c040'); // the helmet
+      px(3, 6, 18, 1, '#b8902a');
+      px(10, 3, 4, 3, '#fff2a0'); // its lamp
+      px(4, 21, 16, 3, '#7a5232');
+    }
+  } else if (kind === 'hedgehog') {
+    // Spines round the top of a pale face, a pointed snout with a black nose.
+    const th = patronLook('hedgehog', name) === 'thistle';
+    const spine = th ? '#b8a690' : '#5e4028';
+    const tip = th ? '#fbf5ea' : '#e8d4b0';
+    for (let x = 2; x < 22; x += 3) px(x, 2 + (x % 2), 2, 6, spine);
+    for (let x = 3; x < 21; x += 3) px(x, 1 + (x % 2), 1, 2, tip);
+    px(2, 6, 3, 10, spine);
+    px(19, 6, 3, 10, spine);
+    px(5, 7, 14, 10, th ? '#eedcc6' : '#d8b48a'); // face
+    px(7, 10, 3, 3, '#f4f0e4');
+    px(14, 10, 3, 3, '#f4f0e4');
+    px(8, 11, 1, 2, '#14100c');
+    px(15, 11, 1, 2, '#14100c');
+    px(9, 14, 6, 4, th ? '#fbf1e2' : '#f2dcbc'); // the snout
+    px(10, 18, 4, 2, th ? '#fbf1e2' : '#f2dcbc');
+    px(11, 18, 2, 2, '#1a1210');
+    if (th) {
+      px(5, 14, 2, 2, '#f0a0a8'); // rosy cheeks
+      px(17, 14, 2, 2, '#f0a0a8');
+      px(16, 2, 4, 4, '#a860c8'); // the thistle
+      px(7, 20, 10, 3, '#8a4a9a'); // a bow
+    } else {
+      px(4, 20, 16, 4, '#4a7a3a'); // the apron's bib
+    }
   } else if (kind === 'ferret') {
     const pale = patronLook('ferret', name) === 'biscuit';
     const coat = pale ? '#ead9b6' : '#7a5236';

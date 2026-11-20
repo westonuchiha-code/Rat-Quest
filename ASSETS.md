@@ -71,6 +71,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 14 | `breakyard` | THE YARD | The Yard | waking | dungeon | drift | `src/levels/breakyard.ts` |
 | Test Room 15 | `gauntlet` | GAUNTLET | The Gauntlet | waking | dungeon | drift | `src/levels/gauntlet.ts` |
 | Test Room 16 | `press` | THE PRESS | The Press | waking | dungeon | drift | `src/levels/press.ts` |
+| Test Room 17 | `greenroom` | GREEN ROOM | The Green Room | waking | dungeon | drift | `src/levels/greenroom.ts` |
 
 **The Hall** (`hall`, the hub): `src/levels/hall.ts`. **Boss rooms:** SPIDER BOSS (`widowpit`, `src/levels/practice.ts`); GRIMSQUEAK (`lair`, `src/levels/keep.ts`); SUMP WYRM (`sump`, `src/levels/cisternHalls.ts`); BROOD MOTHER (`brood`, `src/levels/hollows.ts`).
 
@@ -137,8 +138,11 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 | --- | --- | --- | --- | --- |
 | ASH | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
 | BISCUIT | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
+| BRAMBLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17 |
 | CORPORAL NIB | ant | `src/enemies/antModel.ts` | villain at 1.3 | Test Room 11, The Hall |
+| DIGGER | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17 |
 | DIZZY DAVE | pigeon | `src/npc/npc.ts` | pigeon at 1 | Dizzy Dave's Spot, Test Room 11, The Hall |
+| DOT | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17 |
 | FINCH | bird | `src/npc/npc.ts` | wren at 1.4 | Waterworks, Plank Pit, Lift Shaft, Web Hollow and 11 more |
 | JINX | rat | `src/npc/patrons.ts` | wren at 1.08 | Test Room 11, The Hall |
 | LORD GRIMSQUEAK | villain | `src/npc/grimsqueakModel.ts` | villain at 0.8 | Test Room 9B, Dizzy Dave's Spot, Test Room 11, The Hall |
@@ -150,6 +154,7 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 | PROFESSOR SNOW | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 11, The Hall |
 | SIR HOBNAIL | stag | `src/enemies/stagModel.ts` | villain at 0.62 | Test Room 11, The Hall |
 | SLINK | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
+| THISTLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17 |
 | VIX | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
 | WREN | bird | `src/npc/npc.ts` | wren at 1.4 | Dizzy Dave's Spot, Test Room 11, Test Room 6, Test Room 6C and 3 more |
 
@@ -262,6 +267,8 @@ Characters "speak" in syllables cut from one recording each (`recordings/voices.
 | ferret | mort | 1.65 |
 | owl | pigeon | 0.86 |
 | rat | wren | 1.08 |
+| mole | mort | 0.78 |
+| hedgehog | wren | 1.25 |
 
 **Robot voices** (the Robot Voice Box). They SPEAK only in the dream. 4 voices (small, thin, big, plain), each with cries for
 attack, hurt and die: `src/audio/robotVoices.ts`, made by `node scripts/chip/robot.mjs`. Which creature has which
@@ -290,7 +297,7 @@ GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio
 
 | A level asks for | It gets | Levels that ask for it |
 | --- | --- | --- |
-| `drift` | `cistern` | 34 |
+| `drift` | `cistern` | 35 |
 | `pump` | `foundry` | 5 |
 | `groove` | `bap2` then `bap1` | 3 |
 | `echo` | `hollows` | 7 |

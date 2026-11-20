@@ -58,7 +58,7 @@ export const CREATURES: Array<{ type: string; mind: string; body: string; name?:
 /** Which file draws each kind of friendly character. */
 const NPC_BODY: Record<string, string> = {
   mouse: 'src/npc/npc.ts', bird: 'src/npc/npc.ts', pigeon: 'src/npc/npc.ts', villain: 'src/npc/grimsqueakModel.ts',
-  turtle: 'src/npc/patrons.ts', fox: 'src/npc/patrons.ts', ferret: 'src/npc/patrons.ts', owl: 'src/npc/patrons.ts', rat: 'src/npc/patrons.ts',
+  turtle: 'src/npc/patrons.ts', fox: 'src/npc/patrons.ts', ferret: 'src/npc/patrons.ts', owl: 'src/npc/patrons.ts', rat: 'src/npc/patrons.ts', mole: 'src/npc/patrons.ts', hedgehog: 'src/npc/patrons.ts',
   ant: 'src/enemies/antModel.ts', stag: 'src/enemies/stagModel.ts',
 };
 

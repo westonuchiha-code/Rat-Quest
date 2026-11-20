@@ -49,6 +49,10 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - Riding a crusher up to the ledge: it waits 3 seconds up for him to step off.
 - The flame jets: a 0.6 s blue pilot before each. The roar is unheard.
 
+**New characters** (the Green Room, Test Room 17)
+- Two moles (Digger, Dot) and two hedgehogs (Bramble, Thistle), to talk to. Whether they look like they belong; their
+  voices are borrowed and pitched (unheard).
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

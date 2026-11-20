@@ -47,7 +47,7 @@ const GESTURES = new Set<string>(['touchScarf', 'reachPaw', 'hesitate', 'pickUp'
 /** The creatures that can be cast, as a scene names them. */
 export const PUPPET_FOES = ['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion'] as const;
 /** The talking characters' kinds. */
-export const PUPPET_NPCS = ['mouse', 'bird', 'pigeon', 'villain', 'turtle', 'fox', 'ferret', 'owl', 'rat', 'ant', 'stag'] as const;
+export const PUPPET_NPCS = ['mouse', 'bird', 'pigeon', 'villain', 'turtle', 'fox', 'ferret', 'owl', 'rat', 'ant', 'stag', 'mole', 'hedgehog'] as const;
 
 /**
  * The marionette's part of a pose, for any model: its root tipped (forward, and to its left), lifted by a hop, and,

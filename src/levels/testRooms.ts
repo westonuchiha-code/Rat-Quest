@@ -46,6 +46,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 14, id: 'breakyard', door: 'THE YARD', like: 'Things to hit: levers that open gates, a cracked wall, a cracked floor.' },
   { n: 15, id: 'gauntlet', door: 'GAUNTLET', like: 'Hazards and helpers: conveyor belts, swinging blades, spikes, fans.' },
   { n: 16, id: 'press', door: 'THE PRESS', like: 'More hazards: crushers (one to ride), flame jets in walls and floor.' },
+  { n: 17, id: 'greenroom', door: 'GREEN ROOM', like: 'New characters for Fable: two moles and two hedgehogs, to talk to.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */
