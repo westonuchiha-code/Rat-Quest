@@ -95,6 +95,46 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   }
   check('a battery sparks now and then: seen, but not for long', !!spark && shown > 0 && shown < 100, `${shown} of 1000 moments`);
 }
+{
+  // A die and a marble, each turned, and a landing to the west of each: both move away from him (east), and settle.
+  const ch = buildChamber({ solids: [], pit: null, water: [], movers: [], decor: [
+    { kind: 'junk', what: 'die', x: 0, y: 0, z: 0, yaw: 0.7 },
+    { kind: 'junk', what: 'marble', x: 10, y: 0, z: 0, yaw: -1.2 },
+  ] } as never);
+  const joints: THREE.Object3D[] = [];
+  ch.group.traverse((o) => { if (o.userData.moves && o.type === 'Group' && o.parent?.parent === ch.group) joints.push(o); });
+  // (Each object's top, in the room: the die's top face, the marble's top.)
+  const topOf = (j: THREE.Object3D): THREE.Vector3 => {
+    j.updateWorldMatrix(true, true);
+    const box = new THREE.Box3().setFromObject(j);
+    return new THREE.Vector3((box.min.x + box.max.x) / 2, box.max.y, (box.min.z + box.max.z) / 2);
+  };
+  ch.update(2);
+  const before = joints.map(topOf);
+  check('a die and a marble each answer a landing beside them', joints.length === 2 && ch.thump(-1.2, 0, 0, 1) === 1 && ch.thump(8.8, 0, 0, 1) === 1, `${joints.length} moving joints`);
+  const eastward = [0, 0];
+  const westward = [0, 0];
+  for (let t = 2; t < 2.6; t += 0.02) {
+    ch.update(t);
+    joints.forEach((j, i) => {
+      eastward[i] = Math.max(eastward[i], topOf(j).x - before[i].x);
+      westward[i] = Math.max(westward[i], before[i].x - topOf(j).x);
+    });
+  }
+  check('...each moves AWAY from where he landed (the die tips, the marble rolls), however it is turned, and not toward him', eastward[0] > 0.02 && eastward[1] > 0.02 && westward[0] < eastward[0] / 4 && westward[1] < 0.01 + eastward[1], `away ${eastward.map((e) => e.toFixed(3)).join(', ')}; toward ${westward.map((e) => e.toFixed(3)).join(', ')}`);
+  ch.update(6);
+  const after = joints.map(topOf);
+  check('...and settles back just as it was', after.every((p, i) => p.distanceTo(before[i]) < 1e-3), after.map((p, i) => p.distanceTo(before[i]).toFixed(4)).join(', '));
+  // The hardest landing, right beside it: the marble's middle never goes more than a fifth of its width from its place.
+  const ball = joints[1];
+  ch.thump(9.9, 0, 0, 1);
+  let far = 0;
+  for (let t = 6; t < 9; t += 0.01) {
+    ch.update(t);
+    far = Math.max(far, Math.hypot(ball.position.x, ball.position.z));
+  }
+  check('...the marble never rolls further than a fifth of its width, even landed on hard right beside it (it stays inside its solid)', far > 0.05 && far <= JUNK.marble.w / 5 + 1e-9, `${far.toFixed(3)} of ${(JUNK.marble.w / 5).toFixed(3)}`);
+}
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 if (failures) process.exit(1);

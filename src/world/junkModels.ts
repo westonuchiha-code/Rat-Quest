@@ -22,6 +22,22 @@ export interface JunkMats {
   glow: THREE.Material;
 }
 
+/**
+ * Moves everything built so far into a joint that the object can move by as a whole: a pivot at `at` (in the object's
+ * own space), its parts hung from it where they were. Tagged as moving, so the room does not gather it.
+ */
+function jointAt(g: THREE.Group, at: THREE.Vector3): { pivot: THREE.Group; inner: THREE.Group } {
+  const pivot = new THREE.Group();
+  const inner = new THREE.Group();
+  while (g.children.length) inner.add(g.children[0]);
+  pivot.position.copy(at);
+  inner.position.copy(at).negate();
+  pivot.add(inner);
+  pivot.userData.moves = true;
+  g.add(pivot);
+  return { pivot, inner };
+}
+
 const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh => {
   bakeVertexColor(geo, color);
   const m = new THREE.Mesh(geo, mat);
@@ -36,7 +52,7 @@ const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x =
  * steam (wisps that rise and fade), a candle's drop of wax running down, a marble's glint. Whatever `tick` moves is
  * tagged (userData.moves), so that the room leaves it out when it gathers its still dressing (world/chamber.ts).
  */
-export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; tick?: (time: number) => void; knock?: (strength: number, time: number) => void } {
+export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group; flame?: THREE.Mesh; sway?: THREE.Object3D; tick?: (time: number) => void; knock?: (strength: number, time: number, awayX: number, awayZ: number) => void } {
   const g = new THREE.Group();
   const J = JUNK[what];
   if (what === 'candle') {
@@ -196,7 +212,23 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     for (const [n, nrm, u, v] of faces) for (const [a, b] of LAY[n]) {
       pip(nrm[0] * h + u[0] * a * o + v[0] * b * o, h + nrm[1] * h + u[1] * a * o + v[1] * b * o, nrm[2] * h + u[2] * a * o + v[2] * b * o, nrm[0], nrm[1], nrm[2]);
     }
-    return { group: g };
+    // A landing close by makes it wobble: it tips up onto its far edge, away from him, and drops back, twice, less.
+    const { pivot, inner } = jointAt(g, new THREE.Vector3());
+    let hit = { at: -99, by: 0, x: 1, z: 0 };
+    const knock = (strength: number, time: number, awayX: number, awayZ: number): void => {
+      hit = { at: time, by: strength, x: awayX, z: awayZ };
+      // (The far bottom edge is what it tips on.)
+      pivot.position.set(awayX * h, 0, awayZ * h);
+      inner.position.set(-awayX * h, 0, -awayZ * h);
+    };
+    const axis = new THREE.Vector3();
+    const tick = (time: number): void => {
+      const t = time - hit.at;
+      const tilt = t >= 0 && t < 1.5 ? hit.by * 0.5 * Math.exp(-t * 3.5) * Math.abs(Math.sin(t * 11)) : 0;
+      axis.set(hit.z, 0, -hit.x);
+      pivot.quaternion.setFromAxisAngle(axis.lengthSq() > 0 ? axis.normalize() : axis.set(0, 0, 1), tilt);
+    };
+    return { group: g, tick, knock };
   }
   if (what === 'pawn') {
     // Turned wood, black and polished: a broad foot, a collar, the body narrowing up to a neck, a ball for a head.
@@ -346,13 +378,26 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     glint.position.set(toward.x, R + toward.y, toward.z);
     glint.userData.moves = true;
     g.add(glint);
+    // A landing close by sets it rolling a little way, away from him; it rocks back and settles where it lay.
+    const { pivot: ball } = jointAt(g, new THREE.Vector3(0, R, 0));
+    let hit = { at: -99, by: 0, x: 1, z: 0 };
+    const knock = (strength: number, time: number, awayX: number, awayZ: number): void => {
+      hit = { at: time, by: strength, x: awayX, z: awayZ };
+    };
+    const axis = new THREE.Vector3();
     const tick = (time: number): void => {
       const u = (time * 0.31 + R * 7) % 1;
       const flare = u > 0.9 ? Math.sin(((u - 0.9) / 0.1) * Math.PI) : 0;
       glint.scale.setScalar(0.4 + flare * 1.6);
+      const t = time - hit.at;
+      // How far it has rolled: out and back, each time less (never past a fifth of its width: it stays within its solid).
+      const s = t >= 0 && t < 3 ? hit.by * 0.14 * Math.exp(-t * 1.6) * Math.sin(t * 4.2) : 0;
+      ball.position.set(hit.x * s, R, hit.z * s);
+      axis.set(hit.z, 0, -hit.x);
+      ball.quaternion.setFromAxisAngle(axis.lengthSq() > 0 ? axis.normalize() : axis.set(0, 0, 1), s / R);
     };
     tick(0);
-    return { group: g, tick };
+    return { group: g, tick, knock };
   }
   // what === 'sardines': an opened tin, oil in it, three fish lying head to tail, its lid rolled back on its key.
   g.add(part(new THREE.BoxGeometry(J.w * 0.8, J.h * 0.8, J.d), 0xe0dccf, mats.tin, -J.w * 0.1, J.h * 0.4, 0));

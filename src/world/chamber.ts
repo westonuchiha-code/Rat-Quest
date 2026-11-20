@@ -712,7 +712,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   /** Story machinery that moves: each is called every frame with the time. */
   const animators: Array<(time: number) => void> = [];
   /** Odds and ends that answer a thump near them (a matchbox's matches rattle): see `thump`. */
-  const knockables: Array<{ x: number; y: number; z: number; knock: (strength: number, time: number) => void }> = [];
+  const knockables: Array<{ x: number; y: number; z: number; yaw: number; knock: (strength: number, time: number, awayX: number, awayZ: number) => void }> = [];
   let clock = 0;
   const foam: Array<{ mesh: THREE.Mesh; phase: number }> = [];
   // Wall hangings are stood flat against their walls and kept clear of the floor first (see hangings.ts).
@@ -1725,7 +1725,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(built.group);
       if (built.sway) swayers.push({ obj: built.sway, axis: 'x', amount: 0.14, speed: 1.3, phase: d.x * 0.9 + d.z });
       if (built.tick) animators.push(built.tick);
-      if (built.knock) knockables.push({ x: d.x, y: d.y, z: d.z, knock: built.knock });
+      if (built.knock) knockables.push({ x: d.x, y: d.y, z: d.z, yaw: d.yaw, knock: built.knock });
       if (built.flame) {
         swayers.push({ obj: built.flame, axis: 'z', amount: 0.25, speed: 7, phase: d.x + d.z });
         lightDefs.push({ x: d.x, y: d.y + 1.2, z: d.z, r: 6, color: new THREE.Color(0xffb060), power: 0.7, flash: 0, flicker: 0.2, phase: d.x * 1.7 + d.z });
@@ -2468,7 +2468,12 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     for (const k of knockables) {
       const d = Math.hypot(k.x - x, k.z - z);
       if (d > 2.5 || Math.abs(k.y - y) > 1.5) continue;
-      k.knock(strength * (1 - d / 2.5), clock);
+      // (Which way is away from him, in the thing's own turned space.)
+      const ax = d > 1e-6 ? (k.x - x) / d : 1;
+      const az = d > 1e-6 ? (k.z - z) / d : 0;
+      const c = Math.cos(k.yaw);
+      const sn = Math.sin(k.yaw);
+      k.knock(strength * (1 - d / 2.5), clock, ax * c - az * sn, ax * sn + az * c);
       n++;
     }
     return n;
