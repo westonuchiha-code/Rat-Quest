@@ -135,8 +135,11 @@ and can be cast in a scene (cutscene/stage.ts). Put one in a level as any regula
 | `mole` | DIGGER (a miner: yellow helmet with a lit lamp, a tool belt), DOT (round spectacles, a knitted scarf) | short and round, velvet, big pink spade hands with pale claws, a long pink snout that sniffs about, eyes he can hardly open; voice: low and mumbled |
 | `hedgehog` | BRAMBLE (brown spines, a green apron), THISTLE (pale spines, a thistle flower in them, rosy cheeks, a bow) | round, a coat of spines over back and head (one mesh), a pointed snout with a twitching nose; voice: quick and bright |
 
-Both share a frame (`class Small`: short legs, arms, a mug and a hand of cards); what differs is built by each. Placed
-in the Green Room only: Digger and Dot at cards, Bramble keeping a counter, Thistle on a stool with a drink.
+Both share a frame (`class Small`: short legs with round feet that hang off a stool's edge, arms, a mug and a hand of
+cards); what differs is built by each. Placed in the Green Room only: Digger and Dot at cards, Bramble keeping a
+counter (on a step: a hedgehog is shorter than a counter), Thistle on a stool with a drink. Polished once (2026-11-20,
+the owner's word): the moles' spade paws and pointed claws, bigger eyes, whiskers; the hedgehogs' ears (pink inside)
+and paws in colour (they were plain white balls), shorter and denser spines lying back.
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

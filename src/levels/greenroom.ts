@@ -10,11 +10,13 @@
  */
 import { compileCustom, type CustomLevel } from './custom';
 import type { LevelDef } from './types';
-import { stoolSolids, tableSolids, type Decor } from '../world/layout';
+import { TABLE, stoolSolids, tableSolids, type Decor } from '../world/layout';
 import type { NpcSpec } from '../npc/npc';
 
 const HX = 14;
 const HZ = 10;
+/** How high Bramble's step behind the counter is. */
+export const STEP = 0.3;
 /** The card table and the counter. */
 export const GREEN = { cards: { x: -4, z: -4 }, counter: { x: 5, z: -5 }, out: 1.25 } as const;
 
@@ -27,6 +29,9 @@ const room: CustomLevel = {
     { t: 'floor', x0: -HX, z0: -HZ, x1: HX, z1: HZ, top: 0 },
     { t: 'spawn', x0: 0, z0: HZ - 3, x1: 0, z1: HZ - 3, top: 0 },
     { t: 'exit', x0: 0, z0: HZ, x1: 0, z1: HZ, top: 0, dir: 'n' },
+    // A step behind the counter for Bramble, who is shorter than it: right up against the counter's solid, so there
+    // is no slot between the two for the rat to wedge himself in.
+    { t: 'plank', x0: GREEN.counter.x - 0.9, z0: GREEN.counter.z - 2, x1: GREEN.counter.x + 0.9, z1: GREEN.counter.z - TABLE.solid, top: STEP, bottom: 0 },
   ],
 };
 
@@ -55,7 +60,7 @@ export function greenRoom(): LevelDef {
       'Good evening. Or morning. Down here it hardly matters, does it?',
       'I knitted this scarf in the dark. You can tell, apparently.',
     ] },
-    { name: 'Bramble', kind: 'hedgehog', x: K.x, z: K.z - GREEN.out, y: 0, facing: 0, doing: 'tend', partner: [K.x, K.z + GREEN.out], lines: [
+    { name: 'Bramble', kind: 'hedgehog', x: K.x, z: K.z - GREEN.out - 0.25, y: STEP, facing: 0, doing: 'tend', partner: [K.x, K.z + GREEN.out], lines: [
       'What will it be? We have got water, and we have got water that has been near a lemon.',
       'Do not lean on the counter. I mean, you can. I just will not hug you after.',
     ] },

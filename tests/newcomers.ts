@@ -44,8 +44,14 @@ for (const [name, kind, look] of CAST) {
           const m = o as THREE.Mesh;
           if (!m.isMesh || !m.visible) return;
           let held = false;
-          for (let q: THREE.Object3D | null = m; q; q = q.parent) if (!q.visible) held = true;
+          let leg = false;
+          for (let q: THREE.Object3D | null = m; q; q = q.parent) {
+            if (!q.visible) held = true;
+            if (q.userData.leg) leg = true;
+          }
           if (held) return;
+          // (Sitting, his feet hang over the stool's edge: what rests on the seat is the rest of him.)
+          if (leg && seated) return;
           box.setFromObject(m);
           if (!Number.isFinite(box.min.y)) bad.push(`${doing}${seated ? ' seated' : ''}`);
           low = Math.min(low, box.min.y);

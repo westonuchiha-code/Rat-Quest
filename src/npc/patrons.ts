@@ -1428,9 +1428,9 @@ const MOLE = {
 } as const;
 const HEDGEHOG = {
   /** Bramble: brown spines, a green apron. */
-  bramble: { face: 0xd8b48a, belly: 0xf2dcbc, spine: 0x5e4028, tip: 0xe8d4b0, nose: 0x1a1210, cloth: 0x4a7a3a, clothDark: 0x355a2a },
+  bramble: { face: 0xd8b48a, belly: 0xf2dcbc, spine: 0x5e4028, tip: 0xe8d4b0, nose: 0x1a1210, cloth: 0x4a7a3a, clothDark: 0x355a2a, paw: 0x7a5a44 },
   /** Thistle: pale spines, a thistle flower in them, rosy cheeks. */
-  thistle: { face: 0xeedcc6, belly: 0xfbf1e2, spine: 0xb8a690, tip: 0xfbf5ea, nose: 0x3a2a2a, cloth: 0x8a4a9a, clothDark: 0x6a3878 },
+  thistle: { face: 0xeedcc6, belly: 0xfbf1e2, spine: 0xb8a690, tip: 0xfbf5ea, nose: 0x3a2a2a, cloth: 0x8a4a9a, clothDark: 0x6a3878, paw: 0xa8887a },
 } as const;
 /** How long a newcomer's legs are (short), and so how high his hips stand. */
 const N_LEG = 0.16;
@@ -1460,7 +1460,10 @@ abstract class Small implements PatronBody {
       const thigh = new THREE.Group();
       thigh.position.set(side * x, 0, 0.02);
       thigh.add(limb(r, r * 0.85, N_LEG, color));
-      thigh.add(kit.box(r * 1.7, 0.05, r * 2.6, foot, 0, -N_LEG + 0.025, r * 0.7));
+      // A round foot, flat underneath (a squashed ball), its toes forward: it reads as a foot standing or sitting.
+      thigh.add(kit.blob(r * 1.1, 0.035, r * 1.6, foot, 0, -N_LEG + 0.035, r * 0.6, 8, 5, 0.15));
+      // (Marked, so a test can tell his seat from his dangling feet.)
+      thigh.userData.leg = true;
       this.body.add(thigh);
       this.legs.push({ thigh, side });
     }
@@ -1513,7 +1516,7 @@ abstract class Small implements PatronBody {
     this.body.rotation.x = lean ? -0.16 : ctx.seated ? 0.05 : 0;
     this.chest.rotation.x = (ctx.doing === 'cards' ? 0.14 : 0) + 0.025 * Math.sin(t * 1.7);
     this.chest.rotation.z = 0.03 * Math.sin(t * 0.8);
-    for (const leg of this.legs) leg.thigh.rotation.set(ctx.seated ? -1.45 : lean && leg.side > 0 ? 0.35 : 0, 0, leg.side * (ctx.seated ? 0.15 : 0.04));
+    for (const leg of this.legs) leg.thigh.rotation.set(ctx.seated ? -1.25 + 0.06 * Math.sin(t * 1.6 + leg.side) : lean && leg.side > 0 ? 0.35 : 0, 0, leg.side * (ctx.seated ? 0.2 : 0.04));
     const peek = ctx.doing === 'cards' && !ctx.talking ? now(t, 6.5, 2.2, ctx.turn * 3) : 0;
     this.head.rotation.y = ctx.headYaw * (1 - 0.8 * peek);
     this.head.rotation.x = 0.3 * peek + (Common.listening(ctx) ? 0.08 * Math.max(0, Math.sin(t * 2.9)) ** 3 : 0) + (ctx.talking ? 0.05 * Math.sin(t * 8.5) : 0) - 0.45 * this.sip + (ctx.nod ?? 0);
@@ -1563,14 +1566,21 @@ class Mole extends Small {
     // ONE round body, pear-shaped, wider at the bottom; a paler front.
     this.chest.add(turned(
       [[0, 0], [0.2, 0.03], [0.26, 0.17], [0.25, 0.32], [0.19, 0.45], [0.1, 0.52], [0, 0.53]],
-      (_nx, ny, nz) => (nz > 0.35 && ny > -0.6 && ny < 0.6 ? C.light : C.coat), 7, 0.9,
+      (_nx, ny, nz) => (nz > 0.35 && ny > -0.6 && ny < 0.6 ? C.light : C.coat), 9, 0.9,
     ));
     this.addLegs(0.06, 0.12, C.coat, C.pink);
     // Arms: short, and on the end of each a SPADE of a hand, wide and pink, four pale claws along its edge.
     this.addArms(0.23, 0.36, 0.055, 0.14, 0.11, C.coat, (side) => {
       const g = new THREE.Group();
-      g.add(kit.box(0.14, 0.05, 0.11, C.pink, side * 0.01, -0.02, 0.01));
-      for (let k = 0; k < 4; k++) g.add(kit.box(0.022, 0.05, 0.03, C.claw, -0.05 + k * 0.033, -0.065, 0.045));
+      // A broad flat paw, palm out, turned a little outward as a mole's are; five pale claws off its lower edge.
+      g.add(kit.blob(0.075, 0.07, 0.03, C.pink, side * 0.012, -0.045, 0.02, 8, 6, 0.12));
+      for (let k = 0; k < 5; k++) {
+        const claw = kit.cone(0.012, 0.05, C.claw, 4);
+        claw.rotation.x = Math.PI;
+        claw.position.set(-0.052 + k * 0.026 + side * 0.012, -0.1, 0.02);
+        g.add(claw);
+      }
+      g.rotation.y = side * 0.5;
       return g;
     });
     // The head: ONE round piece running into the body, and a long pink snout that goes everywhere first.
@@ -1580,11 +1590,19 @@ class Mole extends Small {
     this.snout.position.set(0, 0.02, 0.13);
     this.snout.add(turned([[0, 0], [0.07, 0.02], [0.06, 0.12], [0.035, 0.19], [0, 0.2]], C.pink, 6, 0.9, true, mat));
     this.snout.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.pinkDark }), 0, 0, 0.2));
+    // A few pale whiskers each side of the snout, fanned.
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < 3; k++) {
+        const w = kit.box(0.14, 0.006, 0.006, 0xe8dcc8, side * 0.09, -0.005 + k * 0.012, 0.15);
+        w.rotation.set(0, side * (0.25 - k * 0.12), side * (k - 1) * 0.18);
+        this.snout.add(w);
+      }
+    }
     this.head.add(this.snout);
     const eyes: THREE.Object3D[] = [];
     for (const side of [-1, 1]) {
-      const e = eye(0.022, 0.014);
-      e.position.set(side * 0.075, 0.07, 0.135);
+      const e = eye(0.03, 0.019);
+      e.position.set(side * 0.078, 0.075, 0.13);
       e.rotation.y = side * 0.4;
       this.head.add(e);
       eyes.push(e);
@@ -1645,11 +1663,11 @@ class Hedgehog extends Small {
       (_nx, _ny, nz) => (nz > 0.25 ? C.belly : C.face), 7, 0.92,
     ));
     // The spines: a coat of cones over his back and the top of him, each pointing out, dark with a pale tip.
-    this.chest.add(spines(0, 0.27, -0.02, [0.27, 0.27, 0.24], 90, (d) => d.z < 0.3 && d.y > -0.5, 0.16, C.spine, C.tip, 11));
-    this.addLegs(0.055, 0.11, C.face, C.nose);
+    this.chest.add(spines(0, 0.27, -0.02, [0.27, 0.27, 0.24], 130, (d) => d.z < 0.3 && d.y > -0.5, 0.12, C.spine, C.tip, 11));
+    this.addLegs(0.055, 0.11, C.face, C.paw);
     this.addArms(0.22, 0.35, 0.05, 0.13, 0.11, C.face, () => {
       const g = new THREE.Group();
-      g.add(bead(0.045, mat, 0, -0.02, 0.01));
+      g.add(kit.blob(0.045, 0.04, 0.045, C.paw, 0, -0.025, 0.01, 7, 5, 0.15));
       return g;
     });
     // The head: round, running out into a POINTED snout with a black button of a nose; spines over the back of it.
@@ -1660,10 +1678,12 @@ class Hedgehog extends Small {
     this.nose.add(turned([[0, 0], [0.085, 0.02], [0.055, 0.11], [0.025, 0.18], [0, 0.19]], C.face, 6, 0.9, true));
     this.nose.add(bead(0.03, new THREE.MeshBasicMaterial({ color: C.nose }), 0, 0.005, 0.19));
     this.head.add(this.nose);
-    this.head.add(spines(0, 0.05, -0.03, [0.15, 0.15, 0.14], 34, (d) => d.z < -0.05 && d.y > -0.2, 0.12, C.spine, C.tip, 23));
+    this.head.add(spines(0, 0.05, -0.03, [0.15, 0.15, 0.14], 44, (d) => d.z < -0.05 && d.y > -0.2, 0.09, C.spine, C.tip, 23));
     for (const side of [-1, 1]) {
       // Small round ears, half hidden in the spines.
-      this.head.add(bead(0.04, mat, side * 0.12, 0.12, 0.02));
+      const ear = kit.blob(0.045, 0.045, 0.02, (_x, _y, nz) => (nz > 0.3 ? 0xe8a8a8 : C.face), side * 0.12, 0.12, 0.03, 8, 5, 0.1);
+      ear.rotation.y = side * -0.35;
+      this.head.add(ear);
       if (look === 'thistle') this.head.add(bead(0.03, new THREE.MeshBasicMaterial({ color: 0xf0a0a8 }), side * 0.1, 0.0, 0.11));
     }
     const eyes: THREE.Object3D[] = [];
@@ -1692,7 +1712,7 @@ class Hedgehog extends Small {
         loop.rotation.z = side * 0.3;
         this.chest.add(loop);
       }
-      this.chest.add(bead(0.022, mat, 0, 0.45, 0.21));
+      this.chest.add(kit.blob(0.022, 0.022, 0.022, C.clothDark, 0, 0.45, 0.21));
     }
     ink = mat;
     this.common = new Common(eyes, 0.85);
@@ -1738,7 +1758,7 @@ function spines(x: number, y: number, z: number, radii: [number, number, number]
     cone.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     cone.translate(0, len / 2, 0);
     // A little off the straight out, so they lie back as a hedgehog's do.
-    const out = d.clone().add(new THREE.Vector3(0, 0.15, -0.35)).normalize();
+    const out = d.clone().add(new THREE.Vector3(0, 0.1, -0.55)).normalize();
     cone.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, out));
     cone.translate(x + d.x * radii[0] * 0.92, y + d.y * radii[1] * 0.92, z + d.z * radii[2] * 0.92);
     parts.push(cone);
