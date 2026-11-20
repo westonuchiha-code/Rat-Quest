@@ -15,6 +15,11 @@ done, move it to "Done" at the bottom with the commit; do not delete it. Read ST
 30 and 20 frames a second; or it is new geometry that the ride, the camera and the collision must all agree on.
 **What makes a thing easy:** the pattern exists already and a test will say when it is right.
 
+**WHERE THINGS STAND (2026-11-20, end of the Opus week).** Part A is Fable's and was not touched, but for A9's first
+part. Part B has three open items, B8, B9 and B11, and each waits on him. B12 (drawing cost) is done as far as it goes
+without rebuilding models. Everything Opus did, by risk, is ONE PAGE: `docs/OPUS-WEEK.md`. What only he can judge is
+`PLAYTEST.md`. Done items are one line each at the bottom.
+
 ---
 
 ## THE SWITCH TO OPUS (written by Fable, 2026-11-17, at 98.8% of the week's Fable)
@@ -143,34 +148,12 @@ heard it and said yes. `assets/music/<room id>.mp3` is the quick way to try one 
 settings, ever. Players get the sliders instead. When he asks: a player's version of the Tweaks panel, a way back to
 "as designed", a mark on a save whose numbers were changed. His words are in START-HERE.md.
 
-**B12. What a room asks of the graphics card (measured 2026-11-18 by Opus; not acted on).** `window.__cost()` in a
-built page reports draw calls, triangles and which groups hold the meshes. Draw calls a frame, as each room opens:
-Hall 2,020, Toy Box 1,703, Waterworks 942, Foundry 852, Hollows 835, Club 760, Keep 649, Cistern 599 ... the
-smallest under 150. A phone is comfortable with a few hundred; nobody has measured the frame rate ON his phone.
-WHERE IT IS: the Hall's 30 doors (about 1,000 meshes: each door's arch is 16 stones that move one by one as it opens)
-and its 17 characters (about 830: each is made of many small parts); the Toy Box's dream dressing (about 2,400 meshes in
-the room's own group: flowers, butterflies, lights). TRIED AND TAKEN OUT: joining each room's still walls and floors
-into one mesh per picture (Hall 2,020 to 1,988; the Long Drop drew three times the triangles, as joined pieces can no
-longer be skipped off screen). DONE: a door's frame is one mesh once it has opened (world/doorway.ts; Hall 2,020 to
-1,674, the same picture: compared side by side; tests/rooms.ts). DONE 2026-11-19: each flower is one mesh, not four (world/chamber.ts; the same flower, compared side by side): Toy Box
-1,706 to 617 draw calls, the Milky Way 215 to 132. A chain's links are a quarter lighter (three-sided bars; four-sided
-rings were tried and read as diamonds): the Lair's triangles 37,920 to 36,128, the Waterworks 71,390 to 68,936.
-DONE 2026-11-19: the characters' still parts joined (npc/stillParts.ts, Npc.settle; `&nojoin` to compare): a twin of
-each is put through what it does, and what never moved is joined per joint and material. 832 meshes to 622; the Hall
-1,717 to 1,552 draw calls, the Club 754 to 716. tests/stillparts.ts: each of 32 characters draws EXACTLY the same,
-step by step (proven to catch a wrong join). Not more without rebuilding the models: nearly every joint sways a
-little, so a limb's parts join only with each other. Grimsqueak (162 meshes) and a cutscene's own cast are left as
-they were. A door's ironwork (bands, post, ring, stud) is one mesh (world/doorway.ts): the Hall 1,552 to 1,528.
-`__cost()` also lists each of the scene's other groups by size (him, the doors).
-DONE 2026-11-19: the room's STILL DRESSING GATHERED (world/chamber.ts gatherStill, `chamber.gather()` after layering;
-`&nogather` to compare): torches, stools, tables, rugs, junk, kegs, bottles, dartboards, couches, lamps, speakers, fire
-bowls and signs, one mesh per material, all but what moves (flames, cones, swaying things) and what layering put a
-layer up. Not the thimble rows on a bar (their feet would flicker into the counter). A banner's gold is one mesh.
-The Hall 1,528 to 1,199 draw calls (1,717 this morning), the Club 712 to 529. tests/gather.ts: all 38 rooms draw the
-same as their clocks run (proven to catch frozen flames); tests/clipsweep.ts now gathers too: nothing flickers.
-Measured in the test browser (it draws on the CPU, so only the ratio means anything): each frame's own work, the
-Hall 9.6 ms to 8.0, the Club 5.5 to 4.6 (a fifth less), with `&nojoin&nogather` as before. Not measured on his phone.
-LEFT: models built with fewer joints (his eyes wanted); walls and floors (tried 2026-11-18: no gain, see above).
+**B12. What a room asks of the graphics card.** DONE as far as it goes (2026-11-18/19): the Hall from 2,020 draw calls to
+1,199, the Club 760 to 529, the Toy Box 1,703 to 617, each the same picture, proven by test (tests/rooms.ts,
+stillparts.ts, gather.ts; `&nojoin`, `&nogather` to compare); the steps are in `docs/OPUS-WEEK.md`, part 2.
+`window.__cost()` in a built page reports draw calls, triangles and the heaviest groups. Each frame's own work in the
+test browser: a fifth less. NOT measured on his phone. TRIED AND LEFT OUT: one mesh for a room's still walls (the Long
+Drop drew three times the triangles). LEFT: models built with fewer joints (his eyes wanted).
 
 **SET ASIDE BY HIM (2026-11-18), not to be offered again unless he raises them:** what to do about old place names
 in wedge hints and characters' lines; the Club's own doors asking for Golden Wedges; new lines for Madam Tawny in
@@ -199,18 +182,11 @@ weakened, skipped or deleted to get to green; checks `ASSETS.md` and the notes w
 
 ---
 
-## THE BUG SWEEP OF 2026-11-17 (what was looked at, and what it found)
+## THE BUG SWEEPS
 
-- **Every level opened in the built game** (51: the Hall, 25 numbered rooms, 4 boss rooms, 11 practice rooms, 13 old
-  levels), a picture of each looked at: no errors, none broken.
-- **Every door in the Hall walked through** (26): each leads to the room its sign names.
-  **FOUND AND FIXED:** in a room that asks nothing of him (every practice room), the line in the corner still said
-  "The Hall". It says the room's own name now.
-- **All eight cutscenes** opened part-way through: all play, nobody missing.
-- **The level editor's tour** (open a sample, select, measure, place, undo, redo, paste, the menus, the problems
-  list): no errors. It does not know pots, rocks or spawn buttons (B2).
-- **The full test suite:** 3,839 pass, 0 fail, 101 suites.
-- Not swept: anything that needs a hand on the controls (Part C); sound.
+2026-11-17: every level opened, every Hall door walked through, all cutscenes played part-way, the editor toured:
+one fault (a practice room's corner said "The Hall"; fixed). Since then, four robot runs through all 38 rooms
+(PLAYTEST.md) and `tests/chaos.ts` in every test run: nothing but one mid-jump graze.
 
 ---
 
