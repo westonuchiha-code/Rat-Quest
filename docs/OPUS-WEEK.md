@@ -66,7 +66,10 @@ conveyor belt, a pendulum blade, a spike floor, a floor fan. In the editor. Noth
 **Worth your eye:** a belt and a fan move him from outside the controller (as a moving platform and a spring do); a
 blade is a heavy blow (`takeHit(..., true)`), spikes a burn (`takeBurn`, so no roll helps). They act on creatures
 too (`HazardFoes`): a creature struck takes it as a thrown thing (`how` 'thrown'), so each kind answers as it does to
-a throw. A fan blows a creature off rather than lifting it. The Gauntlet has roach buttons, so `tests/hall.ts`'s rule "buttons
+a throw. A fan blows a creature off rather than lifting it. Crushers and flame jets (the Press, Test Room 16): a crusher is a
+moving platform's `crush` motion; `stepMovers` now returns true when one came down on him, and main.ts strikes him
+after the fight is resolved. (Found on the way, NOT fixed: `crushCheck` in main.ts sets `events.playerResult` before
+`resolveCombat`, which clears it, so being pinned against a ceiling hurts him without the hurt being shown or heard.) The Gauntlet has roach buttons, so `tests/hall.ts`'s rule "buttons
 only in the practice rooms" now names it as the one other room allowed them.
 
 ## 4. Tools, tests and notes (no effect on the game)

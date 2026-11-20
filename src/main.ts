@@ -9,6 +9,7 @@ import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
 import { leversOn, strikeThings } from './world/strikeables';
+import { PLATFORM } from './world/platforms';
 import { HAZARD, HazardFoes, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
@@ -1097,6 +1098,8 @@ function startGame(): void {
   let musicFloor: MusicFloor | null = null;
   /** The room clock when the hazards were last heard (world/hazards.ts `sounds`: what happened since). */
   let hazardClock = 0;
+  /** A crusher came down on him this step (it is struck after the fight is resolved). */
+  let crusherHit = false;
   /** The hazards' memory of which creature they last struck, and when. */
   const hazardFoes = new HazardFoes();
   /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
@@ -2360,7 +2363,8 @@ function startGame(): void {
     }
 
     const wasGrounded = player.grounded;
-    chamber.stepMovers(dt, player.dead ? undefined : player);
+    // (A crusher that came down on him strikes him after the fight is resolved, which clears what hit him before it.)
+    if (chamber.stepMovers(dt, player.dead ? undefined : player)) crusherHit = true;
     crushCheck();
     if (keyTap('lock') || consumeAction('lock')) {
       if (lockTarget) lockTarget = null;
@@ -2748,11 +2752,20 @@ function startGame(): void {
     lavaStep();
     // A firefly's flames: whoever stands in them is burned (no roll or shield helps). In the Ember Helm he walks through.
     resolveFlames(player, flames, FIREFLY.burn, events);
+    // A crusher came down on him (world/platforms.ts 'crush'): a heavy blow, from right over him.
+    if (crusherHit) {
+      crusherHit = false;
+      const result = player.takeHit(player.position.x + 0.01, player.position.z, PLATFORM.crush.damage, true);
+      if (result === 'hit' || result === 'killed') events.playerResult = result;
+      audio.play('rockKnock', { vol: 1, rate: 0.7, priority: 8 });
+      shake = Math.max(shake, 0.2);
+    }
     // A blade's touch (too big for a shield) or spikes underfoot (no roll helps); what they sound like near him.
     if (chamber.hazards) {
       const hz = chamber.hazards;
       const touch = hazardHurt(hz.specs, player, worldClock, TUNING.rat.radius, TUNING.rat.height);
-      if (touch) {
+      // (A flame jet burns as fire does: the Ember Helm keeps it off.)
+      if (touch && !(touch.kind === 'flamejet' && player.gear.fireproof)) {
         const result = touch.kind === 'blade' ? player.takeHit(touch.x, touch.z, HAZARD.blade.damage, true) : player.takeBurn(touch.x, touch.z, HAZARD.spikes.damage);
         if (result === 'hit' || result === 'killed') events.playerResult = result;
       }
@@ -2763,7 +2776,8 @@ function startGame(): void {
       }
       for (const sd of hazardSounds(hz.specs, hazardClock, worldClock, player.position)) {
         if (sd.kind === 'swish') audio.play('whoosh', { vol: 0.9 * sd.vol, rate: roll(0.55, 0.65), priority: 5 });
-        else audio.play('spikeUp', { vol: 0.8 * sd.vol, rate: roll(0.95, 1.05), priority: 5 });
+        else if (sd.kind === 'spikes') audio.play('spikeUp', { vol: 0.8 * sd.vol, rate: roll(0.95, 1.05), priority: 5 });
+        else audio.play('flameRoar', { vol: 0.9 * sd.vol, rate: roll(0.92, 1.05), priority: 5 });
       }
       hazardClock = worldClock;
       hz.show(worldClock);

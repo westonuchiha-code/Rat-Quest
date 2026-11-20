@@ -60,7 +60,8 @@ export interface Chamber {
   lava: LavaVolume[];
   movers: Mover[];
   /** Glides every moving platform forward and carries whoever stands on one. Call once per simulation step. */
-  stepMovers(dt: number, rider?: Rider): void;
+  /** True if a crusher (world/platforms.ts 'crush') came down on him this step: the game strikes him. */
+  stepMovers(dt: number, rider?: Rider): boolean;
   group: THREE.Group;
   colliders: Aabb[];
   /** Crates and barrels that can be smashed, in the order they appear in the level. */
@@ -540,7 +541,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const thick = spec.thick ?? 0.5;
     const geo = new THREE.BoxGeometry(spec.w, thick, spec.d, Math.max(1, Math.ceil(spec.w / 2.5)), 1, Math.max(1, Math.ceil(spec.d / 2.5)));
     // (A spring is striped as a warning is; one that crumbles is rubble; the rest are planks, as before.)
-    const skin = spec.skin ?? (spec.motion === 'spring' ? 'hazardTrim' : spec.motion === 'crumble' ? 'rubbleWall' : DEFAULT_SKIN.plank);
+    const skin = spec.skin ?? (spec.motion === 'spring' || spec.motion === 'crush' ? 'hazardTrim' : spec.motion === 'crumble' ? 'rubbleWall' : DEFAULT_SKIN.plank);
     applyWorldUvs(geo, TILE[skin] ?? 2);
     bakeVertexColor(geo, 0xeeeeee);
     const mesh = addMesh(geo, mat(skin), spec.x, spec.y - thick / 2, spec.z);
@@ -550,9 +551,10 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     colliders.push(mv.aabb);
   }
   const carry = new THREE.Vector3();
-  const stepMovers = (dt: number, rider?: Rider): void => {
+  const stepMovers = (dt: number, rider?: Rider): boolean => {
     carry.set(0, 0, 0);
-    if (!movers.length) return;
+    if (!movers.length) return false;
+    let crushed = false;
     const r = TUNING.rat.radius;
     movers.forEach((m, i) => {
       const a = m.aabb;
@@ -611,13 +613,17 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
           rider.prevPosition.y += a.max.y - p.y;
           p.y = a.max.y;
         } else if (dy < -1e-6) {
+          // (A crusher slamming down on him strikes him, as well as pushing him out.)
+          if (now.falling) crushed = true;
           // It is coming down on him (a lift settling onto the floor he stands on): he is pushed out from under it,
           // the shortest way that is not into a wall, quickly but not in one jump.
           const exits: Array<[number, number]> = [[a.min.x - r - p.x, 0], [a.max.x + r - p.x, 0], [0, a.min.z - r - p.z], [0, a.max.z + r - p.z]];
           const free = exits.filter(([ex, ez]) => !colliders.some((b) => !movers.some((o) => o.aabb === b) && p.x + ex + r > b.min.x && p.x + ex - r < b.max.x && p.z + ez + r > b.min.z && p.z + ez - r < b.max.z && b.max.y > p.y + TUNING.physics.stepHeight && b.min.y < p.y + TUNING.rat.height));
           const [ex, ez] = (free.length ? free : exits).sort((u, v) => Math.hypot(u[0], u[1]) - Math.hypot(v[0], v[1]))[0];
           const need = Math.hypot(ex, ez);
-          const go = Math.min(need + 0.01, 7 * dt) / Math.max(1e-6, need);
+          // (A crusher slamming down puts him out at once: left to the controller he would be shoved out the nearest
+          // way, wall or no wall.)
+          const go = Math.min(need + 0.01, now.falling ? need + 0.01 : 7 * dt) / Math.max(1e-6, need);
           p.x += ex * go; p.z += ez * go;
           rider.prevPosition.x += ex * go; rider.prevPosition.z += ez * go;
         } else {
@@ -626,6 +632,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         }
       }
     });
+    return crushed;
   };
 
   // ---- The ceiling: over everything inside the outer walls; and the walls carried on up to it where it is higher. ----
@@ -1775,7 +1782,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       group.add(glow);
       musicPads.push(key ? { kind: 'key', x: d.x, y: d.y + h, z: d.z, w: d.w, d: d.d, note: d.note, black: d.black } : { kind: 'chime', x: d.x, y: d.y + h, z: d.z, w: d.r * 1.8, d: d.r * 1.8, note: d.note, puzzle: d.puzzle, slot: d.slot });
       musicLooks.push({ body, glow: glowMat, rest: d.y + h / 2 });
-    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan') {
+    } else if (d.kind === 'belt' || d.kind === 'blade' || d.kind === 'spikes' || d.kind === 'fan' || d.kind === 'flamejet') {
       // Hazards and helpers (world/hazards.ts, hazardModels.ts): drawn here; main.ts has them act on him. A belt is solid.
       const built = buildHazard(d, { iron: lit('wroughtIron'), plain: plainMat });
       group.add(built.group);

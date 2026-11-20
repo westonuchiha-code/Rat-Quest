@@ -73,6 +73,7 @@ const GROUPS: Array<{ id: string; label: string; items: PieceInfo[] }> = [
     P('blade', 'Swinging blade', 'Sb', '#c8ccd4', 'things', 'A pendulum blade from overhead, swinging across the way it is turned (R). It hurts; a shield will not stop it.'),
     P('spikes', 'Spike floor', 'Sp', '#b8bcc4', 'things', 'Spikes in the floor: up for 1.2 seconds of every 3, after a warning poke. They hurt whoever stands in them.'),
     P('fan', 'Floor fan', 'Fn', '#8a8a90', 'things', 'A fan in the floor that lifts him up its column, 9 high: he hovers near its top.'),
+    P('flamejet', 'Flame jet', 'Fj', '#ff6a20', 'things', 'A nozzle that shoots flame 4 long for 1 second in every 3, a blue pilot flame first. On the floor it points up; turned (R), it is in a wall, pointing out. It burns.'),
     P('crackfloor', 'Cracked floor', 'Cf', '#b0a490', 'things', 'A slab of cracked floor: it holds him, but a plunge breaks it, and he goes through.'),
   ] },
   { id: 'collect', label: 'Collectibles', items: [
@@ -152,7 +153,7 @@ export const TOOLS: Array<{ group: string; items: Array<{ t: ToolId; label: stri
   { group: 'SHAPES', items: STAMPS.map((st) => ({ t: `stamp:${st.id}` as ToolId, label: st.label })) },
 ];
 /** Pieces that are one spot on the map, not a rectangle. */
-export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'blade', 'fan', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
+export const SINGLE = new Set<PieceType>(['crate', 'barrel', 'pot', 'rock', 'table', 'stool', 'candle', 'spool', 'matchbox', 'cheese', 'sardines', 'button', 'pencil', 'die', 'pawn', 'battery', 'teacup', 'spoon', 'safetypin', 'paperclip', 'crayon', 'marble', 'lever', 'blade', 'fan', 'flamejet', 'crumb', 'cap', 'relic', 'roach', 'toad', 'beetle', 'bat', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm', 'npc', 'pipe', 'fall', 'mark', 'plate', 'lamp', 'chain', 'window', 'slime', 'web', 'brazier', 'speaker', 'couch', 'light', 'banner', 'torch', 'gauge', 'crystal', 'roots', 'spawn', 'exit', 'wedge']);
 /** Pieces that face a way. */
 const FACES = new Set<PieceType>(['belt', 'blade', 'lever', 'plate', 'matchbox', 'sardines', 'cheese', 'pencil', 'battery', 'spoon', 'safetypin', 'paperclip', 'crayon', 'river', 'fall', 'pipe', 'stairs', 'ramp', 'window', 'slime', 'web', 'banner', 'torch', 'gauge', 'guard', 'mantis', 'stag', 'hornet', 'ant', 'firefly', 'scorpion', 'brood', 'wyrm']);
 /** Rectangles that fill whole squares: dragged from one square to another, they cover both. */
@@ -1107,7 +1108,7 @@ export class Builder {
     }
     if (p.t === 'gate') h += `<h4>The gate</h4><div class="field"><span>Opens when</span>${sel('opens', pr.opens ?? 'goals', [['goals', 'the goals are done'], ['pipes', 'the pipes are burst'], ['plates', 'the plates are pressed'], ['levers', 'every lever is over']])}</div>`;
     if (p.t === 'lift') {
-      h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up']])}</div>`;
+      h += `<h4>How it moves</h4><div class="field"><span>Kind</span>${sel('motion', pr.motion ?? 'glide', [['glide', 'glides there and back'], ['circle', 'goes round in a circle'], ['ride', 'goes when stood on'], ['sink', 'sinks when stood on'], ['crumble', 'crumbles when stood on'], ['spring', 'a spring: throws him up'], ['crush', 'a crusher: slams down how far it travels']])}</div>`;
       h += `<div class="field"><span>Glides</span>${sel('move', pr.move ?? 'up', [['up', 'up and down'], ['n', 'north'], ['e', 'east'], ['s', 'south'], ['w', 'west']])}</div>`;
       h += `<div class="field"><span>How far</span><input type="number" step="0.5" min="0.5" data-pp="travel" value="${pr.travel ?? 4}" /></div>`;
       h += `<div class="field"><span>Speed</span><input type="number" step="0.5" min="0.5" data-pp="speed" value="${pr.speed ?? 2}" /></div>`;

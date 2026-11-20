@@ -237,6 +237,8 @@ export const SFX_NAMES = [
   'leverThrow', 'stoneCrack', 'stoneFall',
   // Hazards (world/hazards.ts, 2026-11-20): spikes shooting up out of their plate (a steel scrape and a hard snap).
   'spikeUp',
+  // A flame jet lighting: a gas pop and a roar of flame that holds and dies away.
+  'flameRoar',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -543,6 +545,14 @@ const RECIPES: Record<SfxName, () => Sample> = {
       const hit = t >= 0.07 && t < 0.073 ? c.r() * 2 - 1 : 0;
       return Math.tanh((scrape + snap + ring(hit) * 14) * 1.2) * Math.min(1, (0.4 - t) / 0.08);
     };
+  }, { bits: 7 }),
+  // A flame jet: a soft pop as the gas catches, then a rough roar (low noise, rumbling), held, and fading.
+  flameRoar: () => draw(1.1, RATE_LO, 275, (c) => (t) => {
+    const pop = t < 0.05 ? sine(c.osc(0, 90 + 400 * t)) * (1 - t / 0.05) * 0.8 : 0;
+    const body = c.lp(0, c.r() * 2 - 1, 0.18) * 1.6 + c.lp(1, c.r() * 2 - 1, 0.04) * 1.2;
+    const rumble = 0.75 + 0.25 * Math.sin(TAU * 11 * t) * Math.sin(TAU * 7 * t);
+    const env = Math.min(1, t / 0.06) * Math.min(1, (1.1 - t) / 0.4);
+    return Math.tanh((pop + body * rumble * env) * 1.2);
   }, { bits: 7 }),
   // A blow on cracked stone: a sharp snap, a dull body, and grit trickling after.
   stoneCrack: () => draw(0.45, RATE_HI, 272, (c) => (t) => {

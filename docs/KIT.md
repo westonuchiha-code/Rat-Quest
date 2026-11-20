@@ -20,6 +20,7 @@ level editor: the "Moving platform" piece, its "Kind" setting; its "How far" mea
 | sink    | sinks while he stands on it, rises again when he is off | `speed` 1.2, `depth` 2.5 | the depth |
 | crumble | shakes when he lands, falls after `hold`, gone for `back`, then returns | `hold` 0.7, `back` 3 | (none) |
 | spring  | squashes and throws him `launch` high (holding jump or not), ready again a moment later | `launch` 6 | the height |
+| crush   | a CRUSHER: waits up (`hold`), shakes for the last half second, slams down `depth` (as a weight falls), sits (`pause`), winds back up at `speed`. Coming down on him: a heavy blow (2), and he is put out from under it at once the shortest way that is not into a wall. He can ride its top. | `hold` 1.6, `depth` 3, `pause` 0.8, rise 1.5, `thick` 2 | how far it drops |
 
 A spring is striped (hazardTrim), a crumbling one is rubble, unless a `skin` is given. A spring sets his upward speed
 from the outside (as gusts push him sideways): the controller is not touched. Crates standing on any of them ride along
@@ -99,6 +100,17 @@ Swinging blade, Spike floor, Floor fan (the belt and blade take a direction).
   a fan does not lift one (a creature has no fall of its own: it keeps to its floor) but blows one that walks onto it
   off again. A flier (bat, hornet, firefly) meets only the blades. Not one in his hands or thrown by him. A kill
   counts as any other. In the Gauntlet, a button in front of each bay puts a roach into it.
+
+### Flame jets (`flamejet` in hazards.ts; `tests/press.ts`; the Press, Test Room 16)
+
+`{ kind: 'flamejet', x, y, z, yaw, up?, length, period, on, phase }`: a nozzle in a wall pointing along `yaw` (or in
+the floor pointing up, `up`). It burns for `on` seconds of every `period`, after 0.6 s of a blue pilot flame; the
+flame grows out and dies back in 0.15 s. It burns as fire does (`takeBurn`: no roll helps; the Ember Helm keeps it
+off). Creatures in it are struck too, but not a firefly. A roar as it lights (`flameRoar`, unheard). In the editor:
+Flame jet (on the floor it points up; turned, it is in a wall pointing out).
+
+The Press also shows the crusher (above): a corridor under three crushers out of step, and one to ride up to a ledge.
+ICE, asked for with these, was already a part: the editor's Ice floor (a slick floor, `slick: true`).
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

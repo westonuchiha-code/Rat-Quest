@@ -10,6 +10,8 @@
  *            first, poking up a little), and hurt whoever stands in them. A roll does not help. Not solid.
  *   fan      a fan in the floor blowing up: in its column he is lifted, to hover near its top. It can run all the
  *            time, or be on for `on` seconds and off for `off`.
+ *   flamejet a FLAME JET: a nozzle in a wall (or the floor, pointing up) that shoots flame for `on` seconds of every
+ *            `period`, a pilot flame showing first. It burns as fire does (the Ember Helm keeps it off; a roll does not).
  * Everything here goes by the room's clock (world time), so each frame is the same however it is reached: what the
  * room draws and what hurts him agree.
  * main.ts: `carry` and `lift` before his update (as a gust is), `hurt` after the fight is resolved (as fire is).
@@ -19,7 +21,10 @@ export interface BeltSpec { kind: 'belt'; x: number; y: number; z: number; w: nu
 export interface BladeSpec { kind: 'blade'; x: number; y: number; z: number; length: number; yaw: number; swing: number; period: number; phase: number }
 export interface SpikeSpec { kind: 'spikes'; x: number; y: number; z: number; w: number; d: number; period: number; up: number; phase: number }
 export interface FanSpec { kind: 'fan'; x: number; y: number; z: number; r: number; height: number; on?: number; off?: number; phase?: number }
-export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec;
+/** A flame jet: a nozzle at x, y, z that shoots flame `length` along `yaw` (out of a wall), or straight up if `up`,
+ * for `on` seconds of every `period`, after a moment's pilot flame. */
+export interface JetSpec { kind: 'flamejet'; x: number; y: number; z: number; yaw: number; up?: boolean; length: number; period: number; on: number; phase: number }
+export type HazardSpec = BeltSpec | BladeSpec | SpikeSpec | FanSpec | JetSpec;
 
 /** The numbers: a blade's reach round its edge, the spikes' warning and height, a fan's lift. */
 export const HAZARD = {
@@ -27,7 +32,22 @@ export const HAZARD = {
   spikes: { warn: 0.5, height: 0.55, damage: 1 },
   fan: { rise: 5.5, accel: 40, top: 0.85, spinUp: 0.6 },
   belt: { speed: 3 },
+  jet: { warn: 0.6, radius: 0.45, grow: 0.15, damage: 1 },
 } as const;
+
+/** How far out a jet's flame reaches now, 0..1 of its length (it grows out fast, and dies back as fast); and whether
+ * its pilot is showing (the warning). */
+export function jetFlame(j: JetSpec, time: number): { reach: number; pilot: boolean } {
+  const t = (((time / j.period + j.phase) % 1) + 1) % 1 * j.period;
+  const start = j.period - j.on;
+  if (t >= start) {
+    const g = HAZARD.jet.grow;
+    return { reach: Math.min(1, (t - start) / g, (j.period - t) / g), pilot: false };
+  }
+  return { reach: 0, pilot: t >= start - HAZARD.jet.warn };
+}
+/** Which way a jet points: a unit vector. */
+export const jetDir = (j: JetSpec): [number, number, number] => (j.up ? [0, 1, 0] : [Math.sin(j.yaw), 0, Math.cos(j.yaw)]);
 
 /** What of him a hazard needs (the player controller has it all). */
 export interface Body {
@@ -131,6 +151,27 @@ function touching(h: HazardSpec, x: number, y: number, z: number, radius: number
     const vy = e.y < y ? y - e.y : e.y > y + height ? e.y - y - height : 0;
     return Math.hypot(flat, vy) < radius + HAZARD.blade.radius ? { x: nx, z: nz } : null;
   }
+  if (h.kind === 'flamejet') {
+    const reach = jetFlame(h, time).reach * h.length;
+    if (reach <= 0.05) return null;
+    // The flame is a rod from the nozzle, `reach` long, HAZARD.jet.radius round; he is a column (its nearest point).
+    const [ux, uy, uz] = jetDir(h);
+    let best = Infinity;
+    let at = { x: h.x, z: h.z };
+    for (let k = 0; k <= 8; k++) {
+      const f = (k / 8) * reach;
+      const px = h.x + ux * f;
+      const py = h.y + uy * f;
+      const pz = h.z + uz * f;
+      const vy = py < y ? y - py : py > y + height ? py - y - height : 0;
+      const dd = Math.hypot(Math.hypot(x - px, z - pz), vy);
+      if (dd < best) {
+        best = dd;
+        at = { x: px, z: pz };
+      }
+    }
+    return best < radius + HAZARD.jet.radius ? at : null;
+  }
   if (h.kind === 'spikes') {
     if (spikesUp(h, time) < 1) return null;
     return Math.abs(x - h.x) <= h.w / 2 && Math.abs(z - h.z) <= h.d / 2 && y >= h.y - 0.1 && y < h.y + HAZARD.spikes.height ? { x, z } : null;
@@ -139,11 +180,11 @@ function touching(h: HazardSpec, x: number, y: number, z: number, radius: number
 }
 
 /** What touches him now and would hurt him: a blade (from where it is) or spikes (from under him). */
-export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes'; x: number; z: number } | null {
+export function hurt(hazards: readonly HazardSpec[], body: Body, time: number, radius: number, height: number): { kind: 'blade' | 'spikes' | 'flamejet'; x: number; z: number } | null {
   if (body.dead) return null;
   const p = body.position;
   for (const h of hazards) {
-    if (h.kind !== 'blade' && h.kind !== 'spikes') continue;
+    if (h.kind !== 'blade' && h.kind !== 'spikes' && h.kind !== 'flamejet') continue;
     const at = touching(h, p.x, p.y, p.z, radius, height, time);
     if (at) return { kind: h.kind, ...at };
   }
@@ -178,8 +219,8 @@ const flies = (c: Creature): boolean => !!c.canFly || c.kind === 'bat' || c.kind
  */
 export class HazardFoes {
   private readonly struck = new WeakMap<object, number>();
-  act(hazards: readonly HazardSpec[], foes: readonly Creature[], dt: number, time: number): Array<{ foe: Creature; kind: 'blade' | 'spikes'; killed: boolean }> {
-    const out: Array<{ foe: Creature; kind: 'blade' | 'spikes'; killed: boolean }> = [];
+  act(hazards: readonly HazardSpec[], foes: readonly Creature[], dt: number, time: number): Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet'; killed: boolean }> {
+    const out: Array<{ foe: Creature; kind: 'blade' | 'spikes' | 'flamejet'; killed: boolean }> = [];
     for (const c of foes) {
       if (!c.alive) continue;
       const flier = flies(c);
@@ -197,11 +238,13 @@ export class HazardFoes {
           c.nudge(ux * FOE_HAZARD.fanPush * power * dt, uz * FOE_HAZARD.fanPush * power * dt);
         } else {
           if (h.kind === 'spikes' && flier) continue;
+          // (A firefly is a creature of fire: a flame jet does not burn it.)
+          if (h.kind === 'flamejet' && c.kind === 'firefly') continue;
           if (time - (this.struck.get(c) ?? -1e9) < FOE_HAZARD.cooldown) continue;
           const at = touching(h, c.x, c.y, c.z, c.radius, Math.max(0.6, c.radius * 1.6), time);
           if (!at) continue;
           this.struck.set(c, time);
-          // (From where the blade is; spikes come from under it: from just beside its middle.)
+          // (From where the blade or flame is; spikes come from under it: from just beside its middle.)
           const fx = h.kind === 'spikes' ? c.x + 0.01 : at.x;
           const fz = h.kind === 'spikes' ? c.z : at.z;
           const killed = c.takeHit(FOE_HAZARD.damage, fx, fz, 'thrown');
@@ -219,8 +262,8 @@ export class HazardFoes {
  * shooting up. Each with how loud (fading with distance, nothing past `HEARD`).
  */
 export const HEARD = 12;
-export function sounds(hazards: readonly HazardSpec[], before: number, now: number, at: { x: number; z: number }): Array<{ kind: 'swish' | 'spikes'; vol: number }> {
-  const out: Array<{ kind: 'swish' | 'spikes'; vol: number }> = [];
+export function sounds(hazards: readonly HazardSpec[], before: number, now: number, at: { x: number; z: number }): Array<{ kind: 'swish' | 'spikes' | 'jet'; vol: number }> {
+  const out: Array<{ kind: 'swish' | 'spikes' | 'jet'; vol: number }> = [];
   if (now <= before) return out;
   for (const h of hazards) {
     const far = Math.hypot(h.x - at.x, h.z - at.z);
@@ -228,6 +271,7 @@ export function sounds(hazards: readonly HazardSpec[], before: number, now: numb
     const vol = 1 - far / HEARD;
     if (h.kind === 'blade' && Math.sign(bladeAngle(h, before)) !== Math.sign(bladeAngle(h, now)) && bladeAngle(h, now) !== 0) out.push({ kind: 'swish', vol });
     else if (h.kind === 'spikes' && spikesUp(h, before) < 1 && spikesUp(h, now) >= 1) out.push({ kind: 'spikes', vol });
+    else if (h.kind === 'flamejet' && jetFlame(h, before).reach <= 0 && jetFlame(h, now).reach > 0) out.push({ kind: 'jet', vol });
   }
   return out;
 }

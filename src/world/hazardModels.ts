@@ -7,7 +7,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { bakeVertexColor } from '../render/ps1Material';
-import { HAZARD, bladeAngle, fanPower, spikesUp, type HazardSpec } from './hazards';
+import { HAZARD, bladeAngle, fanPower, jetDir, jetFlame, spikesUp, type HazardSpec } from './hazards';
 
 export interface HazardMats {
   iron: THREE.Material;
@@ -136,6 +136,52 @@ export function buildHazard(h: HazardSpec, mats: HazardMats): BuiltHazard {
         shown = want > shown ? Math.min(want, shown + dt * 14) : Math.max(want, shown - dt * 3);
         bed.position.y = -H + 0.02 + shown * H;
         bed.visible = shown > 0.01;
+      },
+    };
+  }
+  if (h.kind === 'flamejet') {
+    // A flame jet: an iron nozzle, a pilot flame (blue) at its mouth, and the flame itself: two cones, orange round
+    // yellow, stretched out as far as it reaches now and flickering. Built pointing up its own +y, then turned.
+    group.position.set(h.x, h.y, h.z);
+    const aim = new THREE.Group();
+    const [ux, uy, uz] = jetDir(h);
+    aim.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(ux, uy, uz));
+    group.add(aim);
+    const nozzle = new THREE.CylinderGeometry(0.22, 0.32, 0.4, 8, 1);
+    nozzle.translate(0, -0.12, 0);
+    bakeVertexColor(nozzle, 0x3a3a40);
+    const lip = new THREE.TorusGeometry(0.24, 0.05, 4, 10);
+    lip.rotateX(Math.PI / 2);
+    lip.translate(0, 0.08, 0);
+    bakeVertexColor(lip, 0xe8c040);
+    aim.add(new THREE.Mesh(mergeAll([nozzle, lip]), mats.iron));
+    const fire = (color: number, opacity: number): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
+    const coneAt = (r: number, m: THREE.Material): THREE.Mesh => {
+      const g = new THREE.ConeGeometry(r, 1, 8, 1, true);
+      g.rotateX(Math.PI);
+      g.translate(0, 0.5, 0);
+      const mesh = new THREE.Mesh(g, m);
+      mesh.position.y = 0.08;
+      aim.add(mesh);
+      return mesh;
+    };
+    // (Each cone turned point-down at the nozzle, widening to its end: a jet's flame.)
+    const outer = coneAt(HAZARD.jet.radius * 1.1, fire(0xff6a20, 0.75));
+    const inner = coneAt(HAZARD.jet.radius * 0.6, fire(0xffe070, 0.9));
+    const pilot = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 6, 1), fire(0x5a9aff, 0.9));
+    pilot.position.y = 0.22;
+    aim.add(pilot);
+    return {
+      group,
+      show(time) {
+        const f = jetFlame(h, time);
+        const len = Math.max(0.001, f.reach * h.length);
+        const flick = 1 + 0.12 * Math.sin(time * 37) + 0.06 * Math.sin(time * 61);
+        outer.visible = inner.visible = f.reach > 0.01;
+        outer.scale.set(flick, len, flick);
+        inner.scale.set(1 / flick, len * 0.85, 1 / flick);
+        pilot.visible = f.pilot;
+        pilot.scale.y = 0.8 + 0.3 * Math.sin(time * 23);
       },
     };
   }

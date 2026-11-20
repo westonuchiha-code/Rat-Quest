@@ -42,6 +42,11 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - The buttons in front of each bay put a roach in: watch the belt carry it, the blades and spikes strike it, the
   fan blow it off. Whether a creature should be lifted by a fan as he is (it is not: they have no fall of their own).
 
+**Crushers and flame jets** (the Press, Test Room 16)
+- A crusher's warning shake is half a second; a blow is 2 hearts. Whether the corridor of three is fair.
+- Riding a crusher up to the ledge: it waits 3 seconds up for him to step off.
+- The flame jets: a 0.6 s blue pilot before each. The roar is unheard.
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

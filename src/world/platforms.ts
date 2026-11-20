@@ -10,6 +10,9 @@
  *   crumble  shakes when he lands on it, falls after `hold` seconds, is gone for `back` seconds, and comes back
  *   spring   a pad: stood on, it squashes and throws him up `launch` high (holding jump or not: the short-hop
  *            rule is for his own jumps), and is ready again a moment later
+ *   crush    a CRUSHER: a block that waits up high (`hold`), shakes as a warning, slams down `depth`, sits there
+ *            (`pause`), and winds back up slowly (`speed`). Coming down on him, it strikes him (a heavy blow) and he
+ *            is pushed out from under it. He can ride on top of it.
  *
  * Each platform keeps its own state (`PlatformState`); `platformStep` moves it on by `dt` and says where it is, whether
  * it is solid, and how its picture should shake or squash. world/chamber.ts stepMovers does the rest (carrying him,
@@ -17,8 +20,8 @@
  */
 import { moverOffset, type MoverSpec } from './layout';
 
-export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring';
-export const PLATFORM_MOTIONS: readonly PlatformMotion[] = ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring'];
+export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring' | 'crush';
+export const PLATFORM_MOTIONS: readonly PlatformMotion[] = ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring', 'crush'];
 
 /** Defaults for each kind, where its spec says nothing. */
 export const PLATFORM = {
@@ -30,7 +33,29 @@ export const PLATFORM = {
   ride: { pause: 1 },
   /** spring: how high it throws him (units), and how long before it can throw again. */
   spring: { launch: 6, rest: 0.35 },
+  /** crush: seconds waiting up, of which the last `warn` it shakes; how far it drops; how fast it falls (as a weight
+   * falls, from rest); seconds it sits down; units a second winding back up. */
+  crush: { hold: 1.6, warn: 0.5, depth: 3, fall: 30, pause: 0.8, rise: 1.5, damage: 2 },
 } as const;
+
+/** A crusher's cycle at a time (from its start): its offset down (0 up .. depth), whether it is falling, and its shake. */
+export function crushAt(spec: MoverSpec, time: number): { down: number; falling: boolean; warning: boolean } {
+  const C = PLATFORM.crush;
+  const depth = spec.depth ?? C.depth;
+  const hold = spec.hold ?? C.hold;
+  const pause = spec.pause ?? C.pause;
+  const rise = spec.speed ?? C.rise;
+  const fallFor = Math.sqrt((2 * depth) / C.fall);
+  const cycle = hold + fallFor + pause + depth / rise;
+  let t = (((time / cycle + (spec.phase ?? 0)) % 1) + 1) % 1 * cycle;
+  if (t < hold) return { down: 0, falling: false, warning: t > hold - C.warn };
+  t -= hold;
+  if (t < fallFor) return { down: Math.min(depth, 0.5 * C.fall * t * t), falling: true, warning: false };
+  t -= fallFor;
+  if (t < pause) return { down: depth, falling: false, warning: false };
+  t -= pause;
+  return { down: Math.max(0, depth - rise * t), falling: false, warning: false };
+}
 
 export interface PlatformState {
   /** Its own clock (a glide or a circle runs on this). */
@@ -62,6 +87,8 @@ export interface PlatformNow {
   squash: number;
   /** A spring threw him this step: the upward speed to give him. */
   launch: number;
+  /** A crusher coming down: anything it comes down on is struck. */
+  falling: boolean;
 }
 
 const smooth = (f: number): number => f * f * (3 - 2 * f);
@@ -72,7 +99,7 @@ const smooth = (f: number): number => f * f * (3 - 2 * f);
  */
 export function platformStep(spec: MoverSpec, s: PlatformState, dt: number, ridden: boolean, gravity: number): PlatformNow {
   s.time += dt;
-  const out: PlatformNow = { offset: [0, 0, 0], solid: true, shown: true, shake: [0, 0], squash: 0, launch: 0 };
+  const out: PlatformNow = { offset: [0, 0, 0], solid: true, shown: true, shake: [0, 0], squash: 0, launch: 0, falling: false };
   const motion = spec.motion ?? 'glide';
   const len = Math.hypot(spec.to[0], spec.to[1], spec.to[2]);
   if (motion === 'glide') {
@@ -137,6 +164,11 @@ export function platformStep(spec: MoverSpec, s: PlatformState, dt: number, ridd
     }
     s.squash = Math.max(0, s.squash - dt * 6);
     out.squash = s.squash;
+  } else if (motion === 'crush') {
+    const c = crushAt(spec, s.time);
+    out.offset = [0, -c.down, 0];
+    out.falling = c.falling;
+    if (c.warning) out.shake = [Math.sin(s.time * 71) * 0.04, Math.cos(s.time * 53) * 0.04];
   }
   return out;
 }
