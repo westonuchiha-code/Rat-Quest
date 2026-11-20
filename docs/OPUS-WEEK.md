@@ -87,6 +87,10 @@ three unused textures). 1,364 long `check(...)` calls in the tests laid out one 
 the old log and roadmap in `docs/history/`; PLAYTEST.md for the owner. While the type-check went in, three tests were
 found checking less than they said, and fixed (`falls.ts` sneak, `firefly.ts` health, extra arguments).
 
+**The fifth robot run** (2026-11-20, PLAYTEST.md): nothing broken. One thing for you: at the peak of a jump, feet
+within a step (0.35) of a ledge's top, he is inside its edge for 3-4 frames before the controller lifts him onto it
+(`tests/chaos.ts` now allows 8 frames in that band, 3 deeper in).
+
 ## How to check it quickly
 
 1. `npm run test:all`: it must end `0 fail, types clean`.

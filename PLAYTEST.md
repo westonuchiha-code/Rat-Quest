@@ -62,6 +62,11 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 Four scripted runs through all 38 rooms, running into walls, jumping, swinging and rolling for about 80 seconds a
 room, found nothing: no going through walls, no getting stuck, no falling out of a room. (The third, 2026-11-19,
 after the new odds and ends and the cheaper flowers: one graze, for one moment mid-jump, against Vix in the Hall. The
-fourth, 2026-11-20, with the odds and ends in 17 rooms and their reactions: nothing at all.)
+fourth, 2026-11-20, with the odds and ends in 17 rooms and their reactions: nothing at all. The fifth, later that day,
+after the Yard, the Gauntlet, the Press, the Music Room's bells and the Green Room: 62 browser runs (the six new rooms
+three times each, 24 seconds a run, then every room once) and the in-suite robot with seven more seeds at two minutes
+a room (about ten hours of random hands): no crash, no page error, no going through anything. The one thing found: at
+the top of a jump, with his feet just under a ledge's top, he passes into its edge for 3 or 4 frames before he is
+lifted onto it. That is the controller's leniency for a ledge just made, seen six times; it is Fable's to judge.)
 A shorter version now runs with every test run (tests/chaos.ts: 40 seconds of random hands in each room, no browser). What it cannot tell is
 anything that LOOKS or FEELS wrong to a person. That is the part only you can do.
