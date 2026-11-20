@@ -32,8 +32,9 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - Fifteen written tunes are waiting to be heard (ASSETS.md, part 8); none goes in without your yes.
 
 **What the robot already shook out** (so you do not need to go looking for these)
-Three scripted runs through all 38 rooms, running into walls, jumping, swinging and rolling for about 80 seconds a
+Four scripted runs through all 38 rooms, running into walls, jumping, swinging and rolling for about 80 seconds a
 room, found nothing: no going through walls, no getting stuck, no falling out of a room. (The third, 2026-11-19,
-after the new odds and ends and the cheaper flowers: one graze, for one moment mid-jump, against Vix in the Hall.)
+after the new odds and ends and the cheaper flowers: one graze, for one moment mid-jump, against Vix in the Hall. The
+fourth, 2026-11-20, with the odds and ends in 17 rooms and their reactions: nothing at all.)
 A shorter version now runs with every test run (tests/chaos.ts: 40 seconds of random hands in each room, no browser). What it cannot tell is
 anything that LOOKS or FEELS wrong to a person. That is the part only you can do.
