@@ -22,6 +22,8 @@ const HX = 11;
 const HZ = 11;
 /** The coil: in the middle, how tall (to its ring), how thick. */
 export const BIG_COIL = { x: 0, z: 0, height: 16, r: 0.9 } as const;
+/** Where the Spark Beetles start, on the floor round the coil. */
+export const BEETLES: Array<[number, number]> = [[-5, -4], [4, -6]];
 /** The spiral of plates: how far out, how many, the turn and the rise from one to the next, the first one's height, their size. */
 export const SPIRAL = { radius: 6.2, count: 18, turn: 0.56, rise: 1.0, first: 1.0, size: 2.2 } as const;
 /** The balcony at the top (against the north wall), its top. */
@@ -72,5 +74,7 @@ export function coilRoom(): LevelDef {
     { kind: 'sign', x: -6, y: 4.2, z: HZ - 0.06, yaw: Math.PI, w: 8, h: 2.4, lines: ['THE COIL ROOM', 'BLUE plates zap on the kick,', 'VIOLET on the snare. GREY are safe'], post: 0 },
     { kind: 'sign', x: HX - 0.06, y: 3.6, z: 7.5, yaw: -Math.PI / 2, w: 6, h: 1.8, lines: ['COIL KEYS', 'step on them: the coil sings'], post: 0 },
   ];
-  return { ...def, decor: [...def.decor, ...parts] };
+  // Two Spark Beetles on the floor round the coil's foot (enemies/sparkBeetle.ts): charged on the snare, soft between.
+  const beetles = BEETLES.map(([x, z]) => ({ type: 'sparkbeetle' as const, x, y: 0, z, arena: { x0: -HX + 1, x1: HX - 1, z0: -HZ + 1, z1: 5 }, respawn: true, uncounted: true }));
+  return { ...def, decor: [...def.decor, ...parts], enemies: [...def.enemies, ...beetles] };
 }

@@ -8,6 +8,8 @@ import { input } from './core/input';
 import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
+import { SparkBeetle } from './enemies/sparkBeetle';
+import { SparkBeetleModel } from './enemies/sparkBeetleModel';
 import { leversOn, strikeThings, tickLevers } from './world/strikeables';
 import { PLATFORM } from './world/platforms';
 import { HAZARD, HazardFoes, Zones, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
@@ -305,7 +307,7 @@ function startGame(): void {
   }
   const enemies: Foe[] = [];
   /** The kinds that walk on the ground, and so can walk a slope (their models are tipped to it). */
-  const WALKERS = new Set<Foe['kind']>(['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion', 'roller']);
+  const WALKERS = new Set<Foe['kind']>(['scuttler', 'toad', 'ironback', 'guard', 'mantis', 'stag', 'ant', 'scorpion', 'roller', 'sparkbeetle']);
   const UP_AXIS = new THREE.Vector3(0, 1, 0);
   /** The ant pikemen among them (they are paired up each tick). */
   const antList: Ant[] = [];
@@ -612,6 +614,19 @@ function startGame(): void {
         },
       });
       scene.add(holder);
+    } else if (spec.type === 'sparkbeetle') {
+      // The Spark Beetle (enemies/sparkBeetle.ts): a roach's hunting, charged on the room's beat (the coil's snare).
+      const e = new SparkBeetle(spec);
+      e.clock = () => worldClock;
+      const m = new SparkBeetleModel();
+      enemies.push(e);
+      enemyModels.push({
+        root: m.root,
+        setTransform: (p, f) => m.setTransform(p, f),
+        flash: () => m.flash(),
+        tick: (dt) => m.update(dt, { state: e.state, moving: ['chase', 'return', 'circle', 'lunge'].includes(e.state), charge: e.charge, discharging: e.discharging && e.alive }),
+      });
+      scene.add(m.root);
     } else {
       const m = new ScuttlerModel();
       enemies.push(new Scuttler(spec));

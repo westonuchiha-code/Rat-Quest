@@ -176,6 +176,24 @@ synthesizers", and an electrical tile set. `src/levels/coilroom.ts`; the beat `s
   away), each a jump from the last (the test climbs it with the real rat, one jump each), to a balcony at 19.2 with a
   crumb; crumbs on two safe plates on the way; the coil keys and their coil by the way in.
 
+## The Spark Beetle (`src/enemies/sparkBeetle.ts`, look in `sparkBeetleModel.ts`; `tests/sparkbeetle.ts`; the Coil Room, Test Room 18)
+
+A new enemy (the owner: "come up with a few different enemy designs"; the rest are designs only, `docs/ENEMY-IDEAS.md`).
+A beetle with a copper coil grown into its back. It HUNTS as the roach does (it wraps the roach's own code,
+`world/scuttler.ts`: chasing, circling, lunging, biting), and it is CHARGED BY THE COIL'S SNARE (`world/teslaCoil.ts`):
+
+| when | what it does | what he should do |
+|------|--------------|-------------------|
+| the half beat before each snare | glows up (antennae, coil, a halo); a sword or plunge GLANCES off it | back off |
+| on the snare (0.22 s) | DISCHARGES all round it (reach 0.7 beyond its body): a heavy blow, a held shield does not turn it (a parry on the very moment does, as it does any blow) | be out of reach |
+| the rest of the bar | SPENT: soft | hit it |
+
+Its numbers: `SPARK` (proof: how charged before blades glance, 0.25; burst reach and damage; hp 4, a roach has fewer).
+Its clock is the room's (`clock`, set by main.ts), so it charges on the beat the plates zap on. Placed: two on the
+Coil Room's floor round the coil's foot, coming back when beaten, not among the room's goals. Put one anywhere as an
+`EnemySpec` with `type: 'sparkbeetle'`; away from a coil it still keeps the same beat (90 bpm, snare on 2 and 4).
+*main.ts*: one `addEnemy` branch, and its name in WALKERS (so it walks on ramps).
+
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 
 Made as the Club's regulars are: a BUILD (the animal) and a LOOK (one of two of it, by name: colours and a thing or

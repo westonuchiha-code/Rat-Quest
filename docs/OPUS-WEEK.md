@@ -27,6 +27,11 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
 - **The Hall**: banners, benches, a bar with a step behind it (Tawny keeps it, Slink sits there), two tables.
 - **Tricks**: poses and sounds for the grab and the spin. *main.ts*: the trick names on screen, added, then taken off
   at the owner's word.
+- **The Spark Beetle** (`enemies/sparkBeetle.ts`, a new enemy, in the Coil Room only): the roach's hunting, but
+  proof against blades the half beat before each snare, a heavy burst all round it on the snare, soft between; 4 hp.
+  *main.ts*: an `addEnemy` branch (it gets the room's clock) and its name in WALKERS. `tests/sparkbeetle.ts` fights it
+  with the real rat and the real combat. Note: a shield raised on the very moment parries the burst (the controller's
+  rule for every blow); a shield held up does not.
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 

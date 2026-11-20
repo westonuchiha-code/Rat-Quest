@@ -47,6 +47,7 @@ export const CREATURES: Array<{ type: string; mind: string; body: string; name?:
   { type: 'firefly', mind: 'src/enemies/firefly.ts', body: 'src/enemies/fireflyModel.ts' },
   { type: 'scorpion', mind: 'src/enemies/scorpion.ts', body: 'src/enemies/scorpionModel.ts' },
   { type: 'roller', name: 'Frost Roller', mind: 'src/enemies/roller.ts', body: 'src/enemies/rollerModel.ts' },
+  { type: 'sparkbeetle', name: 'Spark Beetle', mind: 'src/enemies/sparkBeetle.ts', body: 'src/enemies/sparkBeetleModel.ts' },
   { type: 'ironback', mind: 'src/enemies/ironback.ts', body: 'src/enemies/ironbackModel.ts' },
   { type: 'stag', mind: 'src/enemies/stag.ts', body: 'src/enemies/stagModel.ts' },
   { type: 'wyrm', mind: 'src/enemies/wyrm.ts', body: 'src/enemies/wyrmModel.ts' },

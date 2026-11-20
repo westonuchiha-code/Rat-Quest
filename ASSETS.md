@@ -122,6 +122,7 @@ Which body goes with which mind is in `addEnemy` in `src/main.ts`. In the dream 
 | Firefly Bomber | `firefly` | `src/enemies/firefly.ts` | `src/enemies/fireflyModel.ts` | `practice_firefly` |
 | Lamp Scorpion | `scorpion` | `src/enemies/scorpion.ts` | `src/enemies/scorpionModel.ts` | `practice_scorpion` |
 | Frost Roller | `roller` | `src/enemies/roller.ts` | `src/enemies/rollerModel.ts` |  |
+| Spark Beetle | `sparkbeetle` | `src/enemies/sparkBeetle.ts` | `src/enemies/sparkBeetleModel.ts` |  |
 | Ironback | `ironback` | `src/enemies/ironback.ts` | `src/enemies/ironbackModel.ts` | `practice_beetle` |
 | Stag Knight | `stag` | `src/enemies/stag.ts` | `src/enemies/stagModel.ts` | `practice_stag` |
 | The Sump Wyrm | `wyrm` | `src/enemies/wyrm.ts` | `src/enemies/wyrmModel.ts` | `sump` |
