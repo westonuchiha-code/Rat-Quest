@@ -4,8 +4,14 @@ RATQUEST: THE KINGDOM BELOW. Rewritten 2026-11-18 as the CURRENT state, short en
 happened before, day by day and in the owner's words, is kept unchanged in `docs/history/START-HERE-to-2026-11-18.md`
 (and the older feature log and roadmap, `docs/history/HANDOFF.md` and `PLAN.md`). Search those when you need why something is the way it is.
 
-**Read in this order:** this file; then `BACKLOG.md` (what is left, hardest first: Part A is Fable's, Part B Opus's,
-every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on the owner's own play).
+**FABLE, BACK FROM THE SWITCH: read `docs/OPUS-WEEK.md` FIRST.** It is the handoff for everything Opus did from
+2026-11-17 to 11-20 (82 commits, Test Rooms 12-19, the kit of parts, the thirteen playable characters), by risk, with
+every unfixed thing in one list and the owner's standing rules. It points on to `docs/ROOMS.md`, `docs/KIT.md` and
+`docs/ENEMY-IDEAS.md`.
+
+**Read in this order:** `docs/OPUS-WEEK.md`; this file; then `BACKLOG.md` (what is left, hardest first: Part A is
+Fable's, Part B Opus's, every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on
+the owner's own play).
 
 ## The project
 A PS1-style 3D action platformer: a rat knight with a sword and a shield. TypeScript (strict: no unused locals or

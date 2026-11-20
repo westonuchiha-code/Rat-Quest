@@ -195,8 +195,22 @@ one fault (a practice room's corner said "The Hall"; fixed). Since then, four ro
 
 ---
 
+**B13. The playable characters, past prototypes** (Test Room 19; KIT.md has the table). Once the owner says which of
+the thirteen ways to keep: their limbs posed (only the hedgehogs' are), sounds of their own, a hit flash, the knight
+left standing made solid, and the join to the game done properly (main.ts steps the knight's controller under them
+for health and hits: OPUS-WEEK.md section 5). Thin ones to give a second idea: Mo, Snow. Do not put any in a real
+level unasked.
+
+**B14. The enemy designs** (docs/ENEMY-IDEAS.md): seven, not built. Opus's pick: the Bellringer moth (the Music Room's
+bells as a fight), then the Piston Weevil (the Press as an arena). The Spark Beetle (built) could get a twin on the
+kick.
+
 ## Done
 (Move items here, with the commit.)
+- **2026-11-20, the kit and Test Rooms 12-19** (docs/ROOMS.md, docs/KIT.md): moving platforms (ten motions), the music
+  floor and bells, things to hit (levers, a timed lever, cracked wall and floor), hazards (belts, blades, spikes, fans,
+  crushers, flame jets, float, mud, launcher), the mole and the hedgehog, the Coil Room and the Power plant tile set,
+  the Spark Beetle, and the thirteen playable characters. None placed in a real level (the owner's word).
 - **A1 (first part): the Sewers' feel.** Run 0.88, his blows 0.67, a blow on him costs double. `TUNING.sewers`. STILL OPEN under A1: the Mario room (Test Room 8) and the Sonic room (Test Room 5); and his verdict on the numbers.
 - **A10: stronger in the dream.** His blows do 1.5 there (`TUNING.dream.dealt`). His verdict wanted.
 - **A2 (first part): a bowl and a spine in the Toy Box.** STILL OPEN under A2: banked turns (need a new kind of solid: ramps lie along x or z only), a launcher, loops of light rail, round corners for the bowl.

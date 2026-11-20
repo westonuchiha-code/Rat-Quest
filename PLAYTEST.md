@@ -60,6 +60,14 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - The climb: 18 plates, each one jump. Whether it wants harder (fewer safe plates) or easier.
 - The coil keys by the door: whether the coil's voice is fun to play.
 
+**The Stand-in** (Test Room 19): every character, played
+- Talk to anyone in the line-up by the door to be them; talk to the knight standing in their place to be yourself.
+  Each has a way of getting about of its own (the table is in docs/KIT.md; each one's talk says its buttons).
+- Which ways feel worth building on and which to drop. Every number (speeds, jump heights, how long a hover lasts,
+  how far a pounce goes) is one table at the top of its file in `src/player/critters/` (the hedgehogs:
+  `src/player/hedgehogController.ts`).
+- Only the hedgehogs' arms and legs move; the others move as a whole for now. Their sounds are borrowed (unheard).
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.
