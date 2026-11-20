@@ -201,18 +201,25 @@ character". Not a plan for the game: a try. BRAMBLE the hedgehog (npc/patrons.ts
 posed from the very same things the rat's model is told each frame (`RatAnimInput`). The rat's controller, collision
 and combat are untouched: he plays exactly as the rat does, only the drawing is different.
 
-| the rat does | the hedgehog does |
+HIS OWN MOVEMENT (the owner, the same day: "they're totally different character body types ... they wouldn't move the
+same"). Nothing is copied or scaled from the knight's animation (whose code is not touched): it is the hedgehog's
+own, for a short, round body, and every part of him is on a SPRING (`SPRING` in standIn.ts: how quick, how bouncy
+each part is), so he overshoots and settles the way the knight's springs make the knight do.
+
+| when | the hedgehog |
 |------|-----------|
-| stands, walks, runs | stands; a quick patter of his short legs, arms swinging, leaning in as he speeds up |
-| jumps, falls | arms out and up, a leg tucked; arms high and feet reaching coming down; a squash on landing |
-| the 3-hit sword combo | a SEWING NEEDLE: a slash across, back again, an overhead chop; his round body turns with it (the sword trail follows the needle) |
-| guards | crouched behind a BOTTLE CAP on his left arm (it always faces forward) |
-| dodge roll, backflip, the air jump's flip, long jump, slide, plunge | CURLS INTO A BALL OF SPINES and rolls over (the ball sits higher on a slope so it does not sink into it) |
-| rides his shield | rides a big bottle cap like a board; spins and kickflips turn it |
-| swims | lies flat, his spiny back at the waterline, paddling |
-| hangs, climbs | arms straight up, paws on the edge (he is short: he hangs low), then up and over |
-| carries, throws | arms up over his head; a throw brings them down |
-| hurt, dead | rocks back; lies on his back |
+| walking | a WADDLE: his round body rocks side to side over the foot he stands on, his head kept level, little quick steps |
+| running | a SCURRY: nose down and forward, spines laid flat, a bounce each step, arms tucked back |
+| turning, starting, stopping | his head goes into the turn first, his body swings round after it and leans out; he leans in setting off, rocks back stopping |
+| standing | breathes, sniffs the air now and then, looks round |
+| jumping | a quick crouch, then tucked half round going up (short legs drawn in), uncurling with his feet out coming down |
+| landing | his round body SQUASHES and bounces back; his spines shiver up |
+| the 3-hit combo | not sweeps (his arms are short): two STABS with his weight behind them, then a SPIN right round, spines bristling, needle out |
+| guarding | hunched behind his bottle cap, head drawn down, SPINES UP |
+| hit | spines bristle, he flinches half curled |
+| rolls, the air jump's flip, long jump, slide, plunge | curls into a ball of spines and rolls over |
+| dead | curled up tight, as a hedgehog does |
+| swims, hangs, climbs, rides the cap, carries | flat and paddling; paws on the edge; balancing with his arms out; arms up |
 
 **How to see it:** the Stand-in room (Test Room 19: steps, a steep slope and a gentle one, a block to hang from, a
 pool, two roaches, pots). He walks in as the knight; BRAMBLE waits by the way in. Talk to him to the end and they

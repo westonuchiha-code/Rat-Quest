@@ -1444,6 +1444,8 @@ export interface StandInRig {
   legs: ReadonlyArray<{ thigh: THREE.Group; side: number }>;
   /** What he holds as a regular (a mug, cards): put away. */
   hide: THREE.Object3D[];
+  /** His coat of spines, if he has one, and the middle each piece is built round (to raise them about it, bristling). */
+  spines: ReadonlyArray<{ mesh: THREE.Object3D; at: THREE.Vector3 }>;
   idle(dt: number, t: number): void;
 }
 /** A hedgehog or a mole, as a body for player/standIn.ts. */
@@ -1462,6 +1464,8 @@ abstract class Small implements PatronBody {
   protected readonly legs: Array<{ thigh: THREE.Group; side: number }> = [];
   protected readonly mugHand = new THREE.Group();
   protected readonly cards = new THREE.Group();
+  /** A hedgehog's coat and cap of spines (see `rig`). */
+  protected readonly spines: Array<{ mesh: THREE.Object3D; at: THREE.Vector3 }> = [];
   protected common!: Common;
   private sip = 0;
 
@@ -1527,6 +1531,7 @@ abstract class Small implements PatronBody {
     return {
       root: this.root, body: this.body, chest: this.chest, head: this.head, arms: this.arms, legs: this.legs,
       hide: [this.mugHand, this.cards],
+      spines: this.spines,
       idle: (dt, t) => {
         const ctx: PatronCtx = { time: t, talking: false, mouth: 0, headYaw: 0, doing: 'stand', seated: false, turn: 0 };
         this.common.step(dt, ctx);
@@ -1697,7 +1702,9 @@ class Hedgehog extends Small {
     ));
     // The spines: a coat of cones over his back and the top of him, each pointing out, dark with a pale tip.
     // The coat of spines over his back, sides and shoulders: the face and the belly are left clear.
-    this.chest.add(spineCoat(0, 0.25, -0.02, [0.29, 0.3, 0.27], 0.55, 1.95, 28, 10, 0.085, C.spine, C.tip));
+    const coat = spineCoat(0, 0.25, -0.02, [0.29, 0.3, 0.27], 0.55, 1.95, 28, 10, 0.085, C.spine, C.tip);
+    this.chest.add(coat);
+    this.spines.push({ mesh: coat, at: new THREE.Vector3(0, 0.25, -0.02) });
     this.addLegs(0.055, 0.11, C.face, C.paw);
     this.addArms(0.22, 0.35, 0.05, 0.13, 0.11, C.face, () => {
       const g = new THREE.Group();
@@ -1723,7 +1730,9 @@ class Hedgehog extends Small {
     this.mouthPiece.add(kit.box(0.045, 0.012, 0.012, 0x3a2420, 0, 0, 0));
     this.head.add(this.mouthPiece);
     // And a cap of them over the top and back of his head, the brow left clear, joining the coat behind.
-    this.head.add(spineCoat(0, 0.045, -0.02, [0.172, 0.168, 0.17], [0.12, 1.15], 1.7, 18, 6, 0.06, C.spine, C.tip));
+    const cap = spineCoat(0, 0.045, -0.02, [0.172, 0.168, 0.17], [0.12, 1.15], 1.7, 18, 6, 0.06, C.spine, C.tip);
+    this.head.add(cap);
+    this.spines.push({ mesh: cap, at: new THREE.Vector3(0, 0.045, -0.02) });
     for (const side of [-1, 1]) {
       // Small round ears, half hidden in the spines.
       const ear = kit.blob(0.042, 0.042, 0.02, (_x, _y, nz) => (nz > 0.3 ? 0xe8a8a8 : C.face), side * 0.115, 0.115, 0.07, 8, 5, 0.1);

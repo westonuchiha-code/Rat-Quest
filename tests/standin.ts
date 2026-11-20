@@ -58,7 +58,7 @@ function frame(p: PlayerController, pad: Partial<PlayerInput>): { box: THREE.Box
   room.stepMovers(DT, p);
   p.update(DT, input(pad), room.colliders);
   const a = anim(p);
-  h.setTransform(new THREE.Vector3(), 0);
+  h.setTransform(new THREE.Vector3(), p.facing);
   h.update(DT, a);
   h.root.updateMatrixWorld(true);
   h.root.traverse((o) => {
@@ -104,6 +104,8 @@ const start = (x: number, y: number, z: number, facing = Math.PI): PlayerControl
   for (let k = 0; k < 25; k++) {
     frame(p, {});
     h.getBlade(base, tip);
+    // (In his own frame: across him, and out in front of him.)
+    h.root.worldToLocal(tip);
     tipX.push(tip.x);
     tipZ.push(tip.z);
   }
@@ -198,6 +200,80 @@ const start = (x: number, y: number, z: number, facing = Math.PI): PlayerControl
     if (p.grounded && p.position.y > HANG.top - 0.05) climbed = true;
   }
   check('jumping at the high block, the real rat catches its edge; the hedgehog hangs with his paws at it', hung > 0 && paws < 0.15, hung ? `paws ${paws.toFixed(2)} off the edge` : 'never hung');
+}
+// ---- HIS OWN MOVEMENT (2026-11-20; the owner: give him movement for his own body, not the knight's) ----
+const rig = (): { body: THREE.Group; root: THREE.Group; head: THREE.Group; spines: ReadonlyArray<{ mesh: THREE.Object3D }> } => h['rig'];
+const spineScale = (): number => rig().spines[0].mesh.scale.x;
+{
+  // Walking: a waddle, his round body rocking side to side over each step.
+  const p = start(0, 0, 6);
+  let lo = 9;
+  let hi = -9;
+  for (let k = 0; k < 90; k++) {
+    frame(p, { move: new THREE.Vector3(1, 0, 0) });
+    if (k > 30) {
+      lo = Math.min(lo, rig().body.rotation.z);
+      hi = Math.max(hi, rig().body.rotation.z);
+    }
+  }
+  check('walking, he waddles: his body rocks from side to side over his feet', hi > 0.08 && lo < -0.08, `rocks ${lo.toFixed(2)}..${hi.toFixed(2)}`);
+}
+{
+  // Running: a scurry, nose down and forward, spines laid flat.
+  const p = start(0, 0, 6);
+  let pitch = 0;
+  let flat = 9;
+  for (let k = 0; k < 90; k++) {
+    frame(p, { move: new THREE.Vector3(1, 0, 0), run: true });
+    if (k > 40) {
+      pitch += rig().body.rotation.x / 49;
+      flat = Math.min(flat, spineScale());
+    }
+  }
+  check('running, he scurries leaning well forward, his spines laid flat', pitch > 0.3 && flat < 1, `lean ${pitch.toFixed(2)}, spines ${flat.toFixed(2)}`);
+}
+{
+  // Guarding: hunched, his spines bristling up.
+  const p = start(0, 0, 6);
+  for (let k = 0; k < 40; k++) frame(p, { guardHeld: true });
+  check('guarding, he hunches and his spines bristle up', spineScale() > 1.12 && rig().body.rotation.x > 0.2, `spines ${spineScale().toFixed(2)}`);
+}
+{
+  // Landing: a round body bounces, squashed and back.
+  const p = start(0, 0, 6);
+  let squash = 9;
+  let landed = false;
+  for (let k = 0; k < 100; k++) {
+    const f = frame(p, { jumpPressed: k === 0, jumpHeld: true });
+    if (k > 5 && f.a.state !== 'jump' && f.a.state !== 'fall') landed = true;
+    if (landed) squash = Math.min(squash, rig().body.scale.y);
+  }
+  check('landing, he squashes and bounces back', squash < 0.9 && Math.abs(rig().body.scale.y - 1) < 0.03, `squashed to ${squash.toFixed(2)}`);
+}
+{
+  // The third blow of the combo: he spins right round, spines out.
+  const p = start(0, 0, 6);
+  let most = 0;
+  let bristle = 0;
+  for (let k = 0; k < 110; k++) {
+    const f = frame(p, { attackPressed: k === 0 || k === 20 || k === 42 });
+    if (f.a.comboStep === 2) {
+      most = Math.max(most, rig().root.rotation.y);
+      bristle = Math.max(bristle, spineScale());
+    }
+  }
+  check('the third blow is a spin: he goes right round, spines bristling', most > 5.5 && bristle > 1.1, `turned ${(most / Math.PI).toFixed(1)} half-turns, spines ${bristle.toFixed(2)}`);
+}
+{
+  // Turning: his head goes into the turn first, his body swings round after.
+  const p = start(0, 0, 6);
+  for (let k = 0; k < 40; k++) frame(p, { move: new THREE.Vector3(1, 0, 0), run: true });
+  let lead = 0;
+  for (let k = 0; k < 12; k++) {
+    frame(p, { move: new THREE.Vector3(0, 0, -1), run: true });
+    lead = Math.max(lead, Math.abs(rig().head.rotation.y));
+  }
+  check('turning, his head leads into the turn', lead > 0.15, `head ${lead.toFixed(2)} rad ahead`);
 }
 check('no part of him ever went to NaN, in any pose', nan === 0, `${nan}`);
 console.log('  states posed:', [...seen.entries()].map(([s, n]) => `${s} ${n}`).join(', '));

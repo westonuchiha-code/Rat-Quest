@@ -40,6 +40,8 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
   switch out"): `dialog.onFinish` (ui/dialog.ts: called when a talk is read to its end, not walked away from) sets
   `swappedAs` for a character with `swap`; the talk start speaks as THE KNIGHT when swapped; the knight's double
   (`knightDouble`, `dressDouble`) stands in the character's place; all cleared on loading a level.
+  Then the hedgehog's movement was made his own (the owner: different bodies move differently): standIn.ts only, no
+  knight's code read into it. `rig.spines` added to the small regulars (npc/patrons.ts) so his spines can bristle.
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 
