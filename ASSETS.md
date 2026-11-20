@@ -141,7 +141,7 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 | --- | --- | --- | --- | --- |
 | ASH | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
 | BISCUIT | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
-| BRAMBLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17 |
+| BRAMBLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17, Test Room 19 |
 | CORPORAL NIB | ant | `src/enemies/antModel.ts` | villain at 1.3 | Test Room 11, The Hall |
 | DIGGER | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17 |
 | DIZZY DAVE | pigeon | `src/npc/npc.ts` | pigeon at 1 | Dizzy Dave's Spot, Test Room 11, The Hall |

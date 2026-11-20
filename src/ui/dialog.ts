@@ -86,6 +86,8 @@ export class Dialog {
     return this.open_;
   }
 
+  /** Called when a talk is read to its end (the last page turned), not when he walks off from it. */
+  onFinish: (() => void) | null = null;
   /** Called with the speaker's name whenever a talk begins (the sticker book notes who he has met). */
   onStart: ((name: string) => void) | null = null;
   /** The button that moves the talk on, as a chip (the game sets it); the arrow alone without one. */
@@ -123,7 +125,11 @@ export class Dialog {
     else if (this.index < this.lines.length - 1) {
       this.index++;
       this.shown = 0;
-    } else return this.close();
+    } else {
+      this.close();
+      this.onFinish?.();
+      return;
+    }
     this.draw();
   }
 

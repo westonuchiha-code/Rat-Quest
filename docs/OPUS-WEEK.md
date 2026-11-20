@@ -36,7 +36,10 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
   posed from what the rat's model is told. Play is untouched. *main.ts*: the object passed to `rat.update` is now a
   named `ratAnim` (same contents), and after it a block draws the stand-in and hides the rat when the level says
   `playAs: 'hedgehog'` or the address has `as=hedgehog`; the sword trail reads the stand-in's needle then. Off, it does
-  nothing (it is not even made).
+  nothing (it is not even made). Then THE SWAP (the owner: "when you walk in you can talk to this other character and
+  switch out"): `dialog.onFinish` (ui/dialog.ts: called when a talk is read to its end, not walked away from) sets
+  `swappedAs` for a character with `swap`; the talk start speaks as THE KNIGHT when swapped; the knight's double
+  (`knightDouble`, `dressDouble`) stands in the character's place; all cleared on loading a level.
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 

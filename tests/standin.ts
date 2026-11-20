@@ -20,7 +20,12 @@ const DT = 1 / 60;
 const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
 
 const def = levelById('standin');
-check('the Stand-in room is Test Room 19, and in it he is drawn as the hedgehog', !!def && def.playAs === 'hedgehog' && ROOMS.some((r) => r.n === 19 && r.id === 'standin'));
+check('the Stand-in room is Test Room 19; he walks in as the knight', !!def && !def.playAs && ROOMS.some((r) => r.n === 19 && r.id === 'standin'));
+{
+  const b = def?.npcs?.find((n) => n.name === 'Bramble');
+  const spawn = def?.spawn ?? { x: 0, y: 0, z: 0, facing: 0 };
+  check('Bramble waits by the way in, to swap with him (and the knight has his own lines, to swap back)', !!b && b.swap?.as === 'hedgehog' && (b.swap?.back.length ?? 0) > 0 && b.lines.length > 0 && Math.hypot(b.x - spawn.x, b.z - spawn.z) < 6, b ? `${Math.hypot(b.x - spawn.x, b.z - spawn.z).toFixed(1)} from the way in` : 'not there');
+}
 const room = buildChamber(def as never);
 
 /** What the rat's model is told each frame (as main.ts tells it, in play). */

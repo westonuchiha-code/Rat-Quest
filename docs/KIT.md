@@ -215,14 +215,19 @@ and combat are untouched: he plays exactly as the rat does, only the drawing is 
 | hurt, dead | rocks back; lies on his back |
 
 **How to see it:** the Stand-in room (Test Room 19: steps, a steep slope and a gentle one, a block to hang from, a
-pool, two roaches, pots), where it is on by itself; or `#as=hedgehog` on any level's address. A level asks for it with
-`playAs: 'hedgehog'` on its `LevelDef`.
+pool, two roaches, pots). He walks in as the knight; BRAMBLE waits by the way in. Talk to him to the end and they
+SWAP: he is Bramble, and the knight stands where Bramble stood (his own model, in what he wears, turning to watch).
+Talk to the knight (his own face in the talk box) to the end and they swap back. Leaving the room undoes it.
+The swap is a field on any character (`NpcSpec.swap`: who he becomes, and what the knight says when spoken to), so
+another level can have one too. Also: `#as=hedgehog` on any level's address, or `playAs: 'hedgehog'` on a `LevelDef`,
+to be him from the start.
 **What is not done:** his hit flash (he blinks, as the rat does, but does not glow red), the story gestures (sitting,
 waving, pointing) and the wall kick's own pose. The camera is the rat's (he is a little shorter).
 **To do another character the same way:** the hedgehog's bones are reached through `rig` on the small regulars
 (`makeSmall` in patrons.ts: the moles are built the same way, so they should take the same poses, but for curling up. Not tried).
 *main.ts*: what the rat's model is told is kept in `ratAnim` and given to the stand-in too; the stand-in is drawn and
-the rat hidden when asked for; the sword trail reads the needle.
+the rat hidden when asked for; the sword trail reads the needle. The swap: `swappedAs`, set when a talk with a `swap`
+character is read to its end (`dialog.onFinish`, new in ui/dialog.ts), cleared on loading a level; `knightDouble`.
 
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 

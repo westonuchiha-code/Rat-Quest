@@ -2,6 +2,9 @@ import { lookOf } from './npc';
 import { patronLook } from './patrons';
 import type { NpcKind } from './npc';
 
+/** The name the knight goes by in a talk box (the Stand-in room: he can be spoken to there). */
+export const KNIGHT = 'THE KNIGHT';
+
 /** Draws a chunky little face for the talk box, in a few big pixels, like the portraits in old games. */
 export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse', name = ''): void {
   const look = lookOf(kind, name);
@@ -16,6 +19,27 @@ export function drawPortrait(canvas: HTMLCanvasElement, kind: NpcKind = 'mouse',
     g.fillRect(x, y, w, h);
   };
   px(0, 0, N, N, kind === 'bird' ? '#2a4a3a' : kind === 'villain' ? '#2a1030' : kind === 'pigeon' ? '#3a2a50' : kind === 'turtle' ? '#2e3a2a' : kind === 'fox' ? '#3a2a22' : kind === 'ferret' ? '#2e2a3a' : kind === 'owl' ? '#22303a' : kind === 'ant' ? '#2a2420' : kind === 'stag' ? '#221c2a' : kind === 'rat' ? '#2a1a30' : kind === 'mole' ? '#2a2620' : kind === 'hedgehog' ? '#2a3022' : '#2a3448');
+  if (kind === 'rat' && name === KNIGHT) {
+    // The knight himself (when someone else has his controls, in the Stand-in room): grey-brown fur, pink ears, his
+    // steel helmet with its gold spike, dark eyes.
+    px(0, 0, N, N, '#283040');
+    px(2, 6, 6, 6, '#7a6a5e');
+    px(16, 6, 6, 6, '#7a6a5e');
+    px(3, 7, 4, 4, '#e8a0a8');
+    px(17, 7, 4, 4, '#e8a0a8');
+    px(5, 8, 14, 12, '#8a7a6c'); // head
+    px(5, 4, 14, 5, '#a9b3bc'); // helmet
+    px(4, 8, 16, 1, '#77818b'); // its rim
+    px(11, 1, 2, 3, '#d4aa3c'); // its spike
+    px(7, 11, 3, 3, '#14100c');
+    px(14, 11, 3, 3, '#14100c');
+    px(8, 11, 1, 1, '#ffffff');
+    px(15, 11, 1, 1, '#ffffff');
+    px(8, 15, 8, 5, '#b8a898'); // muzzle
+    px(11, 15, 2, 2, '#f07a9c');
+    px(4, 20, 16, 4, '#c84a3a'); // his scarf
+    return;
+  }
   if (kind === 'turtle') {
     const old = patronLook('turtle', name) === 'mo';
     const skin = old ? '#7c8f4e' : '#9fbf5a';

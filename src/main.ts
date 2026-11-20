@@ -18,6 +18,7 @@ import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
 import { DREAM_LOOK, RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND, type RatAnimInput } from './player/ratModel';
 import { StandIn } from './player/standIn';
+import { KNIGHT } from './npc/portrait';
 import { ATTACK_CLIPS } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
@@ -270,6 +271,14 @@ function startGame(): void {
   let dreamRat: RatModel | null = null;
   /** A hedgehog in his place, worked by his controls (player/standIn.ts): made when first asked for. */
   let standIn: StandIn | null = null;
+  /**
+   * THE SWAP (the Stand-in room): talked to till the end, a character with a `swap` takes the knight's controls, and
+   * the knight stands where he stood (`knightDouble`, his own model, dressed as he is), to be talked to and swapped
+   * back. Undone on leaving the room.
+   */
+  let swappedAs: 'hedgehog' | null = null;
+  let swapNpc: Npc | null = null;
+  let knightDouble: RatModel | null = null;
   let dreaming = false;
   const sky = new SkyDome();
   const dozers: Dozer[] = [];
@@ -1155,6 +1164,14 @@ function startGame(): void {
   }
   const dialog = new Dialog(gameWrap);
   let talkingTo: Npc | null = null;
+  // A talk read to its end with one who swaps: the swap (or the swap back).
+  dialog.onFinish = (): void => {
+    const n = talkingTo;
+    if (!n?.spec.swap) return;
+    swappedAs = swappedAs ? null : n.spec.swap.as;
+    swapNpc = n;
+    audio.play('menuMove', { vol: 0.8, priority: 6 });
+  };
   let dlgCam = 0;
   // Floor plates: stand on one and it stays pressed; gates can wait for them.
   let plateGroup: THREE.Group | null = null;
@@ -1231,6 +1248,21 @@ function startGame(): void {
     rat.setScarfLong(3.2);
   };
   /** Shows what he wears on the model. */
+  /** The knight left standing (the swap): dressed in what he wears, once each time it changes. */
+  let doubleDress = '';
+  const dressDouble = (m: RatModel): void => {
+    const key = ['helmet', 'scarf', 'sword', 'shield'].map((k) => equipment.equipped(k as never)).join();
+    if (key === doubleDress) return;
+    doubleDress = key;
+    const helm = ITEMS[equipment.equipped('helmet')].colors;
+    m.setHelmet({ dome: helm.dome, rim: helm.rim, spike: helm.spike });
+    const sc = ITEMS[equipment.equipped('scarf')].colors;
+    m.setScarf({ cloth: sc.cloth, trim: sc.trim });
+    const sw = ITEMS[equipment.equipped('sword')].colors;
+    m.setSword({ blade: sw.blade, hilt: sw.hilt });
+    const sh = ITEMS[equipment.equipped('shield')].colors;
+    m.setShield({ face: sh.face, trim: sh.trim });
+  };
   const applyGear = (): void => {
     // (His own paint back first: what he wears is painted onto it. Then, in the dream, the dream's over that.)
     if (dreaming) rat.wearColours(null);
@@ -1738,6 +1770,9 @@ function startGame(): void {
     scene.add(plateGroup);
     dialog.close();
     talkingTo = null;
+    swappedAs = null;
+    swapNpc = null;
+    if (knightDouble) knightDouble.root.visible = false;
     heard.foes.clear();
     lockTarget = null;
     audio.stopLoops();
@@ -2338,7 +2373,9 @@ function startGame(): void {
     } else if (jumpPressed && nearNpc && player.grounded && !player.dead && !builder.live) {
       jumpPressed = false;
       talkingTo = nearNpc;
-      dialog.start(nearNpc.spec.name, nearNpc.spec.lines, nearNpc.spec.kind);
+      // (Swapped, it is the knight standing there who is spoken to.)
+      if (swappedAs && nearNpc.spec.swap) dialog.start(KNIGHT, nearNpc.spec.swap.back, 'rat');
+      else dialog.start(nearNpc.spec.name, nearNpc.spec.lines, nearNpc.spec.kind);
       if (nearNpc.spec.kind === 'villain') audio.play('villainLaugh', { vol: 0.9, verb: 0.3, priority: 8 });
       player.velocity.set(0, 0, 0);
     }
@@ -4489,7 +4526,7 @@ function startGame(): void {
     // (A cutscene has its own cast: the knight himself waits out of the picture.)
     if (show) rat.root.visible = false;
     // A STAND-IN (player/standIn.ts): the hedgehog drawn in his place, moved by the same things, when asked for.
-    const standing = /[#&]as=hedgehog/.test(location.hash) || cur.playAs === 'hedgehog';
+    const standing = /[#&]as=hedgehog/.test(location.hash) || cur.playAs === 'hedgehog' || swappedAs === 'hedgehog';
     if (standing) {
       standIn ??= new StandIn();
       if (!standIn.root.parent) scene.add(standIn.root);
@@ -4561,6 +4598,22 @@ function startGame(): void {
     for (const n of npcs) {
       n.update(rawDt, player.position.x, player.position.y, player.position.z, dialog.open && talkingTo === n);
       shadowCuts.cut(n.root, chamber.colliders);
+    }
+    // Swapped: the one he swapped with is gone from his place, and the knight stands there instead, facing him.
+    if (swapNpc) {
+      const on = swappedAs !== null;
+      swapNpc.root.visible = !on;
+      if (on) {
+        if (!knightDouble) {
+          knightDouble = new RatModel();
+          scene.add(knightDouble.root);
+        }
+        dressDouble(knightDouble);
+        const sp = swapNpc.spec;
+        knightDouble.setTransform(new THREE.Vector3(sp.x, sp.y ?? 0, sp.z), Math.atan2(player.position.x - sp.x, player.position.z - sp.z));
+        knightDouble.update(rawDt, { state: 'idle', planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll', dodgeProgress: 0, verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0 });
+      }
+      if (knightDouble) knightDouble.root.visible = on;
     }
     // (The same small hint says what STOW would do beside a crate, and what his hands can do with one over his head.)
     const talkable = npcs.some((n) => n.near) || (nearFire && resting < 0);

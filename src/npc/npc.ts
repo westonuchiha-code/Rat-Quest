@@ -42,6 +42,11 @@ export interface NpcSpec {
    * them he must have beaten in all. With both, both must be so.
    */
   when?: { cleared?: string; beaten?: [string, number] };
+  /**
+   * Talked to till the end, he and the knight SWAP: the knight's controls work him (player/standIn.ts), and the
+   * knight stays standing where he stood, to be spoken to (`back`) and swapped back. The Stand-in room.
+   */
+  swap?: { as: 'hedgehog'; back: string[] };
 }
 
 /** Whether one of the Club's later regulars is here yet, by what the save says has been done. */

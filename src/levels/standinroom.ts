@@ -2,7 +2,9 @@
  * THE STAND-IN (Test Room 19, 2026-11-20). The owner: "pick one of the other characters that's a little different from
  * the main character and try to get it to move as if you were able to use it as a second player ... this isn't a plan
  * for the actual game I just want to see how close you can get." Here he is BRAMBLE, the hedgehog (player/standIn.ts):
- * the same controls, the same moves, a hedgehog's body. Not a level: a course with one of everything to try him on:
+ * the same controls, the same moves, a hedgehog's body. You walk in as the knight; BRAMBLE waits by the way in: talk
+ * to him to the end and you SWAP (npc.ts `swap`): you are him, and the knight stands where he stood; talk to the knight
+ * to swap back. Not a level: a course with one of everything to try him on:
  *   STEPS up to a high shelf (jump, double jump: he curls and flips), and off the shelf
  *   a STEEP SLOPE (too steep to stand: he slides, curled) and a GENTLE ONE (sneak running down it: he rides his cap);
  *   a HIGH BLOCK to hang from and pull up onto; a POOL to swim in; two ROACHES to fight; pots to carry and throw.
@@ -10,6 +12,7 @@
 import { compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor } from '../world/layout';
+import type { NpcSpec } from '../npc/npc';
 
 const HX = 14;
 const HZ = 12;
@@ -19,6 +22,8 @@ export const STEPS = { x0: -HX, x1: -10, tops: [1, 2, 3], shelf: 4 } as const;
 export const SLOPES = { steep: { z0: -HZ, z1: -8, x1: -7.5 }, gentle: { z0: -6, z1: -2, x1: 0 } } as const;
 /** The block to hang from (too high to jump onto). */
 export const HANG = { x0: 3, x1: 7, z0: -HZ, z1: -8, top: 3.4 } as const;
+/** Where Bramble waits, by the way in: talk to him to swap. */
+export const BRAMBLE = { x: 2.5, z: 5.5 } as const;
 /** The pool: its walls' top and the water's. */
 export const POOL = { x0: 8, x1: HX, z0: -4, z1: 4, wall: 2, water: 1.9 } as const;
 
@@ -26,7 +31,7 @@ const crumb = (x: number, z: number, top: number): Piece => ({ t: 'crumb', x0: x
 
 const room: CustomLevel = {
   name: 'The Stand-in',
-  blurb: 'Bramble the hedgehog in the rat\'s place, on his controls: a course with one of every move to try him on.',
+  blurb: 'Talk to Bramble the hedgehog and swap: be him, on the rat\'s controls, on a course with one of every move.',
   theme: 'dungeon',
   width: HX * 2, depth: HZ * 2, wallHeight: 9,
   pieces: [
@@ -52,15 +57,26 @@ const room: CustomLevel = {
     crumb(11.5, 0, 0.3),
     // A crumb on the shelf, and two roaches that come back.
     crumb(-12, -10, STEPS.shelf),
-    { t: 'roach', x0: 2, z0: 3, x1: 2, z1: 3, top: 0, props: { respawn: true } },
-    { t: 'roach', x0: -3, z0: 1, x1: -3, z1: 1, top: 0, props: { respawn: true } },
+    { t: 'roach', x0: 1, z0: -3, x1: 1, z1: -3, top: 0, props: { respawn: true } },
+    { t: 'roach', x0: -4, z0: -4, x1: -4, z1: -4, top: 0, props: { respawn: true } },
   ],
 };
 
 export function standInRoom(): LevelDef {
   const def = compileCustom(room, 'standin');
   const signs: Decor[] = [
-    { kind: 'sign', x: 0, y: 4, z: HZ - 0.06, yaw: Math.PI, w: 8, h: 2.4, lines: ['THE STAND-IN', 'Bramble the hedgehog', 'on the rat\'s controls'], post: 0 },
+    { kind: 'sign', x: 0, y: 4, z: HZ - 0.06, yaw: Math.PI, w: 8, h: 2.4, lines: ['THE STAND-IN', 'talk to Bramble to swap', 'talk to yourself to swap back'], post: 0 },
   ];
-  return { ...def, decor: [...def.decor, ...signs], playAs: 'hedgehog' };
+  // Bramble, by the way in: read his talk to the end and you are him; the knight waits in his place to swap back.
+  const npcs: NpcSpec[] = [
+    { name: 'Bramble', kind: 'hedgehog', x: BRAMBLE.x, z: BRAMBLE.z, y: 0, facing: Math.atan2(-BRAMBLE.x, HZ - 2.5 - BRAMBLE.z), doing: 'stand', lines: [
+      'Oh, hello. You are the one with the sword. I have always wanted a go with a sword.',
+      'I tell you what. Let us swap. You be me for a bit, and I will stand here and be you. I am good at standing.',
+      'Off you go, then! I roll up when I tumble, mind. Come back and talk to yourself when you want to swap back.',
+    ], swap: { as: 'hedgehog', back: [
+      'So. This is what it is like to be the hero. Mostly it is standing about in a helmet.',
+      'Had enough? Right, give me back my spines. Here we go.',
+    ] } },
+  ];
+  return { ...def, decor: [...def.decor, ...signs], npcs: [...(def.npcs ?? []), ...npcs] };
 }

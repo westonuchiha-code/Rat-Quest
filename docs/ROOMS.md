@@ -26,7 +26,7 @@ it.
 | 16 | `press` | `levels/press.ts` | crushers, flame jets | `press` |
 | 17 | `greenroom` | `levels/greenroom.ts` | two new characters, the mole and the hedgehog | `newcomers` |
 | 18 | `coilroom` | `levels/coilroom.ts` | the Tesla coil on a beat, zap plates, coil keys, the Spark Beetle | `coilroom`, `sparkbeetle` |
-| 19 | `standin` | `levels/standinroom.ts` | Bramble the hedgehog on the rat's controls, and a course to try him on | `standin` |
+| 19 | `standin` | `levels/standinroom.ts` | talk to Bramble the hedgehog and swap: be him on the rat's controls, on a course | `standin` |
 
 To run one room's tests: `node scripts/test-all.mjs platforms`. Every suite: `npm run test:all`.
 
@@ -169,8 +169,9 @@ OPUS-WEEK and not fixed.
 
 ## 19. The Stand-in: another character on the rat's controls
 
-**What's in it.** Bramble the hedgehog in the rat's place (the room sets `playAs: 'hedgehog'`), and a course with one
-of each move:
+**What's in it.** You walk in as the knight. Bramble the hedgehog waits by the way in (`BRAMBLE`): talk to him to the
+end and you swap, you are him and the knight stands in his place; talk to the knight to swap back. And a course with
+one of each move:
 - steps up to a shelf (`STEPS`), and two slopes off it (`SLOPES`): a steep one he slides down and a gentle one to ride;
 - a block too high to jump onto, to hang from (`HANG`);
 - a pool (`POOL`), two roaches that come back, and pots.
