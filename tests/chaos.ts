@@ -74,7 +74,11 @@ for (const L of rooms) {
     // (The browser drive's own test of being inside: dev/filmDrive.ts `watch`.)
     const box = ch.colliders.find((b) => !b.ramp && q.x + r > b.min.x + 0.05 && q.x - r < b.max.x - 0.05 && q.z + r > b.min.z + 0.05 && q.z - r < b.max.z - 0.05 && q.y + h * 0.8 > b.min.y + 0.05 && q.y + 0.15 < b.max.y - 0.05);
     inside = box ? inside + 1 : 0;
-    if (inside === 3 && !worst) worst = `${L.id} at ${(f * DT).toFixed(1)}s, ${q.x.toFixed(2)},${q.y.toFixed(2)},${q.z.toFixed(2)} in a box ${box!.min.x.toFixed(1)}..${box!.max.x.toFixed(1)}, ${box!.min.y.toFixed(1)}..${box!.max.y.toFixed(1)}, ${box!.min.z.toFixed(1)}..${box!.max.z.toFixed(1)}`;
+    // (With his feet within a step of the top, he may be inside its edge for a few frames at the top of a jump before
+    // the controller lifts him onto it: its leniency for a ledge just made. Found by longer runs, 2026-11-20: never more
+    // than 4 frames. So there, it is being stuck only after 8; deeper in, after 3.)
+    const shallow = !!box && q.y + TUNING.physics.stepHeight >= box.max.y - 0.05;
+    if (inside === (shallow ? 8 : 3) && !worst) worst = `${L.id} at ${(f * DT).toFixed(1)}s, ${q.x.toFixed(2)},${q.y.toFixed(2)},${q.z.toFixed(2)} in a box ${box!.min.x.toFixed(1)}..${box!.max.x.toFixed(1)}, ${box!.min.y.toFixed(1)}..${box!.max.y.toFixed(1)}, ${box!.min.z.toFixed(1)}..${box!.max.z.toFixed(1)}`;
     // (Nothing here can hurt him: there are no creatures. Out of the room, he is put back.)
     if (q.y < lowest) {
       falls++;

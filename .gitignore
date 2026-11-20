@@ -18,4 +18,4 @@ deliver/
 # One-off scripts and their builds (START-HERE: tests/.tmp, built to .tmpw / .tmpx, then removed).
 tests/.tmp/
 .tmpw/
-.tmpx/
+.tmpx*/
