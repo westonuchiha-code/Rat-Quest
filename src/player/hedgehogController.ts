@@ -46,6 +46,10 @@ export const HOG = {
   swim: { sink: 0.36, speed: 2.4 },
 } as const;
 
+/** Thistle's quills (three, flat and fast) and her pogo (the first bounce, how much higher each, the most). */
+export const QUILLS = { spread: 0.25, speed: 15, up: 0.6, life: 0.7 } as const;
+export const POGO = { first: 7.5, more: 1.15, most: 13 } as const;
+
 /** What he wants, from the pad: the same buttons as the knight's. */
 export interface HogInput {
   move: THREE.Vector3;
@@ -109,9 +113,16 @@ export class HedgehogController {
   private readonly rammed = new Map<HogTarget, number>();
   private time = 0;
 
-  constructor(at: THREE.Vector3) {
+  /**
+   * Which of the two: BRAMBLE spits and rolls (above). THISTLE (2026-11-20, the second hedgehog's own way): her ball
+   * is a POGO, every landing with JUMP held bounces her higher than the last (up to a point), and on her feet ATTACK
+   * flings a FAN OF THREE QUILLS, flat and fast, in place of the spit.
+   */
+  constructor(at: THREE.Vector3, readonly look: 'bramble' | 'thistle' = 'bramble') {
     this.position = at.clone();
   }
+  /** Thistle's pogo: how high the last bounce went (it builds). */
+  private pogo = 0;
 
   get height(): number {
     return this.curled ? HOG.ball.height : HOG.height;
@@ -217,14 +228,17 @@ export class HedgehogController {
       if (!this.curled && this.spitWait <= 0) {
         this.spitWait = HOG.spit.every;
         this.spitT = 0;
-        const fx = Math.sin(this.facing);
-        const fz = Math.cos(this.facing);
-        this.globs.push({
-          pos: new THREE.Vector3(p.x + fx * 0.35, p.y + 0.55, p.z + fz * 0.35),
-          vel: new THREE.Vector3(fx * HOG.spit.speed + v.x * 0.5, HOG.spit.up, fz * HOG.spit.speed + v.z * 0.5),
-          life: HOG.spit.life,
-          splat: null,
-        });
+        for (const turn of this.look === 'thistle' ? [-QUILLS.spread, 0, QUILLS.spread] : [0]) {
+          const fx = Math.sin(this.facing + turn);
+          const fz = Math.cos(this.facing + turn);
+          const quill = this.look === 'thistle';
+          this.globs.push({
+            pos: new THREE.Vector3(p.x + fx * 0.35, p.y + 0.55, p.z + fz * 0.35),
+            vel: new THREE.Vector3(fx * (quill ? QUILLS.speed : HOG.spit.speed) + v.x * 0.5, quill ? QUILLS.up : HOG.spit.up, fz * (quill ? QUILLS.speed : HOG.spit.speed) + v.z * 0.5),
+            life: quill ? QUILLS.life : HOG.spit.life,
+            splat: null,
+          });
+        }
         ev.spat = true;
       } else if (this.curled && this.burstWait <= 0) {
         this.burstWait = HOG.burst.every;
@@ -250,11 +264,17 @@ export class HedgehogController {
     if (this.grounded && !wasGrounded) {
       ev.landed = fallSpeed;
       // A ball that comes down hard bounces.
-      if (this.curled && fallSpeed > HOG.ball.bounceFrom) {
+      if (this.curled && this.look === 'thistle' && input.jumpHeld && fallSpeed > 2) {
+        // Thistle's pogo: held, every landing bounces higher than the last.
+        this.pogo = Math.min(POGO.most, Math.max(POGO.first, this.pogo * POGO.more));
+        v.y = this.pogo;
+        this.grounded = false;
+        ev.bounced = fallSpeed;
+      } else if (this.curled && fallSpeed > HOG.ball.bounceFrom) {
         v.y = fallSpeed * HOG.ball.floorBounce;
         this.grounded = false;
         ev.bounced = fallSpeed;
-      }
+      } else this.pogo = 0;
     }
     if (pool) this.grounded = false;
     // Ramming: rolling fast into a creature, spines first.

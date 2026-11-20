@@ -28,8 +28,7 @@ const def = levelById('standin');
 check('the Stand-in room is Test Room 19; he walks in as the knight', !!def && !def.playAs && ROOMS.some((r) => r.n === 19 && r.id === 'standin'));
 {
   const b = def?.npcs?.find((n) => n.name === 'Bramble');
-  const spawn = def?.spawn ?? { x: 0, y: 0, z: 0, facing: 0 };
-  check('Bramble waits by the way in, to swap with him (and the knight has his own lines, to swap back)', !!b && b.swap?.as === 'hedgehog' && (b.swap?.back.length ?? 0) > 0 && Math.hypot(b.x - spawn.x, b.z - spawn.z) < 6);
+  check('Bramble is in the line-up, to swap with (and the knight has his own lines, to swap back)', !!b && b.swap?.as === 'bramble' && (b.swap?.back.length ?? 0) > 0);
 }
 const room = buildChamber(def as never);
 const C = room.colliders;
@@ -88,7 +87,7 @@ function shape(): THREE.Box3 {
 }
 // ---- The ball ----
 {
-  const h = at(-6, 0, 6, Math.PI / 2);
+  const h = at(-5, 0, -2, Math.PI / 2);
   step(h, { rollPressed: true });
   check('ROLL curls him into a ball (and he is a ball to look at)', h.curled && h.state === 'ball' && (() => {
     for (let k = 0; k < 20; k++) step(h);
@@ -107,7 +106,7 @@ function shape(): THREE.Box3 {
 }
 {
   // Into the east wall at speed: it bounces back.
-  const h = at(11, 0, 8, Math.PI / 2);
+  const h = at(17, 0, 8, Math.PI / 2);
   step(h, { rollPressed: true });
   let bounced = 0;
   for (let k = 0; k < 120 && !bounced; k++) {
@@ -118,7 +117,7 @@ function shape(): THREE.Box3 {
 }
 {
   // Off the shelf and down the steep slope, curled, no push: it runs away downhill.
-  const h = at(-10.6, STEPS.shelf, (SLOPES.steep.z0 + SLOPES.steep.z1) / 2, Math.PI / 2);
+  const h = at(STEPS.x1 - 0.6, STEPS.shelf, (SLOPES.steep.z0 + SLOPES.steep.z1) / 2, Math.PI / 2);
   step(h, { rollPressed: true });
   let most = 0;
   for (let k = 0; k < 20; k++) step(h, { move: E });
@@ -155,7 +154,7 @@ function shape(): THREE.Box3 {
   let splats = 0;
   for (let k = 0; k < 60; k++) splats += step(h, { attackPressed: k === 0 }, [r]).splats.length;
   check('ATTACK spits: the glob flies ahead and stings a roach 2.6 away', r.hp < hp && splats === 1, `${hp} -> ${r.hp}`);
-  const w = at(0, 0, -10.5, Math.PI);
+  const w = at(6, 0, -13, Math.PI);
   let wall = 0;
   for (let k = 0; k < 60; k++) wall += step(w, { attackPressed: k === 0 }).splats.length;
   check('...and spat at a wall, it splats on the wall', wall === 1);
@@ -165,8 +164,8 @@ function shape(): THREE.Box3 {
   check(`he can spit only so often (every ${HOG.spit.every}s)`, spat === 1, `${spat} in a third of a second`);
 }
 {
-  const h = at(-6, 0, 3, Math.PI / 2);
-  const r = new Scuttler({ x: 0, z: 3, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
+  const h = at(-6, 0, -1.5, Math.PI / 2);
+  const r = new Scuttler({ x: 0, z: -1.5, arena: { x0: -20, x1: 20, z0: -20, z1: 20 } });
   const hp = r.hp;
   step(h, { rollPressed: true }, [r]);
   let rammed = false;
@@ -197,7 +196,7 @@ function shape(): THREE.Box3 {
 }
 // ---- Swimming ----
 {
-  const h = at((POOL.x0 + POOL.x1) / 2 + 0.25, POOL.water + 0.3, 0);
+  const h = at((POOL.x0 + POOL.x1) / 2 + 0.25, POOL.water + 0.3, (POOL.z0 + POOL.z1) / 2);
   let swam = 0;
   for (let k = 0; k < 90; k++) if (step(h, { move: new THREE.Vector3(0, 0, k < 45 ? 1 : -1) }) && h.state === 'swim') swam++;
   check('in the pool he swims, his back at the waterline, lying flat', swam > 60 && Math.abs(h.position.y - (POOL.water - HOG.swim.sink)) < 0.1 && rig().body.rotation.x > 1, `${swam} frames, at ${h.position.y.toFixed(2)}`);

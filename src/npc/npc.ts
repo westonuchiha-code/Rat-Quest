@@ -4,7 +4,7 @@ import { getTexture } from '../render/textures';
 import { modelKit, paint } from '../render/modelKit';
 import { GRIM_HEIGHT, GrimsqueakModel, type GrimGesture , type GrimInput } from './grimsqueakModel';
 import { joinStill, movingMeshes } from './stillParts';
-import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind } from './patrons';
+import { makePatron, patronLook, PATRON_KINDS, type Doing, type PatronBody, type PatronKind, type PatronLook } from './patrons';
 import { AntModel } from '../enemies/antModel';
 import { StagModel } from '../enemies/stagModel';
 
@@ -46,7 +46,7 @@ export interface NpcSpec {
    * Talked to till the end, he and the knight SWAP: the knight's controls work him (player/standIn.ts), and the
    * knight stays standing where he stood, to be spoken to (`back`) and swapped back. The Stand-in room.
    */
-  swap?: { as: 'hedgehog'; back: string[] };
+  swap?: { as: PatronLook; back: string[] };
 }
 
 /** Whether one of the Club's later regulars is here yet, by what the save says has been done. */

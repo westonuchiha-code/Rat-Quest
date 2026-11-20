@@ -17,8 +17,9 @@ import { CollectibleTracker, browserStorage } from './world/collectibles';
 import { CollectibleVisuals } from './world/collectibleMeshes';
 import { PlayerController } from './player/controller';
 import { DREAM_LOOK, RatModel, RIDE_MOUNT, RIDE_MOUNT_LAND, type RatAnimInput } from './player/ratModel';
-import { StandIn } from './player/standIn';
-import { HedgehogController, type HogEvents } from './player/hedgehogController';
+import { makePlayable, PLAYABLE, type Playable, type PlayableView } from './player/critters';
+import type { CritterEvents } from './player/critters/base';
+import type { PatronLook } from './npc/patrons';
 import { KNIGHT } from './npc/portrait';
 import { ATTACK_CLIPS } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
@@ -275,17 +276,23 @@ function startGame(): void {
    * (walk, hop, ROLL into a ball, SPIT, a spine burst), in the Stand-in room after the swap (or `#as=hedgehog`). The
    * knight's controller runs under him only for his health, being hit and being beaten; where he is is the hedgehog's.
    */
-  let standIn: StandIn | null = null;
-  let hog: HedgehogController | null = null;
-  /** What the hedgehog did since he was last drawn (sounds, and the drawing's springs). */
-  let hogShow: HogEvents | null = null;
-  const hogWanted = (): boolean => /[#&]as=hedgehog/.test(location.hash) || cur.playAs === 'hedgehog' || swappedAs === 'hedgehog';
+  /** The character being played (his controller and his body), and which he is; what he did since last drawn. */
+  let critter: { ctl: Playable; view: PlayableView; look: PatronLook } | null = null;
+  let critterShow: CritterEvents | null = null;
+  /** Which character is to be played now: by the swap, by the level, or by the address (`#as=jinx`). */
+  const playLook = (): PatronLook | null => {
+    if (swappedAs) return swappedAs;
+    if (cur.playAs) return cur.playAs === 'hedgehog' ? 'bramble' : cur.playAs;
+    const a = /[#&]as=([a-z]+)/.exec(location.hash)?.[1];
+    if (a === 'hedgehog') return 'bramble';
+    return a && a in PLAYABLE ? (a as PatronLook) : null;
+  };
   /**
    * THE SWAP (the Stand-in room): talked to till the end, a character with a `swap` takes the knight's controls, and
    * the knight stands where he stood (`knightDouble`, his own model, dressed as he is), to be talked to and swapped
    * back. Undone on leaving the room.
    */
-  let swappedAs: 'hedgehog' | null = null;
+  let swappedAs: PatronLook | null = null;
   let swapNpc: Npc | null = null;
   let knightDouble: RatModel | null = null;
   let dreaming = false;
@@ -1177,8 +1184,13 @@ function startGame(): void {
   dialog.onFinish = (): void => {
     const n = talkingTo;
     if (!n?.spec.swap) return;
-    swappedAs = swappedAs ? null : n.spec.swap.as;
-    swapNpc = n;
+    // (Talked to the knight standing in his place: back to the knight. Talked to another: straight to being him.)
+    if (swappedAs && n === swapNpc) swappedAs = null;
+    else {
+      if (swapNpc) swapNpc.root.visible = true;
+      swappedAs = n.spec.swap.as;
+      swapNpc = n;
+    }
     audio.play('menuMove', { vol: 0.8, priority: 6 });
   };
   let dlgCam = 0;
@@ -2383,7 +2395,7 @@ function startGame(): void {
       jumpPressed = false;
       talkingTo = nearNpc;
       // (Swapped, it is the knight standing there who is spoken to.)
-      if (swappedAs && nearNpc.spec.swap) dialog.start(KNIGHT, nearNpc.spec.swap.back, 'rat');
+      if (swappedAs && nearNpc === swapNpc && nearNpc.spec.swap) dialog.start(KNIGHT, nearNpc.spec.swap.back, 'rat');
       else dialog.start(nearNpc.spec.name, nearNpc.spec.lines, nearNpc.spec.kind);
       if (nearNpc.spec.kind === 'villain') audio.play('villainLaugh', { vol: 0.9, verb: 0.3, priority: 8 });
       player.velocity.set(0, 0, 0);
@@ -2546,8 +2558,8 @@ function startGame(): void {
     // LIFTING (world/lifting.ts): STOW beside a crate or a barrel takes it up over his head. (With nothing to lift it
     // puts his sword away, as it did.)
     // (The hedgehog lifts nothing: his paws are too short.)
-    if (hogWanted()) stowPressed = false;
-    const handsFree = !hogWanted() && !held && !heldFoe && player.canLift && !talkingTo;
+    if (playLook()) stowPressed = false;
+    const handsFree = !playLook() && !held && !heldFoe && player.canLift && !talkingTo;
     liftable = handsFree ? liftTarget(chamber.crates, player.position, player.facing) : null;
     // (And a creature that is DOWN, if nothing else is nearer to hand.)
     liftableFoe = handsFree && !liftable ? enemies[liftFoe(enemies, player.position, player.facing)] ?? null : null;
@@ -2572,43 +2584,41 @@ function startGame(): void {
       audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
     }
     // (Flying from a launcher counts as holding jump: the short-hop rule is for his own jumps, not a cannon's throw.)
-    if (hogWanted()) {
-      // The hedgehog: his own moves. (The knight's controller is stepped with nothing pressed, for his health, his
-      // being hit and knocked back, and his being beaten; then he is put where the hedgehog is.)
-      if (!hog) {
-        hog = new HedgehogController(player.position);
-        hog.facing = player.facing;
+    const look = playLook();
+    if (look) {
+      // ANOTHER CHARACTER, played (player/critters): his own moves. (The knight's controller is stepped with nothing
+      // pressed, for his health, his being hit and knocked back, and his being beaten; then he is put where the
+      // character is. One who stands his ground is not knocked back.)
+      if (!critter || critter.look !== look) {
+        if (critter) scene.remove(critter.view.root, critter.view.effects);
+        const made = makePlayable(look, player.position);
+        made.ctl.facing = player.facing;
+        critter = { ...made, look };
+        scene.add(critter.view.root, critter.view.effects);
       }
+      const c = critter.ctl;
       player.update(dt, { move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false }, chamber.colliders);
       const pinned = player.dead ? 'dead' : player.state === 'hurt' ? 'hurt' : null;
-      if (pinned) hog.position.copy(player.position);
-      const ev = hog.update(dt, { move: zoneStride < 1 ? m.clone().multiplyScalar(zoneStride) : m, run, jumpPressed, jumpHeld, attackPressed, rollPressed: dodgePressed }, chamber.colliders, chamber.water, enemies.filter((e) => !inHand(e)), pinned);
-      player.position.copy(hog.position);
-      player.velocity.copy(hog.velocity);
-      player.facing = hog.facing;
-      player.grounded = hog.grounded;
-      if (ev.jumped) audio.play('jump', { vol: 0.5, rate: 1.35, priority: 4 });
-      if (ev.curled || ev.uncurled) audio.play('dodge', { vol: 0.6, rate: ev.curled ? 1.25 : 1.05, priority: 5 });
-      if (ev.spat) audio.play('spit', { vol: 0.8, rate: 1.3, priority: 6 });
-      if (ev.burst) audio.play('spikeHit', { vol: 0.7, rate: 1.5, priority: 7 });
-      if (ev.bounced > 0) audio.play('land', { vol: Math.min(0.8, ev.bounced / 10), rate: 1.4, priority: 4 });
-      for (let i = 0; i < ev.splats.length; i++) audio.play('splat', { vol: 0.5, rate: 1.4, priority: 3 });
-      // (Kept to be drawn: a frame may hold more than one step.)
-      if (!hogShow) hogShow = ev;
+      if (pinned && !c.steadfast) c.position.copy(player.position);
+      const ev = c.update(dt, { move: zoneStride < 1 ? m.clone().multiplyScalar(zoneStride) : m, run, jumpPressed, jumpHeld, attackPressed, rollPressed: dodgePressed, guardHeld }, { colliders: chamber.colliders, water: chamber.water, foes: enemies.filter((e) => !inHand(e)) }, pinned);
+      player.position.copy(c.position);
+      player.velocity.copy(c.velocity);
+      player.facing = c.facing;
+      player.grounded = c.grounded;
+      for (const [name, vol, rate] of ev.sfx) audio.play(name as Parameters<typeof audio.play>[0], { vol, rate, priority: 5 });
+      if (ev.jumped && !ev.sfx.length) audio.play('jump', { vol: 0.5, rate: 1.3, priority: 4 });
+      // (Kept to be drawn and counted: a frame may hold more than one step.)
+      if (!critterShow) critterShow = ev;
       else {
-        hogShow.hits.push(...ev.hits);
-        hogShow.jumped ||= ev.jumped;
-        hogShow.curled ||= ev.curled;
-        hogShow.uncurled ||= ev.uncurled;
-        hogShow.spat ||= ev.spat;
-        hogShow.burst ||= ev.burst;
-        hogShow.landed = Math.max(hogShow.landed, ev.landed);
-        hogShow.bounced = Math.max(hogShow.bounced, ev.bounced);
+        critterShow.hits.push(...ev.hits);
+        critterShow.jumped ||= ev.jumped;
+        critterShow.landed = Math.max(critterShow.landed, ev.landed);
       }
     } else {
-      hog = null;
-      player.update(dt, { move: zoneStride < 1 ? m.clone().multiplyScalar(zoneStride) : m, run, jumpPressed, jumpHeld: jumpHeld || zones.flying, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
-    }
+      if (critter) {
+        scene.remove(critter.view.root, critter.view.effects);
+        critter = null;
+      }    }
     // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
     if (musicFloor && chamber.music) {
       for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {
@@ -2771,14 +2781,15 @@ function startGame(): void {
     flames.step(dt);
     soundWorld(dt);
 
-    resolveCombat(player, heldFoe || thrownFoes.length ? enemies.filter((e) => !inHand(e)) : enemies, events, [...chamber.crates, ...chamber.pipes]);
-    // (The hedgehog's spit, ram and burst are hits like any: the flash, the sound, the count of creatures beaten.)
-    for (const h of hogShow?.hits ?? []) {
+    // (A character who cannot be touched just now, dug in or shut in his shell or a shadow, is out of the fight.)
+    resolveCombat(player, critter?.ctl.untouchable ? [] : heldFoe || thrownFoes.length ? enemies.filter((e) => !inHand(e)) : enemies, events, [...chamber.crates, ...chamber.pipes]);
+    // (A played character's hits are hits like any: the flash, the sound, the count of creatures beaten.)
+    for (const h of critterShow?.hits ?? []) {
       if (events.enemyHit) break;
       events.enemyHit = h.foe as Foe;
       events.enemyKilled = h.killed;
     }
-    if (hogShow) hogShow.hits.length = 0;
+    if (critterShow) critterShow.hits.length = 0;
     // What has been thrown flies on, and breaks on what it meets (world/lifting.ts).
     /** A creature met by something thrown: it is hurt, unless its armour turns it. */
     const strike = (index: number, part: number, from: { x: number; z: number }, damage: number): void => {
@@ -4579,21 +4590,13 @@ function startGame(): void {
     rat.root.visible = photo.open ? !photo.hideRat : !(player.recentlyHit && Math.floor(time * 18) % 2 === 0 && player.state !== 'hurt');
     // (A cutscene has its own cast: the knight himself waits out of the picture.)
     if (show) rat.root.visible = false;
-    // The hedgehog, drawn in his place when he is played (player/standIn.ts).
-    if (hog) {
-      if (!standIn) {
-        standIn = new StandIn();
-        scene.add(standIn.root, standIn.effects);
-      }
-      standIn.root.visible = rat.root.visible;
-      standIn.effects.visible = true;
-      standIn.setTransform(drawnPos, hog.facing);
-      standIn.update(photo.open ? rawDt : animDt, hog, hogShow);
-      hogShow = null;
+    // The character being played, drawn in his place (player/critters).
+    if (critter) {
+      critter.view.root.visible = rat.root.visible;
+      critter.view.setTransform(drawnPos, critter.ctl.facing);
+      critter.view.update(photo.open ? rawDt : animDt, critterShow);
+      critterShow = null;
       rat.root.visible = false;
-    } else if (standIn) {
-      standIn.root.visible = false;
-      standIn.effects.visible = false;
     }
     flash = Math.max(0, flash - frameDt * 5);
     rat.setFlash(flash * 0.7, flash * 0.05, flash * 0.05);

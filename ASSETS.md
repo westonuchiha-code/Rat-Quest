@@ -139,26 +139,29 @@ Their talk-box faces: `src/npc/portrait.ts` (kept blocky on purpose). Their voic
 
 | Character | Kind | Body built in | Voice | Appears in |
 | --- | --- | --- | --- | --- |
-| ASH | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
-| BISCUIT | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
+| ASH | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, Test Room 19, The Hall |
+| BISCUIT | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, Test Room 19, The Hall |
 | BRAMBLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17, Test Room 19 |
 | CORPORAL NIB | ant | `src/enemies/antModel.ts` | villain at 1.3 | Test Room 11, The Hall |
-| DIGGER | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17 |
+| DIGGER | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17, Test Room 19 |
 | DIZZY DAVE | pigeon | `src/npc/npc.ts` | pigeon at 1 | Dizzy Dave's Spot, Test Room 11, The Hall |
-| DOT | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17 |
+| DOT | mole | `src/npc/patrons.ts` | mort at 0.78 | Test Room 17, Test Room 19 |
 | FINCH | bird | `src/npc/npc.ts` | wren at 1.4 | Waterworks, Plank Pit, Lift Shaft, Web Hollow and 11 more |
-| JINX | rat | `src/npc/patrons.ts` | wren at 1.08 | Test Room 11, The Hall |
+| JINX | rat | `src/npc/patrons.ts` | wren at 1.08 | Test Room 11, Test Room 19, The Hall |
 | LORD GRIMSQUEAK | villain | `src/npc/grimsqueakModel.ts` | villain at 0.8 | Test Room 9B, Dizzy Dave's Spot, Test Room 11, The Hall |
 | MADAM TAWNY | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 11, The Hall |
 | MELLOW MORT | mouse | `src/npc/npc.ts` | mort at 1.3 | Dizzy Dave's Spot, Test Room 11, The Hall |
+| MO | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 19 |
 | MOSSBACK MO | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 11, The Hall |
-| PEBBLE | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 11, The Hall |
+| PEBBLE | turtle | `src/npc/patrons.ts` | pigeon at 0.72 | Test Room 11, Test Room 19, The Hall |
 | PIP | mouse | `src/npc/npc.ts` | mort at 1.3 | Cellars, Furnace, Dizzy Dave's Spot, Test Room 3B and 3 more |
 | PROFESSOR SNOW | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 11, The Hall |
 | SIR HOBNAIL | stag | `src/enemies/stagModel.ts` | villain at 0.62 | Test Room 11, The Hall |
-| SLINK | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, The Hall |
-| THISTLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17 |
-| VIX | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, The Hall |
+| SLINK | ferret | `src/npc/patrons.ts` | mort at 1.65 | Test Room 11, Test Room 19, The Hall |
+| SNOW | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 19 |
+| TAWNY | owl | `src/npc/patrons.ts` | pigeon at 0.86 | Test Room 19 |
+| THISTLE | hedgehog | `src/npc/patrons.ts` | wren at 1.25 | Test Room 17, Test Room 19 |
+| VIX | fox | `src/npc/patrons.ts` | wren at 0.92 | Test Room 11, Test Room 19, The Hall |
 | WREN | bird | `src/npc/npc.ts` | wren at 1.4 | Dizzy Dave's Spot, Test Room 11, Test Room 6, Test Room 6C and 3 more |
 
 ## 6. Scenery and props

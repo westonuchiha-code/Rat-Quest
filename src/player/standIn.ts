@@ -48,8 +48,13 @@ export class StandIn {
   private accel = 0;
   private readonly springs = Object.fromEntries(CHANNELS.map((c) => [c, { x: 0, v: 0 }])) as Record<Channel, { x: number; v: number }>;
 
-  constructor() {
-    const small = makeSmall('hedgehog', 'bramble');
+  constructor(readonly look: 'bramble' | 'thistle' = 'bramble') {
+    const small = makeSmall('hedgehog', look);
+    // (Thistle's are quills, pale and long, not spit.)
+    if (look === 'thistle') {
+      this.globMat.color.set(0xf2e6cc);
+      this.splatMat.color.set(0xf2e6cc);
+    }
     this.rig = small.rig;
     this.root.add(this.rig.root);
     this.headAt = this.rig.head.position.clone();
@@ -269,7 +274,8 @@ export class StandIn {
       } else {
         m.material = this.globMat;
         m.position.copy(g.pos);
-        m.scale.set(1, 1, 1.3);
+        if (this.look === 'thistle') m.scale.set(0.35, 0.35, 3.2);
+        else m.scale.set(1, 1, 1.3);
         m.lookAt(g.pos.clone().add(g.vel));
       }
     });
