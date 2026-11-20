@@ -49,6 +49,12 @@ rolls. Each answers with a quiet knock (wood, bone, glass) or tink (tin, china).
   each), then listens; played back right, the next round is a note longer; three rounds and it is SOLVED (`MusicFloor.solved`,
   every pad flashes, the clear chime). Wrong: a buzz (`chipBuzz`), and it waits for the start pad again. `echoPads(id, y)`
   lays four (C, E, G, the C above) and a start pad. A level could hang a door or a reward on `solved`: nothing does yet.
+- **bell** (decor `{ kind: 'bell', x, y, z, yaw, note, color, puzzle?, slot? }`, 2026-11-20): a bell hung low in a
+  frame, STRUCK WITH THE SWORD (it is a thing to hit, world/strikeables.ts, and a music pad). Alone it sounds its note
+  (`bellNote`, a bell's partials, unheard); with `puzzle` and `slot` it is a pad of an echo puzzle like a chime, one
+  bell its start (slot -1). Standing under it does nothing. It swings when struck, and a halo round it lights as it
+  sounds. `bells(id, y)` in levels/musicroom.ts lays four in D minor (D, F, A, D) and a white start bell: the Music
+  Room's BELL ECHO, which opens a nook in its west wall. Not in the level editor yet (it would need a note setting).
 - main.ts steps it after him (a few lines by his update) and the room shows what is lit and pressed (`Chamber.music`).
 - **A gate the puzzle lifts**: a gate's `echo: '<puzzle>'` (GateSpec in layout.ts) lifts it once that puzzle is solved.
   The Music Room has one, in the east wall, with a cheese crumb behind it.

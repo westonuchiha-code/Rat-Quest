@@ -8,11 +8,13 @@
  *               each, then falls to rubble and is not there. A plunge's blast does not touch it (it runs along the floor).
  *   crackfloor  a cracked slab of floor. Walked on, jumped on, it holds; a PLUNGE landing on it breaks it, and he goes
  *               through. Nothing else breaks it.
+ *   bell        (2026-11-20) a bell hung low in a frame: a sword swing rings it (once a swing). It is a pad of the
+ *               room's music (world/musicFloor.ts, `pad`): it sounds its note, or plays its part in an echo puzzle.
  * Plain logic: it takes the parts of the rat it needs (the player controller has them all) and says what happened.
  * main.ts calls `strikeThings` after the fight is resolved, plays what it says, and has the room show it.
  */
 
-export type StrikeKind = 'lever' | 'crackwall' | 'crackfloor';
+export type StrikeKind = 'lever' | 'crackwall' | 'crackfloor' | 'bell';
 
 export interface Strikeable {
   kind: StrikeKind;
@@ -34,15 +36,18 @@ export interface Strikeable {
   lastSwing: number;
   /** When it was last struck (seconds of world clock, for the shudder), set by whoever shows it. */
   struckAt: number;
+  /** A bell: its place among the room's music pads (world/musicFloor.ts). */
+  pad?: number;
 }
 
 export type StrikeEvent =
   | { kind: 'flip'; index: number; on: boolean }
   | { kind: 'crack'; index: number; left: number }
-  | { kind: 'break'; index: number };
+  | { kind: 'break'; index: number }
+  | { kind: 'ring'; index: number };
 
 /** The numbers: a cracked wall's blows, what a heavy blade counts for, the size of a lever's post. */
-export const STRIKE = { wallHits: 3, heavyBlade: 2, heavyCounts: 2, lever: { w: 0.5, h: 1.3, d: 0.5 } } as const;
+export const STRIKE = { wallHits: 3, heavyBlade: 2, heavyCounts: 2, lever: { w: 0.5, h: 1.3, d: 0.5 }, bell: { w: 0.8, h: 0.75, d: 0.8, hang: 0.35, frame: 1.7 } } as const;
 
 /** What of the rat a blow needs (the player controller is one). */
 export interface Striker {
@@ -95,6 +100,10 @@ export function strikeThings(things: Strikeable[], p: Striker): StrikeEvent[] {
     }
     if (!swordReaches(t, p)) return;
     t.lastSwing = p.swingId;
+    if (t.kind === 'bell') {
+      out.push({ kind: 'ring', index });
+      return;
+    }
     if (t.kind === 'lever') {
       t.on = !t.on;
       out.push({ kind: 'flip', index, on: t.on });

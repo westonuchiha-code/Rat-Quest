@@ -2497,7 +2497,7 @@ function startGame(): void {
     // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
     if (musicFloor && chamber.music) {
       for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {
-        if (ev.kind === 'note') audio.play('chipNote', { rate: noteRate(ev.note), vol: 0.7, priority: 6 });
+        if (ev.kind === 'note') audio.play(chamber.music.pads[ev.pad].kind === 'bell' ? 'bellNote' : 'chipNote', { rate: noteRate(ev.note), vol: 0.7, priority: 6 });
         else if (ev.kind === 'wrong') audio.play('chipBuzz', { vol: 0.6, priority: 6 });
         else if (ev.kind === 'solved') audio.play('clear', { vol: 0.8, priority: 7 });
       }
@@ -2810,7 +2810,11 @@ function startGame(): void {
       for (const ev of strikeThings(chamber.strike.things, player)) {
         const t = chamber.strike.things[ev.index];
         t.struckAt = worldClock;
-        if (ev.kind === 'flip') {
+        if (ev.kind === 'ring') {
+          // A bell: the music floor sounds it (or hears it in its puzzle) at its next step.
+          if (t.pad !== undefined) musicFloor?.strike(t.pad);
+          hitStop = Math.max(hitStop, 0.02);
+        } else if (ev.kind === 'flip') {
           audio.play('leverThrow', { vol: 0.85, rate: ev.on ? 1 : 0.9, priority: 7 });
           hitStop = Math.max(hitStop, 0.03);
         } else if (ev.kind === 'crack') {

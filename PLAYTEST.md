@@ -32,6 +32,8 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - The lever's clunk, the stone's crack and its fall: unheard.
 - The cellar under the cracked floor is 2 deep: a jump and a second in the air get him out. Whether that is a chore.
 - Solve the Music Room's echo puzzle: the gate in the east wall lifts.
+- The BELL ECHO across the middle of the Music Room: strike the white bell, listen, strike the tune back on the four
+  bells. The west gate lifts. The bell sound (`bellNote`) is unheard: whether it sounds like a bell at all.
 
 **Hazards** (the Gauntlet, Test Room 15)
 - The blades: whether a run through the corridor is too tight or too loose (a third of the moments get through).

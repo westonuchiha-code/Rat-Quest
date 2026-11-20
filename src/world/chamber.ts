@@ -754,7 +754,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const animators: Array<(time: number) => void> = [];
   /** Music underfoot (world/musicFloor.ts): its pads, and how each is drawn. */
   const musicPads: MusicPad[] = [];
-  const musicLooks: Array<{ body: THREE.Mesh; glow: THREE.MeshBasicMaterial; rest: number }> = [];
+  const musicLooks: Array<{ body: THREE.Object3D; glow: THREE.MeshBasicMaterial; rest: number }> = [];
   /** Things to hit (world/strikeables.ts): their states, looks and solids, in level order. */
   const strikeThings: Strikeable[] = [];
   const strikeLooks: BuiltStrike[] = [];
@@ -1789,6 +1789,23 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       hazardSpecs.push(d);
       hazardLooks.push(built);
       if (d.kind === 'belt') colliders.push(makeAabb(d.x, d.y - BELT_DEPTH / 2, d.z, d.w, BELT_DEPTH, d.d));
+    } else if (d.kind === 'bell') {
+      // A bell (world/strikeables.ts, strikeModels.ts): struck with the sword, and a music pad (world/musicFloor.ts).
+      const B = STRIKE.bell;
+      const t = newStrikeable('bell', d.x, d.y + B.hang, d.z, B.w, B.h, B.d);
+      t.pad = musicPads.length;
+      const built = buildStrike(d, { stone: lit('cutStone'), iron: lit('wroughtIron'), plain: plainMat });
+      built.group.position.set(d.x, d.y, d.z);
+      group.add(built.group);
+      musicPads.push({ kind: 'bell', x: d.x, y: d.y + B.hang, z: d.z, w: B.w, d: B.d, note: d.note, puzzle: d.puzzle, slot: d.slot });
+      musicLooks.push({ body: new THREE.Object3D(), glow: built.group.userData.glow as THREE.MeshBasicMaterial, rest: 0 });
+      // (Solid: the frame and the bell in it, one box, turned with it.)
+      const across = Math.abs(Math.sin(d.yaw)) > 0.5;
+      const aabb = makeAabb(d.x, d.y + B.frame / 2, d.z, across ? 0.9 : 1.6, B.frame, across ? 1.6 : 0.9);
+      colliders.push(aabb);
+      strikeThings.push(t);
+      strikeLooks.push(built);
+      strikeSolids.push(aabb);
     } else if (d.kind === 'lever' || d.kind === 'crackwall' || d.kind === 'crackfloor') {
       // Things to hit (world/strikeables.ts, strikeModels.ts): drawn, solid, and struck by main.ts.
       const L = STRIKE.lever;

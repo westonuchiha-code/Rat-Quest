@@ -12,12 +12,15 @@
  *             them in the same order. Right: the next round's tune is one note longer. `rounds` right, it is SOLVED and
  *             every pad of it flashes. Wrong: a buzz, and it waits for the start pad again. Between tunes the pads play
  *             their notes when stepped on, to try them.
+ *   bell      (2026-11-20) a bell hung in a frame, struck with the sword (world/strikeables.ts): it sounds its note,
+ *             and in a puzzle it is a pad like a chime (one is its start). `strike(pad)`; it counts at the next step.
  * main.ts calls `update` each step with where his feet are, plays what it says (the chip note: audio/synth.ts
  * `chipNote`, faster for higher notes), and has the room show what is lit and pressed (`Chamber.music.show`).
  */
 
 export interface MusicPad {
-  kind: 'key' | 'chime';
+  /** A bell (2026-11-20) is struck with the sword (world/strikeables.ts), not stepped on: `strike` it. */
+  kind: 'key' | 'chime' | 'bell';
   x: number;
   y: number;
   z: number;
@@ -69,9 +72,9 @@ export class MusicFloor {
     this.lit = pads.map(() => 0);
     this.down = pads.map(() => false);
     this.flash = pads.map(() => 0);
-    const ids = [...new Set(pads.filter((p) => p.kind === 'chime' && p.puzzle).map((p) => p.puzzle as string))];
+    const ids = [...new Set(pads.filter((p) => p.kind !== 'key' && p.puzzle).map((p) => p.puzzle as string))];
     for (const id of ids) {
-      const mine = pads.map((p, i) => [p, i] as const).filter(([p]) => p.kind === 'chime' && p.puzzle === id);
+      const mine = pads.map((p, i) => [p, i] as const).filter(([p]) => p.kind !== 'key' && p.puzzle === id);
       const start = mine.find(([p]) => p.slot === -1)?.[1] ?? -1;
       const slots = mine.filter(([p]) => (p.slot ?? -1) >= 0).sort((a, b) => (a[0].slot ?? 0) - (b[0].slot ?? 0)).map(([, i]) => i);
       if (start >= 0 && slots.length >= 2) this.puzzles.push({ id, slots, start, state: 'idle', tune: [], step: 0, timer: 0, round: 0, seed: seed + this.puzzles.length * 101 });
@@ -91,10 +94,17 @@ export class MusicFloor {
     return p ? p.tune.map((i) => p.slots.indexOf(i)) : [];
   }
 
-  /** Which pad his feet are on, if any (a black key over a white one wins). */
+  /** A bell struck: it counts as pressed at the next step. */
+  private readonly struck: number[] = [];
+  strike(pad: number): void {
+    if (this.pads[pad]?.kind === 'bell') this.struck.push(pad);
+  }
+
+  /** Which pad his feet are on, if any (a black key over a white one wins). Not a bell: bells are struck. */
   private padUnder(x: number, y: number, z: number): number {
     let best = -1;
     this.pads.forEach((p, i) => {
+      if (p.kind === 'bell') return;
       if (Math.abs(x - p.x) > p.w / 2 || Math.abs(z - p.z) > p.d / 2 || Math.abs(y - p.y) > 0.35) return;
       if (best < 0 || (p.black && !this.pads[best].black)) best = i;
     });
@@ -125,14 +135,16 @@ export class MusicFloor {
     }
     // His feet: on which pad, and was it just now.
     const under = grounded ? this.padUnder(feet.x, feet.y, feet.z) : -1;
-    const pressed = under >= 0 && !this.down[under] ? under : -1;
+    // (A bell struck since the last step is pressed now, before whatever his feet are on.)
+    const rung = this.struck.shift();
+    const pressed = rung !== undefined ? rung : under >= 0 && !this.down[under] ? under : -1;
     for (let i = 0; i < this.down.length; i++) this.down[i] = i === under;
     const sound = (i: number): void => {
       this.lit[i] = 1;
       out.push({ kind: 'note', note: this.pads[i].note, pad: i });
     };
     // A key, or a chime with no puzzle playing a tune just now: it sounds.
-    if (pressed >= 0 && this.pads[pressed].kind === 'key') sound(pressed);
+    if (pressed >= 0 && (this.pads[pressed].kind === 'key' || (this.pads[pressed].kind === 'bell' && !this.pads[pressed].puzzle))) sound(pressed);
     for (const p of this.puzzles) {
       if (pressed === p.start && p.state !== 'playing') {
         p.round = 1;

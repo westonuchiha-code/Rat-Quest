@@ -7,7 +7,9 @@
  * On the left, a FLOOR PIANO: one octave from middle C, eight white keys and five black, each its own note on the chip
  * (audio/synth.ts chipNote). On the right, an ECHO PUZZLE: four coloured pads (C, E, G and the C above) and a white
  * start pad; step on the start pad, listen, and play the tune back; three rounds, each a note longer, and it is solved.
- * How both play: world/musicFloor.ts. Both are kit parts (docs/KIT.md): `floorkey` and `chime` decor.
+ * Across the middle, a BELL ECHO (2026-11-20): the same puzzle on bells struck with the sword, in D minor; it opens a
+ * nook in the west wall as the pads' opens one in the east.
+ * How they play: world/musicFloor.ts. Both are kit parts (docs/KIT.md): `floorkey` and `chime` decor.
  */
 import { compileCustom, type CustomLevel } from './custom';
 import type { LevelDef } from './types';
@@ -51,6 +53,20 @@ export function echoPads(puzzle = 'echo', y = 0): Decor[] {
   return out;
 }
 
+/** The bell echo (2026-11-20): four bells in a row across the middle, struck with the sword, in D minor (D, F, A and
+ * the D above: another scale from the pads'), and a white start bell in front; its colours bronze to silver. */
+export const BELLS = { z: -11, xs: [-4.5, -1.5, 1.5, 4.5], start: { x: 0, z: -6 } } as const;
+const BELL_NOTES: Array<[number, number]> = [[2, 0xc88040], [5, 0xd8a848], [9, 0xb8bcc4], [14, 0x9a6a3a]];
+
+export function bells(puzzle = 'bells', y = 0): Decor[] {
+  const out: Decor[] = BELLS.xs.map((x, slot) => ({ kind: 'bell', x, y, z: BELLS.z, yaw: 0, note: BELL_NOTES[slot][0], color: BELL_NOTES[slot][1], puzzle, slot }));
+  out.push({ kind: 'bell', x: BELLS.start.x, y, z: BELLS.start.z, yaw: 0, note: -3, color: 0xf0ece0, puzzle, slot: -1 });
+  return out;
+}
+
+/** A nook in the west wall that the bell echo opens: as the east one, mirrored. */
+export const BELL_PRIZE = { mouth: -HX + 5, z: 5, half: 2.75, top: 6, gate: 3.5 } as const;
+
 /** A nook in the east wall that the echo puzzle opens (a gate's `echo`): its walls, mouth and gate. */
 export const PRIZE = { x0: HX - 5, mouth: HX - 5, z: 5, half: 2.75, top: 6, gate: 3.5 } as const;
 
@@ -68,6 +84,11 @@ const room: CustomLevel = {
     { t: 'wall', x0: PRIZE.x0, z0: PRIZE.z + PRIZE.half, x1: HX, z1: PRIZE.z + PRIZE.half + 0.5, top: PRIZE.top },
     { t: 'wall', x0: PRIZE.mouth - 0.25, z0: PRIZE.z - PRIZE.half, x1: PRIZE.mouth + 0.25, z1: PRIZE.z + PRIZE.half, top: PRIZE.top, bottom: PRIZE.gate },
     { t: 'crumb', x0: HX - 2.5, z0: PRIZE.z, x1: HX - 2.5, z1: PRIZE.z, top: 0 },
+    // And its twin in the west wall, for the bells.
+    { t: 'wall', x0: -HX, z0: BELL_PRIZE.z - BELL_PRIZE.half - 0.5, x1: BELL_PRIZE.mouth, z1: BELL_PRIZE.z - BELL_PRIZE.half, top: BELL_PRIZE.top },
+    { t: 'wall', x0: -HX, z0: BELL_PRIZE.z + BELL_PRIZE.half, x1: BELL_PRIZE.mouth, z1: BELL_PRIZE.z + BELL_PRIZE.half + 0.5, top: BELL_PRIZE.top },
+    { t: 'wall', x0: BELL_PRIZE.mouth - 0.25, z0: BELL_PRIZE.z - BELL_PRIZE.half, x1: BELL_PRIZE.mouth + 0.25, z1: BELL_PRIZE.z + BELL_PRIZE.half, top: BELL_PRIZE.top, bottom: BELL_PRIZE.gate },
+    { t: 'crumb', x0: -HX + 2.5, z0: BELL_PRIZE.z, x1: -HX + 2.5, z1: BELL_PRIZE.z, top: 0 },
   ],
 };
 
@@ -75,9 +96,13 @@ export function musicRoom(): LevelDef {
   const def = compileCustom(room, 'musicroom');
   const boards: Decor[] = [
     { kind: 'sign', x: PIANO.x0 + PIANO.white.w * 4, y: 4.5, z: -HZ + 0.06, yaw: 0, w: 9, h: 2.2, lines: ['FLOOR PIANO', 'step on a key to play it,', 'the black ones too'], post: 0 },
+    { kind: 'sign', x: 0, y: 4.5, z: -HZ + 0.06, yaw: 0, w: 9, h: 2.2, lines: ['BELL ECHO', 'strike the white bell, listen,', 'then strike the tune back'], post: 0 },
     { kind: 'sign', x: ECHO_AT.x, y: 4.5, z: -HZ + 0.06, yaw: 0, w: 9, h: 2.2, lines: ['ECHO', 'stand on the white pad, listen,', 'then play the tune back'], post: 0 },
   ];
   // The gate the echo puzzle lifts (main.ts updateGates: a gate's `echo`).
-  const gates: GateSpec[] = [{ x: PRIZE.mouth, z: PRIZE.z, width: PRIZE.half * 2, height: PRIZE.gate, alongZ: true, echo: 'echo' }];
-  return { ...def, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...boards], gates: [...(def.gates ?? []), ...gates] };
+  const gates: GateSpec[] = [
+    { x: PRIZE.mouth, z: PRIZE.z, width: PRIZE.half * 2, height: PRIZE.gate, alongZ: true, echo: 'echo' },
+    { x: BELL_PRIZE.mouth, z: BELL_PRIZE.z, width: BELL_PRIZE.half * 2, height: BELL_PRIZE.gate, alongZ: true, echo: 'bells' },
+  ];
+  return { ...def, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...bells(), ...boards], gates: [...(def.gates ?? []), ...gates] };
 }

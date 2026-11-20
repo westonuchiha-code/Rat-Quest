@@ -19,6 +19,12 @@ function mergeAll(parts: THREE.BufferGeometry[]): THREE.BufferGeometry {
   return mergeGeometries(flat) ?? new THREE.BufferGeometry();
 }
 
+const boxAt = (w: number, h: number, d: number, x: number, y: number, z: number, color: number): THREE.BufferGeometry => {
+  const g = new THREE.BoxGeometry(w, h, d);
+  g.translate(x, y, z);
+  return bakeVertexColor(g, color);
+};
+
 export interface StrikeMats {
   stone: THREE.Material;
   iron: THREE.Material;
@@ -59,9 +65,44 @@ function cracks(len: number, across: number, n: number, seed: number, face: (g: 
   return bakeVertexColor(out, 0x16120e);
 }
 
-export function buildStrike(d: { kind: 'lever'; yaw: number } | { kind: 'crackwall'; w: number; h: number; d: number } | { kind: 'crackfloor'; w: number; d: number }, mats: StrikeMats): BuiltStrike {
+export function buildStrike(d: { kind: 'bell'; color: number; yaw: number } | { kind: 'lever'; yaw: number } | { kind: 'crackwall'; w: number; h: number; d: number } | { kind: 'crackfloor'; w: number; d: number }, mats: StrikeMats): BuiltStrike {
   const group = new THREE.Group();
   group.userData.moves = true;
+  if (d.kind === 'bell') {
+    // A frame of two posts and a beam, and a bell hung low from it, its mouth a rat's waist high; a halo round it
+    // that lights as it sounds. Struck, it swings and settles.
+    const B = STRIKE.bell;
+    group.rotation.y = d.yaw;
+    const frame = [
+      boxAt(0.12, B.frame, 0.12, -0.7, B.frame / 2, 0, 0x4a3a2a),
+      boxAt(0.12, B.frame, 0.12, 0.7, B.frame / 2, 0, 0x4a3a2a),
+      boxAt(1.6, 0.14, 0.16, 0, B.frame, 0, 0x5a4a3a),
+    ];
+    group.add(new THREE.Mesh(mergeAll(frame), mats.iron));
+    const swing = new THREE.Group();
+    swing.position.y = B.frame - 0.07;
+    // The bell: a lathe of its outline, mouth down.
+    const outline = [[0.02, 0], [0.12, -0.02], [0.2, -0.12], [0.25, -0.35], [0.3, -0.55], [0.4, -0.66], [0.42, -0.7], [0.36, -0.7]].map(([x, y]) => new THREE.Vector2(x, y));
+    const bell = new THREE.LatheGeometry(outline, 12);
+    bell.translate(0, -(B.frame - 0.07 - B.hang - B.h), 0);
+    bakeVertexColor(bell, d.color);
+    const hanger = boxAt(0.05, B.frame - 0.07 - B.hang - B.h, 0.05, 0, -(B.frame - 0.07 - B.hang - B.h) / 2, 0, 0x2a2a2a);
+    swing.add(new THREE.Mesh(mergeAll([bell, hanger]), mats.plain));
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0xffd870, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    // (A halo round the whole bell, so it is seen to sound from any side, above as well.)
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8), glowMat);
+    glow.position.y = -(B.frame - 0.07 - B.hang - B.h) - 0.38;
+    swing.add(glow);
+    group.add(swing);
+    group.userData.glow = glowMat;
+    return {
+      group,
+      show(t, time) {
+        const since = time - t.struckAt;
+        swing.rotation.x = since >= 0 && since < 2 ? Math.sin(since * 9) * 0.35 * Math.exp(-since * 2.2) : 0;
+      },
+    };
+  }
   if (d.kind === 'lever') {
     const L = STRIKE.lever;
     // The base: an iron block, a slot in its top.

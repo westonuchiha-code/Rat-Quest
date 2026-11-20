@@ -333,6 +333,9 @@ export type Decor =
   | { kind: 'lever'; x: number; y: number; z: number; yaw: number }
   | { kind: 'crackwall'; x: number; y: number; z: number; w: number; h: number; d: number; hits?: number }
   | { kind: 'crackfloor'; x: number; y: number; z: number; w: number; d: number }
+  /** A bell to strike with the sword (world/strikeables.ts), a music pad (world/musicFloor.ts): its note in semitones
+   * from middle C; in an echo puzzle, which (`puzzle`) and its `slot` (-1 its start). y is the floor; yaw turns its frame. */
+  | { kind: 'bell'; x: number; y: number; z: number; yaw: number; note: number; color: number; puzzle?: string; slot?: number }
   /** Hazards and helpers (world/hazards.ts): a conveyor belt (solid; y is its top), a pendulum blade (x, y, z its
    * pivot), spikes in the floor (y the floor), a fan in the floor (y the floor). */
   | HazardSpec

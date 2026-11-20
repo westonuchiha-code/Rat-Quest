@@ -239,6 +239,8 @@ export const SFX_NAMES = [
   'spikeUp',
   // A flame jet lighting: a gas pop and a roar of flame that holds and dies away.
   'flameRoar',
+  // A bell struck with the sword (world/strikeables.ts): middle C, played faster for higher notes as the chip's is.
+  'bellNote',
 ] as const;
 export type SfxName = (typeof SFX_NAMES)[number];
 
@@ -554,6 +556,16 @@ const RECIPES: Record<SfxName, () => Sample> = {
     const env = Math.min(1, t / 0.06) * Math.min(1, (1.1 - t) / 0.4);
     return Math.tanh((pop + body * rumble * env) * 1.2);
   }, { bits: 7 }),
+  // A bell at middle C: a bright strike, then the partials a bell has (not a string's: the minor third and the
+  // fifth over the octave, the hum under it), each dying away at its own rate.
+  bellNote: () => draw(1.8, RATE_HI, 276, (c) => (t) => {
+    const f = 261.63;
+    const parts: Array<[number, number, number]> = [[0.5, 0.35, 1.2], [1, 0.6, 2.2], [1.19, 0.3, 2.8], [1.5, 0.25, 3.4], [2, 0.3, 3.6], [2.52, 0.12, 5], [3.01, 0.1, 6]];
+    let v = 0;
+    parts.forEach(([m, a, k], i) => (v += sine(c.osc(i, f * m)) * a * Math.exp(-t * k)));
+    const strike = (c.r() * 2 - 1) * Math.exp(-t * 200) * 0.4;
+    return Math.tanh((v + strike) * Math.min(1, t / 0.002) * 0.9) * Math.min(1, (1.8 - t) / 0.3);
+  }, { bits: 8 }),
   // A blow on cracked stone: a sharp snap, a dull body, and grit trickling after.
   stoneCrack: () => draw(0.45, RATE_HI, 272, (c) => (t) => {
     const snap = (c.r() * 2 - 1) * Math.exp(-t * 90) * 0.9;

@@ -6,6 +6,10 @@ import { levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { pianoKeys } from '../src/levels/musicroom';
 import { SFX_NAMES, sfx } from '../src/audio/synth';
+import * as THREE from 'three';
+import { PlayerController, type PlayerInput } from '../src/player/controller';
+import { strikeThings } from '../src/world/strikeables';
+import { BELLS } from '../src/levels/musicroom';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -82,6 +86,55 @@ const on = (i: number): { x: number; y: number; z: number } => ({ x: pads[i].x, 
   check(`...played back right, the next round is a note longer, ${ECHO.rounds} rounds in all`, lengths.join() === Array.from({ length: ECHO.rounds }, (_, k) => ECHO.firstLength + k).join() && rounds === ECHO.rounds - 1, `lengths ${lengths.join(', ')}`);
   check('...and then it is SOLVED: every pad of it flashes', solved && f.solved('echo') && pads.every((p, i) => p.kind !== 'chime' || f.flash[i] > 0));
   lengths = [];
+}
+
+// ---- The bell echo: the same puzzle, on bells struck with the sword ----
+{
+  const things = ch.strike?.things ?? [];
+  const bellThings = things.filter((t) => t.kind === 'bell');
+  check('the Music Room has five bells (four and a white start bell), each a music pad of the "bells" puzzle', bellThings.length === 5 && bellThings.every((t) => t.pad !== undefined && pads[t.pad!].kind === 'bell' && pads[t.pad!].puzzle === 'bells'));
+  check('...in D minor (D, F, A, the D above): not the pads\' C major', pads.filter((p) => p.kind === 'bell' && (p.slot ?? -1) >= 0).sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0)).map((p) => p.note).join() === '2,5,9,14');
+  const f = new MusicFloor(pads);
+  const bellPad = (slot: number): number => pads.findIndex((p) => p.kind === 'bell' && p.slot === slot);
+  // Standing right under a bell does not sound it: bells are struck, not stepped on.
+  const b0 = pads[bellPad(0)];
+  check('standing under a bell does not sound it', step(f, { x: b0.x, y: 0, z: b0.z }, 0.3).length === 0 && step(f, { x: b0.x, y: b0.y, z: b0.z }, 0.3).length === 0);
+  // The real rat, in front of the white bell, swings: it rings once, and the puzzle starts and plays its tune.
+  const startT = bellThings.find((t) => pads[t.pad!].slot === -1)!;
+  const rat = new PlayerController(new THREE.Vector3(BELLS.start.x, 0, BELLS.start.z + 1.1));
+  const input = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+  for (let i = 0; i < 20; i++) rat.update(DT, input(), ch.colliders);
+  rat.facing = Math.PI;
+  rat.update(DT, input({ attackPressed: true }), ch.colliders);
+  let rings = 0;
+  for (let i = 0; i < 40; i++) {
+    rat.update(DT, input(), ch.colliders);
+    for (const e of strikeThings(things, rat)) {
+      if (e.kind !== 'ring') continue;
+      rings++;
+      f.strike(things[e.index].pad!);
+    }
+    step(f, null);
+  }
+  check('the rat\'s swing at the white bell rings it once, and the bell echo starts', rings === 1 && things[things.indexOf(startT)] === startT && f.stateOf('bells') === 'playing', `rings ${rings}, ${f.stateOf('bells')}`);
+  // Now answered by striking the bells (as a swing at each would): three rounds and it is solved.
+  let solved = false;
+  for (let r = 0; r < ECHO.rounds; r++) {
+    const tune = f.tuneOf('bells');
+    step(f, null, ECHO.before + 0.5 + ECHO.gap * (tune.length + 1));
+    for (const sl of tune) {
+      f.strike(bellPad(sl));
+      for (const e of step(f, null, 0.2)) if (e.kind === 'solved') solved = true;
+    }
+  }
+  check('struck back right, three rounds, the bell echo is SOLVED', solved && f.solved('bells') && !f.solved('echo'));
+  check('...and the Music Room has a gate in the west wall that it opens (and the pads\' gate in the east)', ch.gates.some((g) => g.spec.echo === 'bells' && g.spec.x < 0) && ch.gates.some((g) => g.spec.echo === 'echo' && g.spec.x > 0));
+  // A bell with no puzzle just sounds its note.
+  const lone = new MusicFloor([{ kind: 'bell', x: 0, y: 0.35, z: 0, w: 0.8, d: 0.8, note: 7 }]);
+  lone.strike(0);
+  const heard = lone.update(DT, { x: 9, y: 0, z: 9 }, true);
+  check('a bell on its own (no puzzle) sounds its note when struck', heard.length === 1 && heard[0].kind === 'note' && heard[0].note === 7);
+  check('the bell\'s sound is one the game has, and makes a sound', SFX_NAMES.includes('bellNote') && sfx('bellNote').data.some((v) => Math.abs(v) > 0.2));
 }
 
 // ---- The sounds ----
