@@ -24,6 +24,9 @@ import { makeToyRide, makePipeRide, makeBowlRide, makeSpineRide } from '../level
 import type { Aabb } from '../world/collision';
 
 /** What the pad says this frame: the drive overwrites what it drives. */
+/** The stick, for `&autopad`: east, west, north (-z), south, let go. */
+const STICK: Record<string, [number, number]> = { E: [1, 0], W: [-1, 0], N: [0, -1], S: [0, 1], '0': [0, 0] };
+
 export interface Pad {
   move: THREE.Vector3;
   run: boolean;
@@ -67,6 +70,15 @@ export class FilmDrive {
   private plungeAt = 2;
   private plungeStep = 0;
   private jumpAt = 1;
+  /**
+   * `&autopad=T:K,T:K,...`: a little script of the pad, for filming a character's own move: at T seconds, K: `J` jump
+   * pressed, `A` attack, `R` roll (dodge), `H+`/`H-` jump held/let go, `G+`/`G-` guard held/let go, `U+`/`U-` run,
+   * `E` `W` `N` `S` the stick that way (`0` let go).
+   */
+  private readonly script: Array<{ t: number; k: string }> | null;
+  private scriptT = 0;
+  private scriptNext = 0;
+  private readonly held = { jump: false, guard: false, run: false, x: 0, z: 0 };
   /** `&autoball`: ROLL pressed once, a second in (the hedgehog curls up), for the other drives to push the ball. */
   private readonly ball: boolean;
   private ballAt = 1;
@@ -85,6 +97,8 @@ export class FilmDrive {
     this.swing = sw ? Number(sw[1] ?? 1.2) || 1.2 : 0;
     this.plunge = /[#&]autoplunge\b/.test(hash);
     this.ball = /[#&]autoball\b/.test(hash);
+    const sc = /[#&]autopad=([^&]+)/.exec(hash)?.[1];
+    this.script = sc ? sc.split(',').map((e) => ({ t: Number(e.split(':')[0]), k: e.split(':')[1] ?? '' })) : null;
     const c = /[#&]chaos=(\d+)/.exec(hash);
     this.chaos = c ? { seed: Math.max(1, Number(c[1]) || 1), t: 0, next: 0, dir: [0, 1], last: { x: 0, z: 0, t: 0 }, said: new Map(), room: '' } : null;
   }
@@ -138,6 +152,24 @@ export class FilmDrive {
       pad.attackPressed = a.attackPressed;
       pad.guardHeld = a.guardHeld;
       pad.dodgePressed = a.dodgePressed;
+    }
+    if (this.script) {
+      this.scriptT += dt;
+      const h = this.held;
+      while (this.scriptNext < this.script.length && this.script[this.scriptNext].t <= this.scriptT) {
+        const k = this.script[this.scriptNext++].k;
+        if (k === 'J') pad.jumpPressed = true;
+        else if (k === 'A') pad.attackPressed = true;
+        else if (k === 'R') pad.dodgePressed = true;
+        else if (k === 'H+' || k === 'H-') h.jump = k === 'H+';
+        else if (k === 'G+' || k === 'G-') h.guard = k === 'G+';
+        else if (k === 'U+' || k === 'U-') h.run = k === 'U+';
+        else if (k in STICK) [h.x, h.z] = STICK[k];
+      }
+      pad.jumpHeld = h.jump || pad.jumpPressed;
+      pad.guardHeld = h.guard;
+      pad.run = h.run;
+      pad.move.set(h.x, 0, h.z);
     }
     if (this.ball && this.ballAt > 0) {
       this.ballAt -= dt;

@@ -3586,7 +3586,7 @@ function startGame(): void {
   const devCarryFoe = /[#&]carryfoe\b/.test(location.hash);
   let devCarried = false;
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
-  const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
+  const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
   (window as unknown as { __cost?: () => unknown }).__cost = () => {

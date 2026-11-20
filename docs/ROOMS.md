@@ -26,7 +26,7 @@ it.
 | 16 | `press` | `levels/press.ts` | crushers, flame jets | `press` |
 | 17 | `greenroom` | `levels/greenroom.ts` | two new characters, the mole and the hedgehog | `newcomers` |
 | 18 | `coilroom` | `levels/coilroom.ts` | the Tesla coil on a beat, zap plates, coil keys, the Spark Beetle | `coilroom`, `sparkbeetle` |
-| 19 | `standin` | `levels/standinroom.ts` | talk to Bramble the hedgehog and swap: be him on the rat's controls, on a course | `standin` |
+| 19 | `standin` | `levels/standinroom.ts` | every character played, each its own way, and a course with a place for each | `standin`, `critters` |
 
 To run one room's tests: `node scripts/test-all.mjs platforms`. Every suite: `npm run test:all`.
 
@@ -167,16 +167,16 @@ OPUS-WEEK and not fixed.
 - It is soft the rest of the bar, and has 4 hp. Its numbers are in `SPARK`.
 - Seven more enemy designs, each built round one of these rooms' parts, are in `docs/ENEMY-IDEAS.md`.
 
-## 19. The Stand-in: Bramble the hedgehog, played
+## 19. The Stand-in: every character, played
 
-**What's in it.** You walk in as the knight. Bramble waits by the way in (`BRAMBLE`) and tells you what a hedgehog
-can do; talk to him to the end and you are him, with HIS OWN MOVES: a hop, ROLL into a ball (it keeps its speed,
-runs downhill, bounces, rams), SPIT, a spine burst. Talk to the knight standing in his place to swap back. The
-course: steps up to a shelf (`STEPS`), two slopes off it to roll down (`SLOPES`), a BURROW whose way in is too low to
-walk through (`BURROW`: only the ball gets in), a pool (`POOL`), two roaches that come back, and pots.
+**What's in it.** All thirteen of the Club's and the Green Room's characters in a line-up by the way in, each with a
+way of getting about of its own (KIT.md has the table). Talk to one to the end and you are them; to another, them
+instead; to the knight standing in your place, yourself again. A place for each way: the BURROW (`BURROW`), the PILLAR
+(`PILLAR`), the GAP (`GAP`), the sealed PEN (`PEN`), the DEEP POOL (`POOL`, its crumb on the bed), the shelf and its
+slopes (`STEPS`, `SLOPES`), three roaches. `LINEUP` places them.
 
-**The code.** `player/hedgehogController.ts` (his moves, his own collision; numbers in `HOG`), `player/standIn.ts`
-(his body on springs). See KIT.md for the table of buttons.
+**The code.** `player/critters/` (base.ts, moles.ts, turtlesFoxes.ts, ferretsOwlsJinx.ts; index.ts says who is who and
+draws them), and the hedgehogs' `player/hedgehogController.ts` and `standIn.ts`. Tests: `critters`, `standin`.
 
 ---
 

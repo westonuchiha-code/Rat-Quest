@@ -233,7 +233,7 @@ class CritterView implements PlayableView {
 const solid = (color: number): THREE.MeshBasicMaterial => new THREE.MeshBasicMaterial({ color });
 /** The things drawn round them: a mound of earth, the things that fall on the jinxed, a shadow left behind. */
 const PROPS: Record<string, () => THREE.Object3D> = {
-  mound: () => new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.45, 1.3), solid(0x6a4a2e)),
+  mound: () => new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.4, 1.3), solid(0x4a3220)),
   spool: () => {
     const g = new THREE.Group();
     g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 10), solid(0xc84a3a)));

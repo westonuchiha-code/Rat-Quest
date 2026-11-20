@@ -194,40 +194,45 @@ Coil Room's floor round the coil's foot, coming back when beaten, not among the 
 `EnemySpec` with `type: 'sparkbeetle'`; away from a coil it still keeps the same beat (90 bpm, snare on 2 and 4).
 *main.ts*: one `addEnemy` branch, and its name in WALKERS (so it walks on ramps).
 
-## Bramble, played: another character with moves of his own (`src/player/hedgehogController.ts`, body `standIn.ts`; `tests/standin.ts`; the Stand-in, Test Room 19)
+## Every character, played: each a way of getting about of its own (`src/player/critters/`; `tests/critters.ts`, `tests/standin.ts`; the Stand-in, Test Room 19)
 
-The owner (2026-11-20): "he's not a knight, he's a hedgehog so you got to give him other stuff to do ... make him roll
-around like a hedgehog ... like a Metroid kind of thing ... maybe he can spit ... get all the other characters to move
-around like the main character, not give all the other characters the movement of the main character."
+The owner (2026-11-20), after Bramble: "do that with the rest of the characters try to make each one of them have its
+own sort of unique little play style ... their own unique way of getting around the levels ... just prototypes or if
+one character brings on multiple ideas you can try out both ... we can have a character that casts magic but it should
+be unique it shouldn't just be like generic fire and ice magic it should be like something to do like with this world
+or with the character."
 
-So he has HIS OWN CONTROLLER, written for him (the knight's, player/controller.ts, is not used for his moves and is
-not touched). The same buttons do hedgehog things:
+Thirteen, one for each look of every Club and Green Room character. Each has its OWN controller on the knight's
+buttons (none uses the knight's, player/controller.ts, which is not touched). Every one of their numbers is a table at
+the top of its file (`DIGGER`, `PEBBLE`, `VIX` ...). What they share (an upright box for a body against the level,
+gravity, water, things thrown, stings): `critters/base.ts`. Who is who, and how each is drawn: `critters/index.ts`.
 
-| button | Bramble |
-|--------|---------|
-| move (run held: faster) | walks, a waddle (2.6), or scurries (4.6): slower than the knight, short legs |
-| jump | a little hop (1.4 high; the knight's is 2.5). No second jump, no ledge grabs: he is no climber |
-| ROLL (the knight's dodge) | CURLS INTO A BALL, and stays curled till pressed again. The ball builds speed and KEEPS it (it rolls on when let go), RUNS AWAY DOWNHILL, BOUNCES off walls and off the ground when it lands hard, rolls through gaps too low to walk through, and RAMS what it rolls into fast (it stings, he rebounds). It can hop. He cannot stand up under a roof too low for him |
-| ATTACK, on his feet | SPITS a glob: a short arc ahead, it stings what it hits and splats on walls |
-| ATTACK, curled | a SPINE BURST: his spines thrown out all round, stinging what is close |
+| who | kind | how they get about | ATTACK | ROLL (the knight's dodge) | other |
+|-----|------|--------------------|--------|------|-------|
+| Bramble | hedgehog | rolls as a ball (momentum, downhill, bounces, low gaps) | spit; curled, a spine burst | curl up / uncurl | (hedgehogController.ts) |
+| Thistle | hedgehog | a POGO ball: curled, JUMP held bounces higher each landing | a fan of three quills | curl up / uncurl | |
+| Digger | mole | DIGS: under the floor, under walls (where floor goes on beneath them); untouchable down there | under: bursts up under what is over him; on top: a swipe | down / up (only where there is room) | |
+| Dot | mole | YARN: cast ahead and up, it catches a ledge and reels her onto it | the yarn (a creature it catches is stung and pulled in) | a tumble aside | |
+| Pebble | turtle | her SHELL SLIDES like a puck, ricochets, knocks creatures flying; a fast swimmer who DIVES | | into the shell / out; in water: dive | JUMP held under water: up |
+| Mo | turtle | slow and IMMOVABLE (not knocked back); SINKS and walks the bottom of water | a STOMP: a shockwave all round | | GUARD: shut in his shell |
+| Vix | fox | the fastest; hold JUMP to crouch, let go: a long POUNCE that lands on what is there | a snap | | |
+| Ash | fox | a SHADOW DASH: through creatures (stung), untouchable, twice in the air | a snap | the dash | |
+| Slink | ferret | CLIMBS walls (JUMP against one she is pushed into; grip runs out); SLINKS flat under low things | a nip | slink / stand | |
+| Biscuit | ferret | the WAR DANCE (hopping wildly, untouchable, knocking things over); a double jump | the dance | a hop back | |
+| Tawny | owl | FLIES: four flaps, a long GLIDE (JUMP held), a TALON DIVE that goes for prey below | on the ground a peck; in the air the dive | | |
+| Snow | owl | HOVERS (JUMP held in the air, as long as her breath lasts); two flaps | three feather darts | | |
+| Jinx | rat | MAGIC, her own: BAD LUCK and BLINKING | a HEX: what it hits, something from the house above (a cotton reel, a teacup, a die, a button) falls on a moment later | throw her MARK (a high lob, onto what is ahead); again: BLINK to it | GUARD: change places with a jinxed creature; JUMP held in the air: hangs on a hex sign |
 
-In water he paddles, his back at the waterline. He lifts nothing (his paws are too short).
-His body moves on springs: the waddle and scurry, his head leading into turns, a squash landing, the ball turning
-over as far as it has rolled, his head thrown forward to spit, his spines lying flat at speed and bristling for the
-burst and when hit. All his numbers are in `HOG` (hedgehogController.ts) and `SPRING` (standIn.ts).
-
-**How to see it:** the Stand-in room (Test Room 19). He walks in as the knight; Bramble waits by the way in and tells
-him what a hedgehog can do; talk to him to the end and you are him (and the knight stands in his place, to swap back).
-The room has the slopes to roll down, the walls to bounce off, roaches to spit at and ram, a pool, and a BURROW whose
-way in is too low to walk through: only the ball gets in, to the crumb inside. (`#as=hedgehog` on the address: him
-from the start, anywhere.) Film drive: `&autoball` presses ROLL once.
-**How it is joined to the game (main.ts):** while he is played, his controller moves him; the knight's controller is
-stepped under him with nothing pressed only for his health, being hit (he is knocked back where it puts him) and
-being beaten, and is kept where the hedgehog is. His spit, ram and burst are hits like any (the flash, the sound,
-the count of creatures beaten). The swap: `NpcSpec.swap`, `dialog.onFinish`.
-**Not done:** his own hurt and beaten sounds (he uses the knight's), a hit flash, ledges or climbing of any kind.
-**To do another character this way:** a controller of his own on the same buttons (`HogInput`), a body that reads it,
-and the same join in main.ts. The mole would be next: a digger, not a roller.
+**The room** (Test Room 19, `levels/standinroom.ts`): they stand in a LINE-UP by the way in; read one's talk to the end
+and you are them (the knight stands in their place; talk to another to be them instead, or to the knight to be him).
+A place for each way, most reachable more ways than one: the BURROW (too low to walk into), the PILLAR (sheer, five
+high), the GAP (two high blocks), the PEN (walled and roofed: only digging gets in), the DEEP POOL (a crumb on its bed:
+only the turtles get down), the shelf with its slopes, three roaches. `#as=<name>` on the address plays one anywhere
+(`#as=jinx`). Film drive: `&autopad=T:K,...` (a script of the pad, dev/filmDrive.ts) and `&autoball`.
+**How they are drawn:** the hedgehogs have a body posed limb by limb (standIn.ts); the others are their Club model
+moved as a whole on springs (leaning, rocking with each step, squashed, spun, tumbled, hidden underground; an owl in
+the air waves its wings). Their limbs are not posed one by one yet.
+**Not done:** sounds of their own (they borrow the game's), hit flashes, their limbs, and any of them in a real level.
 
 ## New characters (`src/npc/patrons.ts` `class Mole`, `class Hedgehog`; `tests/newcomers.ts`; the Green Room, Test Room 17)
 

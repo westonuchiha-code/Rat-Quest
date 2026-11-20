@@ -47,6 +47,10 @@ fight. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main
   rams), SPIT, a spine burst. *main.ts*: when he is played, `hog.update` moves him; `player.update` is stepped with
   nothing pressed (health, hits, death) and put where he is; his hits are fed to `events` after `resolveCombat`; the
   lift is off for him; the stand-in is drawn from `hog`. `dev/filmDrive.ts`: `&autoball`.
+  Then EVERY CHARACTER (`player/critters/`): thirteen controllers of their own. *main.ts*: the hedgehog code became
+  general (`critter`, `playLook()`: by the swap, by the level, or `#as=<name>`); a character who is `untouchable` just
+  now is left out of `resolveCombat`'s enemies; one who is `steadfast` is not moved by being hit; the swap goes from
+  one character straight to another. `NpcSpec.swap.as` is any look. `dev/filmDrive.ts`: `&autopad`.
 
 ## 2. Changes to how things are DRAWN, meant to look the same (proven by test)
 
