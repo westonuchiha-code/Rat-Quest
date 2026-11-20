@@ -137,7 +137,11 @@ export function buildStrike(d: { kind: 'bell'; color: number; yaw: number } | { 
         const want = t.on ? THROW : -THROW;
         shown += Math.sign(want - shown) * Math.min(Math.abs(want - shown), dt * 9);
         pivot.rotation.x = shown;
-        lampMat.color.setHex(t.on ? 0x6aff6a : 0x1e2a1e);
+        // (A timed lever: its lamp amber, blinking quicker as its time runs out.)
+        if (t.on && t.timer) {
+          const f = 3 + 14 * (1 - (t.left ?? 0) / t.timer);
+          lampMat.color.setHex(Math.sin(time * f * Math.PI) > 0 ? 0xffb030 : 0x3a2a10);
+        } else lampMat.color.setHex(t.on ? 0x6aff6a : 0x1e2a1e);
       },
     };
   }

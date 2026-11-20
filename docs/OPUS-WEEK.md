@@ -94,7 +94,8 @@ Plates shock through the same `hurt` path as the spikes (a burn).
 
 **More parts in rooms 12-18** (2026-11-20, later): swing, blink and path platforms (the Workshop); float zone, mud and
 launcher (the Gauntlet). *main.ts*: `zones.step` beside the belt and fan; the stick scaled by the mud; jump counted as
-held while flying from a launcher.
+held while flying from a launcher. A timed lever and a gate that shuts again (the Yard): *main.ts* ticks the levers in
+the strike block and lets `updateGates` close a `shut` gate (`chamber.closeGate`).
 
 **The fifth robot run** (2026-11-20, PLAYTEST.md): nothing broken. One thing for you: at the peak of a jump, feet
 within a step (0.35) of a ledge's top, he is inside its edge for 3-4 frames before the controller lifts him onto it

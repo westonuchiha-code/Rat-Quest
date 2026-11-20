@@ -4,11 +4,11 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
-import { STRIKE, leversOn, newStrikeable, strikeThings, type Striker } from '../src/world/strikeables';
+import { STRIKE, leversOn, newStrikeable, strikeThings, tickLevers, type Striker } from '../src/world/strikeables';
 import { levelById } from '../src/levels/levels';
 import { buildChamber } from '../src/world/chamber';
 import { compileCustom } from '../src/levels/custom';
-import { YARD, STAGE, NOOK } from '../src/levels/breakyard';
+import { YARD, STAGE, NOOK, RACE } from '../src/levels/breakyard';
 import { SFX_NAMES, sfx } from '../src/audio/synth';
 import { topAt } from '../src/world/collision';
 
@@ -72,8 +72,8 @@ const def = levelById('breakyard')!;
 check('the Yard is a level', !!def);
 const room = buildChamber(def as never);
 const things = room.strike?.things ?? [];
-check('the Yard has three levers, a cracked wall and a cracked floor', things.filter((t) => t.kind === 'lever').length === 3 && things.filter((t) => t.kind === 'crackwall').length === 1 && things.filter((t) => t.kind === 'crackfloor').length === 1);
-check('its gates: one waits for lever 0, one for levers 1 and 2', room.gates.length === 2 && room.gates[0].spec.levers?.join() === '0' && room.gates[1].spec.levers?.join() === '1,2');
+check('the Yard has four levers (one timed), a cracked wall and a cracked floor', things.filter((t) => t.kind === 'lever').length === 4 && things.filter((t) => t.kind === 'lever' && t.timer).length === 1 && things.filter((t) => t.kind === 'crackwall').length === 1 && things.filter((t) => t.kind === 'crackfloor').length === 1);
+check('its gates: one waits for lever 0, one for levers 1 and 2, and the race gate for the timed lever (3), and shuts again', room.gates.length === 3 && room.gates[0].spec.levers?.join() === '0' && room.gates[1].spec.levers?.join() === '1,2' && room.gates[2].spec.levers?.join() === '3' && !!room.gates[2].spec.shut);
 const highest = (x: number, z: number, below: number): number => Math.max(-99, ...room.colliders.filter((b) => x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z).map((b) => topAt(b, x, z)).filter((t) => t <= below));
 const H = STAGE.hole;
 check('the cracked floor is solid: standing over the hole, the floor under him is the stage top', Math.abs(highest(H.x, H.z, STAGE.top + 0.5) - STAGE.top) < 1e-6);
@@ -155,6 +155,58 @@ check('the cracked wall is solid across its nook', inWall());
     any += strikeThings(t2, p).length;
   }
   check('dropping onto the cracked floor (no plunge), it holds him', any === 0 && p.grounded && Math.abs(p.position.y - STAGE.top) < 0.05, `y ${p.position.y.toFixed(2)}`);
+}
+
+// ---- Race the gate (2026-11-20): a timed lever, a gate that shuts again ----
+{
+  const t = { ...newStrikeable('lever', 0, 0, 1, STRIKE.lever.w, STRIKE.lever.h, STRIKE.lever.d), timer: 4, left: 0 };
+  strikeThings([t], rat({ attackActive: true, swingId: 1 }));
+  let sprang = -1;
+  for (let k = 0; k < 6 * 60 && sprang < 0; k++) if (tickLevers([t], 1 / 60).some((e) => e.kind === 'flip' && !e.on)) sprang = (k + 1) / 60;
+  check('a TIMED lever, struck over, springs back by itself when its time is up', Math.abs(sprang - 4) < 0.05 && !t.on, `after ${sprang.toFixed(2)} s`);
+  /** The race, run as main.ts runs it: the real rat strikes the lever, then runs for the pen; the gate lifts while the
+   * lever is over and drops when it springs back. `wait`: seconds he dawdles before running. Where he ends up. */
+  const race = (wait: number): { inPen: boolean; x: number } => {
+    const r = buildChamber(levelById('breakyard') as never);
+    const th = r.strike!.things;
+    const gate = r.gates[2];
+    const timed = th.filter((q) => q.kind === 'lever')[3];
+    const p = new PlayerController(new THREE.Vector3(timed.x + 1.1, 0, timed.z));
+    for (let k = 0; k < 20; k++) p.update(DT, input(), r.colliders);
+    p.facing = -Math.PI / 2;
+    let clock = 0;
+    const frame = (pad: Partial<PlayerInput>): void => {
+      clock += DT;
+      p.update(DT, input(pad), r.colliders);
+      strikeThings(th, p);
+      tickLevers(th, DT);
+      const on = leversOn(th, gate.spec.levers ?? []);
+      if (!gate.open && on) r.openGate(gate);
+      else if (gate.open && !on) r.closeGate(gate);
+      r.update(clock);
+    };
+    frame({ attackPressed: true });
+    for (let k = 0; k < 30; k++) frame({});
+    for (let k = 0; k < Math.round(wait / DT); k++) frame({});
+    for (let k = 0; k < 6 * 60; k++) frame({ move: new THREE.Vector3(-1, 0, (RACE.gate.z - p.position.z) * 0.8), run: true });
+    return { inPen: p.position.x < RACE.pen.x1 - 0.5, x: p.position.x };
+  };
+  const quick = race(0);
+  const slow = race(3);
+  check('the real rat strikes the timed lever and runs straight for the pen: he is inside before the gate drops', quick.inPen, `x ${quick.x.toFixed(2)}`);
+  check('...dawdling 3 seconds first, he is too late: the gate has dropped and he is shut out', !slow.inPen, `x ${slow.x.toFixed(2)}`);
+  // And out again, once shut in: up the step inside, a jump and a second over the north wall.
+  {
+    const r = buildChamber(levelById('breakyard') as never);
+    const p = new PlayerController(new THREE.Vector3(RACE.pen.x0 + 1.5, RACE.step, RACE.pen.z0 + 1));
+    for (let k = 0; k < 20; k++) p.update(DT, input(), r.colliders);
+    let k = 0;
+    for (; k < 4 * 60 && p.position.z > RACE.pen.z0 - 1; k++) {
+      p.update(DT, input({ jumpPressed: k === 2 || (k > 10 && p.velocity.y < 0 && k < 40), jumpHeld: true, move: k > 6 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3() }), r.colliders);
+    }
+    for (let j = 0; j < 90; j++) p.update(DT, input(), r.colliders);
+    check('...and shut inside, he gets out: up the step, a jump and a second over the north wall', p.position.z < RACE.pen.z0 - 0.5 && p.grounded, `at z ${p.position.z.toFixed(2)}, y ${p.position.y.toFixed(2)}`);
+  }
 }
 
 // ---- The Music Room: the echo puzzle lifts a gate ----

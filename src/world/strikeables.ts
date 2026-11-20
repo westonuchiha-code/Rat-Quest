@@ -3,7 +3,8 @@
  * can put in the game for Fable to work with later"). Three kit parts, each a decor (world/layout.ts) that the room
  * draws and makes solid (world/chamber.ts), and that is struck here:
  *   lever       a handle on a post. The sword flips it (once a swing): over, it is ON; struck again, OFF. A gate can
- *               wait for levers (GateSpec.levers: all of them on at once).
+ *               wait for levers (GateSpec.levers: all of them on at once). A TIMED one (`timer`) springs back by
+ *               itself after that many seconds (`tickLevers`); a gate that `shut`s drops again when it does.
  *   crackwall   a cracked slab of wall. It takes `hits` sword blows (a heavy blade counts two), cracking further at
  *               each, then falls to rubble and is not there. A plunge's blast does not touch it (it runs along the floor).
  *   crackfloor  a cracked slab of floor. Walked on, jumped on, it holds; a PLUNGE landing on it breaks it, and he goes
@@ -38,6 +39,9 @@ export interface Strikeable {
   struckAt: number;
   /** A bell: its place among the room's music pads (world/musicFloor.ts). */
   pad?: number;
+  /** A TIMED lever (2026-11-20): seconds it stays over before it springs back on its own; and how many are left. */
+  timer?: number;
+  left?: number;
 }
 
 export type StrikeEvent =
@@ -106,6 +110,8 @@ export function strikeThings(things: Strikeable[], p: Striker): StrikeEvent[] {
     }
     if (t.kind === 'lever') {
       t.on = !t.on;
+      // (A timed one starts its count when it goes over.)
+      if (t.timer) t.left = t.on ? t.timer : 0;
       out.push({ kind: 'flip', index, on: t.on });
       return;
     }
@@ -114,6 +120,19 @@ export function strikeThings(things: Strikeable[], p: Striker): StrikeEvent[] {
       t.gone = true;
       out.push({ kind: 'break', index });
     } else out.push({ kind: 'crack', index, left: t.hits - t.taken });
+  });
+  return out;
+}
+
+/** Timed levers count down; one whose time is up springs back (off). What sprang back. */
+export function tickLevers(things: Strikeable[], dt: number): StrikeEvent[] {
+  const out: StrikeEvent[] = [];
+  things.forEach((t, index) => {
+    if (t.kind !== 'lever' || !t.timer || !t.on) return;
+    t.left = Math.max(0, (t.left ?? t.timer) - dt);
+    if (t.left > 0) return;
+    t.on = false;
+    out.push({ kind: 'flip', index, on: false });
   });
   return out;
 }

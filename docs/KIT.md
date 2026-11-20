@@ -80,6 +80,12 @@ machines": Lever, Cracked wall, Cracked floor.
 | cracked wall | `{ kind: 'crackwall', x, y, z, w, h, d, hits? }` | sword blows: it cracks at each, and falls at `hits` (default `wallHits` 3). A heavy blade (damage 2 or more) counts two. A plunge's blast does not touch it. | `wallHits` 3, `heavyBlade` 2, `heavyCounts` 2 |
 | cracked floor | `{ kind: 'crackfloor', x, y, z, w, d }` (y is its top) | only a PLUNGE landing on its top. Walked on, dropped on, swung at, it holds. Broken, he goes through. | 0.4 thick |
 
+- **A TIMED lever** (`timer: N` on a lever, 2026-11-20): it springs back by itself N seconds after it goes over
+  (`tickLevers`), its lamp amber and blinking quicker as the time runs out, a tick each half second (each quarter in
+  the last second and a half). A gate with `shut: true` drops again when its levers stop holding it (solid again once
+  down). The Yard's RACE THE GATE: a pen with a crumb, its gate 10 paces from a 4-second lever; a step inside is the
+  way out over the wall once the gate has dropped behind him (tests/strikeables.ts races it with the real rat: a
+  straight run makes it, dawdling 3 seconds does not, and he can climb out).
 - **A gate the levers lift**: a gate's `levers: [0, 1]` lifts it when those levers (counted among the room's levers
   only, first is 0) are all over at once. In the editor: a Gate's "Opens when", "every lever is over".
 - Measured from the box's nearest side, so a wide wall is struck anywhere along it, as a crate is.

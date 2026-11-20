@@ -5,6 +5,7 @@
  *   TWO LEVERS    a gate that waits for both: one either side, too far apart for one swing.
  *   CRACKED WALL  a nook walled up with a cracked slab: three blows (a heavy blade, two) and it is down.
  *   CRACKED FLOOR a stone stage with a cracked slab in its top: plunge onto it and he goes through, into the cellar.
+ * RACE THE GATE (2026-11-20): a pen with a gate a TIMED lever holds up for 4 seconds, then the gate drops again.
  * In each nook, a cheese crumb, for something to find. Kit parts (docs/KIT.md): `lever`, `crackwall`, `crackfloor`
  * decor, and a gate's `levers`.
  */
@@ -35,6 +36,9 @@ function nook(x: number, lintel: boolean): Piece[] {
 
 const crumb = (x: number, z: number, top = 0): Piece => ({ t: 'crumb', x0: x, z0: z, x1: x, z1: z, top });
 
+/** RACE THE GATE (2026-11-20): a pen against the west wall, its gate in its east wall; a TIMED lever out in the room
+ * that holds the gate up for `timer` seconds, then springs back, and the gate drops. */
+export const RACE = { pen: { x0: -HX, x1: -16, z0: 4, z1: 12 }, gate: { z: 8, half: 1.5 }, lever: { x: -6, z: 8 }, timer: 4, step: 2.5 } as const;
 const H = STAGE.hole;
 const room: CustomLevel = {
   name: 'The Yard',
@@ -56,6 +60,16 @@ const room: CustomLevel = {
     box('stone', H.x + H.half, H.z - H.half, YARD.floor + 4, H.z + H.half, STAGE.top, { bottom: 0 }),
     box('stone', YARD.floor - 2, -6, YARD.floor + 2, -4.5, 1, { bottom: 0 }),
     crumb(H.x, H.z),
+    // The race pen: its north and south walls, and its east wall either side of the gate, a lintel over the gate.
+    box('wall', RACE.pen.x0, RACE.pen.z0 - 0.5, RACE.pen.x1 + 0.5, RACE.pen.z0, NOOK.top),
+    box('wall', RACE.pen.x0, RACE.pen.z1, RACE.pen.x1 + 0.5, RACE.pen.z1 + 0.5, NOOK.top),
+    box('wall', RACE.pen.x1, RACE.pen.z0, RACE.pen.x1 + 0.5, RACE.gate.z - RACE.gate.half, NOOK.top),
+    box('wall', RACE.pen.x1, RACE.gate.z + RACE.gate.half, RACE.pen.x1 + 0.5, RACE.pen.z1, NOOK.top),
+    box('wall', RACE.pen.x1, RACE.gate.z - RACE.gate.half, RACE.pen.x1 + 0.5, RACE.gate.z + RACE.gate.half, NOOK.top, { bottom: NOOK.gate }),
+    crumb(RACE.pen.x0 + 3, RACE.gate.z),
+    // A step inside against the north wall: the way OUT once the gate has dropped behind him (a jump and a second
+    // from it clear the wall; from outside there is nothing to climb, so it is no way in).
+    box('stone', RACE.pen.x0, RACE.pen.z0, RACE.pen.x0 + 3, RACE.pen.z0 + 2, RACE.step, { bottom: 0 }),
   ],
 };
 
@@ -67,6 +81,9 @@ export function breakYard(): LevelDef {
     { kind: 'lever', x: YARD.oneLever + 4.2, y: 0, z: NOOK.front + 1.2, yaw: 0 },
     { kind: 'lever', x: YARD.twoLevers - 4.2, y: 0, z: NOOK.front + 1.2, yaw: 0 },
     { kind: 'lever', x: YARD.twoLevers + 4.2, y: 0, z: NOOK.front + 1.2, yaw: 0 },
+    // Lever 3: the timed one, out in the room, facing the pen.
+    { kind: 'lever', x: RACE.lever.x, y: 0, z: RACE.lever.z, yaw: -Math.PI / 2, timer: RACE.timer },
+    { kind: 'sign', x: RACE.pen.x1 + 0.56, y: NOOK.top - 1.4, z: RACE.pen.z1 - 1.6, yaw: Math.PI / 2, w: 4.6, h: 1.6, lines: ['RACE THE GATE', 'the lever holds it up for 4'], post: 0 },
     { kind: 'crackwall', x: YARD.wall, y: 0, z: NOOK.front, w: 5, h: NOOK.top, d: 0.6 },
     { kind: 'crackfloor', x: H.x, y: STAGE.top, z: H.z, w: H.half * 2, d: H.half * 2 },
     sign(YARD.oneLever, ['ONE LEVER', 'strike it over and the gate', 'lifts. editor: Lever'] ),
@@ -77,6 +94,7 @@ export function breakYard(): LevelDef {
   const gates: GateSpec[] = [
     { x: YARD.oneLever, z: NOOK.front, width: 5, height: NOOK.gate, levers: [0] },
     { x: YARD.twoLevers, z: NOOK.front, width: 5, height: NOOK.gate, levers: [1, 2] },
+    { x: RACE.pen.x1 + 0.25, z: RACE.gate.z, width: RACE.gate.half * 2, height: NOOK.gate, alongZ: true, levers: [3], shut: true },
   ];
   return { ...def, decor: [...def.decor, ...parts], gates: [...(def.gates ?? []), ...gates] };
 }

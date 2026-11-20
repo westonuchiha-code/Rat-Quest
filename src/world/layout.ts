@@ -330,7 +330,7 @@ export type Decor =
    * on a floor at y; `yaw` the way it throws over); a CRACKED WALL, a slab w by h by d standing on y, that `hits` sword
    * blows bring down; a CRACKED FLOOR, a slab w by d whose top is y, that only a plunge breaks.
    */
-  | { kind: 'lever'; x: number; y: number; z: number; yaw: number }
+  | { kind: 'lever'; x: number; y: number; z: number; yaw: number; timer?: number }
   | { kind: 'crackwall'; x: number; y: number; z: number; w: number; h: number; d: number; hits?: number }
   | { kind: 'crackfloor'; x: number; y: number; z: number; w: number; d: number }
   /** A bell to strike with the sword (world/strikeables.ts), a music pad (world/musicFloor.ts): its note in semitones
@@ -494,6 +494,8 @@ export interface GateSpec {
   levers?: number[];
   /** Opens when the echo puzzle of this name (world/musicFloor.ts) is solved. */
   echo?: string;
+  /** Drops shut again when what opened it stops holding (a timed lever springing back). */
+  shut?: boolean;
 }
 
 /**

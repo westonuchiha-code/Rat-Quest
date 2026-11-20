@@ -8,7 +8,7 @@ import { input } from './core/input';
 import { TUNING } from './data/tuning';
 import { CHAMBER_OPTIONS, Chamber, buildChamber, storyPower } from './world/chamber';
 import { MusicFloor, noteRate } from './world/musicFloor';
-import { leversOn, strikeThings } from './world/strikeables';
+import { leversOn, strikeThings, tickLevers } from './world/strikeables';
 import { PLATFORM } from './world/platforms';
 import { HAZARD, HazardFoes, Zones, carry as beltCarry, hurt as hazardHurt, lift as fanLift, sounds as hazardSounds } from './world/hazards';
 import { CollectibleTracker, browserStorage } from './world/collectibles';
@@ -2851,6 +2851,17 @@ function startGame(): void {
           rumble.smash();
         }
       }
+      // Timed levers count down (a tick each half second, quicker at the end), and spring back when their time is up.
+      for (const t of chamber.strike.things) {
+        if (t.kind !== 'lever' || !t.timer || !t.on) continue;
+        const before = t.left ?? 0;
+        const after = before - dt;
+        const every = before < 1.5 ? 0.25 : 0.5;
+        if (Math.floor(before / every) !== Math.floor(Math.max(0, after) / every)) audio.play('coilTick', { vol: 0.7, rate: before < 1.5 ? 1.4 : 1, priority: 5 });
+      }
+      for (const ev of tickLevers(chamber.strike.things, dt)) {
+        if (ev.kind === 'flip') audio.play('leverThrow', { vol: 0.85, rate: 0.85, priority: 7 });
+      }
       chamber.strike.show(worldClock);
     }
     if (events.glanced) {
@@ -3969,6 +3980,12 @@ function startGame(): void {
   /** Lifts any gate whose pipes are all burst, and any gate that waits for the goals. */
   function updateGates(): void {
     for (const g of chamber.gates) {
+      // (A gate that shuts drops again when its levers no longer hold it: a timed lever has sprung back.)
+      if (g.open && g.spec.shut && chamber.strike && !leversOn(chamber.strike.things, g.spec.levers ?? [])) {
+        chamber.closeGate(g);
+        audio.play('gate', { vol: 0.8, rate: 0.8, priority: 6 });
+        continue;
+      }
       if (g.open) continue;
       const pipes = g.spec.pipes ?? [];
       const byPipes = pipes.length > 0 && pipes.every((i) => !chamber.pipes[i]?.alive);

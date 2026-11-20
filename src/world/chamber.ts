@@ -79,6 +79,8 @@ export interface Chamber {
   gates: Gate[];
   /** Starts lifting a gate. */
   openGate(gate: Gate): void;
+  /** Starts dropping a lifted gate again (one that `shut`s); it is solid again when it is down. */
+  closeGate(gate: Gate): void;
   /** Pools the rat can swim in. */
   water: WaterVolume[];
   /** Hands the nearest coloured lights (lamps, braziers, beacons) to the shader. Call once per frame after update(). */
@@ -1840,7 +1842,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     } else if (d.kind === 'lever' || d.kind === 'crackwall' || d.kind === 'crackfloor') {
       // Things to hit (world/strikeables.ts, strikeModels.ts): drawn, solid, and struck by main.ts.
       const L = STRIKE.lever;
-      const t = d.kind === 'lever' ? newStrikeable('lever', d.x, d.y, d.z, L.w, L.h, L.d)
+      const t = d.kind === 'lever' ? { ...newStrikeable('lever', d.x, d.y, d.z, L.w, L.h, L.d), ...(d.timer ? { timer: d.timer, left: 0 } : {}) }
         : d.kind === 'crackwall' ? newStrikeable('crackwall', d.x, d.y, d.z, d.w, d.h, d.d, d.hits)
         : newStrikeable('crackfloor', d.x, d.y - 0.4, d.z, d.w, 0.4, d.d);
       const built = buildStrike(d, { stone: lit('cutStone'), iron: lit('wroughtIron'), plain: plainMat });
@@ -2442,6 +2444,15 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       pp.gush.puddle.scale.setScalar(Math.min(1.6, 0.2 + a * 0.7));
     }
     gates.forEach((gt, i) => {
+      // (Shut again: down quicker than it went up; solid again once it is down.)
+      if (!gt.open && gt.lift > 0) {
+        gt.lift = Math.max(0, gt.lift - dt / 0.7);
+        const gm = gateMeshes[i];
+        const k = gt.lift * gt.lift * (3 - 2 * gt.lift);
+        gm.bars.position.y = gm.baseY + k * (gt.spec.height - 0.4);
+        if (gt.lift <= 0 && !colliders.includes(gm.aabb)) colliders.push(gm.aabb);
+        return;
+      }
       if (!gt.open || gt.lift >= 1) return;
       gt.lift = Math.min(1, gt.lift + dt / 1.6);
       const gm = gateMeshes[i];
@@ -2552,6 +2563,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
   const openGate = (gate: Gate): void => {
     gate.open = true;
   };
+  const closeGate = (gate: Gate): void => {
+    gate.open = false;
+  };
 
   const ranked: typeof lightDefs = [];
   /** `extra`: lights that come and go (a patch of flame, a firefly's lantern), besides the room's own. */
@@ -2646,5 +2660,5 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     },
   } : undefined;
   const hazards = hazardSpecs.length ? { specs: hazardSpecs, show: (time: number): void => hazardLooks.forEach((b) => b.show(time)) } : undefined;
-  return { hazards, strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  return { hazards, strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, closeGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
 }
