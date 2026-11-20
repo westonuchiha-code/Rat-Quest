@@ -17,6 +17,15 @@ in the pause menu's Tweaks panel; the section to look in is given in brackets.
 - On the shield: the tuck, how high a pipe's lip launches him, the trick buttons, and whether the camera should
   follow behind him while he rides (Tweaks, "Riding" and "Camera").
 
+**The odds and ends** (household junk at a rat's size, in the Hall, the Club and 17 rooms: `src/levels/oddments.ts`)
+- Whether any stands somewhere you use: moving or removing one is one line in that file.
+- Land beside them: a matchbox's matches rattle, a die tips, a marble rolls and rocks back, a cotton reel rocks, a
+  teacup rattles and its tea slops, a spoon taps, a sardine tin's lid wobbles. Whether each is too much or too little
+  is one number in `src/world/junkModels.ts`.
+- Their little sounds (a knock for wood, bone and glass, a tink for tin and china), unheard: `src/main.ts`, by the
+  landing sound.
+- Left alone they do things too: candles drip, the teacup steams, a marble glints, a battery sparks.
+
 **Decisions only you can make, when you get to them**
 - The Forge (Test Room 7) is a try-out of a new look for the Foundry. A yes means the Foundry gets re-dressed to match.
 - The Hall's door names past the first four are placeholders.

@@ -1,11 +1,12 @@
-# What Opus changed, 2026-11-17 to 11-19 (for Fable's review)
+# What Opus changed, 2026-11-17 to 11-20 (for Fable's review)
 
-45 commits, every subject starting `[opus]`: `git log --grep='^\[opus\]'`. In `src/`: 43 files, about 1,950 lines in and
-390 out. The suite went from 3,839 checks in 101 suites to 4,155 in 107, all passing, types clean.
+51 commits, every subject starting `[opus]`: `git log --grep='^\[opus\]'`. In `src/`: 43 files, about 2,110 lines in and
+391 out. The suite went from 3,839 checks in 101 suites to 4,169 in 107, all passing, types clean.
 
 **The four files where a small change breaks something far away.** `src/player/controller.ts`, `src/combat/combat.ts`
-and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 12 commits, listed under the group each
-belongs to below (marked *main.ts*), and a twelfth: on landing it calls `chamber.thump` (a matchbox's matches rattle). Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
+and `src/camera/followCamera.ts`: **not touched**. `src/main.ts`: touched by 13 commits, listed under the group each
+belongs to below (marked *main.ts*); the last ones add a few lines by the landing sound: it calls `chamber.thump`, and
+plays a quiet knock or tink for each kind of odd-and-end that answered. Read those diffs line by line: `git log --grep='^\[opus\]' -p -- src/main.ts`.
 
 ## 1. Changes to how the game PLAYS (review these first)
 
@@ -42,7 +43,9 @@ deliberately broken version. The Hall: 2,020 draw calls at the start of the week
 ## 3. New things to look at (no effect on play beyond being solid)
 
 20 household objects (`world/junkModels.ts`, sizes and solids `JUNK` in `world/layout.ts`), all in the level editor.
-A candle gives light and drips; a reel's thread sways; a teacup steams; a marble glints. Textures on the Club's
+A candle gives light and drips; a reel's thread sways; a teacup steams; a marble glints; a battery sparks. Landing beside
+one (`chamber.thump`) makes a matchbox's matches rattle, a die tip, a marble roll, a reel rock, tea slop, a spoon tap, a
+sardine lid wobble: each moving part is tagged `userData.moves` so the gathering leaves it alone (tests/oddments.ts). Textures on the Club's
 furniture, banners, torches, shelves, pipes, chains, lamps, gauges, roots, speaker, dartboard (seven new painted
 textures in `render/textures.ts`). Title boards say the old name and TEST ROOM N. Drop-in fonts and voices
 (`assets/fonts`, `assets/voices`). An icon for the page.
