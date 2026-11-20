@@ -135,6 +135,30 @@ check('in all, a few dozen about the levels', count >= 40, `${count}`);
   }
   check('...the marble never rolls further than a fifth of its width, even landed on hard right beside it (it stays inside its solid)', far > 0.05 && far <= JUNK.marble.w / 5 + 1e-9, `${far.toFixed(3)} of ${(JUNK.marble.w / 5).toFixed(3)}`);
 }
+{
+  // A cotton reel rocks on its rim; a teacup's tea slops and the cup rattles. Both settle level again.
+  const ch = buildChamber({ solids: [], pit: null, water: [], movers: [], decor: [
+    { kind: 'junk', what: 'spool', x: 0, y: 0, z: 0, yaw: 0.3 },
+    { kind: 'junk', what: 'teacup', x: 10, y: 0, z: 0, yaw: 2 },
+  ] } as never);
+  const reel = ch.group.children.find((o) => o.position.x === 0 && o.type === 'Group')!.children.find((o) => o.userData.moves)!;
+  const cup = ch.group.children.find((o) => o.position.x === 10 && o.type === 'Group')!;
+  let tea: THREE.Mesh | null = null;
+  cup.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && m.geometry.type === 'CircleGeometry' && o.userData.moves) tea = m; });
+  const tilt = (o: THREE.Object3D): number => 2 * Math.acos(Math.min(1, Math.abs(o.quaternion.w)));
+  ch.update(3);
+  check('a cotton reel and a teacup each answer a landing beside them', !!reel && !!tea && ch.thump(-1.2, 0, 0, 1) === 1 && ch.thump(8.8, 0, 0, 1) === 1);
+  let reelMost = 0;
+  let teaMost = 0;
+  for (let t = 3; t < 3.8; t += 0.02) {
+    ch.update(t);
+    reelMost = Math.max(reelMost, tilt(reel));
+    teaMost = Math.max(teaMost, tilt(tea!));
+  }
+  check('...the reel rocks on its rim (less than a die does), the tea slops', reelMost > 0.03 && reelMost < 0.3 && teaMost > 0.03, `reel ${reelMost.toFixed(3)}, tea ${teaMost.toFixed(3)} radians`);
+  ch.update(8);
+  check('...and both settle level again', tilt(reel) < 1e-6 && tilt(tea!) < 1e-6);
+}
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
 if (failures) process.exit(1);

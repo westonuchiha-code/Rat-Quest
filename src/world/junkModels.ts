@@ -38,6 +38,29 @@ function jointAt(g: THREE.Group, at: THREE.Vector3): { pivot: THREE.Group; inner
   return { pivot, inner };
 }
 
+/**
+ * A landing close by makes a standing thing wobble: it tips up onto its far bottom edge (`half` out from its middle),
+ * away from him, by up to `most` radians, and drops back, twice, each time less. (A die; a cotton reel, less.)
+ */
+function tipper(g: THREE.Group, half: number, most: number): { tick: (time: number) => void; knock: (strength: number, time: number, awayX: number, awayZ: number) => void } {
+  const { pivot, inner } = jointAt(g, new THREE.Vector3());
+  let hit = { at: -99, by: 0, x: 1, z: 0 };
+  const knock = (strength: number, time: number, awayX: number, awayZ: number): void => {
+    hit = { at: time, by: strength, x: awayX, z: awayZ };
+    // (The far bottom edge is what it tips on.)
+    pivot.position.set(awayX * half, 0, awayZ * half);
+    inner.position.set(-awayX * half, 0, -awayZ * half);
+  };
+  const axis = new THREE.Vector3();
+  const tick = (time: number): void => {
+    const t = time - hit.at;
+    const tilt = t >= 0 && t < 1.5 ? hit.by * most * Math.exp(-t * 3.5) * Math.abs(Math.sin(t * 11)) : 0;
+    axis.set(hit.z, 0, -hit.x);
+    pivot.quaternion.setFromAxisAngle(axis.lengthSq() > 0 ? axis.normalize() : axis.set(0, 0, 1), tilt);
+  };
+  return { tick, knock };
+}
+
 const part = (geo: THREE.BufferGeometry, color: number, mat: THREE.Material, x = 0, y = 0, z = 0): THREE.Mesh => {
   bakeVertexColor(geo, color);
   const m = new THREE.Mesh(geo, mat);
@@ -95,7 +118,8 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     tail.rotation.z = 0.5;
     hang.add(tail);
     g.add(hang);
-    return { group: g, sway: hang };
+    // A landing close by rocks it on its rim, less than a die (it is taller, and heavier at the foot).
+    return { group: g, sway: hang, ...tipper(g, J.w / 2, 0.3) };
   }
   if (what === 'matchbox') {
     // The sleeve (a label on its top, a striking strip down its side) and the drawer pushed half out of it, matches in it.
@@ -213,22 +237,7 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
       pip(nrm[0] * h + u[0] * a * o + v[0] * b * o, h + nrm[1] * h + u[1] * a * o + v[1] * b * o, nrm[2] * h + u[2] * a * o + v[2] * b * o, nrm[0], nrm[1], nrm[2]);
     }
     // A landing close by makes it wobble: it tips up onto its far edge, away from him, and drops back, twice, less.
-    const { pivot, inner } = jointAt(g, new THREE.Vector3());
-    let hit = { at: -99, by: 0, x: 1, z: 0 };
-    const knock = (strength: number, time: number, awayX: number, awayZ: number): void => {
-      hit = { at: time, by: strength, x: awayX, z: awayZ };
-      // (The far bottom edge is what it tips on.)
-      pivot.position.set(awayX * h, 0, awayZ * h);
-      inner.position.set(-awayX * h, 0, -awayZ * h);
-    };
-    const axis = new THREE.Vector3();
-    const tick = (time: number): void => {
-      const t = time - hit.at;
-      const tilt = t >= 0 && t < 1.5 ? hit.by * 0.5 * Math.exp(-t * 3.5) * Math.abs(Math.sin(t * 11)) : 0;
-      axis.set(hit.z, 0, -hit.x);
-      pivot.quaternion.setFromAxisAngle(axis.lengthSq() > 0 ? axis.normalize() : axis.set(0, 0, 1), tilt);
-    };
-    return { group: g, tick, knock };
+    return { group: g, ...tipper(g, h, 0.5) };
   }
   if (what === 'pawn') {
     // Turned wood, black and polished: a broad foot, a collar, the body narrowing up to a neck, a ball for a head.
@@ -288,10 +297,27 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
     inside.computeVertexNormals();
     g.add(part(inside, 0xe8e2d4, mats.wax, 0, 0.08 + (J.h - 0.08) / 2, 0));
     g.add(part(new THREE.CylinderGeometry(cupR * 1.005, cupR * 0.95, 0.1, 16, 1, true), 0x4a72b8, mats.plain, 0, J.h - 0.12, 0));
-    g.add(part(new THREE.CircleGeometry(cupR * 0.8, 14).rotateX(-Math.PI / 2), 0x7a4a24, mats.plain, 0, J.h * 0.45, 0));
+    const tea = part(new THREE.CircleGeometry(cupR * 0.8, 14).rotateX(-Math.PI / 2), 0x7a4a24, mats.plain, 0, J.h * 0.45, 0);
+    tea.userData.moves = true;
+    g.add(tea);
     const handle = new THREE.TorusGeometry(0.17, 0.045, 5, 10, Math.PI * 1.3);
     handle.rotateZ(-Math.PI * 0.65);
     g.add(part(handle, 0xf4f0e8, mats.wax, cupR * 0.95 + 0.1, J.h * 0.55, 0));
+    // A landing close by: the cup rattles on its saucer and the tea in it slops, tilting away from him and back.
+    const { pivot: cupJoint } = jointAt(g, new THREE.Vector3(0, 0.08, 0));
+    let hit = { at: -99, by: 0, x: 1, z: 0 };
+    const knock = (strength: number, time: number, awayX: number, awayZ: number): void => {
+      hit = { at: time, by: strength, x: awayX, z: awayZ };
+    };
+    const axis = new THREE.Vector3();
+    const slosh = (time: number): void => {
+      const t = time - hit.at;
+      const a = t >= 0 && t < 3 ? hit.by * Math.exp(-t * 2.2) : 0;
+      cupJoint.rotation.y = a * 0.08 * Math.sin(t * 37);
+      cupJoint.position.y = 0.08 + a * 0.025 * Math.abs(Math.sin(t * 29));
+      axis.set(hit.z, 0, -hit.x);
+      tea.quaternion.setFromAxisAngle(axis.lengthSq() > 0 ? axis.normalize() : axis.set(0, 0, 1), a * 0.35 * Math.sin(t * 9));
+    };
     // Steam: three faint wisps rising off the tea, each growing and fading as it goes, one after another.
     const wisps: Array<{ m: THREE.Mesh; mat: THREE.MeshBasicMaterial; k: number }> = [];
     for (let k = 0; k < 3; k++) {
@@ -309,8 +335,12 @@ export function buildJunk(what: JunkKind, mats: JunkMats): { group: THREE.Group;
       }
     };
     for (const w of wisps) w.m.userData.moves = true;
-    steam(0);
-    return { group: g, tick: steam };
+    const tick = (time: number): void => {
+      steam(time);
+      slosh(time);
+    };
+    tick(0);
+    return { group: g, tick, knock };
   }
   if (what === 'spoon') {
     // On its back along x: the bowl, the neck, the handle widening to its end.
