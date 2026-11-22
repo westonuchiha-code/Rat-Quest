@@ -188,6 +188,8 @@ the door-opening scene played over him the moment he came in, the first time (a 
 'Reach the door', and in a showroom he starts by the door); and the Stand-in's goal was 'Defeat every enemy' of
 roaches that come back. FIXED: the eight showrooms have `goals: NO_GOALS` (levels/custom.ts), and a room with no
 goals is marked cleared as he arrives however it was opened (main.ts, by the level load).
+(The owner rejected this as a fix, 2026-11-22: taking a goal away is not fixing it; and test-room goals are not what
+matters now. Left as it is; the real tidy-up is on the Opus list in BACKLOG.md. The lesson is in docs/KIT.md, 'BUILDING A ROOM'.)
 **And from Fable's own list, A3(c), "the camera still loses him down the chute": DONE.** Measured first (the Move
 Garden's chute, the view behind him): hidden behind the platform's lip for 15 frames. The point the view looks at
 trails above him as he drops, and it could see that point over the lip. Now, if he is below that point and it cannot

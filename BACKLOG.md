@@ -63,6 +63,33 @@ bowl and the spine, the bats on the rails, grabbing a roach after a perfect guar
 
 ---
 
+## WHERE THE TIME GOES (the owner, 2026-11-22)
+
+Nothing in the game is a finished level. Every room is a TEST ROOM: a playground for getting the feel of a kind of area
+right, so real levels can be built later. Most rooms will be changed or deleted. Do not make test rooms completable or
+polished. What is a placeholder and what is not: `docs/STATUS.md`.
+
+**Priorities, in order:** (1) how each kind of area FEELS (physics, and the knight's handling per area); (2) enemies and
+environmental hazards; (3) the knight's movement and animation.
+
+**FOR FABLE, in this order:** 1. Snow and ice feel (handling and the knight's animation for it; one room, one film, the
+owner's verdict before anything else). 2. Speed room feel. 3. Enemies and hazards matched to each feel. 4. Knight
+animation polish where the feels expose gaps. Fable is only here a day or two at a time: spend it on these, nothing else.
+
+**FOR OPUS LATER (not breaking anything, so it waits):**
+- Movement and animation for the other playable characters (B13). They are placeholders, and LOW: the owner has no time
+  to playtest each one.
+- Fire and castle feels, once the pattern is proven on ice and speed.
+- The remaining enemy designs (B14).
+- The room-goal tidy-up: decide each showroom's goal on purpose (`NO_GOALS` on rooms 12-19 is a rejected first fix, left
+  for now). The Stand-in's roaches should stop respawning if its goal is to defeat them.
+- Small tidy-ups.
+
+**Working rules:** small edits and notes go to a cheaper model or subagent. Full test runs and films only when a piece is
+ready for the owner to judge. Tell the owner before each piece what is about to be done and why.
+
+---
+
 ## PART A. FOR FABLE FIRST (hardest at the top)
 
 **A1. Each waking biome its own feel, starting with the Sewers (Dark Souls).**

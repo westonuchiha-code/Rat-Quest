@@ -7,6 +7,13 @@ on later". The levels will be laid out again, so nothing here is placed in them:
 its own (the Workshop, Test Room 12, `#level=workshop`), and listed here: what it is, how to put one in, its numbers,
 and the test that holds it.
 
+> **BUILDING A ROOM: decide its goal on purpose.** On 2026-11-22 the smoke check flagged goals in Test Rooms 12-19:
+> rooms where "reach the door" was done the instant the knight arrived, and one (the Stand-in) whose goal was "defeat
+> every enemy" with roaches that respawn forever. The level builder did not choose those goals; the model building the
+> room did, by not thinking about it. The first fix only removed the goals, and the owner rejected that: if enemies keep
+> respawning and the goal is to defeat them, the fix is to stop them respawning, not delete the goal. So: decide what the
+> player is there to do, check it can be done with what is in the room, and write that in the room file's header comment.
+
 ## Moving platforms (`src/world/platforms.ts`; `tests/platforms.ts`)
 
 A moving platform is a `MoverSpec` in a level's `movers` (src/world/layout.ts). Its `motion` says how it moves. In the

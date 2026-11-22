@@ -9,6 +9,11 @@ happened before, day by day and in the owner's words, is kept unchanged in `docs
 every unfixed thing in one list and the owner's standing rules. It points on to `docs/ROOMS.md`, `docs/KIT.md` and
 `docs/ENEMY-IDEAS.md`.
 
+**WHAT MATTERS NOW (the owner, 2026-11-22):** nothing here is a finished level. Every room is a test room, there to
+get the feel of a kind of area right so real levels can be built later. The work is, in order: area feel, then enemies
+and hazards, then the knight's movement and animation. Read BACKLOG.md, "WHERE THE TIME GOES", and docs/STATUS.md before
+choosing what to do. Do not polish placeholders.
+
 **BEFORE ANY BUILD IS SENT: the smoke check** (`npm run smoke`, `scripts/smoke.mjs`; `bash scripts/deliver.sh` runs it
 itself and stops if it fails). It opens the built game in a headless browser, presses the pad and reads where he is:
 the knight must walk, jump and swing, a played character must move, no page may throw. `npm run test:all` does NOT
