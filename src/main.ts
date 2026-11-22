@@ -1149,6 +1149,8 @@ function startGame(): void {
   let zoneStride = 1;
   /** A crusher came down on him this step (it is struck after the fight is resolved). */
   let crusherHit = false;
+  /** What being pinned against a ceiling did to him this step (shown after the fight is resolved). */
+  let pinnedHit: 'hit' | 'killed' | null = null;
   /** The hazards' memory of which creature they last struck, and when. */
   const hazardFoes = new HazardFoes();
   /** (All its jets, for what is heard of them; and whether each was letting gas go at the last look.) */
@@ -2365,7 +2367,8 @@ function startGame(): void {
     const p = player.position;
     if (!pinnedUnder(p, chamber.colliders, chamber.movers.map((m) => m.aabb), chamber.carry)) return;
     const result = player.takeHit(p.x, p.z, 1);
-    if (result === 'hit' || result === 'killed') events.playerResult = result;
+    // (Kept till the fight is resolved, which clears what hit him before it: or the hurt was never shown or heard.)
+    if (result === 'hit' || result === 'killed') pinnedHit = result;
     if (player.dead) return;
     p.copy(lastSafe);
     player.prevPosition.copy(lastSafe);
@@ -2902,6 +2905,11 @@ function startGame(): void {
     lavaStep();
     // A firefly's flames: whoever stands in them is burned (no roll or shield helps). In the Ember Helm he walks through.
     resolveFlames(player, flames, FIREFLY.burn, events);
+    // Pinned against a ceiling by a platform (crushCheck, before his step): the hurt it did is shown now.
+    if (pinnedHit) {
+      events.playerResult = pinnedHit;
+      pinnedHit = null;
+    }
     // A crusher came down on him (world/platforms.ts 'crush'): a heavy blow, from right over him.
     if (crusherHit) {
       crusherHit = false;

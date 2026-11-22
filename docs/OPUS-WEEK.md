@@ -158,9 +158,18 @@ within a step (0.35) of a ledge's top, he is inside its edge for 3-4 frames befo
 
 ## 5. EVERYTHING NOT FIXED, OR WORTH YOUR EYE (in one place)
 
+**FABLE'S REVIEW, 2026-11-22 (first pass).** The suite re-run: 4,502 pass. The three knight's files: no change in the
+whole range. No test deleted; no existing test left with fewer checks. Read: main.ts's changes. Found and FIXED: (1) a
+played character undid whatever else moved the knight (he is copied over the knight each step): a belt, a circling
+platform, a fan, a launcher, the put-back after a fall, coming back from being beaten: the join now passes on what was
+done to the knight's place and speed since the last step (`critterAt`, `critterVel`); (2) the `crushCheck` hurt that
+was never shown (kept in `pinnedHit` till after `resolveCombat`). JUDGED AND LEFT: the parry of the Spark Beetle's
+burst (the game's rule everywhere, and hard to do), and the 3-4 frames inside a ledge's edge at the top of a jump (the
+controller's ledge forgiveness, as designed). NOT YET READ line by line: the rooms' and parts' own files.
+
 **Bugs found and left (yours to judge):**
-- `crushCheck` in main.ts sets `events.playerResult` before `resolveCombat` clears it: pinned against a ceiling by a
-  crusher, he is hurt without the hurt being shown or heard.
+- (FIXED by Fable, 11-22) `crushCheck` in main.ts set `events.playerResult` before `resolveCombat` cleared it: pinned
+  against a ceiling, he was hurt without the hurt being shown or heard.
 - At the top of a jump, feet just under a ledge's top, he passes into its edge for 3 or 4 frames before the controller
   lifts him onto it (its leniency for a ledge just made). `tests/chaos.ts` allows 8 frames in that band.
 - A shield raised on the very moment PARRIES the Spark Beetle's burst (the controller's rule for every blow; a shield
