@@ -25,6 +25,14 @@ DIST=dist-plain node scripts/make-single.mjs ratquest-nopad.html >/dev/null
 rm -rf dist-plain
 cp dist-single/ratquest.html dist-single/ratquest-editor.html dist-single/ratquest-nopad.html "$OUT"/
 
+# THE SMOKE CHECK (scripts/smoke.mjs): the file just built is opened in a headless browser and played a little: the
+# knight must walk, jump and swing, a played character must move, no page may throw. A build that fails is not sent.
+# (2026-11-20 to 22, every build sent had a knight who could not move, and nothing said so.)
+if ! node scripts/smoke.mjs "$OUT/ratquest.html"; then
+  echo "deliver: THE SMOKE CHECK FAILED. Do not send these files." >&2
+  exit 1
+fi
+
 # The variants: a small script right after <head> sets the start (only if no #hash was given, except the test room).
 node -e '
 const fs = require("fs");

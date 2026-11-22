@@ -3611,6 +3611,8 @@ function startGame(): void {
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
+  // (For the smoke check, scripts/smoke.mjs: where he is and what he is doing, read from outside the game.)
+  (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp, as: critter?.look ?? null });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
   (window as unknown as { __cost?: () => unknown }).__cost = () => {
     let meshes = 0;

@@ -179,7 +179,10 @@ knight's own `player.update` was dropped from the branch where no character is p
 sent from then until 11-22. No test saw it: none runs main.ts, and every film since was of a character. Found filming
 the knight for the camera work below. FIXED (the line is back, word for word), and `tests/critters.ts` now reads
 main.ts's text for both steps (shown to fail with the line taken out). **The lesson for whoever is next: after any
-change to main.ts, film the KNIGHT walking, not only the new thing.**
+change to main.ts, film the KNIGHT walking, not only the new thing.** And so that nobody has to remember: THE SMOKE
+CHECK (`scripts/smoke.mjs`, `npm run smoke`; run by `scripts/deliver.sh`, which stops if it fails): the built game
+opened in a headless browser and played through `&autopad`, read through `window.__probe` (main.ts): the knight walks,
+jumps, swings; the Hall opens; three characters move; no page error. Shown to fail (four checks) with the line out.
 **And from Fable's own list, A3(c), "the camera still loses him down the chute": DONE.** Measured first (the Move
 Garden's chute, the view behind him): hidden behind the platform's lip for 15 frames. The point the view looks at
 trails above him as he drops, and it could see that point over the lip. Now, if he is below that point and it cannot
