@@ -25,6 +25,14 @@ export type PieceType =
   | 'lever' | 'crackwall' | 'crackfloor' | 'belt' | 'blade' | 'spikes' | 'fan' | 'flamejet'
   | 'floorkey' | 'chime' | 'bell'
   | 'stairs' | 'ramp' | 'lift' | 'mark' | 'spawn' | 'exit' | 'wedge';
+/**
+ * A SHOWROOM has no goals (the kit's rooms, Test Rooms 12 to 19): nothing to clear, its door open from the start. A
+ * room built here with none of its own is given 'Reach the door'; in a showroom he starts BY the door, so that was
+ * done as he arrived and the door-opening scene held him for its length the first time he came into each. (And the
+ * Stand-in's was 'Defeat every enemy', of roaches that come back: never done.) Found by scripts/smoke.mjs, 2026-11-22.
+ */
+export const NO_GOALS: LevelDef['goals'] = [];
+
 /** A button plate puts its creature this far off, the way it is set; and no more than this many of them alive at once. */
 export const BUTTON_OUT = 6;
 export const BUTTON_MOST = 6;

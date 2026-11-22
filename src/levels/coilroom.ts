@@ -13,7 +13,7 @@
  * before its hit: climb to the beat.
  * By the way in, the COIL KEYS: an octave of keys on the floor and a small coil of their own that sings each one.
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor } from '../world/layout';
 import type { Lane } from '../world/teslaCoil';
@@ -76,5 +76,5 @@ export function coilRoom(): LevelDef {
   ];
   // Two Spark Beetles on the floor round the coil's foot (enemies/sparkBeetle.ts): charged on the snare, soft between.
   const beetles = BEETLES.map(([x, z]) => ({ type: 'sparkbeetle' as const, x, y: 0, z, arena: { x0: -HX + 1, x1: HX - 1, z0: -HZ + 1, z1: 5 }, respawn: true, uncounted: true }));
-  return { ...def, decor: [...def.decor, ...parts], enemies: [...def.enemies, ...beetles] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...parts], enemies: [...def.enemies, ...beetles] };
 }

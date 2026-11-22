@@ -13,7 +13,7 @@ every unfixed thing in one list and the owner's standing rules. It points on to 
 itself and stops if it fails). It opens the built game in a headless browser, presses the pad and reads where he is:
 the knight must walk, jump and swing, a played character must move, no page may throw. `npm run test:all` does NOT
 run main.ts; this does. (For two days in November every build sent had a knight who could not move.) After any change
-to `src/main.ts`, run it.
+to `src/main.ts`, run it. `npm run smoke -- --rooms` also opens every room and moves him in each (a few minutes).
 
 **Read in this order:** `docs/OPUS-WEEK.md`; this file; then `BACKLOG.md` (what is left, hardest first: Part A is
 Fable's, Part B Opus's, every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on

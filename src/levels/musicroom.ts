@@ -11,7 +11,7 @@
  * nook in the west wall as the pads' opens one in the east.
  * How they play: world/musicFloor.ts. Both are kit parts (docs/KIT.md): `floorkey` and `chime` decor.
  */
-import { compileCustom, type CustomLevel } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel } from './custom';
 import type { LevelDef } from './types';
 import type { Decor, GateSpec } from '../world/layout';
 
@@ -104,5 +104,5 @@ export function musicRoom(): LevelDef {
     { x: PRIZE.mouth, z: PRIZE.z, width: PRIZE.half * 2, height: PRIZE.gate, alongZ: true, echo: 'echo' },
     { x: BELL_PRIZE.mouth, z: BELL_PRIZE.z, width: BELL_PRIZE.half * 2, height: BELL_PRIZE.gate, alongZ: true, echo: 'bells' },
   ];
-  return { ...def, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...bells(), ...boards], gates: [...(def.gates ?? []), ...gates] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...pianoKeys(), ...echoPads(), ...bells(), ...boards], gates: [...(def.gates ?? []), ...gates] };
 }

@@ -11,7 +11,7 @@
  * A cheese crumb at the end of each, for something to reach. A button in front of each bay puts a roach into it, to see
  * the hazard act on a creature: carried, struck, blown off the fan. Kit parts (docs/KIT.md): `belt`, `blade`, `spikes`, `fan`.
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor } from '../world/layout';
 
@@ -98,5 +98,5 @@ export function gauntlet(): LevelDef {
     sign(GAUNTLET.spikes, ['SPIKES', 'up for a moment in every three,', 'a warning poke first']),
     sign(GAUNTLET.fans, ['FANS', 'stand in the air and it lifts', 'him: one runs, one stops']),
   ];
-  return { ...def, decor: [...def.decor, ...parts] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...parts] };
 }

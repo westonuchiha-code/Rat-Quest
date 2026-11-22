@@ -9,7 +9,7 @@
  * In each nook, a cheese crumb, for something to find. Kit parts (docs/KIT.md): `lever`, `crackwall`, `crackfloor`
  * decor, and a gate's `levers`.
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor, GateSpec } from '../world/layout';
 
@@ -96,5 +96,5 @@ export function breakYard(): LevelDef {
     { x: YARD.twoLevers, z: NOOK.front, width: 5, height: NOOK.gate, levers: [1, 2] },
     { x: RACE.pen.x1 + 0.25, z: RACE.gate.z, width: RACE.gate.half * 2, height: NOOK.gate, alongZ: true, levers: [3], shut: true },
   ];
-  return { ...def, decor: [...def.decor, ...parts], gates: [...(def.gates ?? []), ...gates] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...parts], gates: [...(def.gates ?? []), ...gates] };
 }

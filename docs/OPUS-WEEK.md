@@ -183,6 +183,11 @@ change to main.ts, film the KNIGHT walking, not only the new thing.** And so tha
 CHECK (`scripts/smoke.mjs`, `npm run smoke`; run by `scripts/deliver.sh`, which stops if it fails): the built game
 opened in a headless browser and played through `&autopad`, read through `window.__probe` (main.ts): the knight walks,
 jumps, swings; the Hall opens; three characters move; no page error. Shown to fail (four checks) with the line out.
+`--rooms` (a few minutes) opens EVERY room (46) and moves him in each. Its first run found: (6) in Test Rooms 12 to 18
+the door-opening scene played over him the moment he came in, the first time (a room built with no goals is given
+'Reach the door', and in a showroom he starts by the door); and the Stand-in's goal was 'Defeat every enemy' of
+roaches that come back. FIXED: the eight showrooms have `goals: NO_GOALS` (levels/custom.ts), and a room with no
+goals is marked cleared as he arrives however it was opened (main.ts, by the level load).
 **And from Fable's own list, A3(c), "the camera still loses him down the chute": DONE.** Measured first (the Move
 Garden's chute, the view behind him): hidden behind the platform's lip for 15 frames. The point the view looks at
 trails above him as he drops, and it could see that point over the lip. Now, if he is below that point and it cannot

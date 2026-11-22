@@ -7,7 +7,7 @@
  *   FLOOR JETS    a corridor with flame jets in its floor, shooting up one after another.
  * A cheese crumb at the end of each. Ice, the other hazard asked for, was already a kit part: the editor's Ice floor.
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor, MoverSpec } from '../world/layout';
 
@@ -70,5 +70,5 @@ export function press(): LevelDef {
     sign(PRESS.wallJets, ['WALL JETS', 'a blue pilot flame,', 'then fire across']),
     sign(PRESS.floorJets, ['FLOOR JETS', 'up one after another:', 'the Ember Helm keeps it off']),
   ];
-  return { ...def, movers: [...(def.movers ?? []), ...movers], decor: [...def.decor, ...parts] };
+  return { ...def, goals: NO_GOALS, movers: [...(def.movers ?? []), ...movers], decor: [...def.decor, ...parts] };
 }

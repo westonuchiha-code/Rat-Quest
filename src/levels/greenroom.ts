@@ -8,7 +8,7 @@
  * Each can be talked to. Each kind has a voice (audio/speech.ts), a portrait (npc/portrait.ts) and can be cast in a
  * cutscene (cutscene/stage.ts).
  */
-import { compileCustom, type CustomLevel } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel } from './custom';
 import type { LevelDef } from './types';
 import { TABLE, stoolSolids, tableSolids, type Decor } from '../world/layout';
 import type { NpcSpec } from '../npc/npc';
@@ -69,5 +69,5 @@ export function greenRoom(): LevelDef {
       'This flower? A thistle. Named after me. Or I was named after it. One of us was first.',
     ] },
   ];
-  return { ...def, decor: [...def.decor, ...decor], solids: [...def.solids, ...solids], npcs: [...(def.npcs ?? []), ...npcs] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...decor], solids: [...def.solids, ...solids], npcs: [...(def.npcs ?? []), ...npcs] };
 }

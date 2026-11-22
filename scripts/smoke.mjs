@@ -6,12 +6,13 @@
 // main.ts): the knight must walk, jump and swing; a played character must move; the Hall must open; and no page may
 // throw an error. `bash scripts/deliver.sh` runs it on what it has just built, and stops if it fails.
 //
-//   node scripts/smoke.mjs [path/to/ratquest.html]      (default: ../deliver/ratquest.html, then dist-single/)
+//   node scripts/smoke.mjs [path/to/ratquest.html] [--rooms]      (default: ../deliver/ratquest.html, then dist-single/)
+//   --rooms: every room as well (a few minutes): each opens with no error and he can move in it.
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const given = process.argv[2];
+const given = process.argv.slice(2).find((a) => !a.startsWith('--'));
 const file = [given, '../deliver/ratquest.html', 'deliver/ratquest.html', 'dist-single/ratquest.html'].filter(Boolean).map((p) => path.resolve(p)).find((p) => fs.existsSync(p));
 if (!file) {
   console.log('smoke: no built game to open (build it first: bash scripts/deliver.sh)');
@@ -89,6 +90,26 @@ for (const who of ['bramble', 'vix', 'jinx']) {
   // (As the owner opens it: no address at all. It must come up without an error.)
   const r = await play('', () => false, 5);
   check('opened with no address, as the owner opens it: no error on the page', r.errors.length === 0, r.errors[0] ?? '');
+}
+if (process.argv.includes('--rooms')) {
+  // EVERY ROOM (asked for with --rooms: it takes a few minutes): each opens, with no error, and he can move in it
+  // (the stick pushed each way in turn: he starts facing a wall in some).
+  const page = await browser.newPage();
+  await page.goto(`file://${file}#level=hall&${quiet}`);
+  let rooms = [];
+  for (let k = 0; k < 200 && !rooms.length; k++) {
+    rooms = await page.evaluate(() => (window.__rooms ? window.__rooms() : [])).catch(() => []);
+    await wait(100);
+  }
+  await page.close();
+  check('the game says which rooms it has', rooms.length > 30, `${rooms.length} rooms`);
+  const bad = [];
+  for (const id of rooms) {
+    const r = await play(`level=${id}&${quiet}&autopad=2:N,2:U+,3.2:E,4.4:S,5.6:W`, (q) => q.far > 1, 9);
+    const why = r.errors[0] ?? (r.first?.room !== id ? `opened ${r.first?.room ?? 'nothing'}` : r.far <= 1 ? `he went only ${r.far.toFixed(1)}` : '');
+    if (why) bad.push(`${id}: ${why}`);
+  }
+  check(`every room opens with no error, and the knight can move in it (${rooms.length} rooms)`, bad.length === 0, bad.join('; '));
 }
 await browser.close();
 console.log(failures ? `\nsmoke: ${failures} FAILED` : '\nsmoke: all passed');

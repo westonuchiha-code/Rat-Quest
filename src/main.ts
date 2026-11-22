@@ -1884,7 +1884,9 @@ function startGame(): void {
     // A sub-area's door back out is open from the start: unless the area asks something of him first (the Long
     // Drop's way out opens when the Widow is beaten; he walked out past her, the first time she was put in).
     // (And the Club's, now that it is a room off the Hall: it leads back there.)
-    if ((def.returnTo || (def.hub && !noWayOut(def))) && def.goals.length === 0) levelProgress.markCleared(def.id);
+    // (A room with no goals has nothing to clear: its door is open as he arrives, with no scene. However it was come
+    // to: opened by its address it has no `returnTo`, and the door-opening scene played over him at once.)
+    if ((def.returnTo || !def.hub || !noWayOut(def)) && def.goals.length === 0 && !def.wedges) levelProgress.markCleared(def.id);
     // Doors to other areas (the Club's world doors, or a world's doors into its side areas), each with a sign.
     const doors = doorsOf(def);
     if (doors.length) {
@@ -3612,7 +3614,8 @@ function startGame(): void {
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the smoke check, scripts/smoke.mjs: where he is and what he is doing, read from outside the game.)
-  (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp, as: critter?.look ?? null });
+  (window as unknown as { __rooms?: () => string[] }).__rooms = () => [...new Set([...LEVELS, ...TEST_ROOMS].map((l) => l.id))];
+  (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp, as: critter?.look ?? null, busy: cutscene.active ? 'cutscene' : trans.active ? 'door' : story.scene ? 'story' : dialog.open ? 'talk' : menu.open ? 'menu' : boot.blocking ? 'boot' : '' });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
   (window as unknown as { __cost?: () => unknown }).__cost = () => {
     let meshes = 0;

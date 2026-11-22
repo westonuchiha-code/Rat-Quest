@@ -14,7 +14,7 @@
  * go out of step, a crossing that opens and closes) and PATH (a loop of waypoints: along, up, back, down, carrying him
  * up to a high ledge).
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor, MoverSpec } from '../world/layout';
 
@@ -94,5 +94,5 @@ export function workshop(): LevelDef {
     { kind: 'sign', x: F.blink + 6, y: 5, z: HZ - 0.06, yaw: Math.PI, w: 7, h: 2, lines: ['BLINK', 'there, gone, there: flickers first'], post: 0 },
     { kind: 'sign', x: F.path, y: 5, z: HZ - 0.06, yaw: Math.PI, w: 7, h: 2, lines: ['PATH', 'a loop of waypoints, any shape'], post: 0 },
   ];
-  return { ...def, decor: [...def.decor, ...boards, ...fronts], movers: [...(def.movers ?? []), ...front] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...boards, ...fronts], movers: [...(def.movers ?? []), ...front] };
 }

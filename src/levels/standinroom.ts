@@ -14,7 +14,7 @@
  *   the DEEP POOL: a crumb on the bottom (only a turtle gets down to it: one dives, one walks the bottom);
  *   three ROACHES that come back, to try everything on; pots by the way in.
  */
-import { compileCustom, type CustomLevel, type Piece } from './custom';
+import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom';
 import type { LevelDef } from './types';
 import type { Decor } from '../world/layout';
 import type { NpcSpec } from '../npc/npc';
@@ -141,5 +141,5 @@ export function standInRoom(): LevelDef {
     lines: [...LINES[look], 'I will stand here and be you. Come and talk to yourself when you want to swap back.'],
     swap: { as: look, back: ['So this is what it is like, being the hero. Mostly standing about in a helmet.', 'Had enough? Right. Swap back. Here we go.'] },
   }));
-  return { ...def, decor: [...def.decor, ...signs], npcs: [...(def.npcs ?? []), ...npcs] };
+  return { ...def, goals: NO_GOALS, decor: [...def.decor, ...signs], npcs: [...(def.npcs ?? []), ...npcs] };
 }
