@@ -279,6 +279,9 @@ function startGame(): void {
   /** The character being played (his controller and his body), and which he is; what he did since last drawn. */
   let critter: { ctl: Playable; view: PlayableView; look: PatronLook } | null = null;
   let critterShow: CritterEvents | null = null;
+  /** Where the played character last left the knight, and how fast: what moved him since is passed on (see the join). */
+  const critterAt = new THREE.Vector3();
+  const critterVel = new THREE.Vector3();
   /** Which character is to be played now: by the swap, by the level, or by the address (`#as=jinx`). */
   const playLook = (): PatronLook | null => {
     if (swappedAs) return swappedAs;
@@ -2595,8 +2598,15 @@ function startGame(): void {
         made.ctl.facing = player.facing;
         critter = { ...made, look };
         scene.add(critter.view.root, critter.view.effects);
+        critterAt.copy(player.position);
+        critterVel.copy(player.velocity);
       }
       const c = critter.ctl;
+      // What the rest of the game did to the knight since the character was last put on him is done to the character:
+      // a platform or a belt carried him, a fan or a launcher threw him, he was put back after a fall, or came back
+      // from being beaten. (Without this the character, who is copied over the knight each step, undid all of it.)
+      c.position.add(critterAt.subVectors(player.position, critterAt));
+      c.velocity.add(critterVel.subVectors(player.velocity, critterVel));
       player.update(dt, { move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false }, chamber.colliders);
       const pinned = player.dead ? 'dead' : player.state === 'hurt' ? 'hurt' : null;
       if (pinned && !c.steadfast) c.position.copy(player.position);
@@ -2605,6 +2615,8 @@ function startGame(): void {
       player.velocity.copy(c.velocity);
       player.facing = c.facing;
       player.grounded = c.grounded;
+      critterAt.copy(player.position);
+      critterVel.copy(player.velocity);
       for (const [name, vol, rate] of ev.sfx) audio.play(name as Parameters<typeof audio.play>[0], { vol, rate, priority: 5 });
       if (ev.jumped && !ev.sfx.length) audio.play('jump', { vol: 0.5, rate: 1.3, priority: 4 });
       // (Kept to be drawn and counted: a frame may hold more than one step.)
