@@ -8,6 +8,7 @@
 //
 //   node scripts/smoke.mjs [path/to/ratquest.html] [--rooms]      (default: ../deliver/ratquest.html, then dist-single/)
 //   --rooms: every room as well (a few minutes): each opens with no error and he can move in it.
+//   --doors: through every door of the Hall and back out of each room.
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -110,6 +111,59 @@ if (process.argv.includes('--rooms')) {
     if (why) bad.push(`${id}: ${why}`);
   }
   check(`every room opens with no error, and the knight can move in it (${rooms.length} rooms)`, bad.length === 0, bad.join('; '));
+}
+if (process.argv.includes('--doors')) {
+  // THE HALL'S DOORS (asked for with --doors): he is set down in each door of the Hall in turn; he must arrive in the
+  // room it leads to, with no error; then, set down in that room's way out (if it is open: a room with goals keeps
+  // it shut till they are done), he must be back in the Hall.
+  const page = await browser.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(`file://${file}#level=hall&${quiet}`);
+  const probe = () => page.evaluate(() => (window.__probe ? window.__probe() : null)).catch(() => null);
+  const until = async (ok, secs = 25) => {
+    const end = Date.now() + secs * 1000;
+    while (Date.now() < end) {
+      const s = await probe();
+      if (s && ok(s)) return s;
+      await wait(100);
+    }
+    return null;
+  };
+  await until((s) => s.room === 'hall' && !s.busy, 40);
+  const hall = await page.evaluate(() => window.__doors());
+  check('the Hall says where its doors are', hall.doors.length > 20, `${hall.doors.length} doors`);
+  const bad = [];
+  let shut = 0;
+  let back = 0;
+  for (const d of hall.doors) {
+    if (!d.to || !d.open) {
+      bad.push(`${d.to ?? 'a door to nowhere'}: not open`);
+      continue;
+    }
+    await until((s) => s.room === 'hall' && !s.busy);
+    await page.evaluate((q) => window.__put(q.x, q.y, q.z), d);
+    const there = await until((s) => s.room === d.to && !s.busy);
+    if (!there) {
+      bad.push(`${d.to}: never arrived (${(await probe())?.room}, ${(await probe())?.busy || 'free'})`);
+      await page.goto(`file://${file}#level=hall&${quiet}`);
+      await page.reload();
+      continue;
+    }
+    const room = await page.evaluate(() => window.__doors());
+    if (room.exit.wayOut && room.exit.cleared) {
+      await page.evaluate((q) => window.__put(q.x, q.y, q.z), room.exit);
+      const home = await until((s) => s.room === 'hall' && !s.busy);
+      if (home) back++;
+      else bad.push(`${d.to}: its way out did not lead back to the Hall (${(await probe())?.room})`);
+    } else {
+      shut++;
+      await page.goto(`file://${file}#level=hall&${quiet}`);
+      await page.reload();
+    }
+  }
+  await page.close();
+  check(`every door in the Hall leads to its room (${hall.doors.length}), and each room's open way out leads back (${back}; ${shut} are shut till their goals are done)`, bad.length === 0 && errors.length === 0, [...bad, ...errors.slice(0, 2)].join('; '));
 }
 await browser.close();
 console.log(failures ? `\nsmoke: ${failures} FAILED` : '\nsmoke: all passed');

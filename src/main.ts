@@ -3614,6 +3614,17 @@ function startGame(): void {
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the smoke check, scripts/smoke.mjs: where he is and what he is doing, read from outside the game.)
+  // (And for its walk through the doors: where this room's doors are and where each leads, its way out, and a hand
+  // to set him down somewhere.)
+  (window as unknown as { __doors?: () => unknown }).__doors = () => ({
+    doors: doorsOf(cur).map((d) => ({ to: d.to ?? null, x: d.door.x, y: d.door.y ?? 0, z: d.door.z, open: doorOpen(d) })),
+    exit: { x: cur.exit.x, y: cur.exit.y ?? 0, z: cur.exit.z, wayOut: !noWayOut(cur), cleared: levelProgress.cleared(cur.id), parent: parentOf(cur)?.id ?? null },
+  });
+  (window as unknown as { __put?: (x: number, y: number, z: number) => void }).__put = (x, y, z) => {
+    player.position.set(x, y, z);
+    player.prevPosition.set(x, y, z);
+    player.velocity.set(0, 0, 0);
+  };
   (window as unknown as { __rooms?: () => string[] }).__rooms = () => [...new Set([...LEVELS, ...TEST_ROOMS].map((l) => l.id))];
   (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp, as: critter?.look ?? null, busy: cutscene.active ? 'cutscene' : trans.active ? 'door' : story.scene ? 'story' : dialog.open ? 'talk' : menu.open ? 'menu' : boot.blocking ? 'boot' : '' });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
