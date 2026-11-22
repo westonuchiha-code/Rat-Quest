@@ -19,7 +19,7 @@
  * harder blows.
  */
 import { TUNING } from './tuning';
-export type FeelId = 'waking' | 'dream' | 'sewers' | 'platform';
+export type FeelId = 'waking' | 'dream' | 'sewers' | 'platform' | 'frost';
 
 export interface Feel {
   id: FeelId;
@@ -31,7 +31,8 @@ export interface Feel {
    * ON FOOT: what his running speed and his jumps (the first and the one in the air) are multiplied by, and how much
    * of gravity pulls on him while he is not on his shield. 1, 1, 1 is the waking world.
    */
-  foot: { run: number; jump: number; gravity: number };
+  /** (`grip`: how quickly he gets going and stops on ORDINARY ground there, as a share of his usual; 1 if not said.) */
+  foot: { run: number; jump: number; gravity: number; grip?: number };
   /**
    * FIGHTING: what his blows (and what he throws) do to a creature is multiplied by `dealt`; what a blow costs HIM is
    * multiplied by `taken` (and rounded to whole hearts, never less than one). 1 and 1 is the waking world.
@@ -83,6 +84,15 @@ export const FEELS: Record<FeelId, Feel> = {
     // (The numbers are TUNING.platform: Tweaks, "The platform room".)
     foot: TUNING.platform,
     fight: TUNING.platform,
+    ride: { tuck: false, trickSpeed: false, airTricks: false },
+  },
+  frost: {
+    id: 'frost',
+    name: 'The frost',
+    like: 'Slipping and sliding: nothing has much grip, and on the ice itself he scrabbles to get going, skids wide, slides on his belly to travel and digs his shield in to stop.',
+    // (The numbers are TUNING.frost and TUNING.ice.)
+    foot: TUNING.frost,
+    fight: TUNING.frost,
     ride: { tuck: false, trickSpeed: false, airTricks: false },
   },
 };

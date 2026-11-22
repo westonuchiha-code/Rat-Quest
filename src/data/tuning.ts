@@ -247,7 +247,37 @@ export const TUNING = {
    * get going, and to turn or brake against the way he is sliding): a third, so he turns wide but is not helpless.
    * He is always on his feet and steering: it is not the slide down a steep slope. His jump, and the air, are as ever.
    */
-  ice: { accel: 0.35, decel: 0.1 },
+  ice: {
+    accel: 0.35,
+    decel: 0.1,
+    /**
+     * THE BELLY SLIDE (2026-11-22, the ice feel). On ice, going at least `from`, the roll is not a roll: he throws
+     * himself down on his front and SLIDES, keeping his speed (`kick` times it as he goes down, never past `top`),
+     * slowed only a little (`drag`, a share of his speed lost each second), steered by the stick (`steer`, radians a
+     * second). It ends when he is slower than `end`, leaves the ice, jumps, swings, or digs in. Nothing shields him
+     * in it (a roll does, for a moment): it is how he travels on ice, not how he gets out of a fight.
+     */
+    belly: { from: 3.4, kick: 1.3, top: 10.5, drag: 0.12, steer: 1.5, end: 2.2 },
+    /**
+     * DIGGING IN: guard held on ice, he plants his shield's edge and is slowed by this share of his ordinary stopping
+     * (which ice cuts to `decel`, a tenth): the way to stop where he means to.
+     */
+    brake: 0.85,
+  },
+  /**
+   * THE FROST: how the ice world plays (data/feel.ts `frost`). He runs and jumps as anywhere; but NOTHING there has
+   * much grip: on its ordinary ground (rimed cobbles, packed snow) he gets going and stops at `grip` of his usual
+   * rate. On the ice itself, TUNING.ice.
+   */
+  frost: {
+    run: 1,
+    jump: 1,
+    gravity: 1,
+    dealt: 1,
+    taken: 1,
+    plunge: 1,
+    grip: 0.55,
+  },
   /**
    * Slime (the green runnel down the middle of a pipe): ON FOOT it holds him, he goes at this share of his speed.
    * (ON THE SHIELD it does nothing: it was tried as the fast line, the board's drag cut and its top speed raised, and

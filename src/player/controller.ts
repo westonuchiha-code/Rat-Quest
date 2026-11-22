@@ -11,9 +11,9 @@ import { ATTACK_CLIPS } from './animations';
 
 /** How steep the ramp a rider is climbing must be (rise over run) for him to fly off its top over one that falls away beyond: a spine's ridge. */
 const RIDGE_STEEP = 0.9;
-export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride' | 'slide';
+export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride' | 'slide' | 'belly';
 /** A move that just happened this step, for sounds and rumble. */
-export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | 'slip' | 'slideHop' | 'slideEnd' | null;
+export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | 'slip' | 'slideHop' | 'slideEnd' | 'belly' | 'bellyEnd' | null;
 /** 'parried' is a block made just as the shield came up: no shove, and the attacker reels. */
 export type HitResult = 'dodged' | 'blocked' | 'parried' | 'hit' | 'killed';
 /** 0 not plunging, 1 hanging with the sword raised, 2 diving, 3 stuck in the ground after landing. */
@@ -148,10 +148,41 @@ export class PlayerController {
     return this.grounded && !!this.groundBox?.slick;
   }
   private stickHeld = false;
+  /** On his belly on the ice (see `bellySliding`). */
+  private belly = false;
+  /** Where the stick is asking him to go, and how fast (for what his body shows on ice). */
+  private wantX = 0;
+  private wantZ = 0;
   /**
    * He is gliding: on ice, moving, the stick let go, and doing nothing else. His feet are not driving him, so he is
    * drawn braced and still, not running on the spot.
    */
+  /**
+   * ON ICE (2026-11-22, the ice feel; numbers TUNING.ice). What his body shows of it:
+   *   `bellySliding`  thrown down on his front and sliding (the roll, on ice at speed).
+   *   `scrabble`      0..1: his feet going under him without biting: setting off, or pushing against the way he slides.
+   *   `skid`          -1..1: sliding one way while he pushes another (to his left +, to his right -).
+   *   `iceBraking`    his shield's edge dug in (guard held), slowing him.
+   */
+  get bellySliding(): boolean {
+    return this.belly;
+  }
+  get scrabble(): number {
+    if (!this.onIce || !this.stickHeld || this.belly || this.guarding || (this.state !== 'run' && this.state !== 'walk' && this.state !== 'idle')) return 0;
+    const want = Math.hypot(this.wantX, this.wantZ);
+    if (want < 0.5) return 0;
+    const along = (this.velocity.x * this.wantX + this.velocity.z * this.wantZ) / (want * want);
+    return Math.max(0, Math.min(1, (0.55 - along) / 0.45));
+  }
+  get skid(): number {
+    const v = Math.hypot(this.velocity.x, this.velocity.z);
+    if (!this.onIce || !this.stickHeld || this.belly || v < 2.5) return 0;
+    const off = Math.atan2(this.velocity.x * this.wantZ - this.velocity.z * this.wantX, this.velocity.x * this.wantX + this.velocity.z * this.wantZ);
+    return Math.abs(off) < 0.35 ? 0 : Math.max(-1, Math.min(1, off / 1.3)) * Math.min(1, v / 5);
+  }
+  get iceBraking(): boolean {
+    return this.onIce && this.guarding && Math.hypot(this.velocity.x, this.velocity.z) > 1;
+  }
   get gliding(): boolean {
     return this.onIce && !this.stickHeld && (this.state === 'run' || this.state === 'walk') && Math.hypot(this.velocity.x, this.velocity.z) > 0.6;
   }
@@ -445,6 +476,7 @@ export class PlayerController {
     this.kickLock = 0;
     this.wallTimer = 0;
     this.guarding = false;
+    this.belly = false;
     this.velocity.x = ax * H.knockback;
     this.velocity.z = az * H.knockback;
     if (this.grounded) this.velocity.y = 3.2;
@@ -848,7 +880,25 @@ export class PlayerController {
       this.attackTimer = -1;
       this.attackStep = 0;
       this.dodgeBuffer = 0;
-      this.startDodge(move);
+      const going = Math.hypot(this.velocity.x, this.velocity.z);
+      if (this.onIce && going >= T.ice.belly.from && !this.carrying) {
+        // ON ICE, AT SPEED, IT IS NOT A ROLL: down on his front, and he slides (TUNING.ice.belly).
+        this.belly = true;
+        const k = Math.min(T.ice.belly.kick, T.ice.belly.top / going);
+        this.velocity.x *= Math.max(1, k);
+        this.velocity.z *= Math.max(1, k);
+        this.dodgeCooldown = T.dodge.cooldown;
+        this.moveEvent = 'belly';
+      } else this.startDodge(move);
+    }
+    // The belly slide ends: slower than a crawl, off the ice, or he jumps, swings or digs in.
+    if (this.belly) {
+      const going = Math.hypot(this.velocity.x, this.velocity.z);
+      const offIce = this.grounded && !this.groundBox?.slick;
+      if (going < T.ice.belly.end || offIce || swimming || helpless || this.jumpBuffer > 0 || wantAttack || input.guardHeld || this.riding || this.sliding) {
+        this.belly = false;
+        this.moveEvent = 'bellyEnd';
+      }
     }
 
     // Air attack stages: hang, then dive until the ground, then stay stuck for a moment.
@@ -929,6 +979,19 @@ export class PlayerController {
       // Just kicked off a wall: momentum carries him out before the stick takes over again.
     } else if (this.kickFlight > 0 && !this.grounded && !swimming && this.kickCarry(move, dt)) {
       // Carried across by the kick (see kickCarry).
+    } else if (this.belly) {
+      // On his belly on the ice: he keeps his speed, loses a little of it, and leans to steer.
+      const v = Math.hypot(this.velocity.x, this.velocity.z);
+      const keep = Math.max(0, 1 - T.ice.belly.drag * dt);
+      let a = Math.atan2(this.velocity.x, this.velocity.z);
+      if (move.lengthSq() > 0.01) {
+        const want = Math.atan2(move.x, move.z);
+        const off = Math.atan2(Math.sin(want - a), Math.cos(want - a));
+        a += Math.max(-T.ice.belly.steer * dt, Math.min(T.ice.belly.steer * dt, off));
+      }
+      this.velocity.x = Math.sin(a) * v * keep;
+      this.velocity.z = Math.cos(a) * v * keep;
+      this.facing = a;
     } else {
       // (On ground too steep to stand on he scrabbles, for the moment he has before he slips: the steeper, the slower.)
       const steepUnder = this.slopeUnder();
@@ -940,7 +1003,13 @@ export class PlayerController {
       const hasInput = move.lengthSq() > 0.01;
       // (On ice he has no grip: slow to get going or to turn, and a long slide before he stops. See TUNING.ice.)
       const ice = this.onIce;
-      const accel = swimming ? T.swim.accel : this.grounded ? (hasInput ? T.move.groundAccel * (ice ? T.ice.accel : 1) : T.move.groundDecel * this.gear.grip * (ice ? T.ice.decel : 1)) : T.move.airAccel;
+      // (Where nothing has much grip, the frost, ordinary ground is slippery too: data/feel.ts `grip`.)
+      const grip = this.feel.foot.grip ?? 1;
+      // (Guard held on ice: his shield's edge dug in. He stops nearly as he would on stone.)
+      const dug = ice && this.guarding;
+      const accel = swimming ? T.swim.accel : this.grounded ? (dug ? T.move.groundDecel * this.gear.grip * T.ice.brake : hasInput ? T.move.groundAccel * (ice ? T.ice.accel : grip) : T.move.groundDecel * this.gear.grip * (ice ? T.ice.decel : grip)) : T.move.airAccel;
+      this.wantX = move.x * target;
+      this.wantZ = move.z * target;
       this.velocity.x = approach(this.velocity.x, move.x * target, accel * dt);
       this.velocity.z = approach(this.velocity.z, move.z * target, accel * dt);
     }
@@ -1987,6 +2056,8 @@ export class PlayerController {
       this.state = 'ride';
     } else if (this.sliding) {
       this.state = 'slide';
+    } else if (this.belly) {
+      this.state = 'belly';
     } else if (this.plungeStage !== 0) {
       this.state = 'plunge';
     } else if (this.attackTimer >= 0) {

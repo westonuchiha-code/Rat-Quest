@@ -67,6 +67,13 @@ export const TWEAKS: TweakDef[] = [
 
   { group: 'Riding', path: 'ride.minSlope', label: 'Air attack is the shield over slopes this steep or more (rise over run)', min: 0.05, max: 2, step: 0.05 },
   { group: 'Ice', path: 'ice.decel', label: 'How much of his usual stopping he has on ice (less: he glides further)', min: 0.02, max: 1, step: 0.02 },
+  { group: 'Ice', path: 'frost.grip', label: 'In the ice world, how much grip ORDINARY ground has (1: as anywhere)', min: 0.2, max: 1, step: 0.05 },
+  { group: 'Ice', path: 'ice.brake', label: 'Guard held on ice (shield dug in): how much of his usual stopping', min: 0.1, max: 1.5, step: 0.05 },
+  { group: 'Ice', path: 'ice.belly.from', label: 'Belly slide: how fast he must be going for the roll to become one', min: 1, max: 6, step: 0.2 },
+  { group: 'Ice', path: 'ice.belly.kick', label: 'Belly slide: how much faster he goes as he throws himself down', min: 1, max: 1.6, step: 0.05 },
+  { group: 'Ice', path: 'ice.belly.top', label: 'Belly slide: the kick never takes him past this speed', min: 6, max: 16, step: 0.5 },
+  { group: 'Ice', path: 'ice.belly.drag', label: 'Belly slide: the share of his speed lost each second', min: 0, max: 1, step: 0.02 },
+  { group: 'Ice', path: 'ice.belly.steer', label: 'Belly slide: how fast he can turn it (radians a second)', min: 0.3, max: 4, step: 0.1 },
   { group: 'Ice', path: 'ice.accel', label: 'How much of his usual push he has on ice (less: slower to start, wider turns)', min: 0.05, max: 1, step: 0.05 },
   { group: 'Riding', path: 'slide.grip', label: 'Too steep: seconds he scrabbles up before he slips', min: 0, max: 1.5, step: 0.05 },
   { group: 'Riding', path: 'slide.gravity', label: 'Sliding on his hide: how hard a slope pulls him', min: 2, max: 30, step: 0.5 },

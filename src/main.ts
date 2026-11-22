@@ -1861,7 +1861,8 @@ function startGame(): void {
     scene.add(doorway.group);
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
     dreamVoices.reset();
-    for (const spec of def.enemies) addEnemy(spec);
+    // (`&nofoes`: a filming aid, the room with no creatures in it.)
+    if (!/[#&]nofoes\b/.test(location.hash)) for (const spec of def.enemies) addEnemy(spec);
     // THE DREAM'S CREATURES ARE THE WAKING WORLD'S, IN LOUD COLOURS (as its sleepers are: world/dozers.ts): the same
     // creature in all it does, its painted colours turned round the wheel. Only looks.
     if (def.look === 'dream') enemyModels.forEach((m, i) => dreamify(m.root, [0.42, 0.58, 0.3, 0.7][i % 4]));
@@ -2065,6 +2066,11 @@ function startGame(): void {
       audio.play('cloth', { vol: 0.6, priority: 4 });
     } else if (ev === 'slideHop') audio.play('ratJump', { vol: 0.5, rate: 1.1, priority: 4 });
     else if (ev === 'slideEnd') audio.play('step', { vol: 0.6, rate: 0.8, priority: 4 });
+    // (The ice: down on his belly, a whoosh and the scrape of his shield; up again, a scuff. Unheard by Claude.)
+    else if (ev === 'belly') {
+      audio.play('whoosh', { vol: 0.7, rate: 1.25, priority: 5 });
+      audio.play('land', { vol: 0.5, rate: 1.5, priority: 4 });
+    } else if (ev === 'bellyEnd') audio.play('step', { vol: 0.5, rate: 1.1, priority: 4 });
     // Onto an edge with it: iron on stone, a hard knock and a ring.
     else if (ev === 'grind') {
       // (Onto a rail out of the air: what he was doing up there is over, and not paid for.)
@@ -4619,6 +4625,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
+      ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
       throwT: player.throwProgress,
       ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,

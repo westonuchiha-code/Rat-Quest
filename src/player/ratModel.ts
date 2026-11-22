@@ -289,6 +289,11 @@ export interface RatAnimInput {
   /** Gliding on ice with the stick let go: braced, his feet still (see PlayerController.gliding). */
   glide?: boolean;
   /**
+   * ON ICE (PlayerController `bellySliding`, `scrabble`, `skid`, `iceBraking`): on his belly; how much his feet are
+   * going without biting (0..1); how hard he is sliding sideways to the way he pushes (-1..1); his shield dug in.
+   */
+  ice?: { belly: boolean; scrabble: number; skid: number; brake: boolean };
+  /**
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
    */
@@ -430,6 +435,29 @@ const SLIDE_BELLY: Pose = fullPose({
   armS: [-2.75, 0, -0.3], elbowS: -0.35, wrist: [0, 0, 0], armH: [-2.75, 0, 0.3], elbowH: -0.35, shield: [0, 0, 0],
   footS: [-0.08, 0.02, 0], footH: [0.08, 0.05, 0.02], toeS: 1.0, toeH: 1.0, tail: [0.9, 0, 0], ears: 0.9,
 });
+/**
+ * ON ICE (2026-11-22, the ice feel).
+ * THE BELLY SLIDE: flat on his front, head up to see where he is going, his shield arm thrown out ahead of him like the
+ * nose of a sledge, his sword arm swept back along his side, legs out behind, tail streaming. (Tipped flat by the code.)
+ */
+const ICE_BELLY: Pose = fullPose({
+  hipPos: [0, 0, 0], hips: [0, 0, 0], chest: [-0.25, 0, 0], head: [-1.05, 0, 0],
+  armS: [0.55, 0, -0.45], elbowS: -0.2, wrist: [0.3, 0, 0], armH: [-2.85, 0, 0.25], elbowH: -0.15, shield: [0, 0, 0],
+  footS: [-0.09, 0.03, -0.02], footH: [0.09, 0.06, 0.0], toeS: 1.1, toeH: 1.1, tail: [1.0, 0, 0.1], ears: 1,
+});
+/** DUG IN: thrown back against his own slide, heels out in front of him, his shield's edge jammed down into the ice beside him, sword arm out for balance. */
+const ICE_BRAKE: Pose = fullPose({
+  hipPos: [0, -0.13, -0.05], hips: [-0.5, -0.35, 0], chest: [0.3, 0.2, 0], head: [0.15, 0.25, 0],
+  armS: [0.5, 0, -1.2], elbowS: -0.4, wrist: [0.4, 0, 0], armH: [-0.35, 0.2, 0.75], elbowH: -0.55, shield: [0.5, 0.3, 0],
+  footS: [-0.07, 0, 0.2], footH: [0.1, 0, 0.26], toeS: -0.5, toeH: -0.5, tail: [0.5, 0, 0.3], ears: 0.8,
+});
+/** SKIDDING: both feet together and turned across the way he slides, knees bent, arms flung wide for balance. (Leaned into it by the code.) */
+const ICE_SKID: Pose = fullPose({
+  hipPos: [0, -0.1, 0], hips: [0.1, 0, 0], chest: [0.2, 0, 0], head: [-0.05, 0, 0],
+  armS: [0.2, 0, -1.25], elbowS: -0.35, wrist: [0.3, 0, 0], armH: [0.2, 0, 1.25], elbowH: -0.5, shield: [0, 0.2, 0],
+  footS: [-0.06, 0, 0.03], footH: [0.06, 0, -0.03], toeS: 0, toeH: 0, tail: [0.3, 0, 0], ears: 0.6,
+});
+
 /**
  * Getting on: he hops, throws the shield down off his arm so that it tips forward onto its face and slides in under
  * his feet, and comes down on it. (The owner, 2026-11-15: "it just seems like it's like an instant snap".) All of it is drawn
@@ -1057,6 +1085,7 @@ export class RatModel {
     this.lastDt = dt;
     const state = ctx.state;
     const grounded = state !== 'jump' && state !== 'fall' && state !== 'longjump' && state !== 'hang' && state !== 'climb';
+    // (belly: on the ice, see ICE_BELLY.)
     const moving = (state === 'walk' || state === 'run' || state === 'guard') && ctx.planarSpeed > 0.3;
     this.idleTime = state === 'idle' ? this.idleTime + dt : 0;
     this.run = ease(this.run, state === 'run' ? 1 : 0, dt, 9);
@@ -1107,6 +1136,16 @@ export class RatModel {
       pose = swimPose(this.swimPhase, this.swimMove);
       stiffness = 14;
       damping = 0.75;
+    } else if (state === 'belly') {
+      // On his belly on the ice: flat, a little bob as he goes, his tail whipping behind him; he rolls into his turns.
+      pose = fullPose(ICE_BELLY);
+      pose.tail[1] = Math.sin(this.time * 11) * 0.35;
+      pose.footS[1] += 0.02 * Math.sin(this.time * 9);
+      pose.footH[1] += 0.02 * Math.sin(this.time * 9 + 2);
+      tumbleX = 1.38;
+      lift = -0.3 + 0.012 * Math.sin(this.time * 17);
+      stiffness = 30;
+      damping = 0.85;
     } else if (state === 'plunge') {
       pose = ctx.plungeStage === 1 ? PLUNGE_WIND : ctx.plungeStage === 2 ? PLUNGE_DIVE : PLUNGE_LAND;
       stiffness = ctx.plungeStage === 3 ? 44 : 36;
@@ -1290,13 +1329,49 @@ export class RatModel {
       pose = LAND;
       stiffness = 34;
       damping = 0.75;
+    } else if (ctx.ice?.brake) {
+      // (Dug in on the ice: the shudder of the shield's edge biting comes up through him.)
+      pose = fullPose(ICE_BRAKE);
+      pose.hipPos[1] += 0.008 * Math.sin(this.time * 55);
+      pose.armH[0] += 0.04 * Math.sin(this.time * 61);
+      tumbleX = -0.22;
+      stiffness = 36;
+      damping = 0.8;
     } else if (ctx.glide) {
       // (Gliding on ice: knees bent and arms out, as after a landing, held for as long as he glides.)
       pose = LAND;
       stiffness = 14;
       damping = 0.85;
-    } else if (moving) {
-      pose = locomotionPose(this.phase, this.run);
+    } else if (moving || (ctx.ice?.scrabble ?? 0) > 0.05) {
+      const scr = ctx.ice?.scrabble ?? 0;
+      const skid = ctx.ice?.skid ?? 0;
+      // SCRABBLING: his feet go under him far faster than he does, not biting; he is bent forward over them and his
+      // arms wheel. (The stride's own clock is hurried: see below.)
+      if (scr > 0.05) this.phase += dt * Math.PI * 2 * 3.4 * scr;
+      pose = locomotionPose(this.phase, Math.max(this.run, scr));
+      if (scr > 0.05) {
+        const wheel = this.time * 19;
+        pose.chest[0] += 0.38 * scr;
+        pose.hipPos[1] -= 0.05 * scr;
+        pose.hipPos[2] -= 0.04 * scr;
+        pose.head[0] -= 0.2 * scr;
+        pose.armS[0] += 1.1 * scr * Math.sin(wheel);
+        pose.armS[2] -= 0.5 * scr;
+        pose.armH[0] += 1.1 * scr * Math.sin(wheel + 2.4);
+        pose.armH[2] += 0.5 * scr;
+        pose.tail[0] += 0.5 * scr;
+        pose.tail[1] = 0.5 * scr * Math.sin(wheel * 0.6);
+        pose.ears += 0.5 * scr;
+      }
+      // SKIDDING: sliding one way while he pushes another: feet together across the slide, leaned hard into the turn.
+      if (Math.abs(skid) > 0.05 && scr < 0.6) {
+        const k = Math.min(1, Math.abs(skid) * 1.3) * (1 - scr);
+        pose = blendPose(pose, ICE_SKID, k);
+        pose.hips[2] -= 0.4 * skid * k;
+        pose.chest[2] -= 0.25 * skid * k;
+        pose.hips[1] += 0.5 * skid * k;
+        pose.head[1] -= 0.4 * skid * k;
+      }
       stiffness = 30;
       damping = 0.9;
     } else {

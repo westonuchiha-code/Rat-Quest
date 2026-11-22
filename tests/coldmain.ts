@@ -17,6 +17,7 @@ import { buildChamber } from '../src/world/chamber';
 import { CollectibleTracker } from '../src/world/collectibles';
 import { getTexturePixels } from '../src/render/textures';
 import { TUNING } from '../src/data/tuning';
+import { FEELS, feelOf } from '../src/data/feel';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -596,6 +597,138 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     mean('iceBlock') > mean('iceSheet') * 2.2,
     `${mean('iceBlock').toFixed(0)} against ${mean('iceSheet').toFixed(0)}`
   );
+}
+
+// ---- THE ICE FEEL (2026-11-22): scrabbling, skidding, the belly slide, digging in; and the frost's poor grip ----
+{
+  const I = TUNING.ice;
+  /** On the ice sheet, at its west end, settled; or on the south bank's cobbles. */
+  const on = (where: 'ice' | 'bank', frost = true): PlayerController => {
+    const p = new PlayerController(new THREE.Vector3(-12, where === 'ice' ? 0 : 1.5, where === 'ice' ? -2.6 : 7.5));
+    if (frost) p.feel = FEELS.frost;
+    for (let k = 0; k < 60; k++) p.update(DT, inp({ run: false }), cs);
+    return p;
+  };
+  const E = new THREE.Vector3(1, 0, 0);
+  const speed = (p: PlayerController): number => Math.hypot(p.velocity.x, p.velocity.z);
+  /** Up to a run, eastward, on the ice. */
+  const running = (): PlayerController => {
+    const p = on('ice');
+    // (A second and a bit: at his run, with most of the sheet still ahead of him.)
+    for (let k = 0; k < 70; k++) p.update(DT, inp({ move: E }), cs);
+    return p;
+  };
+  check('on the sheet he is on ice, and on the bank he is not', on('ice').onIce && !on('bank').onIce);
+  // Scrabbling: setting off, his feet go without biting; up to speed, they bite.
+  {
+    const p = on('ice');
+    p.update(DT, inp({ move: E }), cs);
+    p.update(DT, inp({ move: E }), cs);
+    const start = p.scrabble;
+    for (let k = 0; k < 150; k++) p.update(DT, inp({ move: E }), cs);
+    const going = p.scrabble;
+    // ...and thrown into reverse at a run, he scrabbles again.
+    p.update(DT, inp({ move: E.clone().negate() }), cs);
+    p.update(DT, inp({ move: E.clone().negate() }), cs);
+    check('SCRABBLING: setting off on ice his feet go without biting; at a run they bite; thrown into reverse, they spin again', start > 0.8 && going < 0.05 && p.scrabble > 0.8, `${start.toFixed(2)}, ${going.toFixed(2)}, ${p.scrabble.toFixed(2)}`);
+  }
+  // Skidding: at a run one way, pushing another: a skid, to the side he is sliding to.
+  {
+    const p = running();
+    for (let k = 0; k < 6; k++) p.update(DT, inp({ move: new THREE.Vector3(0, 0, -1) }), cs);
+    const north = p.skid;
+    const q = running();
+    for (let k = 0; k < 6; k++) q.update(DT, inp({ move: new THREE.Vector3(0, 0, 1) }), cs);
+    check('SKIDDING: at a run one way and pushing across it, he skids (one way or the other by which way he pushes)', Math.abs(north) > 0.4 && Math.abs(q.skid) > 0.4 && Math.sign(north) === -Math.sign(q.skid) && running().skid === 0, `${north.toFixed(2)}, ${q.skid.toFixed(2)}`);
+  }
+  // Stopping: let go, he glides a long way; shield dug in, a short one.
+  const stopIn = (held: boolean): { far: number; dug: boolean } => {
+    const p = running();
+    const x0 = p.position.x;
+    let dug = false;
+    for (let k = 0; k < 400 && speed(p) > 0.2; k++) {
+      p.update(DT, inp({ guardHeld: held }), cs);
+      if (p.iceBraking) dug = true;
+    }
+    return { far: p.position.x - x0, dug };
+  };
+  {
+    const glide = stopIn(false);
+    const brake = stopIn(true);
+    check('DIGGING IN: guard held on ice, he stops in a fraction of the glide', brake.dug && !glide.dug && brake.far < glide.far * 0.35 && brake.far > 0.5, `${brake.far.toFixed(1)} against ${glide.far.toFixed(1)}`);
+  }
+  // The belly slide.
+  {
+    const p = running();
+    const v0 = speed(p);
+    const x0 = p.position.x;
+    p.update(DT, inp({ move: E, dodgePressed: true }), cs);
+    const down = p.state === 'belly' && p.bellySliding;
+    const kicked = speed(p);
+    for (let k = 0; k < 119; k++) p.update(DT, inp({}), cs);
+    const slid = p.position.x - x0;
+    check(
+      'THE BELLY SLIDE: the roll on ice at a run throws him on his front, faster for it, and in two seconds he has gone further than he could run',
+      down && kicked > v0 * 1.2 && kicked <= I.belly.top + 1e-6 && p.state === 'belly' && slid > v0 * 2,
+      `${v0.toFixed(1)} -> ${kicked.toFixed(1)}; ${slid.toFixed(1)} in two seconds (running: ${(v0 * 2).toFixed(1)})`,
+    );
+    // It is not a roll: a blow lands.
+    check('...and nothing shields him in it, as a roll does: a blow lands', p.takeHit(p.position.x + 1, p.position.z, 1) === 'hit' && !p.bellySliding);
+  }
+  {
+    // Steering it: the stick leans it round; he keeps his speed.
+    const p = running();
+    p.update(DT, inp({ move: E, dodgePressed: true }), cs);
+    const v0 = speed(p);
+    // (North, toward the bank, for under half a second: the turn is steady, not a snap.)
+    for (let k = 0; k < 24; k++) p.update(DT, inp({ move: new THREE.Vector3(0, 0, -1) }), cs);
+    const turned = Math.atan2(-p.velocity.z, p.velocity.x);
+    check('...the stick steers it, and he keeps his speed through the turn', p.state === 'belly' && turned > 0.45 && turned < 0.75 && speed(p) > v0 * 0.9, `turned ${turned.toFixed(2)} rad, ${v0.toFixed(1)} -> ${speed(p).toFixed(1)}`);
+    // On to the bank: it is over.
+    for (let k = 0; k < 120 && p.state === 'belly'; k++) p.update(DT, inp({ move: new THREE.Vector3(0, 0, -1) }), cs);
+    check('...off the ice onto the bank, it is over', p.state !== 'belly' && !p.onIce);
+  }
+  {
+    const p = running();
+    p.update(DT, inp({ move: E, dodgePressed: true }), cs);
+    for (let k = 0; k < 10; k++) p.update(DT, inp({}), cs);
+    p.update(DT, inp({ guardHeld: true }), cs);
+    const out = p.state !== 'belly';
+    const q = running();
+    q.update(DT, inp({ move: E, dodgePressed: true }), cs);
+    for (let k = 0; k < 10; k++) q.update(DT, inp({}), cs);
+    const before = speed(q);
+    q.update(DT, inp({ jumpPressed: true, jumpHeld: true }), cs);
+    q.update(DT, inp({ jumpHeld: true }), cs);
+    check('...guard ends it (he digs in); a jump ends it too, and he leaves the ice still going', out && q.state === 'jump' && speed(q) > before * 0.9, `${before.toFixed(1)} -> ${speed(q).toFixed(1)}`);
+  }
+  {
+    // Slow, or not on ice, the roll is a roll.
+    const slow = on('ice');
+    for (let k = 0; k < 20; k++) slow.update(DT, inp({ move: E, run: false }), cs);
+    slow.update(DT, inp({ move: E, run: false, dodgePressed: true }), cs);
+    const bank = on('bank');
+    for (let k = 0; k < 60; k++) bank.update(DT, inp({ move: E }), cs);
+    bank.update(DT, inp({ move: E, dodgePressed: true }), cs);
+    check('...too slow, or on the bank, the roll is the roll it always was', slow.state === 'dodge' && bank.state === 'dodge', `${slow.state}, ${bank.state}`);
+  }
+  {
+    // The frost: on the bank's cobbles he is slower to get going than in the waking world (and as fast once going).
+    const toRun = (frost: boolean): { frames: number; top: number } => {
+      const p = on('bank', frost);
+      let frames = 0;
+      while (frames < 300 && speed(p) < TUNING.move.run * 0.9) {
+        p.update(DT, inp({ move: E }), cs);
+        frames++;
+      }
+      for (let k = 0; k < 60; k++) p.update(DT, inp({ move: E }), cs);
+      return { frames, top: speed(p) };
+    };
+    const a = toRun(true);
+    const b = toRun(false);
+    check('THE FROST: on its ordinary ground he is slower to get going than in the waking world, and as fast once he is', a.frames > b.frames * 1.5 && Math.abs(a.top - b.top) < 0.05, `${a.frames} frames against ${b.frames}; top ${a.top.toFixed(1)}`);
+    check('the Cold Main plays as the frost', feelOf(levelById('coldmain')!).id === 'frost');
+  }
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');
