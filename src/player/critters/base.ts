@@ -205,6 +205,7 @@ export abstract class Critter {
     this.wall = null;
     this.moveAxis('x', v.x * dt, w.colliders, bounce);
     this.moveAxis('z', v.z * dt, w.colliders, bounce);
+    this.unstick(w.colliders);
     this.moveY(v.y * dt, w.colliders);
     if (this.pool) this.grounded = false;
     if (this.grounded && !was) ev.landed = Math.max(ev.landed, fall);
@@ -290,7 +291,7 @@ export abstract class Critter {
         const box = w.colliders.find((b) => q.x > b.min.x && q.x < b.max.x && q.z > b.min.z && q.z < b.max.z && q.y < topAt(b, q.x, q.z) && q.y > b.min.y);
         if (box) {
           // (Came down onto its top, or went into its side.)
-          const top = from.y >= topAt(box, from.x, from.z) - 0.02;
+          const top = from.y >= topAt(box, from.x, from.z) - 0.02 && Critter.standable(box);
           const at = q.clone();
           if (top) at.y = topAt(box, q.x, q.z);
           s.end = { at, foe: null, top, age: 0 };
@@ -314,13 +315,40 @@ export abstract class Critter {
     if (d === 0) return;
     const p = this.position;
     const r = this.radius;
+    const old = p[axis];
     p[axis] += d;
     for (const b of colliders) {
       if (!this.blocks(b, p.x, p.z, r)) continue;
+      // (Only a solid this move ran him INTO stops it. One he was already within along this way, however he came to
+      // be, is not backed out of along it: that put him out through its far side, and out of the room. See `unstick`.)
+      if (old + r > b.min[axis] + 1e-3 && old - r < b.max[axis] - 1e-3) continue;
       p[axis] = d > 0 ? b.min[axis] - r - 1e-4 : b.max[axis] + r + 1e-4;
       this.wall = axis === 'x' ? { x: d > 0 ? -1 : 1, z: 0 } : { x: 0, z: d > 0 ? -1 : 1 };
       this.velocity[axis] = bounce > 0 && Math.abs(this.velocity[axis]) > 2 ? -this.velocity[axis] * bounce : 0;
     }
+  }
+  /** Found within a solid (he stood up into it, landed half on it, was put there): out by its NEAREST side. */
+  protected unstick(colliders: Aabb[]): void {
+    const p = this.position;
+    const r = this.radius;
+    for (const b of colliders) {
+      if (!this.blocks(b, p.x, p.z, r)) continue;
+      // (Within a slope: up onto its surface, not out of its end.)
+      if (b.ramp) {
+        if (p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z) p.y = Math.max(p.y, topAt(b, p.x, p.z));
+        continue;
+      }
+      const out = [p.x + r - b.min.x, b.max.x - (p.x - r), p.z + r - b.min.z, b.max.z - (p.z - r)];
+      const least = Math.min(...out);
+      if (least === out[0]) p.x = b.min.x - r - 1e-4;
+      else if (least === out[1]) p.x = b.max.x + r + 1e-4;
+      else if (least === out[2]) p.z = b.min.z - r - 1e-4;
+      else p.z = b.max.z + r + 1e-4;
+    }
+  }
+  /** A top wide enough to stand on (not the top of a thin wall: the room's own walls among them). */
+  protected static standable(b: Aabb): boolean {
+    return b.max.x - b.min.x >= 1.5 && b.max.z - b.min.z >= 1.5;
   }
   /** The ground under him (the highest top no more than a step above his feet), or -Infinity. */
   protected groundUnder(colliders: Aabb[], step = 0.32): number {

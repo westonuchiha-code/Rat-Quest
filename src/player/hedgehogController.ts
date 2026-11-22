@@ -260,6 +260,21 @@ export class HedgehogController {
     const fallSpeed = -v.y;
     this.moveAxis('x', v.x * dt, colliders, ev);
     this.moveAxis('z', v.z * dt, colliders, ev);
+    // (Found within a solid, however he came to be: out by its nearest side.)
+    for (const b of colliders) {
+      if (!this.blocks(b, p.x, p.z, HOG.radius)) continue;
+      // (Within a slope: up onto its surface, not out of its end.)
+      if (b.ramp) {
+        if (p.x > b.min.x && p.x < b.max.x && p.z > b.min.z && p.z < b.max.z) p.y = Math.max(p.y, topAt(b, p.x, p.z));
+        continue;
+      }
+      const out = [p.x + HOG.radius - b.min.x, b.max.x - (p.x - HOG.radius), p.z + HOG.radius - b.min.z, b.max.z - (p.z - HOG.radius)];
+      const least = Math.min(...out);
+      if (least === out[0]) p.x = b.min.x - HOG.radius - 1e-4;
+      else if (least === out[1]) p.x = b.max.x + HOG.radius + 1e-4;
+      else if (least === out[2]) p.z = b.min.z - HOG.radius - 1e-4;
+      else p.z = b.max.z + HOG.radius + 1e-4;
+    }
     this.moveY(v.y * dt, colliders);
     if (this.grounded && !wasGrounded) {
       ev.landed = fallSpeed;
@@ -320,9 +335,13 @@ export class HedgehogController {
     if (d === 0) return;
     const p = this.position;
     const r = HOG.radius;
+    const old = p[axis];
     p[axis] += d;
     for (const b of colliders) {
       if (!this.blocks(b, p.x, p.z, r)) continue;
+      // (Only a solid this move ran him into: one he was already within along this way is not backed out of along it,
+      // which put a body out through its far side. critters/base.ts has the same rule, and why.)
+      if (old + r > b.min[axis] + 1e-3 && old - r < b.max[axis] - 1e-3) continue;
       // Back out to its face.
       p[axis] = d > 0 ? b.min[axis] - r - 1e-4 : b.max[axis] + r + 1e-4;
       const hit = Math.abs(this.velocity[axis]);

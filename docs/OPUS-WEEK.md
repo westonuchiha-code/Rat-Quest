@@ -165,7 +165,16 @@ platform, a fan, a launcher, the put-back after a fall, coming back from being b
 done to the knight's place and speed since the last step (`critterAt`, `critterVel`); (2) the `crushCheck` hurt that
 was never shown (kept in `pinnedHit` till after `resolveCombat`). JUDGED AND LEFT: the parry of the Spark Beetle's
 burst (the game's rule everywhere, and hard to do), and the 3-4 frames inside a ledge's edge at the top of a jump (the
-controller's ledge forgiveness, as designed). NOT YET READ line by line: the rooms' and parts' own files.
+controller's ledge forgiveness, as designed).
+**Second pass, the same day: the played characters under random hands** (`tests/critterchaos.ts`, now in the suite: two
+minutes of random buttons, three times, for each of the thirteen, in their room). It found four of them getting OUT OF
+THE ROOM, all fixed: (3) the shared wall rule (critters/base.ts and hedgehogController.ts `moveAxis`) backed a body
+out of ANY solid it overlapped along the way it was moving, so one already within a wall along that way came out of
+its far side: now only a solid the move ran him into stops it, and one he is found within puts him out by its nearest
+side (`unstick`; a slope lifts him onto its surface instead); (4) Dot cast her yarn again in the air and went up the
+room's wall: from the ground only now; (5) Jinx's mark and Dot's yarn took the top of a thin wall (the room's own) for
+a place to stand: a top must be 1.5 wide both ways (`Critter.standable`). NOT YET READ line by line: the rooms' and
+parts' own files (hazards, platforms, things to hit).
 
 **Bugs found and left (yours to judge):**
 - (FIXED by Fable, 11-22) `crushCheck` in main.ts set `events.playerResult` before `resolveCombat` cleared it: pinned

@@ -159,7 +159,8 @@ export class DotCritter extends Critter {
         this.look.tumble = 0.01;
         ev.sfx.push(['dodge', 0.5, 1.2]);
       }
-      if (input.attackPressed && this.wait <= 0) this.cast(w, ev);
+      // (From the ground only: cast again and again in the air, she went up any wall, and over the room's.)
+      if (input.attackPressed && this.wait <= 0 && this.grounded) this.cast(w, ev);
     }
     if (this.look.tumble !== 0) this.look.tumble = this.grounded ? 0 : this.look.tumble + dt * 12;
     this.turnTo(dt, input);
@@ -209,7 +210,8 @@ export class DotCritter extends Critter {
     // On its side near enough its top, she is pulled up and over onto it; else, to where it caught.
     const top = topAt(hit, Math.max(hit.min.x, Math.min(hit.max.x, at.x)), Math.max(hit.min.z, Math.min(hit.max.z, at.z)));
     const onto = new THREE.Vector3(Math.max(hit.min.x + 0.35, Math.min(hit.max.x - 0.35, at.x + f.x * 0.45)), top, Math.max(hit.min.z + 0.35, Math.min(hit.max.z - 0.35, at.z + f.z * 0.45)));
-    this.reel = top - at.y < 3 ? onto : at.clone().addScaledVector(dir, -0.4);
+    // (Onto its top only if that is wide enough to stand on: not a thin wall's, nor the room's own.)
+    this.reel = top - at.y < 3 && hit.max.x - hit.min.x >= 1.5 && hit.max.z - hit.min.z >= 1.5 ? onto : at.clone().addScaledVector(dir, -0.4);
     this.line = { to: at, t: 9 };
     ev.sfx.push(['threadTwang', 0.7, 1.4]);
   }
