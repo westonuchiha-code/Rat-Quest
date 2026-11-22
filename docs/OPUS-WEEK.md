@@ -173,7 +173,18 @@ out of ANY solid it overlapped along the way it was moving, so one already withi
 its far side: now only a solid the move ran him into stops it, and one he is found within puts him out by its nearest
 side (`unstick`; a slope lifts him onto its surface instead); (4) Dot cast her yarn again in the air and went up the
 room's wall: from the ground only now; (5) Jinx's mark and Dot's yarn took the top of a thin wall (the room's own) for
-a place to stand: a top must be 1.5 wide both ways (`Critter.standable`). NOT YET READ line by line: the rooms' and
+a place to stand: a top must be 1.5 wide both ways (`Critter.standable`).
+**Third pass: THE KNIGHT DID NOT MOVE.** When the hedgehog's join became every character's (commit 98d1b4e, 11-20), the
+knight's own `player.update` was dropped from the branch where no character is played. He stood frozen in every build
+sent from then until 11-22. No test saw it: none runs main.ts, and every film since was of a character. Found filming
+the knight for the camera work below. FIXED (the line is back, word for word), and `tests/critters.ts` now reads
+main.ts's text for both steps (shown to fail with the line taken out). **The lesson for whoever is next: after any
+change to main.ts, film the KNIGHT walking, not only the new thing.**
+**And from Fable's own list, A3(c), "the camera still loses him down the chute": DONE.** Measured first (the Move
+Garden's chute, the view behind him): hidden behind the platform's lip for 15 frames. The point the view looks at
+trails above him as he drops, and it could see that point over the lip. Now, if he is below that point and it cannot
+see his own chest, the point comes down to him at once (`DROP_RATE`) and it is drawn in past what hides HIM
+(`DROP_PULL`): hidden 0 frames, and it does not turn. `tests/camera.ts` holds it (three checks). NOT YET READ line by line: the rooms' and
 parts' own files (hazards, platforms, things to hit).
 
 **Bugs found and left (yours to judge):**

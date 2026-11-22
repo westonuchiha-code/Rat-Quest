@@ -652,5 +652,48 @@ for (const [name, x, z, yaw] of [['a wall', 10, 48 - TUNING.rat.radius - 0.02, 0
   check('the Tweaks panel has it', TWEAKS.some((t) => t.path === 'camera.rideFollowRate'));
 }
 
+// ---- GONE DOWN OUT OF ITS SIGHT (2026-11-22; the owner: "the camera still loses him down the chute") ----
+// The Move Garden's chute: off the platform and down a slope of two in one, the view behind him. The point it looks
+// at trails above him as he drops, and it could see THAT over the platform's lip while he was under it: hidden for 15
+// frames. Now the point comes down to him at once, and it is drawn in past what hides him.
+{
+  const garden = (() => {
+    const L = LEVELS.find((l) => l.id === 'garden')!;
+    return buildChamber(L as never).colliders;
+  })();
+  const pad = (o: Partial<PlayerInput> = {}): PlayerInput => ({ move: new THREE.Vector3(), run: false, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o });
+  const down = (yaw: number): { hidden: number; out: number; turned: number } => {
+    const p = new PlayerController(new THREE.Vector3(31.5, 8, 21));
+    const eye = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 200);
+    const cam = new FollowCamera(eye);
+    cam.yaw = yaw;
+    for (let k = 0; k < 120; k++) {
+      p.update(DT, pad(), garden);
+      cam.update(DT, p.position, p.facing, false, 0, 0, garden, p.velocity);
+    }
+    let hidden = 0;
+    let out = 0;
+    for (let k = 0; k < 150; k++) {
+      p.update(DT, pad({ move: new THREE.Vector3(0, 0, -1), run: true }), garden);
+      cam.update(DT, p.position, p.facing, true, 0, 0, garden, p.velocity);
+      eye.updateMatrixWorld(true);
+      const c = new THREE.Vector3(p.position.x, p.position.y + C.targetHeight, p.position.z);
+      if (sight(c, eye.position, garden, 0) < 1) hidden++;
+      const q = c.clone().applyMatrix4(eye.matrixWorldInverse);
+      if (Math.abs((Math.atan2(q.y, -q.z) * 180) / Math.PI) > 29) out++;
+    }
+    return { hidden, out, turned: Math.abs(wrap(cam.yaw - yaw)) };
+  };
+  const behind = down(0);
+  const front = down(Math.PI);
+  check(
+    'down the chute, the view behind him: he is never hidden behind the platform\'s lip, nor out of the picture',
+    behind.hidden === 0 && behind.out === 0,
+    `hidden ${behind.hidden} frames, out of the picture ${behind.out}`,
+  );
+  check('...nor with the view in front of him', front.hidden === 0 && front.out === 0, `hidden ${front.hidden}, out ${front.out}`);
+  check('...and it has not turned by itself to do it', behind.turned < 1e-6 && front.turned < 1e-6);
+}
+
 console.log(failures === 0 ? '\ncamera: all passed' : `\ncamera: ${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);

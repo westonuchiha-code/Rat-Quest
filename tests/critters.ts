@@ -6,6 +6,7 @@
 // the war dance, the owl glides and dives, the white owl hovers, and Jinx's bad luck and blink.
 import './../src/core/colorSetup';
 import * as THREE from 'three';
+import { readFileSync } from 'node:fs';
 import { makePlayable, PLAYABLE, PLAYABLE_LOOKS, type Playable } from '../src/player/critters';
 import type { CritterInput } from '../src/player/critters/base';
 import { DIGGER } from '../src/player/critters/moles';
@@ -283,6 +284,17 @@ check('the line-up: all thirteen by the way in, each with a way of their own, ea
   const [sx, jx] = [s.x, k2.position.x];
   go(k2, { guardHeld: true }, [s]);
   check('...GUARD swaps her with a jinxed roach', Math.abs(k2.position.x - sx) < 0.5 && Math.abs(s.x - jx) < 0.5, `she ${jx.toFixed(1)} -> ${k2.position.x.toFixed(1)}, it ${sx.toFixed(1)} -> ${s.x.toFixed(1)}`);
+}
+{
+  // THE KNIGHT STILL MOVES (2026-11-22). When the characters were joined to the game (main.ts), the knight's own step
+  // was dropped from the branch where no character is played: he stood frozen in every build for two days, and no
+  // test saw it (none runs main.ts; every film was of a character). main.ts cannot be run here, so its text is read:
+  // the knight's controller must be stepped WITH the pad when no character is played, and with nothing pressed when
+  // one is.
+  const main = readFileSync(`${process.cwd()}/src/main.ts`, 'utf8');
+  const withPad = main.split('player.update(dt, { move: zoneStride').length - 1;
+  const idle = main.split('player.update(dt, { move: new THREE.Vector3(), run: false').length - 1;
+  check('main.ts: the knight is stepped with the pad when no character is played, and with nothing pressed when one is', withPad === 1 && idle === 1, `with the pad ${withPad}, with nothing pressed ${idle}`);
 }
 check('nothing of any of them went to NaN', nan === 0, `${nan}`);
 

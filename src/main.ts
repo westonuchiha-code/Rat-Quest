@@ -2633,7 +2633,10 @@ function startGame(): void {
       if (critter) {
         scene.remove(critter.view.root, critter.view.effects);
         critter = null;
-      }    }
+      }
+      // (Flying from a launcher counts as holding jump: the short-hop rule is for his own jumps, not a cannon's throw.)
+      player.update(dt, { move: zoneStride < 1 ? m.clone().multiplyScalar(zoneStride) : m, run, jumpPressed, jumpHeld: jumpHeld || zones.flying, attackPressed, dodgePressed, guardHeld, stowPressed }, chamber.colliders);
+    }
     // Music underfoot (world/musicFloor.ts): a key or a pad he lands on sounds; an echo puzzle plays and listens.
     if (musicFloor && chamber.music) {
       for (const ev of musicFloor.update(dt, player.position, player.grounded && !player.dead)) {

@@ -83,7 +83,8 @@ camera; a new mark on a box must be copied in `chamber.ts`.
 **A3. The camera's known weak places.**
 (a) With the view on the wall's side at the top of a pipe wall, it looks down over the deck's edge and the deck
 fills the bottom third. (b) Knocked back against a wall (seen in the throne room in the first seconds), it goes
-overhead and shows only floor. (c) "The camera still loses him down the chute" (the Long Drop's fall). (d) The
+overhead and shows only floor. (c) DONE 2026-11-22: "the camera still loses him down the chute" (it was the Move
+Garden's chute, and any high lip: hidden 15 frames, now none; followCamera.ts `DROP_RATE`, tests/camera.ts). (d) The
 shield-follow slider (`camera.rideFollowRate`, 0) wants his verdict, and if he likes it, tuning. HARD: every camera
 change has moved something else; `tests/camera.ts` (42) must stay green.
 

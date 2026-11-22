@@ -28,6 +28,10 @@ const CHEST_CLEAR = 0.5;
 /** The ground under the point leaned ahead of him counts as the slope he is on if it is no more than this far over his chest. */
 const AHEAD_UP = 1.2;
 const RISE_RATE = 20;
+/** Gone down out of its sight (see `update`): how far below the point it looks at he must be, and how fast that point then comes down to him. */
+const DROP_UNDER = 0.25;
+const DROP_RATE = 40;
+const DROP_PULL = 45;
 const LIFT_STEP = 0.07;
 /** Pulled in to less than this much of its distance it starts to go up over his head; at the second, it is all the way up. */
 const SQUEEZE_FROM = 0.55;
@@ -112,6 +116,8 @@ export class FollowCamera {
   lookingUp = 0;
 
   private readonly camera: THREE.PerspectiveCamera;
+  /** This step, he has gone down out of its sight (see `update`). */
+  private droppedFromSight = false;
   private readonly pos = new THREE.Vector3();
   /** The middle of him (his chest), and the point the view is built round: that, leaned the way he is running. */
   private readonly chest = new THREE.Vector3();
@@ -213,7 +219,22 @@ export class FollowCamera {
 
     // The view follows him sideways closely but rides up and down gently, so hops and landings do not jolt it.
     if (fresh) this.smoothY = focus.y;
-    this.smoothY += (focus.y - this.smoothY) * (1 - Math.exp(-C.heightRate * dt));
+    // GONE DOWN OUT OF ITS SIGHT, IT COMES DOWN AFTER HIM AT ONCE. (The owner: "the camera still loses him down the
+    // chute".) Its height comes after his gently, so the point it looks at trails up to `heightSlack` above him as he
+    // drops: over the lip of a ledge or the top of a steep slope it could see THAT point, and so did nothing, while he
+    // himself was under the edge and out of sight for a third of a second. If he is below the point it looks at, and
+    // from where it is it cannot see his own chest, the point comes down to him fast: then what it does about things
+    // in its way is done about where he really is. (It still does not turn. A hop or a fall in plain view is as it was.)
+    let downRate: number = C.heightRate;
+    this.droppedFromSight = false;
+    if (!fresh && focus.y < this.smoothY - DROP_UNDER) {
+      this.sideA.set(focus.x, focus.y + C.targetHeight, focus.z);
+      if (sight(this.sideA, this.camera.position, colliders, 0.05) < 1) {
+        downRate = DROP_RATE;
+        this.droppedFromSight = true;
+      }
+    }
+    this.smoothY += (focus.y - this.smoothY) * (1 - Math.exp(-downRate * dt));
     this.smoothY = Math.min(focus.y + C.heightSlack, Math.max(focus.y - C.heightSlack, this.smoothY));
     // GOING UP A SLOPE, IT KEEPS UP. (The owner, 2026-11-17: "the camera needs to stay behind the character right now if
     // you're going up ramps at any kind of speed whether you're walking or especially while you're riding the board it
@@ -338,9 +359,15 @@ export class FollowCamera {
 
     // Pull the camera in if a wall lies between the rat and where it wants to be: quickly in, slowly back out.
     // (On its way up to a clear line it comes back out as fast as it rises.)
-    const hit = sight(this.target, end, colliders);
+    let hit = sight(this.target, end, colliders);
+    // (Gone down out of its sight: it is drawn in past what hides HIM, not what hides the point still coming down to
+    // him, and more quickly than a wall draws it in.)
+    if (this.droppedFromSight) {
+      this.sideA.set(focus.x, focus.y + C.targetHeight, focus.z);
+      hit = Math.min(hit, sight(this.sideA, end, colliders));
+    }
     const want = hit >= 1 ? 1 : Math.max(0.12, hit - 0.05);
-    const rate = want < this.pull ? C.pullInRate : wantLift > 0 ? Math.max(C.pullOutRate, C.liftInRate) : C.pullOutRate;
+    const rate = want < this.pull ? (this.droppedFromSight ? DROP_PULL : C.pullInRate) : wantLift > 0 ? Math.max(C.pullOutRate, C.liftInRate) : C.pullOutRate;
     this.pull += (want - this.pull) * ease(rate);
     this.pos.copy(this.target).lerp(end, this.pull);
     this.look.copy(this.target);
