@@ -329,6 +329,7 @@ function startGame(): void {
   let grindSparkIn = 0;
   let iceSprayIn = 0;
   let rushKick = 0;
+  let rushCrouch = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
   // Enemies in the level. Waves add more as they arrive.
@@ -4671,7 +4672,7 @@ function startGame(): void {
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
       throwT: player.throwProgress,
-      ride: player.riding ? { steer: player.rideSteer, tuck: player.rideTuck, spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
+      ride: player.riding ? { steer: player.rideSteer, tuck: Math.max(player.rideTuck, rushCrouch), spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
     };
     rat.update(photo.open ? rawDt : animDt, ratAnim);
@@ -4794,6 +4795,9 @@ function startGame(): void {
     {
       const going = !critter && (player.riding || player.grinding) ? Math.hypot(player.velocity.x, player.velocity.z) : 0;
       rushKick = Math.max(0, rushKick - frameDt * 2.2);
+      // (And his body shows a rush: the faster past his standing top speed, the lower he crouches over the shield.)
+      const over = player.feel.ride.rush ? Math.min(1, Math.max(0, (going - TUNING.ride.max - 0.5) / Math.max(1, TUNING.ride.rush.top - TUNING.ride.max - 0.5))) : 0;
+      rushCrouch += (over - rushCrouch) * Math.min(1, frameDt * 8);
       const want = Math.min(1, Math.max(0, (going - 11) / 15)) * 9 + rushKick * 5;
       const next = fovKick + (want - fovKick) * Math.min(1, frameDt * 5);
       if (!photo.open && Math.abs(next - fovKick) > 0.01) {
