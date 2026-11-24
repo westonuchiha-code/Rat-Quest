@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { aabbOf } from '../src/world/collision';
 import { ceilingOf, CEILING_CLEAR, ICE_SPIKE, iceSpikeSolids } from '../src/world/layout';
-import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
+import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, THIN_ICE, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
 import { blow, gasAt, gasNear, gasWidth, gustOn, gustsOf, jetsOf, JET_SPEED } from '../src/world/gusts';
 import { garden, GARDEN } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
@@ -728,6 +728,46 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     const b = toRun(false);
     check('THE FROST: on its ordinary ground he is slower to get going than in the waking world, and as fast once he is', a.frames > b.frames * 1.5 && Math.abs(a.top - b.top) < 0.05, `${a.frames} frames against ${b.frames}; top ${a.top.toFixed(1)}`);
     check('the Cold Main plays as the frost', feelOf(levelById('coldmain')!).id === 'frost');
+  }
+}
+
+// ---- THE THIN ICE (2026-11-24): a frozen pool in the north bank. Feet break it; flat on his belly, it bears him ----
+{
+  const P = THIN_ICE;
+  const N = new THREE.Vector3(0, 0, -1);
+  const x = (P.x0 + P.x1) / 2;
+  /** From out on the sheet, north at a run toward the pool; `belly`: he throws himself flat before he reaches it. */
+  const cross = (belly: boolean): { p: PlayerController; ch: ReturnType<typeof buildChamber>; swam: boolean; flatOnIt: boolean } => {
+    const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: def.movers } as never);
+    const p = new PlayerController(new THREE.Vector3(x, 0, 1.2));
+    p.feel = FEELS.frost;
+    p.water = def.water;
+    let swam = false;
+    let flatOnIt = false;
+    for (let k = 0; k < 60 * 4; k++) {
+      ch.stepMovers(DT, p);
+      p.update(DT, inp({ move: N, dodgePressed: belly && k === 55 }), ch.colliders);
+      if (p.swimming) swam = true;
+      if (p.bellySliding && p.position.z < P.z1 - 0.5 && p.position.z > P.z0 + 0.5) flatOnIt = true;
+    }
+    return { p, ch, swam, flatOnIt };
+  };
+  check('the pool is in the north bank, clear of the channel, and its lid is whole to begin with', P.z1 <= -COLDMAIN.channel && def.movers!.length === P.n * P.n && def.movers!.every((m) => m.thin && m.slick && m.motion === 'crumble'));
+  const run = cross(false);
+  check('THIN ICE: run onto it and it gives way under him: he is in the water', run.swam, `ended at y ${run.p.position.y.toFixed(2)}`);
+  check('...and the breaking spreads: the whole lid has gone, not only the pane he trod on', run.ch.movers.every((m) => m.state.stage === 'falling' || m.state.stage === 'gone'));
+  const flat = cross(true);
+  check('THIN ICE: on his belly it bears him: he slides out over it and is never in the water', flat.flatOnIt && !flat.swam, `flat on it ${flat.flatOnIt}, swam ${flat.swam}`);
+  // (Out of the water again: a jump at its edge, and he climbs out.)
+  {
+    const { p, ch } = run;
+    let out = false;
+    for (let k = 0; k < 60 * 6 && !out; k++) {
+      ch.stepMovers(DT, p);
+      p.update(DT, inp({ move: N.clone().negate(), jumpPressed: k % 40 === 30, jumpHeld: k % 40 >= 30 }), ch.colliders);
+      out = !p.swimming && p.grounded && p.position.y > -0.05;
+    }
+    check('he can get out of the pool again (a jump at its edge)', out, `y ${p.position.y.toFixed(2)}, z ${p.position.z.toFixed(2)}`);
   }
 }
 

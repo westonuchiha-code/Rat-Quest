@@ -324,6 +324,7 @@ function startGame(): void {
   const grindSparks = new Sparks();
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
+  let iceSprayIn = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
   // Enemies in the level. Waves add more as they arrive.
@@ -4745,6 +4746,16 @@ function startGame(): void {
     if (player.grinding && frameDt > 0 && grindSparkIn <= 0) {
       grindSparkIn = 0.045;
       grindSparks.burst(drawnPos.x, drawnPos.y + 0.06, drawnPos.z, time * 7 % 1 < 0.5 ? 0xffd070 : 0xffa040, 2, 1.7, 0.11);
+    }
+    // ON ICE, what his feet, his belly or his shield's edge shave off flies up: so a slip is SEEN, not only posed.
+    // (Most from the shield dug in; a steady plume behind the belly slide; a little from scrabbling feet or a skid.)
+    iceSprayIn -= frameDt;
+    if (!critter && frameDt > 0 && iceSprayIn <= 0) {
+      const shave = player.iceBraking ? 1 : player.bellySliding ? 0.7 : Math.max(player.scrabble, Math.abs(player.skid)) > 0.3 ? 0.4 : 0;
+      if (shave > 0) {
+        iceSprayIn = 0.05;
+        grindSparks.burst(drawnPos.x, drawnPos.y + 0.05, drawnPos.z, time * 9 % 1 < 0.5 ? 0xdff4ff : 0xa8d8f0, shave >= 0.7 ? 3 : 2, 1.2 + shave * 1.4, 0.09 + shave * 0.06);
+      }
     }
     grindSparks.update(frameDt, camera.quaternion);
     if (ringAge < 0.35) {

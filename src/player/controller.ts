@@ -167,6 +167,10 @@ export class PlayerController {
   get bellySliding(): boolean {
     return this.belly;
   }
+  /** His weight spread flat (what thin ice bears: world/chamber.ts). */
+  get spread(): boolean {
+    return this.belly;
+  }
   get scrabble(): number {
     if (!this.onIce || !this.stickHeld || this.belly || this.guarding || (this.state !== 'run' && this.state !== 'walk' && this.state !== 'idle')) return 0;
     const want = Math.hypot(this.wantX, this.wantZ);

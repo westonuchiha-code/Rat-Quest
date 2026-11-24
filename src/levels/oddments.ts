@@ -17,7 +17,7 @@ import { junkSolids, type JunkKind } from '../world/layout';
 export const ODDMENTS: Record<string, Array<[JunkKind, number, number, number, 0 | 1]>> = {
   cistern: [['spoon', 37, 46, 0, 0], ['teacup', -46, -46, 0, 0], ['sardines', 41, -46, 0, 0], ['button', -46, 46, 0, 0], ['safetypin', -32, 29, 0, 0], ['paperclip', 46, -40, 0, 0]],
   // (The Cold Main's ice is pale: a red button where a grey spoon was lost against it.)
-  coldmain: [['battery', -13, 8, 0, 0], ['teacup', 13, -9, 0, 0], ['button', -6, -9, 0, 0], ['sardines', 3, -9, 0, 0]],
+  coldmain: [['battery', -13, 8, 0, 0], ['teacup', 13, -9, 0, 0], ['button', -6, -10.2, 0, 0], ['sardines', 3, -9, 0, 0]],
   foundry: [['battery', 46, 38, 0, 1], ['matchbox', -46, -23, 0, 0], ['pencil', 35, -46, 0, 0], ['candle', -21, 45, 0, 0]],
   hollows: [['spool', 25, 22, 0, 0], ['cheese', 4, -46, 0, 0], ['pawn', -24, 11, 0, 0], ['button', 46, -31, 0, 0]],
   keep: [['candle', -41, -41, 12, 0], ['die', 46, 13, 0, 0], ['teacup', 37, -41, 0, 0], ['pawn', -34, -46, 12, 0]],

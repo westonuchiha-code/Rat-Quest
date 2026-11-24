@@ -19,7 +19,7 @@
  * A test room: `#level=coldmain&nostory`. Its door leads back to the Move Garden.
  */
 import type { LevelDef } from './types';
-import { extent, iceSpikeSolids, type Box, type Decor } from '../world/layout';
+import { extent, iceSpikeSolids, type Box, type Decor, type MoverSpec } from '../world/layout';
 import type { CollectibleDef } from '../world/collectibles';
 import { doorOn } from '../world/rooms';
 import { JET_SPEED } from '../world/gusts';
@@ -39,6 +39,12 @@ export const ICE_BLOCKS: ReadonlyArray<readonly [number, number, number]> = [
   [9.4, -0.2, 6.4],
 ];
 export const ICE_BLOCK = 2.6;
+/**
+ * THE THIN ICE (2026-11-24, a placeholder to try the idea): a pool in the north bank, frozen over with a lid of thin
+ * ice in `n` by `n` panes. A pane gives way `hold` seconds after his FEET are on it, and does not freeze again; flat
+ * on his belly (the belly slide, off the channel's ice) it bears him. `floor` and `water` are the pool's bed and top.
+ */
+export const THIN_ICE = { x0: -8.5, x1: -3.5, z0: -9, z1: -4, n: 3, hold: 0.12, floor: -2, water: -0.45 } as const;
 /** Where the spikes of ice stand: [x, z, how tall]. Those in the channel are what the bottle caps hide among. */
 export const ICE_SPIKES: ReadonlyArray<readonly [number, number, number]> = [
   // A pocket on the south side of the channel, open to the north: the first cap is in it.
@@ -67,9 +73,17 @@ export function coldMain(): LevelDef {
   const decor: Decor[] = [];
   const skinned = (b: Box, skin: Box['skin']): Box => ({ ...b, skin });
   // The banks, and the ice between them: level with them (the water froze where it stood).
-  solids.push(skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -1, 0, -G.halfZ - 1, -G.channel), 'frostCobbles'));
+  // (The north bank, round the pool of thin ice: deep enough that the pool has sides.)
+  const P = THIN_ICE;
+  solids.push(skinned(extent('floor', -G.halfX - 1, P.x0, -3, 0, -G.halfZ - 1, -G.channel), 'frostCobbles'));
+  solids.push(skinned(extent('floor', P.x1, G.halfX + 1, -3, 0, -G.halfZ - 1, -G.channel), 'frostCobbles'));
+  solids.push(skinned(extent('floor', P.x0, P.x1, -3, 0, -G.halfZ - 1, P.z0), 'frostCobbles'));
+  solids.push(skinned(extent('floor', P.x0, P.x1, -3, P.floor, P.z0, P.z1), 'frostCobbles'));
+  const movers: MoverSpec[] = [];
+  const pane = (P.x1 - P.x0) / P.n;
+  for (let i = 0; i < P.n; i++) for (let k = 0; k < P.n; k++) movers.push({ x: P.x0 + pane * (i + 0.5), z: P.z0 + pane * (k + 0.5), y: 0, w: pane, d: pane, thick: 0.18, to: [0, 0, 0], speed: 0, pause: 0, motion: 'crumble', hold: P.hold, back: 1e9, slick: true, thin: true });
   solids.push(skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -1, 0, G.channel, G.halfZ + 1), 'frostCobbles'));
-  solids.push({ ...skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -1, 0, -G.channel, G.channel), 'iceSheet'), slick: true });
+  solids.push({ ...skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -3, 0, -G.channel, G.channel), 'iceSheet'), slick: true });
   for (const [x0, x1, z0, z1] of [[-G.halfX - 1, -G.halfX, -G.halfZ - 1, G.halfZ + 1], [G.halfX, G.halfX + 1, -G.halfZ - 1, G.halfZ + 1], [-G.halfX, G.halfX, -G.halfZ - 1, -G.halfZ], [-G.halfX, G.halfX, G.halfZ, G.halfZ + 1]]) {
     solids.push(skinned(extent('wall', x0, x1, 0, G.wall, z0, z1), 'iceBrick'));
   }
@@ -131,7 +145,8 @@ export function coldMain(): LevelDef {
     ambient: 0.62,
     solids,
     pit: null,
-    water: [],
+    water: [{ x0: THIN_ICE.x0, x1: THIN_ICE.x1, z0: THIN_ICE.z0, z1: THIN_ICE.z1, y: THIN_ICE.water, cold: true }],
+    movers,
     decor,
     spawn: { x: 0, y: 0, z: 8.4, facing: Math.PI },
     collectibles,

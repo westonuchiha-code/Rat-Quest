@@ -51,6 +51,8 @@ export interface Rider {
   position: THREE.Vector3;
   prevPosition: THREE.Vector3;
   velocity?: THREE.Vector3;
+  /** His weight is spread (flat on his belly): thin ice bears him. */
+  spread?: boolean;
 }
 
 export interface Chamber {
@@ -545,7 +547,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const thick = spec.thick ?? 0.5;
     const geo = new THREE.BoxGeometry(spec.w, thick, spec.d, Math.max(1, Math.ceil(spec.w / 2.5)), 1, Math.max(1, Math.ceil(spec.d / 2.5)));
     // (A spring is striped as a warning is; one that crumbles is rubble; the rest are planks, as before.)
-    const skin = spec.skin ?? (spec.motion === 'spring' || spec.motion === 'crush' ? 'hazardTrim' : spec.motion === 'crumble' ? 'rubbleWall' : DEFAULT_SKIN.plank);
+    const skin = spec.skin ?? (spec.motion === 'spring' || spec.motion === 'crush' ? 'hazardTrim' : spec.motion === 'crumble' ? (spec.thin ? 'iceBlock' : 'rubbleWall') : DEFAULT_SKIN.plank);
     applyWorldUvs(geo, TILE[skin] ?? 2);
     bakeVertexColor(geo, 0xeeeeee);
     const mesh = addMesh(geo, mat(skin), spec.x, spec.y - thick / 2, spec.z);
@@ -562,6 +564,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       swingChains.set(moverMeshes.length - 1, chains);
     }
     const mv: Mover = { spec, aabb: makeAabb(spec.x, spec.y - thick / 2, spec.z, spec.w, thick, spec.d), delta: new THREE.Vector3(), state: newPlatformState() };
+    if (spec.slick) mv.aabb.slick = true;
     movers.push(mv);
     colliders.push(mv.aabb);
   }
@@ -575,7 +578,8 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       const a = m.aabb;
       // (Whether he stood on it as this step began: a ride, a sink, a crumble and a spring answer to that.)
       const was = !!rider && Math.abs(rider.position.y - a.max.y) < 0.12 && rider.position.x > a.min.x - 0.05 && rider.position.x < a.max.x + 0.05 && rider.position.z > a.min.z - 0.05 && rider.position.z < a.max.z + 0.05;
-      const now = platformStep(m.spec, m.state, dt, was, TUNING.physics.gravity);
+      // (Thin ice does not feel him on his belly.)
+      const now = platformStep(m.spec, m.state, dt, was && !(m.spec.thin && rider?.spread), TUNING.physics.gravity);
       const [ox, oy, oz] = now.offset;
       const thick = m.spec.thick ?? 0.5;
       const nx = m.spec.x + ox;
@@ -661,6 +665,18 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         }
       }
     });
+    // THIN ICE CRACKS SPREAD: a pane that has gone starts the panes beside it going (so feet that broke one cannot
+    // outrun the breaking: the whole lid goes, pane by pane, outward from where he trod).
+    for (const m of movers) {
+      if (!m.spec.thin || (m.state.stage !== 'falling' && m.state.stage !== 'gone')) continue;
+      for (const o of movers) {
+        if (!o.spec.thin || o.state.stage !== 'still') continue;
+        if (Math.abs(o.spec.x - m.spec.x) <= (o.spec.w + m.spec.w) / 2 + 0.05 && Math.abs(o.spec.z - m.spec.z) <= (o.spec.d + m.spec.d) / 2 + 0.05) {
+          o.state.stage = 'shaking';
+          o.state.stageTime = 0;
+        }
+      }
+    }
     return crushed;
   };
 
@@ -2278,6 +2294,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       m = createPs1Material({ tex: getTexture('sludge') });
       currents.push({ offset: m.uniforms.uvOffset.value as THREE.Vector2, flow: vol.flow });
     }
+    if (vol.cold) m = createPs1Material({ tex: getTexture('iceSheet'), color: 0x7fb4e6 });
     addMesh(geo, m, (vol.x0 + vol.x1) / 2, vol.y, (vol.z0 + vol.z1) / 2);
     sheets.push({ geo, base });
   }

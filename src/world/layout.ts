@@ -100,6 +100,8 @@ export interface WaterVolume {
   y: number;
   /** A current, in units per second along x and z. He is carried along while he swims in it, and the surface flows. */
   flow?: [number, number];
+  /** Meltwater under ice: dark and blue, not the sewer's green. */
+  cold?: boolean;
 }
 
 /** A pool of lava. Touching it hurts and throws the rat back to the last safe ground. y is the surface height. */
@@ -523,6 +525,10 @@ export interface MoverSpec {
   depth?: number;
   hold?: number;
   back?: number;
+  /** Its top is ice: no grip (as a solid's `slick`). */
+  slick?: boolean;
+  /** THIN ICE (with `crumble`): it gives way under his feet, but not under him flat on his belly (his weight spread). */
+  thin?: boolean;
   /** spring: how high it throws him. */
   launch?: number;
   /** swing: radians each way, and along which way it swings (x or z); seconds a swing (`period`). */
