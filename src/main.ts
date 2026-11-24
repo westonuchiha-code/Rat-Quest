@@ -208,6 +208,8 @@ function startGame(): void {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, 4 / 3, 0.1, 200);
+  let baseFov = 55;
+  let fovKick = 0;
 
   /** Matches the low-res picture and the camera to the shape of the screen. */
   function resize(): void {
@@ -229,7 +231,8 @@ function startGame(): void {
     // On a tall screen, widen the vertical view so the sides are not cropped away.
     const sideways = (52 * Math.PI) / 180;
     const vertical = (2 * Math.atan(Math.tan(sideways / 2) / camera.aspect) * 180) / Math.PI;
-    camera.fov = Math.min(86, Math.max(55, vertical));
+    baseFov = Math.min(86, Math.max(55, vertical));
+    camera.fov = baseFov + fovKick;
     camera.updateProjectionMatrix();
   }
   resize();
@@ -325,6 +328,7 @@ function startGame(): void {
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
   let iceSprayIn = 0;
+  let rushKick = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
   // Enemies in the level. Waves add more as they arrive.
@@ -3028,6 +3032,12 @@ function startGame(): void {
     if (events.enemyHit) {
       enemyModels[enemies.indexOf(events.enemyHit)].flash();
       audio.play(events.enemyKilled ? 'kill' : 'hit', { vol: 0.9, rate: roll(0.92, 1.1), priority: 8 });
+      // THE RUSH (the speed room): struck down from his shield, it is a burst of speed, seen and heard.
+      if (events.enemyKilled && player.rush()) {
+        rushKick = 1;
+        audio.play('whoosh', { vol: 0.8, rate: 1.5, priority: 7 });
+        grindSparks.burst(player.position.x, player.position.y + 0.5, player.position.z, 0xfff2a8, 10, 4.5, 0.2);
+      }
       // Only the tiniest freeze on a normal hit (a hint of that old Zelda feel); a kill adds a short slow-motion beat.
       hitStop = events.enemyKilled ? 0.05 : 0.025;
       if (events.enemyKilled) {
@@ -3633,7 +3643,7 @@ function startGame(): void {
     player.velocity.set(0, 0, 0);
   };
   (window as unknown as { __rooms?: () => string[] }).__rooms = () => [...new Set([...LEVELS, ...TEST_ROOMS].map((l) => l.id))];
-  (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, state: player.state, hp: player.hp, as: critter?.look ?? null, busy: cutscene.active ? 'cutscene' : trans.active ? 'door' : story.scene ? 'story' : dialog.open ? 'talk' : menu.open ? 'menu' : boot.blocking ? 'boot' : '' });
+  (window as unknown as { __probe?: () => unknown }).__probe = () => ({ room: cur.id, x: player.position.x, y: player.position.y, z: player.position.z, v: Math.hypot(player.velocity.x, player.velocity.z), state: player.state, hp: player.hp, as: critter?.look ?? null, busy: cutscene.active ? 'cutscene' : trans.active ? 'door' : story.scene ? 'story' : dialog.open ? 'talk' : menu.open ? 'menu' : boot.blocking ? 'boot' : '' });
   // (For the cost report: what the last frame asked of the graphics card, and how much is in the room.)
   (window as unknown as { __cost?: () => unknown }).__cost = () => {
     let meshes = 0;
@@ -4746,6 +4756,19 @@ function startGame(): void {
     if (player.grinding && frameDt > 0 && grindSparkIn <= 0) {
       grindSparkIn = 0.045;
       grindSparks.burst(drawnPos.x, drawnPos.y + 0.06, drawnPos.z, time * 7 % 1 < 0.5 ? 0xffd070 : 0xffa040, 2, 1.7, 0.11);
+    }
+    // SPEED IS SEEN: on his shield the view widens as he goes faster than his standing top speed's worth, and a RUSH
+    // (a creature struck down from the shield in the speed room) kicks it wider for a moment.
+    {
+      const going = !critter && (player.riding || player.grinding) ? Math.hypot(player.velocity.x, player.velocity.z) : 0;
+      rushKick = Math.max(0, rushKick - frameDt * 2.2);
+      const want = Math.min(1, Math.max(0, (going - 11) / 15)) * 9 + rushKick * 5;
+      const next = fovKick + (want - fovKick) * Math.min(1, frameDt * 5);
+      if (!photo.open && Math.abs(next - fovKick) > 0.01) {
+        fovKick = next;
+        camera.fov = baseFov + fovKick;
+        camera.updateProjectionMatrix();
+      }
     }
     // ON ICE, what his feet, his belly or his shield's edge shave off flies up: so a slip is SEEN, not only posed.
     // (Most from the shield dug in; a steady plume behind the belly slide; a little from scrabbling feet or a skid.)

@@ -66,6 +66,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Moves', path: 'moves.climbTime', label: 'Ledge climb time', min: 0.1, max: 1, step: 0.02 },
 
   { group: 'Riding', path: 'ride.minSlope', label: 'Air attack is the shield over slopes this steep or more (rise over run)', min: 0.05, max: 2, step: 0.05 },
+  { group: 'Speed room', path: 'ride.rush.boost', label: 'THE RUSH: speed added for each creature struck down from the shield', min: 0, max: 12, step: 0.5 },
+  { group: 'Speed room', path: 'ride.rush.top', label: 'THE RUSH: the fastest it can make him', min: 16, max: 40, step: 1 },
   { group: 'Ice', path: 'ice.decel', label: 'How much of his usual stopping he has on ice (less: he glides further)', min: 0.02, max: 1, step: 0.02 },
   { group: 'Ice', path: 'frost.grip', label: 'In the ice world, how much grip ORDINARY ground has (1: as anywhere)', min: 0.2, max: 1, step: 0.05 },
   { group: 'Ice', path: 'ice.brake', label: 'Guard held on ice (shield dug in): how much of his usual stopping', min: 0.1, max: 1.5, step: 0.05 },
@@ -346,7 +348,7 @@ export const TWEAKS: TweakDef[] = [
  * (It used to be a list kept by hand, and six groups of creature sliders were never on it.)
  */
 export const TWEAK_SECTIONS: Array<{ title: string; groups: string[] }> = [
-  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'The sewers', 'The platform room', 'Ice', 'Fighting', 'Camera'] },
+  { title: 'The knight', groups: ['Moving', 'Jumping', 'Moves', 'Lifting', 'Riding', 'The dream', 'The sewers', 'The platform room', 'Ice', 'Speed room', 'Fighting', 'Camera'] },
   { title: 'Creatures', groups: ['Roaches', 'Toads', 'Ironbacks', 'Flitters', 'Keep Guards', 'Mantises', 'Stag Knights', 'Hornet Lancers', 'Ant Pikemen', 'Firefly Bombers'] },
   { title: 'Bosses', groups: ['The Sump Wyrm', 'The Broodmother', 'The Widow', 'Grimsqueak'] },
   { title: 'The game', groups: ['Doors and prices'] },

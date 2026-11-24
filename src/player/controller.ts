@@ -167,6 +167,29 @@ export class PlayerController {
   get bellySliding(): boolean {
     return this.belly;
   }
+  /**
+   * THE RUSH: a burst of speed for a creature struck down from his shield (where the place's feel has it: the speed
+   * room). On a rail it lifts what the rail lets him keep as well. True if it was given.
+   */
+  rush(): boolean {
+    if (!this.feel.ride.rush) return false;
+    const R = TUNING.ride.rush;
+    if (this.grind) {
+      const g = this.grind;
+      const v = Math.min(R.top, Math.abs(g.v) + R.boost);
+      if (v <= Math.abs(g.v)) return false;
+      g.top = Math.max(g.top, v);
+      g.v = (g.v >= 0 ? 1 : -1) * v;
+      return true;
+    }
+    if (!this.riding) return false;
+    const had = Math.hypot(this.velocity.x, this.velocity.z);
+    const v = Math.min(R.top, had + R.boost);
+    if (had < 0.5 || v <= had) return false;
+    this.velocity.x *= v / had;
+    this.velocity.z *= v / had;
+    return true;
+  }
   /** His weight spread flat (what thin ice bears: world/chamber.ts). */
   get spread(): boolean {
     return this.belly;

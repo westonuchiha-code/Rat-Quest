@@ -20,6 +20,7 @@ import { garden } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { MAX_WALK_SLOPE, slimeZones } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
+import { FEELS, feelOf } from '../src/data/feel';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -551,6 +552,85 @@ const fromMiddle = (p: PlayerController): number => Math.hypot(p.position.x - B.
     B.placed.every((p) => (p.kind === 'pipe' || p.kind === 'flat') === p.trough)
       && sectionAt(-5).kind === 'head'
       && slopeOf(big.find((b) => !!b.ramp && b.min.z === falling[0].z0)!) > 0.4
+  );
+}
+
+// ---- THE SPEED ROOM'S FEEL (2026-11-24): THE RUSH. A creature struck down from his shield is a burst of speed ----
+{
+  const K = TUNING.ride.rush;
+  const sp = (p: PlayerController): number => Math.hypot(p.velocity.x, p.velocity.z);
+  check('the Long Drop plays as the speed room', feelOf(levelById('longdrop')!).id === 'speed' && !!FEELS.speed.ride.rush && !FEELS.waking.ride.rush && !FEELS.dream.ride.rush);
+  // On his shield down the pipe.
+  for (const feel of ['speed', 'waking'] as const) {
+    let before = 0;
+    let after = 0;
+    let given = false;
+    let later = 0;
+    let n = 0;
+    ride({ x: 0, z: 2 }, 150, (p) => {
+      p.feel = FEELS[feel];
+      n++;
+      if (n === 60) {
+        before = sp(p);
+        given = p.rush();
+        after = sp(p);
+      }
+      if (n === 90) later = sp(p);
+      return {};
+    });
+    if (feel === 'speed') check('THE RUSH: riding, it is a burst of speed past what he had, and he has most of it still half a second on', given && Math.abs(after - before - K.boost) < 0.01 && later > before + K.boost * 0.4, `${before.toFixed(1)} to ${after.toFixed(1)}, then ${later.toFixed(1)}`);
+    else check('...and only in the speed room: in the waking world nothing is given', !given && after === before);
+  }
+  // On a rail: given, kept while he grinds, and never past its top however many he strikes down.
+  {
+    const rail = B.rails[0];
+    const side = rail.x > 0 ? -1 : 1;
+    let pressed = false;
+    let frames = 0;
+    let before = 0;
+    let after = 0;
+    let kept = 0;
+    let most = 0;
+    ride({ x: rail.x + side * 0.5, z: rail.z0 - 7 }, 400, (p) => {
+      p.feel = FEELS.speed;
+      if (p.grinding) {
+        frames++;
+        if (frames === 10) {
+          before = sp(p);
+          p.rush();
+        }
+        // (A rail gives him his speed as it next moves him.)
+        if (frames === 11) after = sp(p);
+        if (frames === 30) {
+          kept = sp(p);
+          for (let k = 0; k < 12; k++) p.rush();
+        }
+        if (frames === 31) most = sp(p);
+        return {};
+      }
+      const press = !pressed && p.grounded && p.position.z > rail.z0 + 1.5;
+      if (press) pressed = true;
+      return { stowPressed: press };
+    }, () => frames > 32);
+    check('THE RUSH on a rail: a burst of speed, kept as he grinds on; and a dozen more take him to its top and no further', after - before > K.boost - 0.5 && kept > before + K.boost * 0.7 && Math.abs(most - K.top) < 0.6, `${before.toFixed(1)} to ${after.toFixed(1)}, kept ${kept.toFixed(1)}, most ${most.toFixed(1)}`);
+  }
+}
+
+// ---- THE COURSE AT A RUSH'S SPEED: it was measured for his standing top speed. Thrown to the rush's top again and
+// again all the way down (more than any run of bats would do), the line worth riding still takes him to the arena. ----
+{
+  let n = 0;
+  let bailAt = '';
+  const run = ride(null, 9000, (p) => {
+    p.feel = FEELS.speed;
+    if (!bailAt && p.moveEvent === 'bail') bailAt = `bail z ${p.position.z.toFixed(0)} x ${p.position.x.toFixed(1)} v ${Math.hypot(p.velocity.x, p.velocity.z).toFixed(0)}`;
+    if (p.riding && p.grounded && ++n % 120 === 0) for (let k = 0; k < 4; k++) p.rush();
+    return { move: steer(dropLine)(p) };
+  }, inArena);
+  check(
+    'THE COURSE AT A RUSH: thrown to the rush\'s top every two seconds all the way down, he is still on his shield to the arena, thrown off by nothing, and never out of the course',
+    inArena(run.p) && run.fastest > TUNING.ride.rush.top - 1 && !run.events.some((e) => e === 'bail' || e === 'slip' || e === 'rideEnd') && run.out < 12,
+    `${run.seconds.toFixed(0)} s, fastest ${run.fastest.toFixed(1)}, out ${run.out.toFixed(1)}, ${[...new Set(run.events.filter((e) => e !== 'rideLand'))].join()}, ended at z ${run.p.position.z.toFixed(0)} y ${run.p.position.y.toFixed(0)}; ${bailAt}`
   );
 }
 

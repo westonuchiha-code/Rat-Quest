@@ -19,7 +19,7 @@
  * harder blows.
  */
 import { TUNING } from './tuning';
-export type FeelId = 'waking' | 'dream' | 'sewers' | 'platform' | 'frost';
+export type FeelId = 'waking' | 'dream' | 'sewers' | 'platform' | 'frost' | 'speed';
 
 export interface Feel {
   id: FeelId;
@@ -47,6 +47,8 @@ export interface Feel {
     trickSpeed: boolean;
     /** The SPIN (roll, in the air) and the GRAB (guard held, in the air). */
     airTricks: boolean;
+    /** THE RUSH: a creature struck down while he rides or grinds is a burst of speed (TUNING.ride.rush). */
+    rush?: boolean;
   };
 }
 
@@ -94,6 +96,14 @@ export const FEELS: Record<FeelId, Feel> = {
     foot: TUNING.frost,
     fight: TUNING.frost,
     ride: { tuck: false, trickSpeed: false, airTricks: false },
+  },
+  speed: {
+    id: 'speed',
+    name: 'The speed room',
+    like: 'Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air. Every creature struck down from the shield is a burst of speed, so a run of them is faster and faster.',
+    foot: TUNING.speed,
+    fight: TUNING.speed,
+    ride: { tuck: false, trickSpeed: false, airTricks: false, rush: true },
   },
 };
 

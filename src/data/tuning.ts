@@ -233,6 +233,11 @@ export const TUNING = {
     ollie: 8.2, // the jump off the board
     flipLift: 5.4, // the little lift a kickflip gives (the second jump, in the air)
     flipTime: 0.42, // seconds the shield takes to spin round under his feet
+    // THE RUSH (the speed room's own: data/feel.ts `rush`, 2026-11-24). A creature struck down while he rides or
+    // grinds is a burst of speed, past his standing top speed, to a top of its own: bat after bat, faster and faster.
+    // (The top is half as fast again as he stands at, no more: the course is measured for 16, and a test rides all of
+    // it at this. At 26 and over the weeds come too fast for the line that test steers.)
+    rush: { boost: 4, top: 24 },
     trickBoost: 3.5, // speed added for landing one, for EACH trick done in that air (up to his tucked top speed)
     bailSpeed: 6, // into a wall faster than this, he comes off
     bailTime: 0.5, // ...and is this long picking himself up
@@ -264,6 +269,8 @@ export const TUNING = {
      */
     brake: 0.85,
   },
+  /** THE SPEED ROOM on foot and in a fight: as the waking world (what is its own is on his shield: `ride.rush`). */
+  speed: { run: 1, jump: 1, gravity: 1, dealt: 1, taken: 1, plunge: 1 },
   /**
    * THE FROST: how the ice world plays (data/feel.ts `frost`). He runs and jumps as anywhere; but NOTHING there has
    * much grip: on its ordinary ground (rimed cobbles, packed snow) he gets going and stops at `grip` of his usual

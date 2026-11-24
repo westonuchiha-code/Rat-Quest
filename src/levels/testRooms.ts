@@ -26,7 +26,7 @@ export interface RoomEntry {
   /** What it is for: the kind of game it is to feel like (his words where he has said). */
   like: string;
   /** How it plays, it and its areas (data/feel.ts), if not the waking world's way (the dream's rooms say so by their look). */
-  feel?: 'sewers' | 'platform' | 'frost';
+  feel?: 'sewers' | 'platform' | 'frost' | 'speed';
 }
 
 export const ROOMS: RoomEntry[] = [
@@ -34,7 +34,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 2, id: 'glowcave', door: 'MUSHROOM CAVE', like: 'A dark cave lit by what glows in it.' },
   { n: 3, id: 'cistern', door: 'THE SEWERS', feel: 'sewers', like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level.' },
   { n: 4, id: 'coldmain', door: 'ICE WORLD', feel: 'frost', like: 'Ice underfoot: sliding, and things that roll.' },
-  { n: 5, id: 'longdrop', door: 'DOWNHILL PIPES', like: 'Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air.' },
+  { n: 5, id: 'longdrop', door: 'DOWNHILL PIPES', feel: 'speed', like: 'Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air.' },
   { n: 6, id: 'foundry', door: 'FOUNDRY', like: 'Fire and iron: heat to cross, heavy beasts.' },
   { n: 7, id: 'forge', door: 'FORGE', like: "The Foundry's new look, tried out: furnaces, a ladle that pours." },
   { n: 8, id: 'hollows', door: 'DEEP CAVES', feel: 'platform', like: 'A 3D Mario: wall jumps and double jumps over a long fall, weaker beasts.' },
