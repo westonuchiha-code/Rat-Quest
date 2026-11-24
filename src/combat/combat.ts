@@ -13,6 +13,8 @@ export interface CombatEvents {
   playerResult: HitResult | null;
   /** True on the tick a plunge lands: the blast all round. */
   shockwave: boolean;
+  /** His dive landed on a creature and threw him back up (the platform room's stomp). */
+  stomped?: boolean;
   /** Crates broken this tick. */
   cratesBroken: Crate[];
   /** An iron-bound crate was struck by something too light to break it. */
@@ -32,6 +34,9 @@ function angleBetween(a: number, b: number): number {
  *  - An enemy's bite hits the rat if he is in front of it and in reach. A dodge avoids it; a guard facing it blocks it.
  *  - Bodies are kept from overlapping.
  */
+/** THE STOMP: how far over a creature's feet his own may be for his dive to have landed on it. */
+export const STOMP_REACH = 1.5;
+
 export function resolveCombat(player: PlayerController, enemies: Foe[], events: CombatEvents, crates: Crate[] = []): void {
   events.cratesBroken.length = 0;
   events.crateRang = null;
@@ -39,6 +44,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
   events.enemyKilled = false;
   events.playerResult = null;
   events.shockwave = false;
+  events.stomped = false;
   events.glanced = null;
   const p = player.position;
 
@@ -103,7 +109,10 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
           part = k;
         }
       }
-      if (player.plungeStage === 2 && near <= P.diveRadius && e.y <= p.y + 0.3) damage = P.diveDamage;
+      // (Where a dive landed on a creature BOUNCES him, the stomp, it must reach the creature first: elsewhere the
+      // dive strikes whatever is under him however far down, and a bounce off that would be a bounce off the air.)
+      const dived = player.plungeStage === 2 && near <= P.diveRadius && e.y <= p.y + 0.3 && (!player.feel.fight.bounce || p.y - e.y <= STOMP_REACH);
+      if (dived) damage = P.diveDamage;
       else if (player.plungeImpact && sameLevel && near <= P.shockRadius) {
         damage = P.shockDamage;
         how = 'shock';
@@ -115,6 +124,8 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
           events.enemyHit = e;
           // (This is the ground pound: the dive, or its blast.)
           if (e.takeHit(damage * player.feel.fight.dealt * player.feel.fight.plunge, p.x, p.z, how, part)) events.enemyKilled = true;
+          // (THE STOMP: where the place has it, a dive landed on a creature throws him back up off it.)
+          if (dived && player.stomp()) events.stomped = true;
         }
       }
     }

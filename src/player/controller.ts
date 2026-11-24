@@ -13,7 +13,7 @@ import { ATTACK_CLIPS } from './animations';
 const RIDGE_STEEP = 0.9;
 export type PlayerState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'attack' | 'dodge' | 'guard' | 'plunge' | 'swim' | 'hurt' | 'dead' | 'longjump' | 'hang' | 'climb' | 'ride' | 'slide' | 'belly';
 /** A move that just happened this step, for sounds and rumble. */
-export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | 'slip' | 'slideHop' | 'slideEnd' | 'belly' | 'bellyEnd' | null;
+export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'rideEnd' | 'ollie' | 'kickflip' | 'trick' | 'rideLand' | 'bail' | 'grind' | 'grindEnd' | 'slip' | 'slideHop' | 'slideEnd' | 'belly' | 'bellyEnd' | 'stomp' | null;
 /** 'parried' is a block made just as the shield came up: no shove, and the attacker reels. */
 export type HitResult = 'dodged' | 'blocked' | 'parried' | 'hit' | 'killed';
 /** 0 not plunging, 1 hanging with the sword raised, 2 diving, 3 stuck in the ground after landing. */
@@ -188,6 +188,23 @@ export class PlayerController {
     if (had < 0.5 || v <= had) return false;
     this.velocity.x *= v / had;
     this.velocity.z *= v / had;
+    return true;
+  }
+  /**
+   * THE STOMP (where the place's feel has it: the platform room). His dive has landed on a creature: he is thrown
+   * back up off it, the dive over (no landing, no being stuck in the ground), his air jump given back. True if so.
+   */
+  stomp(): boolean {
+    const up = this.feel.fight.bounce;
+    if (!up || this.plungeStage !== 2) return false;
+    this.plungeStage = 0;
+    this.plungeTimer = 0;
+    this.velocity.y = up;
+    this.grounded = false;
+    // (Not cut short by the jump button being up: it is not a jump he is holding.)
+    this.jumpCut = true;
+    this.airJumpsLeft = TUNING.jump.airJumps;
+    this.moveEvent = 'stomp';
     return true;
   }
   /** CAUGHT (a web: world/webs.ts): on his shield, on a rail or off it, he is left with no more than `left` of his speed. */

@@ -3123,6 +3123,16 @@ function startGame(): void {
       (ring.material as THREE.MeshBasicMaterial).color.set(0xa8f0b8);
       ring.position.set(player.position.x, player.waterY + 0.05, player.position.z);
     }
+    if (events.stomped) {
+      // THE STOMP (the platform room): off a creature and up again. A spring of a sound, a ring where he struck.
+      audio.play('land', { vol: 0.8, rate: 1.7, priority: 7 });
+      audio.play('whoosh', { vol: 0.5, rate: 1.6, priority: 6 });
+      ringAge = 0;
+      ringSize = 1.1;
+      (ring.material as THREE.MeshBasicMaterial).color.set(0xfff2a8);
+      ring.position.set(player.position.x, player.position.y - 0.2, player.position.z);
+      grindSparks.burst(player.position.x, player.position.y, player.position.z, 0xfff2a8, 8, 3, 0.16);
+    }
     if (events.shockwave) {
       ringAge = 0;
       ringSize = TUNING.plunge.shockRadius;

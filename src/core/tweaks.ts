@@ -94,6 +94,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The sewers', path: 'sewers.taken', label: 'In the sewers a blow costs him this many times as much', min: 1, max: 3, step: 0.5 },
   { group: 'The platform room', path: 'platform.dealt', label: 'In the platform room his blows do this many times as much', min: 1, max: 3, step: 0.02 },
   { group: 'The platform room', path: 'platform.plunge', label: 'In the platform room his ground pound does this many times as much again', min: 1, max: 4, step: 0.5 },
+  { group: 'The platform room', path: 'platform.bounce', label: 'THE STOMP: how hard a ground pound landed ON a creature throws him back up (a jump is 9.5)', min: 0, max: 18, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckMax', label: 'Top riding speed, tucked (stick forward)', min: 8, max: 40, step: 0.5 },
   { group: 'Riding', path: 'ride.tuckGain', label: 'How fast a tuck builds speed', min: 0.1, max: 3, step: 0.05 },
   { group: 'Riding', path: 'ride.dragFlat', label: 'Slow-down on the flat', min: 0, max: 8, step: 0.1 },

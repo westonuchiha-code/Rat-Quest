@@ -548,6 +548,48 @@ const hall = levelById(HALL_ID)!;
     }
     return { alive: roach.alive, hp: roach.hp };
   };
+  /** A jump and the air attack straight down ONTO a roach: whether he was thrown back up, how high, and what he had left. */
+  const stompOn = (feel: Feel): { stomped: boolean; top: number; airJumps: boolean; stuck: boolean; low: number } => {
+    const roach = new Scuttler({ x: 0, z: 0.2 });
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    p.feel = feel;
+    for (let i = 0; i < 10; i++) p.update(DT, inp({}), floor);
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    p.update(DT, inp({ jumpPressed: true, jumpHeld: true }), floor);
+    let stomped = false;
+    let at = 0;
+    let top = 0;
+    let airJumps = false;
+    let stuck = false;
+    let low = 99;
+    for (let i = 0; i < 240; i++) {
+      // (After the stomp: a second jump in the air, to see that he has it.)
+      const again = stomped && !airJumps && p.velocity.y < 1;
+      const y0 = p.position.y;
+      p.update(DT, inp({ jumpHeld: i < 20, attackPressed: i === 22, jumpPressed: again }), floor);
+      if (again && p.velocity.y > 4 && p.position.y > y0) airJumps = true;
+      roach.x = 0;
+      roach.z = 0.2;
+      resolveCombat(p, [roach], events);
+      if (events.stomped && !stomped) {
+        stomped = true;
+        at = p.position.y;
+        low = at;
+      }
+      if (stomped) top = Math.max(top, p.position.y - at);
+      if (p.plungeStage === 3) stuck = true;
+      if (i > 30 && p.grounded && p.plungeStage === 0) break;
+    }
+    return { stomped, top, airJumps, stuck, low };
+  };
+  const stompThere = stompOn(FEELS.platform);
+  const stompAwake = stompOn(FEELS.waking);
+  check(
+    'THE STOMP: there, his ground pound landed ON a creature throws him back up off it, higher than a jump, never stuck in the ground, with his air jump to use again',
+    stompThere.stomped && stompThere.top > 2.5 && stompThere.airJumps && !stompThere.stuck && stompThere.low < 1.5,
+    `from ${stompThere.low.toFixed(2)} over the floor (he has reached it, not bounced off the air above it), up ${stompThere.top.toFixed(2)}, air jump ${stompThere.airJumps}, stuck ${stompThere.stuck}`
+  );
+  check('...and only there: in the waking world the same dive lands and sticks, as it always did', !stompAwake.stomped && stompAwake.stuck && FEELS.waking.fight.bounce === undefined && FEELS.sewers.fight.bounce === undefined);
   const awake = pound(FEELS.waking);
   const there = pound(FEELS.platform);
   check(

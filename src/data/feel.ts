@@ -38,7 +38,8 @@ export interface Feel {
    * multiplied by `taken` (and rounded to whole hearts, never less than one). 1 and 1 is the waking world.
    */
   /** (`plunge`: what his GROUND POUND does, the dive and its blast, is multiplied by this as well.) */
-  fight: { dealt: number; taken: number; plunge: number };
+  /** (`bounce`: THE STOMP. His dive landed on a creature throws him back up at this speed, his air jump given back. None if not said.) */
+  fight: { dealt: number; taken: number; plunge: number; bounce?: number };
   /** On his shield. */
   ride: {
     /** THE TUCK: the stick pushed the way he is going crouches him, pushes him along on the flat, and builds speed past his standing top speed downhill. */
@@ -82,7 +83,7 @@ export const FEELS: Record<FeelId, Feel> = {
   platform: {
     id: 'platform',
     name: 'The platform room',
-    like: 'A 3D Mario: wall jumps and double jumps, and weaker enemies he can ground pound his way out of. His blows do a third more, and his ground pound double.',
+    like: 'A 3D Mario: wall jumps and double jumps, and weaker enemies he can ground pound his way out of. His blows do a third more, his ground pound double, and a pound landed on a creature bounces him back up: they are stepping stones.',
     // (The numbers are TUNING.platform: Tweaks, "The platform room".)
     foot: TUNING.platform,
     fight: TUNING.platform,

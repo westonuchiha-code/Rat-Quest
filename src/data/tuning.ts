@@ -188,6 +188,9 @@ export const TUNING = {
     dealt: 1.34,
     taken: 1,
     plunge: 2,
+    // THE STOMP (2026-11-24): his ground pound's dive, landed ON a creature, throws him back up at this speed with
+    // his air jump given back: creatures are stepping stones there. (A jump is 9.5.)
+    bounce: 11,
   },
   ride: {
     minSlope: 0.4, // over a slope at least this steep (rise over run) the air attack is the shield under his feet, not the dive
