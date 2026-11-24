@@ -224,6 +224,8 @@ export class PlayerController {
     // (Not cut short by the jump button being up: it is not a jump he is holding.)
     this.jumpCut = true;
     this.airJumpsLeft = TUNING.jump.airJumps;
+    // (His body shows it: he goes up off the creature in the tucked flip of an air jump, not standing straight.)
+    this.flipTimer = 0;
     this.moveEvent = 'stomp';
     return true;
   }

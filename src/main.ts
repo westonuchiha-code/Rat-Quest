@@ -335,6 +335,9 @@ function startGame(): void {
   let webMeshes: THREE.LineSegments[] = [];
   let rushKick = 0;
   let ripGlintIn = 0;
+  /** Seconds since a perfect guard (for the sweep his body makes of it), or -1. */
+  let parrySweep = -1;
+  const PARRY_SWEEP_FOR = 0.24;
   let rushCrouch = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
@@ -3165,6 +3168,7 @@ function startGame(): void {
       rumble.block();
     } else if (events.playerResult === 'parried') {
       goals.parries++;
+      parrySweep = 0;
       // Turned aside at the last instant: a longer freeze, a brighter ring, and no shove.
       hitStop = 0.12;
       shake = Math.max(shake, 0.1);
@@ -4724,6 +4728,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
+      guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1 },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
       throwT: player.throwProgress,
@@ -4860,6 +4865,10 @@ function startGame(): void {
         camera.fov = baseFov + fovKick;
         camera.updateProjectionMatrix();
       }
+    }
+    if (parrySweep >= 0) {
+      parrySweep += frameDt;
+      if (parrySweep > PARRY_SWEEP_FOR) parrySweep = -1;
     }
     // OPEN TO A RIPOSTE: the creature he has just turned glints gold for as long as the riposte can be had.
     ripGlintIn -= frameDt;

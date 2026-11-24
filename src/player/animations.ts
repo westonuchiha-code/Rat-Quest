@@ -328,6 +328,45 @@ export const GUARD: Pose = fullPose({
   tail: [0.15, 0, 0],
   ears: 0.35,
 });
+/**
+ * THE PERFECT GUARD'S FRAMES (2026-11-24). For as long as a blow caught would be a PERFECT guard (the first instants
+ * after the shield goes up), the shield is PUNCHED OUT in front of him, arm nearly straight, his weight behind it:
+ * the frames that count are the frames that look like something. Then it settles back into the guard.
+ */
+export const GUARD_SNAP: Pose = fullPose({
+  hipPos: [0, -0.12, 0.07],
+  hips: [0.1, -0.35, 0],
+  chest: [0.34, 0.3, 0],
+  head: [-0.28, 0.2, 0],
+  armS: [0.75, 0, -0.45],
+  elbowS: -1.1,
+  wrist: [0.5, 0, 0],
+  armH: [-1.5, -0.2, 0.02],
+  elbowH: -0.18,
+  shield: [0, 0.3, 0],
+  footS: [-0.13, 0, -0.22],
+  footH: [0.12, 0, 0.24],
+  tail: [0.3, 0, 0],
+  ears: 0.6,
+});
+/** A blow TURNED by a perfect guard: the shield swept out and aside with it, his chest opened after it, sword arm cocked for the answer. */
+export const PARRY_SWEEP: Pose = fullPose({
+  hipPos: [0, -0.09, 0.03],
+  hips: [0.05, 0.25, 0],
+  chest: [0.1, 0.75, 0],
+  head: [-0.1, -0.5, 0],
+  armS: [-0.9, -1.2, -0.2],
+  elbowS: -1.0,
+  wrist: [1.1, 0, 0],
+  armH: [-1.1, 1.15, 0.35],
+  elbowH: -0.3,
+  shield: [0, -0.4, 0],
+  footS: [-0.13, 0, -0.16],
+  footH: [0.12, 0, 0.18],
+  tail: [0.1, -0.6, 0],
+  ears: 0.2,
+});
+
 
 /** Tucked into a ball for the roll. The model turns the whole body over. */
 export const ROLL_TUCK: Pose = fullPose({
