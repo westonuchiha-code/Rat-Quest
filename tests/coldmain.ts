@@ -9,7 +9,7 @@ import * as THREE from 'three';
 import { PlayerController, PlayerInput } from '../src/player/controller';
 import { aabbOf } from '../src/world/collision';
 import { ceilingOf, CEILING_CLEAR, ICE_SPIKE, iceSpikeSolids } from '../src/world/layout';
-import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, THIN_ICE, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
+import { coldMain, COLDMAIN, ICE_BLOCKS, ICE_BLOCK, ICE_SPIKES, ICE_PRIZES, THIN_ICE, THIN_CHANNEL, NORTH_BURSTS, SOUTH_BURSTS, GUST, FALL } from '../src/levels/coldmain';
 import { blow, gasAt, gasNear, gasWidth, gustOn, gustsOf, jetsOf, JET_SPEED } from '../src/world/gusts';
 import { garden, GARDEN } from '../src/levels/garden';
 import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/levels/levels';
@@ -17,6 +17,7 @@ import { buildChamber } from '../src/world/chamber';
 import { CollectibleTracker } from '../src/world/collectibles';
 import { getTexturePixels } from '../src/render/textures';
 import { TUNING } from '../src/data/tuning';
+import { Roller } from '../src/enemies/roller';
 import { FEELS, feelOf } from '../src/data/feel';
 
 const DT = 1 / 60;
@@ -76,8 +77,10 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
   const sheet = def.solids.filter((b) => b.slick);
   check(
     'the channel down its middle is ice, bank to bank and wall to wall; the banks are cobbles; and every block of ice in the channel is ice on top, in a picture of its own (not the sheet\'s)',
-    sheet.length === 1 + ICE_BLOCKS.length
-      && sheet.some((b) => b.kind === 'floor' && b.z0 === -G.channel && b.z1 === G.channel && b.skin === 'iceSheet')
+    // (The sheet is four pieces now, round the patch of thin ice in it.)
+    sheet.length === 4 + ICE_BLOCKS.length
+      && sheet.filter((b) => b.kind === 'floor').every((b) => b.z0 >= -G.channel && b.z1 <= G.channel && b.skin === 'iceSheet')
+      && sheet.some((b) => b.kind === 'floor' && b.z0 === -G.channel && b.z1 === G.channel && b.x0 < -G.halfX)
       && sheet.filter((b) => b.kind !== 'floor').every((b) => b.skin === 'iceBlock')
       && def.solids.filter((b) => b.kind === 'floor' && !b.slick).every((b) => b.skin === 'frostCobbles')
   );
@@ -752,10 +755,10 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     }
     return { p, ch, swam, flatOnIt };
   };
-  check('the pool is in the north bank, clear of the channel, and its lid is whole to begin with', P.z1 <= -COLDMAIN.channel && def.movers!.length === P.n * P.n && def.movers!.every((m) => m.thin && m.slick && m.motion === 'crumble'));
+  check('the pool is in the north bank, clear of the channel, and its lid is whole to begin with', P.z1 <= -COLDMAIN.channel && def.movers!.length === P.n * P.n + THIN_CHANNEL.n * THIN_CHANNEL.n && def.movers!.every((m) => m.thin && m.slick && m.motion === 'crumble'));
   const run = cross(false);
   check('THIN ICE: run onto it and it gives way under him: he is in the water', run.swam, `ended at y ${run.p.position.y.toFixed(2)}`);
-  check('...and the breaking spreads: the whole lid has gone, not only the pane he trod on', run.ch.movers.every((m) => m.state.stage === 'falling' || m.state.stage === 'gone'));
+  check('...and the breaking spreads: the whole lid has gone, not only the pane he trod on (and the patch out in the channel has not)', run.ch.movers.filter((m) => m.spec.z < P.z1).every((m) => m.state.stage === 'falling' || m.state.stage === 'gone') && run.ch.movers.filter((m) => m.spec.z > P.z1).every((m) => m.state.stage === 'still'));
   const flat = cross(true);
   check('THIN ICE: on his belly it bears him: he slides out over it and is never in the water', flat.flatOnIt && !flat.swam, `flat on it ${flat.flatOnIt}, swam ${flat.swam}`);
   // (Out of the water again: a jump at its edge, and he climbs out.)
@@ -769,6 +772,38 @@ const tracker = (): CollectibleTracker => new CollectibleTracker([{ id: 'coldmai
     }
     check('he can get out of the pool again (a jump at its edge)', out, `y ${p.position.y.toFixed(2)}, z ${p.position.z.toFixed(2)}`);
   }
+}
+
+// ---- THE THIN ICE IN THE CHANNEL, AND THE FROST ROLLERS: one that BOWLS over it goes through and is gone ----
+{
+  const C = THIN_CHANNEL;
+  const jets = [...NORTH_BURSTS, ...SOUTH_BURSTS];
+  check(
+    'the patch is in the sheet, on the ice the Rollers keep to, and in no gust\'s path, block or spike',
+    C.z0 > -COLDMAIN.channel && C.z1 < COLDMAIN.channel
+      && jets.every(([x]) => x + GUST.width / 2 < C.x0 || x - GUST.width / 2 > C.x1)
+      && ICE_BLOCKS.every(([x, z]) => x + ICE_BLOCK / 2 < C.x0 || x - ICE_BLOCK / 2 > C.x1 || z + ICE_BLOCK / 2 < C.z0 || z - ICE_BLOCK / 2 > C.z1)
+      && ICE_SPIKES.every(([x, z]) => x < C.x0 - 0.6 || x > C.x1 + 0.6 || z < C.z0 - 0.6 || z > C.z1 + 0.6)
+  );
+  const mx = (C.x0 + C.x1) / 2;
+  const mz = (C.z0 + C.z1) / 2;
+  /** A Roller west of the patch, him east of it: it tucks and bowls at him, over the patch. Or (`walks`) it only walks. */
+  const lure = (bowls: boolean): { r: Roller; broke: boolean } => {
+    const ch = buildChamber({ solids: def.solids, pit: def.pit, water: def.water, decor: def.decor, movers: def.movers } as never);
+    const r = new Roller({ x: bowls ? C.x0 - 3 : mx, z: mz, arena: { x0: -14.4, x1: 14.4, z0: -3.9, z1: 3.9 } });
+    r.rng = () => 0;
+    r.breakThin = (x, z) => ch.breakThin(x, z);
+    if (!bowls) r.mayAttack = false;
+    for (let k = 0; k < 60 * 6 && r.alive; k++) {
+      ch.stepMovers(DT);
+      r.update(DT, bowls ? C.x1 + 0.4 : mx + 6, 0, mz, true);
+    }
+    return { r, broke: ch.movers.some((m) => m.spec.x > C.x0 && m.spec.z > C.z0 && m.spec.z < C.z1 && m.state.stage !== 'still') };
+  };
+  const bowled = lure(true);
+  check('A ROLLER BOWLED OVER THIN ICE GOES THROUGH: the pane breaks under it, and it is gone (sunk, not beaten by a blade)', !bowled.r.alive && bowled.r.sunk && bowled.broke && bowled.r.events.includes('die'), `alive ${bowled.r.alive}, sunk ${bowled.r.sunk}, broke ${bowled.broke}, at x ${bowled.r.x.toFixed(1)}`);
+  const walked = lure(false);
+  check('...but walking on it, on all its legs, the ice bears it', walked.r.alive && !walked.broke);
 }
 
 console.log(failures ? `\n${failures} FAILED` : '\nall passed');

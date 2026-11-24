@@ -64,6 +64,8 @@ export interface Chamber {
   /** Glides every moving platform forward and carries whoever stands on one. Call once per simulation step. */
   /** True if a crusher (world/platforms.ts 'crush') came down on him this step: the game strikes him. */
   stepMovers(dt: number, rider?: Rider): boolean;
+  /** A weight coming down on thin ice at a place (a creature bowling over it): the pane there, if it is whole, gives way at once. True if one did. */
+  breakThin(x: number, z: number): boolean;
   group: THREE.Group;
   colliders: Aabb[];
   /** Crates and barrels that can be smashed, in the order they appear in the level. */
@@ -568,6 +570,15 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     movers.push(mv);
     colliders.push(mv.aabb);
   }
+  const breakThin = (x: number, z: number): boolean => {
+    for (const m of movers) {
+      if (!m.spec.thin || m.state.stage !== 'still' || x < m.aabb.min.x || x > m.aabb.max.x || z < m.aabb.min.z || z > m.aabb.max.z) continue;
+      m.state.stage = 'shaking';
+      m.state.stageTime = 1e3;
+      return true;
+    }
+    return false;
+  };
   const carry = new THREE.Vector3();
   const stepMovers = (dt: number, rider?: Rider): boolean => {
     carry.set(0, 0, 0);
@@ -2287,14 +2298,16 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const base = geo.attributes.position.array.slice() as Float32Array;
     for (let i = 0; i < col.count; i++) {
       const k = 0.8 + 0.2 * Math.sin(base[i * 3] * 2.1) * Math.cos(base[i * 3 + 2] * 1.7);
-      col.setXYZ(i, col.getX(i) * k, col.getY(i) * k, col.getZ(i) * k);
+      // (Meltwater: the sheet's own picture, lit bluer and brighter, so that open water does not pass for ice.)
+      const [cr, cg, cb] = vol.cold ? [1.3, 2.0, 2.8] : [1, 1, 1];
+      col.setXYZ(i, col.getX(i) * k * cr, col.getY(i) * k * cg, col.getZ(i) * k * cb);
     }
     let m = waterMat;
     if (vol.flow) {
       m = createPs1Material({ tex: getTexture('sludge') });
       currents.push({ offset: m.uniforms.uvOffset.value as THREE.Vector2, flow: vol.flow });
     }
-    if (vol.cold) m = createPs1Material({ tex: getTexture('iceSheet'), color: 0x7fb4e6 });
+    if (vol.cold) m = createPs1Material({ tex: getTexture('iceSheet') });
     addMesh(geo, m, (vol.x0 + vol.x1) / 2, vol.y, (vol.z0 + vol.z1) / 2);
     sheets.push({ geo, base });
   }
@@ -2677,5 +2690,5 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     },
   } : undefined;
   const hazards = hazardSpecs.length ? { specs: hazardSpecs, show: (time: number): void => hazardLooks.forEach((b) => b.show(time)) } : undefined;
-  return { hazards, strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, closeGate, water: layout.water, update, updateLights, movers, stepMovers, carry, lava: layout.lava ?? [] };
+  return { hazards, strike, music, thump, gather, group, colliders, crates, pipes, breakCrate, liftCrate, moveCrate, setCrate, gates, openGate, closeGate, water: layout.water, update, updateLights, movers, stepMovers, breakThin, carry, lava: layout.lava ?? [] };
 }

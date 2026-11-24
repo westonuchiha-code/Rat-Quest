@@ -570,12 +570,14 @@ function startGame(): void {
       const e = new Roller(spec);
       const m = new RollerModel();
       e.onIce = (x, y, z) => chamber.colliders.some((b) => !!b.slick && x >= b.min.x && x <= b.max.x && z >= b.min.z && z <= b.max.z && Math.abs(topAt(b, x, z) - y) < 0.3);
+      e.breakThin = (x, z) => chamber.breakThin(x, z);
       enemies.push(e);
       enemyModels.push({
         root: m.root,
-        setTransform: (p, f) => m.setTransform(p, f),
+        // (Through thin ice: it goes down into the water, still a ball, and is gone.)
+        setTransform: (p, f) => m.setTransform(e.sunk && e.state === 'dead' ? p.clone().setY(p.y - Math.min(2.4, e.stateTime * 5)) : p, f),
         flash: () => m.flash(),
-        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, curl: e.curl, spin: e.spin, moving: e.moving }),
+        tick: (dt) => m.update(dt, e.sunk && e.state === 'dead' ? { state: 'roll', stateTime: e.stateTime, curl: 1, spin: e.spin + e.stateTime, moving: 0 } : { state: e.state, stateTime: e.stateTime, curl: e.curl, spin: e.spin, moving: e.moving }),
       });
       scene.add(m.root);
     } else if (spec.type === 'scorpion') {
@@ -705,7 +707,11 @@ function startGame(): void {
         else if (ev === 'spill') audio.play('plateKnock', { vol: Math.max(0.4, v), rate: 0.7, priority: 7 });
         else if (ev === 'right') audio.play('chitinTap', { vol: v * 0.7, rate: 1.2, priority: 4 });
         else if (ev === 'hurt') audio.play('scorpHurt', { vol: v, rate: 1.3, priority: 6 });
-        else if (ev === 'die') audio.play('antDie', { vol: v, rate: 1.2, priority: 6 });
+        else if (ev === 'die' && e.sunk) {
+          // (Through thin ice: the ice going, and the water taking it.)
+          audio.play('crate', { vol: Math.max(0.4, v), rate: 1.6, priority: 7 });
+          audio.play('splash', { vol: Math.max(0.5, v), rate: 0.8, priority: 7 });
+        } else if (ev === 'die') audio.play('antDie', { vol: v, rate: 1.2, priority: 6 });
       } else if (e instanceof Scorpion) {
         // The Lamp Scorpion, in sounds of its own: its dry rasp when it sees him; its lamp filling as the tail
         // rears, as long as the tell; the whip of the tail and the barb's crack into the floor; its claws shutting

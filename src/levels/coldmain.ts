@@ -45,6 +45,13 @@ export const ICE_BLOCK = 2.6;
  * on his belly (the belly slide, off the channel's ice) it bears him. `floor` and `water` are the pool's bed and top.
  */
 export const THIN_ICE = { x0: -8.5, x1: -3.5, z0: -9, z1: -4, n: 3, hold: 0.12, floor: -2, water: -0.45 } as const;
+/**
+ * AND A PATCH OF IT OUT IN THE CHANNEL, where the Frost Rollers are (the same day): the same thin ice over the same
+ * meltwater, a hole's worth of the sheet. A Roller BOWLING over it goes through and is gone (enemies/roller.ts
+ * `breakThin`): the thing to lure one over. At the east end: clear of the blocks, the spikes and every gust's path
+ * (a gust carries whoever is on the ice, and should not carry him onto this unasked).
+ */
+export const THIN_CHANNEL = { x0: 10.9, x1: 13.6, z0: -3.7, z1: -1.0, n: 2, hold: THIN_ICE.hold, floor: -2, water: -0.45 } as const;
 /** Where the spikes of ice stand: [x, z, how tall]. Those in the channel are what the bottle caps hide among. */
 export const ICE_SPIKES: ReadonlyArray<readonly [number, number, number]> = [
   // A pocket on the south side of the channel, open to the north: the first cap is in it.
@@ -80,10 +87,17 @@ export function coldMain(): LevelDef {
   solids.push(skinned(extent('floor', P.x0, P.x1, -3, 0, -G.halfZ - 1, P.z0), 'frostCobbles'));
   solids.push(skinned(extent('floor', P.x0, P.x1, -3, P.floor, P.z0, P.z1), 'frostCobbles'));
   const movers: MoverSpec[] = [];
-  const pane = (P.x1 - P.x0) / P.n;
-  for (let i = 0; i < P.n; i++) for (let k = 0; k < P.n; k++) movers.push({ x: P.x0 + pane * (i + 0.5), z: P.z0 + pane * (k + 0.5), y: 0, w: pane, d: pane, thick: 0.18, to: [0, 0, 0], speed: 0, pause: 0, motion: 'crumble', hold: P.hold, back: 1e9, slick: true, thin: true });
+  for (const T of [THIN_ICE, THIN_CHANNEL]) {
+    const pane = (T.x1 - T.x0) / T.n;
+    for (let i = 0; i < T.n; i++) for (let k = 0; k < T.n; k++) movers.push({ x: T.x0 + pane * (i + 0.5), z: T.z0 + pane * (k + 0.5), y: 0, w: pane, d: pane, thick: 0.18, to: [0, 0, 0], speed: 0, pause: 0, motion: 'crumble', hold: T.hold, back: 1e9, slick: true, thin: true });
+  }
   solids.push(skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -1, 0, G.channel, G.halfZ + 1), 'frostCobbles'));
-  solids.push({ ...skinned(extent('floor', -G.halfX - 1, G.halfX + 1, -3, 0, -G.channel, G.channel), 'iceSheet'), slick: true });
+  // (The sheet, round the patch of thin ice in it; and the patch's bed.)
+  const C = THIN_CHANNEL;
+  for (const [x0, x1, z0, z1] of [[-G.halfX - 1, C.x0, -G.channel, G.channel], [C.x1, G.halfX + 1, -G.channel, G.channel], [C.x0, C.x1, -G.channel, C.z0], [C.x0, C.x1, C.z1, G.channel]]) {
+    solids.push({ ...skinned(extent('floor', x0, x1, -3, 0, z0, z1), 'iceSheet'), slick: true });
+  }
+  solids.push(skinned(extent('floor', C.x0, C.x1, -3, C.floor, C.z0, C.z1), 'frostCobbles'));
   for (const [x0, x1, z0, z1] of [[-G.halfX - 1, -G.halfX, -G.halfZ - 1, G.halfZ + 1], [G.halfX, G.halfX + 1, -G.halfZ - 1, G.halfZ + 1], [-G.halfX, G.halfX, -G.halfZ - 1, -G.halfZ], [-G.halfX, G.halfX, G.halfZ, G.halfZ + 1]]) {
     solids.push(skinned(extent('wall', x0, x1, 0, G.wall, z0, z1), 'iceBrick'));
   }
@@ -145,7 +159,7 @@ export function coldMain(): LevelDef {
     ambient: 0.62,
     solids,
     pit: null,
-    water: [{ x0: THIN_ICE.x0, x1: THIN_ICE.x1, z0: THIN_ICE.z0, z1: THIN_ICE.z1, y: THIN_ICE.water, cold: true }],
+    water: [THIN_ICE, THIN_CHANNEL].map((T) => ({ x0: T.x0, x1: T.x1, z0: T.z0, z1: T.z1, y: T.water, cold: true })),
     movers,
     decor,
     spawn: { x: 0, y: 0, z: 8.4, facing: Math.PI },

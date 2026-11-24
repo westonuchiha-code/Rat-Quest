@@ -83,6 +83,13 @@ export class Roller {
   floorUnder: FloorUnder | null = null;
   /** Whether the floor under a place is ice. The game sets this; without it, every floor is taken for ice. */
   onIce: ((x: number, y: number, z: number) => boolean) | null = null;
+  /**
+   * THIN ICE under a place gives way under it as it BOWLS (the game sets this; it breaks the pane and says so). It
+   * goes through and is gone: the thing to lure it over. (Walking, on all its legs, the ice bears it.)
+   */
+  breakThin: ((x: number, z: number) => boolean) | null = null;
+  /** It went through thin ice (for how it is drawn and heard). */
+  sunk = false;
   private homeY = 0;
   private fromX = 0;
   private fromZ = 0;
@@ -269,6 +276,13 @@ export class Roller {
           }
           this.events.push('bounce');
         }
+        if (this.breakThin?.(this.x, this.z)) {
+          this.sunk = true;
+          this.hp = 0;
+          this.events.push('die');
+          this.enter('dead');
+          break;
+        }
         this.facing = Math.atan2(this.dirX, this.dirZ);
         this.spin += (this.speed * dt) / (Math.PI * 2 * 0.42);
         if (this.stateTime >= R.rollTime || this.speed < R.spillSpeed) this.spill(R.spilled);
@@ -310,6 +324,7 @@ export class Roller {
           this.z = this.home.z;
           this.y = this.homeY;
           this.hp = R.hp;
+          this.sunk = false;
           this.curl = 0;
           this.velX = 0;
           this.velZ = 0;
