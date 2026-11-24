@@ -16,8 +16,8 @@ Tags: **PLACEHOLDER** (an idea, expect it to change or go), **WORK IN PROGRESS**
 | Sewers | `sewers` feel | WORK IN PROGRESS | Has its own feel. Awaiting the owner's verdict. |
 | Deep caves / platforming | `platform` feel | WORK IN PROGRESS | Awaiting the owner's verdict. |
 | Wacky Pomo dream | `dream` feel | WORK IN PROGRESS | Skate park is missing banked turns and rail loops. |
-| Snow and ice | none | NOT STARTED | Ice is only a slippery floor tile today. Next up. |
-| Speed room (the Long Drop) | none | NOT STARTED | |
+| Snow and ice | `frost` feel | WORK IN PROGRESS | Scrabble, skid, belly slide, shield brake, ice spray; thin ice over meltwater that costs hearts (Test Room 4). Awaiting the owner's verdict. For later: a cracking sound, an editor entry for thin ice, Rollers that meet it. |
+| Speed room (the Long Drop) | `speed` feel | WORK IN PROGRESS | The rush: a creature struck down from the shield is a burst of speed (top 24; the course is tested at it); the view widens with speed. Awaiting the owner's verdict. For later: bats placed for chains on every rail, a sound of its own. |
 | Foundry / fire | none | NOT STARTED | |
 | Castle | none | NOT STARTED | |
 

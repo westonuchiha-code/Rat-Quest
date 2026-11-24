@@ -253,6 +253,8 @@ export const TUNING = {
    * He is always on his feet and steering: it is not the slide down a steep slope. His jump, and the air, are as ever.
    */
   ice: {
+    // MELTWATER (a `cold` pool, under thin ice): seconds in it for each heart it costs him.
+    water: { every: 3.5 },
     accel: 0.35,
     decel: 0.1,
     /**

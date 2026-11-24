@@ -2374,6 +2374,31 @@ function startGame(): void {
     }
   }
 
+  /**
+   * MELTWATER (a pool marked `cold`, under thin ice): it is too cold to stay in. Every `TUNING.ice.water.every`
+   * seconds he is in it costs him a heart; out of it, the cold leaves him at once. (The ice room's own hazard:
+   * falling through is not the end of him, dawdling in it is.)
+   */
+  let coldFor = 0;
+  function coldCheck(dt: number): void {
+    const p = player.position;
+    const inCold = !player.dead && !critter && player.swimming && cur.water.some((w) => w.cold && p.x >= w.x0 && p.x <= w.x1 && p.z >= w.z0 && p.z <= w.z1);
+    if (!inCold) {
+      coldFor = 0;
+      return;
+    }
+    const was = coldFor;
+    coldFor += dt;
+    // (He shivers: flecks of frost off him, quicker as the cold bites.)
+    const every = coldFor > TUNING.ice.water.every * 0.5 ? 0.25 : 0.6;
+    if (Math.floor(coldFor / every) !== Math.floor(was / every)) grindSparks.burst(p.x, player.waterY + 0.1, p.z, 0xdff4ff, 4, 1.4, 0.1);
+    if (coldFor >= TUNING.ice.water.every) {
+      coldFor = 0;
+      const result = player.takeHit(p.x, p.z, 1);
+      if (result === 'hit' || result === 'killed') pinnedHit = result;
+    }
+  }
+
   /** A moving platform that pins him against the ceiling crushes him: a hit, and back to the last safe ground. */
   function crushCheck(): void {
     if (player.dead) return;
@@ -2464,6 +2489,7 @@ function startGame(): void {
     // (A crusher that came down on him strikes him after the fight is resolved, which clears what hit him before it.)
     if (chamber.stepMovers(dt, player.dead ? undefined : player)) crusherHit = true;
     crushCheck();
+    coldCheck(dt);
     if (keyTap('lock') || consumeAction('lock')) {
       if (lockTarget) lockTarget = null;
       else {
