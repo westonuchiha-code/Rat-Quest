@@ -88,7 +88,9 @@ export class Toad {
 
   /** True in the last part of a pounce, as it comes down. */
   get attackActive(): boolean {
-    return this.state === 'pounce' && !this.pounceSpent && this.stateTime >= this.T.pounceTime * 0.8;
+    // (THE POUNCE HURTS AS IT LANDS, as it is drawn: from two frames before it touches down. It was live from 0.8 of
+    // the way through, six or seven frames before, with the toad still most of a unit up in the air. Audit, 2026-11-24.)
+    return this.state === 'pounce' && !this.pounceSpent && this.stateTime >= this.T.pounceTime - 0.035;
   }
 
   readonly home: { x: number; z: number };

@@ -258,3 +258,31 @@ kick.
 - **Odds and ends (2026-11-18/19, his "making some new objects")**: a candle stub (it gives light), cotton reel, matchbox, wheel of cheese, sardine tin, coat button, pencil stub, die. `world/junkModels.ts`, sizes and solids `JUNK` in world/layout.ts, all in the editor. Some in the Hall and the Club. HIS WORDS (2026-11-19): "I really like the addition of all the little extra items, I think it really fills out the world." So: four more (a chess pawn, a battery, a teacup on its saucer, a teaspoon), and up to four in each of twelve main rooms and side areas, suited to the place (levels/oddments.ts; tests/oddments.ts keeps them on the floor, out of the way, and out of every fight). The glowing cave and the webs have no quiet corner and have none. Then (same day) four more: a safety pin and a paperclip for the sewers, a crayon and a marble for the dream rooms; the Toy Box, the Milky Way, the Big Dipper, the Brood Pit's way in and the shaft got some too (not the Long Drop, the Widow's pit or the dark: nowhere clear of a fight; not the villain's lair). A cotton reel's loose thread sways; a teacup steams; a candle drips (a drop of wax every nine seconds); a marble glints; a matchbox's matches rattle when he lands beside it (chamber.thump, one line in main.ts by the landing sound, with a quiet high knock unheard by Claude); a battery sparks now and then; a die tips away from a landing beside it and drops back; a marble rolls a little way off and rocks back to its place (never past a fifth of its width: it stays inside its solid). A cotton reel rocks on its rim (less than a die); a teacup rattles on its saucer and its tea slops; a spoon rocks on its bowl and taps; a sardine tin's curled lid wobbles on its key; a chess pawn rocks on its foot; a battery rolls a little across its length (metal: it tinks). thump now says WHICH kinds answered, and main.ts plays a knock (matchbox, die, marble, reel) or a tink (spoon, tin, teacup), quietly: all unheard by Claude. What an object moves itself is tagged `userData.moves` and kept out of the gathering. FOR FABLE: docs/OPUS-WEEK.md, one page on everything Opus changed, by risk.
 - **Textures on plain props (2026-11-18)**: the Club's furniture, banners, torches, shelves; then pipes, chains, lamps, light posts, gauges, roots, the speaker, the dartboard. Counted by `tests/proptextures.ts` (not a test: a count). Left plain on purpose: painted faces, rings, bulbs, flowers, rugs, crystals, marks.
 - **Dead code (2026-11-18/19)**: 19 unused exports and three textures nothing used (frostPipe, starfield, emberBrick) taken out. Nothing else is unused: the build refuses unused names, and every file is imported.
+
+
+## ANIMATION AGAINST HIT TIMING: what the audit of 2026-11-24 found and did NOT fix (for Opus)
+
+The owner: "We're doing a lot of frame perfect stuff so I want to make sure the animations are on par." Every creature's
+drawn tell and strike was read against the frame its blow can land (three read-only audits). FIXED that day: the
+knight's perfect-guard frames (shield punched out), the scorpion's sting and the toad's pounce (hurt as they land), the
+roach and Spark Beetle on their backs when turned, the Spark Beetle's bite drawn at all, the ironback's toss/buck/roll
+and its parry opening, the mantis cut, the ant bite, the bat's wingbeat, the Stag Knight's slam/sweep/stomp and the
+Broodmother's scissor. LEFT, smaller, in rough order of worth:
+
+- OPEN BUT NOT DRAWN AS OPEN: toad after a turned pounce (pass `down`, draw it winded flat); scorpion after a blocked
+  snap; stag `settle` and sweep `recover`; brood `settle` and scissor `recover`; wyrm `recover` and `settle`.
+- HIT WIDER THAN WHAT IS DRAWN: scorpion sting ring (drawn 0.7, hits 1.0); Spark Beetle burst (halo 0.94, hits 1.42);
+  brood stab (a long cone; the spike is drawn at one point: give it a `bite.at` circle as the widow has); Grimsqueak's
+  slam ring (hits 0.45 past its drawn edge) and storm (left forks stop short of the line's end).
+- SNAPS: hornet joust (heading and height cut as it commits); brood whirl's end (facing jumps); widow slam/stab tells
+  (the foot jumps partway through) and bite (head drops in one frame); Grimsqueak swoop and slam entry (pitch, swell).
+- EARLY OR LATE, SMALL: scorpion claw snap (2-3 frames); ironback buck; Keep Guard thrust at point-blank; Grimsqueak's
+  bolt leaves before the throw is drawn (6-8 frames); widow sweep hurts only 0.12 in though the foot is moving; wyrm's
+  spurs spin back after the whip.
+- TELLS THAT DO NOT BUILD (they show "about to", not "how close"): roach, toad crouch, bat, hornet. And a roach's bite
+  and its charge share one tell (only its length differs). A design note, the owner's to weigh.
+- KEEP GUARD: its hurt flinch is drawn as its guard-break. SPARK BEETLE: nothing marks it soft after its burst.
+- NUMBERS WRITTEN TWICE (they agree today): scuttlerModel 0.25/0.6/0.12, toadModel 0.8/0.6, batModel 0.25; and the
+  roach's old `windup`/`lungeTime`/`recover` keys in tuning.ts sit unused beside the live `bite` and `charge`.
+- NOT SEEN IN THE GAME: a roach turned onto its back (a perfect guard against a live roach could not be filmed: they
+  flank him; `&parryall` makes every caught blow a perfect guard, for whoever films it).

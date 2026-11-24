@@ -13,6 +13,9 @@ const copper = createPs1Material({ lit: true, tex: getTexture('copperCoil') });
 
 export interface SparkAnim {
   state: string;
+  /** How long it has been in that state, and whether a perfect guard has turned it onto its back. */
+  stateTime?: number;
+  down?: boolean;
   moving: boolean;
   charge: number;
   discharging: boolean;
@@ -101,19 +104,81 @@ export class SparkBeetleModel {
   flash(): void {
     this.flashT = 0.14;
   }
+  /** What its body is doing, eased (its bite's tell, the lunge, lying spent, on its back when turned, dying). */
+  private pitch = 0;
+  private rollZ = 0;
+  private lift = 0.32;
+  private stretch = 1;
+  private shrink = 1;
+  private time = 0;
   update(dt: number, a: SparkAnim): void {
+    this.time += dt;
     this.flashT = Math.max(0, this.flashT - dt);
     const dead = a.state === 'dead';
-    this.root.visible = !dead || this.flashT > 0;
+    const t = a.stateTime ?? 0;
+    const ease = (from: number, to: number, rate: number): number => from + (to - from) * (1 - Math.exp(-rate * dt));
+    const smooth = (x: number): number => { const k = Math.max(0, Math.min(1, x)); return k * k * (3 - 2 * k); };
+    // ITS BITE IS DRAWN (2026-11-24: it was not; only its legs stopping told of it). The roach's bite, in its body:
+    // it rears up and shakes (the tell), throws itself out long and low (the lunge), sags (spent), lies on its back
+    // with its legs going (turned by a perfect guard: open), and rolls over and shrivels when it is beaten.
+    let pitch = 0;
+    let roll = 0;
+    let lift = 0.32 + (a.moving ? 0.015 * Math.sin(this.walk * 2) : 0);
+    let stretch = 1;
+    let shake = 0;
+    let rate = 14;
+    let legs: 'walk' | 'still' | 'wave' = a.moving ? 'walk' : 'still';
+    if (a.state === 'windup') {
+      const k = smooth(t / 0.25);
+      pitch = -0.55 * k;
+      lift = 0.42;
+      stretch = 0.92;
+      shake = 0.012 + 0.03 * Math.min(1, t / 0.6);
+      rate = 16;
+    } else if (a.state === 'lunge') {
+      pitch = 0.22;
+      lift = 0.27;
+      stretch = 1.22;
+      rate = 70;
+    } else if (a.state === 'recover' && a.down) {
+      roll = Math.PI + Math.sin(this.time * 7) * 0.16;
+      lift = 0.3 + (t < 0.3 ? Math.sin((t / 0.3) * Math.PI) * 0.3 : 0);
+      legs = 'wave';
+      rate = 22;
+    } else if (a.state === 'recover') {
+      lift = 0.24 + Math.sin(this.time * 9) * 0.012;
+      pitch = 0.1;
+      stretch = 0.96;
+      rate = 9;
+    } else if (a.state === 'stagger') {
+      pitch = -0.3;
+      roll = Math.sin(t * 30) * 0.12 * Math.max(0, 1 - t / 0.4);
+      rate = 24;
+    } else if (dead) {
+      roll = Math.PI * smooth(t / 0.3);
+      lift = 0.3 + 0.3 * Math.sin(Math.min(1, t / 0.35) * Math.PI);
+      legs = 'wave';
+      rate = 40;
+    }
+    // (Beaten, it rolls over and shrivels away, as the others do: it was gone in a seventh of a second.)
+    this.shrink = dead ? 1 - smooth((t - 0.9) / 0.5) : 1;
+    this.root.visible = !dead || this.shrink > 0.02;
     if (a.moving) this.walk += dt * 18;
-    for (const l of this.legs) l.leg.rotation.y = a.moving ? 0.35 * Math.sin(this.walk + l.k * 2.1 + (l.side > 0 ? Math.PI : 0)) : 0;
-    this.body.position.y = 0.32 + (a.moving ? 0.015 * Math.sin(this.walk * 2) : 0);
+    for (const l of this.legs) l.leg.rotation.y = legs === 'walk' ? 0.35 * Math.sin(this.walk + l.k * 2.1 + (l.side > 0 ? Math.PI : 0)) : legs === 'wave' ? 0.45 * Math.sin(this.time * 17 + l.k * 1.7) * (dead ? Math.max(0, 1 - t / 0.8) : 1) : 0;
+    this.pitch = ease(this.pitch, pitch, rate);
+    this.rollZ = dead ? roll : ease(this.rollZ, roll, a.down || this.rollZ > 1 ? 20 : rate);
+    if (!dead && a.state !== 'recover' && this.rollZ > 2.6) this.rollZ = ease(this.rollZ, 0, 20);
+    this.lift = ease(this.lift, lift, rate);
+    this.stretch = ease(this.stretch, stretch, rate);
+    this.body.position.set(shake * Math.sin(this.time * 57), this.lift, shake * Math.cos(this.time * 49));
+    this.body.rotation.set(this.pitch, 0, this.rollZ);
     // Its light: dim blue at rest, brighter as it charges, white-blue as it lets go.
     const c = a.discharging ? 1 : a.charge;
     const col = new THREE.Color(0x3a5aff).lerp(new THREE.Color(0xe0eaff), c * c);
     for (const m of this.glow) m.color.copy(col).multiplyScalar(0.45 + 0.55 * c);
     this.haloMat.opacity = a.discharging ? 0.55 : 0.25 * c * c;
     this.halo.scale.setScalar(a.discharging ? 1.25 + 0.15 * Math.sin(this.walk * 7) : 1);
-    this.body.scale.setScalar(this.flashT > 0 ? 1.12 : 1);
+    const hit = this.flashT > 0 ? 1.12 : 1;
+    this.body.scale.set(hit * this.shrink, hit * this.shrink, hit * this.shrink * this.stretch);
   }
 }

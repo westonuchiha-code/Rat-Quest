@@ -193,7 +193,11 @@ export class Scorpion {
 
   get attackActive(): boolean {
     if (this.spent) return false;
-    if (this.state === 'sting') return this.stateTime >= SCORPION.stingTime * 0.4;
+    // (THE STING HURTS WHEN THE BARB LANDS, as it is drawn: the last instants of its fall and the instant after it
+    // strikes the floor. It was live from 0.4 of the way down, four or five frames before the barb was seen to land,
+    // and over by the time it did: a guard timed to what he SAW was late. Audit, 2026-11-24.)
+    if (this.state === 'sting') return this.stateTime >= SCORPION.stingTime * 0.8;
+    if (this.state === 'stuck') return this.stateTime < 0.05;
     return this.state === 'snap';
   }
   /** The sting comes down on its ring; the claws shut in front of it. */

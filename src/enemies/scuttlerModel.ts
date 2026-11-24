@@ -31,6 +31,8 @@ export interface ScuttlerAnimInput {
   state: ScuttlerState;
   stateTime: number;
   moving: boolean;
+  /** Turned by a perfect guard: on its back, open. */
+  down?: boolean;
 }
 
 function ease(current: number, target: number, dt: number, rate: number): number {
@@ -51,6 +53,7 @@ interface Leg {
 }
 
 export class ScuttlerModel {
+  private wasDead = false;
   readonly root = new THREE.Group();
   // (Each has a picture of its SURFACE, in greys, laid over the colours painted on it: the texture pass, 2026-11-16.)
   private readonly material = createPs1Material({ lit: true, shine: 0.3, tex: getTexture('chitin') });
@@ -274,7 +277,17 @@ export class ScuttlerModel {
       jaw = t > 0.12 ? -0.1 : 1.0; // snaps shut at the end
       stretch = 1.22;
       eyeHot = 1;
-      rate = 30;
+      // (Fast: its bite is live from the first instant of the lunge, and at 30 the body was four or five frames behind.)
+      rate = 70;
+    } else if (state === 'recover' && ctx.down) {
+      // TURNED BY A PERFECT GUARD: thrown onto its back, rocking, legs going at the roof. OPEN, and it must look it
+      // (it lay as one that had only missed does: nothing told him he had turned it).
+      roll = Math.PI + Math.sin(this.time * 7) * 0.16;
+      height = 0.26 + (t < 0.3 ? Math.sin((t / 0.3) * Math.PI) * 0.3 : 0);
+      jaw = 0.8;
+      spread = 0.5;
+      curl = 0.35 + 0.25 * Math.sin(this.time * 13);
+      rate = 26;
     } else if (state === 'recover') {
       // Spent: sags to the floor and pants.
       height = 0.2 + Math.sin(this.time * 9) * 0.012;
@@ -303,7 +316,10 @@ export class ScuttlerModel {
 
     this.pitch = ease(this.pitch, pitch, dt, rate);
     this.height = ease(this.height, height, dt, rate);
-    this.roll = state === 'dead' ? roll : ease(this.roll > 1 ? 0 : this.roll, roll, dt, rate);
+    // (Back from the dead it is the right way up at once; turned onto its back, and righting itself after, it goes over.)
+    if (this.wasDead && state !== 'dead') this.roll = 0;
+    this.wasDead = state === 'dead';
+    this.roll = state === 'dead' ? roll : ease(this.roll, roll, dt, ctx.down || this.roll > 1 ? 20 : rate);
     this.jawOpen = ease(this.jawOpen, jaw, dt, rate * 1.5);
     this.stretch = ease(this.stretch, stretch, dt, rate);
     this.scale = state === 'dead' ? scale : ease(this.scale, scale, dt, 8);
@@ -318,7 +334,8 @@ export class ScuttlerModel {
     this.root.scale.setScalar(Math.max(0.001, this.scale));
     this.shadow.visible = this.scale > 0.05;
 
-    this.headGroup.rotation.x = state === 'windup' ? -0.3 : state === 'recover' ? 0.25 : 0;
+    // (Eased: it cut seventeen degrees in a frame at each change.)
+    this.headGroup.rotation.x = ease(this.headGroup.rotation.x, state === 'windup' ? -0.3 : state === 'recover' ? 0.25 : 0, dt, 28);
     this.jaws[0].rotation.y = -this.jawOpen;
     this.jaws[1].rotation.y = this.jawOpen;
     // The wing cases lift at the hinge and spread a little; the tail prongs feel about behind it.

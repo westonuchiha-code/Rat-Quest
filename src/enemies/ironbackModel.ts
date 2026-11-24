@@ -301,7 +301,8 @@ export class IronbackModel {
         headDip = -0.8;
         pitch = -0.25;
         hot = 0.6;
-        rate = 30;
+        // (Fast: the blow is live from the first instant of the toss, and at 30 the horn was five frames behind it.)
+        rate = 75;
         break;
       case 'buckWind':
         tailLift = 0.5 * smooth(t / I.buckWind);
@@ -313,7 +314,7 @@ export class IronbackModel {
         tailLift = 0.9;
         pitch = 0.4;
         height = 0.42;
-        rate = 30;
+        rate = 75;
         break;
       case 'recover':
         height = 0.3 + Math.sin(this.time * 7) * 0.01;
@@ -352,13 +353,16 @@ export class IronbackModel {
     this.pitch = ease(this.pitch, pitch, dt, rate);
     this.height = ease(this.height, height, dt, rate);
     // Rolling onto its back and off again: driven straight, so it does not unwind the long way round.
-    this.roll = state === 'flipped' || state === 'rise' || state === 'dead' ? roll : ease(this.roll > 1 ? 0 : this.roll, roll, dt, rate);
+    // (Onto its back it GOES over, quickly, not in one frame: eased while it is still short of being over.)
+    this.roll = state === 'flipped' && this.roll < Math.PI - 0.35 ? ease(this.roll, Math.PI, dt, 22) : state === 'flipped' || state === 'rise' || state === 'dead' ? roll : ease(this.roll > 1 ? 0 : this.roll, roll, dt, rate);
     this.headDip = ease(this.headDip, headDip, dt, rate);
     this.tailLift = ease(this.tailLift, tailLift, dt, rate);
     this.paw = ease(this.paw, paw, dt, 30);
     this.scale = state === 'dead' ? scale : ease(this.scale, scale, dt, 8);
 
-    this.body.position.set(shake * Math.sin(this.time * 57), this.height, shake * Math.cos(this.time * 49));
+    // (Going over onto its back it is lifted by its own width as it turns: or its side went through the floor.)
+    const over = state === 'flipped' ? 0.6 * Math.abs(Math.sin(this.roll)) : 0;
+    this.body.position.set(shake * Math.sin(this.time * 57), this.height + over, shake * Math.cos(this.time * 49));
     this.body.rotation.set(this.pitch, 0, this.roll);
     this.root.scale.setScalar(Math.max(0.001, this.scale));
     this.shadow.visible = this.scale > 0.05;

@@ -386,7 +386,8 @@ export class BroodModel {
       case 'sweepWind':
         return SWEEP_WIND;
       case 'sweep':
-        return sweepArc(Math.min(1, ctx.stateTime / BROOD.sweepTime));
+        // (Her scythes cross his front as they begin to hurt, not five frames after. Audit, 2026-11-24.)
+        return sweepArc(Math.min(1, ctx.stateTime / (BROOD.sweepTime * 0.6)));
       case 'crouch':
         return CROUCH;
       case 'leap':

@@ -441,7 +441,8 @@ export class MantisModel {
     flatten(this.poseFor(ctx), this.springs.target);
 
     // How hard the springs pull: a cut snaps, a wind-up is drawn (the held one more slowly), the rest settle.
-    const stiffness = state === 'slash' ? 38 : state === 'leap' ? 26 : state === 'stagger' || state === 'reel' || state === 'hop' ? 24 : state === 'windup' ? (ctx.held ? 15 : 20) : state === 'dead' ? 11 : 15;
+    // (A cut is live from its first instant: at 38 the scythe was drawn at its fullest eight frames after it could hurt. Audit, 2026-11-24.)
+    const stiffness = state === 'slash' ? 60 : state === 'leap' ? 26 : state === 'stagger' || state === 'reel' || state === 'hop' ? 24 : state === 'windup' ? (ctx.held ? 15 : 20) : state === 'dead' ? 11 : 15;
     const damping = state === 'reel' || state === 'stagger' ? 0.45 : 0.8;
     this.springs.step(dt, stiffness, damping);
 

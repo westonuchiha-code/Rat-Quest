@@ -45,6 +45,7 @@ function smooth(x: number): number {
 }
 
 export class BatModel {
+  private flapSize = 1;
   /** Holds the bat and its perch. It stays at the origin: the bat moves inside it, the perch stays at the roost. */
   readonly root = new THREE.Group();
   private readonly flier = new THREE.Group();
@@ -336,6 +337,9 @@ export class BatModel {
     this.mouth = ease(this.mouth, mouth, dt, 20);
     this.scale = s === 'dead' ? scale : ease(this.scale, scale, dt, 8);
 
+    // (Eased: the beat of its wings stepped from one size to another at each change, in the middle of its swoop too.)
+    this.flapSize = ease(this.flapSize, flapSize, dt, 22);
+    flapSize = this.flapSize;
     const flapNow = Math.sin(this.flap) * flapSize;
     // Hanging upside down turns it over its middle; lying on the floor tips it onto its back.
     this.body.rotation.set(this.tilt + this.upside * Math.PI + this.lie * -Math.PI * 0.5, 0, Math.sin(this.time * 2.2) * 0.06 * (1 - this.lie));

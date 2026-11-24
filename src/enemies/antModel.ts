@@ -475,7 +475,7 @@ export class AntModel {
       }
     }
     // How hard the springs pull: a thrust snaps, the wind-up is drawn, a blow jolts, the rest settle.
-    const stiffness = state === 'thrust' || state === 'bite' ? 40 : state === 'stagger' || state === 'reel' ? 24 : state === 'windup' ? 17 : state === 'biteWind' ? 22 : state === 'dead' ? 11 : 15;
+    const stiffness = state === 'bite' ? 62 : state === 'thrust' ? 40 : state === 'stagger' || state === 'reel' ? 24 : state === 'windup' ? 17 : state === 'biteWind' ? 22 : state === 'dead' ? 11 : 15;
     const damping = state === 'reel' || state === 'stagger' ? 0.5 : state === 'thrust' || state === 'bite' ? 1 : 0.85;
     this.springs.step(dt, stiffness, damping);
 

@@ -379,13 +379,16 @@ export class StagModel {
       case 'windup':
         return SLAM_WIND;
       case 'slam':
-        return slamArc(Math.min(1, ctx.stateTime / STAG.slamTime));
+        // (THE HAMMER IS DOWN WHEN THE BLOW IS: it can hurt from 0.08 before the slam's end, and drawn over the whole
+        // slam it was a quarter of the way down then, landing six frames after. Audit, 2026-11-24.)
+        return slamArc(Math.min(1, ctx.stateTime / Math.max(0.04, STAG.slamTime - 0.07)));
       case 'stuck':
         return SLAM_END;
       case 'sweepWind':
         return SWEEP_WIND;
       case 'sweep':
-        return sweepArc(Math.min(1, ctx.stateTime / STAG.sweepTime));
+        // (And the sweep crosses his front as it begins to hurt, 0.05 in: not four frames after.)
+        return sweepArc(Math.min(1, ctx.stateTime / (STAG.sweepTime * 0.6)));
       case 'recover':
         return SWEEP_END;
       case 'stompWind':
@@ -405,7 +408,7 @@ export class StagModel {
     flatten(this.poseFor(ctx), this.springs.target);
     // A swing follows its arc closely; a blow landing stops dead; the rest of it is heavy and slow to move.
     const swinging = state === 'slam' || state === 'sweep';
-    const stiffness = swinging ? 90 : state === 'stuck' || state === 'stomp' ? 34 : state === 'windup' || state === 'sweepWind' || state === 'stompWind' ? 11 : state === 'kneel' ? 14 : 9;
+    const stiffness = swinging ? 90 : state === 'stomp' ? 85 : state === 'stuck' ? 34 : state === 'windup' || state === 'sweepWind' || state === 'stompWind' ? 11 : state === 'kneel' ? 14 : 9;
     this.springs.step(dt, stiffness, swinging ? 1 : 0.9);
 
     // A ring runs out over the floor where a blow lands: from the hammer's head after a slam, from under it after a stomp.

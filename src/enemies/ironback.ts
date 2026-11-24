@@ -220,7 +220,9 @@ export class Ironback {
     }
     if (blocked || parried) {
       this.recoverTime = parried ? I.blockedRecover * 1.4 : I.blockedRecover;
-      this.enter(parried ? 'stagger' : 'recover');
+      // (A toss or a buck turned by a perfect guard: it is left recovering for LONGER than one only blocked. It went
+      // to `stagger`, a third of a second, and the longer time set above was never used. Audit, 2026-11-24.)
+      this.enter('recover');
     }
   }
 

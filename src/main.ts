@@ -334,6 +334,7 @@ function startGame(): void {
   let webs: WebState[] = [];
   let webMeshes: THREE.LineSegments[] = [];
   let rushKick = 0;
+  const PARRY_ALL = /[#&]parryall\b/.test(location.hash);
   let ripGlintIn = 0;
   /** Seconds since a perfect guard (for the sweep his body makes of it), or -1. */
   let parrySweep = -1;
@@ -672,7 +673,7 @@ function startGame(): void {
         root: m.root,
         setTransform: (p, f) => m.setTransform(p, f),
         flash: () => m.flash(),
-        tick: (dt) => m.update(dt, { state: e.state, moving: ['chase', 'return', 'circle', 'lunge'].includes(e.state), charge: e.charge, discharging: e.discharging && e.alive }),
+        tick: (dt) => m.update(dt, { state: e.state, stateTime: e.stateTime, down: e.down, moving: e.state === 'chase' || e.state === 'return', charge: e.charge, discharging: e.discharging && e.alive }),
       });
       scene.add(m.root);
     } else {
@@ -682,7 +683,7 @@ function startGame(): void {
         root: m.root,
         setTransform: (p, f) => m.setTransform(p, f),
         flash: () => m.flash(),
-        tick: (dt, e) => m.update(dt, { state: e.state as ScuttlerState, stateTime: e.stateTime, moving: e.state === 'chase' || e.state === 'return' }),
+        tick: (dt, e) => m.update(dt, { state: e.state as ScuttlerState, stateTime: e.stateTime, moving: e.state === 'chase' || e.state === 'return', down: (e as Scuttler).down }),
       });
       scene.add(m.root);
     }
@@ -2536,6 +2537,8 @@ function startGame(): void {
     crushCheck();
     coldCheck(dt);
     webCheck(dt);
+    // (`&parryall`: a filming aid. Any blow his shield catches is a PERFECT guard, so that what follows one can be filmed.)
+    if (PARRY_ALL && player.gear.parry < 90) player.gear = { ...player.gear, parry: 99 };
     if (keyTap('lock') || consumeAction('lock')) {
       if (lockTarget) lockTarget = null;
       else {
