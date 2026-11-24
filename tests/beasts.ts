@@ -21,6 +21,8 @@ const count: Record<string, { ironback: number; bat: number; chains: number }> =
 for (const def of LEVELS) {
   for (const e of def.enemies) {
     if (e.type !== 'ironback' && e.type !== 'bat') continue;
+    // (A bat that only flutters where it hangs is no roosting bat: it may hang over a drop, as the Hollows' bridge of them does.)
+    if (e.type === 'bat' && e.flutter) continue;
     const c = (count[def.id] ??= { ironback: 0, bat: 0, chains: 0 });
     const y = e.y ?? 0;
     if (e.type === 'ironback') {
@@ -64,7 +66,7 @@ check(
 const hollows = LEVELS.find((l) => l.id === 'hollows')!;
 check(
   'the gallery bats keep to their ledge (it is a long way down)',
-  hollows.enemies.filter((e) => e.type === 'bat').every((e) => e.arena && e.arena.x0 >= -48 && e.arena.x1 <= -34)
+  hollows.enemies.filter((e) => e.type === 'bat' && !e.flutter).every((e) => e.arena && e.arena.x0 >= -48 && e.arena.x1 <= -34)
 );
 const foundry = LEVELS.find((l) => l.id === 'foundry')!;
 check(

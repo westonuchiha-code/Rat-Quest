@@ -45,7 +45,8 @@ for (const L of LEVELS) {
   check(`${tag}: he starts on solid ground, clear of everything`, standsOn && clear, `spawn ${s.x},${s.y},${s.z}`);
 
   // Enemies start on the floor, clear of solids.
-  const badEnemy = [...L.enemies, ...L.waves.flat()].find((e) => !L.solids.some((b) => b.kind !== 'wall' && !isBreakable(b.kind) && e.x > b.x0 && e.x < b.x1 && e.z > b.z0 && e.z < b.z1 && Math.abs(b.y1 - (e.y ?? 0)) < 0.05) || L.solids.some((b) => inside(b, e.x, (e.y ?? 0) + 0.5, e.z, 0.3)));
+  // (But for a bat that only flutters where it hangs: it may hang over a drop.)
+  const badEnemy = [...L.enemies, ...L.waves.flat()].filter((e) => !(e.type === 'bat' && e.flutter)).find((e) => !L.solids.some((b) => b.kind !== 'wall' && !isBreakable(b.kind) && e.x > b.x0 && e.x < b.x1 && e.z > b.z0 && e.z < b.z1 && Math.abs(b.y1 - (e.y ?? 0)) < 0.05) || L.solids.some((b) => inside(b, e.x, (e.y ?? 0) + 0.5, e.z, 0.3)));
   check(`${tag}: enemies start on open floor`, !badEnemy, badEnemy ? `${badEnemy.x},${badEnemy.z}` : '');
 
   // The exit door is on a wall, in the open, and not at the spawn.

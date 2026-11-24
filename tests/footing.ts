@@ -235,7 +235,8 @@ const inScenery = (e: { x: number; z: number; radius: number }): boolean => !roo
       }
       return floor;
     };
-    for (const e of [...lv.enemies, ...lv.waves.flat()]) if (!stand(e.x, e.y ?? 0, e.z, 0.5)) off.push(`${lv.id} ${e.type ?? 'roach'} at ${e.x},${e.z}`);
+    // (But for a bat that only flutters where it hangs: it may hang over a drop.)
+    for (const e of [...lv.enemies, ...lv.waves.flat()].filter((e) => !(e.type === 'bat' && e.flutter))) if (!stand(e.x, e.y ?? 0, e.z, 0.5)) off.push(`${lv.id} ${e.type ?? 'roach'} at ${e.x},${e.z}`);
   }
   check('every enemy in every level starts on open floor', off.length === 0, off.slice(0, 6).join('; '));
 }
