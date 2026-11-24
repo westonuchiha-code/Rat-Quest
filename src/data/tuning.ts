@@ -245,6 +245,7 @@ export const TUNING = {
     // (The top is half as fast again as he stands at, no more: the course is measured for 16, and a test rides all of
     // it at this. At 26 and over the weeds come too fast for the line that test steers.)
     rush: { boost: 4, top: 24 },
+    web: { tear: 19, left: 4, regrow: 25 }, // WEB CURTAINS (world/webs.ts): the speed that tears through, the speed left when caught, seconds to respin
     trickBoost: 3.5, // speed added for landing one, for EACH trick done in that air (up to his tucked top speed)
     bailSpeed: 6, // into a wall faster than this, he comes off
     bailTime: 0.5, // ...and is this long picking himself up

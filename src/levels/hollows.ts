@@ -95,6 +95,14 @@ export const NORTH_WEST_FLOOR = { x0: -48, x1: -4, z0: -48, z1: -30 };
  * The Undershelf's firefly: over its west end, where the ways to the gallery, the west path and the Faith Stones part.
  * Its air: that end of the shelf and out over the chasm beside it (clear of Spider Rock and the pillars under the Mouth).
  */
+/**
+ * THE BAT BRIDGE (2026-11-24, a placeholder to try the stomp: data/feel.ts `bounce`). Three bats that only flutter
+ * where they hang, in a line over the chasm from the east bank's edge to the spider's larder ledge, each higher than
+ * the last. A ground pound landed on one throws him up and gives his air jump back: bat to bat, he crosses.
+ * WHAT IT IS FOR, on purpose: a second way to the larder's relic, and the only way back OUT of the larder without a
+ * fall. It is no goal and counts toward none (the bats are `uncounted`, and come back). [x, height], all at `z`.
+ */
+export const BAT_BRIDGE = { z: 9.75, bats: [[17.5, 1.4], [13, 1.9], [8.5, 2.4]] as ReadonlyArray<readonly [number, number]> } as const;
 export const SHELF_FIREFLY = { x: -30, z: 40 };
 export const FIREFLY_AIR = { x0: -47, x1: -13, z0: 22, z1: 47 };
 
@@ -252,7 +260,7 @@ export function hollows(): LevelDef {
     world: 'hollows',
     fallBack: true,
     solids: rockWalls(def),
-    enemies,
+    enemies: [...enemies, ...BAT_BRIDGE.bats.map(([x, y]) => ({ type: 'bat' as const, flutter: true, x, y, z: BAT_BRIDGE.z, respawn: true, uncounted: true }))],
     courseDoors: [
       { to: 'webs', name: 'Web Hollow', need: 0, door: doorOn('west', 48, 0, 48, GALLERY) },
       // On the gallery's north ledge: the way down to what has been spinning all these webs.

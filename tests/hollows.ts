@@ -9,7 +9,11 @@ import { buildChamber } from '../src/world/chamber';
 import { TUNING } from '../src/data/tuning';
 import type { Box } from '../src/world/layout';
 import type { LevelDef } from '../src/levels/types';
-import { hollows, hollowsWebs, hollowsFaith, CAPS, HIGH, LIP, ROCK, ROCK_BOX, STONES, NEEDLE, SPIRE, CLEFT, DRIP } from '../src/levels/hollows';
+import { hollows, hollowsWebs, hollowsFaith, CAPS, HIGH, LIP, ROCK, ROCK_BOX, STONES, NEEDLE, SPIRE, CLEFT, DRIP, BAT_BRIDGE } from '../src/levels/hollows';
+import { Bat } from '../src/enemies/bat';
+import { resolveCombat, type CombatEvents } from '../src/combat/combat';
+import { FEELS } from '../src/data/feel';
+import { aabbOf } from '../src/world/collision';
 import { LEVELS } from '../src/levels/levels';
 import { HUB_DOORS } from '../src/levels/junction';
 import { TRACK_NAMES } from '../src/audio/music';
@@ -392,6 +396,64 @@ check('it is a real leap: 13 or more out and 6 down', LIP.z0 - ROCK_BOX.z1 >= 13
       noTop.join(', ')
     );
   }
+}
+
+// ---- THE BAT BRIDGE (2026-11-24): three fluttering bats from the east bank to the larder ledge, crossed by stomping ----
+{
+  const Bz = BAT_BRIDGE.z;
+  const specs = def.enemies.filter((e) => e.type === 'bat' && (e as { flutter?: boolean }).flutter);
+  check(
+    'three bats that only flutter hang in a line over the chasm from the east bank toward the larder ledge, each higher than the last; they come back, and count toward no goal',
+    specs.length === BAT_BRIDGE.bats.length
+      && specs.every((e) => e.z === Bz && e.respawn === true && e.uncounted === true && e.x < 22 && e.x > 2)
+      && BAT_BRIDGE.bats.every(([x, y], i) => i === 0 || (x < BAT_BRIDGE.bats[i - 1][0] && y > BAT_BRIDGE.bats[i - 1][1]))
+  );
+  const cs = def.solids.map((b) => aabbOf(b));
+  const input = (o: Partial<PlayerInput>): PlayerInput => ({ move: new THREE.Vector3(), run: true, jumpPressed: false, jumpHeld: false, attackPressed: false, dodgePressed: false, guardHeld: false, stowPressed: false, ...o } as PlayerInput);
+  /** From the east bank's edge, west: a jump, and a ground pound on each bat in turn. Where he ends, and how many he stomped. */
+  const cross = (feel: (typeof FEELS)[keyof typeof FEELS]): { p: PlayerController; stomps: number } => {
+    const bats = BAT_BRIDGE.bats.map(([x, y]) => new Bat({ x, y, z: Bz, flutter: true, respawn: true }));
+    const p = new PlayerController(new THREE.Vector3(23.2, 0, Bz));
+    p.feel = feel;
+    p.facing = -Math.PI / 2;
+    for (let i = 0; i < 20; i++) p.update(DT, input({}), cs);
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    let stomps = 0;
+    let next = 0;
+    let jumped = false;
+    let airUsed = false;
+    for (let i = 0; i < 60 * 12; i++) {
+      const b = next < bats.length ? { x: BAT_BRIDGE.bats[next][0], y: BAT_BRIDGE.bats[next][1] } : null;
+      const tx = b ? b.x : 0;
+      const dx = tx - p.position.x;
+      const over = !!b && Math.abs(dx) < 0.3;
+      // (He runs at the edge and jumps from it; in the air he steers to stand over the next bat, and dives.)
+      const jump = !jumped && p.grounded && p.position.x < 22.5;
+      if (jump) jumped = true;
+      // (Sinking short of the next thing: his air jump.)
+      const air = jumped && !p.grounded && !airUsed && !over && p.velocity.y < -2 && p.plungeStage === 0 && p.position.y < (b ? b.y + 1.2 : 3.6);
+      if (air) airUsed = true;
+      const dive = over && !p.grounded && p.plungeStage === 0 && p.position.y > b!.y + 0.3;
+      p.update(DT, input({ move: new THREE.Vector3(Math.max(-1, Math.min(1, dx * 2.5)), 0, 0), jumpPressed: jump || air, jumpHeld: true, attackPressed: dive }), cs);
+      resolveCombat(p, bats, events);
+      if (events.stomped) {
+        stomps++;
+        next++;
+        airUsed = false;
+      }
+      if (jumped && p.grounded) break;
+      if (p.position.y < -6) break;
+    }
+    return { p, stomps };
+  };
+  const there = cross(FEELS.platform);
+  check(
+    'THE BAT BRIDGE: from the east bank he jumps, ground pounds each bat in turn (thrown up off each, his air jump back), and lands on the larder ledge: the stomp carries him over the chasm',
+    there.stomps === BAT_BRIDGE.bats.length && there.p.grounded && Math.abs(there.p.position.y - 3) < 0.05 && Math.abs(there.p.position.x) < 2.2,
+    `${there.stomps} stomps; ended at x ${there.p.position.x.toFixed(1)}, y ${there.p.position.y.toFixed(1)}, grounded ${there.p.grounded}`
+  );
+  const awake = cross(FEELS.waking);
+  check('...and it is the stomp that does it: with the waking world\'s ground pound (no bounce) the same crossing does not reach the ledge', awake.stomps === 0 && !(Math.abs(awake.p.position.y - 3) < 0.05 && Math.abs(awake.p.position.x) < 2.2), `ended at x ${awake.p.position.x.toFixed(1)}, y ${awake.p.position.y.toFixed(1)}`);
 }
 
 console.log(failures === 0 ? 'hollows: all pass' : `hollows: ${failures} FAIL`);

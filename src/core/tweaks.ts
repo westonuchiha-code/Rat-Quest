@@ -68,6 +68,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Riding', path: 'ride.minSlope', label: 'Air attack is the shield over slopes this steep or more (rise over run)', min: 0.05, max: 2, step: 0.05 },
   { group: 'Speed room', path: 'ride.rush.boost', label: 'THE RUSH: speed added for each creature struck down from the shield', min: 0, max: 12, step: 0.5 },
   { group: 'Speed room', path: 'ride.rush.top', label: 'THE RUSH: the fastest it can make him', min: 16, max: 40, step: 1 },
+  { group: 'Speed room', path: 'ride.web.tear', label: 'WEB CURTAINS: going at least this fast on his shield he tears through', min: 12, max: 30, step: 0.5 },
+  { group: 'Speed room', path: 'ride.web.left', label: 'WEB CURTAINS: caught, the speed he is left with', min: 0, max: 12, step: 0.5 },
   { group: 'Ice', path: 'ice.water.every', label: 'MELTWATER (under thin ice): seconds in it for each heart it costs', min: 1, max: 10, step: 0.5 },
   { group: 'Ice', path: 'ice.decel', label: 'How much of his usual stopping he has on ice (less: he glides further)', min: 0.02, max: 1, step: 0.02 },
   { group: 'Ice', path: 'frost.grip', label: 'In the ice world, how much grip ORDINARY ground has (1: as anywhere)', min: 0.2, max: 1, step: 0.05 },

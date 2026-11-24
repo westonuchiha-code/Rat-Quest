@@ -531,6 +531,42 @@ const hall = levelById(HALL_ID)!;
     const turned = g.takeHit(0, 5, 1);
     if (turned === 'parried') g.openRiposte(foe);
     check('a blow caught as his shield comes up is a perfect guard, and opens the riposte', turned === 'parried' && g.riposteReady(foe), turned);
+    // (And the same through a real fight: a roach's own lunge, resolveCombat, the guard raised `lead` frames before it lands.)
+    const realFight = (feel: Feel): { found: boolean; lead: number; ready: boolean; riposted: boolean } => {
+      for (let lead = 0; lead <= 12; lead++) {
+        const roach = new Scuttler({ x: 0, z: 3, hunt: true });
+        const p = man(feel);
+        const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+        for (let i = 0; i < 60 * 8; i++) {
+          p.facing = Math.atan2(roach.x - p.position.x, roach.z - p.position.z);
+          const guard = (roach.state === 'windup' && roach.stateTime >= roach.windupTime - lead * DT) || roach.state === 'lunge';
+          roach.update(DT, p.position.x, p.position.y, p.position.z, true);
+          p.update(DT, inp({ guardHeld: guard }), floor);
+          resolveCombat(p, [roach], events);
+          if (events.playerResult === 'parried') {
+            const ready = p.riposteReady(roach);
+            let riposted = false;
+            for (let j = 0; j < 90 && !riposted; j++) {
+              p.facing = Math.atan2(roach.x - p.position.x, roach.z - p.position.z);
+              roach.x = p.position.x + Math.sin(p.facing) * 1.2;
+              roach.z = p.position.z + Math.cos(p.facing) * 1.2;
+              p.update(DT, inp({ attackPressed: j === 3 }), floor);
+              resolveCombat(p, [roach], events);
+              if (events.riposte) riposted = true;
+            }
+            return { found: true, lead, ready, riposted };
+          }
+          if (events.playerResult === 'hit') break;
+        }
+      }
+      return { found: false, lead: -1, ready: false, riposted: false };
+    };
+    const real = realFight(FEELS.sewers);
+    check('a real roach lunging at a sewers knight can be turned with a perfect guard through resolveCombat', real.found, `lead ${real.lead}`);
+    check('...and that perfect guard has opened the riposte on that very roach', real.found && real.ready);
+    check('...and his next sword blow on it, in time, is a riposte', real.found && real.riposted);
+    const realWake = realFight(FEELS.waking);
+    check('the same fight in the waking world finds a perfect guard, but it opens no riposte', realWake.found && !realWake.ready && !realWake.riposted, `lead ${realWake.lead}`);
   }
   const w = swings(FEELS.waking);
   const sw = swings(FEELS.sewers);

@@ -9,16 +9,17 @@
  * Plain rules here (tests/longdrop.ts plays them); main.ts draws them (`webMesh`) and gives the knight the result.
  */
 import * as THREE from 'three';
+import { TUNING } from '../data/tuning';
 
 export interface WebSpec { x: number; y: number; z: number; r: number }
 export const WEB = {
   /** Going at least this fast he tears through. (Over his standing top speed: only a rush does it.) */
-  tear: 19,
+  get tear(): number { return TUNING.ride.web.tear; },
   /** Caught, this is the speed he is left with. */
-  left: 4,
+  get left(): number { return TUNING.ride.web.left; },
   /** A torn web is spun again after this long. */
-  regrow: 25,
-} as const;
+  get regrow(): number { return TUNING.ride.web.regrow; },
+};
 
 export interface WebState { spec: WebSpec; torn: number }
 export const websOf = (specs: readonly WebSpec[] | undefined): WebState[] => (specs ?? []).map((spec) => ({ spec, torn: 0 }));
