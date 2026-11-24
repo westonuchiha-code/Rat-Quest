@@ -13,7 +13,7 @@ Tags: **PLACEHOLDER** (an idea, expect it to change or go), **WORK IN PROGRESS**
 
 | Area | Where | Tag | State |
 |------|-------|-----|-------|
-| Sewers | `sewers` feel | WORK IN PROGRESS | Has its own feel. Awaiting the owner's verdict. |
+| Sewers | `sewers` feel | WORK IN PROGRESS | Slower, weaker blows, hits cost double; THE RIPOSTE: after a perfect guard his next sword blow on that creature (within 1.3 s) is worth four, and the creature glints gold while it is open. Awaiting the owner's verdict. NOT FILMED (a perfect guard cannot be scripted cheaply); the rules are tested, the link from a real perfect guard in a fight is one line in combat.ts. |
 | Deep caves / platforming | `platform` feel | WORK IN PROGRESS | The stomp: a ground pound landed ON a creature bounces him back up with his air jump back (creatures as stepping stones). Awaiting the owner's verdict. For later: creatures placed over gaps to stomp across. |
 | Wacky Pomo dream | `dream` feel | WORK IN PROGRESS | Skate park is missing banked turns and rail loops. |
 | Snow and ice | `frost` feel | WORK IN PROGRESS | Scrabble, skid, belly slide, shield brake, ice spray; thin ice over meltwater that costs hearts, in the bank and in the channel; a Frost Roller that bowls over it goes through (Test Room 4). Awaiting the owner's verdict. For later: a cracking sound, an editor entry for thin ice. |

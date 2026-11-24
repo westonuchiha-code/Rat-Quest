@@ -334,6 +334,7 @@ function startGame(): void {
   let webs: WebState[] = [];
   let webMeshes: THREE.LineSegments[] = [];
   let rushKick = 0;
+  let ripGlintIn = 0;
   let rushCrouch = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
 
@@ -3108,6 +3109,15 @@ function startGame(): void {
       }
       // Only the tiniest freeze on a normal hit (a hint of that old Zelda feel); a kill adds a short slow-motion beat.
       hitStop = events.enemyKilled ? 0.05 : 0.025;
+      // THE RIPOSTE (the sewers: his blow on a creature he has just turned with a perfect guard): it is FELT. A long
+      // freeze, a hard shake, a burst of gold off the creature, and a deeper sound under the blow.
+      if (events.riposte) {
+        hitStop = 0.16;
+        shake = Math.max(shake, 0.18);
+        audio.play('kill', { vol: 1, rate: 0.7, priority: 9 });
+        audio.play('sparkle', { vol: 0.7, rate: 0.9, priority: 8 });
+        grindSparks.burst(events.enemyHit.x, events.enemyHit.y + 0.6, events.enemyHit.z, 0xffd070, 16, 5, 0.22);
+      }
       if (events.enemyKilled) {
         // (Counted, on his save: the Club's regulars turn up on how many of a kind he has beaten.)
         levelProgress.noteBeaten(events.enemyHit.kind);
@@ -4850,6 +4860,13 @@ function startGame(): void {
         camera.fov = baseFov + fovKick;
         camera.updateProjectionMatrix();
       }
+    }
+    // OPEN TO A RIPOSTE: the creature he has just turned glints gold for as long as the riposte can be had.
+    ripGlintIn -= frameDt;
+    if (ripGlintIn <= 0 && frameDt > 0 && player.riposteReady()) {
+      ripGlintIn = 0.1;
+      const open = enemies.find((e) => e.alive && player.riposteReady(e));
+      if (open) grindSparks.burst(open.x, open.y + 0.9, open.z, 0xffd070, 2, 1.2, 0.13);
     }
     // ON ICE, what his feet, his belly or his shield's edge shave off flies up: so a slip is SEEN, not only posed.
     // (Most from the shield dug in; a steady plume behind the belly slide; a little from scrabbling feet or a skid.)

@@ -482,6 +482,56 @@ const hall = levelById(HALL_ID)!;
     }
     return roach.alive ? 99 : n;
   };
+  // THE RIPOSTE (2026-11-24): after a perfect guard, his next sword blow on that creature, in time, is worth four.
+  {
+    /** One swing at a roach: what it took off it. `open`: he has just turned its blow. `wait`: seconds before he swings. `other`: it was another creature he turned. */
+    const blow = (feel: Feel, open: boolean, wait = 0, other = false): { took: number; rip: boolean; ready: boolean; second: number } => {
+      const roach = new Scuttler({ x: 0, z: 1.2 });
+      const p = man(feel);
+      const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+      if (open) p.openRiposte(other ? new Scuttler({ x: 9, z: 9 }) : roach);
+      for (let i = 0; i < Math.round(wait / DT); i++) p.update(DT, inp({}), floor);
+      const ready = p.riposteReady(roach);
+      const hp0 = roach.hp;
+      let rip = false;
+      let took = 0;
+      let second = 0;
+      for (let n = 0; n < 2; n++) {
+        const was = roach.hp;
+        for (let i = 0; i < 90; i++) {
+          p.facing = 0;
+          p.update(DT, inp({ attackPressed: i === 0 }), floor);
+          roach.x = p.position.x;
+          roach.z = p.position.z + 1.2;
+          resolveCombat(p, [roach], events);
+          if (events.riposte) rip = true;
+          if (roach.hp < was && p.state !== 'attack') break;
+        }
+        if (n === 0) took = hp0 - roach.hp;
+        else second = was - roach.hp;
+      }
+      return { took, rip, ready, second };
+    };
+    const plain = blow(FEELS.sewers, false);
+    const ripo = blow(FEELS.sewers, true);
+    check(
+      'THE RIPOSTE: in the sewers, his sword blow on a creature he has just turned with a perfect guard does four times a blow\'s harm; and the blow after it is a plain one again',
+      ripo.ready && ripo.rip && !plain.rip && plain.took > 0 && Math.abs(ripo.took / plain.took - TUNING.sewers.riposte) < 0.6 && ripo.second <= plain.took + 0.01,
+      `plain ${plain.took.toFixed(2)}, riposte ${ripo.took.toFixed(2)}, the next ${ripo.second.toFixed(2)}`
+    );
+    const late = blow(FEELS.sewers, true, TUNING.sewers.riposteFor + 0.2);
+    const wrong = blow(FEELS.sewers, true, 0, true);
+    const awake = blow(FEELS.waking, true);
+    check('...only in time, only on the creature he turned, and only there (the waking world has no riposte)', !late.rip && !late.ready && !wrong.rip && !awake.rip && FEELS.waking.fight.riposte === undefined && FEELS.platform.fight.riposte === undefined);
+    // (And a perfect guard is what opens it: the game's own fight, a blow turned as the shield comes up.)
+    const g = man(FEELS.sewers);
+    g.facing = 0;
+    g.update(DT, inp({ guardHeld: true }), floor);
+    const foe = new Scuttler({ x: 0, z: 1.2 });
+    const turned = g.takeHit(0, 5, 1);
+    if (turned === 'parried') g.openRiposte(foe);
+    check('a blow caught as his shield comes up is a perfect guard, and opens the riposte', turned === 'parried' && g.riposteReady(foe), turned);
+  }
   const w = swings(FEELS.waking);
   const sw = swings(FEELS.sewers);
   const dr = swings(FEELS.dream);

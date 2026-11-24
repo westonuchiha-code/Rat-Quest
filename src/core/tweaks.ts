@@ -90,6 +90,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'The dream', path: 'dream.gravity', label: 'In the dream this much of gravity pulls on him (on foot; less is floatier)', min: 0.3, max: 1, step: 0.05 },
   { group: 'The dream', path: 'dream.dealt', label: 'In the dream his blows do this many times as much', min: 1, max: 3, step: 0.1 },
   { group: 'The sewers', path: 'sewers.run', label: 'In the sewers he runs this much of his speed', min: 0.6, max: 1, step: 0.02 },
+  { group: 'The sewers', path: 'sewers.riposte', label: 'THE RIPOSTE: after a perfect guard, his next sword blow on that creature does this many times the harm', min: 1, max: 8, step: 0.5 },
+  { group: 'The sewers', path: 'sewers.riposteFor', label: 'THE RIPOSTE: seconds he has to land it', min: 0.4, max: 3, step: 0.1 },
   { group: 'The sewers', path: 'sewers.dealt', label: 'In the sewers his blows do this much', min: 0.33, max: 1, step: 0.01 },
   { group: 'The sewers', path: 'sewers.taken', label: 'In the sewers a blow costs him this many times as much', min: 1, max: 3, step: 0.5 },
   { group: 'The platform room', path: 'platform.dealt', label: 'In the platform room his blows do this many times as much', min: 1, max: 3, step: 0.02 },

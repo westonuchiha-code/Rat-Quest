@@ -173,6 +173,10 @@ export const TUNING = {
     dealt: 0.67,
     taken: 2,
     plunge: 1,
+    // THE RIPOSTE (2026-11-24): after a PERFECT GUARD, his next sword blow on the creature he turned, landed within
+    // `riposteFor` seconds, does this many times a blow's harm there. The way to fight where his blows are weak.
+    riposte: 4,
+    riposteFor: 1.3,
   },
   /**
    * THE PLATFORM ROOM (data/feel.ts reads these): his "3D Mario" biome. "A lot of wall jumping and double jumping and

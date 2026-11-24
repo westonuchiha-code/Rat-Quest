@@ -39,7 +39,7 @@ export interface Feel {
    */
   /** (`plunge`: what his GROUND POUND does, the dive and its blast, is multiplied by this as well.) */
   /** (`bounce`: THE STOMP. His dive landed on a creature throws him back up at this speed, his air jump given back. None if not said.) */
-  fight: { dealt: number; taken: number; plunge: number; bounce?: number };
+  fight: { dealt: number; taken: number; plunge: number; bounce?: number; /** THE RIPOSTE: after a perfect guard, his next sword blow on that creature within `riposteFor` seconds does `riposte` times the harm. None if not said. */ riposte?: number; riposteFor?: number };
   /** On his shield. */
   ride: {
     /** THE TUCK: the stick pushed the way he is going crouches him, pushes him along on the flat, and builds speed past his standing top speed downhill. */
@@ -74,7 +74,7 @@ export const FEELS: Record<FeelId, Feel> = {
   sewers: {
     id: 'sewers',
     name: 'The sewers',
-    like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double.',
+    like: 'Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double; but a perfect guard opens the creature to a riposte, one blow worth four.',
     // (The numbers are TUNING.sewers: Tweaks, "The sewers".)
     foot: TUNING.sewers,
     fight: TUNING.sewers,

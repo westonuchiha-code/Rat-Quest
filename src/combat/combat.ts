@@ -15,6 +15,8 @@ export interface CombatEvents {
   shockwave: boolean;
   /** His dive landed on a creature and threw him back up (the platform room's stomp). */
   stomped?: boolean;
+  /** His sword's blow this tick was a riposte (after a perfect guard, in the sewers). */
+  riposte?: boolean;
   /** Crates broken this tick. */
   cratesBroken: Crate[];
   /** An iron-bound crate was struck by something too light to break it. */
@@ -45,6 +47,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
   events.playerResult = null;
   events.shockwave = false;
   events.stomped = false;
+  events.riposte = false;
   events.glanced = null;
   const p = player.position;
 
@@ -89,7 +92,10 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
           player.recoil(at.x, at.z);
         } else {
           events.enemyHit = e;
-          if (e.takeHit(clip.damage * player.gear.damage * player.feel.fight.dealt, p.x, p.z, 'sword', part)) events.enemyKilled = true;
+          // (THE RIPOSTE: on the creature he has just turned with a perfect guard, where the place has it.)
+          const rip = player.takeRiposte(e);
+          if (rip > 1) events.riposte = true;
+          if (e.takeHit(clip.damage * player.gear.damage * player.feel.fight.dealt * rip, p.x, p.z, 'sword', part)) events.enemyKilled = true;
         }
       }
     }
@@ -144,6 +150,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
         const result = player.takeHit(origin.x, origin.z, B.damage, !!B.heavy);
         events.playerResult = result;
         if (result !== 'dodged') e.lungeLanded(result === 'blocked', result === 'parried');
+        if (result === 'parried') player.openRiposte(e);
       }
     }
 

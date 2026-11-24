@@ -84,13 +84,13 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 291 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 293 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
 | Biome feel | Meant to be like | Run | Jump | Gravity | His blows | His ground pound | A blow costs him | Tuck | Speed from tricks | Spin and grab |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | The waking world | Heavier and more dangerous: blocking, parrying, harder fights. He can ride his shield down a slope and grind a rail, and kickflip; no more than that. | x1 | x1 | x1 | x1 | x1 | x1 | no | no | no |
 | The wacky Pomo dream | Fantastical, floatier, faster, hyperactive: a skate park. He runs faster, jumps higher and falls slower; lean forward for speed, tricks pay speed, spins and grabs in the air. | x1.25 | x1.1 | x0.75 | x1.5 | x1 | x1 | yes | yes | yes |
-| The sewers | Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double. | x0.88 | x1 | x1 | x0.67 | x1 | x2 | no | no | no |
+| The sewers | Dark Souls: blocking, parrying, harder fights, moving slower through the level. He runs slower, his blows do less, and what hits him costs double; but a perfect guard opens the creature to a riposte, one blow worth four. | x0.88 | x1 | x1 | x0.67 | x1 | x2 | no | no | no |
 | The platform room | A 3D Mario: wall jumps and double jumps, and weaker enemies he can ground pound his way out of. His blows do a third more, his ground pound double, and a pound landed on a creature bounces him back up: they are stepping stones. | x1 | x1 | x1 | x1.34 | x2 | x1 | no | no | no |
 | The frost | Slipping and sliding: nothing has much grip, and on the ice itself he scrabbles to get going, skids wide, slides on his belly to travel and digs his shield in to stop. | x1 | x1 | x1 | x1 | x1 | x1 | no | no | no |
 | The speed room | Sonic Adventure: grinding down a railway on his shield, smacking bats out of the air. Every creature struck down from the shield is a burst of speed, so a run of them is faster and faster. | x1 | x1 | x1 | x1 | x1 | x1 | no | no | no |

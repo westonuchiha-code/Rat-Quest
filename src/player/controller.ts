@@ -190,6 +190,26 @@ export class PlayerController {
     this.velocity.z *= v / had;
     return true;
   }
+  /** THE RIPOSTE: the creature he has just turned with a perfect guard, and how long he still has to strike it. */
+  private riposteOn: object | null = null;
+  private riposteLeft = 0;
+  /** He turned `foe`'s blow with a perfect guard: where the place's feel has a riposte, it is open to one. */
+  openRiposte(foe: object): void {
+    if (!this.feel.fight.riposte) return;
+    this.riposteOn = foe;
+    this.riposteLeft = this.feel.fight.riposteFor ?? 1;
+  }
+  /** Whether a sword blow on `foe` now would be a riposte (for what is shown). */
+  riposteReady(foe?: object): boolean {
+    return this.riposteLeft > 0 && (!foe || foe === this.riposteOn);
+  }
+  /** His sword has struck `foe`: how many times a blow's harm it does (1, or the riposte's, which is then spent). */
+  takeRiposte(foe: object): number {
+    if (this.riposteLeft <= 0 || foe !== this.riposteOn) return 1;
+    this.riposteLeft = 0;
+    this.riposteOn = null;
+    return this.feel.fight.riposte ?? 1;
+  }
   /**
    * THE STOMP (where the place's feel has it: the platform room). His dive has landed on a creature: he is thrown
    * back up off it, the dive over (no landing, no being stuck in the ground), his air jump given back. True if so.
@@ -732,6 +752,8 @@ export class PlayerController {
     const move = input.move;
     this.stickHeld = move.lengthSq() > 0.01;
     this.moveEvent = null;
+    this.riposteLeft = Math.max(0, this.riposteLeft - dt);
+    if (this.riposteLeft <= 0) this.riposteOn = null;
     this.wallTimer = Math.max(0, this.wallTimer - dt);
     this.kickLock = Math.max(0, this.kickLock - dt);
     this.kickFlight = this.grounded || helpless || this.hang || this.plungeStage !== 0 ? 0 : Math.max(0, this.kickFlight - dt);
