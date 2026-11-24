@@ -21,6 +21,7 @@ import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById } from '../src/level
 import { MAX_WALK_SLOPE, slimeZones } from '../src/world/layout';
 import { TUNING } from '../src/data/tuning';
 import { FEELS, feelOf } from '../src/data/feel';
+import { WEB, meetWeb, websOf } from '../src/world/webs';
 
 const DT = 1 / 60;
 let failures = 0;
@@ -632,6 +633,65 @@ const fromMiddle = (p: PlayerController): number => Math.hypot(p.position.x - B.
     inArena(run.p) && run.fastest > TUNING.ride.rush.top - 1 && !run.events.some((e) => e === 'bail' || e === 'slip' || e === 'rideEnd') && run.out < 12,
     `${run.seconds.toFixed(0)} s, fastest ${run.fastest.toFixed(1)}, out ${run.out.toFixed(1)}, ${[...new Set(run.events.filter((e) => e !== 'rideLand'))].join()}, ended at z ${run.p.position.z.toFixed(0)} y ${run.p.position.y.toFixed(0)}; ${bailAt}`
   );
+}
+
+// ---- WEB CURTAINS (2026-11-24): across the low end of each rail. A rush tears through; without one he is caught ----
+{
+  check(
+    'a web hangs across the low end of every rail, past its last bat, over the rail and wide enough that a grinder cannot miss it',
+    B.webs.length === B.rails.length
+      && B.rails.every((r) => B.webs.some((w) => w.x === r.x && w.z < r.z1 && w.z > r.z1 - 3 && B.bats.filter((b) => b.z > r.z0 && b.z < r.z1).every((b) => b.z < w.z)))
+      && WEB.tear > TUNING.ride.max + 1 && WEB.tear <= TUNING.ride.max + TUNING.ride.rush.boost
+      && def.webs!.length === B.webs.length
+  );
+  /** Down the first rail; `rushes`: bats struck down on the way (a rush each). What the web made of him. */
+  const grind = (rushes: number): { how: string; after: number; rode: boolean; before: number } => {
+    const rail = B.rails[0];
+    const side = rail.x > 0 ? -1 : 1;
+    const webs = websOf(B.webs);
+    let pressed = false;
+    let frames = 0;
+    let how = 'none';
+    let before = 0;
+    let after = -1;
+    let since = -1;
+    const prev = new THREE.Vector3();
+    const run = ride({ x: rail.x + side * 0.5, z: rail.z0 - 7 }, 600, (p) => {
+      p.feel = FEELS.speed;
+      // (What main.ts does each step, after he has moved.)
+      const sp = Math.hypot(p.velocity.x, p.velocity.z);
+      const met = frames > 0 ? meetWeb(webs, prev, p.position, sp, p.riding || p.grinding) : null;
+      if (met) {
+        how = met.how;
+        before = sp;
+        if (met.how === 'catch') p.snag(WEB.left);
+        since = 0;
+      }
+      if (since >= 0 && since++ === 2) after = Math.hypot(p.velocity.x, p.velocity.z);
+      prev.copy(p.position);
+      if (p.grinding) {
+        frames++;
+        if (frames === 20) for (let k = 0; k < rushes; k++) p.rush();
+        return {};
+      }
+      const press = !pressed && p.grounded && p.position.z > rail.z0 + 1.5;
+      if (press) pressed = true;
+      return { stowPressed: press };
+    }, (p) => p.position.z > rail.z1 + 8);
+    return { how, after, rode: run.p.riding, before };
+  };
+  const slow = grind(0);
+  check('grinding down a rail with no bat struck, its web CATCHES him: he is left with hardly any speed (and is not hurt or thrown off his shield)', slow.how === 'catch' && slow.after < WEB.left + 2.5 && slow.rode, `${slow.how}: ${slow.before.toFixed(1)} to ${slow.after.toFixed(1)}`);
+  const fast = grind(1);
+  check('...with ONE bat struck down on the way (a rush), he TEARS THROUGH it and keeps his speed', fast.how === 'tear' && fast.after > WEB.tear - 1 && fast.rode, `${fast.how}: ${fast.before.toFixed(1)} to ${fast.after.toFixed(1)}`);
+  // On foot it is brushed aside; and a torn web is not met again until it is spun again.
+  {
+    const webs = websOf([{ x: 0, y: 1, z: 5, r: 1.2 }]);
+    const a = meetWeb(webs, new THREE.Vector3(0, 0, 4.9), new THREE.Vector3(0, 0, 5.1), 3, false);
+    const b = meetWeb(webs, new THREE.Vector3(0, 0, 4.9), new THREE.Vector3(0, 0, 5.1), 30, true);
+    const wide = meetWeb(websOf([{ x: 0, y: 1, z: 5, r: 1.2 }]), new THREE.Vector3(3, 0, 4.9), new THREE.Vector3(3, 0, 5.1), 10, true);
+    check('on foot a web is only brushed aside; torn, it is not met again; and passing wide of one is not meeting it', a?.how === 'brush' && b === null && wide === null);
+  }
 }
 
 console.log(failures === 0 ? 'longdrop: all passed' : `longdrop: ${failures} FAILED`);

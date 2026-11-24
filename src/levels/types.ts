@@ -158,6 +158,8 @@ export interface LevelDef {
   well?: Well;
   /** Platforms that glide back and forth and carry the rat. */
   movers?: MoverSpec[];
+  /** Web curtains across his way (world/webs.ts): torn through at a rush's speed, or they catch him. */
+  webs?: import('../world/webs').WebSpec[];
   /**
    * Floor plates: stepping on one presses it for good; gates can wait for them.
    * With `spawn` it is a BUTTON THAT COMES BACK UP when he steps off: each time it is pressed, one more of that

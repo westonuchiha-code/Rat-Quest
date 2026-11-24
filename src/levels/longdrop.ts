@@ -64,6 +64,8 @@ export const WEED = { half: 0.22, high: 1.1 } as const;
 export const SHOULDER_KICKER = { x0: 4, x1: 7, len: 3, rise: 1, back: 7 } as const;
 export const BED_KICKER = { len: 3, rise: 0.5 } as const;
 export const RAIL = { x: 1.4, wide: 0.24, high: 0.3 } as const;
+/** A rail's web: how far back from the rail's low end, how far over the rail its middle is, and how big. */
+export const WEB_AT = { back: 1.6, up: 0.9, r: 1.15 } as const;
 /** Where a rail's bats hang: how far to the side of the rail (toward the middle of the bed), and how far over its top (the bottom of the bat). */
 export const BAT_OFF = { side: 0.9, up: 0.35 } as const;
 /**
@@ -198,6 +200,8 @@ interface Built {
   rails: RailRun[];
   /** Bats hanging in the air beside the rails, to be hit in passing. */
   bats: Array<{ x: number; y: number; z: number }>;
+  /** A web curtain across the low end of each rail (world/webs.ts): the bats' speed tears it; without, it catches him. */
+  webs: Array<{ x: number; y: number; z: number; r: number }>;
   /** The crumbs along the line worth riding. */
   lineCrumbs: string[];
   /** Every weed: where its stem is. */
@@ -227,6 +231,7 @@ function build(): Built {
   const launches: Launch[] = [];
   const rails: RailRun[] = [];
   const bats: Array<{ x: number; y: number; z: number }> = [];
+  const webs: Array<{ x: number; y: number; z: number; r: number }> = [];
   const lineCrumbs: string[] = [];
   const weeds: Array<[number, number, number]> = [];
   const crumb = (x: number, y: number, z: number): string => {
@@ -312,6 +317,9 @@ function build(): Built {
         // each two of the rail's crumbs, off to the side of it that the middle of the bed is on, at the height of
         // his sword arm.
         for (let d = from + 8; d < to - 3; d += 12) bats.push({ x: x - Math.sign(x) * BAT_OFF.side, y: top(z0 + d) + BAT_OFF.up, z: z0 + d });
+        // A WEB across the rail's low end (the Widows' country: world/webs.ts). Past the last bat: whoever struck one
+        // down on the way is going fast enough to tear it; whoever did not is caught in it.
+        webs.push({ x, y: top(z0 + to - WEB_AT.back) + WEB_AT.up, z: z0 + to - WEB_AT.back, r: WEB_AT.r });
       }
       if (s.rails?.length) {
         const from = Math.min(...s.rails.map((r) => r[1]));
@@ -383,7 +391,7 @@ function build(): Built {
   const firstRails = placed.find((p) => p.spec?.kind === 'bed' && p.spec.rails?.length);
   if (firstRails) decor.push({ kind: 'sign', x: -HALF + 0.02, y: firstRails.y0 + 2.2, z: firstRails.z0 + 4, yaw: Math.PI / 2, w: 2.8, h: 1.4, lines: ['THE RAILS', 'RIDE NEAR, STOW'] });
 
-  return { placed, solids, decor, collectibles, launches, rails, bats, lineCrumbs, weeds, head, lip, arena, well };
+  return { placed, solids, decor, collectibles, launches, rails, bats, webs, lineCrumbs, weeds, head, lip, arena, well };
 }
 
 /** Everything about how the course lies (built once). */
@@ -430,6 +438,7 @@ export function longDrop(): LevelDef {
     // (see enemies/widow.ts). Between them their legs reach the whole floor.
     enemies: [...B.bats.map((b) => ({ type: 'bat' as const, flutter: true, x: b.x, y: b.y, z: b.z, respawn: true, uncounted: true })), ...[1, -1].map((side) => ({ type: 'widow' as const, x: B.arena.x + side * (B.arena.r + WIDOW_OUT), y: 0, z: B.arena.z, respawn: false, arena: { x0: B.arena.x - B.arena.r, x1: B.arena.x + B.arena.r, z0: B.arena.z - B.arena.r, z1: B.arena.z + B.arena.r } }))],
     goals: [{ type: 'defeat', label: 'Beat the Widows' }],
+    webs: B.webs.map((w) => ({ ...w })),
     well: { ...B.well },
     // Its way out stands at the south edge of the arena's light (ahead of him as he lands, between the two of them),
     // appears when they are beaten, and leads back to the Move Garden.

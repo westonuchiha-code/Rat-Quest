@@ -17,7 +17,7 @@ Tags: **PLACEHOLDER** (an idea, expect it to change or go), **WORK IN PROGRESS**
 | Deep caves / platforming | `platform` feel | WORK IN PROGRESS | Awaiting the owner's verdict. |
 | Wacky Pomo dream | `dream` feel | WORK IN PROGRESS | Skate park is missing banked turns and rail loops. |
 | Snow and ice | `frost` feel | WORK IN PROGRESS | Scrabble, skid, belly slide, shield brake, ice spray; thin ice over meltwater that costs hearts, in the bank and in the channel; a Frost Roller that bowls over it goes through (Test Room 4). Awaiting the owner's verdict. For later: a cracking sound, an editor entry for thin ice. |
-| Speed room (the Long Drop) | `speed` feel | WORK IN PROGRESS | The rush: a creature struck down from the shield is a burst of speed (top 24; the course is tested at it); the view widens with speed; he crouches lower the faster a rush takes him. Awaiting the owner's verdict. For later: bats placed for chains on every rail, a sound of its own. |
+| Speed room (the Long Drop) | `speed` feel | WORK IN PROGRESS | The rush: a creature struck down from the shield is a burst of speed (top 24; the course is tested at it); the view widens with speed; he crouches lower the faster a rush takes him; a web curtain across each rail's low end, torn through at a rush's speed, catching him without (world/webs.ts). Awaiting the owner's verdict. For later: bats placed for chains on every rail, a sound of its own. |
 | Foundry / fire | none | NOT STARTED | |
 | Castle | none | NOT STARTED | |
 

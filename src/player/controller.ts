@@ -190,6 +190,18 @@ export class PlayerController {
     this.velocity.z *= v / had;
     return true;
   }
+  /** CAUGHT (a web: world/webs.ts): on his shield, on a rail or off it, he is left with no more than `left` of his speed. */
+  snag(left: number): void {
+    if (this.grind) {
+      const g = this.grind;
+      g.v = (g.v >= 0 ? 1 : -1) * Math.min(Math.abs(g.v), left);
+      return;
+    }
+    const had = Math.hypot(this.velocity.x, this.velocity.z);
+    if (had <= left) return;
+    this.velocity.x *= left / had;
+    this.velocity.z *= left / had;
+  }
   /** His weight spread flat (what thin ice bears: world/chamber.ts). */
   get spread(): boolean {
     return this.belly;

@@ -64,6 +64,7 @@ import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
 import { Roller } from './enemies/roller';
+import { WEB, meetWeb, tickWebs, webMesh, websOf, type WebState } from './world/webs';
 import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
 import { shadowSpokes } from './world/shadow';
@@ -328,6 +329,10 @@ function startGame(): void {
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
   let iceSprayIn = 0;
+  const webGroup = new THREE.Group();
+  scene.add(webGroup);
+  let webs: WebState[] = [];
+  let webMeshes: THREE.LineSegments[] = [];
   let rushKick = 0;
   let rushCrouch = 0;
   let rideLandIn = 0; // seconds till he comes down on the shield he has hopped onto
@@ -1873,6 +1878,11 @@ function startGame(): void {
     scene.add(doorway.group);
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
     dreamVoices.reset();
+    // Web curtains (world/webs.ts): this room's, drawn.
+    webGroup.clear();
+    webs = websOf(def.webs);
+    webMeshes = webs.map((w) => webMesh(w.spec));
+    for (const m of webMeshes) webGroup.add(m);
     // (`&nofoes`: a filming aid, the room with no creatures in it.)
     if (!/[#&]nofoes\b/.test(location.hash)) for (const spec of def.enemies) addEnemy(spec);
     // THE DREAM'S CREATURES ARE THE WAKING WORLD'S, IN LOUD COLOURS (as its sleepers are: world/dozers.ts): the same
@@ -2386,6 +2396,30 @@ function startGame(): void {
    * seconds he is in it costs him a heart; out of it, the cold leaves him at once. (The ice room's own hazard:
    * falling through is not the end of him, dawdling in it is.)
    */
+  /**
+   * WEB CURTAINS (world/webs.ts): on his shield at a rush's speed he tears through; slower, he is caught and loses
+   * his speed; on foot he brushes it aside.
+   */
+  function webCheck(dt: number): void {
+    tickWebs(webs, dt);
+    webs.forEach((w, i) => (webMeshes[i].visible = w.torn <= 0));
+    if (player.dead || critter || !webs.length) return;
+    const met = meetWeb(webs, player.prevPosition, player.position, Math.hypot(player.velocity.x, player.velocity.z), player.riding || player.grinding);
+    if (!met) return;
+    const s = met.web.spec;
+    if (met.how === 'catch') {
+      player.snag(WEB.left);
+      audio.play('threadTwang', { vol: 0.9, rate: 0.6, priority: 7 });
+      shake = Math.max(shake, 0.12);
+      grindSparks.burst(s.x, s.y, s.z, 0xe8eef2, 6, 1.2, 0.14);
+    } else {
+      audio.play('threadTwang', { vol: 0.7, rate: 1.5, priority: 6 });
+      if (met.how === 'tear') {
+        audio.play('whoosh', { vol: 0.6, rate: 1.2, priority: 6 });
+        grindSparks.burst(s.x, s.y, s.z, 0xffffff, 14, 5, 0.18);
+      }
+    }
+  }
   let coldFor = 0;
   function coldCheck(dt: number): void {
     const p = player.position;
@@ -2497,6 +2531,7 @@ function startGame(): void {
     if (chamber.stepMovers(dt, player.dead ? undefined : player)) crusherHit = true;
     crushCheck();
     coldCheck(dt);
+    webCheck(dt);
     if (keyTap('lock') || consumeAction('lock')) {
       if (lockTarget) lockTarget = null;
       else {
