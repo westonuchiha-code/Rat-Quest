@@ -43,6 +43,10 @@ export class RatPreview {
     this.rat.setSword(colors);
   }
 
+  setKit(o: { broken: boolean; bare: boolean }): void {
+    this.rat.setKit(o);
+  }
+
   setShield(colors: { face: number; trim: number }): void {
     this.rat.setShield(colors);
   }

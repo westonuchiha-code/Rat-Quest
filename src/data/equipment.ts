@@ -35,10 +35,14 @@ export interface GearFx {
   guardMove?: number;
   /** How wide the shield's block is. */
   blockArc?: number;
+  /** How far the sword reaches (a broken one: not far). */
+  reach?: number;
+  /** NO SHIELD on his arm: he cannot guard, nor ride on it. */
+  noGuard?: boolean;
 }
 
 export type GearMods = Required<GearFx>;
-export const NO_GEAR: GearMods = { run: 1, swim: 1, grip: 1, wallKick: 1, longJump: 1, hearts: 0, fireproof: false, notice: 1, sight: 1, damage: 1, swing: 1, parry: 1, guardMove: 1, blockArc: 1 };
+export const NO_GEAR: GearMods = { run: 1, swim: 1, grip: 1, wallKick: 1, longJump: 1, hearts: 0, fireproof: false, notice: 1, sight: 1, damage: 1, swing: 1, parry: 1, guardMove: 1, blockArc: 1, reach: 1, noGuard: false };
 
 /** What a set of worn things adds up to. */
 export function gearMods(ids: readonly string[]): GearMods {
@@ -49,6 +53,7 @@ export function gearMods(ids: readonly string[]): GearMods {
     for (const [k, v] of Object.entries(fx) as Array<[keyof GearFx, number | boolean]>) {
       if (k === 'hearts') m.hearts += v as number;
       else if (k === 'fireproof') m.fireproof = m.fireproof || (v as boolean);
+      else if (k === 'noGuard') m.noGuard = m.noGuard || (v as boolean);
       else (m[k] as number) *= v as number;
     }
   }
@@ -85,6 +90,14 @@ export const ITEMS: Record<string, ItemDef> = {
     perk: 'The lamp lets you see much further in dark places.', cost: 'Beasts see the lamp too: they notice you from further away.',
     fx: { sight: 1.7, notice: 1.5 },
   },
+  // THE GAME'S START (levels/flotsam.ts): what he has when he is washed up. A new game begins with these two; the Hall's
+  // file begins with the Rat Sword and the Rat Shield, as it always did.
+  brokenSword: {
+    id: 'brokenSword', slot: 'sword', name: 'Broken Sword', description: 'Snapped a hand above the hilt. It was a good sword once.',
+    colors: { blade: 0x8f979c, hilt: 0x8a6a2c },
+    cost: 'Half the bite, and little more than half the reach.',
+    fx: { damage: 0.5, reach: 0.62 },
+  },
   ratSword: {
     id: 'ratSword', slot: 'sword', name: 'Rat Sword', description: 'A short blade, sharp enough for roaches.',
     colors: { blade: 0xe2e9ee, hilt: 0xd4aa3c },
@@ -94,6 +107,12 @@ export const ITEMS: Record<string, ItemDef> = {
     colors: { blade: 0x9aa3a8, hilt: 0x5a3a22 },
     perk: 'Every hit lands twice as hard.', cost: 'Heavy: every swing is slower.',
     fx: { damage: 2, swing: 0.72 },
+  },
+  noShield: {
+    id: 'noShield', slot: 'shield', name: 'Bare Arm', description: 'Nothing on it. Whatever comes, he takes.',
+    colors: { face: 0xa5302a, trim: 0xa9b3bc },
+    cost: 'No guard at all, and nothing to ride on.',
+    fx: { noGuard: true },
   },
   ratShield: {
     id: 'ratShield', slot: 'shield', name: 'Rat Shield', description: 'A kite shield that turns aside bites from the front.',
@@ -130,6 +149,8 @@ export const ITEMS: Record<string, ItemDef> = {
 };
 
 /** What he wears at the start of a new game. */
+/** What a NEW GAME begins with (the Hall's file: STARTING_GEAR). */
+export const WASHED_UP_GEAR: Record<Slot, string> = { helmet: 'tinHelm', sword: 'brokenSword', shield: 'noShield', scarf: 'redScarf' };
 export const STARTING_GEAR: Record<Slot, string> = { helmet: 'tinHelm', sword: 'ratSword', shield: 'ratShield', scarf: 'redScarf' };
 
 export interface PickupDef {

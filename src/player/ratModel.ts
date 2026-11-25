@@ -565,6 +565,11 @@ function mixArms(p: Pose, to: Pose, w: number): void {
   p.elbowH += (to.elbowH - p.elbowH) * k;
 }
 
+const named = <T extends THREE.Object3D>(o: T, name: string): T => {
+  o.name = name;
+  return o;
+};
+
 export class RatModel {
   readonly root = new THREE.Group();
   private readonly lean = new THREE.Group(); // banks into turns and leans with acceleration, pivoting at the feet
@@ -763,8 +768,8 @@ export class RatModel {
       grip,
       ball(0.024, C.gold, 0, 0, -0.06, 1, 1, 1, 5, 4),
       mesh(guardBar, C.gold, 0, 0, 0.068),
-      mesh(faceted(bladeGeo), C.blade, 0, 0, 0.075),
-      mesh(faceted(tipGeo), C.blade, 0, 0, 0.475),
+      named(mesh(faceted(bladeGeo), C.blade, 0, 0, 0.075), 'blade'),
+      named(mesh(faceted(tipGeo), C.blade, 0, 0, 0.475), 'bladeTip'),
     );
     this.bladeBase.position.set(0, 0, 0.09);
     this.bladeTip.position.set(0, 0, 0.585);
@@ -1000,6 +1005,19 @@ export class RatModel {
   setSword(colors: { blade: number; hilt: number }): void {
     remap(this.sword, [[C.blade, colors.blade], [C.gold, colors.hilt]]);
   }
+
+  /** A BROKEN sword (in his hand and on his back): snapped off short, no point. And `bare`: no shield at all. */
+  setKit(o: { broken: boolean; bare: boolean }): void {
+    for (const root of [this.sword, this.backSword]) {
+      root.traverse((m) => {
+        if (m.name === 'blade') m.scale.z = o.broken ? 0.42 : 1;
+        if (m.name === 'bladeTip') m.visible = !o.broken;
+      });
+    }
+    this.bladeTip.position.z = o.broken ? 0.26 : 0.585;
+    this.bare = o.bare;
+  }
+  private bare = false;
 
   /** Recolours the shield (in his hand and on his back): the red of its face, and the metal of its rim. */
   setShield(colors: { face: number; trim: number }): void {
@@ -1441,9 +1459,9 @@ export class RatModel {
     // (Riding, the shield is under his feet: not on his arm, nor on his back.)
     const riding = state === 'ride';
     const kicking = this.dismountT >= 0 && !riding;
-    this.shieldPivot.visible = armed && this.dress.gear && !riding && !kicking;
+    this.shieldPivot.visible = armed && this.dress.gear && !riding && !kicking && !this.bare;
     this.backSword.visible = !armed && this.dress.gear;
-    this.backShield.visible = !armed && this.dress.gear && !riding;
+    this.backShield.visible = !armed && this.dress.gear && !riding && !this.bare;
     this.board.visible = (riding || kicking) && this.dress.gear;
     for (const g of this.boardGhosts) g.root.visible = false;
     this.board.scale.setScalar(this.boardScale);

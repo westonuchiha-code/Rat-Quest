@@ -30,6 +30,7 @@ import { coldMain } from './coldmain';
 import { CAMPAIGN } from './campaign';
 import { hall } from './hall';
 import { practiceRoom, widowPit } from './practice';
+import { flotsam } from './flotsam';
 import { workshop } from './workshop';
 import { musicRoom } from './musicroom';
 import { breakYard } from './breakyard';
@@ -257,6 +258,13 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
  * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
  */
+/**
+ * THE GAME (the owner, 2026-11-25: "a second thing that is just going to be the actual game and we're going to build it
+ * from front to back"): its areas, in order. NEW GAME on the title starts in the first. Not test rooms: the Hall has no
+ * door to them, and nothing renames or numbers them.
+ */
+export const GAME_ROOMS: LevelDef[] = [flotsam()];
+
 export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), workshop(), musicRoom(), breakYard(), gauntlet(), press(), greenRoom(), coilRoom(), standInRoom(), lockworks(), round(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom)];
 
 /**
@@ -334,5 +342,5 @@ export function setExtraLevels(f: () => LevelDef[]): void {
 }
 
 export function levelById(id: string): LevelDef | undefined {
-  return LEVELS.find((l) => l.id === id) ?? extra().find((l) => l.id === id) ?? ARCHIVE.find((l) => l.id === id) ?? TEST_ROOMS.find((l) => l.id === id);
+  return LEVELS.find((l) => l.id === id) ?? extra().find((l) => l.id === id) ?? ARCHIVE.find((l) => l.id === id) ?? TEST_ROOMS.find((l) => l.id === id) ?? GAME_ROOMS.find((l) => l.id === id);
 }

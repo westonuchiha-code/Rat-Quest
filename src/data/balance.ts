@@ -23,6 +23,8 @@
 export const BALANCE = {
   doors: { foundry: 5, hollows: 12, keep: 25 },
   prices: {
+    // (HIS FIRST SHIELD, in the game's first area: the first thing crumbs are FOR. levels/flotsam.ts.)
+    ratShield: { crumbs: 8, caps: 0 },
     nachoCheese: { crumbs: 8, caps: 0 },
     mossScarf: { crumbs: 10, caps: 0 },
     minerHelm: { crumbs: 12, caps: 2 },

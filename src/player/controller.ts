@@ -965,7 +965,7 @@ export class PlayerController {
     const canFight = this.armed && this.stowTimer < 0 && !swimming;
 
     // Guard: held, on the ground, and not mid-swing or mid-dodge.
-    this.guarding = canFight && this.guardBroken <= 0 && !this.riding && !this.sliding && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
+    this.guarding = canFight && !this.gear.noGuard && this.guardBroken <= 0 && !this.riding && !this.sliding && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
     this.guardAge = this.guarding ? this.guardAge + dt : 0;
 
     // A press made a moment too early (mid-roll, or while still shoved back from a block) is remembered and used as soon as it can be.
@@ -1613,6 +1613,8 @@ export class PlayerController {
 
   /** Onto his shield, wherever he is: in the air (the air attack over a slope, or onto a rail) he comes down riding. */
   private beginRide(): void {
+    // (No shield, nothing to ride on.)
+    if (this.gear.noGuard) return;
     this.riding = true;
     this.sliding = false;
     this.rideAge = 0;

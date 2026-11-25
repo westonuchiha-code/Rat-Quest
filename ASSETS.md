@@ -86,7 +86,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 300 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 301 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
 | Biome feel | Meant to be like | Run | Jump | Gravity | His blows | His ground pound | A blow costs him | Tuck | Speed from tricks | Spin and grab |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -370,7 +370,7 @@ shapes, `src/render/pixelFont.ts`.
 | Room numbers and what the doors say | `src/levels/testRooms.ts` |
 | What characters say | in each level's file, on the character (`lines`) |
 | Sign boards in a level | in each level's file (`kind: 'sign'`) |
-| Gear (11) and food (1): names and descriptions | `src/data/equipment.ts`, `src/data/consumables.ts` |
+| Gear (13) and food (1): names and descriptions | `src/data/equipment.ts`, `src/data/consumables.ts` |
 | Sticker names and blurbs | `src/data/stickers.ts` |
 | Menu words | `src/ui/menu.ts`, `src/ui/boot.ts` |
 

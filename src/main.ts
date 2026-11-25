@@ -99,17 +99,17 @@ import { Discoveries } from './core/stickers';
 import { STICKERS, STICKER_GROUPS, charIdFor } from './data/stickers';
 import { itemIcon, stickerIcon } from './ui/icons';
 import { newestSave, readSave, SaveData, SaveSlot, writeSave } from './core/save';
-import { copyFile, eraseFile, FILE_COUNT, fileSummary, FileStore, formatPlayed, lastFile, readMeta, setLastFile, writeMeta } from './core/slots';
+import { copyFile, eraseFile, FILE_COUNT, HALL_FILE, fileSummary, FileStore, formatPlayed, lastFile, readMeta, setLastFile, writeMeta } from './core/slots';
 import { installTouchPad } from './dev/touchPad';
 import { Hud } from './ui/hud';
 import { Debris } from './world/debris';
-import { ITEMS, gearMods } from './data/equipment';
+import { ITEMS, WASHED_UP_GEAR, gearMods } from './data/equipment';
 import { Equipment } from './player/equipment';
 import { PickupVisuals } from './world/pickups';
 import { LevelProgress } from './core/levelProgress';
 import { GoalTracker, keepersOf, shyShows } from './levels/goals';
 import { fireAt, inBrazierFire , slimeZones } from './world/layout';
-import { ALL_LEVELS, ARCHIVE, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
+import { ALL_LEVELS, ARCHIVE, GAME_ROOMS, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
 import { feelOf } from './data/feel';
 import { HALL_ID } from './levels/testRooms';
 import { wayOutOf } from './levels/wayOut';
@@ -1119,7 +1119,7 @@ function startGame(): void {
       if (r !== 'dodged') events.playerResult = r;
     }
     // The orb: his sword sends it back; otherwise it reaches him.
-    if (player.attackActive && boss.swingAt(p.x, p.z, player.facing, player.attackClip.reach, player.attackClip.arc)) {
+    if (player.attackActive && boss.swingAt(p.x, p.z, player.facing, player.attackClip.reach * player.gear.reach, player.attackClip.arc)) {
       // Struck.
     } else if (boss.orb && boss.orbAtRat(p.x, p.y, p.z)) {
       const o = boss.orb;
@@ -1354,6 +1354,9 @@ function startGame(): void {
     const sh = ITEMS[equipment.equipped('shield')].colors;
     rat.setShield({ face: sh.face, trim: sh.trim });
     preview.setShield({ face: sh.face, trim: sh.trim });
+    const kit = { broken: equipment.equipped('sword') === 'brokenSword', bare: equipment.equipped('shield') === 'noShield' };
+    rat.setKit(kit);
+    preview.setKit(kit);
     if (dreaming) wearDream();
   };
   /** What his gear does: his moves (in the controller), how far beasts notice him, his hearts, how far he sees. */
@@ -1512,7 +1515,20 @@ function startGame(): void {
    * HOME: the Hall (levels/hall.ts), where the game starts and every room's door leads back to. (`hubLevel` is the
    * Club, the first hub: it is one of the Hall's rooms now, and its own doors and their prices still work.)
    */
-  const homeLevel = levelById(HALL_ID) ?? hubLevel;
+  const hallLevel = levelById(HALL_ID) ?? hubLevel;
+  /**
+   * TWO THINGS NOW (the owner, 2026-11-25): THE GAME, built front to back (levels/flotsam.ts; NEW GAME and CONTINUE on the
+   * title, the three save files), and THE HALL, "our main test area" (TEST HALL on the title; its own file, HALL_FILE,
+   * so nothing done in there touches a game). `playing` says which; `homeLevel` is where that one starts.
+   */
+  const gameStart = GAME_ROOMS[0] ?? null;
+  const isGameRoom = (l: LevelDef | null | undefined): boolean => !!l && GAME_ROOMS.includes(l);
+  let playing: 'game' | 'hall' = 'hall';
+  let homeLevel = hallLevel;
+  const setPlaying = (what: 'game' | 'hall'): void => {
+    playing = what;
+    homeLevel = what === 'game' && gameStart ? gameStart : hallLevel;
+  };
   /** A place with no way out of its own: home. (The Club is a hub too, but its door leads back to the Hall.) */
   const noWayOut = (l: LevelDef): boolean => !!l.hub && (l === homeLevel || !homeLevel);
   /** Which level he came into each level FROM, by a door (this sitting): its way out leads back to that door. */
@@ -1746,7 +1762,18 @@ function startGame(): void {
     played = playedSaved = readMeta(files).played;
   }
   /** Plays a file: where it was saved, or a new game when it is empty. */
+  /** THE HALL, from the title: the test area, in its own file. */
+  function playHall(): void {
+    setPlaying('hall');
+    useFile(HALL_FILE);
+    discoveries.add('char:knight');
+    loadLevel(hallLevel || hubLevel || LEVELS[0], true);
+    player.hp = player.maxHp;
+    follow.snap();
+    applyGear();
+  }
   function playFile(n: number): void {
+    setPlaying('game');
     const empty = fileSummary(deviceStore, n).empty;
     // An empty file may still hold a few things written before it was played (the sticker book's first page): start clean.
     if (empty) eraseFile(deviceStore, n);
@@ -1762,7 +1789,9 @@ function startGame(): void {
     // (As of 2026-11-17 a file opens IN THE HALL, whatever level it was saved in: the Hall is the list of places, and
     // every level is a test room off it. What the file holds, his hearts and all he has found, is as it was saved.
     // Loading a save from the pause menu still puts him back exactly where it was made.)
-    loadLevel(homeLevel || hubLevel || LEVELS[0], true);
+    // (THE GAME, 2026-11-25: a game file opens in the game, in the area it was saved in.)
+    const saved = d ? (d.levelId ? levelById(d.levelId) : null) : null;
+    loadLevel((isGameRoom(saved) ? saved : null) || homeLevel || hubLevel || LEVELS[0], true);
     if (d) player.hp = Math.max(1, d.hp);
     follow.snap();
     applyGear();
@@ -3311,6 +3340,9 @@ function startGame(): void {
       const dy = def.y - (player.position.y + TUNING.rat.height / 2);
       if (Math.hypot(dx, dz) < 0.9 && Math.abs(dy) < 1.1 && equipment.give(def.itemId)) {
         pickups.taken(def.itemId);
+        // (His first real sword, his first shield: on at once, in place of the broken one and the bare arm.)
+        const was = equipment.equipped(ITEMS[def.itemId].slot);
+        if (was === 'brokenSword' || was === 'noShield') equipment.equip(def.itemId);
         audio.play('relic', { vol: 0.9, priority: 8 });
       }
     }
@@ -3452,7 +3484,9 @@ function startGame(): void {
   const storage = files;
   function restartGame(): void {
     tracker.reset();
-    equipment.reset();
+    // (A new GAME: washed up with a broken sword and no shield. The Hall: the sword and shield he always had.)
+    if (playing === 'game') equipment.resetTo(WASHED_UP_GEAR);
+    else equipment.reset();
     inventory.reset();
     wallet.reset();
     levelProgress.reset();
@@ -3618,7 +3652,7 @@ function startGame(): void {
       return {
         file: i + 1,
         empty: f.empty,
-        where: (f.levelId && levelById(f.levelId)?.name) || (hubLevel?.name ?? ''),
+        where: (f.levelId && levelById(f.levelId)?.name) || (gameStart?.name ?? hubLevel?.name ?? ''),
         wedges: f.wedges,
         total: allWedges(),
         played: formatPlayed(f.played),
@@ -3627,6 +3661,8 @@ function startGame(): void {
     }),
     currentFile: () => files.file,
     playFile: (n) => playFile(n),
+    onHall: () => playHall(),
+    newGameSays: gameStart ? `Starts on the shore of ${gameStart.name}, in an empty file. Your other files are not touched.` : '',
     copyFile: (from, to) => {
       copyFile(deviceStore, from, to);
       if (to === files.file) reloadFile();
@@ -3778,7 +3814,13 @@ function startGame(): void {
       audio.play('relic', { vol: 0.6, rate: 1.3, priority: 7 });
       if (it.kind === 'gear') {
         // Bought, not worn: he puts it on himself from the menu.
+        const was = equipment.equipped(ITEMS[id].slot);
         equipment.give(id);
+        // (His first shield, onto a bare arm: on at once.)
+        if (was === 'brokenSword' || was === 'noShield') {
+          equipment.equip(id);
+          return `The ${ITEMS[id].name}! On your arm it goes. Hold GUARD to raise it.`;
+        }
         return `The ${ITEMS[id].name}! Lovely choice. Put it on from the menu, under EQUIP.`;
       }
       inventory.add(id);
@@ -4469,6 +4511,10 @@ function startGame(): void {
   // He picks up where he was if that is part of the world; otherwise (a new game, or an old campaign level) at home.
   // (As of 2026-11-17 every level is a test room off the Hall: he starts in the Hall, whatever he was in last. The
   // Hall is the list of places.)
+  // (With the title up, the game's first area is what lies behind it; a development address opens what it names, and
+  // is THE GAME if that is one of the game's areas.)
+  if (bootOn || isGameRoom(startAt ? levelById(startAt[1]) : null)) setPlaying('game');
+  if ((playing as string) === 'game' && startAt && location.hash.includes('washedup')) equipment.resetTo(WASHED_UP_GEAR);
   const first = (startAt && levelById(startAt[1])) || homeLevel || hubLevel || LEVELS[0];
   loadLevel(first, !startAt);
   // Development aid: #at=x,y,z,cameraYaw starts the rat somewhere else, for screenshots.

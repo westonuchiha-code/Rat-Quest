@@ -336,6 +336,7 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Doors and prices', path: 'balance.doors.foundry', label: 'Foundry door: wedges', min: 0, max: 47, step: 1, later: 'next time you are in the Club' },
   { group: 'Doors and prices', path: 'balance.doors.hollows', label: 'Hollows door: wedges', min: 0, max: 47, step: 1, later: 'next time you are in the Club' },
   { group: 'Doors and prices', path: 'balance.doors.keep', label: 'Keep door: wedges', min: 0, max: 47, step: 1, later: 'next time you are in the Club' },
+  { group: 'Doors and prices', path: 'balance.prices.ratShield.crumbs', label: 'Rat Shield (the first one): crumbs', min: 0, max: 60, step: 1 },
   { group: 'Doors and prices', path: 'balance.prices.nachoCheese.crumbs', label: 'Nacho cheese: crumbs', min: 0, max: 60, step: 1 },
   { group: 'Doors and prices', path: 'crates.chance', label: 'Chance a broken crate or barrel drops a nacho can', min: 0, max: 1, step: 0.05 },
   { group: 'Doors and prices', path: 'balance.prices.mossScarf.crumbs', label: 'Moss scarf: crumbs', min: 0, max: 150, step: 1 },

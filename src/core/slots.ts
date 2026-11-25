@@ -12,6 +12,8 @@ import type { StorageLike } from '../world/collectibles';
 type Base = StorageLike & { removeItem?(key: string): void };
 
 export const FILE_COUNT = 3;
+/** THE HALL's own file (the test area): not one of the three games, never listed with them. */
+export const HALL_FILE = 9;
 /** Which file was played last (shared). */
 export const FILE_KEY = 'ratquest.file';
 /** Time played and the like, per file. */

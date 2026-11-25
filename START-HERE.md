@@ -32,6 +32,15 @@ to `src/main.ts`, run it. `npm run smoke -- --rooms` also opens every room and m
 Fable's, Part B Opus's, every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on
 the owner's own play).
 
+## THERE ARE TWO THINGS NOW: THE GAME AND THE HALL (the owner, 2026-11-25). READ `docs/GAME.md`
+
+"take everything that we currently have and incorporate it into the Hub room, The Hub room is now going to be our
+main test area ... then I would like you to start a second thing that is just going to be the actual game and we're
+going to build it from front to back." THE GAME is NEW GAME on the title: its areas are `GAME_ROOMS`
+(`src/levels/levels.ts`), the first is Flotsam (`src/levels/flotsam.ts`), and a new game's knight has a broken sword
+and no shield. THE HALL is TEST HALL on the title, with its own save file. His words, the plan and the state of it:
+`docs/GAME.md`.
+
 ## The project
 A PS1-style 3D action platformer: a rat knight with a sword and a shield. TypeScript (strict: no unused locals or
 parameters), Three.js 0.187, Vite 8, no other game library. The owner tests on a PHONE with single-file HTML builds

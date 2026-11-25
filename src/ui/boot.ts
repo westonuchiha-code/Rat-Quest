@@ -27,6 +27,10 @@ export interface BootHost {
   playFile(file: number): void;
   copyFile(from: number, to: number): void;
   eraseFile(file: number): void;
+  /** TEST HALL: the test area, in its own file (left out, the entry is not shown). */
+  onHall?(): void;
+  /** What NEW GAME's card says under 'A new adventure'. */
+  newGameSays?: string;
   /** OPTIONS: the main menu takes over. */
   onOptions(): void;
   /** LEVEL EDITOR and WORKSHOP: the title steps aside for them (left out, the entries are not shown). */
@@ -165,12 +169,13 @@ const CSS = `
 @keyframes rq-spin { from { transform: rotateX(-24deg) rotateY(0); } to { transform: rotateX(-24deg) rotateY(360deg); } }
 `;
 
-type TitleItem = 'continue' | 'new' | 'load' | 'editor' | 'workshop' | 'options';
+type TitleItem = 'continue' | 'new' | 'load' | 'hall' | 'editor' | 'workshop' | 'options';
 /** The small picture beside each entry of the title's menu. */
 const TITLE_ICONS: Record<TitleItem, string> = {
   continue: '<path d="M6 4 L20 12 L6 20 Z" fill="currentColor"/>',
   new: '<path d="M12 2 L14.6 9 L22 9.4 L16.2 14 L18.2 21.4 L12 17.2 L5.8 21.4 L7.8 14 L2 9.4 L9.4 9 Z" fill="currentColor"/>',
   load: '<path d="M2 6 H9 L11 8.5 H22 V20 H2 Z" fill="currentColor"/>',
+  hall: '<path d="M3 21 V9 L12 3 L21 9 V21 H15 V13 H9 V21 Z" fill="currentColor"/>',
   editor: '<path d="M2 14 H10 V22 H2 Z M12 14 H22 V22 H12 Z M7 4 H17 V12 H7 Z" fill="currentColor"/>',
   workshop: '<path d="M21 6.5 a5 5 0 0 1 -6.6 4.7 L6 19.6 a2 2 0 0 1 -2.8 -2.8 L11.6 8.4 A5 5 0 0 1 17.5 2 L14.6 5 L15.6 8.4 L19 9.4 Z" fill="currentColor"/>',
   options: '<path d="M10 2 H14 L14.6 5 L17.2 6.4 L20 5.2 L22 8.6 L19.8 10.6 V13.4 L22 15.4 L20 18.8 L17.2 17.6 L14.6 19 L14 22 H10 L9.4 19 L6.8 17.6 L4 18.8 L2 15.4 L4.2 13.4 V10.6 L2 8.6 L4 5.2 L6.8 6.4 L9.4 5 Z M12 8.6 A3.4 3.4 0 1 0 12 15.4 A3.4 3.4 0 1 0 12 8.6 Z" fill="currentColor" fill-rule="evenodd"/>',
@@ -363,6 +368,7 @@ export class Boot {
       },
     });
     if (used.length) items.push({ id: 'load', label: 'LOAD GAME', run: () => this.showFiles() });
+    if (this.host.onHall) items.push({ id: 'hall', label: 'TEST HALL', run: () => this.startWith(() => this.host.onHall?.()) });
     if (this.host.onEditor) items.push({ id: 'editor', label: 'LEVEL EDITOR', run: () => this.host.onEditor?.() });
     if (this.host.onWorkshop) items.push({ id: 'workshop', label: 'WORKSHOP', run: () => this.host.onWorkshop?.() });
     items.push({ id: 'options', label: 'OPTIONS', run: () => this.host.onOptions() });
@@ -376,8 +382,9 @@ export class Boot {
     const id = this.items[this.sel].id;
     let card = '';
     if (id === 'continue' && last) card = `<div class="k">FILE ${last.file}</div>${file(last)}`;
-    else if (id === 'new') card = empty ? `<div class="k">FILE ${empty.file}</div><div class="where">A new adventure</div><div class="sub">Starts in the Club, in an empty file. Your other files are not touched.</div>` : '<div class="k">NO EMPTY FILE</div><div class="sub">Every file has a game in it. Choose this to pick one to erase.</div>';
+    else if (id === 'new') card = empty ? `<div class="k">FILE ${empty.file}</div><div class="where">A new adventure</div><div class="sub">${this.host.newGameSays || 'Starts in an empty file. Your other files are not touched.'}</div>` : '<div class="k">NO EMPTY FILE</div><div class="sub">Every file has a game in it. Choose this to pick one to erase.</div>';
     else if (id === 'load') card = `<div class="k">SAVE FILES</div>${cards.map((f) => (f.empty ? `<div class="line none"><b>File ${f.file} · empty</b></div>` : `<div class="line"><b>File ${f.file} · ${f.where}</b><i>${f.wedges} / ${f.total}</i></div>`)).join('')}<div class="sub" style="margin-top:0.6cqh">Play, copy or erase a file.</div>`;
+    else if (id === 'hall') card = '<div class="k">TEST HALL</div><div class="sub">Not the game: the long hallway with a door to every test room, boss room and practice room, and everyone standing about in it. It keeps its own file.</div>';
     else if (id === 'editor') card = '<div class="k">LEVEL EDITOR</div><div class="sub">Build your own levels on a map, watch them in the game as you draw, and play them. Sample levels are included to learn from.</div>';
     else if (id === 'workshop') card = '<div class="k">WORKSHOP</div><div class="sub">The tools the game is made with: sliders for how it feels, a sound test, a way to any place, and test switches.</div>';
     else card = '<div class="k">OPTIONS</div><div class="sub">Sound and music, the buttons, the picture.</div>';

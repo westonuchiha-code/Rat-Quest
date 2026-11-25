@@ -83,7 +83,7 @@ function swordReaches(t: Strikeable, p: Striker): boolean {
   const nx = Math.max(t.x - t.w / 2, Math.min(t.x + t.w / 2, pos.x));
   const nz = Math.max(t.z - t.d / 2, Math.min(t.z + t.d / 2, pos.z));
   const dist = Math.hypot(nx - pos.x, nz - pos.z);
-  if (dist > p.attackClip.reach) return false;
+  if (dist > p.attackClip.reach * ((p.gear as { reach?: number }).reach ?? 1)) return false;
   return dist < 0.25 || angleBetween(Math.atan2(nx - pos.x, nz - pos.z), p.facing) <= p.attackClip.arc;
 }
 

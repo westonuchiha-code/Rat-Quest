@@ -70,7 +70,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
         // and what is ahead of him as the swing begins is beside him or behind before it ends. Measured: with the
         // swing's own arc a bat beside the rail could be hit for one frame in sixty.)
         const inArc = player.grinding || d < r + 0.25 || angleBetween(Math.atan2(cx - p.x, cz - p.z), player.facing) <= clip.arc;
-        return inArc && d - r <= clip.reach ? d - r : Infinity;
+        return inArc && d - r <= clip.reach * player.gear.reach ? d - r : Infinity;
       };
       let part = -1;
       let best = reached(e.x, e.z, e.radius);
@@ -204,7 +204,7 @@ function resolveCrates(player: PlayerController, crates: Crate[], events: Combat
     if (player.attackActive && c.lastSwing !== player.swingId && sameLevel && !standingOn) {
       const clip = player.attackClip;
       const inArc = dist < c.half + 0.25 || angleBetween(Math.atan2(dx, dz), player.facing) <= clip.arc;
-      if (inArc && dist - c.half * 1.2 <= clip.reach) broken = bySword = true;
+      if (inArc && dist - c.half * 1.2 <= clip.reach * player.gear.reach) broken = bySword = true;
     }
     if (player.plungeStage === 2 && dist <= c.half + P.diveRadius && c.y + c.half <= p.y + 0.3) broken = true;
     if (player.plungeImpact && sameLevel && dist - c.half <= P.shockRadius) broken = true;

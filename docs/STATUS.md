@@ -102,3 +102,10 @@ Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by C
 | Every small creature and the Stag Knight fought four ways and fixed against the results (`tests/duels.ts`, docs/KIT.md) | WORK IN PROGRESS | Poise added; mantis, scorpion, hornet, Stag Knight retuned. Measured by scripted players, NOT played by hand. The five bosses and the firefly are not covered. Awaiting the owner's verdict on how the fights feel. |
 | Guard strain, guard break, venom (`TUNING.guard`, `tests/guardbreak.ts`, docs/KIT.md) | WORK IN PROGRESS | Third blocked blow in quick succession breaks his guard; the ironback's ram breaks it in one; a scorpion sting on the shield poisons. A perfect guard beats all three. Tested by script and filmed (three ants). Sounds are borrowed and unheard. Awaiting the owner's verdict. |
 | The bosses and the firefly fought four ways (`tests/bossduels.ts`, docs/KIT.md) | WORK IN PROGRESS | Broodmother (38 health, braced after kneeling, scissor breaks a guard and she stabs after), Grimsqueak (ring breaks a guard, orb too big to simply block), Wyrm (riposte capped). Measured by scripted players, NOT played by hand. Awaiting the owner's verdict. |
+
+## The game (2026-11-25)
+
+| Thing | Tag | State |
+|------|-----|-------|
+| The game split from the Hall: title entries, files, the washed-up start (`docs/GAME.md`) | WORK IN PROGRESS | Tested (`tests/game.ts`) and walked through in a browser: NEW GAME opens Flotsam, TEST HALL opens the Hall in its own file. |
+| Area one, Flotsam (`src/levels/flotsam.ts`) | WORK IN PROGRESS | A FIRST DRAFT, undressed. Every jump of the climb checked by simulation. NOT played through by hand; the story is a proposal the owner has not approved. |

@@ -7,6 +7,7 @@ export const EQUIPMENT_KEY = 'ratquest.equipment.v1';
 export class Equipment {
   private readonly owned = new Set<string>(Object.values(STARTING_GEAR));
   private readonly worn: Record<Slot, string> = { ...STARTING_GEAR };
+  private strict = false;
   private readonly listeners: Array<() => void> = [];
 
   constructor(private readonly storage: StorageLike | null = null) {
@@ -47,14 +48,28 @@ export class Equipment {
 
   /** Back to starting gear, for testing. */
   reset(): void {
+    this.strict = false;
     this.owned.clear();
     for (const id of Object.values(STARTING_GEAR)) this.owned.add(id);
     Object.assign(this.worn, STARTING_GEAR);
     this.changed();
   }
 
+  /**
+   * A NEW GAME: only `start`, worn. (The Hall's file is `reset()`: the Rat Sword and the Rat Shield.) Kept `strict`:
+   * read back, he owns what was saved and no more (otherwise every file is given the starting sword and shield).
+   */
+  resetTo(start: Record<Slot, string>): void {
+    this.owned.clear();
+    for (const id of Object.values(start)) this.owned.add(id);
+    Object.assign(this.worn, start);
+    this.strict = true;
+    this.changed();
+  }
+
   /** Reads it all again from storage (another save file was chosen). Nothing is written. */
   reload(): void {
+    this.strict = false;
     this.owned.clear();
     for (const id of Object.values(STARTING_GEAR)) this.owned.add(id);
     Object.assign(this.worn, STARTING_GEAR);
@@ -73,7 +88,7 @@ export class Equipment {
 
   private save(): void {
     try {
-      this.storage?.setItem(EQUIPMENT_KEY, JSON.stringify({ owned: [...this.owned], worn: this.worn }));
+      this.storage?.setItem(EQUIPMENT_KEY, JSON.stringify({ owned: [...this.owned], worn: this.worn, strict: this.strict || undefined }));
     } catch {
       // Saving is best effort.
     }
@@ -83,7 +98,11 @@ export class Equipment {
     try {
       const raw = this.storage?.getItem(EQUIPMENT_KEY);
       if (!raw) return;
-      const data = JSON.parse(raw) as { owned?: string[]; worn?: Partial<Record<Slot, string>> };
+      const data = JSON.parse(raw) as { owned?: string[]; worn?: Partial<Record<Slot, string>>; strict?: boolean };
+      if (data.strict) {
+        this.strict = true;
+        this.owned.clear();
+      }
       for (const id of data.owned ?? []) if (ITEMS[id]) this.owned.add(id);
       for (const slot of Object.keys(STARTING_GEAR) as Slot[]) {
         const id = data.worn?.[slot];

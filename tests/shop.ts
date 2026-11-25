@@ -31,7 +31,8 @@ check('a broken purse is ignored', new Wallet(st, () => earned).balance().crumbs
 
 check('everything on sale exists', SHOP.every((s) => (s.kind === 'gear' ? !!ITEMS[s.id] : !!CONSUMABLES[s.id])));
 check('nothing is free, and caps only on the finer things', SHOP.every((s) => s.crumbs > 0 && s.caps <= s.crumbs));
-check('he never sells the starting gear', !SHOP.some((s) => ['tinHelm', 'ratSword', 'ratShield', 'redScarf'].includes(s.id)));
+// (But the Rat Shield: in THE GAME he starts with a bare arm, and his first shield is the first thing crumbs are for.)
+check('he never sells the starting gear (but the first shield, which a new game does not start with)', !SHOP.some((s) => ['tinHelm', 'ratSword', 'redScarf'].includes(s.id)) && SHOP.some((s) => s.id === 'ratShield'));
 const club = LEVELS.find((l) => l.hub)!;
 const pip = club.npcs?.find((n) => n.name === 'PIP');
 check('Pip keeps the shop in the Club', !!pip?.shop && (pip?.lines.length ?? 0) > 0);

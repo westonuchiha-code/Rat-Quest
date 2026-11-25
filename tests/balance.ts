@@ -81,7 +81,8 @@ check(
 // The shop.
 const crumbs = order.reduce((n, w) => n + count(w, 'crumb'), 0);
 const caps = order.reduce((n, w) => n + count(w, 'cap'), 0);
-const gear = SHOP.filter((s) => s.kind === 'gear');
+// (Not the Rat Shield: the plain first shield of the game's first area, priced to be his first purchase.)
+const gear = SHOP.filter((s) => s.kind === 'gear' && s.id !== 'ratShield');
 const gearCrumbs = gear.reduce((n, s) => n + s.crumbs, 0);
 const gearCaps = gear.reduce((n, s) => n + s.caps, 0);
 check(

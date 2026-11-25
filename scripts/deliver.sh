@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds everything the owner tests with, into one folder (default: ../deliver, next to the project):
 #   ratquest.html              the game, with the on-screen test pad (the owner tests on a phone)
-#                              (it opens in THE HALL: the hallway with a door to every test room, boss room and practice room)
+#                              (it opens on the TITLE: NEW GAME is THE GAME, from its first area; TEST HALL is the Hall)
+#   ratquest-hall.html         straight into THE HALL: the hallway with a door to every test room, boss room and practice room
 #   ratquest-<place>.html      the same, opening on one place: hub (the Club), cistern, foundry, hollows, keep
 #   ratquest-testroom.html     the Club with every door open (level=hub&unlockall)
 #   ratquest-garden.html       the Move Garden: a test room for feeling the jump numbers (level=garden)
@@ -40,6 +41,7 @@ const out = process.argv[1];
 const src = fs.readFileSync(out + "/ratquest.html", "utf8");
 const make = (name, js) => fs.writeFileSync(out + "/" + name, src.replace("<head>", "<head><script>" + js + "</script>"));
 make("ratquest-testroom.html", "location.hash=\"level=hub&unlockall\"");
+make("ratquest-hall.html", "location.hash=\"level=hall\"");
 make("ratquest-garden.html", "location.hash=\"level=garden&nostory\"");
 make("ratquest-dream.html", "location.hash=\"level=toybox&nostory\"");
 for (const l of ["hub", "cistern", "foundry", "hollows", "keep"]) make("ratquest-" + l + ".html", "if(!location.hash)location.hash=\"level=" + l + "\"");

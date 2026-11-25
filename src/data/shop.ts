@@ -27,6 +27,7 @@ function priced(id: PricedId, kind: ShopItem['kind']): ShopItem {
 }
 
 export const SHOP: ShopItem[] = [
+  priced('ratShield', 'gear'),
   priced('nachoCheese', 'snack'),
   priced('mossScarf', 'gear'),
   priced('minerHelm', 'gear'),

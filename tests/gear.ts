@@ -29,8 +29,10 @@ const GOOD: Record<keyof GearFx, (v: number | boolean) => boolean> = {
   longJump: (v) => (v as number) > 1, hearts: (v) => (v as number) > 0, fireproof: (v) => v === true, notice: (v) => (v as number) < 1,
   sight: (v) => (v as number) > 1, damage: (v) => (v as number) > 1, swing: (v) => (v as number) > 1, parry: (v) => (v as number) > 1,
   guardMove: (v) => (v as number) > 1, blockArc: (v) => (v as number) > 1,
+  reach: (v) => (v as number) > 1, noGuard: () => false,
 };
-const forSale = SHOP.filter((s) => s.kind === 'gear').map((s) => ITEMS[s.id]);
+// (Not the Rat Shield: the plain first shield, sold in the game's first area to a knight with a bare arm.)
+const forSale = SHOP.filter((s) => s.kind === 'gear' && s.id !== 'ratShield').map((s) => ITEMS[s.id]);
 check('Pip sells something for every slot', ['helmet', 'sword', 'shield', 'scarf'].every((slot) => forSale.some((i) => i.slot === slot)));
 for (const it of forSale) {
   const fx = Object.entries(it.fx ?? {}) as Array<[keyof GearFx, number | boolean]>;
