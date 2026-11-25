@@ -106,8 +106,17 @@ const s = F.steps;
 const c = (q: readonly number[]): [number, number, number] => [(q[0] + q[2]) / 2, q[4], (q[1] + q[3]) / 2];
 hop('floor to step 1', [-6, 0, 12.5], c(s[0]), 0);
 hop('step 1 to step 2', c(s[0]), c(s[1]), 0.8);
-hop('step 2 to the plank (at rest)', c(s[1]), [(F.plank.x0 + F.plank.x1) / 2, F.plank.top, (F.plank.z0 + F.plank.z1) / 2], 0.8);
-hop('plank (far end) to step 3', [-18.75, F.plank.top, 4.25], c(s[2]), 0);
+{
+  // The plank between them GLIDES (a mover: it is not in the room's fixed boxes). At rest it is against step 2, a
+  // step up; at the far end of its glide it is against step 3, a step under it.
+  const m = (L.movers ?? [])[0];
+  const P = F.plank;
+  check('the plank is a thing that moves: it glides west, as far as its plan says', !!m && Math.abs((m.to?.[0] ?? 0) + P.travel) < 0.01 && Math.abs(m.y - P.top) < 0.5, JSON.stringify(m ?? null).slice(0, 120));
+  const gapIn = s[1][0] - P.x1;
+  check('the climb: step 2 to the plank at rest (against it, a step up)', Math.abs(gapIn) < 0.7 && P.top - s[1][4] <= 1.15 && P.z0 < s[1][3] && P.z1 > s[1][1], `gap ${gapIn.toFixed(2)}, rise ${(P.top - s[1][4]).toFixed(2)}`);
+  const farX0 = P.x0 - P.travel;
+  check('the climb: the plank at its far end to step 3 (against it, a step up)', farX0 - s[2][2] < 0.7 && s[2][4] - P.top <= 1.15 && P.z0 < s[2][3] && P.z1 > s[2][1], `gap ${(farX0 - s[2][2]).toFixed(2)}, rise ${(s[2][4] - P.top).toFixed(2)}`);
+}
 hop('step 3 to step 4', c(s[2]), c(s[3]), 1);
 hop('step 4 to step 5', c(s[3]), c(s[4]), 1);
 hop('step 5 to the deck', c(s[4]), [F.deck.x0 + 1.5, F.deck.top, -3.5], 1);

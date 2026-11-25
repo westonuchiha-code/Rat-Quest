@@ -62,5 +62,10 @@ gate lifts, and the title comes up: the game begins.
 
 Nothing is locked: he may walk up to the Warden at once, with half a sword and no shield.
 
-WHAT IT IS NOT YET: dressed (it is one stone floor in a box: no water, no pipe, no wrecked boat, no reeds); a
-second way round or a shortcut; an opening scene; anything after the gate; sounds or music of its own.
+DRESSED A LITTLE (2026-11-25): the pool the pipe lets out into along the south wall (he can swim in it), junk at a
+rat's size left along the bank and about the yard (all solid: spools for seats by the fire), wooden boards for the
+wreck, roots and slime. THE PLANK REALLY MOVES NOW: it was a `platform` given moving props, which stays put; only a
+`lift` moves. As first drawn the climb could not be finished.
+
+WHAT IT IS NOT YET: a real pipe mouth or a wrecked boat (the wreck is boards on posts); reeds; a second way round or
+a shortcut; an opening scene; anything after the gate; sounds or music of its own. NOT PLAYED THROUGH BY HAND.

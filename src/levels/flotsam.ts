@@ -33,8 +33,10 @@ const HX = 34;
 const HZ = 30;
 export const FLOTSAM_ID = 'flotsam';
 export const FLOTSAM = {
-  spawn: { x: 0, z: 26 },
-  lanterns: [{ x: 4, y: 0, z: 23 }, { x: 9, y: 0, z: -8.5 }],
+  spawn: { x: 0, z: 21 },
+  /** The pool the great pipe lets out into, along the south wall: the floor stops at `z`, the water lies below it. */
+  pool: { z: 23.5, y: -0.3 },
+  lanterns: [{ x: 4.5, y: 0, z: 20.5 }, { x: 9, y: 0, z: -8.5 }],
   /** The wall across the north, and the way through it to the Warden. */
   wall: { z: -12, gap: 5, top: 7 },
   /** The gate behind the Warden: it lifts when he is beaten. */
@@ -69,23 +71,30 @@ const room: CustomLevel = {
   music: 'drift',
   width: HX * 2, depth: HZ * 2, wallHeight: 16,
   pieces: [
-    box('floor', -HX, -HZ, HX, HZ, 0),
+    box('floor', -HX, -HZ, HX, F.pool.z, 0),
+    // The pool, and the water coming down into it out of the wall (the great pipe). He can swim; the bank is low.
+    box('water', -HX, F.pool.z, HX, HZ, F.pool.y),
+    at('fall', 0, HZ - 0.4, F.pool.y, { dir: 'n' }), at('fall', -3, HZ - 0.4, F.pool.y, { dir: 'n' }), at('fall', 3, HZ - 0.4, F.pool.y, { dir: 'n' }),
+    // What the water has left along the bank: junk at a rat's size, all of it solid, to climb about on.
+    at('teacup', -13, 21.2, 0), at('sardines', -16, 20.4, 0, { dir: 'e' }), at('spoon', -11, 19.2, 0, { dir: 'e' }),
+    at('matchbox', 12.5, 21.4, 0, { dir: 'w' }), at('battery', 16, 20.6, 0), at('die', 18.6, 21.5, 0), at('button', 21, 19.5, 0),
+    at('pencil', -21, 21, 0, { dir: 'e' }), at('marble', 24.5, 21.2, 0), at('safetypin', -25, 19, 0), at('crayon', 27, 18.5, 0, { dir: 'e' }),
     at('spawn', F.spawn.x, F.spawn.z, 0),
     { t: 'exit', x0: 0, z0: -HZ, x1: 0, z1: -HZ, top: 0, dir: 's' },
 
     // ---- THE SHORE. One roach, alone, in the open; and the trail of crumbs up into the yard.
     at('roach', -9, 16.5, 0),
-    at('crumb', 0, 21.5, 0), at('crumb', 0.6, 18.5, 0), at('crumb', 1.2, 15.5, 0),
-    at('npc', -3.2, 24, 0, { props: { name: 'Finch', kind: 'bird', lines: [
+    at('crumb', 0.3, 17.5, 0), at('crumb', 0.8, 15, 0), at('crumb', 1.3, 12.5, 0),
+    at('npc', -3.2, 19.5, 0, { props: { name: 'Finch', kind: 'bird', lines: [
       'You came down the BIG pipe? Nobody comes down the big pipe.',
       'Well. Not in one piece. Is that... half a sword?',
       'Go up and see Mort, by the fire. He keeps count of what the water brings.',
     ] } }),
-    at('barrel', 6.5, 25.5, 0), at('crate', 7.8, 26.2, 0), at('crate', -8.5, 26.5, 0, { props: { item: 'crumb' } }),
+    at('barrel', 7.5, 21.5, 0), at('crate', 8.8, 21.8, 0), at('crate', -7.5, 21.6, 0, { props: { item: 'crumb' } }),
 
     // ---- THE YARD. Mort by the fire; Pip and his stall; things lying about.
     at('brazier', F.fire.x, F.fire.z, 0),
-    at('stool', F.fire.x + 1.6, F.fire.z + 0.8, 0), at('stool', F.fire.x - 1.2, F.fire.z + 1.5, 0),
+    at('spool', F.fire.x + 1.9, F.fire.z + 1.0, 0), at('spool', F.fire.x - 1.6, F.fire.z + 1.6, 0), at('cheese', F.fire.x - 2.6, F.fire.z - 1.4, 0),
     at('npc', F.fire.x + 1.5, F.fire.z - 1.2, 0, { props: { name: 'Mort', kind: 'mouse', lines: [
       'Mm? Another one washed up. Sit. No? Suit yourself.',
       'This is Flotsam. Everything here came down that pipe, same as you.',
@@ -102,16 +111,22 @@ const room: CustomLevel = {
     at('lamp', F.shop.x - 0.5, F.shop.z - 2, 5),
     at('crate', 9, 13, 0, { props: { item: 'crumb' } }), at('crate', 10.3, 13.4, 0),
     at('pot', -3, 12, 0), at('pot', -3.8, 12.6, 0), at('rock', 12, 1, 0),
+    at('matchbox', F.shop.x - 3.6, F.shop.z + 2.2, 0), at('battery', F.shop.x + 0.4, F.shop.z + 2.6, 0, { dir: 'e' }), at('pawn', F.shop.x + 3.4, F.shop.z - 2.4, 0), at('candle', F.shop.x - 3, F.shop.z - 1.6, 0),
+    at('roots', -30, 14, 9), at('roots', 30, 16, 9), at('roots', -31, -4, 9), at('roots', 31, 2, 9), at('roots', -8, 28, 10), at('roots', 9, 28.5, 10),
+    at('slime', -HX + 0.1, 6, 5, { dir: 'e' }), at('slime', HX - 0.1, -6, 5, { dir: 'w' }), at('slime', -12, HZ - 0.1, 6, { dir: 'n' }), at('slime', 14, HZ - 0.1, 6, { dir: 'n' }),
 
     // ---- THE WRECK: the climb to the sword. A crumb on each step shows the way.
-    ...F.steps.map((s) => box('platform', s[0], s[1], s[2], s[3], s[4], { bottom: s === F.steps[0] || s === F.steps[1] ? 0 : s[4] - 0.5 })),
+    ...F.steps.map((s) => (s === F.steps[0] || s === F.steps[1] ? box('stone', s[0], s[1], s[2], s[3], s[4], { bottom: 0 }) : box('plank', s[0], s[1], s[2], s[3], s[4], { bottom: s[4] - 0.4 }))),
+    at('die', -6.2, 9.5, 0), at('matchbox', -8, 12.2, 0),
     ...F.steps.map((s) => at('crumb', mid(s)[0], mid(s)[1], s[4])),
-    box('platform', F.plank.x0, F.plank.z0, F.plank.x1, F.plank.z1, F.plank.top, { bottom: F.plank.top - 0.4, props: { motion: 'glide', move: 'w', travel: F.plank.travel, speed: 1.6, pause: 1.2 } }),
-    box('platform', F.deck.x0, F.deck.z0, F.deck.x1, F.deck.z1, F.deck.top, { bottom: F.deck.top - 0.6 }),
+    // (A 'lift' is the piece that MOVES: a 'platform' given these props stays where it is. Found 2026-11-25.)
+    box('lift', F.plank.x0, F.plank.z0, F.plank.x1, F.plank.z1, F.plank.top, { props: { motion: 'glide', move: 'w', travel: F.plank.travel, speed: 1.6, pause: 1.2 } }),
+    box('plank', F.deck.x0, F.deck.z0, F.deck.x1, F.deck.z1, F.deck.top, { bottom: F.deck.top - 0.6 }),
+    at('spool', F.deck.x1 - 0.9, F.deck.z0 + 0.9, F.deck.top), at('teacup', F.deck.x0 + 1.4, F.deck.z1 - 1.2, F.deck.top),
     box('pillar', F.deck.x0 + 0.4, F.deck.z0 + 0.4, F.deck.x0 + 1.2, F.deck.z0 + 1.2, F.deck.top - 0.6),
     box('pillar', F.deck.x1 - 1.2, F.deck.z1 - 1.2, F.deck.x1 - 0.4, F.deck.z1 - 0.4, F.deck.top - 0.6),
     at('bat', -20, -1, 8.6, { props: { perch: 'chain' } }),
-    box('platform', F.capBoard.x0, F.capBoard.z0, F.capBoard.x1, F.capBoard.z1, F.capBoard.top, { bottom: F.capBoard.top - 0.5 }),
+    box('plank', F.capBoard.x0, F.capBoard.z0, F.capBoard.x1, F.capBoard.z1, F.capBoard.top, { bottom: F.capBoard.top - 0.5 }),
     at('cap', (F.capBoard.x0 + F.capBoard.x1) / 2, (F.capBoard.z0 + F.capBoard.z1) / 2, F.capBoard.top),
 
     // ---- THE REEDS: two roaches, and a toad on its rock with crumbs under it.
