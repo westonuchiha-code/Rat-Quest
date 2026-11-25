@@ -299,5 +299,28 @@ room's first thing of that kind in his hands; `scratch rig` pictures were taken 
 SEEN AND FITTED: crate, barrel, pot, rock, key, and a roach. NOT SEEN: the other creatures (they share the roach's fit
 and are other sizes), an iron-bound crate.
 
+## Shortcuts: a gate that opens from one side only (`world/locks.ts` `oneWay`; shown in the Lockworks)
+
+WORK IN PROGRESS (2026-11-25). A gate with `fromSide: 'n' | 's' | 'e' | 'w'` (north is -z) opens when he comes up to
+it ON that side, and stays open. From the other side it is barred: its bar is drawn on the side it opens from (seen
+through the gate), and it rattles when he tries it. THE DARK SOULS SHORTCUT: put it beside a lantern, with the long
+dangerous way round ending on its far side. NOT YET: a bridge or ladder dropped from the far side (the game has no
+ladders; a bridge let down on chains by a catch is the likely form); the level editor.
+
+## BUILDING A ROOM: three more rules (the owner approved the plan they come from, 2026-11-25)
+
+Added to "decide its goal on purpose". From `docs/RESEARCH-INSPIRATIONS.md`.
+1. **It loops.** A biome is one connected place that comes back to its own entrance and lanterns. The first time
+   through is the long way; a shortcut opened from the far side (above), a lever, a key or a weight plate makes the
+   way back short for good. A lantern before each hard stretch, and the stretch's end opens the way back to it.
+2. **Creatures are placed, not scattered.** Each stands somewhere for a reason: one above with something to throw,
+   one behind a corner, a pair of different kinds that forces a choice of which first. The FIRST of any kind is met
+   alone, somewhere he can back away and watch it. Nothing hurts him that he had no way to see or hear coming.
+3. **Teach, then test, then twist.** Every part new to the room gets a safe first use (the thin ice beside solid
+   ground), then a use where failing costs something (thin ice over the cold water), then a combination with
+   something else in the room (thin ice with a Roller coming).
+And where it can be done: **he can see where he is going.** The next landmark, or the lantern he is working back
+toward, shows through a gap, across a pit or from a height.
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

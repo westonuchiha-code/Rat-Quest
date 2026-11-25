@@ -14,6 +14,14 @@ get the feel of a kind of area right so real levels can be built later. The work
 and hazards, then the knight's movement and animation. Read BACKLOG.md, "WHERE THE TIME GOES", and docs/STATUS.md before
 choosing what to do. Do not polish placeholders.
 
+**HOW THE WORLD IS PUT TOGETHER (the owner approved this, 2026-11-25; `docs/RESEARCH-INSPIRATIONS.md`):** separate
+biomes behind doors off a hub, as Mario 64 has them; and EACH BIOME BUILT INSIDE ITSELF THE DARK SOULS WAY: one
+connected place that loops back to its own entrance and lanterns through shortcuts opened from the far side. The plan
+he approved with it, in order: shortcuts that open from the far side; creatures placed as puzzles; teach, then test,
+then twist; jump height that grows with run speed; a sharper cut on a short hop; seeing where you will go; one at a
+time while locked on; sidehops while locked on. NOT to take: an auto-jump, a stamina bar, taking away the ledge
+forgiveness, hazards he cannot learn of first. The rules for building a room are in `docs/KIT.md`, "BUILDING A ROOM".
+
 **BEFORE ANY BUILD IS SENT: the smoke check** (`npm run smoke`, `scripts/smoke.mjs`; `bash scripts/deliver.sh` runs it
 itself and stops if it fails). It opens the built game in a headless browser, presses the pad and reads where he is:
 the knight must walk, jump and swing, a played character must move, no page may throw. `npm run test:all` does NOT

@@ -39,6 +39,34 @@ export function keyAt(gate: Spot, things: readonly Crate[]): Crate | null {
   return things.find((c) => c.alive && c.type === 'key' && Math.hypot(c.x - gate.x, c.z - gate.z) < LOCK.reach && Math.abs(c.y - gate.y) < 3.5) ?? null;
 }
 
+export const ONE_WAY = { reach: 1.35 } as const;
+/**
+ * A gate that opens from one side only: where he is to it. 'open': at it, on the side it opens from. 'barred': at it,
+ * on the other side. null: not at it. (`alongZ`: the gate's width runs along z, so its two sides are east and west.)
+ */
+export function oneWay(gate: { x: number; z: number; y?: number; width: number; alongZ?: boolean; fromSide?: 'n' | 's' | 'e' | 'w' }, at: Spot): 'open' | 'barred' | null {
+  if (!gate.fromSide) return null;
+  const across = gate.alongZ ? at.x - gate.x : at.z - gate.z;
+  const along = gate.alongZ ? at.z - gate.z : at.x - gate.x;
+  if (Math.abs(along) > gate.width / 2 + 0.2 || Math.abs(across) > ONE_WAY.reach || Math.abs(at.y - (gate.y ?? 0)) > 1.2) return null;
+  // (North is -z, west is -x.)
+  const side = gate.alongZ ? (across < 0 ? 'w' : 'e') : across < 0 ? 'n' : 's';
+  return side === gate.fromSide ? 'open' : 'barred';
+}
+
+/** The bar across a one-way gate, on the side it opens from: a beam in two brackets. Hidden when the gate is open. */
+export function buildBar(gate: { x: number; z: number; y?: number; width: number; alongZ?: boolean; fromSide?: 'n' | 's' | 'e' | 'w' }): THREE.Group {
+  const g = new THREE.Group();
+  const out = gate.fromSide === 'n' || gate.fromSide === 'w' ? -0.32 : 0.32;
+  g.position.set(gate.x + (gate.alongZ ? out : 0), (gate.y ?? 0) + 1.15, gate.z + (gate.alongZ ? 0 : out));
+  if (gate.alongZ) g.rotation.y = Math.PI / 2;
+  const wood = new THREE.MeshBasicMaterial({ color: 0x6a4a2a });
+  const iron = new THREE.MeshBasicMaterial({ color: 0x2a2620 });
+  g.add(new THREE.Mesh(new THREE.BoxGeometry(gate.width + 0.5, 0.22, 0.16), wood));
+  for (const side of [-1, 1]) g.add(new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.42, 0.24), iron).translateX(side * (gate.width / 2 + 0.05)));
+  return g;
+}
+
 /** Which checkpoint he is touching (its place in the list), or -1. */
 export function checkpointAt(points: readonly Spot[], at: Spot): number {
   return points.findIndex((c) => Math.hypot(c.x - at.x, c.z - at.z) < CHECKPOINT.reach && at.y > c.y - 0.5 && at.y < c.y + CHECKPOINT.rise);

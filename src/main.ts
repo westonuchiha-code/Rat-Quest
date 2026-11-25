@@ -64,7 +64,7 @@ import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
 import { Roller } from './enemies/roller';
-import { buildCheckpoint, checkpointAt, keyAt, weightOn } from './world/locks';
+import { buildBar, buildCheckpoint, checkpointAt, keyAt, oneWay, weightOn } from './world/locks';
 import { WEB, meetWeb, tickWebs, webMesh, websOf, type WebState } from './world/webs';
 import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
@@ -330,6 +330,10 @@ function startGame(): void {
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
   let iceSprayIn = 0;
+  const barGroup = new THREE.Group();
+  scene.add(barGroup);
+  let gateBars = new Map<object, THREE.Group>();
+  let barRattle = 0;
   const checkGroup = new THREE.Group();
   scene.add(checkGroup);
   let checkLamps: Array<ReturnType<typeof buildCheckpoint>> = [];
@@ -1898,6 +1902,15 @@ function startGame(): void {
     scene.add(doorway.group);
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
     dreamVoices.reset();
+    // One-way gates (world/locks.ts): each one's bar, on the side it opens from.
+    barGroup.clear();
+    gateBars = new Map();
+    for (const g of chamber.gates) {
+      if (!g.spec.fromSide) continue;
+      const bar = buildBar(g.spec);
+      barGroup.add(bar);
+      gateBars.set(g, bar);
+    }
     // Checkpoints (world/locks.ts): this room's lanterns, all dark.
     checkGroup.clear();
     checkLamps = (def.checkpoints ?? []).map((c) => buildCheckpoint(c));
@@ -4315,6 +4328,7 @@ function startGame(): void {
   }
   /** Lifts any gate whose pipes are all burst, and any gate that waits for the goals. */
   function updateGates(): void {
+    barRattle = Math.max(0, barRattle - 1 / 60);
     for (const g of chamber.gates) {
       // (A gate that shuts drops again when its levers no longer hold it: a timed lever has sprung back.)
       // (And one held by WEIGHT PLATES drops when a plate comes up: world/locks.ts.)
@@ -4340,6 +4354,20 @@ function startGame(): void {
       // (Levers all on at once, world/strikeables.ts; an echo puzzle solved, world/musicFloor.ts.)
       const byLevers = !!chamber.strike && leversOn(chamber.strike.things, g.spec.levers ?? []);
       const byEcho = !!g.spec.echo && !!musicFloor?.solved(g.spec.echo);
+      // (A SHORTCUT: it opens only from its far side; from the near one it is barred, and says so. world/locks.ts.)
+      const way = !critter && !player.dead ? oneWay(g.spec, player.position) : null;
+      if (way === 'barred' && barRattle <= 0) {
+        barRattle = 1.4;
+        audio.play('gate', { vol: 0.5, rate: 1.7, priority: 5 });
+        audio.play('menuBack', { vol: 0.5, rate: 0.7, priority: 5 });
+        shake = Math.max(shake, 0.04);
+      }
+      if (way === 'open') {
+        const bar = gateBars.get(g);
+        if (bar) bar.visible = false;
+        audio.play('setDown', { vol: 0.9, rate: 0.8, priority: 7 });
+        audio.play('gate', { vol: 0.9, priority: 7 });
+      }
       // (A LOCKED gate: a key brought to it opens it, and is used up. world/locks.ts.)
       const key = g.spec.locked ? keyAt({ x: g.spec.x, y: g.spec.y ?? 0, z: g.spec.z }, chamber.crates) : null;
       if (key) {
@@ -4358,7 +4386,7 @@ function startGame(): void {
         audio.play('gate', { vol: 0.9, priority: 7 });
         grindSparks.burst(g.spec.x, (g.spec.y ?? 0) + 1.2, g.spec.z, 0xf2c84a, 14, 3.5, 0.2);
       }
-      if (byPipes || byGoals || byPlates || byFoes || byLevers || byEcho || key) {
+      if (byPipes || byGoals || byPlates || byFoes || byLevers || byEcho || key || way === 'open') {
         chamber.openGate(g);
         shake = Math.max(shake, 0.12);
       }

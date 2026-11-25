@@ -506,6 +506,12 @@ export interface GateSpec {
   shut?: boolean;
   /** LOCKED (world/locks.ts): it opens when a key is brought to it, and the key is used up. */
   locked?: boolean;
+  /**
+   * A SHORTCUT (world/locks.ts): it opens only FROM this side of it (north is -z), when he comes up to it there, and
+   * stays open. From the other side it is barred, and rattles. The way back to a lantern, earned by going the long
+   * way round first.
+   */
+  fromSide?: 'n' | 's' | 'e' | 'w';
 }
 
 /**

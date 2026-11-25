@@ -86,4 +86,4 @@ Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by C
 
 | Part | Tag | State |
 |------|-----|-------|
-| Weight plate, key, locked gate, checkpoint lantern (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. |
+| Weight plate, key, locked gate, checkpoint lantern, one-way shortcut gate (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. NEXT in the approved plan: a bridge let down from the far side; then creatures placed as puzzles in a first looped room. |
