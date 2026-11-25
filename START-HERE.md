@@ -158,8 +158,14 @@ have to implement right now."
    back to "as designed", and a mark on a save that says the numbers were changed).
 
 ## The owner's standing rules (all of them, every turn)
-- **Deliver working files every turn:** `bash scripts/deliver.sh deliver`, and send the twelve files it writes
-  (`deliver/` is git-ignored). Send a FILM of anything that moves (stills are not enough), made with the drives below.
+- **Deliver working files every turn:** `bash scripts/deliver.sh deliver`, and send THREE game files and no more
+  (the owner, 2026-11-25: "you really just need to send me, the test room with the Hub that has all the doors ...
+  the full Like official notepad version which is the version that's just the game, and then I need a full version
+  of the game that has the on-screen controller ... you don't need to send me rat Quest Hall and rat Quest Foundry
+  and rat Quest keep every single time"): `ratquest.html` (the game, with the on-screen pad), `ratquest-nopad.html`
+  (the game, no pad) and `ratquest-hall.html` (the test Hall with every door). One place by itself only when he
+  asks for it: `bash scripts/deliver.sh deliver <level id>` writes `ratquest-<id>.html` too. Films and pictures
+  are still wanted every time (`deliver/` is git-ignored). Send a FILM of anything that moves (stills are not enough), made with the drives below.
 - Replies in plain language: what changed, what was tested, what was NOT (say so plainly), then a short numbered
   "what's next". He picks by number or says "Continue" (the first item). **Decide and do the work; do not pad with
   questions.** When a design is contested: think, show, get a yes.
@@ -322,9 +328,9 @@ bunch of shit all over them."
   game only; `tsc -p tests` checks the game and the tests (the build alone checks no types at all).
 - **The asset list:** `npm run assets` packs the drop-in folder (`assets/`) and rewrites `ASSETS.md`. Run it whenever
   anything is added, renamed or removed; `tests/assets.ts` fails until you do. Never edit ASSETS.md by hand.
-- **Deliver:** `bash scripts/deliver.sh deliver` (it runs the asset pack first). Twelve files: `ratquest.html` (opens in
-  the Hall), `-dream` (the Toy Box), `-garden`, `-hub`, `-cistern`, `-foundry`, `-hollows`, `-keep`, `-testroom`,
-  `-nopad`, `-editor`, and `ratquest-source.zip`.
+- **Deliver:** `bash scripts/deliver.sh deliver` (it runs the asset pack first). Three files: `ratquest.html` (the game, on-screen
+  pad), `ratquest-nopad.html` (the game, no pad), `ratquest-hall.html` (the test Hall). More arguments are level ids:
+  each gets a `ratquest-<id>.html` that opens there. `ALL=1` also writes the editor and the source zip.
 - **Address switches** (`#level=<id>` opens a room; ids are in `src/levels/testRooms.ts`): `&nostory`, `&god` (nothing
   hurts him), `&at=x,y,z,yaw`, `&eye=x,y,z&look=x,y,z` (a fixed camera), `&chase=dx,dy,dz`, `&film=4` (film mode: a
   frame at a time, for the film scripts), `&lockon`, `&boards=old|number|both`. Older ones are in the history file.

@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
 # Builds everything the owner tests with, into one folder (default: ../deliver, next to the project):
-#   ratquest.html              the game, with the on-screen test pad (the owner tests on a phone)
-#                              (it opens on the TITLE: NEW GAME is THE GAME, from its first area; TEST HALL is the Hall)
-#   ratquest-hall.html         straight into THE HALL: the hallway with a door to every test room, boss room and practice room
-#   ratquest-<place>.html      the same, opening on one place: hub (the Club), cistern, foundry, hollows, keep
-#   ratquest-testroom.html     the Club with every door open (level=hub&unlockall)
-#   ratquest-garden.html       the Move Garden: a test room for feeling the jump numbers (level=garden)
-#   ratquest-dream.html        the dream: opens on the Toy Box, its skate park (level=toybox), whose doors lead to its two rides
-#   ratquest-nopad.html        no test pad (keyboard / controller; what the Steam build is)
-#   ratquest-editor.html       the level builder
-#   ratquest-source.zip        the project, without node_modules and build output
-# Usage: bash scripts/deliver.sh [outdir]      (then send all twelve files)
+#   ratquest.html          THE GAME, with the on-screen test pad (the owner tests on a phone). Opens on the title.
+#   ratquest-nopad.html    THE GAME, no test pad (keyboard / controller; what the Steam build is)
+#   ratquest-hall.html     the test area: THE HALL, with a door to every test room, boss room and practice room
+#   ratquest-<id>.html     only when asked for: one place by itself (level ids after the folder)
+#   ALL=1 also keeps ratquest-editor.html and writes ratquest-source.zip
+# Usage: bash scripts/deliver.sh [outdir] [level id ...]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 OUT="$(mkdir -p "${1:-../deliver}" && cd "${1:-../deliver}" && pwd)"
@@ -34,19 +29,23 @@ if ! node scripts/smoke.mjs "$OUT/ratquest.html"; then
   exit 1
 fi
 
-# The variants: a small script right after <head> sets the start (only if no #hash was given, except the test room).
+# What is sent every time (the owner, 2026-11-25): the game with the pad, the game without, and the test Hall.
+# Any further arguments are level ids: each gets a file that opens there (bash scripts/deliver.sh deliver keep garden).
+shift || true
 node -e '
 const fs = require("fs");
-const out = process.argv[1];
+const [out, ...ids] = process.argv.slice(1);
 const src = fs.readFileSync(out + "/ratquest.html", "utf8");
 const make = (name, js) => fs.writeFileSync(out + "/" + name, src.replace("<head>", "<head><script>" + js + "</script>"));
-make("ratquest-testroom.html", "location.hash=\"level=hub&unlockall\"");
 make("ratquest-hall.html", "location.hash=\"level=hall\"");
-make("ratquest-garden.html", "location.hash=\"level=garden&nostory\"");
-make("ratquest-dream.html", "location.hash=\"level=toybox&nostory\"");
-for (const l of ["hub", "cistern", "foundry", "hollows", "keep"]) make("ratquest-" + l + ".html", "if(!location.hash)location.hash=\"level=" + l + "\"");
-' "$OUT"
+for (const l of ids) make("ratquest-" + l + ".html", "location.hash=\"level=" + l + "\"");
+' "$OUT" "$@"
 
-rm -f "$OUT/ratquest-source.zip"
-(cd .. && zip -qr "$OUT/ratquest-source.zip" "$NAME" -x "$NAME/.git/*" "$NAME/deliver/*" "$NAME/node_modules/*" "$NAME/.testdist/*" "$NAME/.flaky/*" "$NAME/.sheet/*" "$NAME/.sheet-shots/*" "$NAME/dist/*" "$NAME/dist-editor/*" "$NAME/dist-plain/*")
+# The level builder and the project itself: only when asked for (ALL=1).
+if [ "${ALL:-}" = "1" ]; then
+  rm -f "$OUT/ratquest-source.zip"
+  (cd .. && zip -qr "$OUT/ratquest-source.zip" "$NAME" -x "$NAME/.git/*" "$NAME/deliver/*" "$NAME/node_modules/*" "$NAME/.testdist/*" "$NAME/.flaky/*" "$NAME/.sheet/*" "$NAME/.sheet-shots/*" "$NAME/dist*/*" "$NAME/.tmpw/*" "$NAME/tests/.tmp/*")
+else
+  rm -f "$OUT/ratquest-editor.html"
+fi
 ls -la "$OUT" | awk 'NR > 1 { print $5, $9 }'
