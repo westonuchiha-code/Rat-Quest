@@ -4934,7 +4934,9 @@ function startGame(): void {
       rat.root.visible = false;
     }
     flash = Math.max(0, flash - frameDt * 5);
-    rat.setFlash(flash * 0.7, flash * 0.05, flash * 0.05);
+    // (VENOM in him: he goes a sick green, pulsing, faster and deeper as it is about to bite. Under the red of a blow.)
+    const sick = player.venom > 0 ? (0.1 + 0.16 * (1 - player.venom / TUNING.guard.venomAfter)) * (0.6 + 0.4 * Math.sin(performance.now() * (player.venom < 1 ? 0.03 : 0.012))) : 0;
+    rat.setFlash(flash * 0.7 + sick * 0.25, flash * 0.05 + sick, flash * 0.05 + sick * 0.1);
 
     const ground = groundBelow(renderPos.x, renderPos.y, renderPos.z);
     shadow.visible = ground !== null && !(photo.open && photo.hideRat) && !show;
