@@ -96,6 +96,24 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   check('the Warden holds a gate that lifts when he is beaten, and it stands before the way out', !!gate && Math.abs(gate.z - F.gate.z) < 0.01 && L.exit.z < gate.z);
   check('...and he keeps to his court: he does not come out into the yard', (L.enemies[warden].arena?.z1 ?? 99) < F.wall.z);
   check('nothing else may follow him in there', L.enemies.every((e, i) => i === warden || (e.arena?.z0 ?? -99) > F.wall.z));
+  // A NEW GAME's first moment: out of the great pipe, over the pool, and into it. (And out again by a jump at the bank.)
+  const pool = (L.water ?? []).find((w) => F.arrive.x > w.x0 && F.arrive.x < w.x1 && F.arrive.z > w.z0 && F.arrive.z < w.z1);
+  check('a new game: he comes out of the pipe in the air over the pool', !!pool && F.arrive.y > F.pipe.y && F.arrive.y < F.pipe.y + F.pipe.high && F.arrive.z < 30 - F.pipe.out);
+  {
+    const p = new PlayerController(new THREE.Vector3(F.arrive.x, F.arrive.y, F.arrive.z));
+    p.velocity.set(0, 0, -5.5);
+    p.water = L.water ?? [];
+    const north = new THREE.Vector3(0, 0, -1);
+    let swam = false;
+    let out = false;
+    for (let i = 0; i < 600 && !out; i++) {
+      const press = swam && i % 30 === 0;
+      p.update(DT, inp({ move: swam ? north.clone() : new THREE.Vector3(), jumpPressed: press, jumpHeld: press }), ch.colliders);
+      swam ||= p.state === 'swim';
+      out = swam && p.grounded && p.position.y > -0.05 && p.position.z < F.pool.z;
+    }
+    check('...he lands in the water, swims to the bank and is out of it with a jump, unhurt', swam && out && p.hp === p.maxHp, `swam ${swam}, out ${out}, at z ${p.position.z.toFixed(1)} y ${p.position.y.toFixed(1)}`);
+  }
   check('two lanterns: one on the shore, one before the gate', (L.checkpoints ?? []).length === 2);
   check('he lands on the shore, far from the gate, with it straight ahead', L.spawn.z > 20 && Math.abs(L.spawn.x) < 1 && Math.abs(gate?.x ?? 9) < 1);
   check('nothing bites within nine paces of where he lands', L.enemies.every((e) => Math.hypot(e.x - L.spawn.x, e.z - L.spawn.z) > 9));

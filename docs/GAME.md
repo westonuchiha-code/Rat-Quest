@@ -67,5 +67,12 @@ rat's size left along the bank and about the yard (all solid: spools for seats b
 wreck, roots and slime. THE PLANK REALLY MOVES NOW: it was a `platform` given moving props, which stays put; only a
 `lift` moves. As first drawn the climb could not be finished.
 
-WHAT IT IS NOT YET: a real pipe mouth or a wrecked boat (the wreck is boards on posts); reeds; a second way round or
-a shortcut; an opening scene; anything after the gate; sounds or music of its own. NOT PLAYED THROUGH BY HAND.
+THE ARRIVAL, THE PIPE AND THE CARD (2026-11-25): a new game's knight comes out of the great pipe's mouth (a stone
+culvert standing out of the south wall, `FLOTSAM.pipe`) in the air over the pool (`FLOTSAM.arrive`), falls in, swims
+to the bank and JUMPS out (a sign on the bank says so: pushing at the bank alone does not do it). When the Warden
+falls, the gate lifts and THE TITLE CARD comes up for six seconds (`src/ui/titleCard.ts`: it asks nothing and stops
+nothing). `#...&showcard` shows it at once, for pictures. The two falls on the south wall now pour INTO the room.
+
+WHAT IT IS NOT YET: a wrecked boat (the wreck is boards on posts); reeds; a second way round or a shortcut (in a
+place this small and open one would be for show: better kept for area two); a played opening scene with a camera;
+anything after the gate; sounds or music of its own. NOT PLAYED THROUGH BY HAND.

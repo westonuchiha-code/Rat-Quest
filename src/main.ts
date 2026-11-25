@@ -112,6 +112,8 @@ import { fireAt, inBrazierFire , slimeZones } from './world/layout';
 import { ALL_LEVELS, ARCHIVE, GAME_ROOMS, LEVELS, TEST_ROOMS, levelById, setExtraLevels } from './levels/levels';
 import { feelOf } from './data/feel';
 import { HALL_ID } from './levels/testRooms';
+import { FLOTSAM, FLOTSAM_ID } from './levels/flotsam';
+import { TitleCard } from './ui/titleCard';
 import { wayOutOf } from './levels/wayOut';
 import { MyLevels } from './levels/library';
 import { HUB_GUEST_DOORS, doorLetsIn, doorState, type DoorState } from './levels/junction';
@@ -1478,6 +1480,11 @@ function startGame(): void {
   // ---- Story scenes: wordless bits of acting at the start and end of a level. While one plays the game holds still. ----
   const storySeen = new StorySeen(files);
   const storyOverlay = new StoryOverlay(gameWrap);
+  const titleCard = new TitleCard(gameWrap);
+  /** The Warden of Flotsam is down (so the card comes up once, when he falls). */
+  let wardenDown = false;
+  // (Development aid: #...&showcard shows the card at once, for pictures.)
+  if (location.hash.includes('showcard')) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.', 600);
   const story = { scene: null as CompiledScene | null, t: 0, finished: false, beat: -1, onDone: null as (() => void) | null };
   let storyFrame: SceneFrame | null = null;
   /** An opening waiting for the start-up screens to clear. */
@@ -3493,8 +3500,15 @@ function startGame(): void {
     storySeen.reset();
     trans.active = false;
     player.hp = player.maxHp;
-    // A new game starts at home, in the Hall.
+    // A new game starts at home: the game's first area, or the Hall.
     loadLevel(homeLevel ?? LEVELS[0]);
+    // (THE GAME's first moment: he comes out of the great pipe, over the pool, and down he goes.)
+    if (playing === 'game' && cur.id === FLOTSAM_ID) {
+      player.position.set(FLOTSAM.arrive.x, FLOTSAM.arrive.y, FLOTSAM.arrive.z);
+      player.prevPosition.copy(player.position);
+      player.velocity.set(0, 0, -5.5);
+      player.facing = Math.PI;
+    }
     applyGear();
   }
   const menu = new Menu(gameWrap, {
@@ -5105,6 +5119,13 @@ function startGame(): void {
       parrySweep += frameDt;
       if (parrySweep > PARRY_SWEEP_FOR) parrySweep = -1;
     }
+    // THE WARDEN FALLS (Flotsam, the game's first area): the gate lifts, and the game's name comes up. It "really starts".
+    if (cur.id === FLOTSAM_ID) {
+      const warden = enemies.find((e) => e.kind === 'stag');
+      if (warden && !warden.alive && !wardenDown) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.');
+      wardenDown = !!warden && !warden.alive;
+    }
+    titleCard.update(frameDt);
     // HIS GUARD BREAKS (TUNING.guard): a crack, a hard shake, splinters off his shield.
     if (player.guardBroke) {
       audio.play('block', { vol: 1, rate: 0.55, priority: 9 });

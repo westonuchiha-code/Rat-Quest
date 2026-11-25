@@ -34,6 +34,10 @@ const HZ = 30;
 export const FLOTSAM_ID = 'flotsam';
 export const FLOTSAM = {
   spawn: { x: 0, z: 21 },
+  /** The great pipe's mouth in the south wall: its floor at `y`, this far out of the wall. And where a NEW GAME's knight
+   * comes out of it: in the air over the pool, and down he goes. */
+  pipe: { half: 1.8, y: 5, high: 3, out: 2.2 },
+  arrive: { x: 0, y: 5.6, z: 26.6 },
   /** The pool the great pipe lets out into, along the south wall: the floor stops at `z`, the water lies below it. */
   pool: { z: 23.5, y: -0.3 },
   lanterns: [{ x: 4.5, y: 0, z: 20.5 }, { x: 9, y: 0, z: -8.5 }],
@@ -74,7 +78,15 @@ const room: CustomLevel = {
     box('floor', -HX, -HZ, HX, F.pool.z, 0),
     // The pool, and the water coming down into it out of the wall (the great pipe). He can swim; the bank is low.
     box('water', -HX, F.pool.z, HX, HZ, F.pool.y),
-    at('fall', 0, HZ - 0.4, F.pool.y, { dir: 'n' }), at('fall', -3, HZ - 0.4, F.pool.y, { dir: 'n' }), at('fall', 3, HZ - 0.4, F.pool.y, { dir: 'n' }),
+    // (A fall pours the way it FACES: on the south wall that is north, 's' in this kit's words. Facing 'n' it poured into the wall.)
+    at('fall', -6.5, HZ - 0.4, F.pool.y, { dir: 's' }), at('fall', 6.5, HZ - 0.4, F.pool.y, { dir: 's' }),
+    // THE GREAT PIPE's mouth: a culvert standing out of the south wall over the pool. He comes out of it (F.arrive).
+    box('stone', -F.pipe.half - 0.8, HZ - F.pipe.out, -F.pipe.half, HZ, F.pipe.y + F.pipe.high + 0.8, { bottom: F.pipe.y - 0.8 }),
+    box('stone', F.pipe.half, HZ - F.pipe.out, F.pipe.half + 0.8, HZ, F.pipe.y + F.pipe.high + 0.8, { bottom: F.pipe.y - 0.8 }),
+    box('stone', -F.pipe.half, HZ - F.pipe.out, F.pipe.half, HZ, F.pipe.y, { bottom: F.pipe.y - 0.8 }),
+    box('stone', -F.pipe.half, HZ - F.pipe.out, F.pipe.half, HZ, F.pipe.y + F.pipe.high + 0.8, { bottom: F.pipe.y + F.pipe.high }),
+    // (Out of the pool: JUMP at the bank, as out of any water in this game. A scripted swim, 2026-11-25: pushing at
+    // the bank alone does not do it, and a ramp under the water is swum straight through. The sign on the bank says so.)
     // What the water has left along the bank: junk at a rat's size, all of it solid, to climb about on.
     at('teacup', -13, 21.2, 0), at('sardines', -16, 20.4, 0, { dir: 'e' }), at('spoon', -11, 19.2, 0, { dir: 'e' }),
     at('matchbox', 12.5, 21.4, 0, { dir: 'w' }), at('battery', 16, 20.6, 0), at('die', 18.6, 21.5, 0), at('button', 21, 19.5, 0),
@@ -169,6 +181,7 @@ export function flotsam(): LevelDef {
   const warden = enemies.findIndex((e) => e.type === 'stag');
   const gates: GateSpec[] = [{ x: 0, z: F.gate.z, width: F.gate.half * 2, height: F.gate.high, foes: [warden] }];
   const signs: Decor[] = [
+    { kind: 'sign', x: -2.6, y: 0, z: F.pool.z - 0.9, yaw: 0, w: 2.4, h: 1.2, lines: ['JUMP', 'to climb out'], post: 1.4 },
     { kind: 'sign', x: 3.2, y: 0, z: 20, yaw: 0, w: 2.6, h: 1.3, lines: ['FLOTSAM', 'mind the pipe'], post: 1.5 },
     { kind: 'sign', x: -6, y: 0, z: 9.5, yaw: 0, w: 2.6, h: 1.3, lines: ['THE WRECK', 'a sword up top'], post: 1.5 },
     { kind: 'sign', x: 6.2, y: 0, z: F.wall.z + 1.2, yaw: 0, w: 2.8, h: 1.3, lines: ['THE OLD GATE', 'the Warden lets', 'nobody by'], post: 1.5 },
