@@ -27,7 +27,7 @@ export type BroodState =
   | 'kneel' | 'dead';
 
 export const BROOD = {
-  hp: 26,
+  hp: 38, // (26 till the fight review of 2026-11-25: she was dead in twelve seconds, to skill and to plain swinging alike.)
   radius: 1.05,
   noticeRange: 13,
   roar: 1.3,
@@ -39,6 +39,7 @@ export const BROOD = {
   stabRange: 3.9,
   stabAim: 0.5,
   stabWind: 0.62,
+  pressWind: 0.42, // the wind-up of the one stab that follows a scissor his shield stopped (his guard is broken)
   stabGap: 0.44, // the wind-up of each stab after the first
   stabTrack: 0.6, // she turns with him for this much of a wind-up, then commits
   stabTime: 0.14,
@@ -94,6 +95,9 @@ export const BROOD = {
   poiseBack: 4,
   plungePoise: 3,
   kneel: 2.6,
+  // Up off her knees she is BRACED for this long: blows land but take no poise. (A knight who only swung kept her
+  // kneeling a third of the fight and had her dead in twelve seconds. Fight review, 2026-11-25.)
+  braced: 5,
 };
 
 function wrap(a: number): number {
@@ -150,6 +154,8 @@ export class Brood {
   private threadIn = 0;
   private hangLeft = 0;
   private sincePoise = 99;
+  private bracedFor = 0;
+  private press = false;
   private stepIn = 0;
   private moving = false;
   private fromX = 0;
@@ -199,11 +205,11 @@ export class Brood {
     if (this.state === 'whirl') return this.stateTime >= 0.04;
     return this.state === 'slam';
   }
-  get bite(): { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean } {
+  get bite(): { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; breaks?: boolean } {
     const B = BROOD;
     const s = this.state;
     // (Each wind-up answers with the shape of the blow it leads to, so the test view can draw what is coming.)
-    if (s === 'sweep' || s === 'sweepWind') return { reach: B.sweepReach, arc: B.sweepArc, damage: B.sweepDamage, ground: true };
+    if (s === 'sweep' || s === 'sweepWind') return { reach: B.sweepReach, arc: B.sweepArc, damage: B.sweepDamage, ground: true, breaks: true };
     if (s === 'whirl' || s === 'whirlWind') return { reach: B.whirlReach, arc: Math.PI, damage: B.whirlDamage, ground: true };
     if (s === 'slam' || s === 'crouch' || s === 'leap' || s === 'climb' || s === 'hang' || s === 'dropTell' || s === 'drop') return { reach: B.slamReach, arc: Math.PI, damage: B.slamDamage, heavy: true };
     return { reach: B.stabReach, arc: B.stabArc, damage: B.stabDamage };
@@ -258,6 +264,7 @@ export class Brood {
     if (this.state === 'idle') this.wake();
     // (In the air of a pounce she cannot be tipped over.)
     if (this.state === 'leap') return false;
+    if (this.bracedFor > 0) return false;
     this.poise -= how === 'plunge' ? BROOD.plungePoise : damage;
     this.sincePoise = 0;
     if (this.poise <= 0) this.fall();
@@ -267,6 +274,8 @@ export class Brood {
   /** A blow reached the rat. Blocked, it makes no difference to her; a stab turned by a perfect guard throws her down. */
   lungeLanded(_blocked: boolean, parried = false): void {
     this.spent = true;
+    // (Her scissor on his shield has BROKEN HIS GUARD: she stabs at once, while it is down. TUNING.guard.)
+    if (_blocked && !parried && this.state === 'sweep') this.press = true;
     if (parried && this.state === 'stab') this.fall();
   }
 
@@ -311,6 +320,7 @@ export class Brood {
     this.stateTime += dt;
     this.age += dt;
     this.sincePoise += dt;
+    this.bracedFor = Math.max(0, this.bracedFor - dt);
     this.whirlCool = Math.max(0, this.whirlCool - dt);
     if (this.sincePoise > B.poiseBack && this.state !== 'kneel') this.poise = B.poise;
 
@@ -430,7 +440,16 @@ export class Brood {
         }
         break;
       case 'sweep':
-        if (this.stateTime >= B.sweepTime) this.enter('recover');
+        if (this.stateTime >= B.sweepTime) {
+          if (this.press) {
+            this.press = false;
+            this.stabsLeft = 1;
+            this.arm = this.rng() < 0.5 ? 0 : 1;
+            this.windTime = B.pressWind;
+            this.events.push('stabWind');
+            this.enter('stabWind');
+          } else this.enter('recover');
+        }
         break;
       case 'recover':
         if (this.stateTime >= B.recover) after();
@@ -535,6 +554,7 @@ export class Brood {
       case 'kneel':
         if (this.stateTime >= B.kneel) {
           this.poise = B.poise;
+          this.bracedFor = B.braced;
           this.events.push('rise');
           after();
         }

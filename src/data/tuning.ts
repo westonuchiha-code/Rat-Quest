@@ -65,7 +65,7 @@ export const TUNING = {
     strainForget: 2.2,
     brokenFor: 1.1,
     brokenStun: 0.6,
-    brokenPush: 6.5,
+    brokenPush: 3,
     // VENOM (`bite.venom`: the scorpion's sting): caught on his shield it still poisons him. `venomAfter` seconds
     // later it costs him a heart (seen coming: he is green and sick till then). A sidestep or a perfect guard avoids it.
     venomAfter: 3,

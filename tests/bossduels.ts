@@ -642,14 +642,14 @@ function grimBout(seed: number): Bout {
           }
           const ring = g.ringAtRat(q.x, q.y, q.z);
           if (ring) {
-            const r = p.takeHit(ring.x, ring.z, GRIM.slam.damage);
+            const r = p.takeHit(ring.x, ring.z, GRIM.slam.damage, false, true);
             if (r !== 'dodged') got(r, 'ring');
           }
           if (p.attackActive && g.swingAt(q.x, q.z, p.facing, p.attackClip.reach, p.attackClip.arc)) {
             // Struck back.
           } else if (g.orb && g.orbAtRat(q.x, q.y, q.z)) {
             const o = g.orb;
-            const r = p.takeHit(o.x - o.vx, o.z - o.vz, GRIM.orb.damage);
+            const r = p.takeHit(o.x - o.vx, o.z - o.vz, GRIM.orb.damage, true);
             if (r !== 'dodged') {
               got(r, 'orb');
               g.orbTaken();
@@ -781,6 +781,24 @@ console.log('');
 {
   const harmless = BOSSES.filter((B) => SEEDS.some((s) => all.get(B.key)!.get(`statue:${s}`)!.hits === 0));
   check('each boss hurts a knight who does nothing (every seed)', harmless.length === 0, harmless.map((B) => B.key).join());
+}
+// 3. (Fight review, 2026-11-25.) A SHIELD ONLY HELD UP beats none of them: he is dead before the time is out.
+{
+  const safe = BOSSES.filter((B) => SEEDS.some((s) => all.get(B.key)!.get(`turtle:${s}`)!.out !== 'LOSE'));
+  check('a knight who only holds his shield up is beaten by every boss (every seed)', safe.length === 0, safe.map((B) => B.key).join());
+}
+// 4. SWINGING AND NOTHING ELSE beats no boss untouched, and none of the four great ones at all. (The firefly is no boss.)
+{
+  const soft = BOSSES.filter((B) => B.key !== 'firefly' && SEEDS.some((s) => all.get(B.key)!.get(`masher:${s}`)!.out === 'WIN'));
+  check('a knight who only swings beats none of the four bosses', soft.length === 0, soft.map((B) => B.key).join());
+}
+// 5. A knight who answers each tell beats each of them, hardly touched; and no boss is over inside fifteen seconds.
+// (Not the Widows for the win: this player strikes only what lies in the light, and is slow about it.)
+{
+  const lost = BOSSES.filter((B) => B.key !== 'widow' && SEEDS.some((s) => all.get(B.key)!.get(`skilled:${s}`)!.out !== 'WIN' || all.get(B.key)!.get(`skilled:${s}`)!.hits > 2));
+  check('a knight who answers each tell beats the Broodmother, the Wyrm, Grimsqueak and the firefly, hardly touched', lost.length === 0, lost.map((B) => B.key).join());
+  const blink = BOSSES.filter((B) => B.key !== 'firefly' && SEEDS.some((s) => all.get(B.key)!.get(`skilled:${s}`)!.t < 15));
+  check('...and no boss is over inside fifteen seconds, even for him', blink.length === 0, blink.map((B) => B.key).join());
 }
 // 2. The same dice, the same fight.
 {

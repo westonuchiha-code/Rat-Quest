@@ -93,7 +93,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
         } else {
           events.enemyHit = e;
           // (THE RIPOSTE: on the creature he has just turned with a perfect guard, where the place has it.)
-          const rip = player.takeRiposte(e);
+          const rip = Math.min(player.takeRiposte(e), e.riposteMax ?? Infinity);
           if (rip > 1) events.riposte = true;
           if (e.takeHit(clip.damage * player.gear.damage * player.feel.fight.dealt * rip, p.x, p.z, 'sword', part)) events.enemyKilled = true;
         }

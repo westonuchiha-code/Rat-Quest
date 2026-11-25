@@ -143,6 +143,8 @@ export class Wyrm {
   state: WyrmState = 'idle';
   stateTime = 0;
   lastSwing = -1;
+  /** (A riposte on its reeling head already does double: four times on top of that ended the fight in two answers. Fight review, 2026-11-25.) */
+  readonly riposteMax = 2;
   age = 0;
   readonly radius = WYRM.radius;
   rng: () => number = Math.random;

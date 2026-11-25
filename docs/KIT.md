@@ -382,3 +382,23 @@ All in `TUNING.guard` (sliders under Tweaks, Fighting), rules in `PlayerControll
 To give either to another creature, add `breaks: true` or `venom: true` to its bite. NOT DONE: its own sounds (it
 borrows the block and crate sounds), a cure for venom, the bosses. For films and checks: `window.__blow(breaks, venom)`
 lands a blow on his shield from in front.
+
+## THE BOSSES AS OPPONENTS (2026-11-25) (WORK IN PROGRESS)
+
+`tests/bossduels.ts` fights the Broodmother, the Sump Wyrm, the two Widows, Lord Grimsqueak and the Firefly Bomber,
+each in its own room, against the same four players as `tests/duels.ts` (only swings; only holds his shield; does
+nothing; answers each tell), on three sets of dice. Run alone it prints the table: `node scripts/test-all.mjs bossduels`
+(set `BD_DEBUG=<bot>` to list every hit on that player). What it found, and what was done:
+
+- A SHIELD ONLY HELD UP kept him safe from the Broodmother and from Grimsqueak for three minutes. Now: her scissor
+  breaks his guard (`breaks`) and she stabs at once after it (`BROOD.pressWind`); his slam ring breaks a guard, and
+  his orb is too big for a shield only held up (heavy: strike it back, be elsewhere, or a perfect guard).
+- THE BROODMOTHER fell to plain swinging in twelve seconds, kneeling a third of the fight. Now 38 health (was 26),
+  and up off her knees she is braced for `BROOD.braced` (5 s): blows land but take no poise.
+- THE SUMP WYRM was dead in 17 s to two perfect guards: the riposte's four times on top of its reeling head's double.
+  A creature may now cap the riposte (`riposteMax`; the Wyrm: 2).
+- A BROKEN GUARD threw him so far back (`TUNING.guard.brokenPush` 6.5) that nothing could follow it up. Now 3.
+
+Left as found: Grimsqueak's slam ring starts at his own body, so a knight standing against him cannot jump it on
+sight (he must go on the wind-up); the firefly can die in one opening under the platform feel; the Widows are slow
+for this scripted player (it only strikes what lies in the light).

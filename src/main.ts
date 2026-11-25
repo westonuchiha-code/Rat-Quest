@@ -1114,7 +1114,8 @@ function startGame(): void {
     // A ring from his slam reaches the rat on the ground. In the air it passes under him; a roll goes through it.
     const ringHit = boss.ringAtRat(p.x, p.y, p.z);
     if (ringHit) {
-      const r = player.takeHit(ringHit.x, ringHit.z, GRIM.slam.damage);
+      // (His shield stops it, and his guard is broken by it: a ring is to be jumped. TUNING.guard.)
+      const r = player.takeHit(ringHit.x, ringHit.z, GRIM.slam.damage, false, true);
       if (r !== 'dodged') events.playerResult = r;
     }
     // The orb: his sword sends it back; otherwise it reaches him.
@@ -1122,7 +1123,8 @@ function startGame(): void {
       // Struck.
     } else if (boss.orb && boss.orbAtRat(p.x, p.y, p.z)) {
       const o = boss.orb;
-      const r = player.takeHit(o.x - o.vx, o.z - o.vz, GRIM.orb.damage);
+      // (Too big for a shield only held up: struck back, got away from, or turned by a perfect guard. Fight review, 2026-11-25.)
+      const r = player.takeHit(o.x - o.vx, o.z - o.vz, GRIM.orb.damage, true);
       if (r !== 'dodged') {
         events.playerResult = r;
         boss.orbTaken();

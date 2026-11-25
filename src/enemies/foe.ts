@@ -113,6 +113,8 @@ export interface Foe {
   state: string;
   stateTime: number;
   lastSwing: number;
+  /** The most a RIPOSTE (TUNING.sewers.riposte) is multiplied by on this one: a boss is not to be finished in two answers. */
+  readonly riposteMax?: number;
   readonly respawns: boolean;
   /** True while a melee attack can hurt (the roach's lunge, the toad's landing, the boss's swoop). */
   readonly attackActive: boolean;
