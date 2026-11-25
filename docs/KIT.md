@@ -371,10 +371,14 @@ All in `TUNING.guard` (sliders under Tweaks, Fighting), rules in `PlayerControll
 - BREAK. The breaking blow is still stopped, but he is thrown back, staggered, and cannot raise his shield for
   `brokenFor` (1.1 s): whatever strikes next lands.
 - A PERFECT GUARD clears the strain and cannot be broken. Skill is still the whole answer.
-- LARGE CREATURES: a bite with `breaks: true` breaks his guard in one. So far: the ironback's ram.
+- LARGE CREATURES: a bite with `breaks: true` breaks his guard in one. So far: the ironback's ram and the Stag
+  Knight's sweep. THE IRONBACK FOLLOWS UP: a ram his shield stopped, and it comes straight on again after
+  `IRONBACK.breakRecover` (0.2 s) with a short wind-up (`breakWindup`, 0.4 s), while his shield is down. Once. A
+  sidehop as soon as he can move clears it (tested).
 - VENOM: a bite with `venom: true` that his shield stops still poisons him. Green bubbles rise off him (faster in
   the last second), and `venomAfter` (3 s) on it costs a heart. Once: a second sting does not restart it. A perfect
-  guard, a dodge or simply not being there avoids it. So far: the scorpion's sting.
+  guard, a dodge or simply not being there avoids it. So far: the scorpion's sting and the hornet's dive (not its joust).
 
 To give either to another creature, add `breaks: true` or `venom: true` to its bite. NOT DONE: its own sounds (it
-borrows the block and crate sounds), a cure for venom, the bosses.
+borrows the block and crate sounds), a cure for venom, the bosses. For films and checks: `window.__blow(breaks, venom)`
+lands a blow on his shield from in front.

@@ -16,6 +16,8 @@ import { Scuttler } from '../src/enemies/scuttler';
 import { Ant } from '../src/enemies/ant';
 import { Scorpion } from '../src/enemies/scorpion';
 import { Ironback } from '../src/enemies/ironback';
+import { Stag } from '../src/enemies/stag';
+import { Hornet } from '../src/enemies/hornet';
 import { TUNING } from '../src/data/tuning';
 import type { Foe } from '../src/enemies/foe';
 
@@ -171,9 +173,46 @@ const put = (x: number, z: number) => ({ x, z, arena, hunt: true, respawn: false
   const sting = turtleAmong(() => [new Scorpion(put(0, 6)) as unknown as Foe]);
   console.log(`  one scorpion against a held shield: hits ${sting.hits}, blocks ${sting.blocks}, breaks ${sting.breaks}`);
   check('a scorpion wounds a knight who only holds his shield up (its venom)', sting.hits > 0, `hits ${sting.hits} blocks ${sting.blocks}`);
+  const stag = turtleAmong(() => [new Stag(put(0, 6)) as unknown as Foe]);
+  console.log(`  the Stag Knight against a held shield: hits ${stag.hits}, blocks ${stag.blocks}, breaks ${stag.breaks}`);
+  const wasp = turtleAmong(() => {
+    const h = new Hornet(put(0, 6)) as any;
+    for (let k = 0; k < 150; k++) h.update(DT, 0, 0, -9, true);
+    return [h as Foe];
+  });
+  console.log(`  one hornet against a held shield: hits ${wasp.hits}, blocks ${wasp.blocks}, breaks ${wasp.breaks}`);
+  check('a hornet wounds a knight who only holds his shield up (its venom)', wasp.hits > 0, `hits ${wasp.hits} blocks ${wasp.blocks}`);
   const ram = turtleAmong(() => [new Ironback(put(0, 8)) as unknown as Foe]);
   console.log(`  one ironback against a held shield: hits ${ram.hits}, blocks ${ram.blocks}, breaks ${ram.breaks}`);
-  check("an ironback's ram breaks a shield that is only held up", ram.breaks > 0, `breaks ${ram.breaks} hits ${ram.hits}`);
+  check("an ironback's ram breaks a shield that is only held up, and it comes straight on again and lands", ram.breaks > 0 && ram.hits > 0, `breaks ${ram.breaks} hits ${ram.hits}`);
+}
+
+{
+  // THE SECOND CHARGE CAN BE GOT OUT OF: his shield up till it breaks, then a sidehop as soon as he can move.
+  for (const seed of [1, 2, 3]) {
+    const e = new Ironback(put(0, 8)) as any;
+    let s = seed * 777;
+    e.rng = (): number => ((s = (s * 9301 + 49297) % 233280) / 233280);
+    const p = new PlayerController(new THREE.Vector3(0, 0, 0));
+    const events: CombatEvents = { enemyHit: null, enemyKilled: false, playerResult: null, shockwave: false, cratesBroken: [] };
+    let broke = -1;
+    let hurtAfter = false;
+    let t = 0;
+    for (; t < 30 && (broke < 0 || t < broke + 2.5); t += DT) {
+      e.update(DT, p.position.x, p.position.y, p.position.z, true);
+      const to = Math.atan2(e.x - p.position.x, e.z - p.position.z);
+      p.lockFacing = to;
+      if (p.grounded && ['idle', 'walk', 'run', 'land', 'guard'].includes(p.state)) p.facing = to;
+      const hp = p.hp;
+      const hop = broke >= 0 && e.state !== 'recover' && e.state !== 'chase';
+      p.update(DT, inp(hop ? { move: new THREE.Vector3(Math.cos(to), 0, -Math.sin(to)), dodgePressed: true } : { guardHeld: broke < 0 }), floor);
+      events.playerResult = null;
+      resolveCombat(p, [e], events);
+      if (p.guardBroke && broke < 0) broke = t;
+      if (broke >= 0 && p.hp < hp) hurtAfter = true;
+    }
+    check(`the ironback's second charge can be got out of: a sidehop as soon as he can move (dice ${seed})`, broke >= 0 && !hurtAfter, `broke at ${broke.toFixed(1)}s, hurt after: ${hurtAfter}`);
+  }
 }
 
 console.log(failures === 0 ? '\nguardbreak: all passed' : `\nguardbreak: ${failures} FAILED`);

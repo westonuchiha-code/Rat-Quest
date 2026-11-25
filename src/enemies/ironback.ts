@@ -37,6 +37,10 @@ export const IRONBACK = {
   ramArc: 0.9,
   ramRecover: 0.9,
   blockedRecover: 1.1,
+  // IT BROKE HIS GUARD (a ram his shield stopped, TUNING.guard): it does not back off. It gathers itself for this
+  // long and comes straight on again, with this much wind-up, while his shield is still down: he must get out of the way.
+  breakRecover: 0.2,
+  breakWindup: 0.4,
   // The horn toss, close in front.
   tossRange: 1.3, // beyond its body
   tossWind: 0.45,
@@ -73,6 +77,8 @@ export class Ironback {
   z: number;
   y: number;
   facing = 0;
+  /** It has just broken his guard and is coming straight on again (IRONBACK.breakRecover). */
+  private again = false;
   hp: number = IRONBACK.hp;
   state: IronbackState = 'idle';
   stateTime = 0;
@@ -162,6 +168,7 @@ export class Ironback {
 
   private enter(s: IronbackState): void {
     this.state = s;
+    if (s !== 'recover' && s !== 'windup' && s !== 'ram') this.again = false;
     this.stateTime = 0;
   }
 
@@ -215,7 +222,9 @@ export class Ironback {
       if (parried) return this.flip();
       this.velX = -Math.sin(this.facing) * 3;
       this.velZ = -Math.cos(this.facing) * 3;
-      this.recoverTime = blocked ? I.blockedRecover : I.ramRecover;
+      // (His shield stopped it: his guard is broken, and it comes again at once. Once: not after the second.)
+      this.again = blocked && !this.again;
+      this.recoverTime = this.again ? I.breakRecover : blocked ? I.blockedRecover : I.ramRecover;
       this.enter('recover');
       return;
     }
@@ -304,8 +313,8 @@ export class Ironback {
         break;
       }
       case 'windup':
-        if (this.stateTime < I.windup * I.track) this.facing = turnToward(this.facing, toPlayer, turn * 1.2);
-        if (this.stateTime >= I.windup) {
+        if (this.stateTime < (this.again ? I.breakWindup : I.windup) * I.track) this.facing = turnToward(this.facing, toPlayer, turn * (this.again ? 3 : 1.2));
+        if (this.stateTime >= (this.again ? I.breakWindup : I.windup)) {
           this.spent = false;
           this.events.push('ram');
           this.enter('ram');
@@ -323,6 +332,7 @@ export class Ironback {
           break;
         }
         if (this.stateTime >= I.ramTime) {
+          this.again = false;
           this.recoverTime = I.ramRecover;
           this.enter('recover');
         }
@@ -355,7 +365,7 @@ export class Ironback {
         }
         break;
       case 'recover':
-        if (this.stateTime >= this.recoverTime) this.enter(reachable ? 'chase' : 'return');
+        if (this.stateTime >= this.recoverTime) this.enter(this.again && reachable ? 'windup' : reachable ? 'chase' : 'return');
         break;
       case 'stagger':
         if (this.stateTime >= I.stagger) this.enter(reachable ? 'chase' : 'return');

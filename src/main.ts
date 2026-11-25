@@ -3865,6 +3865,12 @@ function startGame(): void {
     doors: doorsOf(cur).map((d) => ({ to: d.to ?? null, x: d.door.x, y: d.door.y ?? 0, z: d.door.z, open: doorOpen(d) })),
     exit: { x: cur.exit.x, y: cur.exit.y ?? 0, z: cur.exit.z, wayOut: !noWayOut(cur), cleared: levelProgress.cleared(cur.id), parent: parentOf(cur)?.id ?? null },
   });
+  // (For films and checks: a blow on his shield from in front; `breaks`, a great one; `venom`, a sting.)
+  (window as unknown as { __blow?: (breaks?: boolean, venom?: boolean) => string }).__blow = (breaks = false, venom = false) => {
+    const r = player.takeHit(player.position.x + Math.sin(player.facing) * 2, player.position.z + Math.cos(player.facing) * 2, 1, false, breaks, venom);
+    events.playerResult = r;
+    return r;
+  };
   (window as unknown as { __put?: (x: number, y: number, z: number) => void }).__put = (x, y, z) => {
     player.position.set(x, y, z);
     player.prevPosition.set(x, y, z);

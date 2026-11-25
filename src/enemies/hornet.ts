@@ -156,10 +156,10 @@ export class Hornet {
     return (this.state === 'dive' || this.state === 'joust') && !this.spent;
   }
   /** Its blow comes from the point of its lance. */
-  get bite(): { reach: number; arc: number; damage: number; at: BodyPart } {
+  get bite(): { reach: number; arc: number; damage: number; at: BodyPart; venom?: boolean } {
     this.biteAt.x = this.tip.x;
     this.biteAt.z = this.tip.z;
-    return { reach: 0.1, arc: Math.PI / 2, damage: this.state === 'joust' ? HORNET.joustDamage : HORNET.diveDamage, at: this.biteAt };
+    return { reach: 0.1, arc: Math.PI / 2, damage: this.state === 'joust' ? HORNET.joustDamage : HORNET.diveDamage, at: this.biteAt, venom: this.state !== 'joust' };
   }
   /** The floor it has to do with just now (a height): where it will land, where its lance is going, or what he stands on. */
   get floor(): number {
