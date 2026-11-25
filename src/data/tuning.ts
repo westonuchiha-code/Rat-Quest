@@ -60,6 +60,12 @@ export const TUNING = {
   dodge: {
     roll: { duration: 0.5, speed: 7.0 }, // rolls in the direction you hold
     back: { duration: 0.3, speed: 5.5 }, // backstep when no direction is held
+    // THE SIDEHOP (2026-11-25, Ocarina's: docs/RESEARCH-INSPIRATIONS.md). LOCKED ON to a creature, the roll button
+    // with the stick held to one side of it is a quick hop to that side, still facing it: a dodge with a direction,
+    // to answer a blow that comes straight at him. Shorter than a roll, and he can strike the moment it ends.
+    // (Stick toward the creature: the roll, as ever. Stick away from it: the backstep, away from it.)
+    side: { duration: 0.3, speed: 7.4 },
+    sideSafe: [0.0, 0.6],
     // The pause between one roll (or backstep) ending and the next starting. Short: he can still roll round an enemy,
     // roll after roll (the owner, 2026-11-15: "don't completely take away the player's ability to roll around"), but
     // there is a beat between them in which he can be hit.

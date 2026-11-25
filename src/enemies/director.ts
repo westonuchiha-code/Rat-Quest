@@ -43,7 +43,8 @@ export class Director {
   private wasAttacking = 0;
 
   /** `locked`: the one the rat is locked on to, if any. It has first claim on the next attack, and waits a shorter breath for it. */
-  update(dt: number, foes: Foe[], px: number, pz: number, locked: Foe | null = null): void {
+  /** `duel` (the sewers): while he is locked on to one, never two at him at once, however big the crowd. */
+  update(dt: number, foes: Foe[], px: number, pz: number, locked: Foe | null = null, duel = false): void {
     this.cool = Math.max(0, this.cool - dt);
     const takers = foes.filter((e) => e.alive && e.ready !== undefined && Math.hypot(e.x - px, e.z - pz) < DIRECTOR.range);
     const attacking = takers.filter((e) => e.attacking).length;
@@ -54,7 +55,8 @@ export class Director {
     this.flank(takers, px, pz, locked);
     // Far from the rat nobody is taking turns: an enemy on its own patch does as it likes.
     for (const e of foes) if (e.alive && e.ready !== undefined && !takers.includes(e)) e.mayAttack = true;
-    const slots = (takers.length >= DIRECTOR.crowd ? 2 : 1) - attacking;
+    const lockedIn = !!locked && takers.includes(locked);
+    const slots = (takers.length >= DIRECTOR.crowd && !(duel && lockedIn) ? 2 : 1) - attacking;
     if (slots <= 0) return;
     // The one he is locked on to goes first if it is ready, however near the others are, and after a shorter breath.
     if (locked && locked.ready && takers.includes(locked)) {

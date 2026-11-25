@@ -18,7 +18,7 @@ export type MoveEvent = 'longjump' | 'wallkick' | 'grab' | 'climb' | 'ride' | 'r
 export type HitResult = 'dodged' | 'blocked' | 'parried' | 'hit' | 'killed';
 /** 0 not plunging, 1 hanging with the sword raised, 2 diving, 3 stuck in the ground after landing. */
 export type PlungeStage = 0 | 1 | 2 | 3;
-export type DodgeKind = 'roll' | 'back';
+export type DodgeKind = 'roll' | 'back' | 'side';
 
 const EPS = 1e-4;
 /**
@@ -139,6 +139,10 @@ export class PlayerController {
   private comboQueued = false;
 
   private dodgeKind: DodgeKind = 'roll';
+  /** A sidehop's side: +1 or -1 (0 otherwise). For how it is drawn. */
+  dodgeSide = 0;
+  /** The way to the creature he is LOCKED ON to (radians), or null. The game sets it each step. */
+  lockFacing: number | null = null;
   /** Standing on a ramp (see moveVertical). */
   private onRamp = false;
   /** What he is standing on (null in the air). */
@@ -478,7 +482,7 @@ export class PlayerController {
     if (this.deadTimer >= 0 || this.invulnTimer > 0 || this.untouchable) return true;
     if (this.dodgeTimer >= 0) {
       const p = this.dodgeTimer / this.dodgeDuration;
-      const safe = this.dodgeKind === 'roll' ? TUNING.dodge.rollSafe : TUNING.dodge.backSafe;
+      const safe = this.dodgeKind === 'roll' ? TUNING.dodge.rollSafe : this.dodgeKind === 'side' ? TUNING.dodge.sideSafe : TUNING.dodge.backSafe;
       return p >= safe[0] && p <= safe[1];
     }
     return false;
@@ -1304,7 +1308,8 @@ export class PlayerController {
     if (this.position.y < T.pit.respawnY) this.respawn();
 
     // Facing turns toward held input only. Momentum from a backstep, or a slide after letting go, doesn't turn him.
-    const backstepping = this.dodgeTimer >= 0 && this.dodgeKind === 'back';
+    // (Nor a sidehop: he keeps facing the creature he is locked on to.)
+    const backstepping = this.dodgeTimer >= 0 && (this.dodgeKind === 'back' || this.dodgeKind === 'side');
     const planarSpeed = Math.hypot(this.velocity.x, this.velocity.z);
     if (planarSpeed > 0.2 && move.lengthSq() > 0.01 && !backstepping && this.attackTimer < 0 && this.kickFlight <= 0) {
       this.facing = lerpAngle(this.facing, Math.atan2(this.velocity.x, this.velocity.z), 1 - Math.exp(-T.move.turnRate * dt));
@@ -1383,9 +1388,24 @@ export class PlayerController {
   }
 
   private startDodge(move: THREE.Vector3): void {
-    if (move.lengthSq() > 0.01) {
+    // LOCKED ON (the game sets `lockFacing`): the stick held to one side of the creature is a SIDEHOP that way, still
+    // facing it; held away from it, the backstep, away from it. (Held toward it, the roll below.)
+    const lock = this.lockFacing;
+    const off = lock !== null && move.lengthSq() > 0.01 ? Math.atan2(Math.sin(Math.atan2(move.x, move.z) - lock), Math.cos(Math.atan2(move.x, move.z) - lock)) : 0;
+    if (lock !== null && Math.abs(off) > 0.85) {
+      const side = Math.abs(off) < 2.3;
+      this.dodgeKind = side ? 'side' : 'back';
+      this.dodgeSide = side ? (off > 0 ? 1 : -1) : 0;
+      // (Square to the creature: exactly to its side, or exactly away.)
+      const a = side ? lock + this.dodgeSide * (Math.PI / 2) : lock + Math.PI;
+      this.dodgeDir.set(Math.sin(a), 0, Math.cos(a));
+      this.dodgeDuration = side ? TUNING.dodge.side.duration : TUNING.dodge.back.duration;
+      this.dodgeSpeed = side ? TUNING.dodge.side.speed : TUNING.dodge.back.speed;
+      this.facing = lock;
+    } else if (move.lengthSq() > 0.01) {
       // Roll the way the stick is held, and turn to face that way.
       this.dodgeKind = 'roll';
+      this.dodgeSide = 0;
       this.dodgeDir.copy(move).normalize();
       this.dodgeDuration = TUNING.dodge.roll.duration;
       this.dodgeSpeed = TUNING.dodge.roll.speed;
@@ -1393,6 +1413,7 @@ export class PlayerController {
     } else {
       // No input: a short step straight back, without turning.
       this.dodgeKind = 'back';
+      this.dodgeSide = 0;
       this.dodgeDir.set(-Math.sin(this.facing), 0, -Math.cos(this.facing));
       this.dodgeDuration = TUNING.dodge.back.duration;
       this.dodgeSpeed = TUNING.dodge.back.speed;

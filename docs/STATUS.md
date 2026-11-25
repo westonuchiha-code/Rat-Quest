@@ -87,3 +87,10 @@ Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by C
 | Part | Tag | State |
 |------|-----|-------|
 | Weight plate, key, locked gate, checkpoint lantern, one-way shortcut gate (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. Also a bridge let down from its catch (`motion: 'drop'`), and THE ROUND (Test Room 21): a first room that loops, creatures placed by the three rules. Jump height growing with run speed is a slider, OFF (it would change what every measured gap asks). |
+
+## Locked on (2026-11-25, from the approved plan)
+
+| Thing | Tag | State |
+|------|-----|-------|
+| THE SIDEHOP: locked on, the roll button with the stick to one side of the creature is a hop to that side, still facing it; stick away, a backstep away; stick toward, the roll (`TUNING.dodge.side`) | WORK IN PROGRESS | Tested; seen running in the game from a distance. Its pose not looked at close. Awaiting the owner's verdict. |
+| A DUEL in the sewers: locked on, never two creatures at him at once (`Director.update(..., duel)`). Elsewhere a second may attack when four or more are on him, as before | WORK IN PROGRESS | Tested. The turn-taking itself, and the locked one going first, were already in the game. |

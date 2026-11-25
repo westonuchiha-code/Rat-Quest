@@ -348,6 +348,8 @@ function startGame(): void {
   let rushKick = 0;
   const CARRY_AID = /[#&]carry=(\w+)/.exec(location.hash)?.[1] ?? '';
   let carryAided = false;
+  const AUTO_LOCK = Number(/[#&]autolock=([\d.]+)/.exec(location.hash)?.[1] ?? 0);
+  let autoLocked = false;
   const bridgesDown = new Set<object>();
   /** What he has, or last had, was held in front of his chest (a small thing), not on his head: for how he is drawn carrying and throwing it. */
   let carryFront = false;
@@ -2627,7 +2629,10 @@ function startGame(): void {
     }
     // (`&parryall`: a filming aid. Any blow his shield catches is a PERFECT guard, so that what follows one can be filmed.)
     if (PARRY_ALL && player.gear.parry < 90) player.gear = { ...player.gear, parry: 99 };
-    if (keyTap('lock') || consumeAction('lock')) {
+    // (`&autolock=2`: a filming aid. That many seconds in, lock-on is pressed once.)
+    const aidLock = AUTO_LOCK > 0 && !autoLocked && worldClock > AUTO_LOCK;
+    if (aidLock) autoLocked = true;
+    if (keyTap('lock') || consumeAction('lock') || aidLock) {
       if (lockTarget) lockTarget = null;
       else {
         lockTarget = pickTarget(player.position, follow.yaw, enemies);
@@ -2642,6 +2647,8 @@ function startGame(): void {
     if (lockTarget && (player.dead || builder.live)) lockTarget = null;
     if (lockTarget) lockTarget = keepTarget(player.position, follow.yaw, lockTarget, enemies);
     player.attackAim = lockTarget ? facingToward(player.position, lockTarget) : pickAim(player, enemies, m.x, m.z);
+    // (Locked on, his roll button is a sidehop or a backstep by where the stick is to the creature: controller `lockFacing`.)
+    player.lockFacing = lockTarget ? facingToward(player.position, lockTarget) : null;
     const vyBefore = player.velocity.y;
     // A gust of gas carries him along with it (he stands against it on ground he can grip; on ice it takes him).
     if (gusts.length && !player.dead) blow(gusts, worldClock, player.position, player.velocity, dt, TUNING.rat.radius, TUNING.rat.height);
@@ -2926,7 +2933,8 @@ function startGame(): void {
     }
     // Who may attack: up close they take turns. Roosting bats hear him unless he sneaks.
     SENSES.quiet = sneak && player.grounded;
-    director.update(dt, enemies, player.position.x, player.position.z, lockTarget);
+    // (In the sewers a fight with one locked on to is a DUEL: never two at him at once, however many there are.)
+    director.update(dt, enemies, player.position.x, player.position.z, lockTarget, player.feel.id === 'sewers');
     // The ants find their mates, and settle which of each pair holds him and which goes round him.
     if (antList.length) pairAnts(antList, player.position.x, player.position.z);
     const swinging = player.state === 'attack' || (player.riding && player.attackTime > 0);
@@ -4882,6 +4890,7 @@ function startGame(): void {
       comboStep: player.comboStep,
       attackTime: player.attackTime,
       dodgeKind: player.currentDodgeKind,
+      dodgeSide: player.dodgeSide,
       dodgeProgress: player.dodgeProgress,
       verticalSpeed: player.velocity.y,
       flipProgress: player.flipProgress,

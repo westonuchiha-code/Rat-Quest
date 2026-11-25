@@ -266,6 +266,8 @@ export interface RatAnimInput {
   comboStep: number;
   attackTime: number;
   dodgeKind: DodgeKind;
+  /** A sidehop's side, +1 or -1. */
+  dodgeSide?: number;
   dodgeProgress: number;
   verticalSpeed: number; // world y velocity, used to blend between rising and falling poses
   flipProgress: number; // 0..1 through the flip on an air jump, 0 when not flipping
@@ -1209,6 +1211,19 @@ export class RatModel {
         tumbleX = (turn * 0.7 + smoothstep(turn) * 0.3) * Math.PI * 2;
         lift = -0.13 * Math.sin(Math.min(1, p / 0.9) * Math.PI);
         stiffness = 34;
+      } else if (ctx.dodgeKind === 'side') {
+        // THE SIDEHOP: off both feet to one side, low, his body leant into it and his tail thrown out the other
+        // way; shield and sword still toward what he faces. He is back in his stance as it ends.
+        const p = ctx.dodgeProgress;
+        const up = Math.sin(Math.min(1, p / 0.85) * Math.PI);
+        const side = ctx.dodgeSide ?? 1;
+        pose = fullPose(blendPose(STANCE, BACKSTEP, 0.5 * up));
+        pose.chest = [pose.chest[0] + 0.1 * up, pose.chest[1], pose.chest[2] - 0.32 * side * up];
+        pose.hips = [pose.hips[0], pose.hips[1], pose.hips[2] - 0.2 * side * up];
+        pose.tail = [pose.tail[0] + 0.2 * up, pose.tail[1] - 0.9 * side * up, pose.tail[2]];
+        pose.hipPos = [pose.hipPos[0], pose.hipPos[1] - 0.05 * up, pose.hipPos[2]];
+        lift = 0.2 * up;
+        stiffness = 44;
       } else {
         pose = blendPose(BACKSTEP, STANCE, smoothstep((ctx.dodgeProgress - 0.6) / 0.4));
         stiffness = 30;
