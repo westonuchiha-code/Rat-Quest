@@ -388,7 +388,7 @@ const MAX = TUNING.health.max;
   let dead = false;
   for (let i = 0; i < S.hp; i++) dead = d.takeHit(1, d.x + 1, d.z);
   for (let i = 0; i < 60 * 14; i++) d.update(DT, d.x + 3, 0, d.z, true);
-  check('it has ten hits in it, and does not come back', dead && !d.alive && S.hp === 10);
+  check('it has fourteen hits in it (ten till 2026-11-25: it was dead in five seconds), and does not come back', dead && !d.alive && S.hp === 14);
   const again = new Stag({ x: O.x, z: O.z, respawn: true });
   for (let i = 0; i < S.hp; i++) again.takeHit(1, O.x + 1, O.z);
   for (let i = 0; i < 60 * (S.respawn + 1); i++) again.update(DT, O.x + 40, 0, O.z, true);

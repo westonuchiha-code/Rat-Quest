@@ -388,12 +388,13 @@ const still = (): Partial<PlayerInput> => ({});
   for (let i = 0; i < 200 && n.state === 'stuck'; i++) tick(n, q);
   check('and when it pulls free after that, it springs away', n.events.includes('hop') && n.state !== 'stuck');
 
-  // A shield stops the leap too; a perfect guard throws it back.
+  // A held shield does not stop the leap; a perfect guard throws it back.
   const b = mantis(0.6);
   const pb = ratAt(O.x + 8, O.z, b);
   until(b, pb, 'crouch');
   const rb = play(b, pb, () => ({ guardHeld: true }), (x) => x.state === 'stuck' || x.state === 'reel');
-  check('a shield held up stops the leap, and it is stuck all the same', rb.results.includes('blocked') && rb.hp === TUNING.health.max && b.state === 'stuck');
+  // (2026-11-25: its leap is HEAVY. A shield only held up does not stop it: it lands on him. A perfect guard, below, still turns it.)
+  check('a shield only held up does NOT stop the leap (it comes down with all its weight): he is hurt, and it is stuck all the same', rb.results.includes('hit') && rb.hp < TUNING.health.max && b.state === 'stuck', `${rb.results.join()} hp ${rb.hp}, ${b.state}`);
 
   // Too near, it cuts instead; it does not leap twice in a breath.
   const c = mantis(0.6);

@@ -13,6 +13,38 @@ export type CanFly = (x: number, y: number, z: number, r: number) => boolean;
 export type HitHow = 'sword' | 'plunge' | 'shock' | 'thrown';
 
 /**
+ * POISE (2026-11-25). A blow that staggers a creature stops what it was at. Until now EVERY blow did, so a sword
+ * swung again and again held a creature where it stood till it died (measured, a knight who did nothing but swing:
+ * the mantis spent a third of its fight staggered and never touched him). With poise: once it has been staggered, it
+ * is BRACED for `armour` seconds after the stagger ends. Blows still hurt it then, but they do not stop it: it gets
+ * its own blow out, and the one who only swings is struck. Each creature says how long (0: none, it is fodder).
+ */
+export class Poise {
+  private left = 0;
+  constructor(readonly armour: number) {}
+  tick(dt: number): void {
+    this.left = Math.max(0, this.left - dt);
+  }
+  /** Braced now: a blow will not stop it. */
+  get braced(): boolean {
+    return this.left > 0;
+  }
+  /** A blow has landed that would stagger it for `staggerFor` seconds. True: it does (and it is braced after). False: it is braced, and goes on. */
+  take(staggerFor: number): boolean {
+    if (this.left > 0) return false;
+    this.left = staggerFor + this.armour;
+    return true;
+  }
+  /** Braced from now for this long, whatever it was (a creature that has broken away and is coming back in). */
+  brace(secs: number): void {
+    this.left = Math.max(this.left, secs);
+  }
+  reset(): void {
+    this.left = 0;
+  }
+}
+
+/**
  * Keeps a creature out of the scenery. It has just moved from (fromX, fromZ); if where it is now is no good,
  * it slides along whichever way is still free, or stays where it was. (If it was somehow already stuck, it is left
  * alone so it can walk out.) Enemies used to be held only by the rectangle of their patch, so they could hop or be

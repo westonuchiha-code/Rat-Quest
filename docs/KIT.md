@@ -324,5 +324,35 @@ Added to "decide its goal on purpose". From `docs/RESEARCH-INSPIRATIONS.md`.
 And where it can be done: **he can see where he is going.** The next landmark, or the lantern he is working back
 toward, shows through a gap, across a pit or from a height.
 
+## CREATURES AS OPPONENTS (`tests/duels.ts`; `enemies/foe.ts` `Poise`)
+
+The owner, 2026-11-25: "go over all the enemies in the game and make sure that they are quality fighting opponents
+for how the main character currently controls". Each was FOUGHT, one against one, by four kinds of player (one who
+only swings, one who only holds his shield, one who does nothing, one who sidesteps and strikes the openings), and
+the table of results is what was fixed against. `node scripts/test-all.mjs duels` prints it.
+
+WHAT IT FOUND: one fault under nearly all of them. EVERY sword blow staggered a creature afresh, so a combo swung
+without stopping held it where it stood till it died. The mantis spent a third of its fight staggered and never
+touched him; the Stag Knight was on its knee a quarter of the time and dead in five seconds.
+
+WHAT WAS DONE:
+- **Poise** (`Poise` in foe.ts; roach, toad, mantis, ant, scorpion, Keep Guard). Staggered once, a creature is
+  BRACED for a moment after: blows still hurt it and do not stop it, so it gets its own blow out. Each says how long
+  (`new Poise(seconds)`); the roach's is short, it is fodder.
+- **Mantis**: its own rule stands (two blows, and it springs away); it now comes back in braced. Its LEAP is heavy:
+  a shield only held up does not stop it (a perfect guard does, a sidestep leaves it stuck).
+- **Scorpion**: its claws reach as far as his sword (he stood just outside them and cut it down); chased into the
+  dark after its lamp goes out, it turns and snaps; it is braced till it has come back round.
+- **Hornet**: a blade in the way of its DIVE hurts it and does not turn it (it was swatted out of every dive by a
+  sword simply being swung). A cut timed on its pass still knocks it down. Knocked down by a blow it lies 1.2 s, not 1.5.
+- **Stag Knight**: 14 hits not 10, six blows to its knee not five, 1.7 s on it not 2.2.
+A NEW CREATURE should be added to `MAKE` in tests/duels.ts and given a `Poise`.
+
+NOT FOUGHT THIS WAY (they need their own rooms or throw things): the firefly, the Broodmother, the Sump Wyrm, the
+Widow, Lord Grimsqueak. STILL TRUE, and the owner's to weigh: a shield only held up is hurt by almost nothing small
+(a blocked blow leaves the creature open, which is the design); the roach falls to a swung sword untouched outside
+the sewers (it is fodder); the bat and the ironback are not beaten by sidestep-and-strike (a cut as it swoops; its
+back, a wall, or a perfect guard).
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

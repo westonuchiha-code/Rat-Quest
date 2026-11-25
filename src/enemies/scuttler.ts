@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround, Poise } from './foe';
 import type { CanStand } from './foe';
 import { TUNING } from '../data/tuning';
 import { flankWay } from './director';
@@ -31,6 +31,8 @@ export class Scuttler {
   hp: number = TUNING.scuttler.hp;
   state: ScuttlerState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(0.9);
   /** The last player swing that hit it, so one swing cannot hit twice. */
   lastSwing = -1;
   /** Counts up from 0 after each spawn, for the pop-in. */
@@ -122,6 +124,8 @@ export class Scuttler {
       this.enter('dead');
       return true;
     }
+    // (Braced: the blow hurts it and does not stop it. foe.ts `Poise`.)
+    if (!this.poise.take(TUNING.scuttler.stagger)) return false;
     this.enter('stagger');
     // It will not circle for long after that: it wants its own back.
     this.mode = 'circle';
@@ -179,6 +183,7 @@ export class Scuttler {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
     this.hopCooldown = Math.max(0, this.hopCooldown - dt);
 

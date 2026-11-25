@@ -18,7 +18,7 @@ import { SENSES, keepOnFloor, type CanStand, type HitHow, type FloorUnder, sameG
 export type StagState = 'idle' | 'chase' | 'windup' | 'slam' | 'stuck' | 'sweepWind' | 'sweep' | 'recover' | 'stompWind' | 'stomp' | 'settle' | 'kneel' | 'dead' | 'return';
 
 export const STAG = {
-  hp: 10,
+  hp: 14,
   radius: 0.6,
   noticeRange: 9,
   speed: 1.7,
@@ -56,10 +56,12 @@ export const STAG = {
   settle: 0.6,
   stompCooldown: 2.5,
   // Poise.
-  poise: 5,
+  // (5 blows, 2.2 on its knee and 10 hp till 2026-11-25: a sword swung without stopping had it kneeling for over a
+  // quarter of the fight and dead in five seconds.)
+  poise: 6,
   poiseBack: 3.5, // seconds without a blow before it has it all back
   plungePoise: 3,
-  kneel: 2.2,
+  kneel: 1.7,
   respawn: 10,
 };
 

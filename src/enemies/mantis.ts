@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type CanStand, type HitHow, type WallAt, type FloorUnder, sameGround } from './foe';
+import { SENSES, keepOnFloor, type CanStand, type HitHow, type WallAt, type FloorUnder, sameGround, Poise } from './foe';
 import { flankWay } from './director';
 
 /**
@@ -88,6 +88,8 @@ export class Mantis {
   hp: number = MANTIS.hp;
   state: MantisState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(1.5);
   lastSwing = -1;
   age = 0;
   readonly radius = MANTIS.radius;
@@ -183,8 +185,11 @@ export class Mantis {
     // The leap cuts as it comes down, not on the way over.
     return this.state === 'leap' && this.stateTime >= MANTIS.leapTime - 0.09;
   }
-  get bite(): { reach: number; arc: number; damage: number } {
-    return this.state === 'leap' ? { reach: MANTIS.leapReach, arc: MANTIS.leapArc, damage: MANTIS.leapDamage } : { reach: MANTIS.reach, arc: MANTIS.arc, damage: MANTIS.damage };
+  /** (Its LEAP is heavy, 2026-11-25: it comes down on him with all its weight, and a shield only held up does not stop
+   * it; a perfect guard turns it, a sidestep leaves it stuck. Its cuts a shield stops. So holding the shield up is not
+   * the whole of fighting it: it took nothing from one in forty seconds.) */
+  get bite(): { reach: number; arc: number; damage: number; heavy?: boolean } {
+    return this.state === 'leap' ? { reach: MANTIS.leapReach, arc: MANTIS.leapArc, damage: MANTIS.leapDamage, heavy: true } : { reach: MANTIS.reach, arc: MANTIS.arc, damage: MANTIS.damage };
   }
   /** How fast it is walking (for its legs). */
   get walking(): number {
@@ -227,6 +232,9 @@ export class Mantis {
     // Hit while it is stuck, reeling or spent, it stays so for what is left of it. Otherwise the blow stops whatever it was at.
     if (this.state === 'stuck' || this.state === 'reel' || this.state === 'recover') return false;
     this.waitLeft = this.between(MANTIS.retaliate);
+    // (Braced: the blow hurts it and does not stop it. foe.ts `Poise`.)
+    // (But the blow that makes it spring away still stops it: it springs as that stagger ends, as it always has.)
+    if (!this.poise.take(MANTIS.stagger) && this.hitsInARow < MANTIS.escapeAfter) return false;
     this.enter('stagger');
     return false;
   }
@@ -273,6 +281,7 @@ export class Mantis {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
     this.sinceHit += dt;
     this.leapCool = Math.max(0, this.leapCool - dt);
@@ -303,6 +312,8 @@ export class Mantis {
     };
     /** Springs back out of reach, the way it was not facing. */
     const hop = (): void => {
+      // (It has sprung away: nothing stops it till it has come back in and had its own blow. foe.ts `Poise`.)
+      this.poise.brace(M.hopTime + 2.4);
       // Straight back if there is floor there; else to whichever side has some.
       const back = this.facing + Math.PI;
       const far = M.hopSpeed * M.hopTime;

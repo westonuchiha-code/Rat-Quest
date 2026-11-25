@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround, Poise } from './foe';
 import { flankWay } from './director';
 import type { CanStand, HitHow } from './foe';
 
@@ -66,6 +66,8 @@ export class Guard {
   hp: number = GUARD.hp;
   state: GuardState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(1.3);
   lastSwing = -1;
   age = 0;
   readonly radius = GUARD.radius;
@@ -206,6 +208,8 @@ export class Guard {
     if (this.state === 'broken') return false;
     // He turns on whoever struck him, and will not wait long before he answers.
     this.waitLeft = this.between(GUARD.retaliate);
+    // (Braced: the blow hurts him and does not stop him. foe.ts `Poise`.)
+    if (!this.poise.take(GUARD.stagger)) return false;
     this.enter('stagger');
     return false;
   }
@@ -245,6 +249,7 @@ export class Guard {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
     this.sinceBlock += dt;
 

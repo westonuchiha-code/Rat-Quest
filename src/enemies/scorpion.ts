@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround, Poise } from './foe';
 import { flankWay } from './director';
 import type { BodyPart, CanStand } from './foe';
 
@@ -49,7 +49,8 @@ export const SCORPION = {
   stingBlocked: 1.3, // ...longer if it struck his shield
   stingDamage: 1,
   // The claws.
-  snapRange: 1.45, // he is this near its middle...
+  // (1.45 till 2026-11-25: his sword reaches further than that, so he stood just outside its claws and cut it down.)
+  snapRange: 1.8, // he is this near its middle...
   snapFront: 1.05, // ...and within this of straight ahead (radians)
   snapWind: 0.32,
   snapTime: 0.12,
@@ -97,6 +98,8 @@ export class Scorpion {
   hp: number = SCORPION.hp;
   state: ScorpionState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(1.4);
   lastSwing = -1;
   age = 0;
   readonly radius: number = SCORPION.radius;
@@ -249,9 +252,13 @@ export class Scorpion {
       this.velZ = 0;
       this.circleDir = this.rng() < 0.5 ? 1 : -1;
       this.events.push('douse');
+      // (It has broken away: nothing stops it till it has come round and had its own blow. foe.ts `Poise`.)
+      this.poise.brace(S.douseTime + S.dark + 1.2);
       this.enter('douse');
       return false;
     }
+    // (Braced: the blow hurts it and does not stop it. foe.ts `Poise`.)
+    if (!this.poise.take(SCORPION.stagger)) return false;
     this.enter('stagger');
     return false;
   }
@@ -294,6 +301,7 @@ export class Scorpion {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
     this.sinceHit += dt;
     this.snapWait = Math.max(0, this.snapWait - dt);
@@ -457,6 +465,15 @@ export class Scorpion {
           const drift = Math.max(-1, Math.min(1, (dist - S.darkRing) * 1.2));
           moveX = Math.cos(toPlayer) * S.darkSpeed * this.circleDir + Math.sin(toPlayer) * S.darkSpeed * drift;
           moveZ = -Math.sin(toPlayer) * S.darkSpeed * this.circleDir + Math.cos(toPlayer) * S.darkSpeed * drift;
+        }
+        // (CORNERED: he has come after it into the dark and is in its face. The claws, now. Till 2026-11-25 it "did
+        // nothing else until its lamp was lit", and one who chased it cut it down as it circled.)
+        if (reachable && dist <= S.snapRange && this.snapWait <= 0) {
+          this.facing = toPlayer;
+          this.events.push('relight');
+          this.events.push('snapWind');
+          this.enter('snapWind');
+          break;
         }
         if (this.stateTime >= S.dark) {
           this.events.push('relight');

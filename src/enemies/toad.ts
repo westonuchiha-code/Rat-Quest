@@ -8,7 +8,7 @@
  * belly first, onto where you stand (step out from under it, or take it on the shield) and lies winded where it lands.
  * So chasing a toad is never a long run round the room: the second time you close in, it comes to you.
  */
-import { SENSES, keepOnFloor, type FloorUnder } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, Poise } from './foe';
 import type { CanStand } from './foe';
 
 export type ToadState = 'idle' | 'watch' | 'windup' | 'recover' | 'hop' | 'crouch' | 'pounce' | 'stagger' | 'dead' | 'return';
@@ -69,6 +69,8 @@ export class Toad {
   hp: number;
   state: ToadState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(0.9);
   lastSwing = -1;
   age = 0;
   readonly radius: number;
@@ -147,6 +149,8 @@ export class Toad {
       this.enter('dead');
       return true;
     }
+    // (Braced: the blow hurts it and does not stop it. foe.ts `Poise`.)
+    if (!this.poise.take(this.T.stagger)) return false;
     this.enter('stagger');
     return false;
   }
@@ -212,6 +216,7 @@ export class Toad {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
     const dx = px - this.x;
     const dz = pz - this.z;

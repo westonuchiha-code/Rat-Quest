@@ -1,4 +1,4 @@
-import { SENSES, keepOnFloor, type FloorUnder, sameGround } from './foe';
+import { SENSES, keepOnFloor, type FloorUnder, sameGround, Poise } from './foe';
 import type { BodyPart, CanStand, HitHow } from './foe';
 
 /**
@@ -88,6 +88,8 @@ export class Ant {
   hp: number = ANT.hp;
   state: AntState = 'idle';
   stateTime = 0;
+  /** Braced after a stagger: blows hurt it but do not stop it (foe.ts `Poise`). */
+  readonly poise = new Poise(1.2);
   lastSwing = -1;
   age = 0;
   readonly radius = ANT.radius;
@@ -226,7 +228,7 @@ export class Ant {
     this.events.push('hurt');
     // Struck while its pike was knocked wide, it stays that way for what is left of it; otherwise it staggers
     // (and a second blow while it staggers does not hold it there any longer: it will spring back when it would have).
-    if (this.state !== 'reel' && this.state !== 'stagger') this.enter('stagger');
+    if (this.state !== 'reel' && this.state !== 'stagger' && this.poise.take(ANT.stagger)) this.enter('stagger');
     return false;
   }
 
@@ -261,6 +263,7 @@ export class Ant {
     this.fromX = this.x;
     this.fromZ = this.z;
     this.stateTime += dt;
+    this.poise.tick(dt);
     this.age += dt;
 
     const dx = playerX - this.x;

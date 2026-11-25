@@ -94,3 +94,9 @@ Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by C
 |------|-----|-------|
 | THE SIDEHOP: locked on, the roll button with the stick to one side of the creature is a hop to that side, still facing it; stick away, a backstep away; stick toward, the roll (`TUNING.dodge.side`) | WORK IN PROGRESS | Tested; seen running in the game from a distance. Its pose not looked at close. Awaiting the owner's verdict. |
 | A DUEL in the sewers: locked on, never two creatures at him at once (`Director.update(..., duel)`). Elsewhere a second may attack when four or more are on him, as before | WORK IN PROGRESS | Tested. The turn-taking itself, and the locked one going first, were already in the game. |
+
+## Creatures as opponents (2026-11-25)
+
+| Thing | Tag | State |
+|------|-----|-------|
+| Every small creature and the Stag Knight fought four ways and fixed against the results (`tests/duels.ts`, docs/KIT.md) | WORK IN PROGRESS | Poise added; mantis, scorpion, hornet, Stag Knight retuned. Measured by scripted players, NOT played by hand. The five bosses and the firefly are not covered. Awaiting the owner's verdict on how the fights feel. |

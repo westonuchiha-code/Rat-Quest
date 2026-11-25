@@ -50,7 +50,9 @@ export const HORNET = {
   fallTime: 0.4,
   pitFall: 14, // how far down into a pit a dead one falls (out of sight), and how long that takes
   pitFallTime: 1.25,
-  grounded: 1.5,
+  // (1.5 till 2026-11-25: struck out of the air by any swing, it lay long enough to be killed outright. A PERFECT
+  // GUARD still puts it down for long enough: that is the answer that is rewarded.)
+  grounded: 1.2,
   groundedParried: 2.6,
   rise: 0.6,
   respawn: 9,
@@ -258,7 +260,11 @@ export class Hornet {
       return true;
     }
     this.events.push('hurt');
-    if (!this.downed) this.knockDown(false);
+    // (Not out of its DIVE straight at him: it is committed, and a blade in its way hurts it and does not turn it.
+    // It was swatted out of every dive by a sword that was simply being swung, and never touched him. 2026-11-25.
+    // Sidestep it and strike it stuck in the floor, or turn it with a perfect guard.)
+    // (A cut timed as it goes BY on its run still knocks it out of the air: that is skill, and was meant.)
+    if (!this.downed && this.state !== 'dive') this.knockDown(false);
     return false;
   }
 
