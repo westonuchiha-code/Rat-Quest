@@ -1116,6 +1116,7 @@ function startGame(): void {
     for (const [r, m] of ringMeshes) {
       if (rings.includes(r)) continue;
       scene.remove(m);
+      if (m.geometry !== ringGeo) m.geometry.dispose();
       ringMeshes.delete(r);
     }
     for (const r of rings) {
@@ -1127,7 +1128,12 @@ function startGame(): void {
         ringMeshes.set(r, m);
       }
       m.position.set(r.x, boss!.floorY + 0.12, r.z);
-      m.scale.setScalar(r.r);
+      // THE RING IS DRAWN WHERE IT HURTS (audit, 2026-11-24): a band of one width, centred on the ring's own radius,
+      // so that it hurts exactly when it is drawn touching his body. (It was a band from 0.86 of the radius to the
+      // radius: a sliver when small, and at any size it hurt him up to three frames before its drawn edge reached him.)
+      if (m.geometry !== ringGeo) m.geometry.dispose();
+      const half = Math.max(0.05, GRIM.slam.ringWidth - TUNING.rat.radius);
+      m.geometry = new THREE.RingGeometry(Math.max(0.02, r.r - half), r.r + half, 32);
     }
     const o = boss?.orb ?? null;
     orbMesh.visible = !!o;

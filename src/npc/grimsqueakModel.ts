@@ -407,8 +407,9 @@ export class GrimsqueakModel {
         if (!on) return;
         const from = palm(i < 3 ? left : right, S_P);
         const long = spell.reach ?? 4.2;
-        // (A long line's forks come down to the floor along it: it is the floor they rake.)
-        const far = S_Q.set((i < 3 ? -1 : 1) * 0.5 + ((i % 3) - 1) * 0.9, long > 6 ? 0.25 + (i % 3) * 0.35 : from.y - 0.35 + ((i % 3) - 1) * 0.3, from.z + long * (0.55 + 0.15 * (i % 3) + 0.15 * (i < 3 ? 0 : 1)));
+        // (A long line's forks come down to the floor along it: it is the floor they rake. On BOTH sides they reach to
+        // its end: the left three stopped at 0.55 to 0.85 of it, and the line hurt him past them with nothing drawn there.)
+        const far = S_Q.set((i < 3 ? -1 : 1) * 0.5 + ((i % 3) - 1) * 0.9, long > 6 ? 0.25 + (i % 3) * 0.35 : from.y - 0.35 + ((i % 3) - 1) * 0.3, from.z + long * (0.7 + 0.15 * (i % 3)));
         const pos = bolt.geometry.attributes.position as THREE.BufferAttribute;
         for (let k = 0; k < BOLT_POINTS; k++) {
           const u = k / (BOLT_POINTS - 1);

@@ -177,7 +177,8 @@ export class SparkBeetleModel {
     const col = new THREE.Color(0x3a5aff).lerp(new THREE.Color(0xe0eaff), c * c);
     for (const m of this.glow) m.color.copy(col).multiplyScalar(0.45 + 0.55 * c);
     this.haloMat.opacity = a.discharging ? 0.55 : 0.25 * c * c;
-    this.halo.scale.setScalar(a.discharging ? 1.25 + 0.15 * Math.sin(this.walk * 7) : 1);
+    // (Its burst is drawn as wide as it hurts: to where his body is touched, 1.12 from its middle. It was drawn to 0.94.)
+    this.halo.scale.setScalar(a.discharging ? 1.5 + 0.06 * Math.sin(this.time * 40) : 1);
     const hit = this.flashT > 0 ? 1.12 : 1;
     this.body.scale.set(hit * this.shrink, hit * this.shrink, hit * this.shrink * this.stretch);
   }

@@ -271,9 +271,12 @@ Broodmother's scissor. LEFT, smaller, in rough order of worth:
 
 - (OPEN BUT NOT DRAWN AS OPEN: done 2026-11-25. Toad, scorpion, stag, brood and wyrm each have a spent pose. Only the
   Stag Knight's was filmed; the others are unseen.)
-- HIT WIDER THAN WHAT IS DRAWN: scorpion sting ring (drawn 0.7, hits 1.0); Spark Beetle burst (halo 0.94, hits 1.42);
-  brood stab (a long cone; the spike is drawn at one point: give it a `bite.at` circle as the widow has); Grimsqueak's
-  slam ring (hits 0.45 past its drawn edge) and storm (left forks stop short of the line's end).
+- HIT WIDER THAN WHAT IS DRAWN: done 2026-11-25 by drawing them at the size they hurt: the Spark Beetle's burst,
+  Grimsqueak's slam ring (a band of one width now) and his storm's left forks. None of the three was seen in the game.
+  NOT A FAULT after all: the scorpion's sting ring (0.7 drawn, 1.0 centre to centre: it hurts when his BODY, 0.3 wide,
+  touches the ring, which is honest). LEFT FOR THE OWNER TO DECIDE: the Broodmother's stab hurts along a long narrow
+  line from her middle but is drawn as a spike at one point. Narrowing the hit to the spike makes her easier (a step
+  forward or back would dodge it); drawing the line on the floor as she winds up keeps her as hard and makes it fair.
 - SNAPS: hornet joust (heading and height cut as it commits); brood whirl's end (facing jumps); widow slam/stab tells
   (the foot jumps partway through) and bite (head drops in one frame); Grimsqueak swoop and slam entry (pitch, swell).
 - EARLY OR LATE, SMALL: scorpion claw snap (2-3 frames); ironback buck; Keep Guard thrust at point-blank; Grimsqueak's
