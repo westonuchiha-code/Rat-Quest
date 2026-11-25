@@ -49,7 +49,8 @@ export const TWEAKS: TweakDef[] = [
   { group: 'Jumping', path: 'jump.airJumps', label: 'Jumps in the air', min: 0, max: 3, step: 1 },
   { group: 'Jumping', path: 'physics.gravity', label: 'Gravity', min: 8, max: 40, step: 0.5 },
   { group: 'Jumping', path: 'physics.fallGravityMultiplier', label: 'Extra pull when falling', min: 1, max: 3, step: 0.05 },
-  { group: 'Jumping', path: 'jump.cutMultiplier', label: 'Short hop (lower = shorter)', min: 0.1, max: 1, step: 0.05 },
+  { group: 'Jumping', path: 'jump.cutMultiplier', label: 'Short hop (lower = shorter; Mario 64 is 0.25)', min: 0.1, max: 1, step: 0.05 },
+  { group: 'Jumping', path: 'jump.speedBonus', label: 'Running jumps go higher: this much of his speed added (0 off; Mario 64 is 0.25)', min: 0, max: 0.5, step: 0.05 },
   { group: 'Jumping', path: 'jump.coyoteTime', label: 'Grace after leaving a ledge', min: 0, max: 0.4, step: 0.01 },
   { group: 'Jumping', path: 'physics.maxFall', label: 'Top falling speed', min: 10, max: 60, step: 1 },
 

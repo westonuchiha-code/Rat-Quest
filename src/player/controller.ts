@@ -1134,7 +1134,7 @@ export class PlayerController {
         this.moveEvent = 'longjump';
       } else if (this.coyoteTimer > 0 && !(swimming && this.ceilingOver(colliders, 0.9))) {
         // (Not out of the water with a roof right over his head: there is no room to jump.)
-        this.velocity.y = T.jump.velocity * this.feel.foot.jump * (this.carrying ? T.lift.jump : 1);
+        this.velocity.y = (T.jump.velocity + T.jump.speedBonus * Math.hypot(this.velocity.x, this.velocity.z)) * this.feel.foot.jump * (this.carrying ? T.lift.jump : 1);
         this.grounded = false;
         this.coyoteTimer = 0;
         if (swimming) {

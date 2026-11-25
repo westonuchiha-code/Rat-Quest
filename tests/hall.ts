@@ -432,8 +432,9 @@ const hall = levelById(HALL_ID)!;
 {
   const sewer = all.filter((l) => feelOf(l).id === 'sewers').map((l) => l.id).sort();
   check(
-    'the Sewers and its four side areas play the sewers\' way, and nowhere else does',
-    sewer.join(' ') === 'cistern pumpworks sludgepit sump works',
+    // (And the Round, Test Room 21: a first looped room, built in the sewers' way on purpose. 2026-11-25.)
+    'the Sewers and its four side areas play the sewers\' way, and the Round (a test room built that way); nowhere else does',
+    sewer.join(' ') === 'cistern pumpworks round sludgepit sump works',
     sewer.join(' ')
   );
   const floor: Aabb[] = [aabbOf(extent('floor', -200, 200, -1, 0, -200, 200))];

@@ -528,6 +528,8 @@ export interface MoverSpec {
   to: [number, number, number];
   /** Units per second while gliding (default 2). */
   speed?: number;
+  /** drop (a bridge let down): the levers (by their order among the room's) that are its catch. */
+  levers?: number[];
   /** Seconds it waits at each end (default 1.5). */
   pause?: number;
   /** Where in its cycle it starts, 0..1 (default 0). */

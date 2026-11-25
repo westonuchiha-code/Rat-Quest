@@ -21,6 +21,11 @@ export const TUNING = {
     airJumps: 1, // extra jumps allowed before touching ground again
     flipDuration: 0.6, // seconds for the backflip that goes with an air jump
     cutMultiplier: 0.5, // releasing jump early cuts upward speed
+    // MOMENTUM IN THE JUMP (Mario 64's: a quarter of his speed is added to its launch; docs/RESEARCH-INSPIRATIONS.md).
+    // This much of his speed along the ground is added to a jump's upward speed. 0: OFF, as shipped: every room's
+    // ledges and gaps are measured to a jump that is the same at any speed. A slider (Jumping), for the owner to feel.
+    // At 0.25 a running jump is about 0.9 higher than a standing one (2.5 to 3.4).
+    speedBonus: 0,
     coyoteTime: 0.1,
     buffer: 0.12,
   },

@@ -86,4 +86,4 @@ Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by C
 
 | Part | Tag | State |
 |------|-----|-------|
-| Weight plate, key, locked gate, checkpoint lantern, one-way shortcut gate (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. NEXT in the approved plan: a bridge let down from the far side; then creatures placed as puzzles in a first looped room. |
+| Weight plate, key, locked gate, checkpoint lantern, one-way shortcut gate (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. Also a bridge let down from its catch (`motion: 'drop'`), and THE ROUND (Test Room 21): a first room that loops, creatures placed by the three rules. Jump height growing with run speed is a slider, OFF (it would change what every measured gap asks). |

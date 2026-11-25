@@ -7,6 +7,10 @@ import { levelById } from '../src/levels/levels';
 import { ROOMS } from '../src/levels/testRooms';
 import { buildChamber } from '../src/world/chamber';
 import { LOCKWORKS as L } from '../src/levels/lockworks';
+import { ROUND } from '../src/levels/round';
+import { DROP } from '../src/world/platforms';
+import { feelOf } from '../src/data/feel';
+import { maxRunJumpDistance } from '../src/levels/jumpMath';
 import { THROWN_AS } from '../src/world/lifting';
 
 let failures = 0;
@@ -89,6 +93,37 @@ check('the key is behind the weight gate, the prize behind the locked one, and t
       && oneWay(g, { x: g.x, y: 3, z: g.z - 0.5 }) === null);
   check('a gate whose width runs the other way has east and west for its sides', oneWay({ x: 0, z: 0, width: 3, alongZ: true, fromSide: 'e' }, { x: 0.8, y: 0, z: 0.4 }) === 'open' && oneWay({ x: 0, z: 0, width: 3, alongZ: true, fromSide: 'e' }, { x: -0.8, y: 0, z: 0 }) === 'barred');
   check('a plain gate is no shortcut', oneWay({ x: 0, z: 0, width: 3 }, { x: 0, y: 0, z: 0.5 }) === null);
+}
+
+// ---- THE ROUND (Test Room 21): one place that loops back to its own lantern; and the bridge let down ----
+{
+  const R = ROUND;
+  const d = levelById('round')!;
+  const C = R.chasm;
+  check('the Round is Test Room 21, plays as the sewers, asks nothing of him, and a fall in it costs a heart and puts him back', !!d && ROOMS.some((r) => r.id === 'round' && r.n === 21) && feelOf(d).id === 'sewers' && d.goals.length === 0 && d.fallBack === true);
+  check('its chasm is far wider than he can jump (more than twice a running jump): the long way round is the only way, till the bridge is down', C.z1 - C.z0 > maxRunJumpDistance() * 2, `${C.z1 - C.z0} across; a running jump is ${maxRunJumpDistance().toFixed(1)}`);
+  const foes = d.enemies;
+  const first = foes.find((e) => e.x === R.first.x && e.z === R.first.z)!;
+  const toad = foes.find((e) => e.type === 'toad')!;
+  const pair = foes.filter((e) => e.z < C.z0);
+  check('TEACH: the first creature is one roach alone on the south bank, with room to back away (nothing else within twelve of it)', !!first && foes.filter((e) => e !== first && Math.hypot(e.x - first.x, e.z - first.z) < 12).length === 0 && first.z > C.z1);
+  check('TEST: a toad on a ledge over the west strip, and kept to its ledge', !!toad && (toad.y ?? 0) > 2 && toad.x < C.x0 && !!toad.arena && toad.arena.x1 <= R.ledge.x1);
+  check('TWIST: two creatures of different kinds together on the north bank, by the catch', pair.length === 2 && pair[0].type !== pair[1].type && Math.hypot(pair[0].x - pair[1].x, pair[0].z - pair[1].z) < 6 && pair.every((e) => Math.hypot(e.x - R.catch.x, e.z - R.catch.z) < 12));
+  check('a lantern where he comes in, and one at the north-west corner before the pair', d.checkpoints!.length === 2 && d.checkpoints![0].z > C.z1 && d.checkpoints![1].z < C.z0 && d.checkpoints![1].x < pair[0].x - 8);
+  // The bridge.
+  const rc = buildChamber({ solids: d.solids, pit: d.pit, water: d.water, decor: d.decor, movers: d.movers ?? [], gates: d.gates } as never);
+  const bridge = rc.movers.find((m) => m.spec.motion === 'drop')!;
+  const lever = rc.strike!.things.find((t) => t.kind === 'lever')!;
+  for (let k = 0; k < 60; k++) rc.stepMovers(1 / 60);
+  const hungSolid = bridge.aabb.max.y > -100;
+  check('THE BRIDGE hangs up over the chasm on its chains, and is nothing to stand on, till its catch is struck', !!bridge && !!lever && !hungSolid && Math.abs(lever.x - R.catch.x) < 0.01 && lever.z < C.z0);
+  lever.on = true;
+  for (let k = 0; k < Math.round((DROP.time + 0.2) * 60); k++) rc.stepMovers(1 / 60);
+  check('...struck, it comes down and lies from bank to bank, its top level with them, for good', Math.abs(bridge.aabb.max.y) < 0.02 && bridge.aabb.min.z <= C.z0 + 0.01 && bridge.aabb.max.z >= C.z1 - 0.01, `top ${bridge.aabb.max.y.toFixed(2)}, z ${bridge.aabb.min.z} to ${bridge.aabb.max.z}`);
+  lever.on = false;
+  for (let k = 0; k < 120; k++) rc.stepMovers(1 / 60);
+  check('...and stays down whatever becomes of the catch', Math.abs(bridge.aabb.max.y) < 0.02);
+  check('it comes down beside the first lantern: the short way back', Math.hypot(R.bridge.x - d.checkpoints![0].x, C.z1 - d.checkpoints![0].z) < 8);
 }
 
 console.log(failures === 0 ? 'locks: all passed' : `locks: ${failures} FAILED`);

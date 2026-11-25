@@ -7,7 +7,7 @@ import { buildJunk } from './junkModels';
 import { buildStrike, type BuiltStrike } from './strikeModels';
 import { buildHazard, BELT_DEPTH, type BuiltHazard } from './hazardModels';
 import type { HazardSpec } from './hazards';
-import { STRIKE, newStrikeable, type Strikeable } from './strikeables';
+import { STRIKE, leversOn, newStrikeable, type Strikeable } from './strikeables';
 import { buildBottles, buildBulbs, buildDanceFloor, buildDartboard, buildKeg, buildMugRow, buildRug, buildStool, buildTable } from './tavernModels';
 import { PORTRAIT_ASPECT, portraitTexture } from './portraitTexture';
 import * as THREE from 'three';
@@ -563,7 +563,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
     const mesh = addMesh(geo, mat(skin), spec.x, spec.y - thick / 2, spec.z);
     moverMeshes.push(mesh);
     // (A swinging platform hangs on two chains from its pivot: drawn here, stretched to it each step.)
-    if (spec.motion === 'swing') {
+    if (spec.motion === 'swing' || spec.motion === 'drop') {
       const chains = [0, 1].map(() => {
         const g = new THREE.CylinderGeometry(0.04, 0.04, 1, 5, 1);
         g.translate(0, 0.5, 0);
@@ -598,7 +598,9 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
       // (Whether he stood on it as this step began: a ride, a sink, a crumble and a spring answer to that.)
       const was = !!rider && Math.abs(rider.position.y - a.max.y) < 0.12 && rider.position.x > a.min.x - 0.05 && rider.position.x < a.max.x + 0.05 && rider.position.z > a.min.z - 0.05 && rider.position.z < a.max.z + 0.05;
       // (Thin ice does not feel him on his belly.)
-      const now = platformStep(m.spec, m.state, dt, was && !(m.spec.thin && rider?.spread), TUNING.physics.gravity);
+      // (A bridge let down comes down when its catch is struck: its levers are on.)
+      const let_go = m.spec.motion === 'drop' && leversOn(strikeThings, m.spec.levers ?? []);
+      const now = platformStep(m.spec, m.state, dt, was && !(m.spec.thin && rider?.spread), TUNING.physics.gravity, let_go);
       const [ox, oy, oz] = now.offset;
       const thick = m.spec.thick ?? 0.5;
       const nx = m.spec.x + ox;

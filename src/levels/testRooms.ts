@@ -50,6 +50,7 @@ export const ROOMS: RoomEntry[] = [
   { n: 18, id: 'coilroom', door: 'COIL ROOM', like: 'A Tesla coil plays a beat and zaps the plates: climb in time. A keyboard to play the coil.' },
   { n: 19, id: 'standin', door: 'STAND-IN', like: 'Every character, played, each its own way: talk to one to be them. A course with a place for each.' },
   { n: 20, id: 'lockworks', door: 'LOCKWORKS', like: 'Parts for building levels: a weight plate and its gate, a key to carry, a locked gate, checkpoints.' },
+  { n: 21, id: 'round', door: 'THE ROUND', feel: 'sewers', like: 'One place that loops back on itself: the long way round, a bridge let down from the far side, the short way back.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */

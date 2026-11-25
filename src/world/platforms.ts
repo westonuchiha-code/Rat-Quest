@@ -25,7 +25,10 @@
  */
 import { moverOffset, type MoverSpec } from './layout';
 
-export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring' | 'crush' | 'swing' | 'blink' | 'path';
+/** (And `drop`, 2026-11-25, set in a room's own file, not yet in the editor's list: A BRIDGE LET DOWN. It hangs up out
+ * of the way on its chains, `to[1]` over where it will lie, and is nothing to stand on; when its catch (its `levers`,
+ * world/strikeables.ts) is struck it comes down and lies there for good. A shortcut opened from the far side.) */
+export type PlatformMotion = 'glide' | 'circle' | 'ride' | 'sink' | 'crumble' | 'spring' | 'crush' | 'swing' | 'blink' | 'path' | 'drop';
 export const PLATFORM_MOTIONS: readonly PlatformMotion[] = ['glide', 'circle', 'ride', 'sink', 'crumble', 'spring', 'crush', 'swing', 'blink', 'path'];
 
 /** Defaults for each kind, where its spec says nothing. */
@@ -139,17 +142,34 @@ export interface PlatformNow {
   falling: boolean;
 }
 
+/** A bridge let down (`drop`): seconds it takes to come down; and how far over where it hangs its chains are made fast. */
+export const DROP = { time: 0.55, pivot: 2.5 } as const;
+
 const smooth = (f: number): number => f * f * (3 - 2 * f);
 
 /**
  * Moves one platform on by `dt`. `ridden` is whether he was standing on it as this step began; `gravity` is what pulls
  * him down (for the speed that throws him `launch` high).
  */
-export function platformStep(spec: MoverSpec, s: PlatformState, dt: number, ridden: boolean, gravity: number): PlatformNow {
+export function platformStep(spec: MoverSpec, s: PlatformState, dt: number, ridden: boolean, gravity: number, released = false): PlatformNow {
   s.time += dt;
   const out: PlatformNow = { offset: [0, 0, 0], solid: true, shown: true, shake: [0, 0], squash: 0, launch: 0, falling: false };
   const motion = spec.motion ?? 'glide';
   const len = Math.hypot(spec.to[0], spec.to[1], spec.to[2]);
+  if (motion === 'drop') {
+    // (`along`: how far down it has come, 0 hung up .. 1 lying. It falls faster as it comes, and lands with a shudder.)
+    const rise = Math.max(0.5, spec.to[1] - DROP.pivot);
+    if (released && s.along < 1) s.along = Math.min(1, s.along + dt / DROP.time);
+    const k = s.along * s.along;
+    out.offset = [0, rise * (1 - k), 0];
+    out.solid = s.along >= 1;
+    if (s.along >= 1) {
+      s.stageTime += dt;
+      const j = Math.max(0, 1 - s.stageTime / 0.3) * 0.05;
+      out.shake = [Math.sin(s.time * 70) * j, Math.cos(s.time * 53) * j];
+    }
+    return out;
+  }
   if (motion === 'glide') {
     out.offset = moverOffset(spec, s.time);
   } else if (motion === 'circle') {

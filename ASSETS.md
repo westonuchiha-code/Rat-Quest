@@ -75,6 +75,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 | Test Room 18 | `coilroom` | COIL ROOM | The Coil Room | waking | power | drift | `src/levels/coilroom.ts` |
 | Test Room 19 | `standin` | STAND-IN | The Stand-in | waking | dungeon | drift | `src/levels/standinroom.ts` |
 | Test Room 20 | `lockworks` | LOCKWORKS | The Lockworks | waking | dungeon | drift | `src/levels/lockworks.ts` |
+| Test Room 21 | `round` | THE ROUND | The Round | sewers | dungeon | drift | `src/levels/round.ts` |
 
 **The Hall** (`hall`, the hub): `src/levels/hall.ts`. **Boss rooms:** SPIDER BOSS (`widowpit`, `src/levels/practice.ts`); GRIMSQUEAK (`lair`, `src/levels/keep.ts`); SUMP WYRM (`sump`, `src/levels/cisternHalls.ts`); BROOD MOTHER (`brood`, `src/levels/hollows.ts`).
 
@@ -85,7 +86,7 @@ To rename a biome, change `door` there. To add a room: build it, add it to `src/
 ## 2. How each biome plays (physics)
 
 One table: `src/data/feel.ts`. The numbers every place shares: `src/data/tuning.ts` (and prices and door costs in
-`src/data/balance.ts`). 295 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
+`src/data/balance.ts`). 296 of those numbers have a slider in the Tweaks panel (`src/core/tweaks.ts`).
 
 | Biome feel | Meant to be like | Run | Jump | Gravity | His blows | His ground pound | A blow costs him | Tuck | Speed from tricks | Spin and grab |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -307,7 +308,7 @@ GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio
 
 | A level asks for | It gets | Levels that ask for it |
 | --- | --- | --- |
-| `drift` | `cistern` | 38 |
+| `drift` | `cistern` | 39 |
 | `pump` | `foundry` | 5 |
 | `groove` | `bap2` then `bap1` | 3 |
 | `echo` | `hollows` | 7 |

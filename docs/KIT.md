@@ -304,8 +304,10 @@ and are other sizes), an iron-bound crate.
 WORK IN PROGRESS (2026-11-25). A gate with `fromSide: 'n' | 's' | 'e' | 'w'` (north is -z) opens when he comes up to
 it ON that side, and stays open. From the other side it is barred: its bar is drawn on the side it opens from (seen
 through the gate), and it rattles when he tries it. THE DARK SOULS SHORTCUT: put it beside a lantern, with the long
-dangerous way round ending on its far side. NOT YET: a bridge or ladder dropped from the far side (the game has no
-ladders; a bridge let down on chains by a catch is the likely form); the level editor.
+dangerous way round ending on its far side. AND A BRIDGE LET DOWN: a platform with `motion: 'drop'` and `levers: [i]` hangs up on its chains over where it will
+lie (`to[1]` above it), nothing to stand on, until its catch (a lever) is struck; then it comes down and lies there
+for good. Both are shown working together in THE ROUND (Test Room 21, `levels/round.ts`): the smallest room built the
+way the world is to be built, with its creatures placed by the three rules below. NOT YET: the level editor.
 
 ## BUILDING A ROOM: three more rules (the owner approved the plan they come from, 2026-11-25)
 
