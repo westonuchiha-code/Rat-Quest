@@ -2,7 +2,7 @@
 # Builds everything the owner tests with, into one folder (default: ../deliver, next to the project):
 #   ratquest.html          THE GAME, with the on-screen test pad (the owner tests on a phone). Opens on the title.
 #   ratquest-nopad.html    THE GAME, no test pad (keyboard / controller; what the Steam build is)
-#   ratquest-hall.html     the test area: THE HALL, with a door to every test room, boss room and practice room
+#                          (THE HALL, the test area with every door, is TEST HALL on the title of both)
 #   ratquest-<id>.html     only when asked for: one place by itself (level ids after the folder)
 #   ALL=1 also keeps ratquest-editor.html and writes ratquest-source.zip
 # Usage: bash scripts/deliver.sh [outdir] [level id ...]
@@ -29,7 +29,7 @@ if ! node scripts/smoke.mjs "$OUT/ratquest.html"; then
   exit 1
 fi
 
-# What is sent every time (the owner, 2026-11-25): the game with the pad, the game without, and the test Hall.
+# What is sent every time (the owner, 2026-11-25): the game with the pad and the game without. Nothing else.
 # Any further arguments are level ids: each gets a file that opens there (bash scripts/deliver.sh deliver keep garden).
 shift || true
 node -e '
@@ -37,7 +37,6 @@ const fs = require("fs");
 const [out, ...ids] = process.argv.slice(1);
 const src = fs.readFileSync(out + "/ratquest.html", "utf8");
 const make = (name, js) => fs.writeFileSync(out + "/" + name, src.replace("<head>", "<head><script>" + js + "</script>"));
-make("ratquest-hall.html", "location.hash=\"level=hall\"");
 for (const l of ids) make("ratquest-" + l + ".html", "location.hash=\"level=" + l + "\"");
 ' "$OUT" "$@"
 
