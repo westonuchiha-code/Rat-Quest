@@ -10,7 +10,7 @@ import { aabbOf, type Aabb } from '../src/world/collision';
 import { POT, ROCK, extent, potBox, rockBox } from '../src/world/layout';
 import fs from 'node:fs';
 import { resolveCombat, type CombatEvents } from '../src/combat/combat';
-import { DOWN_STATES, HELD_POSE, HELD_ROLL, heldTurn, THROWN_AS, isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
+import { HELD, HOLD_FIT, fitOf, heldAt, DOWN_STATES, HELD_POSE, HELD_ROLL, heldTurn, THROWN_AS, isDown, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from '../src/world/lifting';
 const read = (p: string): string => fs.readFileSync(p, 'utf8');
 import type { Crate } from '../src/world/crates';
 import { compileCustom, type CustomLevel, type Piece } from '../src/levels/custom';
@@ -564,6 +564,26 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
     /LIFT/.test(BIND_NAMES.stow)
       && ['lift.walk', 'lift.jump', 'lift.throwSpeed', 'lift.throwUp', 'lift.damage'].every((path) => TWEAKS.some((t) => t.path === path))
   );
+}
+
+// ---- WHERE A THING IS HELD, AND SO WHERE IT IS THROWN FROM (2026-11-25): on his head, or hugged to his chest ----
+{
+  const here = { x: 2, y: 1, z: 3 };
+  const facing = Math.PI / 2; // (+x)
+  const crate = heldAt(here, 0.5, 0.5, facing, false);
+  check('a BIG thing rests on his head: straight over him, its underside at his helmet (no gap of air, and not sunk past his eyes)', crate.x === here.x && crate.z === here.z && crate.y - 0.5 - here.y < TUNING.rat.height && crate.y - 0.5 - here.y > TUNING.rat.height - 0.2 && HELD.rest < 0, `underside ${(crate.y - 0.5 - here.y).toFixed(2)} over his feet; he is ${TUNING.rat.height} tall`);
+  const kinds = Object.keys(THROWN_AS).filter((k) => THROWN_AS[k as keyof typeof THROWN_AS].light);
+  const bad = kinds.filter((k) => {
+    const p = heldAt(here, 0.3, 0.3, facing, true, undefined, k);
+    // In front of him the way he faces (not to a side), within his arms' reach, between his knees and his chin.
+    return !(p.x - here.x > 0.2 && p.x - here.x < 0.5 && Math.abs(p.z - here.z) < 1e-6 && p.y - here.y > 0.35 && p.y - here.y < 0.75);
+  });
+  check('every SMALL thing he can lift (pot, rock, key) is held in front of his chest, within reach of his arms, and has a fit of its own', bad.length === 0 && kinds.every((k) => !!HOLD_FIT[k]) && kinds.length >= 3, `${kinds.join()}; wrong: ${bad.join() || 'none'}`);
+  const odd = fitOf('something new', 0.2);
+  check('...and a small thing nobody has fitted yet is still held there (fitted from its size), not left over his head', odd.front > 0.2 && odd.front < 0.5 && odd.up > 0.35 && odd.up < 0.75);
+  // A throw leaves from where he holds it.
+  const t = startThrow({ name: 'a pot' }, 0.28, null, heldAt(here, 0.31, 0.28, facing, true, undefined, 'pot'), facing, { x: 0, z: 0 }, 1, null, THROWN_AS.pot.speed);
+  check('a small thing is thrown from his chest, forward and up (not from over his head)', t.pos.y - here.y < 0.75 && t.pos.x > here.x + 0.2 && t.vel.x > 5 && t.vel.y > 0);
 }
 
 console.log(failures === 0 ? '\nlifting: all passed' : `\nlifting: ${failures} FAILED`);

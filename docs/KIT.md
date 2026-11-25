@@ -284,5 +284,20 @@ No sounds of their own (existing ones re-pitched; unheard). One key per lock, no
 WHAT THEY ARE FOR, with what was here already: a crate ridden across on a moving platform to a plate; a key carried
 through blades or over thin ice with no shield up; a key thrown over a gap and followed; a lantern before a hard climb.
 
+## How he holds what he picks up (`world/lifting.ts` `heldAt`, `HOLD_FIT`; poses in `player/ratModel.ts`)
+
+The owner, 2026-11-25: it "just lets things float above your head"; and "for every object he's able to pick up we kind
+of have to fine tune it". THE RULE, for anything liftable:
+- A BIG thing (crate, barrel, any creature) RESTS ON HIS HELMET, his paws up flat under it. Thrown, it is heaved
+  forward off his head.
+- A SMALL thing (pot, rock, key: `THROWN_AS[kind].light`) is HUGGED IN FRONT OF HIS CHEST, and each has its own fit in
+  `HOLD_FIT` (`front`, `up`, `spread` of his paws), set by eye. Thrown, it is shoved out from his chest in both paws,
+  and flies from there.
+ADDING A NEW LIFTABLE THING: give it a line in `THROWN_AS`; if it is light, give it a line in `HOLD_FIT` and LOOK at
+it (a thing without one is fitted from its size, which is a guess). To look: `#level=lockworks&carry=<kind>` puts the
+room's first thing of that kind in his hands; `scratch rig` pictures were taken from in front and from the side.
+SEEN AND FITTED: crate, barrel, pot, rock, key, and a roach. NOT SEEN: the other creatures (they share the roach's fit
+and are other sizes), an iron-bound crate.
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

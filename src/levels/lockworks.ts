@@ -53,6 +53,8 @@ const room: CustomLevel = {
     { t: 'exit', x0: 0, z0: HZ, x1: 0, z1: HZ, top: 0, dir: 'n' },
     ...crossWall(),
     { t: 'crate', x0: L.crate.x, z0: L.crate.z, x1: L.crate.x, z1: L.crate.z, top: 0 },
+    // (A barrel too: it holds the plate as well as the crate does.)
+    { t: 'barrel', x0: L.crate.x, z0: L.crate.z + 3, x1: L.crate.x, z1: L.crate.z + 3, top: 0 },
     { t: 'cap', x0: L.prize.x, z0: L.prize.z, x1: L.prize.x, z1: L.prize.z, top: 0 },
   ],
 };

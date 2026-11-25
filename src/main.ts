@@ -37,7 +37,7 @@ import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
-import { isDown, heldTurn, heldAt, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
+import { isDown, heldTurn, heldAt, fitOf, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
 import type { Crate } from './world/crates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
@@ -339,6 +339,10 @@ function startGame(): void {
   let webs: WebState[] = [];
   let webMeshes: THREE.LineSegments[] = [];
   let rushKick = 0;
+  const CARRY_AID = /[#&]carry=(\w+)/.exec(location.hash)?.[1] ?? '';
+  let carryAided = false;
+  /** What he has, or last had, was held in front of his chest (a small thing), not on his head: for how he is drawn carrying and throwing it. */
+  let carryFront = false;
   const PARRY_ALL = /[#&]parryall\b/.test(location.hash);
   let ripGlintIn = 0;
   /** Seconds since a perfect guard (for the sweep his body makes of it), or -1. */
@@ -1271,8 +1275,8 @@ function startGame(): void {
   /** Things that were in a crate broken somewhere else than it stood, and where they belong (put back as a level loads). */
   const movedItems = new Map<{ x: number; y: number; z: number }, { x: number; y: number; z: number }>();
   /** Where the thing over his head is: on its way up from where it stood, or there. */
-  const heldPlace = (at: { x: number; y: number; z: number }, halfHigh: number, halfWide = 0.5, light = false): THREE.Vector3 => {
-    heldAt(at, halfHigh, halfWide, player.facing, light, hands);
+  const heldPlace = (at: { x: number; y: number; z: number }, halfHigh: number, halfWide = 0.5, light = false, kind?: string): THREE.Vector3 => {
+    heldAt(at, halfHigh, halfWide, player.facing, light, hands, kind);
     const k = Math.min(1, player.carryPose * 1.15);
     return hands.set(heldFrom.x + (hands.x - heldFrom.x) * k, heldFrom.y + (hands.y - heldFrom.y) * Math.sin((k * Math.PI) / 2), heldFrom.z + (hands.z - heldFrom.z) * k);
   };
@@ -2687,12 +2691,22 @@ function startGame(): void {
     liftable = handsFree ? liftTarget(chamber.crates, player.position, player.facing) : null;
     // (And a creature that is DOWN, if nothing else is nearer to hand.)
     liftableFoe = handsFree && !liftable ? enemies[liftFoe(enemies, player.position, player.facing)] ?? null : null;
+    // (`&carry=pot` (crate, barrel, rock, key): a filming aid. A second in, the room's first thing of that kind is in his hands.)
+    if (CARRY_AID && !carryAided && handsFree && worldClock > 1.2) {
+      const want = chamber.crates.find((k) => k.alive && !k.lifted && k.type === CARRY_AID);
+      if (want) {
+        liftable = want;
+        stowPressed = true;
+        carryAided = true;
+      }
+    }
     if (stowPressed && liftable) {
       held = liftable;
       liftable = null;
       heldFrom.set(held.x, held.y, held.z);
       chamber.liftCrate(held);
       player.startCarry(thrownAs(held).light);
+      carryFront = thrownAs(held).light;
       stowPressed = false;
       audio.play('heave', { vol: 0.75, rate: roll(0.95, 1.08) * (thrownAs(held).light ? 1.2 : 1), priority: 6 });
     } else if (stowPressed && liftableFoe) {
@@ -2703,6 +2717,8 @@ function startGame(): void {
       heldFrom.set(heldFoe.x, heldFoe.y, heldFoe.z);
       if (lockTarget === heldFoe) lockTarget = null;
       player.startCarry(true);
+      // (A creature is carried on his head, however light it is to walk with.)
+      carryFront = false;
       stowPressed = false;
       audio.play('heave', { vol: 0.6, rate: 1.15, priority: 6 });
       audio.play('squirm', { vol: 0.6, rate: roll(0.95, 1.1), priority: 5 });
@@ -2780,10 +2796,10 @@ function startGame(): void {
     if (held) {
       const c = held;
       const halfHigh = (c.aabb.max.y - c.aabb.min.y) / 2;
-      const at = heldPlace(player.position, halfHigh, c.half, thrownAs(c).light);
+      const at = heldPlace(player.position, halfHigh, c.half, thrownAs(c).light, c.type);
       if (player.liftEvent === 'throw') {
-        // (From over his head, whatever was left of its way up.)
-        thrown.push(startThrow(c, c.half, c.aabb, carryPlace(player.position, halfHigh, hands), player.facing, player.velocity, 1, aimNow(), thrownAs(c).speed));
+        // (From where he holds it: off his head, or out from his chest.)
+        thrown.push(startThrow(c, c.half, c.aabb, heldAt(player.position, halfHigh, c.half, player.facing, thrownAs(c).light, hands, c.type), player.facing, player.velocity, 1, aimNow(), thrownAs(c).speed));
         held = null;
         audio.play('hurl', { vol: 0.85, rate: roll(0.92, 1.05) * (thrownAs(c).light ? 1.2 : 1), priority: 7 });
       } else if (player.liftEvent === 'down') {
@@ -2810,7 +2826,8 @@ function startGame(): void {
         squirmIn = Math.max(0.35, 0.9 * (1 - heldFoeTime / TUNING.lift.foeHold)) + roll(0, 0.25);
       }
       // (It stands on air over his head: a creature's place is where its feet are.)
-      const at = heldPlace(player.position, 0);
+      // (On its back on his helmet: fitted by eye, a roach's back just touching it.)
+      const at = heldPlace(player.position, -0.1);
       const free = (): void => {
         // Out of his hands without a throw: it is set on the floor before him, and is its own again.
         const fx = player.position.x + Math.sin(player.facing) * (e.radius + TUNING.rat.radius + 0.1);
@@ -2824,7 +2841,7 @@ function startGame(): void {
       };
       if (!e.alive) heldFoe = null;
       else if (player.liftEvent === 'throw') {
-        thrownFoes.push(startThrow(e, Math.max(0.3, e.radius), null, carryPlace(player.position, 0, hands), player.facing, player.velocity, 1, aimNow(), 1.1));
+        thrownFoes.push(startThrow(e, Math.max(0.3, e.radius), null, heldAt(player.position, -0.1, e.radius, player.facing, false, hands), player.facing, player.velocity, 1, aimNow(), 1.1));
         heldFoe = null;
         audio.play('hurl', { vol: 0.85, rate: roll(1.0, 1.12), priority: 7 });
       } else if (player.liftEvent === 'down' || !player.carrying || heldFoeTime > TUNING.lift.foeHold) {
@@ -4807,7 +4824,8 @@ function startGame(): void {
       guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1 },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
-      carryLight: player.carryLight,
+      carryLight: carryFront,
+      carrySpread: held ? fitOf(held.type, held.half).spread : 0.5,
       throwT: player.throwProgress,
       ride: player.riding ? { steer: player.rideSteer, tuck: Math.max(player.rideTuck, rushCrouch), spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
@@ -4915,7 +4933,7 @@ function startGame(): void {
     talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (talkable || !!held || !!heldFoe || !!liftable || !!liftableFoe) && (player.grounded || !!held || !!heldFoe));
     // (And it is drawn where he is drawn, between the game's own steps.)
     if (held && player.carrying) {
-      const at = heldPlace(renderPos, (held.aabb.max.y - held.aabb.min.y) / 2, held.half, thrownAs(held).light);
+      const at = heldPlace(renderPos, (held.aabb.max.y - held.aabb.min.y) / 2, held.half, thrownAs(held).light, held.type);
       const m = held.mesh as unknown as THREE.Object3D | null;
       if (m) m.position.set(at.x, at.y, at.z);
     }

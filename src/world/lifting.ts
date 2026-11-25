@@ -60,13 +60,29 @@ export function carryPlace(pos: { x: number; y: number; z: number }, halfHigh: n
  *   a BIG thing (a crate, a barrel, a creature) RESTS ON HIS HEAD, his paws out bracing its bottom corners: no gap
  *     of air under it, and it sinks with him as his knees bend under it (`sink`);
  *   a SMALL thing (a pot, a rock, a key) is HUGGED IN FRONT OF HIS CHEST in both paws, where his arms do reach.
- * (A throw still leaves from over his head, `carryPlace`: he heaves it up and over. The rules are as they were.)
+ * A THROW LEAVES FROM WHERE HE HOLDS IT (the owner, the same day): a big thing is heaved off his head, a small one
+ * shoved out from his chest in both paws. (`carryPlace`, over his head with a gap, is the old place: tests of the
+ * throw's flight still start there.)
  */
-export const HELD = { rest: -0.09, sink: 0.035, front: 0.36, chest: 0.5 } as const;
-export function heldAt(pos: { x: number; y: number; z: number }, halfHigh: number, halfWide: number, facing: number, light: boolean, out = new THREE.Vector3()): THREE.Vector3 {
+export const HELD = { rest: -0.09, sink: 0.035 } as const;
+/**
+ * EACH SMALL THING'S FIT IN HIS PAWS (fitted by eye, one at a time: the owner, "for every object he's able to pick up
+ * we kind of have to fine tune it ... with small objects they definitely will notice"). `front`: how far in front of
+ * his middle its middle is; `up`: how high its middle is over his feet; `spread`: how far apart his paws are for it
+ * (0: together, 1: wide). A thing not named here is fitted from its size (`fitOf`).
+ */
+export const HOLD_FIT: Record<string, { front: number; up: number; spread: number }> = {
+  pot: { front: 0.38, up: 0.47, spread: 0.75 },
+  rock: { front: 0.34, up: 0.56, spread: 0.8 },
+  key: { front: 0.3, up: 0.49, spread: 0.1 },
+};
+export function fitOf(kind: string | undefined, halfWide: number): { front: number; up: number; spread: number } {
+  return (kind && HOLD_FIT[kind]) || { front: 0.24 + halfWide * 0.5, up: 0.58, spread: Math.min(1, halfWide / 0.3) };
+}
+export function heldAt(pos: { x: number; y: number; z: number }, halfHigh: number, halfWide: number, facing: number, light: boolean, out = new THREE.Vector3(), kind?: string): THREE.Vector3 {
   if (!light) return out.set(pos.x, pos.y + TUNING.rat.height + HELD.rest - HELD.sink + halfHigh, pos.z);
-  const d = HELD.front + halfWide * 0.55;
-  return out.set(pos.x + Math.sin(facing) * d, pos.y + HELD.chest + halfHigh * 0.4, pos.z + Math.cos(facing) * d);
+  const f = fitOf(kind, halfWide);
+  return out.set(pos.x + Math.sin(facing) * f.front, pos.y + f.up, pos.z + Math.cos(facing) * f.front);
 }
 
 /**
