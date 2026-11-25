@@ -3465,6 +3465,14 @@ function startGame(): void {
         builder.show();
         player.velocity.set(0, 0, 0);
         player.position.z += 2.5;
+      } else if (isGameRoom(cur)) {
+        // THE GAME: on to its next area, if that is built. (If not, the door is a door and no more.)
+        const next = GAME_ROOMS[GAME_ROOMS.indexOf(cur) + 1];
+        if (next) startTransition(next);
+        else {
+          player.velocity.set(0, 0, 0);
+          player.position.z += cur.exit.z < 0 ? 1.2 : -1.2;
+        }
       } else if (parentOf(cur)) {
         // Out of a room: back to where he came in from (or the Hall, or the area it is part of), in front of the door
         // that leads here, if there is one.

@@ -19,6 +19,7 @@ import { SHOP } from '../src/data/shop';
 import { GAME_ROOMS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { hallDoors } from '../src/levels/hall';
 import { Stag } from '../src/enemies/stag';
+import { sluice, SLUICE } from '../src/levels/sluice';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -127,6 +128,26 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   check('two lanterns: one on the shore, one before the gate', (L.checkpoints ?? []).length === 2);
   check('he lands on the shore, far from the gate, with it straight ahead', L.spawn.z > 20 && Math.abs(L.spawn.x) < 1 && Math.abs(gate?.x ?? 9) < 1);
   check('nothing bites within nine paces of where he lands', L.enemies.every((e) => Math.hypot(e.x - L.spawn.x, e.z - L.spawn.z) > 9));
+}
+
+// ---- Area two: the Sluice (src/levels/sluice.ts). One way round, a shortcut earned at the far end, a key for the vault.
+{
+  const Z = sluice();
+  const K = SLUICE;
+  check('the game has a second area, after Flotsam', GAME_ROOMS[1]?.id === Z.id && GAME_ROOMS[0].id === L.id);
+  const bridge = (Z.movers ?? []).find((m) => m.motion === 'drop');
+  check('a bridge over the chasm, raised, that a catch lets down', !!bridge && (bridge.levers ?? []).length === 1 && Z.decor.some((d) => d.kind === 'lever'));
+  const lever = Z.decor.find((d) => d.kind === 'lever') as { x: number; z: number } | undefined;
+  check('...and its catch is on the FAR bank: the long way round must be gone first', !!lever && lever.z < K.chasm.z0);
+  check('the long way is the west strip, and a cracked wall stands across it under the toad', Z.decor.filter((d) => d.kind === 'crackwall').length === 2 && Z.enemies.some((e) => e.type === 'toad'));
+  const vaultGate = (Z.gates ?? []).find((g) => g.locked);
+  check('a locked gate on the near bank, by where he comes in', !!vaultGate && vaultGate.z > K.chasm.z1);
+  check('...with something worth having behind it', Z.collectibles.some((c) => c.kind === 'relic' && c.z > K.vault.z0 && c.x > K.vault.x0));
+  check('...and the key is in the far corner of the far bank', K.key.z < K.chasm.z0 - 10 && K.key.x > 10);
+  check('nothing of the near bank can get into the vault', Z.enemies.every((e) => !e.arena || e.arena.z0 < K.chasm.z0 || e.arena.x1 < K.vault.x0));
+  check('two lanterns: where he comes in, and at the far end of the bridge', (Z.checkpoints ?? []).length === 2 && Z.checkpoints![0].z > K.chasm.z1 && Z.checkpoints![1].z < K.chasm.z0);
+  check('it is fought the sewers way', Z.feel === 'sewers');
+  check('a fall into the chasm puts him back on the edge', Z.fallBack === true);
 }
 
 // ---- The climb to the sword: every jump of it can be made (the real controller, the real room).

@@ -89,3 +89,19 @@ and WORKSHOP are on the title of the test build only (`TEST_BUILD` in `src/main.
 WHAT IT IS NOT YET: a wrecked boat (the wreck is boards on posts); reeds; a second way round or a shortcut (in a
 place this small and open one would be for show: better kept for area two); a played opening scene with a camera;
 anything after the gate; sounds or music of its own. NOT PLAYED THROUGH BY HAND.
+
+## AREA TWO: THE SLUICE (`src/levels/sluice.ts`). A FIRST DRAFT, BUILT WITHOUT THE OWNER'S WORD
+
+He was asked twice what lies beyond the Old Gate and said "Continue", so this follows the plan he did approve (a place
+built the Dark Souls way, looping back on itself). If he wants something else here, this is one file and one line of
+`GAME_ROOMS`.
+
+Flotsam is a yard; this is the first PATH. The near bank (a lantern, one roach, a VAULT behind a LOCKED gate with its
+prize showing). The long way west (a cracked wall across it under a toad's ledge). The far bank (an ant and a roach by
+the bridge's catch; strike it and the bridge comes down, back to the lantern). In the far corner under two bats, the
+KEY: carried in both paws back over the bridge to the vault. A door north; nothing behind it yet.
+
+ONE GAME AREA LEADS TO THE NEXT: at a game room's open door, `src/main.ts` goes to the next of `GAME_ROOMS` (the
+last one's door does nothing). THERE IS NO WAY BACK YET: from the Sluice he cannot return to Flotsam.
+
+NOT PLAYED BY HAND. Undressed.

@@ -189,7 +189,7 @@ export function flotsam(): LevelDef {
     { kind: 'sign', x: -6, y: 0, z: 9.5, yaw: 0, w: 2.6, h: 1.3, lines: ['THE WRECK', 'a sword up top'], post: 1.5 },
     { kind: 'sign', x: 6.2, y: 0, z: F.wall.z + 1.2, yaw: 0, w: 2.8, h: 1.3, lines: ['THE OLD GATE', 'the Warden lets', 'nobody by'], post: 1.5 },
   ];
-  signs.push({ kind: 'sign', x: 0, y: 5.6, z: -HZ + 0.06, yaw: 0, w: 7, h: 1.8, lines: ['THE KINGDOM BELOW', 'the way on is not built yet'], post: 0 });
+  signs.push({ kind: 'sign', x: 0, y: 5.6, z: -HZ + 0.06, yaw: 0, w: 7, h: 1.8, lines: ['THE KINGDOM BELOW', 'down, by the Sluice'], post: 0 });
   return {
     ...def,
     goals: NO_GOALS,
