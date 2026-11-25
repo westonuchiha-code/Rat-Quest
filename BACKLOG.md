@@ -269,8 +269,8 @@ roach and Spark Beetle on their backs when turned, the Spark Beetle's bite drawn
 and its parry opening, the mantis cut, the ant bite, the bat's wingbeat, the Stag Knight's slam/sweep/stomp and the
 Broodmother's scissor. LEFT, smaller, in rough order of worth:
 
-- OPEN BUT NOT DRAWN AS OPEN: toad after a turned pounce (pass `down`, draw it winded flat); scorpion after a blocked
-  snap; stag `settle` and sweep `recover`; brood `settle` and scissor `recover`; wyrm `recover` and `settle`.
+- (OPEN BUT NOT DRAWN AS OPEN: done 2026-11-25. Toad, scorpion, stag, brood and wyrm each have a spent pose. Only the
+  Stag Knight's was filmed; the others are unseen.)
 - HIT WIDER THAN WHAT IS DRAWN: scorpion sting ring (drawn 0.7, hits 1.0); Spark Beetle burst (halo 0.94, hits 1.42);
   brood stab (a long cone; the spike is drawn at one point: give it a `bite.at` circle as the widow has); Grimsqueak's
   slam ring (hits 0.45 past its drawn edge) and storm (left forks stop short of the line's end).
