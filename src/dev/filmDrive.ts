@@ -72,7 +72,7 @@ export class FilmDrive {
   private jumpAt = 1;
   /**
    * `&autopad=T:K,T:K,...`: a little script of the pad, for filming a character's own move: at T seconds, K: `J` jump
-   * pressed, `A` attack, `R` roll (dodge), `H+`/`H-` jump held/let go, `G+`/`G-` guard held/let go, `U+`/`U-` run,
+   * pressed, `A` attack, `R` roll (dodge), `T` stow (pick up, set down), `H+`/`H-` jump held/let go, `G+`/`G-` guard held/let go, `U+`/`U-` run,
    * `E` `W` `N` `S` the stick that way (`0` let go).
    */
   private readonly script: Array<{ t: number; k: string }> | null;
@@ -161,6 +161,7 @@ export class FilmDrive {
         if (k === 'J') pad.jumpPressed = true;
         else if (k === 'A') pad.attackPressed = true;
         else if (k === 'R') pad.dodgePressed = true;
+        else if (k === 'T') pad.stowPressed = true;
         else if (k === 'H+' || k === 'H-') h.jump = k === 'H+';
         else if (k === 'G+' || k === 'G-') h.guard = k === 'G+';
         else if (k === 'U+' || k === 'U-') h.run = k === 'U+';

@@ -1,7 +1,8 @@
 import type { Aabb } from './collision';
 
 /** What a breakable is: a wooden crate, a barrel, the joint of a wall pipe; a clay pot; or a rock (which does not break: it is here because it is lifted and thrown as the others are). */
-export type BreakableType = 'crate' | 'barrel' | 'pipe' | 'pot' | 'rock';
+/** (And a KEY: world/locks.ts. It does not break either, and is carried to a locked gate.) */
+export type BreakableType = 'crate' | 'barrel' | 'pipe' | 'pot' | 'rock' | 'key';
 
 /** A thing that breaks when it is hit. Plain data; the room owns the mesh and the collider. */
 export interface Crate {
@@ -24,4 +25,6 @@ export interface Crate {
   tough?: boolean;
   /** Off the floor: he is carrying it, or it is in the air (world/lifting.ts). It is not solid, and nothing rests on it. */
   lifted?: boolean;
+  /** Where it began (a key lost out of the world is put back there). */
+  home?: { x: number; y: number; z: number };
 }

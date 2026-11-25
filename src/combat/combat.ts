@@ -208,8 +208,8 @@ function resolveCrates(player: PlayerController, crates: Crate[], events: Combat
     }
     if (player.plungeStage === 2 && dist <= c.half + P.diveRadius && c.y + c.half <= p.y + 0.3) broken = true;
     if (player.plungeImpact && sameLevel && dist - c.half <= P.shockRadius) broken = true;
-    if (c.type === 'rock') {
-      // A rock does not break, whatever hits it: it rings (once per blow).
+    if (c.type === 'rock' || c.type === 'key') {
+      // A rock does not break, whatever hits it: it rings (once per blow). (Nor does a key.)
       if (broken && c.lastSwing !== player.swingId) {
         c.lastSwing = player.swingId;
         events.crateRang = c;

@@ -64,6 +64,7 @@ import { FireflyModel } from './enemies/fireflyModel';
 import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
 import { Roller } from './enemies/roller';
+import { buildCheckpoint, checkpointAt, keyAt, weightOn } from './world/locks';
 import { WEB, meetWeb, tickWebs, webMesh, websOf, type WebState } from './world/webs';
 import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
@@ -329,6 +330,10 @@ function startGame(): void {
   scene.add(grindSparks.group);
   let grindSparkIn = 0;
   let iceSprayIn = 0;
+  const checkGroup = new THREE.Group();
+  scene.add(checkGroup);
+  let checkLamps: Array<ReturnType<typeof buildCheckpoint>> = [];
+  let checkLit = -1;
   const webGroup = new THREE.Group();
   scene.add(webGroup);
   let webs: WebState[] = [];
@@ -1889,6 +1894,11 @@ function startGame(): void {
     scene.add(doorway.group);
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
     dreamVoices.reset();
+    // Checkpoints (world/locks.ts): this room's lanterns, all dark.
+    checkGroup.clear();
+    checkLamps = (def.checkpoints ?? []).map((c) => buildCheckpoint(c));
+    for (const l of checkLamps) checkGroup.add(l.root);
+    checkLit = -1;
     // Web curtains (world/webs.ts): this room's, drawn.
     webGroup.clear();
     webs = websOf(def.webs);
@@ -2543,6 +2553,20 @@ function startGame(): void {
     crushCheck();
     coldCheck(dt);
     webCheck(dt);
+    // CHECKPOINTS (world/locks.ts): the lantern he touches is lit, and is where he comes back to if he is beaten here.
+    if (checkLamps.length) {
+      const at = !player.dead && !critter ? checkpointAt(cur.checkpoints ?? [], player.position) : -1;
+      if (at >= 0 && at !== checkLit) {
+        if (checkLit >= 0) checkLamps[checkLit].light(false);
+        checkLit = at;
+        checkLamps[at].light(true);
+        const c = cur.checkpoints![at];
+        player.spawn.set(c.x, c.y, c.z);
+        audio.play('sparkle', { vol: 0.8, rate: 1, priority: 7 });
+        grindSparks.burst(c.x, c.y + 1.2, c.z, 0xffd070, 10, 2.2, 0.16);
+      }
+      for (const l of checkLamps) l.tick(worldClock);
+    }
     // (`&parryall`: a filming aid. Any blow his shield catches is a PERFECT guard, so that what follows one can be filmed.)
     if (PARRY_ALL && player.gear.parry < 90) player.gear = { ...player.gear, parry: 99 };
     if (keyTap('lock') || consumeAction('lock')) {
@@ -2925,6 +2949,13 @@ function startGame(): void {
       const hit = stepThrown(t, dt, chamber.colliders, marks());
       chamber.moveCrate(c, t.pos.x, t.pos.y, t.pos.z, t.spent ? 0 : t.age * 5);
       if (hit.what === 'none') continue;
+      if (hit.what === 'lost' && c.type === 'key' && c.home) {
+        // (A KEY lost out of the world is put back where it began: or the gate it opens could never be opened.)
+        chamber.setCrate(c, c.home.x, c.home.y, c.home.z);
+        audio.play('sparkle', { vol: 0.6, rate: 0.8, priority: 6 });
+        thrown.splice(i, 1);
+        continue;
+      }
       if (hit.what === 'lost') {
         // Out of the world: gone, with nothing to show for it.
         c.alive = false;
@@ -2935,7 +2966,7 @@ function startGame(): void {
       if (hit.what === 'foe') strike(hit.index, hit.part, t.from, as.damage);
       // Another crate, a barrel, a pot or a pipe's joint that it met breaks too.
       if (hit.what === 'solid') {
-        const other = [...chamber.crates, ...chamber.pipes].find((k) => k.aabb === hit.box && k.alive && !k.tough && k.type !== 'rock');
+        const other = [...chamber.crates, ...chamber.pipes].find((k) => k.aabb === hit.box && k.alive && !k.tough && k.type !== 'rock' && k.type !== 'key');
         if (other) events.cratesBroken.push(other);
       }
       if (!as.breaks) {
@@ -3232,6 +3263,17 @@ function startGame(): void {
         } else if (does === 'release') {
           platesDown[i] = false;
           if (pad) raisePlate(pad, pl.y);
+        }
+        return;
+      }
+      if (pl.weight) {
+        // A WEIGHT PLATE (world/locks.ts): down only while he, or something set down, is on it.
+        const down = weightOn(pl, player.grounded && !player.dead ? player.position : null, chamber.crates);
+        if (down !== platesDown[i]) {
+          platesDown[i] = down;
+          const pad = plateGroup?.children[i * 2] as THREE.Mesh | undefined;
+          if (pad) (down ? pressPlate : raisePlate)(pad, pl.y);
+          audio.play('menuOk', { vol: 0.8, rate: down ? 0.6 : 0.85, priority: 6 });
         }
         return;
       }
@@ -4235,7 +4277,7 @@ function startGame(): void {
   function smashCrate(c: (typeof chamber.crates)[number]): void {
     chamber.breakCrate(c);
     // (A pot goes to shards, as a pipe's joint does.)
-    debris.burst(c.x, c.y, c.z, c.half, player.position.x, player.position.z, c.type === 'pot' || c.type === 'rock' ? 'pipe' : c.type);
+    debris.burst(c.x, c.y, c.z, c.half, player.position.x, player.position.z, c.type === 'pot' || c.type === 'rock' || c.type === 'key' ? 'pipe' : c.type);
     if (c.type === 'pipe') {
       goals.burst++;
       shake = Math.max(shake, 0.1);
@@ -4258,7 +4300,14 @@ function startGame(): void {
   function updateGates(): void {
     for (const g of chamber.gates) {
       // (A gate that shuts drops again when its levers no longer hold it: a timed lever has sprung back.)
-      if (g.open && g.spec.shut && chamber.strike && !leversOn(chamber.strike.things, g.spec.levers ?? [])) {
+      // (And one held by WEIGHT PLATES drops when a plate comes up: world/locks.ts.)
+      const heldPlates = g.spec.plates ?? [];
+      if (g.open && g.spec.shut && heldPlates.length > 0 && !(g.spec.levers ?? []).length && !heldPlates.every((i) => platesDown[i])) {
+        chamber.closeGate(g);
+        audio.play('gate', { vol: 0.8, rate: 0.8, priority: 6 });
+        continue;
+      }
+      if (g.open && g.spec.shut && (g.spec.levers ?? []).length > 0 && chamber.strike && !leversOn(chamber.strike.things, g.spec.levers ?? [])) {
         chamber.closeGate(g);
         audio.play('gate', { vol: 0.8, rate: 0.8, priority: 6 });
         continue;
@@ -4274,7 +4323,25 @@ function startGame(): void {
       // (Levers all on at once, world/strikeables.ts; an echo puzzle solved, world/musicFloor.ts.)
       const byLevers = !!chamber.strike && leversOn(chamber.strike.things, g.spec.levers ?? []);
       const byEcho = !!g.spec.echo && !!musicFloor?.solved(g.spec.echo);
-      if (byPipes || byGoals || byPlates || byFoes || byLevers || byEcho) {
+      // (A LOCKED gate: a key brought to it opens it, and is used up. world/locks.ts.)
+      const key = g.spec.locked ? keyAt({ x: g.spec.x, y: g.spec.y ?? 0, z: g.spec.z }, chamber.crates) : null;
+      if (key) {
+        if (held === key) {
+          player.endCarry();
+          held = null;
+        }
+        const flying = thrown.findIndex((t) => t.what === key);
+        if (flying >= 0) thrown.splice(flying, 1);
+        key.alive = false;
+        key.lifted = false;
+        if (key.mesh) key.mesh.visible = false;
+        key.aabb.min.set(key.x, -1e4, key.z);
+        key.aabb.max.set(key.x, -1e4 + 1e-3, key.z);
+        audio.play('sparkle', { vol: 0.9, rate: 1.2, priority: 8 });
+        audio.play('gate', { vol: 0.9, priority: 7 });
+        grindSparks.burst(g.spec.x, (g.spec.y ?? 0) + 1.2, g.spec.z, 0xf2c84a, 14, 3.5, 0.2);
+      }
+      if (byPipes || byGoals || byPlates || byFoes || byLevers || byEcho || key) {
         chamber.openGate(g);
         shake = Math.max(shake, 0.12);
       }

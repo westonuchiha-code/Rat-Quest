@@ -165,7 +165,10 @@ export interface LevelDef {
    * With `spawn` it is a BUTTON THAT COMES BACK UP when he steps off: each time it is pressed, one more of that
    * creature is put in the room, unless `most` (default 6) are alive already. (The practice rooms: levels/practice.ts.)
    */
-  plates?: Array<{ x: number; z: number; y: number; spawn?: EnemySpec; most?: number }>;
+  /** (`weight`: a WEIGHT PLATE, world/locks.ts. Down only while he or something set down is on it.) */
+  plates?: Array<{ x: number; z: number; y: number; spawn?: EnemySpec; most?: number; weight?: boolean }>;
+  /** CHECKPOINTS (world/locks.ts): lanterns. The one he last touched is where he comes back to if he is beaten here. */
+  checkpoints?: Array<{ x: number; y: number; z: number }>;
   /** Friendly characters to talk to. */
   npcs?: NpcSpec[];
   spawn: { x: number; y: number; z: number; facing: number };

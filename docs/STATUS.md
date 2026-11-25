@@ -81,3 +81,9 @@ none placed in a real area. See docs/KIT.md.
 ## Art, sound, music, cutscenes, fonts
 
 Everything replaceable and unsettled. List: ASSETS.md. All sound is unheard by Claude; only the owner's ears can judge it.
+
+## New parts for building levels (2026-11-25)
+
+| Part | Tag | State |
+|------|-----|-------|
+| Weight plate, key, locked gate, checkpoint lantern (`world/locks.ts`) | WORK IN PROGRESS | Built, tested, filmed in the Lockworks (Test Room 20). Not in the level editor yet. Awaiting the owner's verdict. |

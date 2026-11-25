@@ -35,6 +35,7 @@ import { musicRoom } from './musicroom';
 import { breakYard } from './breakyard';
 import { gauntlet } from './gauntlet';
 import { press } from './press';
+import { lockworks } from './lockworks';
 import { greenRoom } from './greenroom';
 import { coilRoom } from './coilroom';
 import { standInRoom } from './standinroom';
@@ -255,7 +256,7 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * Test rooms: not part of the game, its counts or its menus. They are for feeling the numbers in (the Move Garden),
  * opened from the Workshop's list of places, by #level=<id>, or by the file the delivery script makes for them.
  */
-export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), workshop(), musicRoom(), breakYard(), gauntlet(), press(), greenRoom(), coilRoom(), standInRoom(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom)];
+export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), workshop(), musicRoom(), breakYard(), gauntlet(), press(), greenRoom(), coilRoom(), standInRoom(), lockworks(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom)];
 
 /**
  * EVERY LEVEL IS A NUMBERED TEST ROOM (the owner, 2026-11-17; levels/testRooms.ts). Each room in the list is named

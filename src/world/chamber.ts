@@ -409,6 +409,14 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         const foot = new THREE.CircleGeometry(r * 0.49, 9).rotateX(Math.PI / 2).translate(0, -h / 2, 0);
         mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([band]), 0x8a4a2c), plainMat));
         mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([mouth, foot]), 0x2a1a12), plainMat));
+      } else if (b.prop === 'key') {
+        // A KEY (world/locks.ts): gold, standing on its bit, its bow a ring at the top. Big enough to read across a room.
+        const gold = 0xf2c84a;
+        const bow = new THREE.TorusGeometry(r * 0.62, r * 0.17, 6, 12).translate(0, h * 0.26, 0);
+        const shaft = new THREE.CylinderGeometry(r * 0.13, r * 0.13, h * 0.6, 6).translate(0, -h * 0.14, 0);
+        const bitA = new THREE.BoxGeometry(r * 0.5, h * 0.09, r * 0.16).translate(r * 0.3, -h * 0.4, 0);
+        const bitB = new THREE.BoxGeometry(r * 0.36, h * 0.09, r * 0.16).translate(r * 0.24, -h * 0.26, 0);
+        mesh.add(new THREE.Mesh(bakeVertexColor(mergeAll([bow, shaft, bitA, bitB]), gold), plainMat));
       } else {
         // A rock: a rough lump, flat underneath, no two sides alike. The cave's own rock.
         const lump = new THREE.IcosahedronGeometry(1, 1);
@@ -425,7 +433,7 @@ export function buildChamber(layout: Layout = buildLayout()): Chamber {
         bakeVertexColor(lump, 0xffffff, false);
         mesh.add(new THREE.Mesh(lump, mat('roughRock')));
       }
-      crates.push({ type: b.prop, index: crates.length, x: cx, y: cy, z: cz, half: r, alive: true, aabb, mesh, lastSwing: -1 });
+      crates.push({ type: b.prop, index: crates.length, x: cx, y: cy, z: cz, half: r, alive: true, aabb, mesh, lastSwing: -1, home: { x: cx, y: cy, z: cz } });
       continue;
     }
 

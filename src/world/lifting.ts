@@ -59,13 +59,15 @@ export function carryPlace(pos: { x: number; y: number; z: number }, halfHigh: n
  * `damage`: to a creature it hits. `breaks`: it breaks on what it meets (else it lands whole, to be thrown again).
  * `light`: carrying it hardly slows him.
  */
-export const THROWN_AS: Record<'crate' | 'barrel' | 'pot' | 'rock', { speed: number; damage: number; breaks: boolean; light: boolean }> = {
+export const THROWN_AS: Record<'crate' | 'barrel' | 'pot' | 'rock' | 'key', { speed: number; damage: number; breaks: boolean; light: boolean }> = {
   crate: { speed: 1, damage: 2, breaks: true, light: false },
   barrel: { speed: 1, damage: 2, breaks: true, light: false },
   // A pot is light: thrown half as far again, it hurts half as much. A sword breaks it too.
   pot: { speed: 1.35, damage: 1, breaks: true, light: true },
   // A rock does not break: it hurts as a crate does, every time it is thrown.
   rock: { speed: 1.2, damage: 2, breaks: false, light: true },
+  // A key: light, never breaks, and is no weapon to speak of.
+  key: { speed: 1.2, damage: 1, breaks: false, light: true },
 };
 /** How this one is thrown (an iron-bound crate does not break either). */
 export function thrownAs(c: Crate): { speed: number; damage: number; breaks: boolean; light: boolean } {

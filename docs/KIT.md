@@ -265,5 +265,24 @@ narrow over the brow, so the spines come down to a point there, and wide by the 
 face still look bad"): a round head with a pale mask, a short snout tipped up with a shiny black button nose, big dark
 eyes with a glint (they were white slits sunk in the head), a small mouth that opens as they talk.
 
+## Weight plates, keys and locked gates, checkpoints (`src/world/locks.ts`; `tests/locks.ts`; shown in the Lockworks, Test Room 20)
+
+WORK IN PROGRESS, placeholders to try the ideas (2026-11-25). Three staple parts the kit lacked.
+
+- **Weight plate**: a floor plate with `weight: true` (`LevelDef.plates`). Down only WHILE he, or anything he can carry
+  (crate, barrel, pot, rock, key) set down, is on it. A gate with `plates: [i], shut: true` lifts while its plates are
+  down and drops when one comes up. (The plain plate presses once and stays; the button, `spawn`, comes back up.)
+- **Key**: `keyBox(x, z, y)` in the level's solids (`world/layout.ts`). Carried and thrown as a rock is: hands full, so
+  no sword and no shield while he has it; it never breaks; lost out of the world it is put back where it began.
+- **Locked gate**: a gate with `locked: true`. A key within `LOCK.reach` (1.7) of it, carried, thrown or lying, opens
+  it and is used up. Any key opens any lock.
+- **Checkpoint**: `LevelDef.checkpoints: [{ x, y, z }]`. A lantern; touching it lights it (and puts out the last one)
+  and makes it where he comes back to if he is beaten in that room. It does not heal him.
+
+NOT YET: none of the four is a piece in the level editor (they are set in a room's own file, as the Lockworks does).
+No sounds of their own (existing ones re-pitched; unheard). One key per lock, no colours.
+WHAT THEY ARE FOR, with what was here already: a crate ridden across on a moving platform to a plate; a key carried
+through blades or over thin ice with no shield up; a key thrown over a gap and followed; a lantern before a hard climb.
+
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.

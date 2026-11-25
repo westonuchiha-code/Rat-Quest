@@ -29,7 +29,7 @@ export interface Box {
    * hurts less, and breaks, as a crate does, to a sword or a throw) or a ROCK (it does not break: it can be thrown
    * again and again). Made with `potBox` and `rockBox`, which give them their sizes. `kind` is 'rubble', as a crate's.
    */
-  prop?: 'pot' | 'rock';
+  prop?: 'pot' | 'rock' | 'key';
   /** Ice: on its top he keeps his momentum. He glides on a couple of seconds with the stick let go, and turns wide (TUNING.ice). */
 /** The top of a pipe's curved wall: a rider who goes off its high end fast goes straight UP and comes back down on it (TUNING.ride.vertMin). */
   vert?: boolean;
@@ -57,6 +57,12 @@ export function potBox(x: number, z: number, y = 0): Box {
 /** A rock lying at (x, z) on a floor at y. */
 export function rockBox(x: number, z: number, y = 0): Box {
   return { kind: 'rubble', prop: 'rock', x0: x - ROCK.wide / 2, x1: x + ROCK.wide / 2, y0: y, y1: y + ROCK.high, z0: z - ROCK.wide / 2, z1: z + ROCK.wide / 2 };
+}
+
+/** A KEY standing at (x, z) on a floor at y (world/locks.ts): carried and thrown as a rock is, to a locked gate. */
+export const KEY = { wide: 0.5, high: 0.7 } as const;
+export function keyBox(x: number, z: number, y = 0): Box {
+  return { kind: 'rubble', prop: 'key', x0: x - KEY.wide / 2, x1: x + KEY.wide / 2, y0: y, y1: y + KEY.high, z0: z - KEY.wide / 2, z1: z + KEY.wide / 2 };
 }
 
 export const ROOM_HALF = 20; // inner faces of the walls sit at +/-20
@@ -496,8 +502,10 @@ export interface GateSpec {
   levers?: number[];
   /** Opens when the echo puzzle of this name (world/musicFloor.ts) is solved. */
   echo?: string;
-  /** Drops shut again when what opened it stops holding (a timed lever springing back). */
+  /** Drops shut again when what opened it stops holding (a timed lever springing back; a weight plate with nothing on it). */
   shut?: boolean;
+  /** LOCKED (world/locks.ts): it opens when a key is brought to it, and the key is used up. */
+  locked?: boolean;
 }
 
 /**
