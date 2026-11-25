@@ -40,8 +40,7 @@ A game file is `strict` (`src/player/equipment.ts`): read back, he owns what he 
 
 Boot logo, title card (the game's first area turning slowly behind it), main menu (NEW GAME / CONTINUE / LOAD GAME /
 TEST HALL / LEVEL EDITOR / WORKSHOP / OPTIONS), three save files (play, copy, erase), the loading screen, and the
-pause ("start") menu with its screens (equipment, items, quests, options, save). NOT YET DONE for the game: taking
-the LEVEL EDITOR and WORKSHOP off the game's title (they are tools); a title card when the game "really starts".
+pause ("start") menu with its screens (equipment, items, quests, options, save). (Both since done: see below.)
 
 ## THE STORY SO FAR (a proposal: the owner has not said yes to any of it)
 
@@ -72,6 +71,20 @@ culvert standing out of the south wall, `FLOTSAM.pipe`) in the air over the pool
 to the bank and JUMPS out (a sign on the bank says so: pushing at the bank alone does not do it). When the Warden
 falls, the gate lifts and THE TITLE CARD comes up for six seconds (`src/ui/titleCard.ts`: it asks nothing and stops
 nothing). `#...&showcard` shows it at once, for pictures. The two falls on the south wall now pour INTO the room.
+
+THE WARDEN IS A BOSS (2026-11-25): the Stag Knight given a name, 40 health (a plain one has 14) and more poise
+(`FLOTSAM.wardenIs`; `EnemySpec.boss`), with his name and health along the bottom while he is fought. Scripted fights
+with each stage of Flotsam's gear (a knight who only swings / one who sidesteps each blow and strikes in the openings):
+
+| He has | Only swings | Sidesteps and strikes |
+|---|---|---|
+| Half a sword (as he arrives) | loses, every time | wins in about 43 s, 0 to 2 hits taken |
+| The wreck's sword | loses two in three | wins in about 20 s, 0 or 1 hit taken |
+
+(Neither scripted player ever raises a shield, so the shield from Pip shows no difference here.)
+
+THE TITLE: the game's own (the no-pad build) has NEW GAME, CONTINUE, LOAD GAME and OPTIONS. TEST HALL, LEVEL EDITOR
+and WORKSHOP are on the title of the test build only (`TEST_BUILD` in `src/main.ts`: the pad build, or `#...&tools`).
 
 WHAT IT IS NOT YET: a wrecked boat (the wreck is boards on posts); reeds; a second way round or a shortcut (in a
 place this small and open one would be for show: better kept for area two); a played opening scene with a camera;

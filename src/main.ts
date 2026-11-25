@@ -3659,6 +3659,7 @@ function startGame(): void {
   let editorBack: 'title' | 'workshop' | null = null;
   let tweaksBack: 'workshop' | null = null;
   let workshopBack: 'title' | null = null;
+  const TEST_BUILD = !!import.meta.env.VITE_TOUCHPAD || location.hash.includes('tools');
   const boot = new Boot(gameWrap, {
     files: () => Array.from({ length: FILE_COUNT }, (_, i) => {
       const f = fileSummary(deviceStore, i + 1);
@@ -3675,7 +3676,10 @@ function startGame(): void {
     }),
     currentFile: () => files.file,
     playFile: (n) => playFile(n),
-    onHall: () => playHall(),
+    // (THE GAME'S OWN TITLE has only the game on it. The test area and the tools are on the title of the TEST build,
+    // the one with the on-screen pad that the owner tests with: 2026-11-25, "the full ... official notepad version which
+    // is the version that's just the game". In any build, #level=hall still opens the Hall.)
+    ...(TEST_BUILD ? { onHall: () => playHall() } : {}),
     newGameSays: gameStart ? `Starts on the shore of ${gameStart.name}, in an empty file. Your other files are not touched.` : '',
     copyFile: (from, to) => {
       copyFile(deviceStore, from, to);
@@ -3700,16 +3704,20 @@ function startGame(): void {
       boot.hide();
       menu.showAt(3);
     },
-    onEditor: () => {
-      editorBack = 'title';
-      boot.hide();
-      builder.show();
-    },
-    onWorkshop: () => {
-      workshopBack = 'title';
-      boot.hide();
-      workshop.show();
-    },
+    ...(TEST_BUILD
+      ? {
+          onEditor: () => {
+            editorBack = 'title';
+            boot.hide();
+            builder.show();
+          },
+          onWorkshop: () => {
+            workshopBack = 'title';
+            boot.hide();
+            workshop.show();
+          },
+        }
+      : {}),
     sound: (n) => {
       if (n === 'chime') audio.play('boot', { vol: 0.8, verb: 0.2, priority: 9 });
       else audio.play(n === 'ok' ? 'menuOk' : n === 'back' ? 'menuBack' : 'menuMove', { vol: 0.6, verb: 0.05, priority: 3 });
@@ -5182,6 +5190,7 @@ function startGame(): void {
     if (!story.scene && !cutscene.active && !trans.active && !menu.open) {
       for (const e of enemies) {
         if ((e instanceof Brood || e instanceof Wyrm || e instanceof Widow) && e.alive && e.awake) fought = { name: e.bossName, frac: e.hp / e.maxHp };
+        if (e instanceof Stag && e.bossName && e.alive && e.state !== 'idle' && e.state !== 'return') fought = { name: e.bossName, frac: e.hp / e.maxHp };
         // (Two Widows share one bar: what is left of both of them.)
         if (e instanceof Widow && e.awake) {
           const pack = enemies.filter((o): o is Widow => o instanceof Widow);

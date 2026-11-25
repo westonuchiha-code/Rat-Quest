@@ -30,6 +30,8 @@ export type GoalDef =
 export interface EnemySpec {
   /** Which enemy. Default: the roach. */
   type?: 'scuttler' | 'toad' | 'grimsqueak' | 'ironback' | 'bat' | 'guard' | 'mantis' | 'stag' | 'brood' | 'wyrm' | 'hornet' | 'ant' | 'firefly' | 'widow' | 'scorpion' | 'roller' | 'sparkbeetle';
+  /** A Stag Knight who is a BOSS (the Warden of Flotsam): his name on the bar, and his own health and poise. */
+  boss?: { name: string; hp: number; poise: number };
   /** A guard: which way he faces at his post (radians). Default 0. */
   facing?: number;
   x: number;

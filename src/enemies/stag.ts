@@ -82,6 +82,10 @@ export class Stag {
   facing = 0;
   hp: number = STAG.hp;
   poise: number = STAG.poise;
+  /** A BOSS of this kind (the Warden of Flotsam): his own name, health and poise. Otherwise the kind's. */
+  maxHp: number = STAG.hp;
+  maxPoise: number = STAG.poise;
+  bossName = '';
   state: StagState = 'idle';
   stateTime = 0;
   lastSwing = -1;
@@ -113,7 +117,12 @@ export class Stag {
   private fromX = 0;
   private fromZ = 0;
 
-  constructor(spec: { x: number; z: number; y?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean; facing?: number }) {
+  constructor(spec: { x: number; z: number; y?: number; arena?: { x0: number; x1: number; z0: number; z1: number }; respawn?: boolean; hunt?: boolean; facing?: number; boss?: { name: string; hp: number; poise: number } }) {
+    if (spec.boss) {
+      this.bossName = spec.boss.name;
+      this.hp = this.maxHp = spec.boss.hp;
+      this.poise = this.maxPoise = spec.boss.poise;
+    }
     this.home = { x: spec.x, z: spec.z };
     this.hunt = !!spec.hunt;
     this.arena = spec.hunt ? { x0: -500, x1: 500, z0: -500, z1: 500 } : spec.arena ?? { x0: spec.x - 7, x1: spec.x + 7, z0: spec.z - 7, z1: spec.z + 7 };
@@ -219,7 +228,7 @@ export class Stag {
     this.age += dt;
     this.sincePoise += dt;
     this.stompCool = Math.max(0, this.stompCool - dt);
-    if (this.sincePoise > S.poiseBack && this.state !== 'kneel') this.poise = S.poise;
+    if (this.sincePoise > S.poiseBack && this.state !== 'kneel') this.poise = this.maxPoise;
 
     const dx = playerX - this.x;
     const dz = playerZ - this.z;
@@ -341,7 +350,7 @@ export class Stag {
         break;
       case 'kneel':
         if (this.stateTime >= S.kneel) {
-          this.poise = S.poise;
+          this.poise = this.maxPoise;
           this.events.push('rise');
           after();
         }
@@ -369,8 +378,8 @@ export class Stag {
           this.z = this.home.z;
           this.y = this.homeY;
           this.facing = this.homeFacing;
-          this.hp = S.hp;
-          this.poise = S.poise;
+          this.hp = this.maxHp;
+          this.poise = this.maxPoise;
           this.age = 0;
           this.lastSwing = -1;
           this.waitLeft = 0;

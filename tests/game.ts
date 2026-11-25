@@ -18,6 +18,7 @@ import { BALANCE } from '../src/data/balance';
 import { SHOP } from '../src/data/shop';
 import { GAME_ROOMS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { hallDoors } from '../src/levels/hall';
+import { Stag } from '../src/enemies/stag';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -94,6 +95,15 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   const warden = L.enemies.findIndex((e) => e.type === 'stag');
   const gate = (L.gates ?? []).find((g) => g.foes?.includes(warden));
   check('the Warden holds a gate that lifts when he is beaten, and it stands before the way out', !!gate && Math.abs(gate.z - F.gate.z) < 0.01 && L.exit.z < gate.z);
+  // THE WARDEN IS A BOSS: the Stag Knight with his own name, health and poise. (A plain one, 14 health, was dead in six
+  // to eight seconds to a knight with the wreck's sword. With these, scripted: a knight who only swings loses to him
+  // most times even with the sword; one who sidesteps each blow wins in about 20 s with it, about 43 s with half a one.)
+  {
+    const w = new Stag(L.enemies[warden] as never);
+    const plain = new Stag({ x: 0, z: 0 });
+    check('the Warden is a boss: named, with near three times a Stag Knight\'s health and more poise', w.bossName === 'The Warden' && w.maxHp === F.wardenIs.hp && w.hp === w.maxHp && w.maxHp >= plain.maxHp * 2.5 && w.maxPoise > plain.maxPoise, `${w.hp} / ${plain.hp}`);
+    check('...and a plain Stag Knight is what he was', plain.bossName === '' && plain.hp === 14);
+  }
   check('...and he keeps to his court: he does not come out into the yard', (L.enemies[warden].arena?.z1 ?? 99) < F.wall.z);
   check('nothing else may follow him in there', L.enemies.every((e, i) => i === warden || (e.arena?.z0 ?? -99) > F.wall.z));
   // A NEW GAME's first moment: out of the great pipe, over the pool, and into it. (And out again by a jump at the bank.)

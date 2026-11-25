@@ -46,6 +46,9 @@ export const FLOTSAM = {
   /** The gate behind the Warden: it lifts when he is beaten. */
   gate: { z: -27, half: 3, high: 5 },
   warden: { x: 0, z: -21 },
+  /** THE WARDEN is the Stag Knight made a boss: a plain one (14 health) was dead in six to eight seconds to a knight
+   * with the wreck's sword, and in fifteen to one with half a sword (scripted fights, 2026-11-25). */
+  wardenIs: { name: 'The Warden', hp: 40, poise: 9 },
   ant: { x: -2, z: -6 },
   /** The wreck: each step up, in order (x0, z0, x1, z1, top). The third is a plank that glides. */
   steps: [
@@ -173,7 +176,7 @@ export function flotsam(): LevelDef {
   const rock = { x0: F.toadRock.x0 + 0.3, x1: F.toadRock.x1 - 0.3, z0: F.toadRock.z0 + 0.3, z1: F.toadRock.z1 - 0.3 };
   // Each keeps to its own ground: the Warden to his court, the toad to its rock, the ant to the ground before the gate.
   const enemies = def.enemies.map((e) => {
-    if (e.type === 'stag') return { ...e, arena: court };
+    if (e.type === 'stag') return { ...e, arena: court, boss: { ...F.wardenIs } };
     if (e.type === 'toad') return { ...e, arena: rock, uncounted: true };
     if (e.type === 'ant') return { ...e, arena: { x0: -12, x1: 12, z0: F.wall.z + 1.5, z1: 2 }, uncounted: true };
     return { ...e, arena: yard, uncounted: true };
