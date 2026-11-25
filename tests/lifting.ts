@@ -583,6 +583,21 @@ const build = () => buildChamber({ solids: def.solids, pit: def.pit, water: def.
   check('...and a small thing nobody has fitted yet is still held there (fitted from its size), not left over his head', odd.front > 0.2 && odd.front < 0.5 && odd.up > 0.35 && odd.up < 0.75);
   // A throw leaves from where he holds it.
   const t = startThrow({ name: 'a pot' }, 0.28, null, heldAt(here, 0.31, 0.28, facing, true, undefined, 'pot'), facing, { x: 0, z: 0 }, 1, null, THROWN_AS.pot.speed);
+  // ...and as far as it went from over his head: it is thrown up harder, to make up for starting lower.
+  {
+    const flat = aabbOf({ kind: 'floor', x0: -50, x1: 50, y0: -1, y1: 0, z0: -50, z1: 50 } as never);
+    const land = (fromChest: boolean): number => {
+      const c: Crate = { type: 'pot', index: 0, x: 0, y: 0, z: 0, half: 0.28, alive: true, aabb: aabbOf(potBox(0, 0)), mesh: null, lastSwing: -1 };
+      const from = fromChest ? heldAt({ x: 0, y: 0, z: 0 }, POT.high / 2, 0.28, 0, true, undefined, 'pot') : carryPlace({ x: 0, y: 0, z: 0 }, POT.high / 2);
+      const th = startThrow(c, c.half, c.aabb, from, 0, { x: 0, z: 0 }, 1, null, THROWN_AS.pot.speed);
+      if (fromChest) th.vel.y = TUNING.lift.throwUpChest;
+      for (let i = 0; i < 300 && stepThrown(th, DT, [flat], []).what === 'none'; i++);
+      return th.pos.z;
+    };
+    const was = land(false);
+    const now = land(true);
+    check('...and it carries as far as it did from over his head (within a unit): shoved up harder from lower down', Math.abs(now - was) < 1, `${was.toFixed(1)} from over his head, ${now.toFixed(1)} from his chest`);
+  }
   check('a small thing is thrown from his chest, forward and up (not from over his head)', t.pos.y - here.y < 0.75 && t.pos.x > here.x + 0.2 && t.vel.x > 5 && t.vel.y > 0);
 }
 

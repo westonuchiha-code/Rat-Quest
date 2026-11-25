@@ -108,6 +108,11 @@ check('the key is behind the weight gate, the prize behind the locked one, and t
   const pair = foes.filter((e) => e.z < C.z0);
   check('TEACH: the first creature is one roach alone on the south bank, with room to back away (nothing else within twelve of it)', !!first && foes.filter((e) => e !== first && Math.hypot(e.x - first.x, e.z - first.z) < 12).length === 0 && first.z > C.z1);
   check('TEST: a toad on a ledge over the west strip, and kept to its ledge', !!toad && (toad.y ?? 0) > 2 && toad.x < C.x0 && !!toad.arena && toad.arena.x1 <= R.ledge.x1);
+  const cracks = d.decor.filter((q) => q.kind === 'crackwall') as Array<{ x: number; z: number; w: number }>;
+  const safe = cracks.find((q) => q.z > C.z1);
+  check('TEACH (the cracked wall): the first he meets shuts a nook on the south bank, out of the toad\'s reach, with a crumb behind it', !!safe && Math.hypot(safe.x - toad.x, safe.z - toad.z) > 13 && d.collectibles.some((q) => q.kind === 'crumb' && q.z > safe.z && q.x < R.nook.x1));
+  const crack = cracks.find((q) => q.z < 0);
+  check('...and under it the strip is walled across but for a cracked wall he must stand and break, within the toad\'s spit', !!crack && Math.hypot(crack.x - toad.x, crack.z - toad.z) < 10 && crack.z < toad.z && d.solids.filter((b) => b.kind === 'wall' && Math.abs((b.z0 + b.z1) / 2 - R.crack.z) < 0.01).length === 2);
   check('TWIST: two creatures of different kinds together on the north bank, by the catch', pair.length === 2 && pair[0].type !== pair[1].type && Math.hypot(pair[0].x - pair[1].x, pair[0].z - pair[1].z) < 6 && pair.every((e) => Math.hypot(e.x - R.catch.x, e.z - R.catch.z) < 12));
   check('a lantern where he comes in, and one at the north-west corner before the pair', d.checkpoints!.length === 2 && d.checkpoints![0].z > C.z1 && d.checkpoints![1].z < C.z0 && d.checkpoints![1].x < pair[0].x - 8);
   // The bridge.

@@ -140,6 +140,7 @@ export const TUNING = {
     hold: 0.12, // the gap between his head and the thing
     throwSpeed: 11, // how fast it leaves him, the way he faces
     throwUp: 3.5, // and upward (with nothing to aim at: a low arc, six along)
+    throwUpChest: 5.3, // ...a small thing, shoved out from his chest (a unit lower): thrown up harder, to carry as far
     aimRange: 10, // a creature this near, in front of him, is what he throws AT
     aimArc: 0.5, // ...within this much of the way he faces (radians each side)
     gravity: 22, // (as crates fall: chamber.ts)

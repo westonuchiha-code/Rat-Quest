@@ -345,6 +345,7 @@ function startGame(): void {
   let rushKick = 0;
   const CARRY_AID = /[#&]carry=(\w+)/.exec(location.hash)?.[1] ?? '';
   let carryAided = false;
+  const bridgesDown = new Set<object>();
   /** What he has, or last had, was held in front of his chest (a small thing), not on his head: for how he is drawn carrying and throwing it. */
   let carryFront = false;
   const PARRY_ALL = /[#&]parryall\b/.test(location.hash);
@@ -2567,6 +2568,23 @@ function startGame(): void {
     const wasGrounded = player.grounded;
     // (A crusher that came down on him strikes him after the fight is resolved, which clears what hit him before it.)
     if (chamber.stepMovers(dt, player.dead ? undefined : player)) crusherHit = true;
+    // A BRIDGE LET DOWN lands with its weight: a thud, the room shaken, dust thrown up along its ends.
+    for (const m of chamber.movers) {
+      if (m.spec.motion !== 'drop') continue;
+      const down = m.state.along >= 1;
+      if (down && !bridgesDown.has(m)) {
+        bridgesDown.add(m);
+        // (Not as a room opens with one already down: only when it comes down in front of him.)
+        if (worldClock > 1) {
+          shake = Math.max(shake, 0.3);
+          audio.play('crate', { vol: 1, rate: 0.5, priority: 9 });
+          audio.play('gate', { vol: 0.8, rate: 0.6, priority: 8 });
+          const a = m.aabb;
+          const alongZ = a.max.z - a.min.z > a.max.x - a.min.x;
+          for (const end of [0, 1]) grindSparks.burst(alongZ ? (a.min.x + a.max.x) / 2 : end ? a.max.x : a.min.x, a.max.y + 0.1, alongZ ? (end ? a.max.z : a.min.z) : (a.min.z + a.max.z) / 2, 0xb8a888, 12, 3, 0.22);
+        }
+      } else if (!down) bridgesDown.delete(m);
+    }
     crushCheck();
     coldCheck(dt);
     webCheck(dt);
@@ -2812,7 +2830,12 @@ function startGame(): void {
       const at = heldPlace(player.position, halfHigh, c.half, thrownAs(c).light, c.type);
       if (player.liftEvent === 'throw') {
         // (From where he holds it: off his head, or out from his chest.)
-        thrown.push(startThrow(c, c.half, c.aabb, heldAt(player.position, halfHigh, c.half, player.facing, thrownAs(c).light, hands, c.type), player.facing, player.velocity, 1, aimNow(), thrownAs(c).speed));
+        const aimed = aimNow();
+        const toss = startThrow(c, c.half, c.aabb, heldAt(player.position, halfHigh, c.half, player.facing, thrownAs(c).light, hands, c.type), player.facing, player.velocity, 1, aimed, thrownAs(c).speed);
+        // (From his chest a small thing starts a unit lower than it did from over his head: it is thrown UP harder,
+        // so that it carries as far as it always has.)
+        if (thrownAs(c).light && !aimed) toss.vel.y = TUNING.lift.throwUpChest;
+        thrown.push(toss);
         held = null;
         audio.play('hurl', { vol: 0.85, rate: roll(0.92, 1.05) * (thrownAs(c).light ? 1.2 : 1), priority: 7 });
       } else if (player.liftEvent === 'down') {
