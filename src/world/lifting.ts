@@ -55,6 +55,21 @@ export function carryPlace(pos: { x: number; y: number; z: number }, halfHigh: n
 }
 
 /**
+ * WHERE A THING IS DRAWN WHILE HE HAS IT (2026-11-25; the owner: "it just lets things float above your head ... we
+ * got to try to figure out how to make that look less stupid"). His arms are short and his head is big, so:
+ *   a BIG thing (a crate, a barrel, a creature) RESTS ON HIS HEAD, his paws out bracing its bottom corners: no gap
+ *     of air under it, and it sinks with him as his knees bend under it (`sink`);
+ *   a SMALL thing (a pot, a rock, a key) is HUGGED IN FRONT OF HIS CHEST in both paws, where his arms do reach.
+ * (A throw still leaves from over his head, `carryPlace`: he heaves it up and over. The rules are as they were.)
+ */
+export const HELD = { rest: -0.09, sink: 0.035, front: 0.36, chest: 0.5 } as const;
+export function heldAt(pos: { x: number; y: number; z: number }, halfHigh: number, halfWide: number, facing: number, light: boolean, out = new THREE.Vector3()): THREE.Vector3 {
+  if (!light) return out.set(pos.x, pos.y + TUNING.rat.height + HELD.rest - HELD.sink + halfHigh, pos.z);
+  const d = HELD.front + halfWide * 0.55;
+  return out.set(pos.x + Math.sin(facing) * d, pos.y + HELD.chest + halfHigh * 0.4, pos.z + Math.cos(facing) * d);
+}
+
+/**
  * HOW EACH KIND OF THING IS THROWN. `speed`: of `TUNING.lift.throwSpeed` (a light thing goes faster and so further).
  * `damage`: to a creature it hits. `breaks`: it breaks on what it meets (else it lands whole, to be thrown again).
  * `light`: carrying it hardly slows him.

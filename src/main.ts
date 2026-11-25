@@ -37,7 +37,7 @@ import { IronbackModel } from './enemies/ironbackModel';
 import { Guard } from './enemies/guard';
 import { GuardModel } from './enemies/guardModel';
 import { buildPlate, buttonStep, pressPlate, raisePlate } from './world/plates';
-import { isDown, heldTurn, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
+import { isDown, heldTurn, heldAt, carryPlace, groundUnder, liftFoe, liftTarget, putDownSpot, startThrow, stepThrown, throwAim, thrownAs, type Target, type Thrown } from './world/lifting';
 import type { Crate } from './world/crates';
 import { pinnedUnder } from './world/crush';
 import { MANTIS, Mantis } from './enemies/mantis';
@@ -1271,8 +1271,8 @@ function startGame(): void {
   /** Things that were in a crate broken somewhere else than it stood, and where they belong (put back as a level loads). */
   const movedItems = new Map<{ x: number; y: number; z: number }, { x: number; y: number; z: number }>();
   /** Where the thing over his head is: on its way up from where it stood, or there. */
-  const heldPlace = (at: { x: number; y: number; z: number }, halfHigh: number): THREE.Vector3 => {
-    carryPlace(at, halfHigh, hands);
+  const heldPlace = (at: { x: number; y: number; z: number }, halfHigh: number, halfWide = 0.5, light = false): THREE.Vector3 => {
+    heldAt(at, halfHigh, halfWide, player.facing, light, hands);
     const k = Math.min(1, player.carryPose * 1.15);
     return hands.set(heldFrom.x + (hands.x - heldFrom.x) * k, heldFrom.y + (hands.y - heldFrom.y) * Math.sin((k * Math.PI) / 2), heldFrom.z + (hands.z - heldFrom.z) * k);
   };
@@ -2780,7 +2780,7 @@ function startGame(): void {
     if (held) {
       const c = held;
       const halfHigh = (c.aabb.max.y - c.aabb.min.y) / 2;
-      const at = heldPlace(player.position, halfHigh);
+      const at = heldPlace(player.position, halfHigh, c.half, thrownAs(c).light);
       if (player.liftEvent === 'throw') {
         // (From over his head, whatever was left of its way up.)
         thrown.push(startThrow(c, c.half, c.aabb, carryPlace(player.position, halfHigh, hands), player.facing, player.velocity, 1, aimNow(), thrownAs(c).speed));
@@ -4807,6 +4807,7 @@ function startGame(): void {
       guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1 },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
+      carryLight: player.carryLight,
       throwT: player.throwProgress,
       ride: player.riding ? { steer: player.rideSteer, tuck: Math.max(player.rideTuck, rushCrouch), spin: player.rideSpinProgress, grab: player.rideGrabPose, flip: player.rideFlipProgress, air: !player.grounded, ...player.rideGround, grind: player.grinding, grindSide: player.grindSide } : null,
       act: posing ? { headYaw: 0, headPitch: 0, gesture: posing, weight: 1 } : story.scene && storyFrame ? { headYaw: storyFrame.headYaw, headPitch: storyFrame.headPitch, gesture: storyFrame.gesture, weight: storyFrame.gestureWeight } : resting >= 0 ? { headYaw: 0, headPitch: -0.15, gesture: 'sit', weight: Math.min(1, resting * 3) } : undefined,
@@ -4914,7 +4915,7 @@ function startGame(): void {
     talkHint.classList.toggle('on', !dialog.open && !menu.open && !builder.open && !cutscene.active && !trans.active && !story.scene && (talkable || !!held || !!heldFoe || !!liftable || !!liftableFoe) && (player.grounded || !!held || !!heldFoe));
     // (And it is drawn where he is drawn, between the game's own steps.)
     if (held && player.carrying) {
-      const at = heldPlace(renderPos, (held.aabb.max.y - held.aabb.min.y) / 2);
+      const at = heldPlace(renderPos, (held.aabb.max.y - held.aabb.min.y) / 2, held.half, thrownAs(held).light);
       const m = held.mesh as unknown as THREE.Object3D | null;
       if (m) m.position.set(at.x, at.y, at.z);
     }

@@ -273,7 +273,7 @@ export class PlayerController {
    * `liftEvent`: what he did with it this step, for the game to carry out: threw it, asked to set it down, let it go.
    */
   carrying = false;
-  private carryLight = false;
+  carryLight = false;
   carryPose = 0;
   liftEvent: 'throw' | 'down' | 'drop' | null = null;
   private throwTimer = -1;

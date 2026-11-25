@@ -302,6 +302,8 @@ export interface RatAnimInput {
   ride?: { steer: number; flip: number; air: boolean; along?: number; across?: number; grind?: boolean; grindSide?: number; /** 0 to 1: tucked, crouched low for speed. */ tuck?: number; /** A spin in the air: how far round, 0..1 (-1: none). A grab: 0..1. */ spin?: number; grab?: number } | null;
   /** Carrying something over his head: how far up his arms are (0..1). `throwT`: how far through a throw (0..1), or -1. */
   carry?: number;
+  /** ...and it is a SMALL thing (hugged to his chest, not rested on his head). */
+  carryLight?: boolean;
   throwT?: number;
   /** A story scene's direction: where his head is turned, and a small gesture laid over the pose. */
   act?: { headYaw: number; headPitch: number; gesture: Gesture | null; weight: number; /** Parts of a pose of the caller's own, laid over the same way; `each` weighs its parts one by one (1 where not given). */ pose?: Partial<Pose>; each?: Partial<Record<keyof Pose, number>> };
@@ -519,6 +521,19 @@ const CARRY_ARMS = fullPose({
   armS: [-2.95, 0, -0.22], elbowS: -0.15, wrist: [0, 0, 0],
   armH: [-2.95, 0, 0.22], elbowH: -0.15, shield: [0, 0, 0],
   chest: [-0.06, 0, 0], head: [-0.2, 0, 0],
+});
+/**
+ * A BIG thing carried: it rests on his head (world/lifting.ts `heldAt`). His paws are straight up beside his ears,
+ * flat against its underside; and (laid on by the carry itself) his head is ducked under it and his knees bent.
+ */
+const BRACE_ARMS = fullPose({
+  armS: [-3.0, 0, -0.36], elbowS: -0.05, wrist: [0, 0, 0],
+  armH: [-3.0, 0, 0.36], elbowH: -0.05, shield: [0, 0, 0],
+});
+/** A SMALL thing carried: hugged in both paws in front of his chest. */
+const HUG_ARMS = fullPose({
+  armS: [-1.2, 0, 0.42], elbowS: -1.0, wrist: [0, 0, 0],
+  armH: [-1.2, 0, -0.42], elbowH: -1.0, shield: [0, 0, 0],
 });
 const THROW_ARMS = fullPose({
   armS: [-1.25, 0, -0.2], elbowS: -0.1, wrist: [0, 0, 0],
@@ -1455,7 +1470,22 @@ export class RatModel {
         // (Up, snapped forward by a third of the way through, and let fall.)
         mixArms(pose, CARRY_ARMS, 1 - Math.min(1, thrown * 3));
         mixArms(pose, THROW_ARMS, Math.sin(Math.min(1, thrown * 1.2) * Math.PI));
-      } else if (carry > 0) mixArms(pose, CARRY_ARMS, carry * carry * (3 - 2 * carry));
+      } else if (carry > 0) {
+        const k = carry * carry * (3 - 2 * carry);
+        if (ctx.carryLight) {
+          // Hugged to his chest: he leans back a little against it, his chin over it.
+          mixArms(pose, HUG_ARMS, k);
+          pose.chest = [pose.chest[0] - 0.14 * k, pose.chest[1], pose.chest[2]];
+          pose.head = [pose.head[0] + 0.12 * k, pose.head[1], pose.head[2]];
+        } else {
+          // On his head: ducked under it, knees bent, and it rocks him a little as he walks.
+          mixArms(pose, BRACE_ARMS, k);
+          pose.hipPos = [pose.hipPos[0], pose.hipPos[1] - 0.035 * k, pose.hipPos[2]];
+          pose.head = [pose.head[0] + 0.3 * k, pose.head[1] * (1 - k), pose.head[2]];
+          pose.chest = [pose.chest[0] + 0.08 * k, pose.chest[1] * (1 - 0.6 * k), pose.chest[2]];
+          pose.ears = (pose.ears ?? 0) + 0.5 * k;
+        }
+      }
     }
 
     if (ctx.act) {
