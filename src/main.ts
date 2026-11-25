@@ -65,6 +65,7 @@ import { SCORPION, Scorpion } from './enemies/scorpion';
 import { ScorpionModel } from './enemies/scorpionModel';
 import { Roller } from './enemies/roller';
 import { buildBar, buildCheckpoint, checkpointAt, keyAt, oneWay, weightOn } from './world/locks';
+import { Dust } from './world/dust';
 import { WEB, meetWeb, tickWebs, webMesh, websOf, type WebState } from './world/webs';
 import { RollerModel } from './enemies/rollerModel';
 import { blow, gasAt, gasNear, gustsOf, jetsOf, type Gust } from './world/gusts';
@@ -328,6 +329,8 @@ function startGame(): void {
   // The sparks his shield strikes from an edge as he grinds along it.
   const grindSparks = new Sparks();
   scene.add(grindSparks.group);
+  const dust = new Dust();
+  scene.add(dust.group);
   let grindSparkIn = 0;
   let iceSprayIn = 0;
   const barGroup = new THREE.Group();
@@ -1912,6 +1915,7 @@ function startGame(): void {
       barGroup.add(bar);
       gateBars.set(g, bar);
     }
+    dust.clear();
     // Checkpoints (world/locks.ts): this room's lanterns, all dark.
     checkGroup.clear();
     checkLamps = (def.checkpoints ?? []).map((c) => buildCheckpoint(c));
@@ -2579,9 +2583,28 @@ function startGame(): void {
           shake = Math.max(shake, 0.3);
           audio.play('crate', { vol: 1, rate: 0.5, priority: 9 });
           audio.play('gate', { vol: 0.8, rate: 0.6, priority: 8 });
+          // (Dust, out of every seam as it seats: thick along its two long sides, thrown out across them; less at
+          // its two ends, where it meets the banks. world/dust.ts.)
           const a = m.aabb;
+          const y = a.max.y + 0.05;
           const alongZ = a.max.z - a.min.z > a.max.x - a.min.x;
-          for (const end of [0, 1]) grindSparks.burst(alongZ ? (a.min.x + a.max.x) / 2 : end ? a.max.x : a.min.x, a.max.y + 0.1, alongZ ? (end ? a.max.z : a.min.z) : (a.min.z + a.max.z) / 2, 0xb8a888, 12, 3, 0.22);
+          const DUST = 0x9a8c78;
+          if (alongZ) {
+            dust.along(a.min.x, a.min.z, a.min.x, a.max.z, y, -1, 0, 0.55, 3.4, 0.3, DUST);
+            dust.along(a.max.x, a.min.z, a.max.x, a.max.z, y, 1, 0, 0.55, 3.4, 0.3, DUST);
+            // (And a second, thinner layer: bigger, slower, a darker dust. One layer alone lay in rows like beads.)
+            dust.along(a.min.x, a.min.z, a.min.x, a.max.z, y, -1, 0, 1.3, 1.7, 0.55, 0x7c7062);
+            dust.along(a.max.x, a.min.z, a.max.x, a.max.z, y, 1, 0, 1.3, 1.7, 0.55, 0x7c7062);
+            dust.along(a.min.x, a.min.z, a.max.x, a.min.z, y, 0, -1, 0.7, 1.6, 0.24, DUST);
+            dust.along(a.min.x, a.max.z, a.max.x, a.max.z, y, 0, 1, 0.7, 1.6, 0.24, DUST);
+          } else {
+            dust.along(a.min.x, a.min.z, a.max.x, a.min.z, y, 0, -1, 0.55, 3.4, 0.3, DUST);
+            dust.along(a.min.x, a.max.z, a.max.x, a.max.z, y, 0, 1, 0.55, 3.4, 0.3, DUST);
+            dust.along(a.min.x, a.min.z, a.max.x, a.min.z, y, 0, -1, 1.3, 1.7, 0.55, 0x7c7062);
+            dust.along(a.min.x, a.max.z, a.max.x, a.max.z, y, 0, 1, 1.3, 1.7, 0.55, 0x7c7062);
+            dust.along(a.min.x, a.min.z, a.min.x, a.max.z, y, -1, 0, 0.7, 1.6, 0.24, DUST);
+            dust.along(a.max.x, a.min.z, a.max.x, a.max.z, y, 1, 0, 0.7, 1.6, 0.24, DUST);
+          }
         }
       } else if (!down) bridgesDown.delete(m);
     }
@@ -5034,6 +5057,7 @@ function startGame(): void {
       }
     }
     grindSparks.update(frameDt, camera.quaternion);
+    dust.update(frameDt);
     if (ringAge < 0.35) {
       ringAge += frameDt;
       const k = Math.min(1, ringAge / 0.35);
