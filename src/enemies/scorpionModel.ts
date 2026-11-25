@@ -321,9 +321,12 @@ export class ScorpionModel {
     const down = state === 'sprawl' || state === 'dead';
 
     // ---- Its body: it dips its front as the tail rears, lunges as it strikes, lies flat when it is down ----
-    const pitchTo = state === 'stingWind' ? 0.14 : state === 'sting' || state === 'stuck' ? 0.2 : state === 'snapWind' ? -0.1 : 0;
+    // (Recovering, after its claws shut on nothing or on his shield, it is OPEN, and drawn so: slumped on its front,
+    // its claws hanging. It stood as it does when ready. Audit, 2026-11-24.)
+    const spent = state === 'recover';
+    const pitchTo = state === 'stingWind' ? 0.14 : state === 'sting' || state === 'stuck' ? 0.2 : state === 'snapWind' ? -0.1 : spent ? 0.16 : 0;
     this.pitch = ease(this.pitch, pitchTo, dt, 16);
-    this.sink = ease(this.sink, down ? 0.17 : state === 'douse' || state === 'dark' ? 0.06 : 0, dt, 12);
+    this.sink = ease(this.sink, down ? 0.17 : state === 'douse' || state === 'dark' ? 0.06 : spent ? 0.07 : 0, dt, 12);
     const breath = down ? 0 : 0.012 * Math.sin(this.time * 3.1);
     this.body.position.y = -this.sink + breath;
     this.body.rotation.x = this.pitch;
@@ -345,7 +348,7 @@ export class ScorpionModel {
     const open = Math.max(-1, Math.min(1, ctx.claw));
     for (const a of this.arms) {
       a.arm.rotation.y = a.side * (0.05 + 0.5 * open);
-      a.arm.rotation.x = open > 0 ? -0.18 * open : 0;
+      a.arm.rotation.x = ease(a.arm.rotation.x, open > 0 ? -0.18 * open : spent ? 0.32 : 0, dt, 18);
       a.finger.rotation.y = a.side * (0.3 + 0.6 * Math.max(0, open) - 0.3 * Math.max(0, -open));
     }
 

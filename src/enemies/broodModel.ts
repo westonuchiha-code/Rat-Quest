@@ -109,6 +109,9 @@ const HANG: Pose = { hip: [0, HIP, 0], pitch: 1.15, yaw: 0, roll: 0, abdomen: 0.
 /** Falling: flat again, everything spread to land on him. */
 const DROP: Pose = { hip: [0, HIP, 0], pitch: 0.1, yaw: 0, roll: 0, abdomen: 0, fangs: 1, tipR: [-2.4, 0.8, 2.0], tipL: [2.4, 0.8, 2.0], tuck: 0.35, glow: 1 };
 /** Her legs gone from under her: belly down, forelegs limp, head bowed. Open for a long while. */
+/** OPEN, and drawn so (audit, 2026-11-24): after her whirl she stood as she does stalking him, and after her scissor she held its last pose. SPENT: sunk, her scythes lying on the floor, fangs shut, her glow low. */
+const SPENT: Pose = { hip: [0, HIP - 0.34, 0.05], pitch: 0.14, yaw: 0, roll: 0.04, abdomen: -0.1, fangs: 0.08, tipR: [-2.0, 0.03, 1.9], tipL: [2.0, 0.03, 1.9], tuck: 0, glow: 0.2 };
+const SWEEP_SPENT: Pose = { hip: [0, HIP - 0.4, 0.2], pitch: 0.2, yaw: 0, roll: 0, abdomen: -0.05, fangs: 0.08, tipR: [0.9, 0.03, 2.6], tipL: [-0.9, 0.03, 2.6], tuck: 0, glow: 0.2 };
 const KNEEL: Pose = { hip: [0.06, HIP - 0.5, 0], pitch: 0.2, yaw: 0, roll: -0.1, abdomen: -0.2, fangs: 0, tipR: [-1.9, 0.03, 1.5], tipL: [1.5, 0.03, 2.0], tuck: 0, glow: 0.15 };
 /** Dead: belly down, every leg curled in, as a dead spider's do. */
 const DEAD: Pose = { hip: [0, HIP - 0.52, 0], pitch: 0.06, yaw: 0, roll: 0.12, abdomen: -0.3, fangs: 0, tipR: [-0.55, 0.3, 1.25], tipL: [0.6, 0.22, 1.2], tuck: 1, glow: 0 };
@@ -372,7 +375,7 @@ export class BroodModel {
       case 'chase':
       case 'settle':
       case 'recover':
-        return ctx.state === 'recover' ? SWEEP_END : READY;
+        return ctx.state === 'recover' ? (ctx.stateTime < 0.14 ? SWEEP_END : SWEEP_SPENT) : ctx.state === 'settle' ? SPENT : READY;
       case 'stabWind':
         return sided(STAB_WIND);
       case 'stab':

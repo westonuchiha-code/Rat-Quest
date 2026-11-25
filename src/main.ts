@@ -637,7 +637,7 @@ function startGame(): void {
         root: m.root,
         setTransform: (p, f) => m.setTransform(p, f),
         flash: () => m.flash(),
-        tick: (dt, e) => m.update(dt, { state: e.state as ToadState, stateTime: e.stateTime, moving: e.state === 'return', hopY: (e as Toad).hopY }),
+        tick: (dt, e) => m.update(dt, { state: e.state as ToadState, stateTime: e.stateTime, moving: e.state === 'return', hopY: (e as Toad).hopY, down: (e as Toad).down }),
       });
       scene.add(m.root);
     } else if (spec.look === 'hatchling') {

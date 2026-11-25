@@ -31,6 +31,8 @@ export interface ToadAnimInput {
   stateTime: number;
   moving: boolean;
   hopY: number;
+  /** Thrown down winded by a perfect guard. */
+  down?: boolean;
 }
 
 function ease(cur: number, target: number, dt: number, rate: number): number {
@@ -197,6 +199,15 @@ export class ToadModel {
         squash = 1 - 0.12 * Math.min(1, t / 0.8);
         break;
       case 'recover':
+        if (ctx.down) {
+          // TURNED BY A PERFECT GUARD: flat on its belly, mouth hanging, heaving. OPEN, and it must look it (it sat as
+          // it does after any spit). Audit, 2026-11-24.
+          sac = 0;
+          lean = 0.3;
+          jaw = 0.6;
+          squash = 0.6 + 0.05 * Math.sin(t * 9);
+          break;
+        }
         // Snaps forward, mouth open, then sags.
         sac = 0.25;
         lean = t < 0.15 ? 0.35 : 0.15;

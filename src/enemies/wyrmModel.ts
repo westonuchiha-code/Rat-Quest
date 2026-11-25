@@ -51,7 +51,8 @@ const POSES: Record<WyrmState, Pose> = {
   prowl: pose(0.14, 0, 0, 0.3, 0, 0.6),
   biteWind: pose(0.8, 0.45, 0, 1, 0, 1),
   bite: pose(0.1, 0.12, 0, 0, 0, 1),
-  recover: pose(0.08, 0.05, 0, 0.25, 0, 0.5),
+  // (OPEN, and drawn so: its head down on the floor, tipped, its light low. It looked as it does prowling. Audit, 2026-11-24.)
+  recover: pose(0, 0.16, 0.14, 0.45, 0, 0.28, 0.55),
   reel: pose(0.85, -0.95, 0.45, 0.6, 0, 0.15, 0.8),
   chargeWind: pose(0.5, 0.2, 0, 1, 0.3, 1),
   charge: pose(0.04, 0.04, 0, 1, 0, 1),
@@ -59,7 +60,7 @@ const POSES: Record<WyrmState, Pose> = {
   skid: pose(0.1, 0, 0, 0.5, 0, 0.6),
   whipWind: pose(0.1, 0, 0, 0.4, 1, 0.9),
   whip: pose(0.1, 0, 0, 0.4, 0.35, 0.9),
-  settle: pose(0.1, 0, 0, 0.3, 0, 0.6),
+  settle: pose(0.03, 0.1, -0.12, 0.4, 0, 0.3, 0.5),
   coil: pose(0.2, 0, 0, 0.6, 0, 1),
   coilWind: pose(1.1, 0.6, 0, 1, 0, 1),
   squeeze: pose(0.3, 0.3, 0, 0, 0, 1),

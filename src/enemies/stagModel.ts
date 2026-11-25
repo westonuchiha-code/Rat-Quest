@@ -76,6 +76,12 @@ const STOMP_WIND: Pose = { hip: [0, HIP + 0.1, 0], pitch: -0.1, yaw: 0, roll: 0,
 /** And down: all its weight dropped onto its feet. */
 const STOMP: Pose = { hip: [0, 0.48, 0], pitch: 0.28, yaw: 0, roll: 0, head: [0.3, 0], jaws: 0.6, shell: 0.7, grip: [0, 0.82, 0.72], dir: [0.05, 0.86, 0.5], curl: 0, heat: 0.3 };
 /** Poise broken: down low, hunched over the hammer with its head hanging. Open. */
+/**
+ * OPEN, and drawn so (audit, 2026-11-24): after its stomp it stood as it does chasing him, and after its sweep it held
+ * the swing's last pose. SPENT: sagged, its head hung, the hammer's head down by the floor, its glow nearly out.
+ */
+const SPENT: Pose = { hip: [0, HIP - 0.2, 0.08], pitch: 0.34, yaw: 0, roll: 0.04, head: [0.5, 0], jaws: 0.12, shell: 0.12, grip: [-0.1, 0.72, 0.8], dir: [-0.05, -0.5, 0.86], curl: 0, heat: 0.06 };
+const SWEEP_SPENT: Pose = { hip: [0, HIP - 0.22, 0.08], pitch: 0.34, yaw: 0.6, roll: 0.08, head: [0.5, -0.3], jaws: 0.12, shell: 0.1, grip: [0.15, 0.66, 0.6], dir: [0.85, -0.5, 0.2], curl: 0, heat: 0.06 };
 const KNEEL: Pose = { hip: [0, 0.42, 0.05], pitch: 0.3, yaw: 0, roll: 0.06, head: [0.6, 0], jaws: 0, shell: 0.15, grip: [-0.15, 0.8, 0.78], dir: [-0.08, -0.45, 0.89], curl: 0, heat: 0.08 };
 /** Dead: over on its back like any beetle, legs in the air, the hammer on the floor beside it. */
 const DEAD: Pose = { hip: [0, 0.66, -0.2], pitch: -1.5, yaw: 0, roll: 0, head: [0.4, 0], jaws: 0.5, shell: 0.2, grip: [-1.3, 0.21, -0.3], dir: [0.1, 0, 0.995], curl: 1, heat: 0 };
@@ -374,8 +380,9 @@ export class StagModel {
         return REST;
       case 'chase':
       case 'return':
-      case 'settle':
         return READY;
+      case 'settle':
+        return SPENT;
       case 'windup':
         return SLAM_WIND;
       case 'slam':
@@ -390,7 +397,7 @@ export class StagModel {
         // (And the sweep crosses his front as it begins to hurt, 0.05 in: not four frames after.)
         return sweepArc(Math.min(1, ctx.stateTime / (STAG.sweepTime * 0.6)));
       case 'recover':
-        return SWEEP_END;
+        return ctx.stateTime < 0.14 ? SWEEP_END : SWEEP_SPENT;
       case 'stompWind':
         return STOMP_WIND;
       case 'stomp':
