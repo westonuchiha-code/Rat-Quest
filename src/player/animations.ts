@@ -349,6 +349,23 @@ export const GUARD_SNAP: Pose = fullPose({
   tail: [0.3, 0, 0],
   ears: 0.6,
 });
+/** HIS GUARD BROKEN: thrown back off his feet's line, the shield flung out wide and low, his chest open, head back. */
+export const GUARD_BROKEN: Pose = fullPose({
+  hipPos: [0, -0.06, -0.08],
+  hips: [-0.12, 0.2, 0],
+  chest: [-0.34, 0.45, 0.08],
+  head: [-0.4, -0.2, 0],
+  armS: [-0.5, 0.3, -0.5],
+  elbowS: -0.6,
+  wrist: [0.4, 0, 0],
+  armH: [-0.7, 1.5, 0.5],
+  elbowH: -0.2,
+  shield: [0.5, -0.6, 0],
+  footS: [-0.13, 0, -0.2],
+  footH: [0.12, 0, 0.08],
+  tail: [0.4, 0.5, 0],
+  ears: -0.3,
+});
 /** A blow TURNED by a perfect guard: the shield swept out and aside with it, his chest opened after it, sword arm cocked for the answer. */
 export const PARRY_SWEEP: Pose = fullPose({
   hipPos: [0, -0.09, 0.03],

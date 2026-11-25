@@ -140,11 +140,12 @@ export class Ironback {
     return (this.state === 'ram' || this.state === 'toss' || this.state === 'buck') && !this.spent;
   }
   /** The shape of the attack it is making. */
-  get bite(): { reach: number; arc: number; damage: number } {
+  /** (Its RAM BREAKS HIS GUARD, 2026-11-25: his shield stops it, as it always has, and he is thrown open by it. It is a large creature. A perfect guard still turns it onto its back.) */
+  get bite(): { reach: number; arc: number; damage: number; breaks?: boolean } {
     const I = IRONBACK;
     if (this.state === 'toss') return { reach: I.tossReach, arc: I.tossArc, damage: 1 };
     if (this.state === 'buck') return { reach: I.buckReach, arc: I.buckArc, damage: 1 };
-    return { reach: I.ramReach, arc: I.ramArc, damage: I.ramDamage };
+    return { reach: I.ramReach, arc: I.ramArc, damage: I.ramDamage, breaks: true };
   }
   /** Which way the attack points: the buck kicks backwards. */
   get biteDir(): number {

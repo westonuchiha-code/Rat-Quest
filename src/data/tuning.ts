@@ -54,6 +54,21 @@ export const TUNING = {
   guard: {
     moveMultiplier: 0.5, // movement speed while holding the shield up
     parryWindow: 0.16, // a hit caught this soon after the shield goes up is turned aside: no shove, and the attacker reels
+    // GUARD STRAIN (the owner, 2026-11-25: small enemies "he can just block away ... a buff that lets them break the
+    // block if there are multiple enemies hitting in succession"; "larger enemies could also break the block").
+    // Each blow his shield stops is a strain on his guard; strain is forgotten `strainForget` seconds after the last.
+    // At `strainBreak` his guard BREAKS: the blow is stopped, but he is thrown open, shoved hard, cannot raise his
+    // shield again for `brokenFor` seconds nor swing for `brokenStun`. A PERFECT GUARD clears all strain.
+    // One creature alone seldom gets three in; two or three on him do. A LARGE creature's blow (`bite.breaks`) breaks
+    // it at once.
+    strainBreak: 3,
+    strainForget: 2.2,
+    brokenFor: 1.1,
+    brokenStun: 0.6,
+    brokenPush: 6.5,
+    // VENOM (`bite.venom`: the scorpion's sting): caught on his shield it still poisons him. `venomAfter` seconds
+    // later it costs him a heart (seen coming: he is green and sick till then). A sidestep or a perfect guard avoids it.
+    venomAfter: 3,
   },
   /** A press made a moment too early is remembered, so a swing or a roll comes out as soon as it can. */
   buffer: { attack: 0.2, dodge: 0.2 },

@@ -356,3 +356,25 @@ back, a wall, or a perfect guard).
 
 ## Still to come (and where each will be shown)
 Each new part gets a bay in the Workshop and a section here.
+
+## HIS SHIELD IS NOT THE WHOLE ANSWER: STRAIN, BREAK, VENOM (2026-11-25) (WORK IN PROGRESS)
+
+The owner: "If you want to give the main character a weakness to enemies small enemies that he can just block away you
+can give some of them like a poison or maybe a buff that lets them break the block if there are multiple enemies
+hitting in succession or something. And then larger enemy is could also break the block."
+
+All in `TUNING.guard` (sliders under Tweaks, Fighting), rules in `PlayerController.takeHit`, tests in `tests/guardbreak.ts`.
+
+- STRAIN. Every blow his shield stops strains his guard. The third inside `strainForget` (2.2 s) of the last BREAKS
+  it (`strainBreak: 3`). One creature alone does not strike that fast; two or three together do. Sparks off the
+  shield from the second blow show it going.
+- BREAK. The breaking blow is still stopped, but he is thrown back, staggered, and cannot raise his shield for
+  `brokenFor` (1.1 s): whatever strikes next lands.
+- A PERFECT GUARD clears the strain and cannot be broken. Skill is still the whole answer.
+- LARGE CREATURES: a bite with `breaks: true` breaks his guard in one. So far: the ironback's ram.
+- VENOM: a bite with `venom: true` that his shield stops still poisons him. Green bubbles rise off him (faster in
+  the last second), and `venomAfter` (3 s) on it costs a heart. Once: a second sting does not restart it. A perfect
+  guard, a dodge or simply not being there avoids it. So far: the scorpion's sting.
+
+To give either to another creature, add `breaks: true` or `venom: true` to its bite. NOT DONE: its own sounds (it
+borrows the block and crate sounds), a cure for venom, the bosses.

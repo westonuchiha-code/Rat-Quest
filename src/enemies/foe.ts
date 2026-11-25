@@ -120,7 +120,8 @@ export interface Foe {
   /** `heavy`: a shield does not stop it (only a perfect guard does). `ground`: it runs along the floor, and misses a rat in the air. */
   /** `at`: the blow comes from there (a place on its body, with that part's radius), not from its middle: a tail's lash. */
   /** `from`: where it is taken to come from, for his shield and for which way it throws him, if that is not `at` (a spike that comes down on where he stands comes from the beast it belongs to). */
-  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; ground?: boolean; at?: BodyPart; from?: { x: number; z: number } };
+  /** (`breaks`: a LARGE creature's blow: his shield stops it, and his guard is broken by it. `venom`: it poisons him even off his shield. TUNING.guard.) */
+  readonly bite?: { reach: number; arc: number; damage: number; heavy?: boolean; breaks?: boolean; venom?: boolean; ground?: boolean; at?: BodyPart; from?: { x: number; z: number } };
   /**
    * The rest of a long body: more circles, besides its own (x, z, radius), that the sword can hit and the rat cannot walk
    * through. A blow that lands on one is passed to takeHit with that part's place in this list (its own circle is -1).

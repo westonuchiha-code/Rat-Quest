@@ -147,7 +147,7 @@ export function resolveCombat(player: PlayerController, enemies: Foe[], events: 
       if (inFront && Math.hypot(bx, bz) <= from.r + B.reach + TUNING.rat.radius && !(B.ground && !player.grounded)) {
         // (Which way it comes from, for his shield and for where it throws him: the blow's own place, unless it says.)
         const origin = B.from ?? from;
-        const result = player.takeHit(origin.x, origin.z, B.damage, !!B.heavy);
+        const result = player.takeHit(origin.x, origin.z, B.damage, !!B.heavy, !!B.breaks, !!B.venom);
         events.playerResult = result;
         if (result !== 'dodged') e.lungeLanded(result === 'blocked', result === 'parried');
         if (result === 'parried') player.openRiposte(e);

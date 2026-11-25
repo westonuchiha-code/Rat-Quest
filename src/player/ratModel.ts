@@ -5,7 +5,7 @@ import { createPs1Material } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import type { PlayerState, DodgeKind } from './controller';
 import {
-  ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
+  ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_BROKEN, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
   Pose, airPose, blendPose, fullPose, idlePose, locomotionPose, unarmedArms, samplePose, smoothstep, swimPose, WALL_BRACE, WALL_KICK,
 } from './animations';
 import { TUNING } from '../data/tuning';
@@ -296,7 +296,7 @@ export interface RatAnimInput {
    */
   ice?: { belly: boolean; scrabble: number; skid: number; brake: boolean };
   /** His guard: `snap`, a blow caught NOW would be a perfect guard (the shield is punched out for exactly those frames); `turned`, how far through the sweep after one he made, 0..1 (-1: none). */
-  guardNow?: { snap: boolean; turned: number };
+  guardNow?: { snap: boolean; turned: number; /** His guard is broken: 0..1, how much of it is left to run (0: not). */ broken?: number };
   /**
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
    * +x side, -1 the other, 0 on a rail).
@@ -1180,6 +1180,11 @@ export class RatModel {
       pose = samplePose(clip.keys, ctx.attackTime);
       stiffness = 38;
       damping = 0.85;
+    } else if ((ctx.guardNow?.broken ?? 0) > 0.35 && (state === 'idle' || state === 'walk' || state === 'run' || state === 'guard')) {
+      // HIS GUARD IS BROKEN: thrown open. (For the first two thirds of it; then he gathers himself.)
+      pose = GUARD_BROKEN;
+      stiffness = 60;
+      damping = 0.7;
     } else if ((ctx.guardNow?.turned ?? -1) >= 0 && (state === 'guard' || state === 'idle' || state === 'walk' || state === 'run')) {
       // A blow just turned by a perfect guard: the shield swept aside with it, the sword cocked. (Fast: it is a blow's worth of time.)
       pose = PARRY_SWEEP;

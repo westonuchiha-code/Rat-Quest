@@ -355,6 +355,7 @@ function startGame(): void {
   let carryFront = false;
   const PARRY_ALL = /[#&]parryall\b/.test(location.hash);
   let ripGlintIn = 0;
+  let venomIn = 0;
   /** Seconds since a perfect guard (for the sweep his body makes of it), or -1. */
   let parrySweep = -1;
   const PARRY_SWEEP_FOR = 0.24;
@@ -4904,7 +4905,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
-      guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1 },
+      guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1, broken: player.guardBroken / TUNING.guard.brokenFor },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
       carryLight: carryFront,
@@ -5047,6 +5048,30 @@ function startGame(): void {
     if (parrySweep >= 0) {
       parrySweep += frameDt;
       if (parrySweep > PARRY_SWEEP_FOR) parrySweep = -1;
+    }
+    // HIS GUARD BREAKS (TUNING.guard): a crack, a hard shake, splinters off his shield.
+    if (player.guardBroke) {
+      audio.play('block', { vol: 1, rate: 0.55, priority: 9 });
+      audio.play('crate', { vol: 0.9, rate: 1.3, priority: 9 });
+      shake = Math.max(shake, 0.22);
+      hitStop = Math.max(hitStop, 0.08);
+      rumble.hit();
+      grindSparks.burst(player.position.x + Math.sin(player.facing) * 0.4, player.position.y + 0.7, player.position.z + Math.cos(player.facing) * 0.4, 0xffb060, 12, 4, 0.2);
+    }
+    // (Strained: each blow his shield stops beyond the first throws a few sparks more, so that he sees it going.)
+    if (events.playerResult === 'blocked' && !player.guardBroke && player.guardStrain >= 2) grindSparks.burst(player.position.x + Math.sin(player.facing) * 0.4, player.position.y + 0.7, player.position.z + Math.cos(player.facing) * 0.4, 0xffd070, 6, 2.6, 0.14);
+    // VENOM in him: sick green bubbles rising off him, faster as it is about to bite; and a sting as it does.
+    if (player.venom > 0) {
+      venomIn -= frameDt;
+      if (venomIn <= 0 && frameDt > 0) {
+        venomIn = player.venom < 1 ? 0.12 : 0.3;
+        dust.puff(player.position.x + (Math.random() - 0.5) * 0.4, player.position.y + 0.5 + Math.random() * 0.5, player.position.z + (Math.random() - 0.5) * 0.4, 0, 1.4, 0, 0.11, 0x6fd24a);
+      }
+    }
+    if (player.venomBit) {
+      audio.play('hit', { vol: 0.8, rate: 0.6, priority: 8 });
+      shake = Math.max(shake, 0.1);
+      for (let k = 0; k < 8; k++) dust.puff(player.position.x, player.position.y + 0.6, player.position.z, (Math.random() - 0.5) * 3, 1 + Math.random() * 2, (Math.random() - 0.5) * 3, 0.16, 0x6fd24a);
     }
     // OPEN TO A RIPOSTE: the creature he has just turned glints gold for as long as the riposte can be had.
     ripGlintIn -= frameDt;

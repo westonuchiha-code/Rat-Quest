@@ -204,11 +204,12 @@ export class Scorpion {
     return this.state === 'snap';
   }
   /** The sting comes down on its ring; the claws shut in front of it. */
-  get bite(): { reach: number; arc: number; damage: number; at?: BodyPart; from?: { x: number; z: number } } {
+  /** (Its STING IS VENOM, 2026-11-25: caught on his shield it still poisons him. Its claws are not.) */
+  get bite(): { reach: number; arc: number; damage: number; venom?: boolean; at?: BodyPart; from?: { x: number; z: number } } {
     const S = SCORPION;
     if (this.state === 'sting' || this.state === 'stingWind' || this.state === 'stuck') {
       const a = this.aim;
-      return { reach: 0, arc: Math.PI, damage: S.stingDamage, at: { x: a.x, z: a.z, r: S.stingR }, from: { x: this.x, z: this.z } };
+      return { reach: 0, arc: Math.PI, damage: S.stingDamage, venom: true, at: { x: a.x, z: a.z, r: S.stingR }, from: { x: this.x, z: this.z } };
     }
     return { reach: S.snapReach, arc: S.snapArc, damage: S.snapDamage };
   }

@@ -523,7 +523,20 @@ export class PlayerController {
   }
 
   /** `heavy`: a blow too big for a shield (it lands through a plain block; only a perfectly timed guard turns it). */
-  takeHit(fromX: number, fromZ: number, damage: number, heavy = false): HitResult {
+  /** GUARD STRAIN (TUNING.guard): how many blows his shield has stopped lately, and how long since the last. */
+  guardStrain = 0;
+  private strainAge = 0;
+  /** His guard is BROKEN: seconds till he can raise his shield again (0: not). */
+  guardBroken = 0;
+  /** Set for the step his guard broke (for the game: the crack, the shake). */
+  guardBroke = false;
+  /** VENOM in him: seconds till it costs a heart (0: none). */
+  venom = 0;
+  /** Set for the step venom took its heart. */
+  venomBit = false;
+
+  /** `breaks`: a LARGE creature's blow, which breaks his guard at once if his shield stops it. `venom`: it poisons him even off his shield. */
+  takeHit(fromX: number, fromZ: number, damage: number, heavy = false, breaks = false, venom = false): HitResult {
     if (this.invulnerable) return 'dodged';
     let ax = this.position.x - fromX;
     let az = this.position.z - fromZ;
@@ -535,8 +548,27 @@ export class PlayerController {
       const toAttacker = Math.atan2(-ax, -az);
       const off = Math.abs(Math.atan2(Math.sin(toAttacker - this.facing), Math.cos(toAttacker - this.facing)));
       if (off <= H.blockArc * this.gear.blockArc) {
-        if (this.guardAge <= TUNING.guard.parryWindow * this.gear.parry) return 'parried';
+        if (this.guardAge <= TUNING.guard.parryWindow * this.gear.parry) {
+          // (A perfect guard takes no strain and clears what there was.)
+          this.guardStrain = 0;
+          return 'parried';
+        }
         if (!heavy) {
+          const G = TUNING.guard;
+          this.guardStrain = this.strainAge > G.strainForget ? 1 : this.guardStrain + 1;
+          this.strainAge = 0;
+          if (venom && this.venom <= 0) this.venom = G.venomAfter;
+          if (breaks || this.guardStrain >= G.strainBreak) {
+            // HIS GUARD BREAKS: the blow is stopped, and he is thrown open.
+            this.guardStrain = 0;
+            this.guardBroken = G.brokenFor;
+            this.guardBroke = true;
+            this.guarding = false;
+            this.velocity.x = ax * G.brokenPush;
+            this.velocity.z = az * G.brokenPush;
+            this.blockStun = G.brokenStun;
+            return 'blocked';
+          }
           this.velocity.x = ax * H.blockPush;
           this.velocity.z = az * H.blockPush;
           this.blockStun = H.blockStun;
@@ -679,6 +711,9 @@ export class PlayerController {
     this.hurtTimer = 0;
     this.invulnTimer = 0;
     this.blockStun = 0;
+    this.guardStrain = 0;
+    this.guardBroken = 0;
+    this.venom = 0;
     this.deadTimer = -1;
     this.hp = this.maxHp;
     this.state = 'idle';
@@ -730,6 +765,27 @@ export class PlayerController {
     this.hurtTimer = Math.max(0, this.hurtTimer - dt);
     this.invulnTimer = Math.max(0, this.invulnTimer - dt);
     this.blockStun = Math.max(0, this.blockStun - dt);
+    this.strainAge += dt;
+    if (this.strainAge > TUNING.guard.strainForget) this.guardStrain = 0;
+    this.guardBroken = Math.max(0, this.guardBroken - dt);
+    this.guardBroke = false;
+    this.venomBit = false;
+    if (this.venom > 0 && this.deadTimer < 0) {
+      this.venom -= dt;
+      if (this.venom <= 0) {
+        // The venom takes its heart: no blow, no knock, but it hurts and he flinches.
+        this.venom = 0;
+        this.venomBit = true;
+        this.hp = Math.max(0, this.hp - 1);
+        if (this.hp <= 0) {
+          this.deadTimer = 0;
+          this.state = 'dead';
+        } else {
+          this.hurtTimer = Math.max(this.hurtTimer, 0.2);
+          this.invulnTimer = Math.max(this.invulnTimer, 0.4);
+        }
+      }
+    }
     const helpless = this.deadTimer >= 0 || this.hurtTimer > 0;
     let input = helpless ? NO_INPUT : rawInput;
     // CARRYING SOMETHING (world/lifting.ts): his hands are full. ATTACK throws it; STOW sets it down (if the game finds
@@ -909,7 +965,7 @@ export class PlayerController {
     const canFight = this.armed && this.stowTimer < 0 && !swimming;
 
     // Guard: held, on the ground, and not mid-swing or mid-dodge.
-    this.guarding = canFight && !this.riding && !this.sliding && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
+    this.guarding = canFight && this.guardBroken <= 0 && !this.riding && !this.sliding && this.plungeStage === 0 && input.guardHeld && this.grounded && this.attackTimer < 0 && this.dodgeTimer < 0;
     this.guardAge = this.guarding ? this.guardAge + dt : 0;
 
     // A press made a moment too early (mid-roll, or while still shoved back from a block) is remembered and used as soon as it can be.
