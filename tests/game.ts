@@ -129,6 +129,7 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
     }
     check('...he lands in the water, swims to the bank and is out of it with a jump, unhurt', swam && out && p.hp === p.maxHp, `swam ${swam}, out ${out}, at z ${p.position.z.toFixed(1)} y ${p.position.y.toFixed(1)}`);
   }
+  check('a fire to rest at in each area: Mort\'s in Flotsam, one by the first lantern in the Sluice', !!L.restSpot && Math.hypot(L.restSpot.x - F.fire.x, L.restSpot.z - F.fire.z) < 0.1 && !!sluice().restSpot && sluice().restSpot!.z > SLUICE.chasm.z1);
   check('two lanterns: one on the shore, one before the gate', (L.checkpoints ?? []).length === 2);
   check('he lands on the shore, far from the gate, with it straight ahead', L.spawn.z > 20 && Math.abs(L.spawn.x) < 1 && Math.abs(gate?.x ?? 9) < 1);
   check('nothing bites within nine paces of where he lands', L.enemies.every((e) => Math.hypot(e.x - L.spawn.x, e.z - L.spawn.z) > 9));

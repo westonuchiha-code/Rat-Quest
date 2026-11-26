@@ -31,6 +31,7 @@ export const SLUICE = {
   bridge: { x: 8, wide: 4, rise: 5 },
   catch: { x: 11.4, z: -7.8 },
   lanterns: [{ x: 3.5, y: 0, z: 20.5 }, { x: 4, y: 0, z: -9.5 }],
+  fire: { x: 6.5, z: 22.5 },
   first: { x: -7, z: 15 },
   /** The toad's ledge over the west strip, and the cracked wall across the strip under it. */
   ledge: { x0: -HX, x1: -19.6, z0: -2.5, z1: 3.5, top: 2.2 },
@@ -65,6 +66,7 @@ const room: CustomLevel = {
 
     // ---- THE NEAR BANK. One roach; the first cracked wall, with a crumb behind it; the vault.
     at('roach', S.first.x, S.first.z, 0),
+    at('brazier', S.fire.x, S.fire.z, 0), at('spool', S.fire.x + 1.7, S.fire.z + 0.6, 0),
     box('wall', S.nook.x1, S.nook.z0 - 0.3, S.nook.x1 + 0.4, S.nook.z1, S.nook.top),
     at('crumb', (S.nook.x0 + S.nook.x1) / 2, (S.nook.z0 + S.nook.z1) / 2 + 0.4, 0),
     box('wall', V.x0 - 0.25, V.z0, V.x0 + 0.25, HZ, V.wallTop),
@@ -73,7 +75,7 @@ const room: CustomLevel = {
     box('wall', V.gateX - V.gateWide / 2, V.z0 - 0.25, V.gateX + V.gateWide / 2, V.z0 + 0.25, V.wallTop, { bottom: V.gateHigh }),
     at('relic', V.prize.x, V.prize.z, 0), at('cap', V.prize.x - 2, V.prize.z + 0.8, 0), at('cap', V.prize.x + 2, V.prize.z + 0.8, 0),
     at('lamp', V.prize.x, V.prize.z - 1, 5),
-    at('crate', 8, 20.5, 0), at('barrel', 9.4, 21.2, 0), at('rock', -12, 12, 0), at('rock', -11, 13, 0),
+    at('crate', 10.5, 19.5, 0), at('barrel', 11.9, 20.2, 0), at('rock', -12, 12, 0), at('rock', -11, 13, 0),
     at('crumb', -10, 17, 0), at('crumb', -14, 14, 0), at('crumb', -17, 10.5, 0),
 
     // ---- THE LONG WAY: the toad's ledge, and the cracked wall across the strip under it.
@@ -128,6 +130,8 @@ export function sluice(): LevelDef {
     ...def,
     goals: NO_GOALS,
     sound: 'sluice',
+    // A fire to rest at by the first lantern (he comes in from the Warden with what hearts he has left).
+    restSpot: { x: S.fire.x, y: 0, z: S.fire.z },
     feel: 'sewers',
     fallBack: true,
     enemies,

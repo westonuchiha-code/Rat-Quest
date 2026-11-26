@@ -137,6 +137,18 @@ WHAT ITS FIRST RUNS FOUND (all fixed):
 - The half sword reaches about 60% as far: a player (or a robot) who stands where he would with a whole one hits
   nothing. Not a bug: but the first roach killed the robot once before it stood closer.
 
+- NOTHING GAVE A HEART BACK in either area. Now each has A FIRE TO REST AT (`restSpot`, the Hall's own rule: jump
+  beside it, hearts filled, the game saved): Mort's fire in Flotsam, and one by the first lantern in the Sluice.
+- THE ROBOT ITSELF had to learn to fight as the game asks: it was swinging while a blow was being wound up, and a
+  knight in the middle of a swing cannot dodge. It now goes away from a creature that is winding up, dodges back if
+  the blow is live and near, and strikes when it is done ("hit and run"), locked on.
+
+WHAT THE FINISHED RUN SHOWS (no cheats, from the fire in Flotsam on, with the sword and the shield): the Warden, whole,
+beaten in one life in about 28 seconds for 1 or 2 hearts; the Sluice's whole loop walked with its creatures in it; one
+death, to the ant and the roach together by the catch, and the long way round walked again after it.
+WITH HALF A SWORD AND NO SHIELD the robot cannot get past the ant before the gate: ten deaths. (A scripted player in
+the fight harness can; this robot is not that good.) So as it stands the sword is needed in practice, not only useful.
+
 ## SOUND FOR THE GAME'S AREAS (2026-11-26)
 
 AMBIENT, IN THE GAME (`src/audio/ambience.ts`, `LevelDef.sound`): Flotsam keeps the drain's bed and drips, with a toad

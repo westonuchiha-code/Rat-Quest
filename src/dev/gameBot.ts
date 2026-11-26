@@ -16,9 +16,10 @@ import { SLUICE as S, SLUICE_ID } from '../levels/sluice';
 export interface BotSees {
   room: string;
   player: { position: THREE.Vector3; grounded: boolean; dead: boolean; state: string; hp: number; facing: number };
-  foes: ReadonlyArray<{ alive: boolean; kind: string; x: number; y: number; z: number; attackActive?: boolean }>;
+  foes: ReadonlyArray<{ alive: boolean; kind: string; x: number; y: number; z: number; attackActive?: boolean; attacking?: boolean; state?: string }>;
   /** Moving platforms, where they are now. */
   movers: ReadonlyArray<{ x0: number; x1: number; z0: number; z1: number; top: number }>;
+  maxHp: number;
   crumbs: number;
   sword: string;
   shield: string;
@@ -37,7 +38,6 @@ export class GameBot {
   private stepT = 0;
   private swing = 0;
   private roll = 0;
-  private side = 1;
   private deaths = 0;
   private wasDead = false;
   private said = '';
@@ -50,6 +50,14 @@ export class GameBot {
   private roundSide = 1;
   private readonly steps: Step[];
   done = false;
+  private lastHp = 99;
+  private readonly verbose = typeof location !== 'undefined' && /[#&]botsays\b/.test(location.hash);
+  private seen: string[] = [];
+  /** He wants to be locked on (he is fighting something). The game presses it for him. */
+  locking = false;
+  /** He wants to rest at the fire he is standing by (the game presses jump for him where it reads a player's). */
+  restNow = false;
+  private detour: Array<[number, number]> = [];
 
   /** `from`: the name of a step to begin at (`&botfrom=...`, for trying one part without the ones before it). */
   constructor(from = '') {
@@ -58,6 +66,17 @@ export class GameBot {
     const plankRest: P3 = [(F.plank.x0 + F.plank.x1) / 2, F.plank.top, (F.plank.z0 + F.plank.z1) / 2];
     const go = (name: string, room: string, x: number, z: number, fights = true, near = 0.5): Step => ({ name, room, fights, run: (w, pad) => this.goto(w, pad, x, z, near) < near });
     const hop = (name: string, from: P3, to: P3, lead: number): Step => ({ name, room: FLOTSAM_ID, fights: false, run: (w, pad, dt) => this.hop(w, pad, dt, from, to, lead) });
+    const rest = (room: string, fx: number, fz: number): Step => ({ name: `rest at the fire (${room})`, room, fights: true, run: (w, pad, dt) => {
+      if (w.player.hp >= w.maxHp) return true;
+      if (this.goto(w, pad, fx - 2.1, fz + 0.4, 0.3) < 0.3) {
+        this.tap -= dt;
+        if (this.tap <= 0) {
+          this.restNow = true;
+          this.tap = 0.9;
+        }
+      }
+      return false;
+    } });
     const plank = (w: BotSees) => w.movers.find((m) => Math.abs(m.top - F.plank.top) < 0.3 && m.x1 - m.x0 < 4);
     this.steps = [
       // ---- FLOTSAM
@@ -128,6 +147,7 @@ export class GameBot {
         }
         return false;
       } },
+      rest(FLOTSAM_ID, F.fire.x, F.fire.z),
       go('toward the gate', FLOTSAM_ID, 5, -2),
       go('the lantern by the gate', FLOTSAM_ID, F.lanterns[1].x - 0.6, F.lanterns[1].z + 0.8, true, 0.5),
       { name: 'the ant before the gate', room: FLOTSAM_ID, run: (w, pad) => {
@@ -150,6 +170,7 @@ export class GameBot {
         return w.room === SLUICE_ID;
       } },
       // ---- THE SLUICE
+      rest(SLUICE_ID, S.fire.x, S.fire.z),
       go('the near bank', SLUICE_ID, -8, 17),
       go('to the long way', SLUICE_ID, -17.5, 9),
       go('up to the cracked wall', SLUICE_ID, -17.5, S.crack.z + 1.5, false, 0.3),
@@ -309,6 +330,8 @@ export class GameBot {
     }
     this.swing -= dt;
     this.roll -= dt;
+    // (He LOCKS ON to what he fights, as a player would: locked on, his dodge to one side is the quick sidehop.)
+    this.locking = !!near;
     if (!near) return false;
     this.dbg -= dt;
     if (this.dbg <= 0) {
@@ -320,16 +343,19 @@ export class GameBot {
     const big = near.kind === 'stag';
     // (How near he must be to strike: the creature's own size, and his sword's length. Half a sword is half a reach.)
     const reach = (big ? 1.2 : 0.5) + (w.sword === 'brokenSword' ? 0.7 : 1.15);
-    if (near.attackActive && nd < reach + 2.6 && this.roll <= 0) {
-      // A blow coming: roll out to one side of it.
-      this.side = -this.side;
-      pad.move.set(dz * this.side, 0, -dx * this.side);
-      pad.dodgePressed = true;
-      this.roll = 0.7;
+    // HIT AND RUN, as a careful player fights: while it is winding up or striking he is going AWAY from it (and
+    // dodges back if the blow is live and near); when it is done he comes in, strikes, and is ready to go again.
+    if (near.attacking || near.attackActive) {
+      pad.move.set(-dx, 0, -dz);
+      pad.run = true;
+      if (near.attackActive && nd < reach + 2.8 && this.roll <= 0) {
+        pad.dodgePressed = true;
+        this.roll = 0.6;
+      }
       return true;
     }
-    if (this.roll > 0.35) {
-      pad.move.set(dz * this.side, 0, -dx * this.side);
+    if (this.roll > 0.3) {
+      pad.move.set(-dx, 0, -dz);
       return true;
     }
     if (nd > reach) {
@@ -337,7 +363,7 @@ export class GameBot {
       pad.run = nd > 4;
     } else {
       pad.move.set(dx * 0.05, 0, dz * 0.05);
-      if (this.swing <= 0 && !near.attackActive) {
+      if (this.swing <= 0) {
         pad.attackPressed = true;
         this.swing = 0.42;
       }
@@ -347,6 +373,21 @@ export class GameBot {
 
   drive(dt: number, pad: Pad, w: BotSees): void {
     this.t += dt;
+    if (w.player.hp < this.lastHp) {
+      const p = w.player.position;
+      const b = [...w.foes].filter((e) => e.alive).sort((u, v) => Math.hypot(u.x - p.x, u.z - p.z) - Math.hypot(v.x - p.x, v.z - p.z))[0];
+      if (b && this.verbose) console.log(`BOT   HIT ${this.t.toFixed(2)}s  hearts ${this.lastHp} to ${w.player.hp}; nearest (${b.kind}): ${b.state}, ${Math.hypot(b.x - p.x, b.z - p.z).toFixed(1)} off; he was ${w.player.state}; roll timer ${this.roll.toFixed(2)}; states lately: ${this.seen.join(' ')}`);
+    }
+    this.lastHp = w.player.hp;
+    {
+      const q = w.player.position;
+      const b = [...w.foes].filter((e) => e.alive).sort((u, v) => Math.hypot(u.x - q.x, u.z - q.z) - Math.hypot(v.x - q.x, v.z - q.z))[0];
+      const tag = b ? `${b.state}${b.attackActive ? '*' : ''}/${w.player.state}` : '';
+      if (tag && tag !== this.seen[this.seen.length - 1]) {
+        this.seen.push(tag);
+        if (this.seen.length > 9) this.seen.shift();
+      }
+    }
     if (this.done) return;
     if (w.player.dead) {
       if (!this.wasDead) {
@@ -368,6 +409,14 @@ export class GameBot {
       if (s?.name.startsWith('the climb')) this.i = this.steps.findIndex((x) => x.name === 'to the foot of the wreck');
       if (s?.name === 'THE WARDEN' || s?.name === 'into the court') this.i = this.steps.findIndex((x) => x.name === 'toward the gate');
       if (s?.name.startsWith('with the key') || s?.name === 'the prize') this.i = this.steps.findIndex((x) => x.name === 'up to the key');
+      // THE SLUICE: he is up again on the near bank. If the bridge is down he goes over it to where he was; if not,
+      // it is the long way round again from the start.
+      if (w.room === SLUICE_ID) {
+        const down = w.movers.some((m) => m.z1 - m.z0 > 8 && Math.abs(m.top) < 0.25);
+        const far = this.steps.findIndex((x) => x.name === 'to the long way');
+        if (down && this.i > far) this.detour = [[S.bridge.x, S.chasm.z1 + 1.5], [S.bridge.x, S.chasm.z0 - 1.5]];
+        else if (this.i > far) this.i = this.steps.findIndex((x) => x.name === 'the near bank');
+      }
       this.stepT = 0;
     }
     const s = this.steps[this.i];
@@ -393,6 +442,12 @@ export class GameBot {
     pad.run = false;
     pad.jumpPressed = pad.jumpHeld = pad.attackPressed = pad.dodgePressed = pad.guardHeld = pad.stowPressed = false;
     this.stepT += dt;
+    if (this.detour.length) {
+      const [x, z] = this.detour[0];
+      if (this.goto(w, pad, x, z, 0.6) < 0.6) this.detour.shift();
+      return;
+    }
+    if (s.fights === false || w.carrying) this.locking = false;
     if (s.fights !== false && !w.carrying && this.fight(w, pad, dt)) {
       // (He still watches whether the step is done: the Warden's step ends when the Warden does.)
       const keep = { x: pad.move.x, z: pad.move.z, run: pad.run, a: pad.attackPressed, d: pad.dodgePressed };

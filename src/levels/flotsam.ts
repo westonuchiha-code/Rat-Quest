@@ -209,6 +209,9 @@ export function flotsam(): LevelDef {
     ...def,
     goals: NO_GOALS,
     sound: 'flotsam',
+    // MORT'S FIRE is a fire to rest at (jump beside it: hearts filled, the game saved), as the Hall's is. Found wanting
+    // by the robot player, 2026-11-26: nothing in either area gave a heart back.
+    restSpot: { x: F.fire.x, y: 0, z: F.fire.z },
     enemies,
     gates: [...(def.gates ?? []), ...gates],
     gear: [...def.gear, { itemId: 'ratSword', x: F.sword.x, y: F.deck.top + 0.8, z: F.sword.z }],

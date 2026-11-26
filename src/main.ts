@@ -2593,6 +2593,11 @@ function startGame(): void {
     let guardHeld = keyHeld('guard') || controlSources.some((s) => s.guardHeld);
     let stowPressed = keyTap('stow') || consumeAction('stow');
 
+    // (The robot player's rest: its jump beside a fire is pressed here, where a player's is read.)
+    if (gameBot?.restNow) {
+      gameBot.restNow = false;
+      jumpPressed = true;
+    }
     // Resting by the fire: he sits down, his hearts fill and the game saves. Moving or any button gets him up.
     const fire = cur.restSpot;
     // (Beside the fire, on the floor it stands on: not up on the bowl, in it.)
@@ -2690,6 +2695,11 @@ function startGame(): void {
         }
       }
     }
+    // (The robot player locks on to what it fights, and lets go when the fight is over.)
+    if (gameBot && !player.dead) {
+      if (gameBot.locking && !lockTarget) lockTarget = pickTarget(player.position, player.facing, enemies);
+      else if (!gameBot.locking && lockTarget) lockTarget = null;
+    }
     if (lockTarget && (player.dead || builder.live)) lockTarget = null;
     if (lockTarget) lockTarget = keepTarget(player.position, follow.yaw, lockTarget, enemies);
     player.attackAim = lockTarget ? facingToward(player.position, lockTarget) : pickAim(player, enemies, m.x, m.z);
@@ -2718,7 +2728,7 @@ function startGame(): void {
     if (gameBot) {
       const pad = { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed };
       gameBot.drive(dt, pad, {
-        room: cur.id, player, foes: enemies,
+        room: cur.id, player, foes: enemies, maxHp: player.maxHp,
         movers: chamber.movers.map((v) => ({ x0: v.aabb.min.x, x1: v.aabb.max.x, z0: v.aabb.min.z, z1: v.aabb.max.z, top: v.aabb.max.y })),
         crumbs: wallet.balance().crumbs, sword: equipment.equipped('sword'), shield: equipment.equipped('shield'),
         carrying: !!held, shopOpen: shop.open, buy: () => shop.buy(), closeShop: () => shop.close(),
