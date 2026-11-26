@@ -44,6 +44,7 @@ export class GameBot {
   private hopState: { phase: number; from: THREE.Vector3 | null; t: number } = { phase: 0, from: null, t: 0 };
   private tap = 0;
   private dbg = 0;
+  private swimTap = 0;
   private stuckT = 0;
   private stuckAt = { x: 0, z: 0 };
   private roundFor = 0;
@@ -227,10 +228,39 @@ export class GameBot {
     if (from) this.i = Math.max(0, this.steps.findIndex((x) => x.name === from));
   }
 
-  /** Runs toward a place; returns how far off it is. */
-  private goto(w: BotSees, pad: Pad, x: number, z: number, near: number): number {
+  /** THE SLUICE's chasm: is this spot over it (and not on the bridge, if that is down)? */
+  private overChasm(w: BotSees, x: number, z: number): boolean {
+    if (w.room !== SLUICE_ID) return false;
+    const C = S.chasm;
+    if (!(x > C.x0 - 0.3 && z > C.z0 - 0.3 && z < C.z1 + 0.3)) return false;
+    const down = w.movers.some((m) => m.z1 - m.z0 > 8 && Math.abs(m.top) < 0.25);
+    return !(down && Math.abs(x - S.bridge.x) < S.bridge.wide / 2 - 0.3);
+  }
+  /**
+   * Runs toward a place; returns how far off it is. In the Sluice it never runs AT the chasm: to a place on the other
+   * bank it goes by the bridge if that is down, and by the west strip if not.
+   */
+  private goto(w: BotSees, pad: Pad, tx: number, tz: number, near: number): number {
     const p = w.player.position;
+    const far = Math.hypot(tx - p.x, tz - p.z);
+    let x = tx;
+    let z = tz;
+    if (w.room === SLUICE_ID) {
+      const C = S.chasm;
+      const bank = (q: number): number => (q > C.z1 ? 1 : q < C.z0 ? -1 : 0);
+      const here = bank(p.z);
+      const there = bank(tz);
+      const down = w.movers.some((m) => m.z1 - m.z0 > 8 && Math.abs(m.top) < 0.25);
+      if (here !== there && (here !== 0 || p.x > C.x0) && there !== 0) {
+        const lane = down ? S.bridge.x : -17.5;
+        const edge = (side: number): number => (side > 0 ? C.z1 + 1.4 : C.z0 - 1.4);
+        // Onto the lane on his own bank first; then along it to the other.
+        if (here !== 0 && Math.abs(p.x - lane) > 0.8) [x, z] = [lane, edge(here)];
+        else [x, z] = [lane, edge(there)];
+      } else if (here === 0 && p.x <= C.x0 && there !== 0 && Math.abs(tx - p.x) > 3) [x, z] = [-17.5, there > 0 ? C.z1 + 1.4 : C.z0 - 1.4];
+    }
     const d = Math.hypot(x - p.x, z - p.z);
+    if (x !== tx || z !== tz) near = 0.5;
     if (d > near) {
       const k = d > 1.2 ? 1 : 0.45;
       let mx = (x - p.x) / d;
@@ -254,7 +284,7 @@ export class GameBot {
       pad.move.set(mx * k, 0, mz * k);
       pad.run = d > 3;
     } else pad.move.set(0, 0, 0);
-    return d;
+    return far;
   }
   /** He has come off the climb (he is on the floor, well under where he should be). */
   private fell(w: BotSees, shouldBe: number): boolean {
@@ -346,19 +376,22 @@ export class GameBot {
     // HIT AND RUN, as a careful player fights: while it is winding up or striking he is going AWAY from it (and
     // dodges back if the blow is live and near); when it is done he comes in, strikes, and is ready to go again.
     if (near.attacking || near.attackActive) {
-      pad.move.set(-dx, 0, -dz);
+      // (Away, but not far: a few paces clear of it is enough, and there may be water or a drop behind him.)
+      if (nd < reach + 3.2 && !this.overChasm(w, p.x - dx * 1.6, p.z - dz * 1.6)) pad.move.set(-dx, 0, -dz);
+      else pad.move.set(0, 0, 0);
       pad.run = true;
-      if (near.attackActive && nd < reach + 2.8 && this.roll <= 0) {
+      if (near.attackActive && nd < reach + 2.8 && this.roll <= 0 && !this.overChasm(w, p.x - dx * 3, p.z - dz * 3)) {
         pad.dodgePressed = true;
         this.roll = 0.6;
       }
       return true;
     }
     if (this.roll > 0.3) {
-      pad.move.set(-dx, 0, -dz);
+      if (!this.overChasm(w, p.x - dx * 1.6, p.z - dz * 1.6)) pad.move.set(-dx, 0, -dz);
       return true;
     }
     if (nd > reach) {
+      if (this.overChasm(w, p.x + dx * 1.2, p.z + dz * 1.2) || this.overChasm(w, near.x, near.z)) return false;
       pad.move.set(dx, 0, dz);
       pad.run = nd > 4;
     } else {
@@ -409,13 +442,12 @@ export class GameBot {
       if (s?.name.startsWith('the climb')) this.i = this.steps.findIndex((x) => x.name === 'to the foot of the wreck');
       if (s?.name === 'THE WARDEN' || s?.name === 'into the court') this.i = this.steps.findIndex((x) => x.name === 'toward the gate');
       if (s?.name.startsWith('with the key') || s?.name === 'the prize') this.i = this.steps.findIndex((x) => x.name === 'up to the key');
-      // THE SLUICE: he is up again on the near bank. If the bridge is down he goes over it to where he was; if not,
-      // it is the long way round again from the start.
+      // THE SLUICE: up again at whichever lantern he lit last. On the far bank, the far bank's steps go on from the
+      // pair; on the near bank, the near bank's steps again (the walk itself keeps off the chasm: `goto`).
       if (w.room === SLUICE_ID) {
-        const down = w.movers.some((m) => m.z1 - m.z0 > 8 && Math.abs(m.top) < 0.25);
-        const far = this.steps.findIndex((x) => x.name === 'to the long way');
-        if (down && this.i > far) this.detour = [[S.bridge.x, S.chasm.z1 + 1.5], [S.bridge.x, S.chasm.z0 - 1.5]];
-        else if (this.i > far) this.i = this.steps.findIndex((x) => x.name === 'the near bank');
+        const at = (n: string): number => this.steps.findIndex((x) => x.name === n);
+        if (w.player.position.z < S.chasm.z0) this.i = Math.max(Math.min(this.i, at('lift the key')), at('toward the pair'));
+        else if (this.i < at('strike the catch')) this.i = Math.min(this.i, at('to the long way'));
       }
       this.stepT = 0;
     }
@@ -428,6 +460,17 @@ export class GameBot {
     if (s.name !== this.said) {
       this.said = s.name;
       console.log(`BOT ${this.t.toFixed(1)}s  ${w.room}: ${s.name}  (hearts ${w.player.hp}, crumbs ${w.crumbs}, ${w.sword}, ${w.shield})`);
+    }
+    // IN WATER, whatever he was doing: to the bank and out with a jump, as the sign says. (He backed into the pool
+    // from the first roach once, and swam at the bank for good.)
+    if (w.player.state === 'swim') {
+      pad.move.set(0, 0, -1);
+      pad.run = true;
+      pad.attackPressed = pad.dodgePressed = pad.stowPressed = false;
+      this.swimTap -= dt;
+      pad.jumpPressed = pad.jumpHeld = this.swimTap <= 0;
+      if (this.swimTap <= 0) this.swimTap = 0.5;
+      return;
     }
     if (s.room !== w.room) {
       // (Through a door into the next area: the steps of the one he has left are over.)

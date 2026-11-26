@@ -143,6 +143,13 @@ WHAT ITS FIRST RUNS FOUND (all fixed):
   knight in the middle of a swing cannot dodge. It now goes away from a creature that is winding up, dodges back if
   the blow is live and near, and strikes when it is done ("hit and run"), locked on.
 
+THE WHOLE THING, FROM NEW GAME, NO CHEATS (2026-11-26; filmed, `deliver/robot-plays-both-areas-3x-speed.mp4`): out of
+the pipe; the three crumbs; the first roach with half a sword; the climb and the plank; the sword at 58 seconds; the
+yard; the shield from Pip at 97 (eight crumbs spent); a rest at Mort's fire; the lantern; the Warden beaten in one
+life, 36 seconds; the Old Gate; a rest at the Sluice's fire; the long way and the cracked wall; ONE DEATH, to the ant
+and the roach together by the catch; up again at the far lantern, the pair beaten; the catch, the bridge, the bats,
+the key over the bridge, the vault, the prize. Five minutes fifty-two of play.
+
 WHAT THE FINISHED RUN SHOWS (no cheats, from the fire in Flotsam on, with the sword and the shield): the Warden, whole,
 beaten in one life in about 28 seconds for 1 or 2 hearts; the Sluice's whole loop walked with its creatures in it; one
 death, to the ant and the roach together by the catch, and the long way round walked again after it.
