@@ -51,7 +51,8 @@ export class GameBot {
   private readonly steps: Step[];
   done = false;
 
-  constructor() {
+  /** `from`: the name of a step to begin at (`&botfrom=...`, for trying one part without the ones before it). */
+  constructor(from = '') {
     const c = (q: readonly number[]): P3 => [(q[0] + q[2]) / 2, q[4], (q[1] + q[3]) / 2];
     const st = F.steps;
     const plankRest: P3 = [(F.plank.x0 + F.plank.x1) / 2, F.plank.top, (F.plank.z0 + F.plank.z1) / 2];
@@ -202,6 +203,7 @@ export class GameBot {
       go('with the key: into the vault', SLUICE_ID, S.vault.gateX, S.vault.z0 + 2, false, 0.6),
       go('the prize', SLUICE_ID, S.vault.prize.x, S.vault.prize.z, false, 0.4),
     ];
+    if (from) this.i = Math.max(0, this.steps.findIndex((x) => x.name === from));
   }
 
   /** Runs toward a place; returns how far off it is. */
@@ -350,6 +352,10 @@ export class GameBot {
       if (!this.wasDead) {
         this.deaths++;
         console.log(`BOT ${this.t.toFixed(1)}s  DIED in "${this.steps[this.i]?.name}" (deaths so far: ${this.deaths})`);
+        if (this.deaths >= 10) {
+          console.log(`BOT ${this.t.toFixed(1)}s  STUCK: ten deaths. It cannot get past "${this.steps[this.i]?.name}".`);
+          this.done = true;
+        }
       }
       this.wasDead = true;
       return;
@@ -374,7 +380,15 @@ export class GameBot {
       this.said = s.name;
       console.log(`BOT ${this.t.toFixed(1)}s  ${w.room}: ${s.name}  (hearts ${w.player.hp}, crumbs ${w.crumbs}, ${w.sword}, ${w.shield})`);
     }
-    if (s.room !== w.room) return;
+    if (s.room !== w.room) {
+      // (Through a door into the next area: the steps of the one he has left are over.)
+      const next = this.steps.findIndex((x, k) => k > this.i && x.room === w.room);
+      if (next > this.i) {
+        this.i = next;
+        this.stepT = 0;
+      }
+      return;
+    }
     pad.move.set(0, 0, 0);
     pad.run = false;
     pad.jumpPressed = pad.jumpHeld = pad.attackPressed = pad.dodgePressed = pad.guardHeld = pad.stowPressed = false;

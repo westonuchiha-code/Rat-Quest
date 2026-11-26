@@ -103,6 +103,10 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
     const w = new Stag(L.enemies[warden] as never);
     const plain = new Stag({ x: 0, z: 0 });
     check('the Warden is a boss: named, with near three times a Stag Knight\'s health and more poise', w.bossName === 'The Warden' && w.maxHp === F.wardenIs.hp && w.hp === w.maxHp && w.maxHp >= plain.maxHp * 2.5 && w.maxPoise > plain.maxPoise, `${w.hp} / ${plain.hp}`);
+    w.takeHit(10, 0, 5);
+    const hurt = w.hp;
+    w.recover();
+    check('the Warden is whole again when the knight who was fighting him has died and come back', hurt < w.maxHp && w.hp === w.maxHp);
     check('...and a plain Stag Knight is what he was', plain.bossName === '' && plain.hp === 14);
   }
   check('...and he keeps to his court: he does not come out into the yard', (L.enemies[warden].arena?.z1 ?? 99) < F.wall.z);

@@ -174,6 +174,12 @@ export class Stag {
     this.state = s;
     this.stateTime = 0;
   }
+  /** A boss whose challenger has died and come back: whole again. (Otherwise he is worn down over as many deaths as it takes.) */
+  recover(): void {
+    if (!this.alive) return;
+    this.hp = this.maxHp;
+    this.poise = this.maxPoise;
+  }
   /** A boss beaten in an earlier sitting (the Warden): down already when the place is come back to, without a sound. */
   alreadyBeaten(): void {
     this.hp = 0;

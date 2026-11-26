@@ -1484,6 +1484,7 @@ function startGame(): void {
   const titleCard = new TitleCard(gameWrap);
   /** The Warden of Flotsam is down (so the card comes up once, when he falls). */
   let wardenDown = false;
+  let knightWasDead = false;
   const WARDEN_BEATEN = `beaten:${FLOTSAM.wardenIs.name}`;
   // (Development aid: #...&showcard shows the card at once, for pictures.)
   if (location.hash.includes('showcard')) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.', 600);
@@ -3957,7 +3958,7 @@ function startGame(): void {
   let devCarried = false;
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
-  const gameBot = /[#&]autoplay\b/.test(location.hash) ? new GameBot() : null;
+  const gameBot = /[#&]autoplay\b/.test(location.hash) ? new GameBot(decodeURIComponent(/[#&]botfrom=([^&]+)/.exec(location.hash)?.[1] ?? '')) : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the smoke check, scripts/smoke.mjs: where he is and what he is doing, read from outside the game.)
   // (And for its walk through the doors: where this room's doors are and where each leads, its way out, and a hand
@@ -5170,6 +5171,10 @@ function startGame(): void {
       parrySweep += frameDt;
       if (parrySweep > PARRY_SWEEP_FOR) parrySweep = -1;
     }
+    // HE DIED AND IS UP AGAIN: a boss he was fighting is whole again. (Found by the robot player, 2026-11-26: the Warden
+    // kept his wounds, and fell in three and a half seconds on the third try.)
+    if (knightWasDead && !player.dead) for (const e of enemies) if (e instanceof Stag && e.bossName) e.recover();
+    knightWasDead = player.dead;
     // THE WARDEN FALLS (Flotsam, the game's first area): the gate lifts, and the game's name comes up. It "really starts".
     if (cur.id === FLOTSAM_ID) {
       const warden = enemies.find((e) => e.kind === 'stag');

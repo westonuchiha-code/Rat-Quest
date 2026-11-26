@@ -118,3 +118,33 @@ clearing jingle plays under the title card (borrowed; unheard by the one who put
 sounds made for it.
 
 NOT PLAYED BY HAND.
+
+## THE ROBOT PLAYER (2026-11-26): `&autoplay` (`src/dev/gameBot.ts`)
+
+The owner asked for "one continuous scripted playthrough": new game, sword, shield, Warden, the Sluice's loop. The
+robot plays both areas by itself with the pad and nothing else, and says what it is doing on the console ("BOT ...").
+To watch it: open the game with `#boot&title&autoplay` and choose NEW GAME. `&botfrom=<step name>` begins it at a
+later step; `&god` makes him unhurtable. It rolls aside when a blow is coming and strikes in between; it steps round
+things it walks into; it can fall off the climb and go round again; it can die, and carries on from the lantern.
+
+WHAT ITS FIRST RUNS FOUND (all fixed):
+- CRUMBS PICKED UP IN THE GAME'S AREAS COUNTED FOR NOTHING. The collectibles tracker and the purse listed the old
+  worlds and the test rooms, not `GAME_ROOMS`: the shield could never have been bought. (`src/main.ts`.)
+- A matchbox at the foot of the wreck stood in the way of the first step; a battery in front of Pip's stall wedged
+  him half off the floor, where he could not talk. Both moved.
+- THE WARDEN KEPT HIS WOUNDS when the knight died: he fell in three and a half seconds on the third try. Now a boss
+  is whole again when the knight who was fighting him comes back (`Stag.recover`).
+- The half sword reaches about 60% as far: a player (or a robot) who stands where he would with a whole one hits
+  nothing. Not a bug: but the first roach killed the robot once before it stood closer.
+
+## SOUND FOR THE GAME'S AREAS (2026-11-26)
+
+AMBIENT, IN THE GAME (`src/audio/ambience.ts`, `LevelDef.sound`): Flotsam keeps the drain's bed and drips, with a toad
+croaking somewhere off and the wreck's boards creaking; the Sluice has the water louder, the bridge's chains, and iron
+far below. Made of sounds the game had. UNHEARD by the one who set the levels.
+
+TWO TUNES, NOT IN THE GAME (his rule: he hears a tune before it goes in). `scripts/chip/songs.mjs`: `wash` "Washed
+Up" (Flotsam: 80, Dm7, the game's drip, a toad's croak and a plank on the beat) and `sluice` "Long Way Round" (the
+Sluice: 88, Gm7, lower, chains and a far clank). Boom bap, swung, crunched, a bass riff, scratches at the phrase
+ends, to the brief in START-HERE.md. Sent as `music-wash.mp3` and `music-sluice.mp3`. Until he says yes, Flotsam
+plays the Cistern's tune he chose and the Sluice the `echo` track.
