@@ -130,6 +130,7 @@ import type { EnemySpec, LevelDef } from './levels/types';
 import { GoalHud } from './ui/goalHud';
 import { TrickLog } from './player/trickLog';
 import { FilmDrive, type Seen } from './dev/filmDrive';
+import { GameBot } from './dev/gameBot';
 import { revealFrame, REVEAL } from './core/revealCutscene';
 import { Doorway } from './world/doorway';
 import { WedgeVisuals } from './world/wedges';
@@ -1261,7 +1262,7 @@ function startGame(): void {
   const files = new FileStore(deviceStore, lastFile(deviceStore));
   const levelProgress = new LevelProgress(files);
   // (The archive's levels are tracked too, so one opened by #level= still works; only the worlds count towards the purse.)
-  const tracker = new CollectibleTracker([...ALL_LEVELS, ...TEST_ROOMS].map((l) => ({ id: l.id, name: l.name, items: l.collectibles })), files);
+  const tracker = new CollectibleTracker([...ALL_LEVELS, ...TEST_ROOMS, ...GAME_ROOMS].map((l) => ({ id: l.id, name: l.name, items: l.collectibles })), files);
   let collectVisuals!: CollectibleVisuals;
   const revealedCrates = new Set<number>(); // crates broken so far, so the things inside show
   // ---- Picking things up and throwing them (world/lifting.ts) ----
@@ -1509,7 +1510,9 @@ function startGame(): void {
   const wallet = new Wallet(files, () => {
     let crumbs = 0;
     let caps = 0;
-    for (const l of LEVELS) {
+    // (And in THE GAME's areas: left out at first, so that nothing picked up in Flotsam could be spent there. Found by
+    // the robot player's first run, 2026-11-26.)
+    for (const l of [...LEVELS, ...GAME_ROOMS]) {
       crumbs += tracker.worth(l.id, 'crumb').have;
       caps += tracker.worth(l.id, 'cap').have;
     }
@@ -2331,7 +2334,7 @@ function startGame(): void {
     for (const pp of chamber.pipes) if (!pp.alive) gv = Math.max(gv, hearAt(pp.x, pp.z, 16));
     audio.loop('gush', gv * gv * 0.3);
     // The world's own sound: its bed, and now and then something far off.
-    const ws = worldSoundFor(cur.theme, !!cur.hub, cur.sky === 'space');
+    const ws = worldSoundFor(cur.theme, !!cur.hub, cur.sky === 'space', cur.sound);
     for (const bed of WORLD_BEDS) audio.loop(bed, bed === ws.bed ? ws.bedVol : 0);
     for (const n of ambience.step(dt, ws)) audio.play(n.name, { vol: n.vol, rate: n.rate, verb: n.verb, priority: 0 });
     // Close to lava: it roils and pops. Close to a brazier: it crackles.
@@ -2710,6 +2713,24 @@ function startGame(): void {
     } else zoneStride = 1;
     // The film and test drives (dev/filmDrive.ts): `&autoride`, `&autorail`, `&chaos`, `&autowalk`, `&autogo`, `&autojump`, `&autoswing`, `&autoplunge`.
     // (`&autofight`, `&autolift` and `&carryfoe`, which reach into the fight and his hands, are below.)
+    // (`&autoplay`: THE GAME'S ROBOT PLAYER, dev/gameBot.ts. It has the whole pad.)
+    if (gameBot) {
+      const pad = { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed };
+      gameBot.drive(dt, pad, {
+        room: cur.id, player, foes: enemies,
+        movers: chamber.movers.map((v) => ({ x0: v.aabb.min.x, x1: v.aabb.max.x, z0: v.aabb.min.z, z1: v.aabb.max.z, top: v.aabb.max.y })),
+        crumbs: wallet.balance().crumbs, sword: equipment.equipped('sword'), shield: equipment.equipped('shield'),
+        carrying: !!held, shopOpen: shop.open, buy: () => shop.buy(), closeShop: () => shop.close(),
+      });
+      ({ run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed } = pad);
+      // (Its JUMP beside a shopkeeper is the talk button, as a player's is: the game read that button before the robot
+      // had the pad, so it is read again here.)
+      if (jumpPressed && nearNpc?.spec.shop && player.grounded) {
+        jumpPressed = jumpHeld = false;
+        player.velocity.set(0, 0, 0);
+        shop.show(nearNpc.spec.lines[0] ?? 'Squeak! Have a look.');
+      }
+    }
     if (filmDrive) {
       const pad = { move: m, run, jumpPressed, jumpHeld, attackPressed, dodgePressed, guardHeld, stowPressed };
       filmDrive.drive(dt, pad, filmSeen());
@@ -3936,6 +3957,7 @@ function startGame(): void {
   let devCarried = false;
   /** The film and test drives on the address (dev/filmDrive.ts), if any is asked for; and what they may look at. */
   const filmDrive = /[#&](autoride|autorail|chaos|autowalk|autogo|autojump|autoswing|autoplunge|autoball|autopad)\b/.test(location.hash) ? new FilmDrive(location.hash) : null;
+  const gameBot = /[#&]autoplay\b/.test(location.hash) ? new GameBot() : null;
   const filmSeen = (): Seen => ({ room: cur.id, player, enemies, fighting: devAuto.fight });
   // (For the smoke check, scripts/smoke.mjs: where he is and what he is doing, read from outside the game.)
   // (And for its walk through the doors: where this room's doors are and where each leads, its way out, and a hand
@@ -4108,6 +4130,7 @@ function startGame(): void {
         ...world,
         ...mine().map((l) => ({ id: l.id, name: l.name, group: 'My Levels', here: l.id === cur.id })),
         ...TEST_ROOMS.map((l) => ({ id: l.id, name: l.name, group: 'Test rooms', here: l.id === cur.id })),
+        ...GAME_ROOMS.map((l) => ({ id: l.id, name: l.name, group: 'The game', here: l.id === cur.id })),
         ...ARCHIVE.map((l) => ({ id: l.id, name: l.name, group: 'Old levels (retired)', here: l.id === cur.id })),
       ];
     },
@@ -4200,6 +4223,13 @@ function startGame(): void {
     if (input.consumePressed('F11') || (input.isDown('AltLeft') && input.consumePressed('Enter'))) platform.toggleFullscreen();
     if (shop.open) {
       // Pip's shop: up and down to choose, confirm to buy, back to leave.
+      // (The robot player, `&autoplay`: the game is held while the shop is up, so its buying is done here. It buys
+      // what the shop opens on, the first shield, and leaves.)
+      if (gameBot) {
+        shop.buy();
+        shop.close();
+        return;
+      }
       if (input.consumePressed('ArrowUp') || input.consumePressed('KeyW') || consumeAction('up')) shop.move(-1);
       if (input.consumePressed('ArrowDown') || input.consumePressed('KeyS') || consumeAction('down')) shop.move(1);
       if (input.consumePressed('Enter') || input.consumePressed('Space') || input.consumePressed('KeyE') || consumeAction('confirm')) shop.buy();

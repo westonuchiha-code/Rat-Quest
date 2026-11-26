@@ -53,6 +53,28 @@ export const WORLD_SOUND: Record<string, WorldSound> = {
   },
   mine: { bed: null, bedVol: 0, far: [drips] },
   dungeon: { bed: null, bedVol: 0, far: [drips] },
+  // THE GAME's own areas (2026-11-26; a level asks for one of these by name, `LevelDef.sound`). Both are drains, so
+  // both keep the drain's bed and its drips; each has noises of its own over them.
+  // FLOTSAM: lived in. A toad somewhere off in the reeds, and the wreck's boards creaking.
+  flotsam: {
+    bed: 'drain',
+    bedVol: 0.13,
+    far: [
+      drips,
+      { name: 'croak', every: [9, 22], vol: [0.06, 0.16], rate: [0.8, 1.1], verb: 0.7 },
+      { name: 'plank', every: [12, 26], vol: [0.05, 0.12], rate: [0.6, 0.85], verb: 0.6 },
+    ],
+  },
+  // THE SLUICE: water going down into the dark, louder; the bridge's chains; iron somewhere below.
+  sluice: {
+    bed: 'drain',
+    bedVol: 0.22,
+    far: [
+      { name: 'drip', every: [2, 6], vol: [0.16, 0.36], rate: [0.6, 1.0], verb: 0.9 },
+      { name: 'chainClink', every: [6, 14], vol: [0.08, 0.2], rate: [0.8, 1.1], verb: 0.9 },
+      { name: 'clank', every: [18, 40], vol: [0.05, 0.12], rate: [0.55, 0.75], verb: 0.95 },
+    ],
+  },
   // Home: just the music and the fire.
   hub: { bed: null, bedVol: 0, far: [] },
 };
@@ -64,7 +86,8 @@ export const WORLD_SOUND: Record<string, WorldSound> = {
  * background everywhere ... it is annoying the s*** out of me." The dream's levels are built with the cave's theme, for
  * its looks, and so had the cave's WIND under them the whole time: a hiss that rises and falls and never stops.)
  */
-export function worldSoundFor(theme: string | undefined, hub: boolean, open = false): WorldSound {
+export function worldSoundFor(theme: string | undefined, hub: boolean, open = false, own?: string): WorldSound {
+  if (own && WORLD_SOUND[own]) return WORLD_SOUND[own];
   if (hub || open) return WORLD_SOUND.hub;
   return WORLD_SOUND[theme ?? 'sewer'] ?? WORLD_SOUND.sewer;
 }

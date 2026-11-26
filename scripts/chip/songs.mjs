@@ -439,6 +439,60 @@ SONGS.push(
     crunch: { bits: 8, hold: 2 }, crackle: 0.6,
   },
 );
+/*
+ * THE GAME'S OWN AREAS (2026-11-26). The owner asked for "music and ambient sound for both areas" of the game he is
+ * building front to back (docs/GAME.md). Written to the brief above. NOT IN THE GAME until he has heard them.
+ */
+SONGS.push(
+  {
+    // FLOTSAM: where the pipe lets out. Mice and birds by a fire, living off what the water brings. Easy, a bit damp.
+    id: 'wash', name: 'Washed Up', where: 'Flotsam: the first area. A fire, a pool, junk the water brought', bpm: 80,
+    chords: ['Dm7', 'Dm7', 'Dm7', 'Gm7', 'Dm7', 'Dm7', 'Bbmaj7', 'A7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.6, gate: 0.8, bars: [
+        'D2:3 -:1 D2:2 F2:2 -:2 A2:2 C3:2 -:2', 'D2:3 -:1 D2:2 C2:2 -:4 A1:2 C2:2', 'D2:3 -:1 D2:2 F2:2 -:2 A2:2 C3:2 -:2', 'G1:3 -:1 G1:2 Bb1:2 -:2 D2:2 F2:2 -:2',
+        'D2:3 -:1 D2:2 F2:2 -:2 A2:2 C3:2 -:2', 'D2:3 -:1 D2:2 C2:2 -:4 A1:2 C2:2', 'Bb1:3 -:1 Bb1:2 D2:2 -:2 F2:2 D2:2 -:2', 'A1:3 -:1 A1:2 C#2:2 -:4 E2:2 A1:2',
+      ] },
+      { type: 'stab', con: 'gen', v: 'epiano', vol: 0.4, oct: 4, rhythm: '....x.....x.....', len: 3 },
+      { type: 'line', con: 'snes', v: 'piano', vol: 0.46, gate: 1, bars: ['-:8 A4:2 F4:2 D4:2 -:2', '-:16', '-:8 C5:2 A4:2 F4:2 -:2', '-:16', '-:8 A4:2 F4:2 D4:2 -:2', '-:16', '-:4 D5:2 -:2 Bb4:2 -:2 F4:2 -:2', '-:8 E4:2 C#4:2 -:4'] },
+    ],
+    drums: { con: 'oki', swing: 0.55, order: 'AAABAAAB', pats: {
+      A: { kick: 'x.....x...x.....', snare: '....x.......x...', chh: 'o.x.o.x.o.x.o.x.' },
+      B: { kick: 'x.....x.........', snare: '....x.......x..x', chh: 'o.x.o.x.........' },
+    } },
+    layers: [
+      { src: 'src/drip', bars: ['..........x.....', '......x.........', '..............x.', '...x............'], vol: 0.45, tunes: [1, 1.2, 0.85, 1], echo: 2 },
+      { src: 'src/croak', bars: ['................', '..............x.', '................', '................', '................', '..............x.', '................', '................'], vol: 0.32, tunes: [1, 0.8] },
+      { src: 'src/plank', bars: ['................', '................', '................', '........x.......'], vol: 0.3, tunes: [1] },
+    ],
+    scratches: { vol: 0.45, bars: ['................', '................', '................', '............b.b.', '................', '................', '................', '............r...'] },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.5,
+  },
+  {
+    // THE SLUICE: past the Old Gate. Water let down into the dark, a bridge on chains, a long way round. Lower, warier.
+    id: 'sluice', name: 'Long Way Round', where: 'The Sluice: the second area. A chasm, chains, a bridge to let down', bpm: 88,
+    chords: ['Gm7', 'Gm7', 'Gm7', 'Gm7', 'Cm7', 'Cm7', 'Gm7', 'D7'],
+    parts: [
+      { type: 'line', con: 'gen', v: 'fmbass', vol: 0.64, gate: 0.75, bars: [
+        'G1:2 -:2 G1:1 -:1 Bb1:2 -:2 C2:2 D2:2 -:2', 'G1:2 -:2 G1:1 -:1 F1:2 -:4 D2:2 F2:2', 'G1:2 -:2 G1:1 -:1 Bb1:2 -:2 C2:2 D2:2 -:2', 'G1:2 -:2 G1:1 -:1 F1:2 -:4 D2:2 Bb1:2',
+        'C2:2 -:2 C2:1 -:1 Eb2:2 -:2 F2:2 G2:2 -:2', 'C2:2 -:2 C2:1 -:1 Bb1:2 -:4 G1:2 Bb1:2', 'G1:2 -:2 G1:1 -:1 Bb1:2 -:2 C2:2 D2:2 -:2', 'D2:2 -:2 D2:1 -:1 F#2:2 -:4 A2:2 D2:2',
+      ] },
+      { type: 'stab', con: 'gen', v: 'epiano', vol: 0.36, oct: 3, rhythm: '......x.......x.', len: 2 },
+      { type: 'line', con: 'snes', v: 'piano', vol: 0.42, gate: 1, bars: ['-:16', '-:10 D5:2 Bb4:2 -:2', '-:16', '-:10 F5:2 D5:2 -:2', '-:16', '-:10 Eb5:2 C5:2 -:2', '-:16', '-:8 F#4:2 A4:2 D5:2 -:2'] },
+    ],
+    drums: { con: 'oki', swing: 0.5, order: 'AAABAAAB', pats: {
+      A: { kick: 'x..x......x.....', snare: '....x.......x...', chh: 'x.xox.xox.xox.xo' },
+      B: { kick: 'x..x......x.....', snare: '....x.......x.xx', chh: 'x.xox.xo........' },
+    } },
+    layers: [
+      { src: 'src/chainClink', bars: ['......x.........', '................', '..............x.', '................'], vol: 0.42, tunes: [1, 0.85] },
+      { src: 'src/drip', bars: ['...x............', '...........x....'], vol: 0.4, tunes: [0.8, 0.7], echo: 4 },
+      { src: 'src/clank', bars: ['................', '................', '................', '............x...', '................', '................', '................', '............x...'], vol: 0.3, tunes: [0.7, 0.6] },
+    ],
+    scratches: { vol: 0.45, bars: ['................', '................', '................', '..............b.', '................', '................', '................', '..........b.r...'] },
+    crunch: { bits: 8, hold: 2 }, crackle: 0.5,
+  },
+);
 
 /** A line an octave (or more) up or down. */
 const octave = (bars, by) => bars.map((bar) => bar.replace(/([A-G][#b]?)(\d)/g, (_, n, o) => n + (Number(o) + by)));

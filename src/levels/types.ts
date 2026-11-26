@@ -100,6 +100,8 @@ export interface LevelDef {
   playAs?: 'hedgehog';
   /** Which music plays here. Default 'drift'. */
   music?: 'drift' | 'pump' | 'groove' | 'echo' | 'march' | 'dream';
+  /** Its own ambient sound (audio/ambience.ts, WORLD_SOUND), instead of its theme's. */
+  sound?: string;
   /** Colour of the fog and the far dark. Default: the sewer's. */
   fog?: number;
   /** Where the fog starts and where it is total (default 18 and 90). Big open levels push it back so their landmarks show. */

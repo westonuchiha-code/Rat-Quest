@@ -127,7 +127,7 @@ const room: CustomLevel = {
     at('lamp', F.shop.x - 0.5, F.shop.z - 2, 5),
     at('crate', 9, 13, 0, { props: { item: 'crumb' } }), at('crate', 10.3, 13.4, 0),
     at('pot', -3, 12, 0), at('pot', -3.8, 12.6, 0), at('rock', 12, 1, 0),
-    at('matchbox', F.shop.x - 3.6, F.shop.z + 2.2, 0), at('battery', F.shop.x + 0.4, F.shop.z + 2.6, 0, { dir: 'e' }), at('pawn', F.shop.x + 3.4, F.shop.z - 2.4, 0), at('candle', F.shop.x - 3, F.shop.z - 1.6, 0),
+    at('matchbox', F.shop.x - 5, F.shop.z + 3.4, 0), at('battery', F.shop.x + 4.6, F.shop.z + 4.2, 0, { dir: 'e' }), at('pawn', F.shop.x + 3.4, F.shop.z - 2.4, 0), at('candle', F.shop.x - 3, F.shop.z - 1.6, 0),
     // (Flotsam is LIVED IN: lit windows in the east wall behind Pip's stall and in the west wall by the wreck, a second
     // table by the fire, washing-line banners, webs up in the corners.)
     at('window', HX - 0.1, -8, 3.2, { dir: 'w' }), at('window', HX - 0.1, -2, 3.2, { dir: 'w' }), at('window', HX - 0.1, 9, 4.4, { dir: 'w' }),
@@ -140,7 +140,7 @@ const room: CustomLevel = {
 
     // ---- THE WRECK: the climb to the sword. A crumb on each step shows the way.
     ...F.steps.map((s) => (s === F.steps[0] || s === F.steps[1] ? box('stone', s[0], s[1], s[2], s[3], s[4], { bottom: 0 }) : box('plank', s[0], s[1], s[2], s[3], s[4], { bottom: s[4] - 0.4 }))),
-    at('die', -6.2, 9.5, 0), at('matchbox', -8, 12.2, 0),
+    // (Nothing lies at the foot of the wreck: a matchbox there stood in the way of the walk up to the first step.)
     ...F.steps.map((s) => at('crumb', mid(s)[0], mid(s)[1], s[4])),
     // (A 'lift' is the piece that MOVES: a 'platform' given these props stays where it is. Found 2026-11-25.)
     box('lift', F.plank.x0, F.plank.z0, F.plank.x1, F.plank.z1, F.plank.top, { props: { motion: 'glide', move: 'w', travel: F.plank.travel, speed: 1.6, pause: 1.2 } }),
@@ -208,6 +208,7 @@ export function flotsam(): LevelDef {
   return {
     ...def,
     goals: NO_GOALS,
+    sound: 'flotsam',
     enemies,
     gates: [...(def.gates ?? []), ...gates],
     gear: [...def.gear, { itemId: 'ratSword', x: F.sword.x, y: F.deck.top + 0.8, z: F.sword.z }],

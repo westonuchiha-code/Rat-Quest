@@ -315,7 +315,7 @@ GAME by `node scripts/chip/embed.mjs <folder> <ids...>`, which writes `src/audio
 | `march` | `keep` | 4 |
 | `dream` | `dream` | 3 |
 
-**Written but NOT in the game** (15): Dave's Groove (`club`), Teeth (`boss`), The Kingdom Below (`title`), Jinx Cuts In (`bap3`), Drip Tape (`sewer`), Clank (`forge`), Spore Breath (`cave`), Cold Stone (`stone`), Big Teeth (`teeth`), Saturday Morning (`cartoon`), Counting Sheep (`sheep`), After Hours (`late`), The Kingdom Below (`kingdom`), Star Slide (Broken) (`glitch`), Does Not Compute (`rogue`).
+**Written but NOT in the game** (17): Dave's Groove (`club`), Teeth (`boss`), The Kingdom Below (`title`), Jinx Cuts In (`bap3`), Drip Tape (`sewer`), Clank (`forge`), Spore Breath (`cave`), Cold Stone (`stone`), Big Teeth (`teeth`), Saturday Morning (`cartoon`), Counting Sheep (`sheep`), After Hours (`late`), Washed Up (`wash`), Long Way Round (`sluice`), The Kingdom Below (`kingdom`), Star Slide (Broken) (`glitch`), Does Not Compute (`rogue`).
 
 ## 9. Cutscenes
 

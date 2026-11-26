@@ -127,6 +127,7 @@ export function sluice(): LevelDef {
   return {
     ...def,
     goals: NO_GOALS,
+    sound: 'sluice',
     feel: 'sewers',
     fallBack: true,
     enemies,
