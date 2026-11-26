@@ -58,6 +58,7 @@ export const FLOTSAM = {
   plank: { x0: -16.5, z0: 3, x1: -14, z1: 5.5, top: 3.3, travel: 3.5 },
   deck: { x0: -16.5, z0: -5.5, x1: -9.5, z1: 0, top: 6.5 },
   sword: { x: -12.2, z: -2.8 },
+  mast: { x: -13.6, z: -4.6 },
   /** Off the deck's east end, over nothing: a cap for a running jump. */
   capBoard: { x0: -5.5, z0: -3.8, x1: -3.5, z1: -1.8, top: 6.5 },
   toadRock: { x0: 16, z0: 8, x1: 19, z1: 11, top: 1.7 },
@@ -127,6 +128,13 @@ const room: CustomLevel = {
     at('crate', 9, 13, 0, { props: { item: 'crumb' } }), at('crate', 10.3, 13.4, 0),
     at('pot', -3, 12, 0), at('pot', -3.8, 12.6, 0), at('rock', 12, 1, 0),
     at('matchbox', F.shop.x - 3.6, F.shop.z + 2.2, 0), at('battery', F.shop.x + 0.4, F.shop.z + 2.6, 0, { dir: 'e' }), at('pawn', F.shop.x + 3.4, F.shop.z - 2.4, 0), at('candle', F.shop.x - 3, F.shop.z - 1.6, 0),
+    // (Flotsam is LIVED IN: lit windows in the east wall behind Pip's stall and in the west wall by the wreck, a second
+    // table by the fire, washing-line banners, webs up in the corners.)
+    at('window', HX - 0.1, -8, 3.2, { dir: 'w' }), at('window', HX - 0.1, -2, 3.2, { dir: 'w' }), at('window', HX - 0.1, 9, 4.4, { dir: 'w' }),
+    at('window', -HX + 0.1, 14, 4, { dir: 'e' }), at('window', -HX + 0.1, 20, 3.2, { dir: 'e' }),
+    at('table', F.fire.x + 3.6, F.fire.z + 2.6, 0, { props: { mugs: 2, cards: true } }), at('stool', F.fire.x + 4.9, F.fire.z + 3.2, 0),
+    at('web', HX - 0.1, 26, 9, { dir: 'w' }), at('web', -HX + 0.1, -9, 9, { dir: 'e' }),
+    at('button', 4, 3, 0), at('paperclip', -5, 1.5, 0), at('safetypin', 9, 9, 0), at('marble', -9, 4, 0),
     at('roots', -30, 14, 9), at('roots', 30, 16, 9), at('roots', -31, -4, 9), at('roots', 31, 2, 9), at('roots', -8, 28, 10), at('roots', 9, 28.5, 10),
     at('slime', -HX + 0.1, 6, 5, { dir: 'e' }), at('slime', HX - 0.1, -6, 5, { dir: 'w' }), at('slime', -12, HZ - 0.1, 6, { dir: 'n' }), at('slime', 14, HZ - 0.1, 6, { dir: 'n' }),
 
@@ -140,6 +148,13 @@ const room: CustomLevel = {
     at('spool', F.deck.x1 - 0.9, F.deck.z0 + 0.9, F.deck.top), at('teacup', F.deck.x0 + 1.4, F.deck.z1 - 1.2, F.deck.top),
     box('pillar', F.deck.x0 + 0.4, F.deck.z0 + 0.4, F.deck.x0 + 1.2, F.deck.z0 + 1.2, F.deck.top - 0.6),
     box('pillar', F.deck.x1 - 1.2, F.deck.z1 - 1.2, F.deck.x1 - 0.4, F.deck.z1 - 0.4, F.deck.top - 0.6),
+    // (Dressed as a WRECK, 2026-11-26: rails along the deck's two long sides, open at the west end where he climbs on
+    // and at the east end where he jumps for the cap; a mast with a rag of sail; rigging hanging by it.)
+    box('plank', F.deck.x0, F.deck.z0 - 0.2, F.deck.x1, F.deck.z0, F.deck.top + 0.55, { bottom: F.deck.top - 0.6 }),
+    box('plank', F.deck.x0, F.deck.z1, F.deck.x1, F.deck.z1 + 0.2, F.deck.top + 0.55, { bottom: F.deck.top - 0.6 }),
+    box('pillar', F.mast.x - 0.22, F.mast.z - 0.22, F.mast.x + 0.22, F.mast.z + 0.22, F.deck.top + 5.4, { bottom: F.deck.top }),
+    at('banner', F.mast.x, F.mast.z + 0.26, F.deck.top + 5, { dir: 's', props: { color: 'gold' } }),
+    at('chain', F.mast.x + 1.6, F.mast.z + 0.6, F.deck.top + 2.4), at('chain', F.mast.x - 1.8, F.mast.z + 0.3, F.deck.top + 3),
     at('bat', -20, -1, 8.6, { props: { perch: 'chain' } }),
     box('plank', F.capBoard.x0, F.capBoard.z0, F.capBoard.x1, F.capBoard.z1, F.capBoard.top, { bottom: F.capBoard.top - 0.5 }),
     at('cap', (F.capBoard.x0 + F.capBoard.x1) / 2, (F.capBoard.z0 + F.capBoard.z1) / 2, F.capBoard.top),

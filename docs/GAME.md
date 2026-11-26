@@ -102,6 +102,19 @@ the bridge's catch; strike it and the bridge comes down, back to the lantern). I
 KEY: carried in both paws back over the bridge to the vault. A door north; nothing behind it yet.
 
 ONE GAME AREA LEADS TO THE NEXT: at a game room's open door, `src/main.ts` goes to the next of `GAME_ROOMS` (the
-last one's door does nothing). THERE IS NO WAY BACK YET: from the Sluice he cannot return to Flotsam.
+last one's door does nothing). THE WAY BACK (2026-11-26): a door in the Sluice's south wall leads to Flotsam (`courseDoors`); he arrives in the
+Warden's court. A BOSS BEATEN STAYS BEATEN in that file (`discoveries`, 'beaten:<name>'; `Stag.alreadyBeaten`), so
+the Old Gate is open when he comes back and the title card does not come up twice.
 
-NOT PLAYED BY HAND. Undressed.
+A SCRIPTED RUN OF ITS LOOP (2026-11-26, in a browser, no creatures, set down at each part in turn): the catch struck
+and the bridge down; the bridge walked on; the key lifted; the vault's gate opened for it and the vault walked into;
+the cracked wall under the toad's ledge broken and walked through. Every part works. NOT yet done as ONE walk from
+the door with the creatures in it.
+
+DRESSED A LITTLE (2026-11-26). The Sluice: grates in the chasm's east wall pouring into it, chains over it, fire bowls
+at the bridge's ends and the way on, banners, junk on both banks, webs in the key's corner. Flotsam: the wreck has
+rails, a mast and a rag of sail; barred windows in the walls; a second table by the fire; more junk. SOUND: the
+clearing jingle plays under the title card (borrowed; unheard by the one who put it there). Neither area has music or
+sounds made for it.
+
+NOT PLAYED BY HAND.

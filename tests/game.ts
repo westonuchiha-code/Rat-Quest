@@ -146,6 +146,14 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   check('...and the key is in the far corner of the far bank', K.key.z < K.chasm.z0 - 10 && K.key.x > 10);
   check('nothing of the near bank can get into the vault', Z.enemies.every((e) => !e.arena || e.arena.z0 < K.chasm.z0 || e.arena.x1 < K.vault.x0));
   check('two lanterns: where he comes in, and at the far end of the bridge', (Z.checkpoints ?? []).length === 2 && Z.checkpoints![0].z > K.chasm.z1 && Z.checkpoints![1].z < K.chasm.z0);
+  const back = (Z.courseDoors ?? []).find((d) => d.to === L.id);
+  check('THE WAY BACK: a door behind where he comes in leads to Flotsam, and he does not land in it as he arrives', !!back && back.door.z > 25 && Math.hypot(Z.spawn.x - back.door.x, Z.spawn.z - back.door.z) > 2);
+  {
+    // A boss beaten stays beaten: the Warden is down already when Flotsam is come back to, and his gate is open for it.
+    const w = new Stag(L.enemies[L.enemies.findIndex((e) => e.type === 'stag')] as never);
+    w.alreadyBeaten();
+    check('a Warden beaten before is down when the place is come back to', !w.alive && w.hp === 0);
+  }
   check('it is fought the sewers way', Z.feel === 'sewers');
   check('a fall into the chasm puts him back on the edge', Z.fallBack === true);
 }

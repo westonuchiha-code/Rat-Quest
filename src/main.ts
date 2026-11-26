@@ -1483,6 +1483,7 @@ function startGame(): void {
   const titleCard = new TitleCard(gameWrap);
   /** The Warden of Flotsam is down (so the card comes up once, when he falls). */
   let wardenDown = false;
+  const WARDEN_BEATEN = `beaten:${FLOTSAM.wardenIs.name}`;
   // (Development aid: #...&showcard shows the card at once, for pictures.)
   if (location.hash.includes('showcard')) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.', 600);
   const story = { scene: null as CompiledScene | null, t: 0, finished: false, beat: -1, onDone: null as (() => void) | null };
@@ -1969,6 +1970,8 @@ function startGame(): void {
     for (const m of webMeshes) webGroup.add(m);
     // (`&nofoes`: a filming aid, the room with no creatures in it.)
     if (!/[#&]nofoes\b/.test(location.hash)) for (const spec of def.enemies) addEnemy(spec);
+    // (A boss beaten in this file stays beaten: the Warden does not get up when Flotsam is come back to.)
+    for (const e of enemies) if (e instanceof Stag && e.bossName && discoveries.has(`beaten:${e.bossName}`)) e.alreadyBeaten();
     // THE DREAM'S CREATURES ARE THE WAKING WORLD'S, IN LOUD COLOURS (as its sleepers are: world/dozers.ts): the same
     // creature in all it does, its painted colours turned round the wheel. Only looks.
     if (def.look === 'dream') enemyModels.forEach((m, i) => dreamify(m.root, [0.42, 0.58, 0.3, 0.7][i % 4]));
@@ -3489,6 +3492,8 @@ function startGame(): void {
         if (to && doorOpen(cd) && atDoor(cd.door, player.position.x, player.position.z)) {
           cameFrom.set(to.id, cur.id);
           startTransition(to);
+          // (THE GAME: back through a door into the area before, he arrives inside ITS door on, clear of stepping through again.)
+          if (isGameRoom(to) && isGameRoom(cur)) trans.arrive = { x: to.exit.x, z: to.exit.z + (to.exit.z < 0 ? 1.9 : -1.9), y: to.exit.y ?? 0, yaw: to.exit.z < 0 ? 0 : Math.PI };
           break;
         }
       }
@@ -5138,7 +5143,12 @@ function startGame(): void {
     // THE WARDEN FALLS (Flotsam, the game's first area): the gate lifts, and the game's name comes up. It "really starts".
     if (cur.id === FLOTSAM_ID) {
       const warden = enemies.find((e) => e.kind === 'stag');
-      if (warden && !warden.alive && !wardenDown) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.');
+      if (warden && !warden.alive && !wardenDown && !discoveries.has(WARDEN_BEATEN)) {
+        discoveries.add(WARDEN_BEATEN);
+        titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.');
+        // (SOUND: the clearing jingle under the card. Borrowed, and unheard by the one who put it here.)
+        audio.play('clear', { vol: 0.9, priority: 10 });
+      }
       wardenDown = !!warden && !warden.alive;
     }
     titleCard.update(frameDt);

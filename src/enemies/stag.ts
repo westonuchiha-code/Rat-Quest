@@ -174,6 +174,12 @@ export class Stag {
     this.state = s;
     this.stateTime = 0;
   }
+  /** A boss beaten in an earlier sitting (the Warden): down already when the place is come back to, without a sound. */
+  alreadyBeaten(): void {
+    this.hp = 0;
+    this.enter('dead');
+    this.stateTime = 99;
+  }
   private drop(): void {
     this.poise = 0;
     this.spent = true;

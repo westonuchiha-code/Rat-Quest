@@ -19,6 +19,8 @@ import { NO_GOALS, compileCustom, type CustomLevel, type Piece } from './custom'
 import type { LevelDef } from './types';
 import { keyBox, type Decor, type GateSpec, type MoverSpec } from '../world/layout';
 import { DROP } from '../world/platforms';
+import { doorOn } from '../world/rooms';
+import { FLOTSAM_ID } from './flotsam';
 
 const HX = 22;
 const HZ = 26;
@@ -87,6 +89,16 @@ const room: CustomLevel = {
     ...S.bats.map((b) => at('bat', b.x, b.z, 6, { props: { perch: 'rock' as const } })),
     at('crumb', 12, -19, 0), at('crumb', -12, -18, 0),
     at('lamp', -10, 16, 7), at('lamp', 6, 14, 7), at('lamp', -17.5, 0, 7), at('lamp', -4, -14, 7), at('lamp', 14, -18, 7),
+    // (Dressed, 2026-11-26: THE SLUICE is water let down into the dark: grates in the chasm's east wall pouring into it;
+    // chains hanging over it; torches at each end of the bridge and by the way on; junk the water left on both banks.)
+    at('fall', HX - 0.4, 0, -1.2, { dir: 'e' }), at('fall', HX - 0.4, 4.5, -1.2, { dir: 'e' }), at('fall', HX - 0.4, -3.5, -1.2, { dir: 'e' }),
+    at('chain', 0, 1, 2.5), at('chain', -6, 3.5, 4), at('chain', 15, -1.5, 3), at('chain', -9.5, -2.5, 5),
+    at('brazier', S.bridge.x - 3.2, S.chasm.z1 + 1.2, 0), at('brazier', S.bridge.x + 3.2, S.chasm.z1 + 1.2, 0),
+    at('brazier', S.bridge.x - 3.2, S.chasm.z0 - 1.2, 0),
+    at('brazier', -3.4, -HZ + 1.4, 0), at('brazier', 3.4, -HZ + 1.4, 0),
+    at('banner', -6.2, -HZ + 0.1, 7, { dir: 'n', props: { color: 'gold' } }), at('banner', 6.2, -HZ + 0.1, 7, { dir: 'n', props: { color: 'gold' } }),
+    at('battery', -5, 21.5, 0, { dir: 'e' }), at('sardines', 11, 12.5, 0), at('spool', -14.5, 20, 0), at('pencil', -8, -21, 0, { dir: 'e' }), at('die', 12.5, -11.5, 0), at('teacup', -16, -16, 0),
+    at('web', HX - 0.1, -23, 6, { dir: 'w' }), at('web', 19, -HZ + 0.1, 7, { dir: 'n' }),
     at('roots', -20, 14, 8), at('roots', 20, -10, 8), at('slime', -HX + 0.1, -14, 5, { dir: 'e' }), at('slime', HX - 0.1, 14, 5, { dir: 'w' }),
   ],
 };
@@ -121,6 +133,8 @@ export function sluice(): LevelDef {
     solids: [...def.solids, keyBox(S.key.x, S.key.z)],
     movers: [...(def.movers ?? []), bridge],
     gates: [...(def.gates ?? []), ...gates],
+    // THE WAY BACK: a door in the south wall, behind where he comes in, to Flotsam (he arrives there inside the Old Gate).
+    courseDoors: [{ to: FLOTSAM_ID, name: 'FLOTSAM', under: 'THE WAY BACK', need: 0, door: doorOn('south', HX, 0, HZ, 0) }],
     checkpoints: S.lanterns.map((c) => ({ ...c })),
     decor: [...def.decor, ...parts],
   };
