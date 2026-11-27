@@ -27,6 +27,20 @@ Room 18): a Tesla coil on a hip-hop beat, zap plates, coil keys, and the Power p
 
 ---
 
+
+## FROM PLAYTESTING: HIS PAWS GO THROUGH WHAT HE CARRIES (the owner, 2026-11-27; a note for later, not to do yet)
+
+> "A future note I found from play testing a lot of the items that you pick up and hold in front of you they your hands
+> sort of like clip through them so I'm wondering if we could just maybe have his hands like magnet to the side of the
+> things that he picks up at least the small objects anyways so that way he's always holding on to two reasonable points
+> on the thing rather than having one of his arms shoved all the way through it."
+
+What it would mean: for each thing he carries in front of him (the small ones at least: pot, rock, key, and the rest in
+`HOLD_FIT`, src/world/lifting.ts), two GRIP POINTS on its sides; his arms are set each frame so his two paws land on
+them (the way `RatModel.paws` and the wake-up's arm search now put a paw on a spot), instead of fixed hug poses
+(`HUG_ARMS`, `HUG_WIDE_ARMS`). And a check like `tests/wakeclip.ts` for every carried thing: no part of either arm
+inside it, both paws on its sides.
+
 ## THE SWITCH TO OPUS (written by Fable, 2026-11-17, at 98.8% of the week's Fable)
 
 **Where things stand.** Everything is committed and pushed on `claude/new-session-0uiaps`. The full suite passes:
