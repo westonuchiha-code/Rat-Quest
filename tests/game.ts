@@ -19,6 +19,8 @@ import { SHOP } from '../src/data/shop';
 import { GAME_ROOMS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { hallDoors } from '../src/levels/hall';
 import { Stag } from '../src/enemies/stag';
+import { WAKE, WAKE_ID } from '../src/levels/wake';
+import { wakePose } from '../src/player/animations';
 import { sluice, SLUICE } from '../src/levels/sluice';
 
 let failures = 0;
@@ -82,8 +84,9 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
 
 // ---- Flotsam.
 {
-  check('the game has a first area, and it is not a test room: the Hall has no door to it', GAME_ROOMS[0] === L || GAME_ROOMS[0].id === L.id, GAME_ROOMS[0]?.id);
-  check('...found by its name', levelById(L.id)?.id === L.id && !TEST_ROOMS.some((t) => t.id === L.id) && !hallDoors().some((d) => d.to === L.id));
+  // (2026-11-27: Flotsam was the game's first area; the owner took it out of the game. "none of those levels that we
+  // were building in the test rooms are real levels so we're building the first level right now". It is a test room.)
+  check('Flotsam is a test room now, with a door in the Hall', TEST_ROOMS.some((t) => t.id === L.id) && hallDoors().some((d) => d.to === L.id) && !GAME_ROOMS.some((g) => g.id === L.id));
   const crumbs = L.collectibles.filter((c) => c.kind === 'crumb').length + L.crateContents.filter((c) => c === 'crumb').length;
   const price = BALANCE.prices.ratShield.crumbs;
   check(`a shield is sold, for crumbs, and there are more crumbs lying about than it costs (${crumbs} for ${price})`, SHOP.some((s) => s.id === 'ratShield') && price === F.crumbsNeeded && crumbs >= price + 3, `${crumbs}`);
@@ -139,7 +142,7 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
 {
   const Z = sluice();
   const K = SLUICE;
-  check('the game has a second area, after Flotsam', GAME_ROOMS[1]?.id === Z.id && GAME_ROOMS[0].id === L.id);
+  check('the Sluice is a test room now, with a door in the Hall', TEST_ROOMS.some((t) => t.id === Z.id) && hallDoors().some((d) => d.to === Z.id));
   const bridge = (Z.movers ?? []).find((m) => m.motion === 'drop');
   check('a bridge over the chasm, raised, that a catch lets down', !!bridge && (bridge.levers ?? []).length === 1 && Z.decor.some((d) => d.kind === 'lever'));
   const lever = Z.decor.find((d) => d.kind === 'lever') as { x: number; z: number } | undefined;
@@ -161,6 +164,20 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   }
   check('it is fought the sewers way', Z.feel === 'sewers');
   check('a fall into the chasm puts him back on the edge', Z.fallBack === true);
+}
+
+// ---- THE GAME (2026-11-27): one room, where he wakes up, and nothing in it yet.
+{
+  const W = GAME_ROOMS[0];
+  check('the game is ONE room: the one he wakes up in', GAME_ROOMS.length === 1 && W.id === WAKE_ID);
+  check('...and it is not a test room: the Hall has no door to it', !TEST_ROOMS.some((t) => t.id === W.id) && !hallDoors().some((d) => d.to === W.id) && levelById(W.id)?.id === W.id);
+  check('...it is EMPTY, as the owner asked: no creatures, no people, no things to pick up, no gear lying about', W.enemies.length === 0 && (W.npcs ?? []).length === 0 && W.collectibles.length === 0 && W.gear.length === 0 && (W.movers ?? []).length === 0);
+  check('...and has no way out yet', W.noExit === true);
+  check('...he lies where the room says he wakes', Math.hypot(W.spawn.x - WAKE.at.x, W.spawn.z - WAKE.at.z) < 0.1);
+  // Getting up: from flat on his back to standing, in order, and his head turned as he looks about at the end.
+  const k = [0, 0.3, 0.5, 0.7, 0.9, 1].map((x) => wakePose(x).tip);
+  check('getting up: flat on his back at first, upright at the end, and never back down on the way', k[0] === 1 && k[5] === 0 && k.every((v, i) => i === 0 || v <= k[i - 1] + 1e-9), k.map((v) => v.toFixed(2)).join(' '));
+  check('...and he sits low (hips near the floor) before he stands', wakePose(0.56).pose.hipPos[1] < -0.25 && Math.abs(wakePose(1).pose.hipPos[1]) < 0.05);
 }
 
 // ---- The climb to the sword: every jump of it can be made (the real controller, the real room).

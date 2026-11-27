@@ -32,6 +32,11 @@ to `src/main.ts`, run it. `npm run smoke -- --rooms` also opens every room and m
 Fable's, Part B Opus's, every Opus commit starts `[opus]` so Fable can review it); then `PLAYTEST.md` (what waits on
 the owner's own play).
 
+## THE GAME IS: A TITLE SCREEN, AN INTRO CUTSCENE, AND ONE EMPTY ROOM HE WAKES UP IN (the owner, 2026-11-27). READ THE TOP OF `docs/GAME.md`
+
+Nothing else is in the game until he puts it in a level. Every other room is a test room in the Hall. He decides
+what goes into the game's levels: describe-and-place with him, or he builds them in the editor.
+
 ## THERE ARE TWO THINGS NOW: THE GAME AND THE HALL (the owner, 2026-11-25). READ `docs/GAME.md`
 
 "take everything that we currently have and incorporate it into the Hub room, The Hub room is now going to be our

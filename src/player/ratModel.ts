@@ -5,7 +5,7 @@ import { createPs1Material } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import type { PlayerState, DodgeKind } from './controller';
 import {
-  ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_BROKEN, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
+  wakePose, ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_BROKEN, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
   Pose, airPose, blendPose, fullPose, idlePose, locomotionPose, unarmedArms, samplePose, smoothstep, swimPose, WALL_BRACE, WALL_KICK,
 } from './animations';
 import { TUNING } from '../data/tuning';
@@ -296,6 +296,8 @@ export interface RatAnimInput {
    */
   ice?: { belly: boolean; scrabble: number; skid: number; brake: boolean };
   /** His guard: `snap`, a blow caught NOW would be a perfect guard (the shield is punched out for exactly those frames); `turned`, how far through the sweep after one he made, 0..1 (-1: none). */
+  /** GETTING UP (the game's first moment): how far through it he is, 0..1; left out or below 0, not getting up. */
+  waking?: number;
   guardNow?: { snap: boolean; turned: number; /** His guard is broken: 0..1, how much of it is left to run (0: not). */ broken?: number };
   /**
    * Riding his shield. `grind`: it is across a ledge or a rail (`grindSide`: which side of him the drop is on, +1 his
@@ -1165,7 +1167,12 @@ export class RatModel {
     let tumbleX = 0;
     let lift = 0;
 
-    if (state === 'dead') {
+    const waking = (ctx.waking ?? -1) >= 0 ? wakePose(ctx.waking!) : null;
+    if (waking) {
+      pose = waking.pose;
+      stiffness = 9;
+      damping = 0.9;
+    } else if (state === 'dead') {
       pose = DEAD;
       stiffness = 12;
     } else if (state === 'hurt') {
@@ -1574,7 +1581,7 @@ export class RatModel {
     }
 
     // Whole-body turning for rolls, flips and lying dead.
-    this.deadAmount = ease(this.deadAmount, state === 'dead' ? 1 : 0, dt, state === 'dead' ? 7 : 30);
+    this.deadAmount = waking ? ease(this.deadAmount, waking.tip, dt, 9) : ease(this.deadAmount, state === 'dead' ? 1 : 0, dt, state === 'dead' ? 7 : 30);
     // Swimming along, he leans forward until he is nearly flat on the water.
     this.swimLean = ease(this.swimLean, state === 'swim' ? this.swimMove * 1.15 : 0, dt, state === 'swim' ? 6 : 12);
     this.tumble.rotation.x = tumbleX + this.swimLean - this.deadAmount * (Math.PI / 2);

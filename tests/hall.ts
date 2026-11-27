@@ -434,7 +434,7 @@ const hall = levelById(HALL_ID)!;
   check(
     // (And the Round, Test Room 21: a first looped room, built in the sewers' way on purpose. 2026-11-25.)
     'the Sewers and its four side areas play the sewers\' way, and the Round (a test room built that way); nowhere else does',
-    sewer.join(' ') === 'cistern pumpworks round sludgepit sump works',
+    sewer.join(' ') === 'cistern pumpworks round sludgepit sluice sump works',
     sewer.join(' ')
   );
   const floor: Aabb[] = [aabbOf(extent('floor', -200, 200, -1, 0, -200, 200))];

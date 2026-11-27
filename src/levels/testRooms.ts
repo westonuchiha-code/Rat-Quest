@@ -51,6 +51,11 @@ export const ROOMS: RoomEntry[] = [
   { n: 19, id: 'standin', door: 'STAND-IN', like: 'Every character, played, each its own way: talk to one to be them. A course with a place for each.' },
   { n: 20, id: 'lockworks', door: 'LOCKWORKS', like: 'Parts for building levels: a weight plate and its gate, a key to carry, a locked gate, checkpoints.' },
   { n: 21, id: 'round', door: 'THE ROUND', feel: 'sewers', like: 'One place that loops back on itself: the long way round, a bridge let down from the far side, the short way back.' },
+  // (Built 2026-11-25 as the game's first two areas, and taken OUT of the game 2026-11-27 by the owner: "none of those
+  // levels that we were building in the test rooms are real levels so we're building the first level right now". Kept
+  // here, as test rooms, for what is in them: the washed-up start, the Warden made a boss, the Sluice's loop.)
+  { n: 22, id: 'flotsam', door: 'FLOTSAM', like: 'Once a draft of the first area: a yard, a climb to a sword, a shield for crumbs, a Warden on a gate.' },
+  { n: 23, id: 'sluice', door: 'THE SLUICE', feel: 'sewers', like: 'Once a draft of the second area: the long way round, a bridge let down, a key for a vault.' },
 ];
 
 /** A fight to work on by itself, and its place with it ("we can tune the atmosphere while we tune the fight"). */

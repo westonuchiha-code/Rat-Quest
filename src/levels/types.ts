@@ -100,6 +100,8 @@ export interface LevelDef {
   playAs?: 'hedgehog';
   /** Which music plays here. Default 'drift'. */
   music?: 'drift' | 'pump' | 'groove' | 'echo' | 'march' | 'dream';
+  /** No way out at all: no exit door is drawn, and none opens (the game's first room, while it is empty). */
+  noExit?: boolean;
   /** Its own ambient sound (audio/ambience.ts, WORLD_SOUND), instead of its theme's. */
   sound?: string;
   /** Colour of the fog and the far dark. Default: the sewer's. */

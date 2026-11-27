@@ -32,6 +32,7 @@ import { hall } from './hall';
 import { practiceRoom, widowPit } from './practice';
 import { flotsam } from './flotsam';
 import { sluice } from './sluice';
+import { wake } from './wake';
 import { workshop } from './workshop';
 import { musicRoom } from './musicroom';
 import { breakYard } from './breakyard';
@@ -264,9 +265,9 @@ export const ARCHIVE: LevelDef[] = ALL_LEVELS.filter((l) => !l.hub && !l.world);
  * from front to back"): its areas, in order. NEW GAME on the title starts in the first. Not test rooms: the Hall has no
  * door to them, and nothing renames or numbers them.
  */
-export const GAME_ROOMS: LevelDef[] = [flotsam(), sluice()];
+export const GAME_ROOMS: LevelDef[] = [wake()];
 
-export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), workshop(), musicRoom(), breakYard(), gauntlet(), press(), greenRoom(), coilRoom(), standInRoom(), lockworks(), round(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom)];
+export const TEST_ROOMS: LevelDef[] = [garden(), longDrop(), glowCave(), coldMain(), milkyWay(), forge(), bigDipper(), toyBox(), workshop(), musicRoom(), breakYard(), gauntlet(), press(), greenRoom(), coilRoom(), standInRoom(), lockworks(), round(), hall(), widowPit(), ...PRACTICE_ROOMS.map(practiceRoom), flotsam(), sluice()];
 
 /**
  * EVERY LEVEL IS A NUMBERED TEST ROOM (the owner, 2026-11-17; levels/testRooms.ts). Each room in the list is named

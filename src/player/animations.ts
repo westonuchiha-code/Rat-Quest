@@ -652,6 +652,65 @@ export const DEAD: Pose = fullPose({
   ears: 0.9,
 });
 
+/*
+ * GETTING UP (2026-11-27): the game's first moment, he comes to on the floor of the deep drain and slowly gets up.
+ * Five poses, blended one into the next by `wakePose`; how far back the whole body is tipped (1: flat on his back) is
+ * given with each (the model tips him; a pose only bends him).
+ */
+/** Propped up on his elbows, head lolling. */
+export const WAKE_PROP: Pose = fullPose({
+  hipPos: [0, -0.02, 0], hips: [0.1, 0, 0], chest: [0.5, 0, 0], head: [0.5, 0.3, 0.1],
+  armS: [0.9, 0, -0.5], elbowS: -1.5, wrist: [0.4, 0, 0], armH: [0.9, 0, 0.5], elbowH: -1.5,
+  footS: [-0.14, 0.02, 0.06], footH: [0.15, 0.02, 0.08], toeS: 0.6, toeH: 0.6,
+  tail: [-1.0, 0.2, -0.05], ears: 0.6,
+});
+/** Sitting up on the floor, legs out in front of him, head hanging. */
+export const WAKE_SIT: Pose = fullPose({
+  hipPos: [0, -0.3, -0.04], hips: [-0.2, 0, 0], chest: [0.55, 0, 0], head: [0.55, -0.15, 0],
+  armS: [0.5, 0, -0.35], elbowS: -0.5, wrist: [0.4, 0, 0], armH: [0.5, 0, 0.35], elbowH: -0.5,
+  footS: [-0.13, 0.03, 0.3], footH: [0.15, 0.03, 0.26], toeS: -0.3, toeH: -0.2,
+  tail: [-0.9, 0.5, 0], ears: 0.5,
+});
+/** Down on one knee, a paw on the floor, getting his breath. */
+export const WAKE_KNEEL: Pose = fullPose({
+  hipPos: [0, -0.2, -0.03], hips: [0.25, 0.1, 0], chest: [0.45, 0, 0], head: [0.35, 0.1, 0],
+  armS: [-0.2, 0, -0.25], elbowS: -0.3, wrist: [0.4, 0, 0], armH: [-0.6, 0.2, 0.3], elbowH: -1.3,
+  footS: [-0.12, 0.03, -0.2], footH: [0.12, 0, 0.17], toeS: 0.9, toeH: 0,
+  tail: [-0.5, 0.3, 0], ears: 0.4,
+});
+/** Up, but not yet steady: hunched, head down. */
+export const WAKE_HUNCH: Pose = fullPose({
+  hipPos: [0, -0.07, 0], hips: [0.15, 0, 0], chest: [0.35, 0, 0], head: [0.3, 0, 0],
+  armS: [0.2, 0, -0.2], elbowS: -0.4, wrist: [0.4, 0, 0], armH: [0.15, 0, 0.2], elbowH: -0.5,
+  footS: [-0.12, 0, -0.03], footH: [0.12, 0, 0.04], tail: [-0.2, 0, 0], ears: 0.3,
+});
+/** Standing, looking about him. */
+export const WAKE_STAND: Pose = fullPose({
+  hipPos: [0, -0.02, 0], hips: [0, 0, 0], chest: [0.05, 0, 0], head: [-0.05, 0, 0],
+  armS: [0.1, 0, -0.2], elbowS: -0.3, wrist: [0.4, 0, 0], armH: [0.1, 0, 0.2], elbowH: -0.3,
+  footS: [-0.11, 0, -0.02], footH: [0.11, 0, 0.03], tail: [0, 0, 0], ears: 0,
+});
+/** The keys of getting up: at what part of it (0..1) each pose is reached, and how far back he is tipped then. */
+const WAKE_KEYS: Array<[number, Pose, number]> = [
+  [0, DEAD, 1], [0.28, DEAD, 1], [0.42, WAKE_PROP, 0.72], [0.56, WAKE_SIT, 0.1], [0.7, WAKE_KNEEL, 0],
+  [0.84, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
+];
+/** Getting up, `k` of the way (0..1): his pose, how far back he is tipped, and his head's turn (he looks about him at the end; he shakes it as he rises). */
+export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
+  k = Math.max(0, Math.min(1, k));
+  let i = 0;
+  while (i < WAKE_KEYS.length - 2 && k > WAKE_KEYS[i + 1][0]) i++;
+  const [k0, p0, t0] = WAKE_KEYS[i];
+  const [k1, p1, t1] = WAKE_KEYS[i + 1];
+  const u = smoothstep((k - k0) / Math.max(1e-6, k1 - k0));
+  const pose = blendPose(p0, p1, u);
+  // A shake of the head as he gets his breath on one knee; a look one way and the other once he is up.
+  const shake = k > 0.6 && k < 0.72 ? Math.sin((k - 0.6) * 90) * 0.35 * Math.sin(((k - 0.6) / 0.12) * Math.PI) : 0;
+  const look = k > 0.86 ? Math.sin(((k - 0.86) / 0.14) * Math.PI * 2) * 0.6 : 0;
+  pose.head = [pose.head[0], pose.head[1] + shake + look, pose.head[2]];
+  return { pose, tip: t0 + (t1 - t0) * u, look };
+}
+
 /** In the air: blends rise, apex and fall by vertical speed, then tucks for a flip. */
 export function airPose(verticalSpeed: number, jumpSpeed: number, flip: number): Pose {
   const v = Math.max(-1, Math.min(1, verticalSpeed / jumpSpeed));

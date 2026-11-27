@@ -1,4 +1,46 @@
-# THE GAME (started 2026-11-25). WORK IN PROGRESS
+# THE GAME. READ THE FIRST SECTION FIRST
+
+## WHAT THE GAME IS RIGHT NOW (the owner, 2026-11-27). THIS OVERRULES EVERYTHING BELOW IT
+
+> "none of those levels that we were building in the test rooms are real levels so we're building the first level
+> right now that's what we're doing. So where he wakes up right now is just going to be an empty room we're just going
+> to make a big empty room using the sewer textures and we're going to work on the cutscene right now ... that room
+> will eventually be the whole first level but right now it's just a room he wakes up in so we can stay focused and
+> then we're going to build the game slowly out one level at a time I don't want to rush through building the whole
+> level at once relying on your placements and stuff I want to describe exactly how I want the level and you can help
+> me put it that way or I will build the level myself in the level editor and you are just going to have to create the
+> rooms. ... right now the only things we should be working on in the main game are the Title screen the intro cut
+> scene and him waking up. Everything else we do if we want to experiment with rooms and stuff they can happen in the
+> test room and the test room is where everything else belongs ... none of that stuff is officially in the game yet
+> until we put it in an actual level"
+
+> "he should wake up with a half sword and no Shield he should have to find the shield in the first level but again
+> we'll get get to that when we get there ... when he's fighting the beetle maybe it's three hits he gets hit once and
+> his shield flies off he gets hit a second time and his sword breaks and when he gets hit a third time then it fades to
+> Black and that's where he wakes up with his half ... a sword"
+
+On the story (do not ask him again): "think of Mario ... it doesn't really matter who the night is all we need to know is
+that he's a rat that he's a knight and that he's there to ... collect Collectibles beat these levels fight some bad
+guys clear some rooms ... a dungeon delving night ... and even that shouldn't be super spelled out." NO narration, no
+text-dialogue intro, no popping out of a pipe.
+
+THE GAME NOW: the title screen; THE INTRO CUTSCENE (to build: below); HIM WAKING UP in ONE EMPTY ROOM (`src/levels/
+wake.ts`, `GAME_ROOMS`), with half a sword and no shield. NOTHING goes into that room unless he says what. Flotsam and
+the Sluice are TEST ROOMS 22 and 23 now (everything written about them below is history).
+
+THE INTRO CUTSCENE, as he described it (to be built): a sewer tunnel, slime water on the floor; he walks, shield on his
+back, sword sheathed; a light flickers; skittering; two cockroaches; a short close-quarters fight in quick cuts like
+Final Fantasy 8's opening duel (the sword sparking off the wall; he jumps and stabs one through; dodges and takes out
+the other); a shadow falls; he turns, surprised; the big beetle with the hammer (the Stag Knight). THREE BLOWS: the
+first knocks his shield flying, the second breaks his sword, the third: black. He wakes up deep in the sewers.
+
+GETTING UP (done, 2026-11-27): `wakePose` in `src/player/animations.ts`, five poses (on his back, propped on his
+elbows, sitting, on one knee, hunched, standing and looking about), about seven seconds; the controls are his once he
+stands (pushing the stick hurries him). `#...&wakeup` plays it, for filming.
+
+---
+
+## HISTORY: THE GAME AS FIRST STARTED (2026-11-25 to 26). SUPERSEDED
 
 The owner, 2026-11-25:
 

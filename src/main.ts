@@ -113,6 +113,7 @@ import { ALL_LEVELS, ARCHIVE, GAME_ROOMS, LEVELS, TEST_ROOMS, levelById, setExtr
 import { feelOf } from './data/feel';
 import { HALL_ID } from './levels/testRooms';
 import { FLOTSAM, FLOTSAM_ID } from './levels/flotsam';
+import { WAKE, WAKE_ID } from './levels/wake';
 import { TitleCard } from './ui/titleCard';
 import { wayOutOf } from './levels/wayOut';
 import { MyLevels } from './levels/library';
@@ -1484,8 +1485,17 @@ function startGame(): void {
   const titleCard = new TitleCard(gameWrap);
   /** The Warden of Flotsam is down (so the card comes up once, when he falls). */
   let wardenDown = false;
+  /**
+   * GETTING UP (the game's first moment, levels/wake.ts): seconds into it, or below 0 when he is not getting up. He
+   * lies still, props himself up, sits, kneels, rises. The controls are his again once he is on his feet; pushing the
+   * stick before then hurries him (a little).
+   */
+  let wakeT = -1;
+  const WAKE_SECS = 7;
   let knightWasDead = false;
   const WARDEN_BEATEN = `beaten:${FLOTSAM.wardenIs.name}`;
+  // (Development aid: #...&wakeup starts him on the floor, getting up, for filming it.)
+  if (/[#&]wakeup\b/.test(location.hash)) wakeT = 0;
   // (Development aid: #...&showcard shows the card at once, for pictures.)
   if (location.hash.includes('showcard')) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.', 600);
   const story = { scene: null as CompiledScene | null, t: 0, finished: false, beat: -1, onDone: null as (() => void) | null };
@@ -1950,6 +1960,8 @@ function startGame(): void {
     scene.add(pickups.group);
     doorway = new Doorway(def.exit, def.theme ?? 'sewer');
     scene.add(doorway.group);
+    // (A room with no way out has no door drawn.)
+    doorway.group.visible = !def.noExit;
     goals = new GoalTracker(def, (k) => tracker.count(def.id, k));
     dreamVoices.reset();
     // One-way gates (world/locks.ts): each one's bar, on the side it opens from.
@@ -2622,6 +2634,14 @@ function startGame(): void {
       }
     }
 
+    // (Getting up: nothing he is told to do is done until he is on his feet.)
+    if (wakeT >= 0) {
+      const hurry = m.lengthSq() > 0.04 && wakeT > 2;
+      wakeT += dt * (hurry ? 1.8 : 1);
+      m.set(0, 0, 0);
+      jumpPressed = jumpHeld = attackPressed = dodgePressed = guardHeld = stowPressed = false;
+      if (wakeT >= WAKE_SECS) wakeT = -1;
+    }
     const wasGrounded = player.grounded;
     // (A crusher that came down on him strikes him after the fight is resolved, which clears what hit him before it.)
     if (chamber.stepMovers(dt, player.dead ? undefined : player)) crusherHit = true;
@@ -3476,7 +3496,7 @@ function startGame(): void {
       storySeen.mark(def.id);
       playScene(def);
     }
-    if (!cur.hub && !story.scene && !storyWaiting && !levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && goals.mainDone(aliveCount()) && player.grounded && calm) {
+    if (!cur.hub && !cur.noExit && !story.scene && !storyWaiting && !levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && goals.mainDone(aliveCount()) && player.grounded && calm) {
       startCutscene();
     }
     // Everything in the level found, after clearing it: the bonus is remembered and any reward is his.
@@ -3487,7 +3507,7 @@ function startGame(): void {
       if (cur.reward) equipment.give(cur.reward);
     }
     // Stepping up to an open door takes him to the next level.
-    if (!noWayOut(cur) && levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && !story.scene && player.grounded && !player.dead && atDoor(cur.exit, player.position.x, player.position.z)) {
+    if (!noWayOut(cur) && !cur.noExit && levelProgress.cleared(cur.id) && !cutscene.active && !trans.active && !story.scene && player.grounded && !player.dead && atDoor(cur.exit, player.position.x, player.position.z)) {
       const leaving = STORY[cur.id]?.exit;
       if (leaving && !storyOff && !exitScenePlayed) {
         // A last bit of acting at the door, then on to the next room.
@@ -3547,7 +3567,14 @@ function startGame(): void {
     player.hp = player.maxHp;
     // A new game starts at home: the game's first area, or the Hall.
     loadLevel(homeLevel ?? LEVELS[0]);
-    // (THE GAME's first moment: he comes out of the great pipe, over the pool, and down he goes.)
+    // (THE GAME's first moment: he comes to on the floor of the room, and gets up.)
+    if (playing === 'game' && cur.id === WAKE_ID) {
+      player.position.set(WAKE.at.x, 0, WAKE.at.z);
+      player.prevPosition.copy(player.position);
+      player.velocity.set(0, 0, 0);
+      player.facing = WAKE.facing;
+      wakeT = 0;
+    }
     if (playing === 'game' && cur.id === FLOTSAM_ID) {
       player.position.set(FLOTSAM.arrive.x, FLOTSAM.arrive.y, FLOTSAM.arrive.z);
       player.prevPosition.copy(player.position);
@@ -4968,7 +4995,7 @@ function startGame(): void {
     }
     fader.set(Math.max(cover, story.scene && storyFrame ? storyFrame.cover : 0));
     doorway.setReveal(doorSparkle, doorFade, time);
-    if (doorFade >= 1 && !exitFrameSolid && !noWayOut(cur)) exitFrameSolid = addDoorFrame(cur.exit, true);
+    if (doorFade >= 1 && !exitFrameSolid && !noWayOut(cur) && !cur.noExit) exitFrameSolid = addDoorFrame(cur.exit, true);
     if (wedgeVis && cur.wedges) {
       const ws = cur.wedges;
       const alive = aliveCount();
@@ -5039,6 +5066,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
+      waking: wakeT >= 0 ? wakeT / WAKE_SECS : -1,
       guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1, broken: player.guardBroken / TUNING.guard.brokenFor },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,

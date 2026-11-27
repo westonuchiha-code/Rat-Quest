@@ -18,6 +18,8 @@ export const LYING: Record<string, { right: [number, number]; left: [number, num
   coldmain: { right: [2.8, 7.3], left: [-3.5, 8.4] },
   lockworks: { right: [6.5, 9.5], left: [-6.5, 9.5] },
   round: { right: [5.5, 16], left: [-5.5, 16] },
+  flotsam: { right: [4.5, 17], left: [-4.5, 17] },
+  sluice: { right: [4, 18.5], left: [-4, 18.5] },
   longdrop: { right: [2.8, -7.1], left: [-2.9, -5.4] },
   foundry: { right: [2.8, 42.9], left: [-2.9, 44.6] },
   forge: { right: [3, 8.5], left: [-2.9, 7.9] },
