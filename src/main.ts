@@ -1492,7 +1492,8 @@ function startGame(): void {
    * stick before then hurries him (a little).
    */
   let wakeT = -1;
-  const WAKE_SECS = 7.5;
+  // (7.5 seconds getting up, then about three rubbing his head and looking about.)
+  const WAKE_SECS = 10.4;
   /** The half sword lying on the floor by him while he gets up (taken up at WAKE_GRAB). */
   let wakeHilt: THREE.Object3D | null = null;
   const layHilt = (): void => {

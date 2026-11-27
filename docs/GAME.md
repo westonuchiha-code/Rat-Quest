@@ -49,6 +49,11 @@ HIS PAWS ON THE FLOOR (2026-11-27, the owner: "It looks like he's pushing up off
 he pushed himself up, and 0.3 up when he "took" the sword. His arms were found by a search (arm, chest and hip angles)
 that puts both paws on the floor pushing up and on all fours, and his sword paw down ON the hilt as he takes it; and
 the check holds both (`RatModel.paws`). A paw that swings from one place to another bends its elbow as it goes.
+THE RUB (2026-11-27, the owner: "after he gets fully upright he kind of tilts his head down and like rubs a part of his
+head ... like he's 'oh ... what was that that hurt' ... he's not actually saying anything"): once he is up (`WAKE_UP`, 72%
+of it), head down and to one side, his free paw to his helmet and round it a few times (`WAKE_RUB`, `WAKE_RUB_FROM` to
+`WAKE_RUB_TO`), then a look about him. Ten and a half seconds in all now (`WAKE_SECS` in main.ts). The paw was placed
+on the helmet by the same kind of search (`RatModel.headAt`), and the check holds it on the helmet, never inside it.
 EVERY NEW ANIMATION FOR A CUTSCENE GETS A CHECK LIKE THIS (no part in the floor, through a wall, or through another).
 
 ---

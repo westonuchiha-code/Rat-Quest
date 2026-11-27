@@ -705,7 +705,12 @@ export const WAKE_REACH: Pose = fullPose({
   tail: [-0.6, 0.12, 0.1], ears: 0.4,
 });
 /** The part of getting up (0..1) at which his paw closes on the hilt: before it he has nothing in his paws. */
-export const WAKE_GRAB = 0.72;
+/** The part of getting up (0..1) by which he is on his feet: the rest is the rub of his head and a look about him. */
+export const WAKE_UP = 0.72;
+/** Rubbing his head: from, to (parts of getting up). */
+export const WAKE_RUB_FROM = 0.79;
+export const WAKE_RUB_TO = 0.89;
+export const WAKE_GRAB = 0.72 * WAKE_UP;
 /** Where the half sword lies when he comes to: off his sword paw's side and a little ahead, flat on the floor
  * (x to his right, z ahead, in his own terms; and which way the blade points, turned from straight ahead). */
 export const WAKE_HILT = { right: 0.24, ahead: 0.27, turn: 1.45 } as const;
@@ -715,6 +720,13 @@ export const WAKE_HUNCH: Pose = fullPose({
   armS: [0.2, 0, -0.2], elbowS: -0.4, wrist: [0.4, 0, 0], armH: [0.15, 0, 0.2], elbowH: -0.5,
   footS: [-0.12, 0, -0.03], footH: [0.12, 0, 0.04], tail: [-0.2, 0, 0], ears: 0.3,
 });
+/** Up, and the blow catches up with him: head down and to one side, his free paw up to it ("oh, what was that, that
+ * hurt": the owner, 2026-11-27; no word said). His sword paw hangs at his side with the half sword. */
+export const WAKE_RUB: Pose = fullPose({
+  hipPos: [0, -0.03, 0], hips: [0.05, 0, 0], chest: [0.2, 0.1, 0.05], head: [0.45, 0.25, 0.25],
+  armS: [0.1, 0, -0.2], elbowS: -0.3, wrist: [0.4, 0, 0], armH: [-2.8, 0.55, 0.2], elbowH: -1.0,
+  footS: [-0.11, 0, -0.02], footH: [0.11, 0, 0.03], tail: [-0.2, 0, 0], ears: 0.5,
+});
 /** Standing, looking about him. */
 export const WAKE_STAND: Pose = fullPose({
   hipPos: [0, -0.02, 0], hips: [0, 0, 0], chest: [0.05, 0, 0], head: [-0.05, 0, 0],
@@ -723,9 +735,13 @@ export const WAKE_STAND: Pose = fullPose({
 });
 /** The keys of getting up: at what part of it (0..1) each pose is reached, and how far he is tipped then (-1: flat on his face). */
 const WAKE_KEYS: Array<[number, Pose, number]> = [
-  [0, WAKE_FLAT, -1], [0.3, WAKE_FLAT, -1], [0.44, WAKE_PUSH, -0.62], [0.55, WAKE_FOURS, -0.35], [0.6, WAKE_KNEEL, 0],
-  // (He is down at the hilt a moment BEFORE his paw closes on it: the joints take that long to get there.)
-  [WAKE_GRAB - 0.06, WAKE_REACH, 0], [WAKE_GRAB + 0.02, WAKE_REACH, 0], [0.86, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
+  ...([
+    [0, WAKE_FLAT, -1], [0.3, WAKE_FLAT, -1], [0.44, WAKE_PUSH, -0.62], [0.55, WAKE_FOURS, -0.35], [0.6, WAKE_KNEEL, 0],
+    // (He is down at the hilt a moment BEFORE his paw closes on it: the joints take that long to get there.)
+    [0.66, WAKE_REACH, 0], [0.74, WAKE_REACH, 0], [0.86, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
+  ] as Array<[number, Pose, number]>).map(([k, p, t]): [number, Pose, number] => [k * WAKE_UP, p, t]),
+  // Up. Then the blow catches up with him: head down, his free paw to it, rubbing; then a look about him.
+  [WAKE_RUB_FROM, WAKE_RUB, 0], [WAKE_RUB_TO, WAKE_RUB, 0], [0.95, WAKE_STAND, 0], [1, WAKE_STAND, 0],
 ];
 /** Getting up, `k` of the way (0..1): his pose, how far back he is tipped, and his head's turn (he looks about him at the end; he shakes it as he rises). */
 export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
@@ -750,9 +766,16 @@ export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
     if (swing > 0.5) pose[elbow] -= arc * Math.min(0.7, swing * 0.4);
   }
   // A shake of the head as he gets his breath on one knee; a look one way and the other once he is up.
-  const shake = k > 0.57 && k < 0.65 ? Math.sin((k - 0.57) * 110) * 0.3 * Math.sin(((k - 0.57) / 0.08) * Math.PI) : 0;
-  const look = k > 0.86 ? Math.sin(((k - 0.86) / 0.14) * Math.PI * 2) * 0.6 : 0;
+  const ks = k / WAKE_UP;
+  const shake = ks > 0.57 && ks < 0.65 ? Math.sin((ks - 0.57) * 110) * 0.3 * Math.sin(((ks - 0.57) / 0.08) * Math.PI) : 0;
+  const look = k > 0.93 ? Math.sin(((k - 0.93) / 0.07) * Math.PI * 2) * 0.55 : 0;
   pose.head = [pose.head[0], pose.head[1] + shake + look, pose.head[2]];
+  // The rub: his paw going round on the sore place, a few times (a turn of the upper arm, and the elbow with it).
+  if (k > WAKE_RUB_FROM - 0.01 && k < WAKE_RUB_TO + 0.01) {
+    const r = Math.sin(((k - WAKE_RUB_FROM) / (WAKE_RUB_TO - WAKE_RUB_FROM)) * Math.PI * 6);
+    pose.armH = [pose.armH[0] + r * 0.12, pose.armH[1] + r * 0.12, pose.armH[2]];
+    pose.elbowH += r * 0.12;
+  }
   return { pose, tip: t0 + (t1 - t0) * u, look };
 }
 

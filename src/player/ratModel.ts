@@ -1015,6 +1015,15 @@ export class RatModel {
     this.elbowH.localToWorld(h.set(0, -ARM_BONE, 0));
   }
 
+  /** The middle of his helmeted head in the world, and how far out from it the helmet goes (for a paw laid on it). */
+  headAt(out: THREE.Vector3): number {
+    this.root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(this.helmet);
+    box.getCenter(out);
+    const size = box.getSize(new THREE.Vector3());
+    return Math.max(size.x, size.z) / 2;
+  }
+
   /** A copy of his sword as it is now (broken or whole, his colours), to lie on a floor: the hilt he wakes beside. */
   looseSword(): THREE.Object3D {
     const c = this.sword.clone(true);

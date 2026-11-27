@@ -5,7 +5,7 @@
 import './../src/core/colorSetup';
 import * as THREE from 'three';
 import { RatModel } from '../src/player/ratModel';
-import { WAKE_GRAB } from '../src/player/animations';
+import { WAKE_GRAB, WAKE_RUB_FROM, WAKE_RUB_TO, WAKE_UP } from '../src/player/animations';
 import { placeHilt } from '../src/player/wakeHilt';
 import { WAKE } from '../src/levels/wake';
 
@@ -15,7 +15,7 @@ function check(name: string, ok: boolean, detail = ''): void {
   if (!ok) failures++;
 }
 const DT = 1 / 60;
-const SECS = 7.5;
+const SECS = 10.4; // (as main.ts's WAKE_SECS: getting up, then rubbing his head and looking about)
 const base = {
   state: 'idle' as const, planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll' as const, dodgeProgress: 0,
   verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0,
@@ -86,13 +86,38 @@ check('...once the half sword is in his paw, neither end of its blade goes into 
   const s = new THREE.Vector3();
   const h = new THREE.Vector3();
   const off: string[] = [];
-  for (const k of [0.44, 0.5, 0.55]) {
+  for (const k of [0.44, 0.5, 0.55].map((x) => x * WAKE_UP)) {
     for (let i = 0; i < 120; i++) r.update(DT, { ...base, waking: k });
     r.paws(s, h);
     // (A paw's middle half a paw up: its underside on the floor.)
-    if (Math.abs(s.y - 0.045) > 0.025 || Math.abs(h.y - 0.045) > 0.025) off.push(`${(k * 100).toFixed(0)}%: ${s.y.toFixed(3)} / ${h.y.toFixed(3)}`);
+    if (Math.abs(s.y - 0.045) > 0.025 || Math.abs(h.y - 0.045) > 0.025) off.push(`${((k / WAKE_UP) * 100).toFixed(0)}% of getting up: ${s.y.toFixed(3)} / ${h.y.toFixed(3)}`);
   }
   check('pushing up and on all fours, both his paws are ON the floor (not in the air)', off.length === 0, off.join('; ') || 'at 44%, 50% and 55%');
+}
+
+// RUBBING HIS HEAD once he is up (the owner, 2026-11-27: "he kind of tilts his head down and like rubs a part of his
+// head ... 'oh ... what was that that hurt'"): his free paw ON his helmet the whole time he rubs, never inside it.
+{
+  const r = new RatModel();
+  r.setKit({ broken: true, bare: true });
+  r.setTransform(at, WAKE.facing);
+  for (let i = 0; i < 90; i++) r.update(DT, { ...base, waking: 0 });
+  const s = new THREE.Vector3();
+  const h = new THREE.Vector3();
+  const c = new THREE.Vector3();
+  let near = Infinity;
+  let far = 0;
+  for (let i = 0; i <= n; i++) {
+    const k = i / n;
+    r.update(DT, { ...base, waking: k });
+    if (k < WAKE_RUB_FROM + 0.015 || k > WAKE_RUB_TO) continue;
+    r.paws(s, h);
+    const R = r.headAt(c);
+    const d = h.distanceTo(c) - R;
+    near = Math.min(near, d);
+    far = Math.max(far, d);
+  }
+  check('rubbing his head: his paw is on his helmet the whole time (not inside it, not off in the air)', near > -0.005 && far < 0.09, `from ${near.toFixed(3)} to ${far.toFixed(3)} off the helmet's edge`);
 }
 
 // The half sword on the floor: laid as the game lays it (main.ts `layHilt`).

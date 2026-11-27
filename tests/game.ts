@@ -20,7 +20,7 @@ import { GAME_ROOMS, TEST_ROOMS, levelById } from '../src/levels/levels';
 import { hallDoors } from '../src/levels/hall';
 import { Stag } from '../src/enemies/stag';
 import { WAKE, WAKE_ID } from '../src/levels/wake';
-import { wakePose } from '../src/player/animations';
+import { WAKE_UP, wakePose } from '../src/player/animations';
 import { sluice, SLUICE } from '../src/levels/sluice';
 
 let failures = 0;
@@ -175,11 +175,11 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   check('...and has no way out yet', W.noExit === true);
   check('...he lies where the room says he wakes', Math.hypot(W.spawn.x - WAKE.at.x, W.spawn.z - WAKE.at.z) < 0.1);
   // Getting up: from flat on his back to standing, in order, and his head turned as he looks about at the end.
-  const k = [0, 0.3, 0.5, 0.7, 0.9, 1].map((x) => wakePose(x).tip);
+  const k = [0, 0.3, 0.5, 0.7, 0.9, 1].map((x) => wakePose(x * WAKE_UP).tip);
   // (Face down: the owner, 2026-11-27, on him lying on his back: "his feet are sticking up in the air and it looks Goofy".)
   check('getting up: flat on his FACE at first, upright at the end, and never back down on the way', k[0] === -1 && k[5] === 0 && k.every((v, i) => i === 0 || v >= k[i - 1] - 1e-9), k.map((v) => v.toFixed(2)).join(' '));
   // (Hips raised from where they first were, 2026-11-27: lower, his knee went into the floor. tests/wakeclip.ts.)
-  check('...and he is on his hands and knees (tipped forward, arms reaching down) before he stands', wakePose(0.57).tip < -0.2 && wakePose(0.57).pose.armS[0] < -0.8 && Math.abs(wakePose(1).pose.hipPos[1]) < 0.05);
+  check('...and he is on his hands and knees (tipped forward, arms reaching down) before he stands', wakePose(0.57 * WAKE_UP).tip < -0.2 && wakePose(0.57 * WAKE_UP).pose.armS[0] < -0.8 && Math.abs(wakePose(1).pose.hipPos[1]) < 0.05);
 }
 
 // ---- The climb to the sword: every jump of it can be made (the real controller, the real room).
