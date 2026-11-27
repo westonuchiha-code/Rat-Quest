@@ -1008,6 +1008,13 @@ export class RatModel {
     remap(this.sword, [[C.blade, colors.blade], [C.gold, colors.hilt]]);
   }
 
+  /** Where his paws are in the world (the end of each forearm): the sword paw, then the shield paw. */
+  paws(s: THREE.Vector3, h: THREE.Vector3): void {
+    this.root.updateMatrixWorld(true);
+    this.elbowS.localToWorld(s.set(0, -ARM_BONE, 0));
+    this.elbowH.localToWorld(h.set(0, -ARM_BONE, 0));
+  }
+
   /** A copy of his sword as it is now (broken or whole, his colours), to lie on a floor: the hilt he wakes beside. */
   looseSword(): THREE.Object3D {
     const c = this.sword.clone(true);

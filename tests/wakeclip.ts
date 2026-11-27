@@ -77,6 +77,24 @@ for (let i = 0; i <= n; i++) {
 check('getting up: no part of him goes into the floor, in any frame (a hundredth at most: the soft edge of a foot)', lowest > -0.012, `lowest ${lowest.toFixed(3)} at ${lowAt}`);
 check('...once the half sword is in his paw, neither end of its blade goes into the floor', bladeLow > -0.01, `lowest ${bladeLow.toFixed(3)} at ${bladeLowAt}`);
 
+// HIS PAWS ON THE FLOOR as he pushes up and is on all fours (the owner, 2026-11-27: "It looks like he's pushing up off
+// the air right he should be pushing up off the ground": they were 0.25 to 0.37 up).
+{
+  const r = new RatModel();
+  r.setKit({ broken: true, bare: true });
+  r.setTransform(at, WAKE.facing);
+  const s = new THREE.Vector3();
+  const h = new THREE.Vector3();
+  const off: string[] = [];
+  for (const k of [0.44, 0.5, 0.55]) {
+    for (let i = 0; i < 120; i++) r.update(DT, { ...base, waking: k });
+    r.paws(s, h);
+    // (A paw's middle half a paw up: its underside on the floor.)
+    if (Math.abs(s.y - 0.045) > 0.025 || Math.abs(h.y - 0.045) > 0.025) off.push(`${(k * 100).toFixed(0)}%: ${s.y.toFixed(3)} / ${h.y.toFixed(3)}`);
+  }
+  check('pushing up and on all fours, both his paws are ON the floor (not in the air)', off.length === 0, off.join('; ') || 'at 44%, 50% and 55%');
+}
+
 // The half sword on the floor: laid as the game lays it (main.ts `layHilt`).
 {
   const r2 = new RatModel();
@@ -102,10 +120,11 @@ check('...once the half sword is in his paw, neither end of its blade goes into 
   r4.setTransform(at, WAKE.facing);
   for (let i = 0; i < 90; i++) r4.update(DT, { ...base, waking: 0 });
   for (let k = 0; k <= WAKE_GRAB; k += DT / SECS) r4.update(DT, { ...base, waking: k });
-  r4.getBlade(b, t);
+  r4.paws(b, t);
   const centre = box.getCenter(new THREE.Vector3());
   const gap = Math.hypot(b.x - centre.x, b.z - centre.z);
-  check('...and his paw is down at it when he takes it up (not reaching at the air)', gap < 0.35 && b.y < 0.3, `paw ${gap.toFixed(2)} off it, ${b.y.toFixed(2)} up`);
+  // (The paw's middle closes on it: the sword lies 0.05 thick, a paw is 0.09 across. At first he took it 0.3 up in the air.)
+  check('...and his paw closes ON it when he takes it up (not on the air beside it)', gap < 0.12 && b.y < 0.13, `paw ${gap.toFixed(2)} off it, ${b.y.toFixed(2)} up`);
 }
 
 console.log(failures === 0 ? '\nwakeclip: all passed' : `\nwakeclip: ${failures} FAILED`);

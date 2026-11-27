@@ -45,6 +45,10 @@ had not: his ear 0.16 into the floor lying down, his tail 0.35 and a knee 0.1 ge
 took it, and the half sword laid on its edge (taller than a hilt, and under the floor). All mended: nothing of him goes
 more than a hundredth into the floor in any frame, the blade never does, the sword lies flat ON the floor clear of him,
 and his paw is down at it when he takes it. A foot that moves along the floor between two poses is lifted as it goes.
+HIS PAWS ON THE FLOOR (2026-11-27, the owner: "It looks like he's pushing up off the air"): they were 0.25 to 0.37 up as
+he pushed himself up, and 0.3 up when he "took" the sword. His arms were found by a search (arm, chest and hip angles)
+that puts both paws on the floor pushing up and on all fours, and his sword paw down ON the hilt as he takes it; and
+the check holds both (`RatModel.paws`). A paw that swings from one place to another bends its elbow as it goes.
 EVERY NEW ANIMATION FOR A CUTSCENE GETS A CHECK LIKE THIS (no part in the floor, through a wall, or through another).
 
 ---
