@@ -176,8 +176,9 @@ function hop(name: string, from: [number, number, number], to: [number, number, 
   check('...he lies where the room says he wakes', Math.hypot(W.spawn.x - WAKE.at.x, W.spawn.z - WAKE.at.z) < 0.1);
   // Getting up: from flat on his back to standing, in order, and his head turned as he looks about at the end.
   const k = [0, 0.3, 0.5, 0.7, 0.9, 1].map((x) => wakePose(x).tip);
-  check('getting up: flat on his back at first, upright at the end, and never back down on the way', k[0] === 1 && k[5] === 0 && k.every((v, i) => i === 0 || v <= k[i - 1] + 1e-9), k.map((v) => v.toFixed(2)).join(' '));
-  check('...and he sits low (hips near the floor) before he stands', wakePose(0.56).pose.hipPos[1] < -0.25 && Math.abs(wakePose(1).pose.hipPos[1]) < 0.05);
+  // (Face down: the owner, 2026-11-27, on him lying on his back: "his feet are sticking up in the air and it looks Goofy".)
+  check('getting up: flat on his FACE at first, upright at the end, and never back down on the way', k[0] === -1 && k[5] === 0 && k.every((v, i) => i === 0 || v >= k[i - 1] - 1e-9), k.map((v) => v.toFixed(2)).join(' '));
+  check('...and he is on his hands and knees (hips low) before he stands', wakePose(0.57).pose.hipPos[1] < -0.15 && Math.abs(wakePose(1).pose.hipPos[1]) < 0.05);
 }
 
 // ---- The climb to the sword: every jump of it can be made (the real controller, the real room).

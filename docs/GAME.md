@@ -34,8 +34,8 @@ Final Fantasy 8's opening duel (the sword sparking off the wall; he jumps and st
 the other); a shadow falls; he turns, surprised; the big beetle with the hammer (the Stag Knight). THREE BLOWS: the
 first knocks his shield flying, the second breaks his sword, the third: black. He wakes up deep in the sewers.
 
-GETTING UP (done, 2026-11-27): `wakePose` in `src/player/animations.ts`, five poses (on his back, propped on his
-elbows, sitting, on one knee, hunched, standing and looking about), about seven seconds; the controls are his once he
+GETTING UP (done, 2026-11-27; made FACE DOWN the same day at his word): `wakePose` in `src/player/animations.ts` (face down, head to one side; pushing up on his arms;
+hands and knees; one knee; hunched; standing and looking about), about seven seconds; the controls are his once he
 stands (pushing the stick hurries him). `#...&wakeup` plays it, for filming.
 
 ---

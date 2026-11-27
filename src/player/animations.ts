@@ -657,12 +657,31 @@ export const DEAD: Pose = fullPose({
  * Five poses, blended one into the next by `wakePose`; how far back the whole body is tipped (1: flat on his back) is
  * given with each (the model tips him; a pose only bends him).
  */
-/** Propped up on his elbows, head lolling. */
-export const WAKE_PROP: Pose = fullPose({
-  hipPos: [0, -0.02, 0], hips: [0.1, 0, 0], chest: [0.5, 0, 0], head: [0.5, 0.3, 0.1],
-  armS: [0.9, 0, -0.5], elbowS: -1.5, wrist: [0.4, 0, 0], armH: [0.9, 0, 0.5], elbowH: -1.5,
-  footS: [-0.14, 0.02, 0.06], footH: [0.15, 0.02, 0.08], toeS: 0.6, toeH: 0.6,
-  tail: [-1.0, 0.2, -0.05], ears: 0.6,
+/*
+ * (2026-11-27, the owner on the first cut, which had him on his BACK: "he gets up weird ... when he's laying down his feet
+ * are sticking up in the air and it looks Goofy, maybe he should be getting up from his belly ... he fell down face
+ * first with like his head to the side". So he lies FACE DOWN: tipped forward, his tip given as a NEGATIVE number.)
+ */
+/** Face down on the floor, his head turned to one side, one arm up by his head, the other at his side. */
+export const WAKE_FLAT: Pose = fullPose({
+  hipPos: [0, 0, 0], hips: [0, 0, 0], chest: [0.05, 0, 0], head: [-0.25, 1.15, 0.25],
+  armS: [0.2, 0, -0.25], elbowS: -0.2, wrist: [0.4, 0, 0], armH: [-2.3, 0.2, 0.3], elbowH: -0.9,
+  footS: [-0.12, 0.02, -0.04], footH: [0.13, 0.02, -0.02], toeS: -1.2, toeH: -1.2,
+  tail: [-1.38, 0.3, -0.12], ears: 0.8,
+});
+/** Pushing up off the floor on his arms, head coming up. */
+export const WAKE_PUSH: Pose = fullPose({
+  hipPos: [0, -0.04, 0], hips: [-0.2, 0, 0], chest: [-0.15, 0, 0], head: [-0.6, 0.2, 0],
+  armS: [-1.45, 0, -0.15], elbowS: -0.35, wrist: [0.4, 0, 0], armH: [-1.45, 0, 0.15], elbowH: -0.35,
+  footS: [-0.12, 0.02, -0.04], footH: [0.13, 0.02, -0.02], toeS: -1, toeH: -1,
+  tail: [-1.45, 0.15, -0.35], ears: 0.6,
+});
+/** On his hands and knees. */
+export const WAKE_FOURS: Pose = fullPose({
+  hipPos: [0, -0.2, -0.06], hips: [0.25, 0, 0], chest: [0.05, 0, 0], head: [-0.75, -0.2, 0],
+  armS: [-1.0, 0, -0.15], elbowS: -0.15, wrist: [0.4, 0, 0], armH: [-1.0, 0, 0.15], elbowH: -0.15,
+  footS: [-0.12, 0.03, -0.26], footH: [0.12, 0.03, -0.26], toeS: 1.1, toeH: 1.1,
+  tail: [-0.9, 0.3, -0.2], ears: 0.5,
 });
 /** Sitting up on the floor, legs out in front of him, head hanging. */
 export const WAKE_SIT: Pose = fullPose({
@@ -690,9 +709,9 @@ export const WAKE_STAND: Pose = fullPose({
   armS: [0.1, 0, -0.2], elbowS: -0.3, wrist: [0.4, 0, 0], armH: [0.1, 0, 0.2], elbowH: -0.3,
   footS: [-0.11, 0, -0.02], footH: [0.11, 0, 0.03], tail: [0, 0, 0], ears: 0,
 });
-/** The keys of getting up: at what part of it (0..1) each pose is reached, and how far back he is tipped then. */
+/** The keys of getting up: at what part of it (0..1) each pose is reached, and how far he is tipped then (-1: flat on his face). */
 const WAKE_KEYS: Array<[number, Pose, number]> = [
-  [0, DEAD, 1], [0.28, DEAD, 1], [0.42, WAKE_PROP, 0.72], [0.56, WAKE_SIT, 0.1], [0.7, WAKE_KNEEL, 0],
+  [0, WAKE_FLAT, -1], [0.3, WAKE_FLAT, -1], [0.44, WAKE_PUSH, -0.62], [0.57, WAKE_FOURS, -0.35], [0.7, WAKE_KNEEL, 0],
   [0.84, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
 ];
 /** Getting up, `k` of the way (0..1): his pose, how far back he is tipped, and his head's turn (he looks about him at the end; he shakes it as he rises). */
