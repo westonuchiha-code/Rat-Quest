@@ -664,7 +664,7 @@ export const DEAD: Pose = fullPose({
  */
 /** Face down on the floor, his head turned to one side, one arm up by his head, the other at his side. */
 export const WAKE_FLAT: Pose = fullPose({
-  hipPos: [0, 0, 0], hips: [0, 0, 0], chest: [0.05, 0, 0], head: [-0.25, 1.15, 0.25],
+  hipPos: [0, 0, 0], hips: [0, 0, 0], chest: [0.05, 0, 0], head: [-0.55, 0.85, 0.1],
   armS: [0.2, 0, -0.25], elbowS: -0.2, wrist: [0.4, 0, 0], armH: [-2.3, 0.2, 0.3], elbowH: -0.9,
   footS: [-0.12, 0.02, -0.04], footH: [0.13, 0.02, -0.02], toeS: -1.2, toeH: -1.2,
   tail: [-1.38, 0.3, -0.12], ears: 0.8,
@@ -674,14 +674,14 @@ export const WAKE_PUSH: Pose = fullPose({
   hipPos: [0, -0.04, 0], hips: [-0.2, 0, 0], chest: [-0.15, 0, 0], head: [-0.6, 0.2, 0],
   armS: [-1.45, 0, -0.15], elbowS: -0.35, wrist: [0.4, 0, 0], armH: [-1.45, 0, 0.15], elbowH: -0.35,
   footS: [-0.12, 0.02, -0.04], footH: [0.13, 0.02, -0.02], toeS: -1, toeH: -1,
-  tail: [-1.45, 0.15, -0.35], ears: 0.6,
+  tail: [-1.17, 0.15, 0.05], ears: 0.6,
 });
 /** On his hands and knees. */
 export const WAKE_FOURS: Pose = fullPose({
-  hipPos: [0, -0.2, -0.06], hips: [0.25, 0, 0], chest: [0.05, 0, 0], head: [-0.75, -0.2, 0],
+  hipPos: [0, -0.03, -0.06], hips: [0.25, 0, 0], chest: [0.05, 0, 0], head: [-0.75, -0.2, 0],
   armS: [-1.0, 0, -0.15], elbowS: -0.15, wrist: [0.4, 0, 0], armH: [-1.0, 0, 0.15], elbowH: -0.15,
-  footS: [-0.12, 0.03, -0.26], footH: [0.12, 0.03, -0.26], toeS: 1.1, toeH: 1.1,
-  tail: [-0.9, 0.3, -0.2], ears: 0.5,
+  footS: [-0.12, 0.05, -0.26], footH: [0.12, 0.05, -0.26], toeS: 0.45, toeH: 0.45,
+  tail: [-0.45, 0.15, 0.08], ears: 0.5,
 });
 /** Sitting up on the floor, legs out in front of him, head hanging. */
 export const WAKE_SIT: Pose = fullPose({
@@ -692,17 +692,17 @@ export const WAKE_SIT: Pose = fullPose({
 });
 /** Down on one knee, a paw on the floor, getting his breath. */
 export const WAKE_KNEEL: Pose = fullPose({
-  hipPos: [0, -0.2, -0.03], hips: [0.25, 0.1, 0], chest: [0.45, 0, 0], head: [0.35, 0.1, 0],
+  hipPos: [0, -0.04, -0.03], hips: [0.25, 0.1, 0], chest: [0.45, 0, 0], head: [0.35, 0.1, 0],
   armS: [-0.2, 0, -0.25], elbowS: -0.3, wrist: [0.4, 0, 0], armH: [-0.6, 0.2, 0.3], elbowH: -1.3,
-  footS: [-0.12, 0.03, -0.2], footH: [0.12, 0, 0.17], toeS: 0.9, toeH: 0,
-  tail: [-0.5, 0.3, 0], ears: 0.4,
+  footS: [-0.12, 0.05, -0.2], footH: [0.12, 0, 0.17], toeS: 0.4, toeH: 0,
+  tail: [-0.15, 0.12, 0.1], ears: 0.4,
 });
 /** On one knee, reaching down with his sword paw for the hilt lying by him (the moment he takes it: `WAKE_GRAB`). */
 export const WAKE_REACH: Pose = fullPose({
-  hipPos: [0, -0.22, -0.03], hips: [0.35, -0.25, 0], chest: [0.55, -0.2, 0], head: [0.55, -0.5, 0],
-  armS: [-1.05, -0.35, -0.2], elbowS: -0.1, wrist: [1.2, 0, 0], armH: [-0.6, 0.2, 0.3], elbowH: -1.3,
-  footS: [-0.12, 0.03, -0.2], footH: [0.12, 0, 0.17], toeS: 0.9, toeH: 0,
-  tail: [-0.5, 0.3, 0], ears: 0.4,
+  hipPos: [0, -0.05, -0.03], hips: [0.35, -0.25, 0], chest: [0.55, -0.2, 0], head: [0.55, -0.5, 0],
+  armS: [-1.05, -0.35, -0.2], elbowS: -0.1, wrist: [0.2, 0, 0], armH: [-0.6, 0.2, 0.3], elbowH: -1.3,
+  footS: [-0.12, 0.05, -0.2], footH: [0.12, 0, 0.17], toeS: 0.4, toeH: 0,
+  tail: [-0.15, 0.12, 0.1], ears: 0.4,
 });
 /** The part of getting up (0..1) at which his paw closes on the hilt: before it he has nothing in his paws. */
 export const WAKE_GRAB = 0.7;
@@ -735,6 +735,13 @@ export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
   const [k1, p1, t1] = WAKE_KEYS[i + 1];
   const u = smoothstep((k - k0) / Math.max(1e-6, k1 - k0));
   const pose = blendPose(p0, p1, u);
+  // (A foot that moves along the floor from one pose to the next is LIFTED as it goes, as a real step is: slid, it
+  // passed through the floor on the way. tests/wakeclip.ts.)
+  const arc = Math.sin(u * Math.PI);
+  for (const f of ['footS', 'footH'] as const) {
+    const moved = Math.hypot(p1[f][0] - p0[f][0], p1[f][2] - p0[f][2]);
+    if (moved > 0.08) pose[f] = [pose[f][0], pose[f][1] + arc * Math.min(0.1, moved * 0.35), pose[f][2]];
+  }
   // A shake of the head as he gets his breath on one knee; a look one way and the other once he is up.
   const shake = k > 0.57 && k < 0.65 ? Math.sin((k - 0.57) * 110) * 0.3 * Math.sin(((k - 0.57) / 0.08) * Math.PI) : 0;
   const look = k > 0.86 ? Math.sin(((k - 0.86) / 0.14) * Math.PI * 2) * 0.6 : 0;

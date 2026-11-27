@@ -21,7 +21,8 @@ import { makePlayable, PLAYABLE, type Playable, type PlayableView } from './play
 import type { CritterEvents } from './player/critters/base';
 import type { PatronLook } from './npc/patrons';
 import { KNIGHT } from './npc/portrait';
-import { ATTACK_CLIPS, WAKE_GRAB, WAKE_HILT } from './player/animations';
+import { ATTACK_CLIPS, WAKE_GRAB } from './player/animations';
+import { placeHilt } from './player/wakeHilt';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
 import { Ambience, worldSoundFor } from './audio/ambience';
@@ -1497,12 +1498,7 @@ function startGame(): void {
   const layHilt = (): void => {
     if (wakeHilt) scene.remove(wakeHilt);
     const h = rat.looseSword();
-    // (Flat on the floor: the blade along the floor, its flat side down; off his sword paw's side, a little ahead.)
-    const f = player.facing;
-    const rx = -Math.cos(f);
-    const rz = Math.sin(f);
-    h.position.set(player.position.x + rx * WAKE_HILT.right + Math.sin(f) * WAKE_HILT.ahead, player.position.y + 0.03, player.position.z + rz * WAKE_HILT.right + Math.cos(f) * WAKE_HILT.ahead);
-    h.rotation.set(0, f + WAKE_HILT.turn, Math.PI / 2, 'YXZ');
+    placeHilt(h, player.position, player.facing);
     scene.add(h);
     wakeHilt = h;
   };

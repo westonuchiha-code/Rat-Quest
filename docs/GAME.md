@@ -39,6 +39,13 @@ hands and knees; one knee; hunched; standing and looking about), about seven sec
 stands (pushing the stick hurries him). `#...&wakeup` plays it, for filming.
 THE HILT (2026-11-27, his idea): he wakes with nothing in his paws; his half sword lies on the floor by his sword paw
 (`WAKE_HILT`), and on one knee he reaches down and takes it up (`WAKE_GRAB`, about two thirds of the way through).
+CLIPPING (2026-11-27, the owner: "be extra careful for clipping cuz clipping ruins cut scenes like this"):
+`tests/wakeclip.ts` measures EVERY frame of getting up with the real model and the game's gear. It found, where the films
+had not: his ear 0.16 into the floor lying down, his tail 0.35 and a knee 0.1 getting up, the blade into the floor as he
+took it, and the half sword laid on its edge (taller than a hilt, and under the floor). All mended: nothing of him goes
+more than a hundredth into the floor in any frame, the blade never does, the sword lies flat ON the floor clear of him,
+and his paw is down at it when he takes it. A foot that moves along the floor between two poses is lifted as it goes.
+EVERY NEW ANIMATION FOR A CUTSCENE GETS A CHECK LIKE THIS (no part in the floor, through a wall, or through another).
 
 ---
 

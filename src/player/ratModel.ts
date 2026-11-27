@@ -1594,7 +1594,9 @@ export class RatModel {
     // Swimming along, he leans forward until he is nearly flat on the water.
     this.swimLean = ease(this.swimLean, state === 'swim' ? this.swimMove * 1.15 : 0, dt, state === 'swim' ? 6 : 12);
     this.tumble.rotation.x = tumbleX + this.swimLean - this.deadAmount * (Math.PI / 2);
-    this.tumbleLift = ease(this.tumbleLift, lift - Math.abs(this.deadAmount) * 0.2, dt, 30);
+    // (Down on his back he lies 0.2 lower; on his FACE (getting up, the game's first moment) only 0.1: lower and his ear
+    // went into the floor. tests/wakeclip.ts.)
+    this.tumbleLift = ease(this.tumbleLift, lift - (this.deadAmount < 0 ? -this.deadAmount * 0.1 : this.deadAmount * 0.2), dt, 30);
     this.tumble.position.y = HIP_Y + this.tumbleLift;
 
     // Lean into acceleration and bank into turns, the way a running animal does.
