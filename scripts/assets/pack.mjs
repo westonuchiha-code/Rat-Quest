@@ -3,13 +3,14 @@
 // See assets/README.md for what goes where. Needs ffmpeg and ffprobe.
 // The game is one .html file, so nothing can be loaded when it runs: a dropped picture is stored as its dots, a
 // dropped sound as its samples, a dropped song as an MP3, all as text in that one module.
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 // (RQ_ASSETS and RQ_DROPPED: another folder to read and another file to write, for the test of this script.)
 const assetsDir = process.env.RQ_ASSETS ?? path.join(root, 'assets');
 const outFile = process.env.RQ_DROPPED ?? path.join(root, 'src/assets/dropped.ts');

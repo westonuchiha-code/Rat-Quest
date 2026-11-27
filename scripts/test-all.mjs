@@ -3,13 +3,14 @@
 //   node scripts/test-all.mjs hall lifting                    only those
 // Prints each suite that fails with its FAIL lines, then the count of PASS and FAIL lines over all. Exit 1 on any failure.
 // (The list is package.json's test:sim, so a new suite is still added in one place.)
+import { fileURLToPath } from 'node:url';
 import { build } from 'vite';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const all = pkg.scripts['test:sim'].match(/for t in ([^;]+);/)[1].trim().split(/\s+/);
 const want = process.argv.slice(2);

@@ -21,7 +21,7 @@ import { makePlayable, PLAYABLE, type Playable, type PlayableView } from './play
 import type { CritterEvents } from './player/critters/base';
 import type { PatronLook } from './npc/patrons';
 import { KNIGHT } from './npc/portrait';
-import { ATTACK_CLIPS } from './player/animations';
+import { ATTACK_CLIPS, WAKE_GRAB, WAKE_HILT } from './player/animations';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
 import { Ambience, worldSoundFor } from './audio/ambience';
@@ -1491,11 +1491,28 @@ function startGame(): void {
    * stick before then hurries him (a little).
    */
   let wakeT = -1;
-  const WAKE_SECS = 7;
+  const WAKE_SECS = 7.5;
+  /** The half sword lying on the floor by him while he gets up (taken up at WAKE_GRAB). */
+  let wakeHilt: THREE.Object3D | null = null;
+  const layHilt = (): void => {
+    if (wakeHilt) scene.remove(wakeHilt);
+    const h = rat.looseSword();
+    // (Flat on the floor: the blade along the floor, its flat side down; off his sword paw's side, a little ahead.)
+    const f = player.facing;
+    const rx = -Math.cos(f);
+    const rz = Math.sin(f);
+    h.position.set(player.position.x + rx * WAKE_HILT.right + Math.sin(f) * WAKE_HILT.ahead, player.position.y + 0.03, player.position.z + rz * WAKE_HILT.right + Math.cos(f) * WAKE_HILT.ahead);
+    h.rotation.set(0, f + WAKE_HILT.turn, Math.PI / 2, 'YXZ');
+    scene.add(h);
+    wakeHilt = h;
+  };
   let knightWasDead = false;
   const WARDEN_BEATEN = `beaten:${FLOTSAM.wardenIs.name}`;
   // (Development aid: #...&wakeup starts him on the floor, getting up, for filming it.)
-  if (/[#&]wakeup\b/.test(location.hash)) wakeT = 0;
+  if (/[#&]wakeup\b/.test(location.hash)) {
+    wakeT = 0;
+    setTimeout(() => layHilt(), 0);
+  }
   // (Development aid: #...&showcard shows the card at once, for pictures.)
   if (location.hash.includes('showcard')) titleCard.show('RATQUEST', 'THE KINGDOM BELOW', 'The Old Gate is open.', 600);
   const story = { scene: null as CompiledScene | null, t: 0, finished: false, beat: -1, onDone: null as (() => void) | null };
@@ -2640,6 +2657,11 @@ function startGame(): void {
       wakeT += dt * (hurry ? 1.8 : 1);
       m.set(0, 0, 0);
       jumpPressed = jumpHeld = attackPressed = dodgePressed = guardHeld = stowPressed = false;
+      if (wakeHilt && wakeT / WAKE_SECS >= WAKE_GRAB) {
+        scene.remove(wakeHilt);
+        wakeHilt = null;
+        audio.play('item', { vol: 0.5, rate: 0.8, priority: 5 });
+      }
       if (wakeT >= WAKE_SECS) wakeT = -1;
     }
     const wasGrounded = player.grounded;
@@ -3574,6 +3596,7 @@ function startGame(): void {
       player.velocity.set(0, 0, 0);
       player.facing = WAKE.facing;
       wakeT = 0;
+      layHilt();
     }
     if (playing === 'game' && cur.id === FLOTSAM_ID) {
       player.position.set(FLOTSAM.arrive.x, FLOTSAM.arrive.y, FLOTSAM.arrive.z);

@@ -37,6 +37,8 @@ first knocks his shield flying, the second breaks his sword, the third: black. H
 GETTING UP (done, 2026-11-27; made FACE DOWN the same day at his word): `wakePose` in `src/player/animations.ts` (face down, head to one side; pushing up on his arms;
 hands and knees; one knee; hunched; standing and looking about), about seven seconds; the controls are his once he
 stands (pushing the stick hurries him). `#...&wakeup` plays it, for filming.
+THE HILT (2026-11-27, his idea): he wakes with nothing in his paws; his half sword lies on the floor by his sword paw
+(`WAKE_HILT`), and on one knee he reaches down and takes it up (`WAKE_GRAB`, about two thirds of the way through).
 
 ---
 

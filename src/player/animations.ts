@@ -697,6 +697,18 @@ export const WAKE_KNEEL: Pose = fullPose({
   footS: [-0.12, 0.03, -0.2], footH: [0.12, 0, 0.17], toeS: 0.9, toeH: 0,
   tail: [-0.5, 0.3, 0], ears: 0.4,
 });
+/** On one knee, reaching down with his sword paw for the hilt lying by him (the moment he takes it: `WAKE_GRAB`). */
+export const WAKE_REACH: Pose = fullPose({
+  hipPos: [0, -0.22, -0.03], hips: [0.35, -0.25, 0], chest: [0.55, -0.2, 0], head: [0.55, -0.5, 0],
+  armS: [-1.05, -0.35, -0.2], elbowS: -0.1, wrist: [1.2, 0, 0], armH: [-0.6, 0.2, 0.3], elbowH: -1.3,
+  footS: [-0.12, 0.03, -0.2], footH: [0.12, 0, 0.17], toeS: 0.9, toeH: 0,
+  tail: [-0.5, 0.3, 0], ears: 0.4,
+});
+/** The part of getting up (0..1) at which his paw closes on the hilt: before it he has nothing in his paws. */
+export const WAKE_GRAB = 0.7;
+/** Where the half sword lies when he comes to: off his sword paw's side and a little ahead, flat on the floor
+ * (x to his right, z ahead, in his own terms; and which way the blade points, turned from straight ahead). */
+export const WAKE_HILT = { right: 0.42, ahead: 0.38, turn: 1.45 } as const;
 /** Up, but not yet steady: hunched, head down. */
 export const WAKE_HUNCH: Pose = fullPose({
   hipPos: [0, -0.07, 0], hips: [0.15, 0, 0], chest: [0.35, 0, 0], head: [0.3, 0, 0],
@@ -711,8 +723,8 @@ export const WAKE_STAND: Pose = fullPose({
 });
 /** The keys of getting up: at what part of it (0..1) each pose is reached, and how far he is tipped then (-1: flat on his face). */
 const WAKE_KEYS: Array<[number, Pose, number]> = [
-  [0, WAKE_FLAT, -1], [0.3, WAKE_FLAT, -1], [0.44, WAKE_PUSH, -0.62], [0.57, WAKE_FOURS, -0.35], [0.7, WAKE_KNEEL, 0],
-  [0.84, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
+  [0, WAKE_FLAT, -1], [0.3, WAKE_FLAT, -1], [0.44, WAKE_PUSH, -0.62], [0.57, WAKE_FOURS, -0.35], [0.63, WAKE_KNEEL, 0],
+  [WAKE_GRAB, WAKE_REACH, 0], [0.86, WAKE_HUNCH, 0], [1, WAKE_STAND, 0],
 ];
 /** Getting up, `k` of the way (0..1): his pose, how far back he is tipped, and his head's turn (he looks about him at the end; he shakes it as he rises). */
 export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
@@ -724,7 +736,7 @@ export function wakePose(k: number): { pose: Pose; tip: number; look: number } {
   const u = smoothstep((k - k0) / Math.max(1e-6, k1 - k0));
   const pose = blendPose(p0, p1, u);
   // A shake of the head as he gets his breath on one knee; a look one way and the other once he is up.
-  const shake = k > 0.6 && k < 0.72 ? Math.sin((k - 0.6) * 90) * 0.35 * Math.sin(((k - 0.6) / 0.12) * Math.PI) : 0;
+  const shake = k > 0.57 && k < 0.65 ? Math.sin((k - 0.57) * 110) * 0.3 * Math.sin(((k - 0.57) / 0.08) * Math.PI) : 0;
   const look = k > 0.86 ? Math.sin(((k - 0.86) / 0.14) * Math.PI * 2) * 0.6 : 0;
   pose.head = [pose.head[0], pose.head[1] + shake + look, pose.head[2]];
   return { pose, tip: t0 + (t1 - t0) * u, look };

@@ -5,7 +5,7 @@ import { createPs1Material } from '../render/ps1Material';
 import { getTexture } from '../render/textures';
 import type { PlayerState, DodgeKind } from './controller';
 import {
-  wakePose, ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_BROKEN, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
+  wakePose, WAKE_GRAB, ATTACK_CLIPS, BACKSTEP, DEAD, GUARD, GUARD_BROKEN, GUARD_SNAP, PARRY_SWEEP, HURT, LAND, PLUNGE_DIVE, PLUNGE_LAND, PLUNGE_WIND, POSE_KEYS, ROLL_TUCK, STANCE,
   Pose, airPose, blendPose, fullPose, idlePose, locomotionPose, unarmedArms, samplePose, smoothstep, swimPose, WALL_BRACE, WALL_KICK,
 } from './animations';
 import { TUNING } from '../data/tuning';
@@ -1008,6 +1008,13 @@ export class RatModel {
     remap(this.sword, [[C.blade, colors.blade], [C.gold, colors.hilt]]);
   }
 
+  /** A copy of his sword as it is now (broken or whole, his colours), to lie on a floor: the hilt he wakes beside. */
+  looseSword(): THREE.Object3D {
+    const c = this.sword.clone(true);
+    c.visible = true;
+    return c;
+  }
+
   /** A BROKEN sword (in his hand and on his back): snapped off short, no point. And `bare`: no shield at all. */
   setKit(o: { broken: boolean; bare: boolean }): void {
     for (const root of [this.sword, this.backSword]) {
@@ -1462,12 +1469,14 @@ export class RatModel {
     // (Hanging and climbing need both paws: sword and shield go on his back for as long as it takes.)
     // (And carrying something, or throwing it: his paws are busy.)
     const armed = ctx.armed && state !== 'hang' && state !== 'climb' && !((ctx.carry ?? 0) > 0.2 || (ctx.throwT ?? -1) >= 0);
-    this.sword.visible = armed && this.dress.gear;
+    // (Getting up, he has nothing in his paws until he takes the hilt off the floor; and nothing on his back.)
+    const emptyPawed = (ctx.waking ?? -1) >= 0 && ctx.waking! < WAKE_GRAB;
+    this.sword.visible = armed && this.dress.gear && !emptyPawed;
     // (Riding, the shield is under his feet: not on his arm, nor on his back.)
     const riding = state === 'ride';
     const kicking = this.dismountT >= 0 && !riding;
     this.shieldPivot.visible = armed && this.dress.gear && !riding && !kicking && !this.bare;
-    this.backSword.visible = !armed && this.dress.gear;
+    this.backSword.visible = !armed && this.dress.gear && (ctx.waking ?? -1) < 0;
     this.backShield.visible = !armed && this.dress.gear && !riding && !this.bare;
     this.board.visible = (riding || kicking) && this.dress.gear;
     for (const g of this.boardGhosts) g.root.visible = false;

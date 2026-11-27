@@ -46,6 +46,16 @@ going to build it from front to back." THE GAME is NEW GAME on the title: its ar
 and no shield. THE HALL is TEST HALL on the title, with its own save file. His words, the plan and the state of it:
 `docs/GAME.md`.
 
+## PLAYTEST SCREENSHOTS FROM HIS TV: branch `xmb-playtest` (2026-11-27)
+
+He plays the no-pad build on his TV from his PC launcher (it pulls the default branch, builds
+`dist-single/ratquest-nopad.html` with vite build and make-single, and SKIPS `scripts/assets/pack.mjs`, so keep
+`src/assets/dropped.ts` committed whenever assets change). Pressing Home there sends a screenshot to the orphan branch
+`xmb-playtest` (never code, never merged): `screenshots/<YYYY-MM-DD_HH-MM-SS>.png` (3840x2160) and
+`screenshots/INDEX.md` (one line a shot: time, build sha, that commit's message, file). When he mentions a playtest
+screenshot: `git fetch origin xmb-playtest`, `git show origin/xmb-playtest:screenshots/INDEX.md`, then
+`git show origin/xmb-playtest:screenshots/<file>.png > <scratch>/shot.png` and look at it.
+
 ## THREE BUILDS (the owner, 2026-11-27)
 
 "the nopad version becomes the one we used for testing just with a real controller on the TV and you sort of in the
