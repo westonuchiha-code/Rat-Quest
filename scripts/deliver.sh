@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Builds everything the owner tests with, into one folder (default: ../deliver, next to the project):
 #   ratquest.html          THE GAME, with the on-screen test pad (the owner tests on a phone). Opens on the title.
-#   ratquest-nopad.html    THE GAME, no test pad (keyboard / controller; what the Steam build is)
-#                          (THE HALL, the test area with every door, is TEST HALL on the title of both)
+#   ratquest-nopad.html    THE GAME, no test pad: for testing with a controller on the TV (the owner's PC launcher
+#                          opens dist-single/ratquest-nopad.html: keep the name). TEST HALL and the tools on its title.
+#   ratquest-final.html    THE FINAL BUILD, to ship: the game only, no test area, no tools. Made every time; sent
+#                          only when asked for.
 #   ratquest-<id>.html     only when asked for: one place by itself (level ids after the folder)
 #   ALL=1 also keeps ratquest-editor.html and writes ratquest-source.zip
 # Usage: bash scripts/deliver.sh [outdir] [level id ...]
@@ -19,7 +21,12 @@ npm run build:editor >/dev/null
 npx vite build --outDir dist-plain >/dev/null
 DIST=dist-plain node scripts/make-single.mjs ratquest-nopad.html >/dev/null
 rm -rf dist-plain
-cp dist-single/ratquest.html dist-single/ratquest-editor.html dist-single/ratquest-nopad.html "$OUT"/
+# THE FINAL BUILD (the owner, 2026-11-27): the game to ship, with no test area and no tools. Made every time and
+# kept beside the others; not sent unless he asks for it.
+npx vite build --mode final --outDir dist-final >/dev/null
+DIST=dist-final node scripts/make-single.mjs ratquest-final.html >/dev/null
+rm -rf dist-final
+cp dist-single/ratquest.html dist-single/ratquest-editor.html dist-single/ratquest-nopad.html dist-single/ratquest-final.html "$OUT"/
 
 # THE SMOKE CHECK (scripts/smoke.mjs): the file just built is opened in a headless browser and played a little: the
 # knight must walk, jump and swing, a played character must move, no page may throw. A build that fails is not sent.

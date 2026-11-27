@@ -9,6 +9,7 @@ steam/release
 dist-single/
 dist-editor/
 dist-plain/
+dist-final/
 .testdist-*/
 .sheet/
 .flaky/

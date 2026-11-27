@@ -41,6 +41,17 @@ going to build it from front to back." THE GAME is NEW GAME on the title: its ar
 and no shield. THE HALL is TEST HALL on the title, with its own save file. His words, the plan and the state of it:
 `docs/GAME.md`.
 
+## THREE BUILDS (the owner, 2026-11-27)
+
+"the nopad version becomes the one we used for testing just with a real controller on the TV and you sort of in the
+background keep us separate version of the game that doesn't have any of the testing stuff in it and that's the
+version eventually we will ship as the final version." So: `ratquest.html` (on-screen pad) and `ratquest-nopad.html`
+(controller, on his TV) are TESTING builds, with TEST HALL, LEVEL EDITOR and WORKSHOP on the title and the tools in
+the pause menu. `ratquest-final.html` (`vite build --mode final`, `VITE_FINAL`) is THE FINAL BUILD: the game only.
+`scripts/deliver.sh` makes all three; send the first two, and the final only when he asks. His PC launcher pulls the
+default branch, runs `bash scripts/deliver.sh deliver` and opens `dist-single/ratquest-nopad.html`: keep that name,
+and keep the script working on a fresh clone after `npm ci`.
+
 ## The project
 A PS1-style 3D action platformer: a rat knight with a sword and a shield. TypeScript (strict: no unused locals or
 parameters), Three.js 0.187, Vite 8, no other game library. The owner tests on a PHONE with single-file HTML builds
@@ -163,7 +174,8 @@ have to implement right now."
   testing with and then any screenshots or movies ... you can send me an additional one if I ask for it and the
   other ones ... you don't really need to keep updating them you could just throw them in the background as like
   old test stuff"): `ratquest.html` (the game, with the on-screen pad: what he tests with) and
-  `ratquest-nopad.html` (the game, no pad). The Hall is TEST HALL on the title of both. One place by itself only
+  `ratquest-nopad.html` (the game, no pad: what he tests with on the TV). Both have the test Hall. The final build is
+  made too, and sent only on request. The Hall is TEST HALL on the title of both. One place by itself only
   when he asks: `bash scripts/deliver.sh deliver <level id>` writes `ratquest-<id>.html` too. Films and pictures
   are still wanted every time (`deliver/` is git-ignored). Send a FILM of anything that moves (stills are not enough), made with the drives below.
 - Replies in plain language: what changed, what was tested, what was NOT (say so plainly), then a short numbered

@@ -3635,9 +3635,10 @@ function startGame(): void {
       const def = cutsceneById(id);
       if (def) playCutscene(def);
     },
-    openBuilder: () => builder.show(),
-    openTweaks: () => tweaksPanel.show(),
-    openWorkshop: () => workshop.show(),
+    // (The tools in the pause menu: not in the final build.)
+    ...(import.meta.env.VITE_FINAL
+      ? {}
+      : { openBuilder: () => builder.show(), openTweaks: () => tweaksPanel.show(), openWorkshop: () => workshop.show() }),
     openPhoto: () => {
       if (canPhoto()) photo.start();
     },
@@ -3704,7 +3705,10 @@ function startGame(): void {
   let editorBack: 'title' | 'workshop' | null = null;
   let tweaksBack: 'workshop' | null = null;
   let workshopBack: 'title' | null = null;
-  const TEST_BUILD = !!import.meta.env.VITE_TOUCHPAD || location.hash.includes('tools');
+  // TWO KINDS OF BUILD (the owner, 2026-11-27): every build he tests with (the on-screen pad's, and the no-pad one he
+  // plays on the TV with a controller) has the test area and the tools on its title; THE FINAL BUILD, the one to ship
+  // (`--mode final`, ratquest-final.html), has the game and nothing else.
+  const TEST_BUILD = !import.meta.env.VITE_FINAL;
   const boot = new Boot(gameWrap, {
     files: () => Array.from({ length: FILE_COUNT }, (_, i) => {
       const f = fileSummary(deviceStore, i + 1);

@@ -83,8 +83,9 @@ with each stage of Flotsam's gear (a knight who only swings / one who sidesteps 
 
 (Neither scripted player ever raises a shield, so the shield from Pip shows no difference here.)
 
-THE TITLE: the game's own (the no-pad build) has NEW GAME, CONTINUE, LOAD GAME and OPTIONS. TEST HALL, LEVEL EDITOR
-and WORKSHOP are on the title of the test build only (`TEST_BUILD` in `src/main.ts`: the pad build, or `#...&tools`).
+THE TITLE (changed 2026-11-27): both builds he tests with (the pad one and the no-pad one) have TEST HALL, LEVEL
+EDITOR and WORKSHOP on the title. Only THE FINAL BUILD (`ratquest-final.html`, `--mode final`) has the game alone:
+NEW GAME, CONTINUE, LOAD GAME and OPTIONS, and no tools in the pause menu.
 
 WHAT IT IS NOT YET: a wrecked boat (the wreck is boards on posts); reeds; a second way round or a shortcut (in a
 place this small and open one would be for show: better kept for area two); a played opening scene with a camera;
