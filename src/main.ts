@@ -1494,6 +1494,11 @@ function startGame(): void {
   let wakeT = -1;
   const wakeEye = new THREE.Vector3();
   const wakeLook = new THREE.Vector3();
+  const wakeHead = new THREE.Vector3();
+  let wakeRoll = 0;
+  /** How the getting-up is filmed: 'flutter' (the owner's Navi idea, 2026-11-28; the default) or 'steady' (the first
+   * version). `#...&wakecam=steady` films it the first way. */
+  const WAKE_CAM: 'flutter' | 'steady' = /[#&]wakecam=steady\b/.test(location.hash) ? 'steady' : 'flutter';
   // (A camera, not a plain object: a plain object's lookAt turns its FRONT to the target, a camera's its BACK, and the
   // first try looked away from him.)
   const wakeCam = new THREE.PerspectiveCamera();
@@ -5446,11 +5451,39 @@ function startGame(): void {
       const rx = -Math.cos(f);
       const rz = Math.sin(f);
       const p0 = player.position;
-      // (Ahead of him and off to his sword side, low; higher and nearer as he gets up.)
-      const ahead = 2.3 - 0.5 * up;
-      const side = 1.3 - 0.3 * up;
-      wakeEye.set(p0.x + fx * ahead + rx * side, p0.y + 0.45 + 0.55 * up, p0.z + fz * ahead + rz * side);
-      wakeLook.set(p0.x + rx * 0.15, p0.y + 0.2 + 0.55 * up, p0.z + rz * 0.15);
+      if (WAKE_CAM === 'steady') {
+        // STEADY: ahead of him and off to his sword side, low; higher and nearer as he gets up.
+        const ahead = 2.3 - 0.5 * up;
+        const side = 1.3 - 0.3 * up;
+        wakeEye.set(p0.x + fx * ahead + rx * side, p0.y + 0.45 + 0.55 * up, p0.z + fz * ahead + rz * side);
+        wakeLook.set(p0.x + rx * 0.15, p0.y + 0.2 + 0.55 * up, p0.z + rz * 0.15);
+      } else {
+        // FLUTTER (the owner, 2026-11-28: "in the beginning it can start out as like a zooming out and then a slow
+        // rotation but I want it to be a tiny bit Jerky like ... Navi ... flying to see link in Ocarina of Time ... a
+        // first person fluttery sort of view that's smooth around corners"): it starts close on his face as he lies
+        // there, draws back, and goes slowly round him as he gets up, bobbing and drifting as a small flying thing
+        // does, tipping a little as it turns. Smooth: no shake, only the flutter.
+        rat.headAt(wakeHead);
+        // (Before his first pose is drawn the head reads where it stood; take it on the floor ahead of him instead.)
+        if (up < 0.1 && wakeHead.y > p0.y + 0.35) wakeHead.set(p0.x + fx * 0.4, p0.y + 0.12, p0.z + fz * 0.4);
+        const out = Math.min(1, up / 0.3);
+        const outE = 1 - (1 - out) * (1 - out);
+        const r = 0.72 + 1.15 * outE + 0.15 * up;
+        // Round from in front of his face (a little to his sword side) to his sword side, slowly.
+        const ang = f + 0.35 + 1.25 * up * up * (3 - 2 * up) * 0.85 + 0.25 * outE;
+        const h = 0.28 + 0.55 * outE + 0.35 * up;
+        const t = wakeT;
+        // The flutter: a few slow waves on top of one another, so it never quite repeats; a dart now and then.
+        const bob = Math.sin(t * 7.1) * 0.035 + Math.sin(t * 3.3 + 1.2) * 0.05 + Math.sin(t * 1.3 + 0.4) * 0.06;
+        const drift = Math.sin(t * 2.1 + 0.7) * 0.07 + Math.sin(t * 5.3) * 0.025;
+        const dart = Math.max(0, Math.sin(t * 0.9 + 2)) ** 8 * 0.18;
+        const cx = (wakeHead.x + p0.x) / 2 + (p0.x - (wakeHead.x + p0.x) / 2) * up;
+        const cz = (wakeHead.z + p0.z) / 2 + (p0.z - (wakeHead.z + p0.z) / 2) * up;
+        const target = wakeHead.clone().lerp(new THREE.Vector3(p0.x, p0.y + 0.6, p0.z), 0.25 + 0.5 * up);
+        wakeEye.set(cx + Math.sin(ang) * (r + dart) + Math.cos(ang) * drift, p0.y + h + bob, cz + Math.cos(ang) * (r + dart) - Math.sin(ang) * drift);
+        wakeLook.copy(target).add(new THREE.Vector3(Math.sin(t * 2.7) * 0.03, Math.sin(t * 3.9 + 1) * 0.025, Math.cos(t * 2.3) * 0.03));
+        wakeRoll = Math.sin(t * 1.7 + 0.5) * 0.06 + Math.sin(t * 4.1) * 0.02;
+      }
       wakeCam.position.copy(wakeEye);
       wakeCam.lookAt(wakeLook);
       const g = Math.max(0, Math.min(1, (k - WAKE_UP) / (1 - WAKE_UP)));
@@ -5476,6 +5509,8 @@ function startGame(): void {
         camera.position.copy(wakeEye);
         camera.quaternion.copy(wakeCam.quaternion);
       }
+      // (The flutter's tip as it turns, fading out as it settles behind him.)
+      if (WAKE_CAM === 'flutter') camera.rotateZ(wakeRoll * (1 - e));
     }
     gameWrap.classList.toggle('rq-cine', wakeT >= 0);
     if (devEye) {

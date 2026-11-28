@@ -1606,7 +1606,7 @@ export class RatModel {
     }
 
     // Whole-body turning for rolls, flips and lying dead.
-    this.deadAmount = waking ? ease(this.deadAmount, waking.tip, dt, 9) : ease(this.deadAmount, state === 'dead' ? 1 : 0, dt, state === 'dead' ? 7 : 30);
+    this.deadAmount = waking ? (ctx.waking! < 0.02 ? waking.tip : ease(this.deadAmount, waking.tip, dt, 9)) : ease(this.deadAmount, state === 'dead' ? 1 : 0, dt, state === 'dead' ? 7 : 30);
     // Swimming along, he leans forward until he is nearly flat on the water.
     this.swimLean = ease(this.swimLean, state === 'swim' ? this.swimMove * 1.15 : 0, dt, state === 'swim' ? 6 : 12);
     this.tumble.rotation.x = tumbleX + this.swimLean - this.deadAmount * (Math.PI / 2);
