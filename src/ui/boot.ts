@@ -51,6 +51,8 @@ const CSS = `
   font-family: var(--rq-font-title); }
 .rq-boot.on { display: block; }
 .rq-booting .hp-row, .rq-booting .rq-goal, .rq-booting .rq-collect, .rq-booting .rq-hint { display: none !important; }
+/* (A little cutscene in the game, getting up: no hearts, goals or hints over it until he is the player's.) */
+.rq-cine .hp-row, .rq-cine .rq-goal, .rq-cine .rq-collect, .rq-cine .rq-hint { display: none !important; }
 .rq-boot > div { position: absolute; inset: 0; display: none; }
 .rq-boot > div.on { display: block; }
 

@@ -21,7 +21,7 @@ import { makePlayable, PLAYABLE, type Playable, type PlayableView } from './play
 import type { CritterEvents } from './player/critters/base';
 import type { PatronLook } from './npc/patrons';
 import { KNIGHT } from './npc/portrait';
-import { ATTACK_CLIPS, WAKE_GRAB } from './player/animations';
+import { ATTACK_CLIPS, WAKE_GRAB, WAKE_UP } from './player/animations';
 import { placeHilt } from './player/wakeHilt';
 import { Scuttler, ScuttlerState } from './enemies/scuttler';
 import { GRIM, Grimsqueak } from './enemies/grimsqueak';
@@ -1492,8 +1492,13 @@ function startGame(): void {
    * stick before then hurries him (a little).
    */
   let wakeT = -1;
-  // (7.5 seconds getting up, then about three rubbing his head and looking about.)
-  const WAKE_SECS = 10.4;
+  const wakeEye = new THREE.Vector3();
+  const wakeLook = new THREE.Vector3();
+  // (A camera, not a plain object: a plain object's lookAt turns its FRONT to the target, a camera's its BACK, and the
+  // first try looked away from him.)
+  const wakeCam = new THREE.PerspectiveCamera();
+  // (7.5 seconds getting up, then about two and a half rubbing his head; then he is the player's.)
+  const WAKE_SECS = 10.2;
   /** The half sword lying on the floor by him while he gets up (taken up at WAKE_GRAB). */
   let wakeHilt: THREE.Object3D | null = null;
   const layHilt = (): void => {
@@ -5015,6 +5020,8 @@ function startGame(): void {
     }
     fader.set(Math.max(cover, story.scene && storyFrame ? storyFrame.cover : 0));
     doorway.setReveal(doorSparkle, doorFade, time);
+    // (A room with no way out has none: setReveal shows the door whenever it is open, so it is hidden again here.)
+    if (cur.noExit) doorway.group.visible = false;
     if (doorFade >= 1 && !exitFrameSolid && !noWayOut(cur) && !cur.noExit) exitFrameSolid = addDoorFrame(cur.exit, true);
     if (wedgeVis && cur.wedges) {
       const ws = cur.wedges;
@@ -5424,6 +5431,53 @@ function startGame(): void {
     }
     fly.applyCamera();
     photo.applyCamera();
+    // GETTING UP IS A LITTLE CUTSCENE (the owner, 2026-11-28: "as he's fully stood the camera will be slowly moving behind
+    // him as from the perspective you'd be playing from and then as you're going there is when he's rubbing his head and
+    // then right when his hand gets into place to be in his Idol stands that's the moment that the player is able to take
+    // control ... a smooth cutscene to animation to gameplay within a few seconds"). While he gets up the view is low at
+    // his front, beside the hilt, and comes in a little as he rises; once he is on his feet it glides from there to where
+    // the follow camera already is behind him, and arrives as his paw comes down. No cut anywhere.
+    if (wakeT >= 0 && !devEye) {
+      const k = wakeT / WAKE_SECS;
+      const up = Math.min(1, k / WAKE_UP);
+      const f = player.facing;
+      const fx = Math.sin(f);
+      const fz = Math.cos(f);
+      const rx = -Math.cos(f);
+      const rz = Math.sin(f);
+      const p0 = player.position;
+      // (Ahead of him and off to his sword side, low; higher and nearer as he gets up.)
+      const ahead = 2.3 - 0.5 * up;
+      const side = 1.3 - 0.3 * up;
+      wakeEye.set(p0.x + fx * ahead + rx * side, p0.y + 0.45 + 0.55 * up, p0.z + fz * ahead + rz * side);
+      wakeLook.set(p0.x + rx * 0.15, p0.y + 0.2 + 0.55 * up, p0.z + rz * 0.15);
+      wakeCam.position.copy(wakeEye);
+      wakeCam.lookAt(wakeLook);
+      const g = Math.max(0, Math.min(1, (k - WAKE_UP) / (1 - WAKE_UP)));
+      const e = g * g * (3 - 2 * g);
+      if (e > 0) {
+        // ROUND him, not through him: from where the shot is to where the follow camera is, the way round that is
+        // shorter, at a distance and height eased from the one to the other; looking at what each looks at, eased.
+        // (A straight line from in front of him to behind him went through his head. 2026-11-28.)
+        const toLook = camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(camera.position.distanceTo(p0));
+        const followLook = camera.position.clone().add(toLook);
+        const a0 = Math.atan2(wakeEye.x - p0.x, wakeEye.z - p0.z);
+        const a1 = Math.atan2(camera.position.x - p0.x, camera.position.z - p0.z);
+        const r0 = Math.hypot(wakeEye.x - p0.x, wakeEye.z - p0.z);
+        const r1 = Math.hypot(camera.position.x - p0.x, camera.position.z - p0.z);
+        let da = a1 - a0;
+        da = Math.atan2(Math.sin(da), Math.cos(da));
+        const a = a0 + da * e;
+        const r = r0 + (r1 - r0) * e;
+        const y = wakeEye.y + (camera.position.y - wakeEye.y) * e;
+        camera.position.set(p0.x + Math.sin(a) * r, y, p0.z + Math.cos(a) * r);
+        camera.lookAt(wakeLook.lerp(followLook, e));
+      } else {
+        camera.position.copy(wakeEye);
+        camera.quaternion.copy(wakeCam.quaternion);
+      }
+    }
+    gameWrap.classList.toggle('rq-cine', wakeT >= 0);
     if (devEye) {
       camera.position.set(devEye[0], devEye[1], devEye[2]);
       camera.lookAt(devEye[3], devEye[4], devEye[5]);

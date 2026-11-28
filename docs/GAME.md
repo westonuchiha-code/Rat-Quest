@@ -54,6 +54,13 @@ head ... like he's 'oh ... what was that that hurt' ... he's not actually saying
 of it), head down and to one side, his free paw to his helmet and round it a few times (`WAKE_RUB`, `WAKE_RUB_FROM` to
 `WAKE_RUB_TO`), then a look about him. Ten and a half seconds in all now (`WAKE_SECS` in main.ts). The paw was placed
 on the helmet by the same kind of search (`RatModel.headAt`), and the check holds it on the helmet, never inside it.
+FROM CUTSCENE TO PLAY, NO CUT (2026-11-28, the owner: "as he's fully stood the camera will be slowly moving behind him
+as from the perspective you'd be playing from and then as you're going there is when he's rubbing his head and then
+right when his hand gets into place to be in his Idol stands that's the moment that the player is able to take control
+... a smooth cutscene to animation to gameplay within a few seconds"): while he gets up, a low shot at his front by the
+hilt (no hearts or labels over it: `.rq-cine`); once he is up it swings ROUND him (not through him: an arc at an eased
+distance) to where the follow camera is, as he rubs his head; it arrives, and control is his, as his paw comes down.
+(The look about him after the rub was dropped: control comes at the paw.) The door the empty room had drawn is gone.
 EVERY NEW ANIMATION FOR A CUTSCENE GETS A CHECK LIKE THIS (no part in the floor, through a wall, or through another).
 
 ---

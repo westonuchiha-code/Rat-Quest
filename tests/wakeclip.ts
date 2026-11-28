@@ -15,7 +15,7 @@ function check(name: string, ok: boolean, detail = ''): void {
   if (!ok) failures++;
 }
 const DT = 1 / 60;
-const SECS = 10.4; // (as main.ts's WAKE_SECS: getting up, then rubbing his head and looking about)
+const SECS = 10.2; // (as main.ts's WAKE_SECS: getting up, then rubbing his head and looking about)
 const base = {
   state: 'idle' as const, planarSpeed: 0, comboStep: 0, attackTime: 0, dodgeKind: 'roll' as const, dodgeProgress: 0,
   verticalSpeed: 0, flipProgress: 0, armed: true, stowProgress: -1, plungeStage: 0,
