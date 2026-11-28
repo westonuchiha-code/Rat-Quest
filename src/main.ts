@@ -1496,9 +1496,27 @@ function startGame(): void {
   const wakeLook = new THREE.Vector3();
   const wakeHead = new THREE.Vector3();
   let wakeRoll = 0;
+  let wakeFov = 50;
   /** How the getting-up is filmed: 'flutter' (the owner's Navi idea, 2026-11-28; the default) or 'steady' (the first
    * version). `#...&wakecam=steady` films it the first way. */
-  const WAKE_CAM: 'flutter' | 'steady' = /[#&]wakecam=steady\b/.test(location.hash) ? 'steady' : 'flutter';
+  const WAKE_CAM: 'cinema' | 'flutter' | 'steady' = /[#&]wakecam=steady\b/.test(location.hash)
+    ? 'steady'
+    : /[#&]wakecam=flutter\b/.test(location.hash) ? 'flutter' : 'cinema';
+  /** CINEMA (the owner, 2026-11-28: "there needs to be some zooming going on it just doesn't feel cinematic I want it to
+   * feel like a short little part of a movie transitioning into a video game"): black bars and a fade in from black; a
+   * high wide shot of him small in the empty room, the lens slowly zooming in; a cut, as he first moves, to his face
+   * close up, the lens zooming out as the camera flies back and round him; the bars slide away as control comes. */
+  const WAKE_CUT = 2.2; // seconds: he lies still until then, and the cut comes on his first movement
+  let wakeFovOn = false;
+  const wakeBars = [0, 1].map((i) => {
+    const d = document.createElement('div');
+    d.style.cssText = `position:absolute;left:0;right:0;${i ? 'bottom' : 'top'}:0;height:11%;background:#000;z-index:4;pointer-events:none;display:none;will-change:transform;`;
+    gameWrap.appendChild(d);
+    return d;
+  });
+  const wakeBlack = document.createElement('div');
+  wakeBlack.style.cssText = 'position:absolute;inset:0;background:#000;z-index:5;pointer-events:none;display:none;';
+  gameWrap.appendChild(wakeBlack);
   // (A camera, not a plain object: a plain object's lookAt turns its FRONT to the target, a camera's its BACK, and the
   // first try looked away from him.)
   const wakeCam = new THREE.PerspectiveCamera();
@@ -5457,6 +5475,16 @@ function startGame(): void {
         const side = 1.3 - 0.3 * up;
         wakeEye.set(p0.x + fx * ahead + rx * side, p0.y + 0.45 + 0.55 * up, p0.z + fz * ahead + rz * side);
         wakeLook.set(p0.x + rx * 0.15, p0.y + 0.2 + 0.55 * up, p0.z + rz * 0.15);
+      } else if (WAKE_CAM === 'cinema' && wakeT < WAKE_CUT) {
+        // CINEMA, the first shot: high and far off, in front of him and to his sword side, looking down on him lying in
+        // the middle of the empty room; the lens slowly closing in (a zoom, not a move), drifting a touch, as if held.
+        const t = wakeT / WAKE_CUT;
+        const t2 = t * t * (3 - 2 * t);
+        const t3 = wakeT;
+        wakeEye.set(p0.x + fx * 10 + rx * 5.5 + Math.sin(t3 * 0.7) * 0.08, p0.y + 5.2 + Math.sin(t3 * 0.9 + 1) * 0.05, p0.z + fz * 10 + rz * 5.5);
+        wakeLook.set(p0.x + fx * 0.25, p0.y + 0.12, p0.z + fz * 0.25);
+        wakeFov = 30 - 23.5 * t2;
+        wakeRoll = 0;
       } else {
         // FLUTTER (the owner, 2026-11-28: "in the beginning it can start out as like a zooming out and then a slow
         // rotation but I want it to be a tiny bit Jerky like ... Navi ... flying to see link in Ocarina of Time ... a
@@ -5466,9 +5494,15 @@ function startGame(): void {
         rat.headAt(wakeHead);
         // (Before his first pose is drawn the head reads where it stood; take it on the floor ahead of him instead.)
         if (up < 0.1 && wakeHead.y > p0.y + 0.35) wakeHead.set(p0.x + fx * 0.4, p0.y + 0.12, p0.z + fz * 0.4);
-        const out = Math.min(1, up / 0.3);
+        // (In CINEMA this shot starts at the cut, so it runs from there to his standing; and the lens zooms out as the
+        // camera draws back: tight on his face, then all of him.)
+        const cine = WAKE_CAM === 'cinema';
+        const cutK = WAKE_CUT / WAKE_SECS / WAKE_UP;
+        const upF = cine ? Math.max(0, (up - cutK) / (1 - cutK)) : up;
+        const out = Math.min(1, upF / (cine ? 0.45 : 0.3));
         const outE = 1 - (1 - out) * (1 - out);
-        const r = 0.72 + 1.15 * outE + 0.15 * up;
+        const r = cine ? 1.45 + 0.75 * outE + 0.1 * upF : 0.72 + 1.15 * outE + 0.15 * up;
+        if (cine) wakeFov = 19 + 33 * outE;
         // Round from in front of his face (a little to his sword side) to his sword side, slowly.
         const ang = f + 0.35 + 1.25 * up * up * (3 - 2 * up) * 0.85 + 0.25 * outE;
         const h = 0.28 + 0.55 * outE + 0.35 * up;
@@ -5510,7 +5544,25 @@ function startGame(): void {
         camera.quaternion.copy(wakeCam.quaternion);
       }
       // (The flutter's tip as it turns, fading out as it settles behind him.)
-      if (WAKE_CAM === 'flutter') camera.rotateZ(wakeRoll * (1 - e));
+      if (WAKE_CAM !== 'steady') camera.rotateZ(wakeRoll * (1 - e));
+      // (CINEMA: the lens, eased back to the game's own as the camera settles behind him; the bars; the fade in.)
+      if (WAKE_CAM === 'cinema') {
+        camera.fov = wakeFov + (baseFov + fovKick - wakeFov) * e;
+        camera.updateProjectionMatrix();
+        wakeFovOn = true;
+        const bars = 1 - e;
+        wakeBars[0].style.display = wakeBars[1].style.display = 'block';
+        wakeBars[0].style.transform = `translateY(${-100 * (1 - bars)}%)`;
+        wakeBars[1].style.transform = `translateY(${100 * (1 - bars)}%)`;
+        const fade = Math.max(0, 1 - wakeT / 0.9);
+        wakeBlack.style.display = fade > 0 ? 'block' : 'none';
+        wakeBlack.style.opacity = String(fade * fade);
+      }
+    } else if (wakeFovOn) {
+      wakeFovOn = false;
+      camera.fov = baseFov + fovKick;
+      camera.updateProjectionMatrix();
+      wakeBars[0].style.display = wakeBars[1].style.display = wakeBlack.style.display = 'none';
     }
     gameWrap.classList.toggle('rq-cine', wakeT >= 0);
     if (devEye) {
