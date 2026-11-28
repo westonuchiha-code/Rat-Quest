@@ -1506,7 +1506,7 @@ function startGame(): void {
    * feel like a short little part of a movie transitioning into a video game"): black bars and a fade in from black; a
    * high wide shot of him small in the empty room, the lens slowly zooming in; a cut, as he first moves, to his face
    * close up, the lens zooming out as the camera flies back and round him; the bars slide away as control comes. */
-  const WAKE_CUT = 2.2; // seconds: he lies still until then, and the cut comes on his first movement
+  const WAKE_CUT = 3.6; // seconds (WAKE_LIE): he lies still until then, and the cut comes on his first movement
   let wakeFovOn = false;
   const wakeBars = [0, 1].map((i) => {
     const d = document.createElement('div');
@@ -1520,8 +1520,19 @@ function startGame(): void {
   // (A camera, not a plain object: a plain object's lookAt turns its FRONT to the target, a camera's its BACK, and the
   // first try looked away from him.)
   const wakeCam = new THREE.PerspectiveCamera();
-  // (7.5 seconds getting up, then about two and a half rubbing his head; then he is the player's.)
-  const WAKE_SECS = 10.2;
+  // (The owner, 2026-11-28: "I know the scene is short but try to make it feel less hurried". Not slowed evenly, which
+  // makes the getting up look like slow motion: he lies still longer while the first shot zooms in, gets up a little
+  // slower than he did, and has longer for the rub and the camera to come round behind him. Seconds against how far
+  // through the getting-up animation he is.)
+  const WAKE_LIE = 3.6; // lying still (the first shot); the cut comes on his first movement
+  const WAKE_RISE = WAKE_LIE + ((WAKE_UP - 0.216) * 10.2) / 0.85; // on his feet
+  const WAKE_SECS = WAKE_RISE + 4.3; // the rub, the camera behind him: then he is the player's
+  const wakeK = (t: number): number =>
+    t < WAKE_LIE
+      ? (0.216 * t) / WAKE_LIE
+      : t < WAKE_RISE
+        ? 0.216 + ((WAKE_UP - 0.216) * (t - WAKE_LIE)) / (WAKE_RISE - WAKE_LIE)
+        : Math.min(1, WAKE_UP + ((1 - WAKE_UP) * (t - WAKE_RISE)) / (WAKE_SECS - WAKE_RISE));
   /** The half sword lying on the floor by him while he gets up (taken up at WAKE_GRAB). */
   let wakeHilt: THREE.Object3D | null = null;
   const layHilt = (): void => {
@@ -2682,7 +2693,7 @@ function startGame(): void {
       wakeT += dt * (hurry ? 1.8 : 1);
       m.set(0, 0, 0);
       jumpPressed = jumpHeld = attackPressed = dodgePressed = guardHeld = stowPressed = false;
-      if (wakeHilt && wakeT / WAKE_SECS >= WAKE_GRAB) {
+      if (wakeHilt && wakeK(wakeT) >= WAKE_GRAB) {
         scene.remove(wakeHilt);
         wakeHilt = null;
         audio.play('item', { vol: 0.5, rate: 0.8, priority: 5 });
@@ -5116,7 +5127,7 @@ function startGame(): void {
       onWall: player.onWall,
       slide: player.sliding ? { back: player.slideBack, air: !player.grounded, ...player.rideGround } : null,
       glide: player.gliding,
-      waking: wakeT >= 0 ? wakeT / WAKE_SECS : -1,
+      waking: wakeT >= 0 ? wakeK(wakeT) : -1,
       guardNow: { snap: player.guarding && player.guardAge <= TUNING.guard.parryWindow * player.gear.parry, turned: parrySweep >= 0 ? Math.min(1, parrySweep / PARRY_SWEEP_FOR) : -1, broken: player.guardBroken / TUNING.guard.brokenFor },
       ice: { belly: player.bellySliding, scrabble: player.scrabble, skid: player.skid, brake: player.iceBraking },
       carry: player.carryPose,
@@ -5461,7 +5472,7 @@ function startGame(): void {
     // his front, beside the hilt, and comes in a little as he rises; once he is on his feet it glides from there to where
     // the follow camera already is behind him, and arrives as his paw comes down. No cut anywhere.
     if (wakeT >= 0 && !devEye) {
-      const k = wakeT / WAKE_SECS;
+      const k = wakeK(wakeT);
       const up = Math.min(1, k / WAKE_UP);
       const f = player.facing;
       const fx = Math.sin(f);
@@ -5481,7 +5492,7 @@ function startGame(): void {
         const t = wakeT / WAKE_CUT;
         const t2 = t * t * (3 - 2 * t);
         const t3 = wakeT;
-        wakeEye.set(p0.x + fx * 10 + rx * 5.5 + Math.sin(t3 * 0.7) * 0.08, p0.y + 5.2 + Math.sin(t3 * 0.9 + 1) * 0.05, p0.z + fz * 10 + rz * 5.5);
+        wakeEye.set(p0.x + fx * 10 + rx * 5.5 + Math.sin(t3 * 0.5) * 0.02, p0.y + 5.2 + Math.sin(t3 * 0.6 + 1) * 0.012, p0.z + fz * 10 + rz * 5.5);
         wakeLook.set(p0.x + fx * 0.25, p0.y + 0.12, p0.z + fz * 0.25);
         wakeFov = 30 - 23.5 * t2;
         wakeRoll = 0;
@@ -5497,9 +5508,9 @@ function startGame(): void {
         // (In CINEMA this shot starts at the cut, so it runs from there to his standing; and the lens zooms out as the
         // camera draws back: tight on his face, then all of him.)
         const cine = WAKE_CAM === 'cinema';
-        const cutK = WAKE_CUT / WAKE_SECS / WAKE_UP;
+        const cutK = wakeK(WAKE_CUT) / WAKE_UP;
         const upF = cine ? Math.max(0, (up - cutK) / (1 - cutK)) : up;
-        const out = Math.min(1, upF / (cine ? 0.45 : 0.3));
+        const out = Math.min(1, upF / (cine ? 0.6 : 0.3));
         const outE = 1 - (1 - out) * (1 - out);
         const r = cine ? 1.45 + 0.75 * outE + 0.1 * upF : 0.72 + 1.15 * outE + 0.15 * up;
         if (cine) wakeFov = 19 + 33 * outE;
@@ -5514,9 +5525,16 @@ function startGame(): void {
         const cx = (wakeHead.x + p0.x) / 2 + (p0.x - (wakeHead.x + p0.x) / 2) * up;
         const cz = (wakeHead.z + p0.z) / 2 + (p0.z - (wakeHead.z + p0.z) / 2) * up;
         const target = wakeHead.clone().lerp(new THREE.Vector3(p0.x, p0.y + 0.6, p0.z), 0.25 + 0.5 * up);
-        wakeEye.set(cx + Math.sin(ang) * (r + dart) + Math.cos(ang) * drift, p0.y + h + bob, cz + Math.cos(ang) * (r + dart) - Math.sin(ang) * drift);
-        wakeLook.copy(target).add(new THREE.Vector3(Math.sin(t * 2.7) * 0.03, Math.sin(t * 3.9 + 1) * 0.025, Math.cos(t * 2.3) * 0.03));
-        wakeRoll = Math.sin(t * 1.7 + 0.5) * 0.06 + Math.sin(t * 4.1) * 0.02;
+        // (CINEMA keeps a tenth of the flutter, the owner, 2026-11-28: "maybe 10% of what it is right now would make
+        // sense ... this smoother camera looked better so a smooth Zoom seems nice".)
+        const fl = cine ? 0.1 : 1;
+        wakeEye.set(
+          cx + Math.sin(ang) * (r + dart * fl) + Math.cos(ang) * drift * fl,
+          p0.y + h + bob * fl,
+          cz + Math.cos(ang) * (r + dart * fl) - Math.sin(ang) * drift * fl,
+        );
+        wakeLook.copy(target).add(new THREE.Vector3(Math.sin(t * 2.7) * 0.03 * fl, Math.sin(t * 3.9 + 1) * 0.025 * fl, Math.cos(t * 2.3) * 0.03 * fl));
+        wakeRoll = (Math.sin(t * 1.7 + 0.5) * 0.06 + Math.sin(t * 4.1) * 0.02) * fl;
       }
       wakeCam.position.copy(wakeEye);
       wakeCam.lookAt(wakeLook);
@@ -5554,7 +5572,7 @@ function startGame(): void {
         wakeBars[0].style.display = wakeBars[1].style.display = 'block';
         wakeBars[0].style.transform = `translateY(${-100 * (1 - bars)}%)`;
         wakeBars[1].style.transform = `translateY(${100 * (1 - bars)}%)`;
-        const fade = Math.max(0, 1 - wakeT / 0.9);
+        const fade = Math.max(0, 1 - wakeT / 1.5);
         wakeBlack.style.display = fade > 0 ? 'block' : 'none';
         wakeBlack.style.opacity = String(fade * fade);
       }
